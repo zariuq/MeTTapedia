@@ -1,0 +1,600 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+
+\geometry{margin=1in}
+\setlist{nosep}
+
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}[definition]{Theorem}
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{example}[definition]{Example}
+\newtheorem{remark}[definition]{Remark}
+
+\newcommand{\Build}{\mathcal{B}}
+\newcommand{\Obs}{\mathcal{O}}
+\newcommand{\View}{\mathcal{V}}
+\newcommand{\Rel}{\mathcal{R}}
+\newcommand{\Work}{\mathsf{Work}}
+\newcommand{\Span}{\mathsf{Span}}
+
+\title{AGI-Oriented Reproducible Builds as\\
+Relational, Observation-Indexed GSLT Integrity}
+\author{MeTTapedia Formalization Project}
+\date{August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Masayuki Hatta proposes seven requirements for AGI-oriented reproducible
+builds, extending ordinary build reproducibility to evolving and
+self-modifying systems.  We give a machine-checked account in which a build is
+a proof-relevant relation rather than necessarily a function, and
+reproducibility is indexed by both a declared source view and an artifact
+observation.  The formulation separates rebuildability, per-source agreement,
+declared-input sufficiency, replayability, result-level hosting, proof-fibre
+fidelity, provenance, receipt currentness, and verification cost.
+
+The theory proves identity and composition laws for GSLT-to-GSLT
+transformations, exposes hidden intermediate dependencies, and recovers
+functional transport only from an explicit representability certificate.  It
+instantiates Hatta's R1--R5 as a typed profile, proves R6 for a characterized
+class of current protected-family-preserving self-modifications, formalizes
+Wheeler's diverse double-compiling assumptions and Thompson's trusting-trust
+attack, and treats R7 as coverage plus a Work--Span--storage feasibility
+discipline.  Observer-indexed legibility is admitted only after exhibiting two
+extensionally equal realizations with different attained verification ranks.
+Dynamic-link provenance composes along relational routes but does not, without
+an additional rule, determine a legal adjudication.  All positive claims are
+paired with negative controls, including sampled-but-not-universal
+verification and semantically equal routes with different provenance.
+\end{abstract}
+
+\section{Attribution and scope}
+
+Hatta's seven requirements and the governance motivation come from
+\cite{hatta2026,hatta2025}.  Complete input closure and purely functional
+deployment are informed by Dolstra and colleagues
+\cite{dolstra2006,dolstra2004}.  The distinction between task semantics,
+dependency discovery, rebuilding, and scheduling follows the build-systems
+analysis of Mokhov, Mitchell, and Peyton Jones \cite{mokhov2020}.  Signed
+layouts and link evidence use the conceptual separation of \emph{in-toto}
+\cite{intoto2019}.  Trusting trust and diverse double-compiling are due to
+Thompson and Wheeler \cite{thompson1984,wheeler2009}.  The empirical and
+engineering reproducible-build background is provided by
+\cite{lamb2021,malka2025}.
+
+The following are MeTTapedia extensions rather than claims attributed to those
+sources:
+
+\begin{itemize}
+  \item the proof-relevant relational and observation-indexed foundation;
+  \item the GSLT/GSLT-IL/OSLF composition and hosting theorems;
+  \item the exact replay equivalence under stated adequacy, completeness,
+        ordering, initial-state, and currentness premises;
+  \item the protected-family R6 theorem for the characterized modification
+        class;
+  \item observer-indexed weakest-audit-view legibility and its strict
+        separation witness;
+  \item the R7 Work--Span--storage algebra and the dynamic-link relational
+        provenance construction.
+\end{itemize}
+
+No theorem here converts Hatta's governance analogy into a legal conclusion.
+No claim about arbitrary self-modifying AGI follows from the restricted R6
+result.
+
+\section{Relational build semantics}
+
+Let $S$ be a type of complete source and environment states, $A$ a type of
+artifacts, $D$ a type of declared input views, and $O$ a type of observable
+artifact outcomes.  None of these types is required to be finite.
+
+\begin{definition}[Proof-relevant build]
+A build is a type-valued relation
+\[
+  \Build : S \to A \to \mathsf{Type}.
+\]
+An occurrence is a triple $(s,a,e)$ with $e : \Build(s,a)$.  Distinct evidence
+terms are retained even when their source and artifact endpoints coincide.
+\end{definition}
+
+A declared input view is a map $d:S\to D$.  An artifact observation is a map
+$o:A\to O$.  Identity observation gives bit- or value-exact reproducibility;
+a coarser observation may express an explicitly justified tolerance or
+acceptance discipline.
+
+\begin{definition}[Separated obligations]
+For a build $\Build$ and observation $o$:
+\begin{align*}
+\mathsf{Rebuildable}(\Build)
+  &:\!\Longleftrightarrow \forall s,\; \exists a,\; \Build(s,a),\\
+\mathsf{Consistent}(\Build,o)
+  &:\!\Longleftrightarrow
+    \forall s,a,b,\;\Build(s,a)\to\Build(s,b)\to o(a)=o(b),\\
+\mathsf{Reproducible}(\Build,o)
+  &:\!\Longleftrightarrow
+    \mathsf{Rebuildable}(\Build)\wedge\mathsf{Consistent}(\Build,o).
+\end{align*}
+Declaration sufficiency is the stronger cross-source property
+\[
+  d(s)=d(t) \wedge \Build(s,a) \wedge \Build(t,b)
+  \;\Longrightarrow\; o(a)=o(b).
+\]
+Declared-view reproducibility combines rebuildability with declaration
+sufficiency.
+\end{definition}
+
+This separation closes several common loopholes.
+
+\begin{proposition}[Vacuity and hidden input controls]
+The formal development proves all of the following.
+\begin{enumerate}
+  \item Reproducibility implies rebuildability.
+  \item Rebuildability alone does not imply reproducibility: one source may
+        admit two observably different artifacts.
+  \item Consistency alone does not imply rebuildability: an empty execution
+        fibre is vacuously consistent.
+  \item Declaration sufficiency implies per-source consistency.
+  \item Per-source reproducibility does not imply declaration sufficiency: a
+        hidden hardware bit can change the exact artifact while every complete
+        source remains deterministic.
+\end{enumerate}
+\end{proposition}
+
+An executable reproducer through $d$ is stronger than fibrewise sufficiency:
+it computes the observed artifact from every declared value.  The converse
+requires the exact reachability or inhabited-codomain premise needed to define
+the reproducer away from realized declarations.  This distinction prevents a
+choice function outside the image from being smuggled into the definition.
+
+\subsection{Observation refinement}
+
+If an exact observation factors through a coarser observation, exact
+reproducibility transports downward.  Transport in the opposite direction is
+not automatic.  A numerical tolerance is accepted only through a supplied
+soundness law; it is not presumed transitive and therefore is not silently
+treated as a quotient.
+
+The identity observation is thus the finest ordinary case, not a synonym for
+the general theory.  This is important for AGI systems whose accepted outcome
+may be behavioral, probabilistic, proof-relevant, or resource-sensitive.
+
+\section{GSLT-to-GSLT composition}
+
+The core theory composes builds relationally.  For
+$\Build_1:S\to M\to\mathsf{Type}$ and
+$\Build_2:M\to A\to\mathsf{Type}$, the composite evidence retains an
+intermediate $m:M$ and witnesses of both stages:
+\[
+  (\Build_2\circ\Build_1)(s,a)
+  := \sum_{m:M}\Build_1(s,m)\times\Build_2(m,a).
+\]
+Consequently, repeated or alternative derivations are not collapsed merely
+because they share endpoints.
+
+\begin{theorem}[Identity and composition]
+Identity builds are reproducible.  Reproducible stages compose when their
+declared source views include the dependency closures required by both stages
+and their intermediate observations are aligned.  Composition is associative
+up to proof-fibre equivalence, rather than by erasing the intermediate
+witness.
+\end{theorem}
+
+\begin{example}[Hidden intermediate input]
+Two stages may each be reproducible relative to their local declarations while
+the composite is not reproducible relative to a declaration that hides a
+property read by the downstream stage.  The formal counterexample keeps the
+middle artifact observable long enough to show exactly where sufficiency
+fails.
+\end{example}
+
+Certified plans retain stage order, declared source demand, and observation
+alignment.  A plan that omits a dependency is rejected even when a particular
+sample execution happens to return the expected endpoint.
+
+\section{Hosting, proof fibres, and open GSLT-IL routes}
+
+Result-level hosting and proof-relevant hosting are different interfaces.  A
+behavioral hosting certificate transports statements about produced results at
+the declared observation.  It does not imply that source and target execution
+fibres are equivalent.  Proof-relevant hosting supplies that stronger
+equivalence explicitly.
+
+\begin{theorem}[Observation-exact transport]
+If a behavioral host preserves and reflects the selected artifact observation,
+then source reproducibility transports to the hosted build at that observation.
+No transport to a strictly finer observation follows without another
+certificate.
+\end{theorem}
+
+The negative target called \texttt{CBad} is deterministic but invents behavior.
+It demonstrates why determinism and forward preservation do not establish
+no-invention or reflection.
+
+GSLT-IL transport is relational by default.  A relation becomes a direct
+function only through a proof-relevantly total and deterministic
+representation certificate.  Open choice and partial routes remain valid
+relations but cannot be functionalized.  Exact returned-image theorems remain
+scoped to the returned image; commands outside it are retained as explicit
+counterexamples.
+
+The OSLF bridge follows the same discipline.  Syntactic translation alone does
+not establish operational reproducibility.  The bridge uses a named
+operational correspondence law, with both a satisfying instance and a failing
+translation witness.
+
+\section{Hatta R1--R5 as a typed profile}
+
+The formal profile stores semantic evidence, not seven Boolean flags.  Its
+fields are summarized in Table~\ref{tab:r1r5}.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}p{0.08\linewidth}p{0.36\linewidth}p{0.45\linewidth}@{}}
+\toprule
+Req. & Formal object & Required evidence \\
+\midrule
+R1 & declared input view & declaration sufficiency at the selected observation \\
+R2 & reproducibility budget & rebuildability and observational consistency \\
+R3 & toolchain and hardware axes & each is declared or proved observationally abstracted \\
+R4 & attestation discipline and layout & authorized, authenticated, current link for each required step \\
+R5 & source-scoped event log & initial-state, source-completeness, transition, order, and currentness premises \\
+\bottomrule
+\end{tabular}
+\caption{The R1--R5 profile.}
+\label{tab:r1r5}
+\end{table}
+
+R3 is deliberately disjunctive: a dependency may be bound in the declared
+view, or a proof may show that varying it cannot affect the chosen observation.
+This allows a portable abstraction layer without pretending the underlying
+hardware or toolchain does not exist.
+
+R4 follows the layout/link separation of \emph{in-toto}: a layout states the
+required steps and authorized issuers, while a link carries occurrence-specific
+attestation.  Authentication alone is insufficient.  The negative layout
+accepts no issuer and therefore cannot be covered by an otherwise authentic
+link.
+
+\subsection{R5 and exact replay premises}
+
+Let an event system have a step relation, an authoritative initial state, an
+ordered authoritative event sequence, and a source-scoped retained log.  The
+MeTTapedia replay theorem states
+\[
+  \mathsf{Trajectory}(s_0,E,s_f)
+  \quad\Longleftrightarrow\quad
+  \mathsf{replay}(s_0,L)=\mathsf{some}(s_f)
+\]
+only under all of the following premises:
+
+\begin{enumerate}
+  \item the retained and authoritative initial states agree;
+  \item every event occurrence retains its required sources;
+  \item retained events are complete as an occurrence multiset;
+  \item the event order is valid and recovers the authoritative sequence;
+  \item executable replay adequately implements the transition relation;
+  \item the log receipt is current at the selected revision.
+\end{enumerate}
+
+Dropping a receipt reconstructs the wrong current state.  Reordering a complete
+multiset can also fail replay.  A stale log may replay successfully yet fail
+currentness.  These controls show why replayability, source completeness,
+ordering, and currency remain distinct.
+
+Prime DAG replay and HE derivation-local state-free execution instantiate this
+boundary separately.  Their semantic objects are not collapsed into one
+implementation-neutral trace format.
+
+For a state-separating open-ended query schedule, a permanently sufficient
+fixed context must be injective.  Therefore an evolving AGI may use bounded,
+task-indexed views, but cannot recursively summarize away the authoritative
+event source and still promise sufficiency for every future separating query.
+
+\section{R6: protected recursive verifiability}
+
+R6 is represented as an indexed certificate family.  The R1--R5 profile has
+six fibres because R3 retains separate toolchain and hardware obligations.
+A family-preserving modification supplies a map from every protected before
+fibre to its corresponding after fibre.  A current modification additionally
+carries an issued receipt whose revision matches the current revision.
+
+\begin{theorem}[Restricted R6]
+For a current family-preserving modification, an inhabited complete R1--R5
+certificate family before the modification transports to an inhabited
+complete family after the modification, and the modification receipt is
+current.
+\end{theorem}
+
+The positive example is non-identity: it coarsens exact artifact observation to
+an explicit input observation, transports each semantic certificate, and keeps
+attestation and replay evidence.  The negative candidate preserves the build
+relation and artifact observation but narrows the declared input view so that
+hardware is hidden.  It cannot admit a protected-family map.  A second negative
+uses a stale receipt.
+
+This discharges Hatta's recursive-verifiability target for architectures whose
+self-modifications carry the stated family-preservation, replay, and
+currentness evidence.  It is not an unconditional theorem about arbitrary
+self-modifying systems.
+
+\section{Trusting trust and diverse double-compiling}
+
+Ordinary recompilation can reproduce a malicious compiler executable from
+apparently benign source when the executable recognizes both the login program
+and its own source \cite{thompson1984}.  Matching the infected executable to
+its self-recompiled output is therefore not sufficient evidence.
+
+The formal DDC model distinguishes compiler source, compiler executables, the
+trusted diverse compiler, source-language and executable-language semantics,
+the first and second stages, deterministic equality at the selected
+observation, and source correspondence.  Wheeler's proof assumptions are
+represented as named fields rather than folded into a single ``trust''
+predicate.
+
+\begin{theorem}[Diverse double-compiling]
+Under Wheeler's stated origin, compiler-correctness, determinism, trusted
+diverse compiler, language-compatibility, and comparison assumptions, equality
+of the DDC result with the compiler under test establishes correspondence to
+the designated compiler source at the selected observation.
+\end{theorem}
+
+The development contains:
+
+\begin{itemize}
+  \item a substantive benign positive instance;
+  \item a Thompson-style infected compiler that passes ordinary
+        self-recompilation;
+  \item a DDC experiment that detects the infected executable;
+  \item for every proof-one and proof-two requirement, a countermodel satisfying
+        all other requirements while the conclusion fails;
+  \item a control showing that matching bytes do not themselves provide the
+        proof-one premises;
+  \item a hosting bridge that separates result equality from proof-fibre
+        fidelity.
+\end{itemize}
+
+The C arithmetic differential example is used only as an observation-exact
+hosting example.  It is not mislabeled as a DDC instance because it does not
+construct Wheeler's complete two-stage compiler/source experiment.
+
+\section{Observer-indexed verification legibility}
+
+Legibility is not assigned to extensional behavior alone.  It is indexed by an
+audit question, a view of the audit state, a presented realization, and an
+auditor capability.
+
+\begin{definition}[Audit information order]
+An audit view $V$ is sufficient for question $q$ when $q$ factors through
+$V$.  Write $V\preceq W$ when $W$ refines $V$.  Sufficient views are upward
+closed in this order.  Two views are equivalent when each refines the other.
+\end{definition}
+
+Auditor capabilities enumerate permitted verification methods.  A
+weakest-permitted method and an attained minimum rank must be supplied by
+proof; the theory does not take an arbitrary inconvenient certificate as the
+definition of opacity.
+
+Hierarchical-complexity rank is a secondary readout.  Permutation-invariant
+verification composition is classified as a chain; order-sensitive
+composition is a coordination.  The same naturality square can be a chain at
+endpoint observation and a coordination at proof-route observation.  Rank is
+therefore observer-relative.
+
+\begin{theorem}[Strict legibility separation]
+There exist two presented realizations with extensionally equal behavior but
+different attained minimum verification ranks.  The lower-rank realization
+admits a direct evidence view; the higher-rank realization requires the full
+ordered trace for its audit question.
+\end{theorem}
+
+Adding a higher-rank method cannot worsen legibility when a lower-rank method
+remains permitted.  Conversely, low rank alone does not imply third-party
+attestation or DDC feasibility: both require additional authentication and
+compiler assumptions.  This prevents a scalar clarity score from becoming a
+semantic authority.
+
+\section{R7: coverage and resource feasibility}
+
+R7 uses a verification plan with two independent readouts:
+
+\begin{enumerate}
+  \item the exact multiset of checked occurrences;
+  \item a resource vector containing Work, Span, and retained-evidence storage.
+\end{enumerate}
+
+Sequential resource composition adds Work and Span.  Certified-independent
+parallel composition adds Work, takes the maximum Span, and retains the sum of
+evidence storage.  Both operations are associative and monotone; the parallel
+readout is bounded by the sequential readout for the same components.
+
+A verification requirement pairs a required case set with a resource limit.
+Meeting the requirement means both covering the set and fitting the envelope.
+
+\begin{theorem}[Sampling is scoped]
+A verification certificate proves its property at every retained checked
+occurrence.  It proves a declared scope only with a coverage proof, and proves
+the universal statement only with full coverage.  A one-source sample of a
+selectively deterministic build does not imply reproducibility at the omitted
+source.
+\end{theorem}
+
+The same failure appears operationally for R5: a sampled reset receipt is
+valid for that event, while omission of the later increment prevents full
+trajectory coverage and reconstructs the wrong state.
+
+Semantic reproducibility, current attestation, and economic feasibility are
+pairwise separated by concrete controls.  A reproducible build can have an
+audit plan exceeding its budget; a cheap plan can inspect an irreproducible
+build; a current authentic attestation can coexist with either condition.
+
+\section{Dynamic-link provenance and plural ledgers}
+
+Hatta's protocol discussion asks composed tools to expose machine-readable
+license and provenance metadata for downstream reasoning \cite{hatta2026}.
+The formal route type decorates an existing proof-relevant semantic relation
+with an ordered metadata history for every actual route witness.  Each link
+records a link identity, tool identity, revision, source occurrences, and
+license occurrences.
+
+Relational composition retains the intermediate semantic witness and
+concatenates the two histories.  Coverage of required link sets composes under
+union.  Repeated source and license declarations remain repeated occurrences.
+
+\begin{proposition}[Provenance boundaries]
+The development proves:
+\begin{enumerate}
+  \item a compile--invoke chain covers both declared links;
+  \item omitting the invocation ledger entry is detectable even when the
+        endpoint relation is unchanged;
+  \item extensionally equal routes may have different provenance histories;
+  \item attaching metadata to a nondeterministic relation does not make it
+        functional;
+  \item compatible local ledgers glue only with an explicit gluing witness;
+        mere runtime coordination does not manufacture one global ledger.
+\end{enumerate}
+\end{proposition}
+
+Technical metadata and legal adjudication are modeled as separate fields.  A
+factorization predicate states what would be required for artifact-plus-metadata
+to determine adjudication.  Two cases with identical technical views and
+different externally supplied adjudications refute that factorization in the
+unconstrained model.  Thus metadata enables inspection but supplies no legal
+rule by itself.  This is a logical non-entailment result, not a legal judgment.
+
+\section{The theorem-level R1--R7 matrix}
+
+The Lean development exports a matrix whose every row contains a formal
+carrier, an actual positive proposition and proof, an actual negative
+proposition and proof, an attribution tag, and its premise boundary.  Table
+\ref{tab:coverage} summarizes the proof terms.
+
+\begin{table}[ht]
+\centering
+\scriptsize
+\begin{tabular}{@{}p{0.05\linewidth}p{0.30\linewidth}p{0.34\linewidth}p{0.21\linewidth}@{}}
+\toprule
+Req. & Positive & Negative & Boundary \\
+\midrule
+R1 & complete environment declaration & input-only view hides hardware & selected observation \\
+R2 & exact identity build & exact branching build & selected budget \\
+R3 & toolchain and hardware declared & hardware neither bound nor abstracted & declare-or-abstract \\
+R4 & authorized current layout covered & rejecting layout uncovered & authorization, authentication, currency \\
+R5 & complete log reconstructs state & lost receipt breaks completeness and replay & full replay premises \\
+R6 & current non-identity coarsening transports family & behavior-only candidate and stale receipt fail & characterized modification class \\
+R7 & full two-case audit meets envelope & sample is not universal; valid build can be unaffordable & coverage plus resources \\
+\bottomrule
+\end{tabular}
+\caption{R1--R7 theorem coverage.}
+\label{tab:coverage}
+\end{table}
+
+The matrix is not a checklist encoding: its top theorem eliminates the seven
+cases and returns each row's concrete positive and negative proof terms.
+
+\section{Trust boundary and limitations}
+
+The mechanization contains no new axioms and no proof holes.  Crown theorems
+depend only on standard Lean principles already used by the imported
+foundations, chiefly quotient soundness, propositional extensionality, and
+classical choice where representation selection requires it.
+
+Several boundaries remain intentional.
+
+\begin{itemize}
+  \item Reproducibility at one observation does not upgrade itself to a finer
+        observation.
+  \item Result equality does not imply proof-fibre identity, provenance, or
+        trusted attestation.
+  \item R6 applies only to current family-preserving modifications.
+  \item Sampled verification has no universal or probabilistic conclusion
+        without an explicit coverage or probability theorem.
+  \item Hierarchical rank is observer- and capability-indexed; it is not a
+        universal human-readability measure.
+  \item Dynamic-link metadata does not determine legal status.
+  \item A concrete CeTTa/C-subset realization is downstream work.  Runtime
+        executions may test or falsify a proposed observer, but do not define
+        the source semantics they are meant to realize.
+\end{itemize}
+
+\section{Conclusion}
+
+AGI-oriented reproducibility is most useful when treated as an invariant of a
+declared observation and source view, not as a synonym for deterministic or
+bit-identical execution.  Proof-relevant relational builds expose the exact
+additional assumptions needed for functions, global ledgers, proof replay,
+and third-party trust.  This makes Hatta's requirements compositional across
+GSLT transformations and precise enough to survive restricted
+self-modification, while the negative controls prevent provenance, sampling,
+legibility, and cost from being mistaken for semantic authority.
+
+\begin{thebibliography}{99}
+
+\bibitem{hatta2026}
+M.~Hatta.
+\newblock Reproducibility is the new copyleft: Defining AGI-oriented
+  reproducible builds.
+\newblock In \emph{Artificial General Intelligence}, LNAI 16854, pages
+  384--401, 2026.
+\newblock doi:10.1007/978-3-032-33010-9\_25; arXiv:2606.03019.
+
+\bibitem{hatta2025}
+M.~Hatta.
+\newblock Several issues regarding data governance in AGI.
+\newblock arXiv:2508.12168, 2025.
+
+\bibitem{thompson1984}
+K.~Thompson.
+\newblock Reflections on trusting trust.
+\newblock \emph{Communications of the ACM}, 27(8):761--763, 1984.
+
+\bibitem{wheeler2009}
+D.~A. Wheeler.
+\newblock \emph{Fully Countering Trusting Trust through Diverse
+  Double-Compiling}.
+\newblock PhD thesis, George Mason University, 2009.
+
+\bibitem{lamb2021}
+C.~Lamb and S.~Zacchiroli.
+\newblock Reproducible builds: Increasing the integrity of software supply
+  chains.
+\newblock \emph{IEEE Software}, 2021. arXiv:2104.06020.
+
+\bibitem{dolstra2006}
+E.~Dolstra.
+\newblock \emph{The Purely Functional Software Deployment Model}.
+\newblock PhD thesis, Utrecht University, 2006.
+
+\bibitem{dolstra2004}
+E.~Dolstra, M.~de Jonge, and E.~Visser.
+\newblock Nix: A safe and policy-free system for software deployment.
+\newblock In \emph{LISA}, 2004.
+
+\bibitem{mokhov2020}
+A.~Mokhov, N.~Mitchell, and S.~Peyton Jones.
+\newblock Build systems \`a la carte: Theory and practice.
+\newblock \emph{Journal of Functional Programming}, 30:e11, 2020.
+
+\bibitem{intoto2019}
+S.~Torres-Arias, H.~Afzali, A.~Kuppusamy, R.~Curtmola, and J.~Cappos.
+\newblock in-toto: Providing farm-to-table guarantees for bits and bytes.
+\newblock In \emph{28th USENIX Security Symposium}, 2019.
+
+\bibitem{malka2025}
+G.~Malka, S.~Zacchiroli, and A.~Zimmermann.
+\newblock Does functional package management enable reproducible builds at
+  scale? Yes.
+\newblock In \emph{Mining Software Repositories}, 2025.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,17 +1,17 @@
-import Mettapedia.GSLT.LanguageDef.C1DigitLanguageDef
+import Mettapedia.GSLT.LanguageDef.RadixDigitLanguageDef
 
 /-!
-# Primitive relation catalog for the C1 digit machine
+# Primitive relation catalog for the radix-digit machine
 
-The reified C1 LanguageDef delegates bounded instruction work to
-`C1ExecuteInstruction`.  This module gives that relation an explicit,
+The reified radix-digit LanguageDef delegates bounded instruction work to
+`RadixDigitExecuteInstruction`.  This module gives that relation an explicit,
 executable mathematical graph and proves that it agrees with the independently
-authored closed C1 machine, including lookup-row and fault receipts.
+authored closed radix-digit machine, including lookup-row and fault receipts.
 -/
 
-namespace Mettapedia.GSLT.LanguageDef.C1DigitRelationCatalog
+namespace Mettapedia.GSLT.LanguageDef.RadixDigitRelationCatalog
 
-open Mettapedia.GSLT.LanguageDef.C1DigitMachine
+open Mettapedia.GSLT.LanguageDef.RadixDigitMachine
 
 inductive PrimitiveResult where
   | next (buffers : Buffers) (registers : Registers) (pc : Nat)
@@ -55,7 +55,7 @@ def missingBuffer (receipt : Receipt) (pc buffer : Nat) : PrimitiveResult :=
 def missingRegister (receipt : Receipt) (pc register : Nat) : PrimitiveResult :=
   engineFault receipt pc (.missingRegister register)
 
-/-- The complete executable graph of `C1ExecuteInstruction`. -/
+/-- The complete executable graph of `RadixDigitExecuteInstruction`. -/
 def executePrimitive (schema : Schema) (pc : Nat)
     (buffers : Buffers) (registers : Registers) (receipt : Receipt) :
     Instruction -> PrimitiveResult
@@ -203,13 +203,13 @@ theorem executePrimitive_agrees
         instruction := by
   cases instruction <;>
     simp [executePrimitive, PrimitiveResult.toConfig,
-      C1DigitMachine.executeInstruction, languageFault, engineFault,
+      RadixDigitMachine.executeInstruction, languageFault, engineFault,
       resourceFault, missingBuffer, missingRegister,
-      C1DigitMachine.missingBuffer, C1DigitMachine.missingRegister,
-      C1DigitMachine.continueWithRegisters,
-      C1DigitMachine.continueWithBuffers,
-      C1DigitMachine.haltLanguage, C1DigitMachine.haltEngine,
-      C1DigitMachine.haltResource] <;> aesop
+      RadixDigitMachine.missingBuffer, RadixDigitMachine.missingRegister,
+      RadixDigitMachine.continueWithRegisters,
+      RadixDigitMachine.continueWithBuffers,
+      RadixDigitMachine.haltLanguage, RadixDigitMachine.haltEngine,
+      RadixDigitMachine.haltResource] <;> aesop
 
 theorem catalog_execute_iff_closed
     (schema : Schema) (program : Program) (pc : Nat)
@@ -253,4 +253,4 @@ theorem missing_lookup_row_negative :
 #print axioms executePrimitive_agrees
 #print axioms catalog_execute_iff_closed
 
-end Mettapedia.GSLT.LanguageDef.C1DigitRelationCatalog
+end Mettapedia.GSLT.LanguageDef.RadixDigitRelationCatalog

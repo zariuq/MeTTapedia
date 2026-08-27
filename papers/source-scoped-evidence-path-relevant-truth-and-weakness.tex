@@ -1,0 +1,844 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  citecolor=green!45!black,
+  urlcolor=blue!55!black,
+  pdftitle={Source-Scoped Evidence, Path-Relevant Truth, and Weakness-Guided Reasoning}
+}
+
+\pagestyle{fancy}
+\setlength{\headheight}{14pt}
+\fancyhf{}
+\lhead{Source-scoped evidence and weakness-guided reasoning}
+\rhead{MeTTapedia conceptual primer}
+\cfoot{\thepage}
+
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}[definition]{Theorem}
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{example}[definition]{Example}
+\newtheorem{counterexample}[definition]{Counterexample}
+\newtheorem{principle}[definition]{Principle}
+\newtheorem{obligation}[definition]{Open obligation}
+\theoremstyle{remark}
+\newtheorem{remark}[definition]{Remark}
+
+\newcommand{\Finset}{\mathsf{Finset}}
+\newcommand{\Pow}{\mathcal{P}}
+\newcommand{\Rel}{\mathsf{Rel}}
+\newcommand{\Chain}{\mathsf{Chain}}
+\newcommand{\Scope}{\mathsf{scope}}
+\newcommand{\Outcome}{\mathsf{Outcome}}
+\newcommand{\Outside}{\mathsf{OutsideFragment}}
+\newcommand{\Incomplete}{\mathsf{Incomplete}}
+\newcommand{\Established}{\mathsf{Established}}
+\newcommand{\Refuted}{\mathsf{Refuted}}
+\newcommand{\Models}{\mathsf{Models}}
+
+\title{\textbf{Source-Scoped Evidence, Path-Relevant Truth,\\
+and Weakness-Guided Cognitive Reasoning}\\[0.4em]
+\large A modular foundation for NARS, PLN, enactive generalization,
+and resource-bounded agents}
+\author{}
+\date{24 August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Reasoning systems often agree on a numerical readout while disagreeing about
+what that number means, which evidence it summarizes, and which operations it
+licenses.  This paper develops an information-first architecture in which an
+evidential object retains its source scope, derivation path, and multiplicity;
+truth values, probabilities, confidence scores, and Boolean verdicts are
+derived observations.  The architecture clarifies four related bodies of
+work.  Pei Wang's NARS motivates path- and scope-relative truth under
+insufficient knowledge and resources.  Probabilistic Logic Networks (PLN) and
+constructible duality contribute positive/negative evidence geometry without
+forcing NARS into a globally coherent probability model.  Michael Timothy
+Bennett's weakness orders admissible hypotheses by semantic freedom rather
+than description length, while Ben Goertzel's quantale-valued weakness makes
+relational composition explicit.  Eray \"Ozkural's task-process models expose
+the distributional assumptions under which weakness predicts
+generalization, and Patrick Hammer's ONA work supplies a concrete bounded
+control layer and a clean observation-aliasing problem.
+
+The common foundation is deliberately weak: finite source geometry and a
+constrained preorder of admissible candidates.  NARS and PLN remain sibling
+theories over this substrate, connected only by explicit bridge theorems.
+Positive and negative controls show why source identity cannot be replaced by
+source count, why equal intervals need not imply equal semantics, why
+Bennett's Razor and shortest-description criteria do not subsume one another,
+and why nonuniform task processes require additional premises.  The result is
+a reusable primer for proof-relevant cognitive languages and their formal
+development.
+\end{abstract}
+
+\tableofcontents
+
+\section{The information-first method}
+
+The central methodological rule is simple.
+
+\begin{principle}[Informative object before quotient]
+Build the object that retains distinctions required by later reasoning.  A
+lossy observable may be derived from it, but the observable should not be
+installed as the foundation unless a factorization theorem proves that no
+required distinction is lost.
+\end{principle}
+
+For evidential reasoning, the informative object may include
+\[
+  (\text{claim},\ \text{derivation path},\ \text{source scope},\
+    \text{positive evidence},\ \text{negative evidence},\ \text{receipt}).
+\]
+A frequency, confidence, interval, probability, Boolean status, or scalar cost
+is then a readout of this object.  Different readouts answer different
+questions.  Equal readouts do not identify the objects that produced them.
+
+This distinction matters whenever evidence can be duplicated, shared, or
+reached through multiple derivations.  Suppose two proofs conclude the same
+formula.  They may be:
+\begin{enumerate}[label=(\alph*)]
+  \item independent proofs from disjoint sources;
+  \item two views of the same source;
+  \item different rule paths that partially overlap;
+  \item distinct occurrences of an otherwise identical derivation.
+\end{enumerate}
+Counting all four alike double-counts evidence.  Deduplicating all four alike
+erases genuine multiplicity.  The remedy is not a better scalar; it is to
+retain enough identity to decide which quotient is appropriate.
+
+\section{The weakest common evidence substrate}
+
+Let $S$ be a type of source occurrences.  A packet type $P$ is
+\emph{source-scoped} when it carries a finite source map
+\[
+  \Scope_P : P \longrightarrow \Finset(S).
+\]
+No truth-value representation, probability interpretation, or merge policy is
+part of this definition.
+
+\begin{definition}[Source independence]
+For source-scoped packets $p : P$ and $q : Q$ over the same source vocabulary,
+possibly with $P\neq Q$, define
+\[
+  p \mathrel{\#_S} q
+  \quad\Longleftrightarrow\quad
+  \Scope_P(p)\cap\Scope_Q(q)=\varnothing.
+\]
+\end{definition}
+
+The heterogeneous form is essential.  A NARS belief and a PLN evidence packet
+need not share a carrier type in order to reveal that they cite the same
+observation.  Their commonality is provenance, not identity of logic.
+
+\begin{proposition}[Elementary source laws]
+Source independence is symmetric.  A packet is independent of itself exactly
+when its scope is empty.  If a source belongs to both scopes, the packets are
+not independent.
+\end{proposition}
+
+\begin{example}[Positive control]
+A direct observation cites source $s_0$; a two-premise deduction cites
+$s_1,s_2$.  Their scopes are disjoint, so revision may combine their evidence
+if the reasoning system licenses revision for disjoint evidence.
+\end{example}
+
+\begin{counterexample}[Payload difference is not independence]
+Two packets may use different syntax, different truth values, and different
+derivation trees while both cite $s_0$.  They are not source-independent.
+Changing representation cannot hide shared provenance.
+\end{counterexample}
+
+\begin{counterexample}[Counts are insufficient]
+The scopes $\{s_0\}$ and $\{s_1\}$ both have cardinality one and are disjoint;
+$\{s_0\}$ and $\{s_0\}$ also both have cardinality one and overlap completely.
+No test using only source counts can distinguish the cases.
+\end{counterexample}
+
+This substrate belongs to neither NARS nor PLN.  Both theories may import it;
+neither is defined as an instance of the other.  Any operation stronger than
+scope inspection remains system-specific.
+
+\section{Two languages: beliefs are not their evidence}
+
+Wang separates a belief language $L_B$ from an evidence language $L_E$ and
+studies a degree map
+\[
+  d : L_B \times L_E \longrightarrow V,
+\]
+where $V$ is the chosen value space \cite{wang2009}.  This separation prevents
+a recurrent type error: treating a proposition and the body of evidence used
+to assess it as if they were the same object.
+
+An abstract two-language layer may be represented by:
+\begin{itemize}
+  \item a type $B$ of beliefs;
+  \item a type $E$ of evidence states;
+  \item a value type $V$;
+  \item a degree function $d:B\to E\to V$;
+  \item a source-scope map on evidence;
+  \item optional transformations of belief and evidence languages, with
+        naturality laws for $d$.
+\end{itemize}
+
+Two equivalences must then be kept distinct:
+\[
+  b_1 \equiv_{\mathrm{sem}} b_2
+  \qquad\text{and}\qquad
+  e_1 \equiv_{\mathrm{ev}} e_2.
+\]
+Semantic equivalence of beliefs does not imply interchangeability of evidence
+bodies.  Conversely, a shared evidence packet may support distinct claims.
+
+\subsection{Finite views are projections, not foundations}
+
+Wang objects to a general-purpose theory whose hypothesis and evidence spaces
+are fixed finite sets in advance \cite{wang2009}.  Finite counting is useful,
+but it should be exposed as a finite view of a more general layer:
+\[
+  \text{open reasoning layer}
+   \longrightarrow
+  \text{finite observable fragment}.
+\]
+The projection may support exact cardinal calculations without implying that
+the world, language, or future problem class is closed.
+
+\begin{example}[Hempel-style loss witness]
+The claims ``raven implies black'' and ``non-black implies non-raven'' may be
+classically contraposed at the belief level.  Their evidence scopes need not
+coincide: observations collected under the first description need not be the
+observations collected under the second.  A one-language quotient can erase
+this difference even when the propositions agree extensionally.
+\end{example}
+
+\section{NARS: truth values are path-relevant}
+
+NARS is designed for the Assumption of Insufficient Knowledge and Resources
+(AIKR).  Under AIKR, all relevant evidence cannot be known or globally
+reconciled at every moment.  Wang therefore permits the same statement to
+carry different truth values reached along different inference paths
+\cite{wang2009}.
+
+Represent a path-scoped belief as
+\[
+  \beta=(\varphi,\tau,\pi),
+\]
+where $\varphi$ is a statement, $\tau$ a NARS truth value, and $\pi$ an
+evidence path retaining both rule occurrences and source identities.  Its
+scope is derived from the path:
+\[
+  \Scope(\beta)=\Scope(\pi).
+\]
+
+\begin{theorem}[Single-event obstruction]
+Suppose two path-scoped beliefs have the same statement $\varphi$ but different
+frequencies $f_1\neq f_2$.  No model assigning one measurable event
+$E_\varphi$ to $\varphi$ can realize both frequencies as
+$\Pr(E_\varphi)=f_i$.
+\end{theorem}
+
+The proof is immediate: one event under one probability measure has one
+probability.  The theorem is deliberately narrow.  It does not claim that an
+individual NARS truth value lacks a probabilistic reading.  It shows that the
+path-indexed family cannot be collapsed to one globally coherent event value
+without losing information.
+
+\subsection{Constructive incoherence}
+
+The resulting incoherence is not arbitrary contradiction.  It is structured
+by retained evidence paths:
+\begin{itemize}
+  \item disjoint evidence scopes license revision by evidence aggregation;
+  \item overlapping scopes prohibit naive addition, avoiding double-counting;
+  \item a choice policy may select one competing belief when revision is not
+        licensed;
+  \item later information may trigger a different reconciliation.
+\end{itemize}
+
+Thus path relevance provides a disciplined form of inconsistency tolerance.
+It is related to paraconsistency but not identical to it.  A paraconsistent
+logic specifies which conclusions follow in the presence of conflict.
+Path-scoped evidence additionally records \emph{how} each conflicting value
+was produced and whether their evidence may be combined.
+
+\begin{counterexample}[Why truth-value equality is too weak]
+Two beliefs may carry the same numerical truth value while one derives from
+$\{s_0\}$ and the other from $\{s_1,s_2\}$.  Equality of truth values does not
+license evidence deduplication, revision, or replacement.
+\end{counterexample}
+
+\section{PLN and constructible duality}
+
+PLN often represents evidence with separate positive and negative support.
+At a minimal level, an evidence object may be written
+\[
+  e=(e^+,e^-),
+\]
+and classified by the constructive availability of positive and negative
+witnesses.  This yields four qualitative regions:
+\[
+  \begin{array}{c|c|c}
+       & e^-\text{ absent} & e^-\text{ present}\\ \hline
+    e^+\text{ absent}  & \text{neither} & \text{negative only}\\
+    e^+\text{ present} & \text{positive only} & \text{both}
+  \end{array}
+\]
+The ``both'' region is not explosion; it is a state containing evidence on
+both sides.  Source-scoped path identity refines this four-way classification.
+Two packets can both lie in the ``both'' region while citing different
+sources, carrying different multiplicities, or supporting different revision
+rights.
+
+\begin{principle}[Sibling theories over shared evidence geometry]
+NARS and PLN should share finite source geometry and generic proof-relevant
+relations.  Their truth-value calculi, inference rules, revision policies, and
+probability interpretations remain separate.  Correspondences are expressed
+as bridge theorems, not directory nesting or definitional equality.
+\end{principle}
+
+This organization prevents two opposite errors:
+\begin{enumerate}
+  \item reducing NARS to a special case of PLN because both use evidence;
+  \item duplicating source-scope and independence theory inside each system.
+\end{enumerate}
+
+\subsection{The Wang--Walley numerical seam}
+
+Wang observes that the NARS frequency interval
+\[
+  \left[\frac{w^+}{w+k},\frac{w^++k}{w+k}\right]
+\]
+has the same numerical form as a Walley-style binary predictive interval
+\[
+  \left[\frac{t^+}{t+s_0},\frac{t^++s_0}{t+s_0}\right]
+\]
+after identifying $w^+=t^+$ and $k=s_0$ \cite{wang2009,walley1991}.
+The identity is algebraic, not semantic.  Walley's lower-prevision theory
+imposes coherence conditions; NARS deliberately does not require one globally
+coherent probability model over all path-relative beliefs.
+
+\begin{counterexample}[Equal interval, unequal evidence]
+Two source scopes of equal cardinality can produce the same interval while
+overlapping differently.  The interval cannot determine whether revision is
+licensed.  Therefore the interval does not factor the full evidence semantics.
+\end{counterexample}
+
+\section{A common abstraction for razors}
+
+Ockham, MDL, MML, Bayesian evidence, Solomonoff induction, structural risk,
+Bennett weakness, and quantale weakness are not instances of one canonical
+scalar called ``simplicity.''  Their most permissive common structure is
+weaker.
+
+\begin{definition}[Constrained selection criterion]
+For candidates $C$, a criterion consists of:
+\begin{enumerate}[label=(\roman*)]
+  \item an admissibility predicate $A:C\to\mathsf{Prop}$;
+  \item a preference preorder $\succeq\;\subseteq C\times C$.
+\end{enumerate}
+A candidate is optimal when it is admissible and is at least as preferred as
+every admissible competitor.  It is maximal when no admissible competitor
+strictly dominates it.
+\end{definition}
+
+Only reflexivity and transitivity are required.  This preserves ties and
+incomparability.  A scalar score, total order, probability interpretation, or
+quantale multiplication is additional structure supplied by a particular
+profile.
+
+\begin{center}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.25\linewidth}
+                >{\raggedright\arraybackslash}p{0.29\linewidth}
+                >{\raggedright\arraybackslash}p{0.34\linewidth}}
+\toprule
+Profile & Admissibility & Preference \\
+\midrule
+Ontological parsimony & satisfies necessity conditions & fewer posited entities \\
+MDL/MML & valid model/code & shorter model-plus-data message \\
+Bayesian evidence & model class accepted & larger marginal likelihood \\
+Solomonoff & representation fixed & larger algorithmic semimeasure \\
+Structural risk & certified learning setup & smaller risk plus capacity penalty \\
+Bennett & correct policy for the task & more semantic completions \\
+Quantale weakness & relation admitted & larger quantale-valued relational score \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Is Bennett's Razor the master abstraction?}
+
+No.  Bennett's Razor is a particularly important semantic profile: among
+correct policies, prefer the policy compatible with the largest set of
+completions \cite{bennett2023,bennett2024}.  It captures least commitment in
+the model space.  But it does not subsume criteria whose primitive data are
+description length, marginal likelihood, computational cost, or a
+multi-dimensional tradeoff.
+
+\begin{counterexample}[Bennett--description disagreement]
+Let candidate $h_w$ have two semantic completions and a two-bit code.  Let
+$h_s$ have one completion and a one-bit code.  Bennett strictly prefers $h_w$;
+description length strictly prefers $h_s$.  Under the product criterion the
+two candidates are incomparable.  Neither razor globally subsumes the other.
+\end{counterexample}
+
+Goertzel's quantale profile is more compositional than a cardinal count: a
+complete lattice represents partial comparison, and monoidal multiplication
+combines relational evidence \cite{goertzelweakness}.  Yet it too is a profile
+above the neutral criterion, not the definition of every selection problem.
+
+\subsection{Applying weakness to formalization itself}
+
+Let a formalization candidate $F$ have a model class $\Models(F)$ and let
+$\mathcal O$ be an explicit set of adequacy obligations.  Define
+\[
+  F_1 \succeq_{\mathrm{sem}} F_2
+  \quad\Longleftrightarrow\quad
+  \Models(F_2)\subseteq\Models(F_1),
+\]
+but compare only candidates satisfying every obligation in $\mathcal O$.
+The optimal formalization is then the least committing adequate one.
+
+This is not an excuse for vacuity.  The unconstrained theory that admits every
+model fails any obligation requiring false models to be excluded.  The
+inconsistent theory that admits no models may satisfy negative conditions
+vacuously, but loses to an adequate theory with a larger nonempty model class.
+
+\begin{principle}[Reflexive weakness discipline]
+Choose the weakest interface that proves the required positive and negative
+theorems.  Add scalar scores, total decisions, finite assumptions, or merge
+policies only in named profiles.  Recover each lossy view by theorem.
+\end{principle}
+
+The neutral source-scoped interface is an application of this discipline: it
+shares exactly the provenance structure needed by NARS and PLN while refusing
+to impose either system's truth semantics on the other.
+
+\section{When weakness predicts generalization}
+
+Bennett's finite generalization result considers a uniform distribution over
+subsets of unseen demands.  If a candidate handles $m$ elements of an unseen
+domain of size $n$, then its success probability is
+\[
+  \frac{2^m}{2^n}.
+\]
+On this explicit uniform sample space, weakness and success probability induce
+the same order \cite{bennett2023}.
+
+The assumption is mathematically load-bearing.  \"Ozkural studies task
+sequences with nonuniform structure and distinguishes four generative models
+\cite{ozkuralzeta}:
+\begin{enumerate}
+  \item independent uniform fixed-width programs (random typing);
+  \item independent zeta-ranked programs;
+  \item programs assembled from a shared subprogram database;
+  \item evolutionary zeta mutations, retaining the old program after an
+        invalid mutation.
+\end{enumerate}
+
+All four fit a history-indexed task process
+\[
+  T : \mathsf{List}(X)\longrightarrow \mathsf{PMF}(X).
+\]
+For a handling relation $H(c,x)$, define the next-task success probability
+$p_T(c\mid h)$.  The exact question is not whether the process has an
+interesting name, but whether it preserves the weakness ordering at history
+$h$:
+\[
+  p_T(c_1\mid h)\le p_T(c_2\mid h)
+  \quad\Longleftrightarrow\quad
+  w(c_1)\le w(c_2).
+\]
+
+\begin{proposition}[Sufficient factorization certificate]
+If there exists a strictly increasing curve $g:\mathbb N\to[0,1]$ such that
+\[
+  p_T(c\mid h)=g(w(c))
+\]
+for every candidate $c$, then the process preserves the weakness order at
+$h$.
+\end{proposition}
+
+\begin{counterexample}[Biased future law]
+Two candidates can have equal completion counts while covering differently
+weighted tasks.  Under a biased task law they have different success
+probabilities.  Cardinal weakness therefore cannot universally rank
+generalization under arbitrary nonuniform processes.
+\end{counterexample}
+
+The productive synthesis is conditional: Bennett supplies the semantic
+freedom order; \"Ozkural supplies explicit families of task laws; a theorem or
+certificate must state when the law preserves the order.  Distributional
+structure is not silently converted into a universal transfer theorem.
+
+\section{Three priors that should remain distinct}
+
+Three programme-level priors illustrate why the common abstraction should not
+be a single formula.
+
+\paragraph{Solomonoff.}
+Algorithmic probability sums the weights of programs producing an output,
+relative to a prefix machine \cite{solomonoff1964}.  It is representation
+invariant only up to the usual machine-dependent constants and is generally
+not computable.
+
+\paragraph{Bennett.}
+For a finite implementable language $L_v$, Bennett's task-coverage weight is
+proportional to the number of subsets covered by a hypothesis.  Normalization
+over the finite hypothesis language preserves the weakness ordering
+\cite{bennett2023}.
+
+\paragraph{\"Ozkural.}
+For exponent $s>1$, the zeta rank law
+\[
+  P(k)=\frac{1}{k^s\zeta(s)},\qquad k\ge1,
+\]
+is a normalized, computable rank distribution.  Transport to programs is
+automatically normalized when the representation supplies a duplicate-free
+enumeration.  Binary strings with leading zeros are a negative control: naive
+binary arithmetization is not injective and cannot justify normalization by
+bijection \cite{ozkuralzeta}.
+
+Concrete hypotheses can be chosen so that the zeta rank, Solomonoff-shaped
+program-length weight, and Bennett semantic-freedom weight each prefer a
+different hypothesis.  This ordering disagreement is evidence of conceptual
+independence, not a defect to scalarize away.
+
+\section{Architectural synthesis without attribution collapse}
+
+\"Ozkural's Omega is an architectural synthesis rather than a renamed
+Solomonoff or G\"odel machine.  Its source-faithful decomposition separates
+\cite{ozkuralomega}:
+\begin{itemize}
+  \item the inherited Alpha substrate and algorithmic-probability programme;
+  \item proof-backed reflective self-improvement inherited from the G\"odel
+        machine programme;
+  \item an explicit AI-kernel bootstrap premise;
+  \item open-ended problem-solving-method invention and retention;
+  \item Heuristic Algorithmic Memory over multiple reference machines;
+  \item analysis and synthesis of methods, forecast-guided ensembles, and
+        operation without assuming a substantially known environment.
+\end{itemize}
+The bootstrap remains a premise with evidence, not a theorem manufactured by
+the architecture record.  Likewise, an inherited universal-machine component
+should reuse the underlying Solomonoff construction rather than reattribute it
+to Omega.  Precise decomposition honors both lineage and novelty.
+
+Omega and OmegaClaw are distinct architectures.  Similar names and overlapping
+topics do not justify identifying their components.  Until the primary
+OmegaClaw text is available, metadata cannot supply its definitions or
+correctness obligations.
+
+\section{Bounded control and observation aliasing}
+
+Hammer and Lofthouse describe OpenNARS for Applications (ONA) as a bounded
+architecture with approximately constant-time cycles, priority-guided
+attention, and explicit forgetting \cite{hammerlofthouse2020}.  Relative
+forgetting changes the ranking used for attention; absolute forgetting evicts
+items to enforce a memory bound.  A typical normalized usefulness map has the
+form
+\[
+  u\longmapsto\frac{u}{u+1},
+\]
+which is monotone and lies in $[0,1)$ for nonnegative $u$.
+
+These control laws belong above NARS evidence semantics.  They govern which
+items receive scarce computation; they do not redefine the truth functions.
+This separation permits other bounded controllers to operate over the same
+evidence calculus.
+
+\subsection{History can carry decision-relevant information}
+
+Hammer's ONA comparison includes tasks where the current observation aliases
+states requiring different actions \cite{hammer2022}.  Let $h_0,h_1$ be two
+histories and $r$ a readout retaining only the current observation.  Suppose
+\[
+  r(h_0)=r(h_1),\qquad a_0\neq a_1,
+\]
+and correctness requires action $a_i$ at $h_i$.  Then no deterministic policy
+$\pi$ depending only on $r(h)$ can satisfy both requirements, because it must
+assign one action to their shared readout.
+
+\begin{theorem}[Observation-fibre obstruction]
+If one observation fibre contains two histories with incompatible admissible
+decision sets, no policy factoring through that observation readout realizes
+the full history-sensitive specification.
+\end{theorem}
+
+\begin{example}[Positive history policy]
+A policy retaining the last action can continue the previous motion in both
+histories even when the visible observation is identical.
+\end{example}
+
+\begin{counterexample}[The obstruction is decision-relative]
+A constant policy still factors through the lossy current-observation readout.
+Therefore partial observation is not always harmful; it is harmful exactly
+when it merges histories whose required decisions differ.
+\end{counterexample}
+
+Hammer's reported experiments and the later independent comparison by
+Beikmohammadi and Magn\'usson should be represented as source-scoped empirical
+records, not promoted to a theorem that ONA universally dominates Q-learning
+\cite{hammer2022,beikmohammadi2023}.  The theorem concerns observation
+factorization.  Performance is a separate empirical question with protocol,
+encoding, and abstention choices retained in its receipt.
+
+\section{Architectural synthesis}
+
+The dependency structure is intentionally not a hierarchy with PLN at the
+root or NARS at the root:
+\[
+\begin{array}{c}
+\text{finite source geometry and proof-relevant relations}\\
+\downarrow\\[-0.4em]
+\text{source-scoped evidence interface}
+\end{array}
+\quad
+\begin{array}{ccc}
+\swarrow && \searrow\\[-0.4em]
+\text{NARS core} && \text{PLN core}\\
+\downarrow && \downarrow\\
+\text{NARS control} && \text{PLN rule families}
+\end{array}
+\]
+The two-language layer, enactive task theory, Universal AI priors, GSLT
+observations, and cognitive architectures are additional clients.  Cross-links
+live in explicit bridge modules with theorem statements naming exactly what is
+preserved and what is forgotten.
+
+\begin{center}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.23\linewidth}
+                >{\raggedright\arraybackslash}p{0.33\linewidth}
+                >{\raggedright\arraybackslash}p{0.33\linewidth}}
+\toprule
+Layer & Retains & Must not assume \\
+\midrule
+Source geometry & occurrence identity, finite scope, overlap & truth-value or merge semantics \\
+NARS evidence & paths, scopes, NARS truth values & one global probability event per statement \\
+PLN evidence & positive/negative support, rule evidence & NARS revision or control policy \\
+Razor profile & admissibility and preference preorder & total scalar comparison \\
+Task process & history-indexed next-task law & weakness preservation without proof \\
+Control layer & resource allocation and forgetting & change to underlying truth semantics \\
+Observation layer & witness container and readout & reflection from lossy value to history \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Implications for a proof-relevant cognitive language}
+
+A MeTTa-like language performs nondeterministic pattern matching and may retain
+multiple derivations of one answer.  Its natural semantic relation is
+proof-relevant:
+\[
+  \Rel(A,B)=A\to B\to\mathsf{Type}.
+\]
+Relational composition should retain the intermediate witness and both
+derivations:
+\[
+  \Chain(R,S)(a,c)
+   = \sum_{b:B} R(a,b)\times S(b,c).
+\]
+The existential witness $b$ is not administrative bookkeeping.  It identifies
+the intermediate result, supports source receipts, and contributes to answer
+multiplicity.  A truth relation or Boolean success flag is the support quotient
+of this richer object.
+
+Source-scoped evidence then attaches provenance to derivations; NARS- or
+PLN-specific readouts may observe those derivations without replacing them.
+Likewise, a decision interface should distinguish
+\[
+  \Established(e),\quad \Refuted(o),\quad \Outside(r),\quad
+  \Incomplete(b,f),
+\]
+with infrastructure faults outside the semantic sum.  Failure to find a proof
+is not a checked obstruction, and lack of fragment coverage is not falsehood.
+
+This arrangement supports cognitive self-description without confusing the
+theory with its checker.  The mathematical language may internalize evidence,
+outcomes, and receipts at a higher universe or stage; an executable checker is
+one consumer of that theory.  Truth readouts, authority decisions, and cost
+observations remain orthogonal projections unless a theorem connects them.
+
+\section{Formalization map}
+
+The accompanying Lean development is organized by mathematical ownership:
+\begin{itemize}
+  \item \texttt{Mettapedia.Evidence.SourceScope}: finite source geometry;
+  \item \texttt{Mettapedia.Evidence.SourceScoped}: the heterogeneous packet
+        interface over that geometry;
+  \item \texttt{Mettapedia.Evidence.TwoLanguage}: Wang's two-language evidence
+        interface;
+  \item \texttt{Mettapedia.NARS}: NARS truth functions, inference, evidence
+        paths, and bounded control;
+  \item \texttt{Mettapedia.NARS.Bridges}: explicit PLN, probability,
+        cognitive-architecture, and Universal-AI comparisons;
+  \item \texttt{Mettapedia.PLN}: PLN's own evidence and rule theories;
+  \item \texttt{Mettapedia.Enactive}: Bennett's finiteness-free and finite
+        layers, razor profiles, and task-process generalization;
+  \item \texttt{Mettapedia.UniversalAI}: Solomonoff, weakness, zeta, and
+        self-improving-agent constructions;
+  \item \texttt{Mettapedia.GSLT}: proof-relevant dynamics, observation
+        disciplines, and transport laws.
+\end{itemize}
+
+Each main concept has positive and negative controls.  The negative controls
+are part of the specification: they distinguish source identity from source
+count, numerical equality from semantic identity, admissibility from vacuity,
+and process structure from a generalization guarantee.
+
+\section{Open obligations and source boundaries}
+
+\begin{obligation}[Infinite and open evidence]
+Finite scopes are suitable receipts for finite computations, but the reasoning
+theory should permit open vocabularies and growing evidence languages.  Finite
+views must be proved conservative projections of the open layer where used.
+\end{obligation}
+
+\begin{obligation}[Credal and path-scoped integration]
+Develop lower and upper expectations over source-scoped path families without
+imposing global coherence on NARS.  The target should say which local families
+are coherent and how incompatible scopes coexist.
+\end{obligation}
+
+\begin{obligation}[Task-process transfer theorems]
+For each \"Ozkural process model, identify sufficient and necessary conditions
+under which success probability factors through weakness.  Do not infer the
+condition from a zeta label or from power-law motivation alone.
+\end{obligation}
+
+\begin{obligation}[Bounded control adequacy]
+Relate ONA's attention and forgetting mechanisms to a formal anytime policy,
+including memory invariants, fairness/starvation properties, and source-scoped
+empirical conformance.
+\end{obligation}
+
+\begin{obligation}[Primary-source gate]
+Architectural claims from conference papers whose full texts are unavailable
+must remain unformalized.  Bibliographic metadata and abstracts can establish
+that a work exists, but not its definitions, theorem hypotheses, or algorithms.
+\end{obligation}
+
+\section{Conclusion}
+
+Path relevance is the missing coordinate behind many apparent conflicts among
+truth-value systems.  A statement's scalar value does not say which path
+produced it, which sources it consumed, whether another value is independent,
+or whether the two may be revised together.  Retaining those distinctions
+makes NARS's local incoherence mathematically intelligible, refines PLN's
+constructive positive/negative geometry, and gives bounded control systems an
+honest provenance substrate.
+
+Bennett's Razor then occupies its proper place: a powerful semantic
+least-commitment profile, not the universal definition of simplicity.
+Goertzel's quantale weakness adds compositional relational structure;
+\"Ozkural's stochastic task laws identify the distributional boundary of
+weakness-based generalization; Hammer's work connects the theory to bounded
+continual control.  Their common abstraction is deliberately modest:
+admissible candidates ordered by a preorder, evidence packets exposing source
+scope, and explicit theorems for every stronger identification.
+
+This is also a discipline for formalization itself.  Preserve the most
+permissive adequate model class; place system-specific commitments in named
+profiles; retain evidence before taking quotients; and make every loss of
+information visible at a theorem boundary.
+
+\begin{thebibliography}{99}
+
+\bibitem{beikmohammadi2023}
+A.~Beikmohammadi and S.~Magn\'usson.
+\newblock Comparing NARS and reinforcement learning: An analysis of ONA and
+Q-learning algorithms.
+\newblock \emph{arXiv:2304.03291}, 2023.
+
+\bibitem{bennett2023}
+M.~T. Bennett.
+\newblock The optimal choice of hypothesis is the weakest, not the shortest.
+\newblock \emph{arXiv:2301.12987}, 2023.
+
+\bibitem{bennett2024}
+M.~T. Bennett.
+\newblock Is complexity an illusion?
+\newblock \emph{arXiv:2404.07227}, 2024.
+
+\bibitem{goertzelweakness}
+B.~Goertzel.
+\newblock Weakness is all you need: Quantale weakness as a unifying
+generalized-Occam principle.
+\newblock Research manuscript, 2025.
+
+\bibitem{hammer2022}
+P.~Hammer.
+\newblock Reasoning and learning systems based on Non-Axiomatic Reasoning
+System theory.
+\newblock In \emph{Proceedings of the International Workshop on
+Self-Supervised Learning}, volume 192 of \emph{Proceedings of Machine Learning
+Research}, pages 89--107, 2022.
+
+\bibitem{hammerlofthouse2020}
+P.~Hammer and T.~Lofthouse.
+\newblock OpenNARS for Applications: Architecture and control.
+\newblock In \emph{Artificial General Intelligence}, 2020.
+
+\bibitem{mackay1992}
+D.~J.~C. MacKay.
+\newblock Bayesian interpolation.
+\newblock \emph{Neural Computation}, 4(3):415--447, 1992.
+
+\bibitem{ozkuralomega}
+E.~\"Ozkural.
+\newblock Omega: An architecture for AI unification.
+\newblock \emph{arXiv:1805.12069}, 2018.
+
+\bibitem{ozkuralzeta}
+E.~\"Ozkural.
+\newblock Zeta distribution and transfer learning problem.
+\newblock \emph{arXiv:1806.08908}, 2018.
+
+\bibitem{rissanen1978}
+J.~Rissanen.
+\newblock Modeling by shortest data description.
+\newblock \emph{Automatica}, 14(5):465--471, 1978.
+
+\bibitem{solomonoff1964}
+R.~J. Solomonoff.
+\newblock A formal theory of inductive inference, parts I and II.
+\newblock \emph{Information and Control}, 7:1--22 and 224--254, 1964.
+
+\bibitem{vapnik1991}
+V.~N. Vapnik.
+\newblock Principles of risk minimization for learning theory.
+\newblock In \emph{Advances in Neural Information Processing Systems 4},
+pages 831--838, 1991.
+
+\bibitem{wallace1968}
+C.~S. Wallace and D.~M. Boulton.
+\newblock An information measure for classification.
+\newblock \emph{The Computer Journal}, 11(2):185--194, 1968.
+
+\bibitem{walley1991}
+P.~Walley.
+\newblock \emph{Statistical Reasoning with Imprecise Probabilities}.
+\newblock Chapman and Hall, 1991.
+
+\bibitem{wang2009}
+P.~Wang.
+\newblock Formalization of evidence: A comparative study.
+\newblock \emph{Journal of Artificial General Intelligence}, 1:25--53, 2009.
+
+\end{thebibliography}
+
+\end{document}

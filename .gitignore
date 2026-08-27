@@ -86,6 +86,7 @@ lean/mettapedia/data/
 lean/mettapedia/scripts/*
 !lean/mettapedia/scripts/oeis_program_discovery_fixture.py
 !lean/mettapedia/scripts/test_oeis_program_discovery_fixture.py
+!lean/mettapedia/scripts/test_metamath_mm2_raw_unit.sh
 !lean/mettapedia/scripts/conformance/
 lean/mettapedia/scripts/conformance/*
 !lean/mettapedia/scripts/conformance/check_pc_authenticated_affine_replay.py

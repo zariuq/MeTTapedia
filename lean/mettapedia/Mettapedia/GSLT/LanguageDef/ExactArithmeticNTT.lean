@@ -2,13 +2,14 @@ import Mettapedia.GSLT.LanguageDef.ArithmeticExtension
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ConstructorCategory
+import Mettapedia.GSLT.LanguageDef.CanonicalWire
 
 /-!
 # Exact-integer arithmetic OSLF and native-type diagnostics
 
-This operational source presentation is distinct from C0.  It exposes the
-seven exact-integer operations, value and decline outcomes, and an explicit
-typed relation boundary for mathematical arithmetic.  The existing
+This operational source presentation is distinct from the external-call
+target.  It exposes the seven exact-integer operations, value and decline
+outcomes, and an explicit typed relation boundary for mathematical arithmetic.  The existing
 `ExactInteger.coreSem` remains the mathematical authority for that boundary.
 -/
 
@@ -86,6 +87,45 @@ def exactArithmetic : LanguageDef := {
     evaluateRule "arith:trem" "ExactIntegerTRem",
     evaluateRule "arith:frem" "ExactIntegerFRem"]
 }
+
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
+private theorem exactArithmetic_rewrites_validate :
+    ∀ rewrite ∈ exactArithmetic.rewrites,
+      LanguageDef.validateRewrite exactArithmetic rewrite = [] := by
+  intro rewrite membership
+  simp only [exactArithmetic, List.mem_cons, List.mem_nil_iff, or_false]
+    at membership
+  rcases membership with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  all_goals
+    simp [LanguageDef.validateRewrite, exactArithmetic, evaluateRule, ctor,
+      v, a, LanguageDef.validatePatternConstructors,
+      LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
+      LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
+      LanguageDef.premiseFvarNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseForAllParams, Pattern.constructorRefs,
+      Pattern.constructorRefsList, Pattern.freeFvarNames,
+      Pattern.isWellScoped, Pattern.isWellScopedAt,
+      Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain,
+      TypeExpr.baseNames]
+
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
+theorem exactArithmetic_validate : exactArithmetic.validate = [] := by
+  apply LanguageDef.validate_eq_nil_of_concreteSyntaxAndRewrites
+  all_goals try decide
+  exact exactArithmetic_rewrites_validate
+
+theorem exactArithmetic_wire_isSome :
+    (CanonicalWire.renderLanguage? exactArithmetic).isSome := by
+  decide +kernel
+
+def exactArithmeticWire : String :=
+  (CanonicalWire.renderLanguage? exactArithmetic).getD ""
+
+theorem exactArithmeticWire_nonempty : exactArithmeticWire != "" := by
+  decide +kernel
 
 /-- Exact proof-relevant binding fibre for one authored arithmetic evaluation
 rule.  The operation constructor is fixed by the rule, while the two operands
@@ -179,5 +219,10 @@ theorem unsupported_add_is_stuck :
         exactArithmetic 1
         (a "arith:eval" [a "arith:add", integerThree, integerThree]) = [] := by
   decide +kernel
+
+#print axioms exactArithmetic_validate
+#print axioms exactArithmetic_wire_isSome
+#print axioms exactArithmetic_galois
+#print axioms add_step_exact
 
 end Mettapedia.GSLT.LanguageDef.ExactArithmeticNTT

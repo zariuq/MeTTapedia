@@ -1,17 +1,18 @@
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ConstructorCategory
+import Mettapedia.GSLT.LanguageDef.CanonicalWire
 
 /-!
-# C0-pure operational GSLT and native-type diagnostics
+# External-call operational GSLT and native-type diagnostics
 
-This is the theorem-side presentation of the first small C-family target.  Its
+This is the theorem-side presentation of a guarded external-call machine. Its
 machine configurations, five completion classes, ordered receipt events, fuel
 boundary, and external-call boundary are authored independently of any C
 structure, interpreter, emitter, compiler, or linked library.
 -/
 
-namespace Mettapedia.GSLT.LanguageDef.C0PureNTT
+namespace Mettapedia.GSLT.LanguageDef.ExternalCallMachine
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
@@ -43,17 +44,17 @@ def query (relation : String) (arguments : List Pattern) : Premise :=
   .relationQuery relation arguments
 
 def run (program pc store fuel receipt : Pattern) : Pattern :=
-  a "c0:run" [program, pc, store, fuel, receipt]
+  a "external-call:run" [program, pc, store, fuel, receipt]
 
 def halted (outcome receipt : Pattern) : Pattern :=
-  a "c0:halted" [outcome, receipt]
+  a "external-call:halted" [outcome, receipt]
 
 def stepReceipt (pc receipt : Pattern) : Pattern :=
-  a "c0:receipt-cons" [a "c0:step-event" [pc], receipt]
+  a "external-call:receipt-cons" [a "external-call:step-event" [pc], receipt]
 
 def externalReceipt (external outcome pc receipt : Pattern) : Pattern :=
-  a "c0:receipt-cons"
-    [a "c0:external-event" [external, outcome], stepReceipt pc receipt]
+  a "external-call:receipt-cons"
+    [a "external-call:external-event" [external, outcome], stepReceipt pc receipt]
 
 def commonContext : List (String × TypeExpr) :=
   typed [
@@ -61,10 +62,10 @@ def commonContext : List (String × TypeExpr) :=
     ("fuel", "Fuel"), ("nextFuel", "Fuel"), ("receipt", "Receipt")]
 
 def consumeFuel : Premise :=
-  query "C0ConsumeFuel" [v "fuel", v "nextFuel"]
+  query "ExternalCallConsumeFuel" [v "fuel", v "nextFuel"]
 
 def fetch (instruction : Pattern) : Premise :=
-  query "C0FetchInstruction" [v "program", v "pc", instruction]
+  query "ExternalCallFetchInstruction" [v "program", v "pc", instruction]
 
 def branchRule (name test target : String) : RewriteRule := {
   name := name
@@ -73,8 +74,8 @@ def branchRule (name test target : String) : RewriteRule := {
     ("ifZero", "Label"), ("ifNonzero", "Label")]
   premises := [
     consumeFuel,
-    fetch (a "c0:branch-zero" [v "slot", v "ifZero", v "ifNonzero"]),
-    query "C0ReadSlot" [v "store", v "slot", v "value"],
+    fetch (a "external-call:branch-zero" [v "slot", v "ifZero", v "ifNonzero"]),
+    query "ExternalCallReadSlot" [v "store", v "slot", v "value"],
     query test [v "value"]]
   left := run (v "program") (v "pc") (v "store") (v "fuel") (v "receipt")
   right := run (v "program") (v target) (v "store") (v "nextFuel")
@@ -100,10 +101,10 @@ def callRule (name target : String) (valueCase : Bool)
         ("ifEngineFault", "Label"), ("ifResourceFault", "Label")]
   premises := [
     consumeFuel,
-    fetch (a "c0:call-binary"
+    fetch (a "external-call:call-binary"
       [v "external", v "ifValue", v "ifLanguageFault",
        v "ifEngineFault", v "ifResourceFault"]),
-    query "C0CallBinaryExternal"
+    query "ExternalCallCallBinaryExternal"
       [v "program", v "external", v "store", externalOutcome]]
   left := run (v "program") (v "pc") (v "store") (v "fuel") (v "receipt")
   right := run (v "program") (v target) storeAfter (v "nextFuel")
@@ -128,74 +129,74 @@ Their order below remains the canonical operational order.
 -/
 
 def fuelExhaustedRule : RewriteRule := {
-  name := "c0:fuel-exhausted"
+  name := "external-call:fuel-exhausted"
   typeContext := typed [
     ("program", "Program"), ("pc", "Label"), ("store", "Store"),
     ("receipt", "Receipt"), ("fault", "Fault")]
-  premises := [query "C0StepLimitFault" [v "fault"]]
+  premises := [query "ExternalCallStepLimitFault" [v "fault"]]
   left := run (v "program") (v "pc") (v "store")
-    (a "c0:fuel-zero") (v "receipt")
-  right := halted (a "c0:outcome-resource-fault" [v "fault"])
-    (a "c0:receipt-cons"
-      [a "c0:fuel-exhausted-event" [v "pc"], v "receipt"])
+    (a "external-call:fuel-zero") (v "receipt")
+  right := halted (a "external-call:outcome-resource-fault" [v "fault"])
+    (a "external-call:receipt-cons"
+      [a "external-call:fuel-exhausted-event" [v "pc"], v "receipt"])
 }
 
 def branchZeroTransition : RewriteRule :=
-  branchRule "c0:branch-zero" "C0IsZero" "ifZero"
+  branchRule "external-call:branch-zero" "ExternalCallIsZero" "ifZero"
 
 def branchNonzeroTransition : RewriteRule :=
-  branchRule "c0:branch-nonzero" "C0IsNonzero" "ifNonzero"
+  branchRule "external-call:branch-nonzero" "ExternalCallIsNonzero" "ifNonzero"
 
 def callValueTransition : RewriteRule :=
-  callRule "c0:call-value" "ifValue" true
-    (a "c0:external-value" [v "nextStore"]) (v "nextStore")
+  callRule "external-call:call-value" "ifValue" true
+    (a "external-call:external-value" [v "nextStore"]) (v "nextStore")
 
 def callLanguageFaultTransition : RewriteRule :=
-  callRule "c0:call-language-fault" "ifLanguageFault" false
-    (a "c0:external-language-fault" [v "fault"]) (v "store")
+  callRule "external-call:call-language-fault" "ifLanguageFault" false
+    (a "external-call:external-language-fault" [v "fault"]) (v "store")
 
 def callEngineFaultTransition : RewriteRule :=
-  callRule "c0:call-engine-fault" "ifEngineFault" false
-    (a "c0:external-engine-fault" [v "fault"]) (v "store")
+  callRule "external-call:call-engine-fault" "ifEngineFault" false
+    (a "external-call:external-engine-fault" [v "fault"]) (v "store")
 
 def callResourceFaultTransition : RewriteRule :=
-  callRule "c0:call-resource-fault" "ifResourceFault" false
-    (a "c0:external-resource-fault" [v "fault"]) (v "store")
+  callRule "external-call:call-resource-fault" "ifResourceFault" false
+    (a "external-call:external-resource-fault" [v "fault"]) (v "store")
 
 def returnValueTransition : RewriteRule := {
-  name := "c0:return-value"
+  name := "external-call:return-value"
   typeContext := commonContext ++ typed [
     ("slot", "SlotId"), ("value", "Value")]
   premises := [
-    consumeFuel, fetch (a "c0:return-value" [v "slot"]),
-    query "C0ReadSlot" [v "store", v "slot", v "value"]]
+    consumeFuel, fetch (a "external-call:return-value" [v "slot"]),
+    query "ExternalCallReadSlot" [v "store", v "slot", v "value"]]
   left := run (v "program") (v "pc") (v "store") (v "fuel") (v "receipt")
-  right := halted (a "c0:outcome-value" [v "value"])
+  right := halted (a "external-call:outcome-value" [v "value"])
     (stepReceipt (v "pc") (v "receipt"))
 }
 
 def returnDeclinedTransition : RewriteRule := {
-  name := "c0:return-declined"
+  name := "external-call:return-declined"
   typeContext := commonContext
-  premises := [consumeFuel, fetch (a "c0:return-declined")]
+  premises := [consumeFuel, fetch (a "external-call:return-declined")]
   left := run (v "program") (v "pc") (v "store") (v "fuel") (v "receipt")
-  right := halted (a "c0:outcome-declined")
+  right := halted (a "external-call:outcome-declined")
     (stepReceipt (v "pc") (v "receipt"))
 }
 
 def returnLanguageFaultTransition : RewriteRule :=
-  returnFaultRule "c0:return-language-fault"
-    "c0:return-language-fault" "c0:outcome-language-fault"
+  returnFaultRule "external-call:return-language-fault"
+    "external-call:return-language-fault" "external-call:outcome-language-fault"
 
 def returnEngineFaultTransition : RewriteRule :=
-  returnFaultRule "c0:return-engine-fault"
-    "c0:return-engine-fault" "c0:outcome-engine-fault"
+  returnFaultRule "external-call:return-engine-fault"
+    "external-call:return-engine-fault" "external-call:outcome-engine-fault"
 
 def returnResourceFaultTransition : RewriteRule :=
-  returnFaultRule "c0:return-resource-fault"
-    "c0:return-resource-fault" "c0:outcome-resource-fault"
+  returnFaultRule "external-call:return-resource-fault"
+    "external-call:return-resource-fault" "external-call:outcome-resource-fault"
 
-def c0PureTransitions : List RewriteRule := [
+def externalCallLanguageTransitions : List RewriteRule := [
   fuelExhaustedRule,
   branchZeroTransition,
   branchNonzeroTransition,
@@ -210,14 +211,14 @@ def c0PureTransitions : List RewriteRule := [
   returnResourceFaultTransition
 ]
 
-/-- Every C0 transition consults only explicit relation facts.  In particular,
-none of the target rules hides a recursive invocation of the C0 evaluator in a
+/-- Every ExternalCall transition consults only explicit relation facts.  In particular,
+none of the target rules hides a recursive invocation of the ExternalCall evaluator in a
 premise. -/
-theorem c0PureTransitions_noncontextual :
-    ∀ rule, rule ∈ c0PureTransitions →
+theorem externalCallLanguageTransitions_noncontextual :
+    ∀ rule, rule ∈ externalCallLanguageTransitions →
       NoncontextualPremises rule.premises := by
   intro rule ruleMember
-  simp only [c0PureTransitions, List.mem_cons, List.mem_nil_iff,
+  simp only [externalCallLanguageTransitions, List.mem_cons, List.mem_nil_iff,
     or_false] at ruleMember
   rcases ruleMember with
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
@@ -231,9 +232,9 @@ theorem c0PureTransitions_noncontextual :
       branchRule, callRule, returnFaultRule, consumeFuel, fetch, query]
   all_goals repeat' constructor
 
-/-- The authored C0-pure operational target. -/
-def c0Pure : LanguageDef := {
-  name := "C0Pure"
+/-- The authored external-call operational target. -/
+def externalCallLanguage : LanguageDef := {
+  name := "ExternalCallMachine"
   types := [
     { name := "Integer", carrier := .builtinInt },
     { name := "String", carrier := .builtinString },
@@ -242,88 +243,137 @@ def c0Pure : LanguageDef := {
     "Program", "Fuel", "Fault", "ExternalOutcome", "Outcome", "Event",
     "Receipt", "Config"]
   terms := [
-    ctor "c0:nat-zero" "Nat" [],
-    ctor "c0:nat-succ" "Nat" [("prior", "Nat")],
-    ctor "c0:slot-id" "SlotId" [("index", "Nat")],
-    ctor "c0:label" "Label" [("index", "Nat")],
-    ctor "c0:external-id" "ExternalId" [("index", "Nat")],
-    ctor "c0:exact-integer" "Value" [("value", "Integer")],
-    ctor "c0:slot-empty" "Slot" [],
-    ctor "c0:slot-value" "Slot" [("value", "Value")],
-    ctor "c0:store-nil" "Store" [],
-    ctor "c0:store-cons" "Store" [("slot", "Slot"), ("rest", "Store")],
-    ctor "c0:branch-zero" "Instruction"
+    ctor "external-call:nat-zero" "Nat" [],
+    ctor "external-call:nat-succ" "Nat" [("prior", "Nat")],
+    ctor "external-call:slot-id" "SlotId" [("index", "Nat")],
+    ctor "external-call:label" "Label" [("index", "Nat")],
+    ctor "external-call:external-id" "ExternalId" [("index", "Nat")],
+    ctor "external-call:exact-integer" "Value" [("value", "Integer")],
+    ctor "external-call:slot-empty" "Slot" [],
+    ctor "external-call:slot-value" "Slot" [("value", "Value")],
+    ctor "external-call:store-nil" "Store" [],
+    ctor "external-call:store-cons" "Store" [("slot", "Slot"), ("rest", "Store")],
+    ctor "external-call:branch-zero" "Instruction"
       [("slot", "SlotId"), ("ifZero", "Label"), ("ifNonzero", "Label")],
-    ctor "c0:call-binary" "Instruction"
+    ctor "external-call:call-binary" "Instruction"
       [("external", "ExternalId"), ("ifValue", "Label"),
        ("ifLanguageFault", "Label"), ("ifEngineFault", "Label"),
        ("ifResourceFault", "Label")],
-    ctor "c0:return-value" "Instruction" [("slot", "SlotId")],
-    ctor "c0:return-declined" "Instruction" [],
-    ctor "c0:return-language-fault" "Instruction" [("fault", "Fault")],
-    ctor "c0:return-engine-fault" "Instruction" [("fault", "Fault")],
-    ctor "c0:return-resource-fault" "Instruction" [("fault", "Fault")],
-    ctor "c0:instruction-nil" "InstructionList" [],
-    ctor "c0:instruction-cons" "InstructionList"
+    ctor "external-call:return-value" "Instruction" [("slot", "SlotId")],
+    ctor "external-call:return-declined" "Instruction" [],
+    ctor "external-call:return-language-fault" "Instruction" [("fault", "Fault")],
+    ctor "external-call:return-engine-fault" "Instruction" [("fault", "Fault")],
+    ctor "external-call:return-resource-fault" "Instruction" [("fault", "Fault")],
+    ctor "external-call:instruction-nil" "InstructionList" [],
+    ctor "external-call:instruction-cons" "InstructionList"
       [("instruction", "Instruction"), ("rest", "InstructionList")],
-    ctor "c0:binary-external" "ExternalDecl"
+    ctor "external-call:binary-external" "ExternalDecl"
       [("external", "ExternalId"), ("linkName", "String"),
        ("firstInput", "SlotId"), ("secondInput", "SlotId"),
        ("output", "SlotId")],
-    ctor "c0:external-nil" "ExternalList" [],
-    ctor "c0:external-cons" "ExternalList"
+    ctor "external-call:external-nil" "ExternalList" [],
+    ctor "external-call:external-cons" "ExternalList"
       [("external", "ExternalDecl"), ("rest", "ExternalList")],
-    ctor "c0:program" "Program"
+    ctor "external-call:program" "Program"
       [("instructions", "InstructionList"), ("externals", "ExternalList"),
        ("entry", "Label")],
-    ctor "c0:fuel-infinite" "Fuel" [],
-    ctor "c0:fuel-zero" "Fuel" [],
-    ctor "c0:fuel-succ" "Fuel" [("prior", "Fuel")],
-    ctor "c0:fault" "Fault" [("name", "String")],
-    ctor "c0:external-value" "ExternalOutcome" [("store", "Store")],
-    ctor "c0:external-language-fault" "ExternalOutcome" [("fault", "Fault")],
-    ctor "c0:external-engine-fault" "ExternalOutcome" [("fault", "Fault")],
-    ctor "c0:external-resource-fault" "ExternalOutcome" [("fault", "Fault")],
-    ctor "c0:outcome-value" "Outcome" [("value", "Value")],
-    ctor "c0:outcome-declined" "Outcome" [],
-    ctor "c0:outcome-language-fault" "Outcome" [("fault", "Fault")],
-    ctor "c0:outcome-engine-fault" "Outcome" [("fault", "Fault")],
-    ctor "c0:outcome-resource-fault" "Outcome" [("fault", "Fault")],
-    ctor "c0:step-event" "Event" [("at", "Label")],
-    ctor "c0:external-event" "Event"
+    ctor "external-call:fuel-infinite" "Fuel" [],
+    ctor "external-call:fuel-zero" "Fuel" [],
+    ctor "external-call:fuel-succ" "Fuel" [("prior", "Fuel")],
+    ctor "external-call:fault" "Fault" [("name", "String")],
+    ctor "external-call:external-value" "ExternalOutcome" [("store", "Store")],
+    ctor "external-call:external-language-fault" "ExternalOutcome" [("fault", "Fault")],
+    ctor "external-call:external-engine-fault" "ExternalOutcome" [("fault", "Fault")],
+    ctor "external-call:external-resource-fault" "ExternalOutcome" [("fault", "Fault")],
+    ctor "external-call:outcome-value" "Outcome" [("value", "Value")],
+    ctor "external-call:outcome-declined" "Outcome" [],
+    ctor "external-call:outcome-language-fault" "Outcome" [("fault", "Fault")],
+    ctor "external-call:outcome-engine-fault" "Outcome" [("fault", "Fault")],
+    ctor "external-call:outcome-resource-fault" "Outcome" [("fault", "Fault")],
+    ctor "external-call:step-event" "Event" [("at", "Label")],
+    ctor "external-call:external-event" "Event"
       [("external", "ExternalId"), ("outcome", "ExternalOutcome")],
-    ctor "c0:fuel-exhausted-event" "Event" [("at", "Label")],
-    ctor "c0:receipt-nil" "Receipt" [],
-    ctor "c0:receipt-cons" "Receipt"
+    ctor "external-call:fuel-exhausted-event" "Event" [("at", "Label")],
+    ctor "external-call:receipt-nil" "Receipt" [],
+    ctor "external-call:receipt-cons" "Receipt"
       [("event", "Event"), ("prior", "Receipt")],
-    ctor "c0:run" "Config"
+    ctor "external-call:run" "Config"
       [("program", "Program"), ("pc", "Label"), ("store", "Store"),
        ("fuel", "Fuel"), ("receipt", "Receipt")] (some .rewrite),
-    ctor "c0:halted" "Config"
+    ctor "external-call:halted" "Config"
       [("outcome", "Outcome"), ("receipt", "Receipt")]
   ]
   equations := []
-  rewrites := c0PureTransitions
+  rewrites := externalCallLanguageTransitions
 }
 
-/-- The complete authored C0 rule family is non-contextual.  This exposes the
-root-rule inversion principle needed by compiler no-invention proofs. -/
-theorem c0Pure_rules_noncontextual :
-    ∀ rule, rule ∈ c0Pure.rewrites →
-      NoncontextualPremises rule.premises := by
-  simpa [c0Pure] using c0PureTransitions_noncontextual
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
+private theorem externalCallLanguage_rewrites_validate :
+    ∀ rewrite ∈ externalCallLanguage.rewrites,
+      LanguageDef.validateRewrite externalCallLanguage rewrite = [] := by
+  intro rewrite membership
+  change rewrite ∈ externalCallLanguageTransitions at membership
+  simp only [externalCallLanguageTransitions, List.mem_cons, List.mem_nil_iff,
+    or_false] at membership
+  rcases membership with
+    rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  all_goals
+    simp [LanguageDef.validateRewrite, externalCallLanguage, externalCallLanguageTransitions, ctor,
+      typed, v, a, query, run, halted, stepReceipt, externalReceipt,
+      commonContext, consumeFuel, fetch, branchRule, callRule,
+      returnFaultRule, fuelExhaustedRule, branchZeroTransition,
+      branchNonzeroTransition, callValueTransition,
+      callLanguageFaultTransition, callEngineFaultTransition,
+      callResourceFaultTransition, returnValueTransition,
+      returnDeclinedTransition, returnLanguageFaultTransition,
+      returnEngineFaultTransition, returnResourceFaultTransition,
+      LanguageDef.validatePatternConstructors,
+      LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
+      LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
+      LanguageDef.premiseFvarNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseForAllParams, Pattern.constructorRefs,
+      Pattern.constructorRefsList, Pattern.freeFvarNames,
+      Pattern.isWellScoped, Pattern.isWellScopedAt,
+      Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain,
+      TypeExpr.baseNames]
 
-/-- A halted C0 configuration has no authored successor under any relation
+/-- The exact authored ExternalCall presentation passes the shared validation gate. -/
+theorem externalCallLanguage_validate : externalCallLanguage.validate = [] := by
+  apply LanguageDef.validate_eq_nil_of_concreteSyntaxAndRewrites
+  all_goals try decide
+  exact externalCallLanguage_rewrites_validate
+
+theorem externalCallLanguage_wire_isSome :
+    (CanonicalWire.renderLanguage? externalCallLanguage).isSome := by
+  decide +kernel
+
+def externalCallLanguageWire : String :=
+  (CanonicalWire.renderLanguage? externalCallLanguage).getD ""
+
+theorem externalCallLanguageWire_nonempty :
+    externalCallLanguageWire != "" := by
+  decide +kernel
+
+/-- The complete authored ExternalCall rule family is non-contextual.  This exposes the
+root-rule inversion principle needed by compiler no-invention proofs. -/
+theorem externalCallLanguage_rules_noncontextual :
+    ∀ rule, rule ∈ externalCallLanguage.rewrites →
+      NoncontextualPremises rule.premises := by
+  simpa [externalCallLanguage] using externalCallLanguageTransitions_noncontextual
+
+/-- A halted ExternalCall configuration has no authored successor under any relation
 environment.  Open relation facts cannot manufacture authority because every
-rule must first match a `c0:run` configuration. -/
+rule must first match a `external-call:run` configuration. -/
 theorem no_step_from_halted
     (relationEnv : RelationEnv) (outcome receipt target : Pattern) :
-    ¬ langReducesUsing relationEnv c0Pure
+    ¬ langReducesUsing relationEnv externalCallLanguage
       (halted outcome receipt) target := by
   apply not_step_of_matchPatternForRule_eq_nil
   intro rule ruleMember
-  change rule ∈ c0PureTransitions at ruleMember
-  simp only [c0PureTransitions, List.mem_cons, List.mem_nil_iff,
+  change rule ∈ externalCallLanguageTransitions at ruleMember
+  simp only [externalCallLanguageTransitions, List.mem_cons, List.mem_nil_iff,
     or_false] at ruleMember
   rcases ruleMember with
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
@@ -337,7 +387,7 @@ theorem no_step_from_halted
       branchRule, callRule, returnFaultRule, run, halted, a, v,
       matchPattern]
 
-/-- The exact binding order produced when a C0 transition matches a running
+/-- The exact binding order produced when a ExternalCall transition matches a running
 configuration.  It is exposed because the generic matcher is proof-relevant:
 downstream compiler proofs should reuse this certified boundary rather than
 recompute the full matcher for every concrete program. -/
@@ -346,7 +396,7 @@ def runMatchBindings
   ("pc", pc), ("fuel", fuel), ("receipt", receipt),
   ("store", store), ("program", program)]
 
-/-- Every named C0 transition whose left side is the common running
+/-- Every named ExternalCall transition whose left side is the common running
 configuration has the same exact structural match. -/
 theorem match_run_transition
     (rule : RewriteRule)
@@ -354,7 +404,7 @@ theorem match_run_transition
       run (v "program") (v "pc") (v "store")
         (v "fuel") (v "receipt"))
     (program pc store fuel receipt : Pattern) :
-    matchPatternForRule c0Pure rule (run program pc store fuel receipt) =
+    matchPatternForRule externalCallLanguage rule (run program pc store fuel receipt) =
       [runMatchBindings program pc store fuel receipt] := by
   rw [matchPatternForRule_eq_syntactic, leftShape]
   simp [run, a, v, matchPattern, matchArgs, mergeBindings,
@@ -368,8 +418,8 @@ def branchInstructionBindings
 theorem match_branch_instruction
     (slot ifZero ifNonzero : Pattern) :
     matchPattern
-        (a "c0:branch-zero" [v "slot", v "ifZero", v "ifNonzero"])
-        (a "c0:branch-zero" [slot, ifZero, ifNonzero]) =
+        (a "external-call:branch-zero" [v "slot", v "ifZero", v "ifNonzero"])
+        (a "external-call:branch-zero" [slot, ifZero, ifNonzero]) =
       [branchInstructionBindings slot ifZero ifNonzero] := by
   simp [a, v, matchPattern, matchArgs, mergeBindings,
     branchInstructionBindings]
@@ -385,10 +435,10 @@ def callInstructionBindings
 theorem match_call_instruction
     (external ifValue ifLanguageFault ifEngineFault ifResourceFault : Pattern) :
     matchPattern
-        (a "c0:call-binary"
+        (a "external-call:call-binary"
           [v "external", v "ifValue", v "ifLanguageFault",
            v "ifEngineFault", v "ifResourceFault"])
-        (a "c0:call-binary"
+        (a "external-call:call-binary"
           [external, ifValue, ifLanguageFault, ifEngineFault,
            ifResourceFault]) =
       [callInstructionBindings external ifValue ifLanguageFault
@@ -398,112 +448,117 @@ theorem match_call_instruction
 
 /-- Exact binding fibre for the successful external-call outcome. -/
 theorem match_external_value (nextStore : Pattern) :
-    matchPattern (a "c0:external-value" [v "nextStore"])
-        (a "c0:external-value" [nextStore]) =
+    matchPattern (a "external-call:external-value" [v "nextStore"])
+        (a "external-call:external-value" [nextStore]) =
       [[("nextStore", nextStore)]] := by
   simp [a, v, matchPattern, matchArgs, mergeBindings]
 
 /-- Exact binding fibre for a fetched value-return instruction. -/
 theorem match_return_value (slot : Pattern) :
-    matchPattern (a "c0:return-value" [v "slot"])
-        (a "c0:return-value" [slot]) =
+    matchPattern (a "external-call:return-value" [v "slot"])
+        (a "external-call:return-value" [slot]) =
       [[("slot", slot)]] := by
   simp [a, v, matchPattern, matchArgs, mergeBindings]
 
 /-! ## Mandatory OSLF and NTT gate -/
 
-/-- C0 has the intended 21 sorts, 43 constructors, and 12 ordered
+/-- ExternalCall has the intended 21 sorts, 43 constructors, and 12 ordered
 transitions.  Exact physical-wire correspondence is a separate theorem rather
 than a consequence of these inventory counts. -/
-theorem c0Pure_inventory :
-    c0Pure.types.length = 21 ∧
-    c0Pure.terms.length = 43 ∧
-    c0Pure.rewrites.length = 12 := by
+theorem externalCallLanguage_inventory :
+    externalCallLanguage.types.length = 21 ∧
+    externalCallLanguage.terms.length = 43 ∧
+    externalCallLanguage.rewrites.length = 12 := by
   decide
 
-/-- Native type theory detects the exact-integer carrier crossing into C0
+/-- Native type theory detects the exact-integer carrier crossing into ExternalCall
 values. -/
 theorem exactInteger_value_crossing :
-    ("c0:exact-integer", "Integer", "Value") ∈ unaryCrossings c0Pure := by
+    ("external-call:exact-integer", "Integer", "Value") ∈ unaryCrossings externalCallLanguage := by
   decide
 
 /-- NTT also detects that outcomes are not stores: a store must pass through
 an explicit external outcome and continuation, rather than crossing directly
 to a terminal outcome. -/
 theorem no_store_outcome_crossing :
-    ("c0:invented-store-outcome", "Store", "Outcome") ∉
-      unaryCrossings c0Pure := by
+    ("external-call:invented-store-outcome", "Store", "Outcome") ∉
+      unaryCrossings externalCallLanguage := by
   decide
 
-private def natZero : Pattern := a "c0:nat-zero"
-private def labelZero : Pattern := a "c0:label" [natZero]
-private def fuelZero : Pattern := a "c0:fuel-zero"
-private def fuelOne : Pattern := a "c0:fuel-succ" [fuelZero]
-private def receiptNil : Pattern := a "c0:receipt-nil"
-private def storeNil : Pattern := a "c0:store-nil"
-private def returnDeclined : Pattern := a "c0:return-declined"
-private def instructionNil : Pattern := a "c0:instruction-nil"
-private def externalNil : Pattern := a "c0:external-nil"
+private def natZero : Pattern := a "external-call:nat-zero"
+private def labelZero : Pattern := a "external-call:label" [natZero]
+private def fuelZero : Pattern := a "external-call:fuel-zero"
+private def fuelOne : Pattern := a "external-call:fuel-succ" [fuelZero]
+private def receiptNil : Pattern := a "external-call:receipt-nil"
+private def storeNil : Pattern := a "external-call:store-nil"
+private def returnDeclined : Pattern := a "external-call:return-declined"
+private def instructionNil : Pattern := a "external-call:instruction-nil"
+private def externalNil : Pattern := a "external-call:external-nil"
 private def demoProgram : Pattern :=
-  a "c0:program"
-    [a "c0:instruction-cons" [returnDeclined, instructionNil],
+  a "external-call:program"
+    [a "external-call:instruction-cons" [returnDeclined, instructionNil],
      externalNil, labelZero]
 private def stepLimitFault : Pattern :=
-  a "c0:fault" [a "c0:step-limit"]
+  a "external-call:fault" [a "external-call:step-limit"]
 
 /-- A finite, explicit relation environment for the executable diagnostics.
 It is evidence for one program, not a universal external-library adequacy
 claim. -/
-def c0DemoRelationEnv : RelationEnv where
+def externalCallDemoRelationEnv : RelationEnv where
   tuples := fun relation _arguments =>
-    if relation == "C0ConsumeFuel" then
+    if relation == "ExternalCallConsumeFuel" then
       [[fuelOne, fuelZero]]
-    else if relation == "C0FetchInstruction" then
+    else if relation == "ExternalCallFetchInstruction" then
       [[demoProgram, labelZero, returnDeclined]]
-    else if relation == "C0StepLimitFault" then
+    else if relation == "ExternalCallStepLimitFault" then
       [[stepLimitFault]]
     else
       []
 
-/-- OSLF synthesized from the authored C0 language and explicit relation
+/-- OSLF synthesized from the authored ExternalCall language and explicit relation
 environment. -/
-def c0PureOSLF := langOSLFUsing c0DemoRelationEnv c0Pure "Config"
+def externalCallLanguageOSLF := langOSLFUsing externalCallDemoRelationEnv externalCallLanguage "Config"
 
-/-- The generated C0 modalities form the expected Galois connection. -/
-theorem c0Pure_galois :
+/-- The generated ExternalCall modalities form the expected Galois connection. -/
+theorem externalCallLanguage_galois :
     GaloisConnection
-      (langDiamondUsing c0DemoRelationEnv c0Pure)
-      (langBoxUsing c0DemoRelationEnv c0Pure) :=
-  langGaloisUsing c0DemoRelationEnv c0Pure
+      (langDiamondUsing externalCallDemoRelationEnv externalCallLanguage)
+      (langBoxUsing externalCallDemoRelationEnv externalCallLanguage) :=
+  langGaloisUsing externalCallDemoRelationEnv externalCallLanguage
 
 private def declineStart : Pattern :=
   run demoProgram labelZero storeNil fuelOne receiptNil
 
 private def declineDone : Pattern :=
-  halted (a "c0:outcome-declined") (stepReceipt labelZero receiptNil)
+  halted (a "external-call:outcome-declined") (stepReceipt labelZero receiptNil)
 
 /-- Positive executable control: the authored return-declined instruction
 consumes one unit of fuel, retains the distinction from faults, and appends an
 ordered step receipt. -/
 theorem decline_step_exact :
-    rewriteAt (engineBasePremises c0DemoRelationEnv) c0Pure 1 declineStart =
+    rewriteAt (engineBasePremises externalCallDemoRelationEnv) externalCallLanguage 1 declineStart =
       [declineDone] := by
   decide +kernel
 
 /-- Negative executable control: terminal configurations cannot invent a
-further C0 step. -/
+further ExternalCall step. -/
 theorem halted_is_normal :
-    rewriteAt (engineBasePremises c0DemoRelationEnv) c0Pure 1 declineDone = [] := by
+    rewriteAt (engineBasePremises externalCallDemoRelationEnv) externalCallLanguage 1 declineDone = [] := by
   decide +kernel
 
 /-- Resource exhaustion is a distinct authored terminal observation and adds
 its own receipt event. -/
 theorem exhausted_step_exact :
-    rewriteAt (engineBasePremises c0DemoRelationEnv) c0Pure 1
+    rewriteAt (engineBasePremises externalCallDemoRelationEnv) externalCallLanguage 1
         (run demoProgram labelZero storeNil fuelZero receiptNil) =
-      [halted (a "c0:outcome-resource-fault" [stepLimitFault])
-        (a "c0:receipt-cons"
-          [a "c0:fuel-exhausted-event" [labelZero], receiptNil])] := by
+      [halted (a "external-call:outcome-resource-fault" [stepLimitFault])
+        (a "external-call:receipt-cons"
+          [a "external-call:fuel-exhausted-event" [labelZero], receiptNil])] := by
   decide +kernel
 
-end Mettapedia.GSLT.LanguageDef.C0PureNTT
+#print axioms externalCallLanguage_validate
+#print axioms externalCallLanguage_wire_isSome
+#print axioms externalCallLanguage_galois
+#print axioms decline_step_exact
+
+end Mettapedia.GSLT.LanguageDef.ExternalCallMachine

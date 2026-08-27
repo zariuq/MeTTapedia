@@ -2447,6 +2447,24 @@ theorem reflectiveRuleWitness_of_validate_eq_nil
     matchingUnique := matchingUnique
     substitutionUnique := substitutionUnique }⟩
 
+/-- Validation errors contributed by one constructor declaration in a
+language.  Naming this row validator makes conservative language extension a
+theorem about the stability of individual authored declarations rather than a
+second whole-language computation. -/
+@[simp] def validateTerm (lang : LanguageDef) (term : GrammarRule) :
+    List ValidationError :=
+  let ctx := s!"term {term.label}"
+  let paramNames :=
+    term.params.flatMap fun param =>
+      TermParam.bodyName param :: TermParam.binderNames param
+  let categoryErrs :=
+    if term.category ∈ lang.typeNames then []
+    else [mkValidationError ctx s!"unknown category `{term.category}`"]
+  let paramTypeErrs := term.params.flatMap fun param =>
+    validateTypeExpr lang.typeNames ctx (TermParam.typeExpr param)
+  let syntaxErrs := validateSyntaxPattern ctx paramNames term.syntaxPattern
+  categoryErrs ++ paramTypeErrs ++ syntaxErrs
+
 /-- Generic semantic validation for an authored `LanguageDef`.
     This complements macro-time parsing checks with cross-reference checks on
     types, constructor names, relation names, and syntax-parameter usage. -/
@@ -2457,17 +2475,7 @@ def validate (lang : LanguageDef) : List ValidationError :=
   let ctorDupErrs := duplicateErrors lang.name "constructor" knownConstructors
   let equationDupErrs := duplicateErrors lang.name "equation" (lang.equations.map (·.name))
   let rewriteDupErrs := duplicateErrors lang.name "rewrite rule" (lang.rewrites.map (·.name))
-  let termErrs :=
-    lang.terms.flatMap fun term =>
-      let ctx := s!"term {term.label}"
-      let paramNames :=
-        term.params.flatMap fun param =>
-          TermParam.bodyName param :: TermParam.binderNames param
-      let categoryErrs :=
-        if term.category ∈ knownTypes then [] else [mkValidationError ctx s!"unknown category `{term.category}`"]
-      let paramTypeErrs := term.params.flatMap fun param => validateTypeExpr knownTypes ctx (TermParam.typeExpr param)
-      let syntaxErrs := validateSyntaxPattern ctx paramNames term.syntaxPattern
-      categoryErrs ++ paramTypeErrs ++ syntaxErrs
+  let termErrs := lang.terms.flatMap (validateTerm lang)
   let equationErrs := lang.equations.flatMap (validateEquation lang)
   let rewriteErrs := lang.rewrites.flatMap (validateRewrite lang)
   typeDupErrs ++ ctorDupErrs ++ equationDupErrs ++ rewriteDupErrs ++
@@ -2475,21 +2483,46 @@ def validate (lang : LanguageDef) : List ValidationError :=
 
 private theorem termValidationErrors_eq_nil_of_validate_eq_nil
     (lang : LanguageDef) (valid : lang.validate = []) :
-    lang.terms.flatMap (fun term =>
-      let context := s!"term {term.label}"
-      let categoryErrors :=
-        if term.category ∈ lang.typeNames then []
-        else [mkValidationError context s!"unknown category `{term.category}`"]
-      let parameterErrors := term.params.flatMap fun parameter =>
-        validateTypeExpr lang.typeNames context (TermParam.typeExpr parameter)
-      let syntaxErrors := validateSyntaxPattern context
-        (term.params.flatMap fun parameter =>
-          TermParam.bodyName parameter :: TermParam.binderNames parameter)
-        term.syntaxPattern
-      categoryErrors ++ parameterErrors ++ syntaxErrors) = [] := by
+    lang.terms.flatMap (validateTerm lang) = [] := by
   unfold validate at valid
   simp only [List.append_eq_nil_iff] at valid
   aesop
+
+/-- Every constructor row of a validated presentation remains individually
+checkable against that same presentation. -/
+theorem validateTerm_eq_nil_of_validate_eq_nil
+    (lang : LanguageDef) (valid : lang.validate = [])
+    (term : GrammarRule) (membership : term ∈ lang.terms) :
+    validateTerm lang term = [] := by
+  have clean := (List.flatMap_eq_nil_iff.mp
+    (termValidationErrors_eq_nil_of_validate_eq_nil lang valid)) term membership
+  simpa [validateTerm] using clean
+
+/-- Every equation row of a validated presentation passes its named row
+validator. -/
+theorem validateEquation_eq_nil_of_validate_eq_nil
+    (lang : LanguageDef) (valid : lang.validate = [])
+    (equation : Equation) (membership : equation ∈ lang.equations) :
+    validateEquation lang equation = [] := by
+  have equationErrors :
+      lang.equations.flatMap (validateEquation lang) = [] := by
+    unfold validate at valid
+    simp only [List.append_eq_nil_iff] at valid
+    aesop
+  exact (List.flatMap_eq_nil_iff.mp equationErrors) equation membership
+
+/-- Every rewrite row of a validated presentation passes its named row
+validator. -/
+theorem validateRewrite_eq_nil_of_validate_eq_nil
+    (lang : LanguageDef) (valid : lang.validate = [])
+    (rewrite : RewriteRule) (membership : rewrite ∈ lang.rewrites) :
+    validateRewrite lang rewrite = [] := by
+  have rewriteErrors :
+      lang.rewrites.flatMap (validateRewrite lang) = [] := by
+    unfold validate at valid
+    simp only [List.append_eq_nil_iff] at valid
+    aesop
+  exact (List.flatMap_eq_nil_iff.mp rewriteErrors) rewrite membership
 
 /-- Every constructor accepted by structural validation returns a declared
 sort. -/
@@ -2498,7 +2531,7 @@ theorem termCategory_mem_of_validate_eq_nil (lang : LanguageDef)
     (membership : term ∈ lang.terms) : term.category ∈ lang.typeNames := by
   have termClean := (List.flatMap_eq_nil_iff.mp
     (termValidationErrors_eq_nil_of_validate_eq_nil lang valid)) term membership
-  simp only [List.append_eq_nil_iff] at termClean
+  simp only [validateTerm, List.append_eq_nil_iff] at termClean
   have categoryClean := termClean.1.1
   by_contra missing
   simp [missing] at categoryClean
@@ -2513,7 +2546,7 @@ theorem termParam_baseName_mem_of_validate_eq_nil (lang : LanguageDef)
     name ∈ lang.typeNames := by
   have termClean := (List.flatMap_eq_nil_iff.mp
     (termValidationErrors_eq_nil_of_validate_eq_nil lang valid)) term termMembership
-  simp only [List.append_eq_nil_iff] at termClean
+  simp only [validateTerm, List.append_eq_nil_iff] at termClean
   have parameterErrors := termClean.1.2
   have parameterClean := (List.flatMap_eq_nil_iff.mp parameterErrors)
     parameter parameterMembership
@@ -2554,6 +2587,31 @@ theorem rewriteNames_nodup_of_validate_eq_nil (lang : LanguageDef)
     (valid : lang.validate = []) : (lang.rewrites.map (·.name)).Nodup := by
   exact (duplicateErrors_eq_nil_iff_nodup _ _ _).mp
     (leadingDuplicateErrors_eq_nil_of_validate_eq_nil lang valid).2.2.2
+
+/-- Exact row-wise constructor for validation.  A language is accepted when
+its four authored name families are duplicate-free and every retained
+constructor, equation, and rewrite row validates against the whole language.
+This is the proof interface used by conservative disjoint unions. -/
+theorem validate_eq_nil_of_rows
+    (lang : LanguageDef)
+    (htypes : lang.typeNames.Nodup)
+    (hconstructors : (lang.terms.map (·.label)).Nodup)
+    (hequations : (lang.equations.map (·.name)).Nodup)
+    (hrewrites : (lang.rewrites.map (·.name)).Nodup)
+    (hterms : ∀ term ∈ lang.terms, validateTerm lang term = [])
+    (hequationRows : ∀ equation ∈ lang.equations,
+      validateEquation lang equation = [])
+    (hrewriteRows : ∀ rewrite ∈ lang.rewrites,
+      validateRewrite lang rewrite = []) :
+    lang.validate = [] := by
+  simp only [validate]
+  rw [duplicateErrors_eq_nil_of_nodup _ _ _ htypes]
+  rw [duplicateErrors_eq_nil_of_nodup _ _ _ hconstructors]
+  rw [duplicateErrors_eq_nil_of_nodup _ _ _ hequations]
+  rw [duplicateErrors_eq_nil_of_nodup _ _ _ hrewrites]
+  simp only [List.nil_append, List.append_eq_nil_iff,
+    List.flatMap_eq_nil_iff]
+  exact ⟨⟨hterms, hequationRows⟩, hrewriteRows⟩
 
 /-- Kernel-checkable sufficient conditions for a constructor-signature-only
 language to pass the full `LanguageDef.validate` gate. Concrete syntax may be
@@ -2657,6 +2715,93 @@ theorem validate_eq_nil_of_constructorAndRewrites
       · rw [hcanonical]
         exact validateSyntaxPattern_termParameters _ _
   · exact hrewriteValid
+
+/-- Decide whether a first-order concrete-syntax item uses only literal
+presentation data or a declared constructor parameter. -/
+def concreteSyntaxItemAllowed (boundNames : List String) : SyntaxItem → Bool
+  | .terminal _ => true
+  | .nonTerminal name => boundNames.contains name
+  | .separator _ | .delimiter _ _ => true
+  | .op _ => false
+
+/-- Executable certificate that every constructor's first-order concrete
+syntax refers only to its own declared parameters. -/
+def concreteSyntaxRowsValid (lang : LanguageDef) : Bool :=
+  lang.terms.all fun term =>
+    let boundNames := term.params.flatMap fun param =>
+      TermParam.bodyName param :: TermParam.binderNames param
+    term.syntaxPattern.all (concreteSyntaxItemAllowed boundNames)
+
+/-- Executable finite certificate that every authored rewrite passes the
+same per-row validator used by `LanguageDef.validate`. -/
+def rewriteRowsValid (lang : LanguageDef) : Bool :=
+  lang.rewrites.all fun rewrite => (validateRewrite lang rewrite).isEmpty
+
+/-- Kernel-checkable sufficient conditions for a language whose concrete
+constructor syntax uses literal terminals, separators, delimiters, and
+declared nonterminal parameters.  This is the general first-order companion
+to `validate_eq_nil_of_constructorAndRewrites`; it exposes the exact syntax
+class already accepted by `LanguageDef.validate`. -/
+theorem validate_eq_nil_of_concreteSyntaxAndRewrites
+    (lang : LanguageDef)
+    (hequations : lang.equations = [])
+    (htypes : lang.typeNames.Nodup)
+    (hconstructors : (lang.terms.map (·.label)).Nodup)
+    (hrewrites : (lang.rewrites.map (·.name)).Nodup)
+    (hcategory : ∀ term ∈ lang.terms, term.category ∈ lang.typeNames)
+    (hparams : ∀ term ∈ lang.terms, ∀ param ∈ term.params,
+      ∀ typeName ∈ (TermParam.typeExpr param).baseNames,
+        typeName ∈ lang.typeNames)
+    (hsyntax : concreteSyntaxRowsValid lang = true)
+    (hrewriteValid : ∀ rewrite ∈ lang.rewrites,
+      validateRewrite lang rewrite = []) :
+    lang.validate = [] := by
+  simp [validate, hequations, htypes, hconstructors, hrewrites]
+  constructor
+  · intro term hterm
+    refine ⟨hcategory term hterm, ?_, ?_⟩
+    · intro param hparam
+      apply validateTypeExpr_eq_nil_of_baseNames
+      exact hparams term hterm param hparam
+    · apply validateSyntaxPattern_terminalsAndBoundNonTerminals
+      intro item hitem
+      unfold concreteSyntaxRowsValid at hsyntax
+      simp only [List.all_eq_true] at hsyntax
+      have itemSyntax := hsyntax term hterm item hitem
+      cases item with
+      | terminal _ => trivial
+      | nonTerminal _ =>
+          simp [concreteSyntaxItemAllowed] at itemSyntax
+          simpa only [List.mem_flatMap, List.mem_cons] using itemSyntax
+      | separator _ => trivial
+      | delimiter _ _ => trivial
+      | op _ => simp [concreteSyntaxItemAllowed] at itemSyntax
+  · exact hrewriteValid
+
+/-- Fully finite form of
+`validate_eq_nil_of_concreteSyntaxAndRewrites`.  The rewrite-family premise is
+an executable Boolean certificate, while the conclusion remains an ordinary
+kernel theorem about the authored `LanguageDef`. -/
+theorem validate_eq_nil_of_concreteSyntaxAndCertifiedRewrites
+    (lang : LanguageDef)
+    (hequations : lang.equations = [])
+    (htypes : lang.typeNames.Nodup)
+    (hconstructors : (lang.terms.map (·.label)).Nodup)
+    (hrewrites : (lang.rewrites.map (·.name)).Nodup)
+    (hcategory : ∀ term ∈ lang.terms, term.category ∈ lang.typeNames)
+    (hparams : ∀ term ∈ lang.terms, ∀ param ∈ term.params,
+      ∀ typeName ∈ (TermParam.typeExpr param).baseNames,
+        typeName ∈ lang.typeNames)
+    (hsyntax : concreteSyntaxRowsValid lang = true)
+    (hrewritesValid : rewriteRowsValid lang = true) :
+    lang.validate = [] := by
+  apply validate_eq_nil_of_concreteSyntaxAndRewrites lang hequations htypes
+    hconstructors hrewrites hcategory hparams hsyntax
+  intro rewrite membership
+  unfold rewriteRowsValid at hrewritesValid
+  simp only [List.all_eq_true] at hrewritesValid
+  have rowValid := hrewritesValid rewrite membership
+  exact List.isEmpty_iff.mp rowValid
 
 /-! ## Ordered execution-flow admission
 

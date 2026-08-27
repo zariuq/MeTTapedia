@@ -344,6 +344,9 @@ private def sourceTheoremRestoredDispatchTemplate : Atom :=
     [.symbol "exec", sourceDispatchLocation,
       .var "theorem-dispatch-input", .var "theorem-dispatch-output"]
 
+private def sourceTheoremReloadTriggerTemplate : Atom :=
+  .expression [.symbol "mm-reload-source-verifier", .var "source"]
+
 private def sourceTheoremCommitPatternAtoms : List Atom :=
   [sourceTheoremCommitSelfTemplate, sourceTheoremPendingTemplate,
    sourceTheoremSucceededTemplate,
@@ -360,7 +363,8 @@ private def sourceTheoremCommitSinks : List Sink :=
    .add (.var "assertion-header"),
    .add sourceTheoremAdmittedTemplate,
    .add sourceTheoremRestoredDispatchTemplate,
-   .add sourceTheoremNextControlTemplate]
+   .add sourceTheoremNextControlTemplate,
+   .add sourceTheoremReloadTriggerTemplate]
 
 private def sourceTheoremCommitOutput : Atom :=
   .expression
@@ -373,7 +377,8 @@ private def sourceTheoremCommitOutput : Atom :=
       .expression [.symbol "+", .var "assertion-header"],
       .expression [.symbol "+", sourceTheoremAdmittedTemplate],
       .expression [.symbol "+", sourceTheoremRestoredDispatchTemplate],
-      .expression [.symbol "+", sourceTheoremNextControlTemplate]]
+      .expression [.symbol "+", sourceTheoremNextControlTemplate],
+      .expression [.symbol "+", sourceTheoremReloadTriggerTemplate]]
 
 /-- Admission is a separate continuation whose required proof-success fact
 can only be produced by the proof machine in an admitted initial space. -/
@@ -456,6 +461,9 @@ def sourceTheoremAdmittedAtom (owner : Atom) (position : Nat)
   .expression
     [.symbol "mm-source-theorem-admitted", owner, natAtom position,
       rawStatementAtom statement, proofOccurrence]
+
+def sourceVerifierReloadTriggerAtom (owner : Atom) : Atom :=
+  .expression [.symbol "mm-reload-source-verifier", owner]
 
 private def sourceProvableStatement (site separator terminator : LocatedByteSpan)
     (label typecode : LocatedName) (body : List LocatedName)
@@ -1595,24 +1603,28 @@ theorem sourceTheoremCommitDirective_fires_admission (owner : Atom)
     exact Finset.mem_union_left _
       (Finset.mem_union_left _
         (Finset.mem_union_left _
-          (Finset.mem_union_right _ (List.mem_toFinset.mpr headerStaged))))
+          (Finset.mem_union_left _
+            (Finset.mem_union_right _ (List.mem_toFinset.mpr headerStaged)))))
   · constructor
     · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
       sourceTheoremCommitDirective, sourceTheoremCommitSinks,
       reflectiveSupportSinkProvider]
       exact Finset.mem_union_left _
         (Finset.mem_union_left _
-          (Finset.mem_union_right _ (List.mem_toFinset.mpr admittedStaged)))
+          (Finset.mem_union_left _
+            (Finset.mem_union_right _ (List.mem_toFinset.mpr admittedStaged))))
     · constructor
       · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
           sourceTheoremCommitDirective, sourceTheoremCommitSinks,
           reflectiveSupportSinkProvider]
         exact Finset.mem_union_left _
-          (Finset.mem_union_right _ (List.mem_toFinset.mpr dispatchStaged))
+          (Finset.mem_union_left _
+            (Finset.mem_union_right _ (List.mem_toFinset.mpr dispatchStaged)))
       · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
           sourceTheoremCommitDirective, sourceTheoremCommitSinks,
           reflectiveSupportSinkProvider]
-        exact Finset.mem_union_right _ (List.mem_toFinset.mpr controlStaged)
+        exact Finset.mem_union_left _
+          (Finset.mem_union_right _ (List.mem_toFinset.mpr controlStaged))
 
 /-- The bootstrap is an ordinary scheduled MM2 step in the supplied target's
 OSLF-generated NTT, and it derives both the initial program counter and the

@@ -1,10 +1,11 @@
 import Mettapedia.GSLT.Core.GSLT
 
 /-!
-# C1 digit-buffer operational machine
+# Radix-digit buffer operational machine
 
-`C1` is the smallest target machine needed by the digit-recursive DA arithmetic
-compiler.  Its semantics is authored over mathematical buffers, registers, and
+`RadixDigitMachine` is the smallest target machine needed by the
+digit-recursive Walters--Zantema arithmetic compiler. Its semantics is authored
+over mathematical buffers, registers, and
 instruction graphs.  It does not mention C layouts, emitted source, native
 arithmetic providers, or a particular source language.
 
@@ -13,9 +14,9 @@ records its program counter and authored origin, so later compilation theorems
 can retain source-rule provenance without making rule names operational.
 -/
 
-namespace Mettapedia.GSLT.LanguageDef.C1DigitMachine
+namespace Mettapedia.GSLT.LanguageDef.RadixDigitMachine
 
-/-- Static limits and the digit radix advertised by a C1 realization. -/
+/-- Static limits and the digit radix advertised by a radix-digit realization. -/
 structure Schema where
   radix : Nat
   radixAtLeastTwo : 2 <= radix
@@ -50,7 +51,7 @@ inductive Outcome where
   | resourceFault (detail : ResourceFault)
 deriving Repr, DecidableEq
 
-/-- C1 instructions are intentionally presentation-neutral.  A compiler may
+/-- RadixDigit instructions are intentionally presentation-neutral.  A compiler may
 attach any source-rule identity to a `Cell`; the identity is recorded but never
 changes instruction behavior. -/
 structure TableRow where
@@ -391,9 +392,9 @@ theorem runSteps_add (schema : Schema) (first second : Nat) (config : Config) :
           exact (runSteps_eq_self_of_step_none schema second config nextStep).symm
       | some next => exact inductionHypothesis next
 
-/-- The authored C1 operational GSLT.  Equality is the only equation; all
+/-- The authored RadixDigit operational GSLT.  Equality is the only equation; all
 machine behavior is supplied by `step?`. -/
-def c1GSLT (schema : Schema) : Mettapedia.GSLT.GSLT where
+def radixDigitGSLT (schema : Schema) : Mettapedia.GSLT.GSLT where
   Term := Config
   equations := {
     r := Eq
@@ -410,17 +411,17 @@ def c1GSLT (schema : Schema) : Mettapedia.GSLT.GSLT where
     exact step
 
 theorem step_iff (schema : Schema) (source target : Config) :
-    (c1GSLT schema).Step source target <-> step? schema source = some target :=
+    (radixDigitGSLT schema).Step source target <-> step? schema source = some target :=
   Iff.rfl
 
 theorem step_deterministic (schema : Schema) {source first second : Config}
-    (firstStep : (c1GSLT schema).Step source first)
-    (secondStep : (c1GSLT schema).Step source second) :
+    (firstStep : (radixDigitGSLT schema).Step source first)
+    (secondStep : (radixDigitGSLT schema).Step source second) :
     first = second := by
   exact Option.some.inj (firstStep.symm.trans secondStep)
 
 theorem normal_iff_step_none (schema : Schema) (source : Config) :
-    (c1GSLT schema).IsNormalForm source <-> step? schema source = none := by
+    (radixDigitGSLT schema).IsNormalForm source <-> step? schema source = none := by
   constructor
   · intro normal
     cases result : step? schema source with
@@ -435,7 +436,7 @@ theorem normal_iff_step_none (schema : Schema) (source : Config) :
 
 theorem halted_is_normal (schema : Schema) (outcome : Outcome)
     (receipt : Receipt) :
-    (c1GSLT schema).IsNormalForm (.halted outcome receipt) := by
+    (radixDigitGSLT schema).IsNormalForm (.halted outcome receipt) := by
   intro redex
   obtain ⟨target, step⟩ := redex
   change step? schema (.halted outcome receipt) = some target at step
@@ -527,4 +528,4 @@ theorem bounded_loop_exhausts_fuel :
         .resourceFault 0 .fuelExhausted] := by
   rfl
 
-end Mettapedia.GSLT.LanguageDef.C1DigitMachine
+end Mettapedia.GSLT.LanguageDef.RadixDigitMachine

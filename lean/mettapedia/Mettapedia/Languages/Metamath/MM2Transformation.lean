@@ -5,6 +5,7 @@ import Mettapedia.Languages.Metamath.MM2OrderedEventVerifier
 import Mettapedia.Languages.Metamath.MM2Target
 import Mettapedia.Languages.Metamath.SourceStateNativeTypes
 import Mettapedia.Languages.ProcessCalculi.MORK.AuthoredContextBridge
+import Mettapedia.Languages.ProcessCalculi.MORK.InvertibleHead
 import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveExecution
 import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveGSLTNativeTypes
 
@@ -11360,6 +11361,530 @@ def normalVerifierInternalRows : List Atom :=
   [normalBodyMatchRuleBundle, normalBodyBuildRuleBundle] ++
     normalDispatchRuleRows
 
+/-- Any inert atom whose head marks it as verifier-owned code must be one of
+the exact rows emitted by the generic verifier transformation. -/
+def NormalVerifierInternalRowIntact (atom : Atom) : Prop :=
+  isVerifierOwnedInternalRowShape atom = true →
+    atom ∈ normalVerifierInternalRows
+
+def NormalVerifierInternalRowsIntact (space : List Atom) : Prop :=
+  AtomsWithin NormalVerifierInternalRowIntact space
+
+theorem normalVerifierInternalRows_intact :
+    NormalVerifierInternalRowsIntact normalVerifierInternalRows := by
+  unfold NormalVerifierInternalRowsIntact AtomsWithin
+  intro atom member
+  unfold NormalVerifierInternalRowIntact
+  intro _
+  exact member
+
+/-- The structural state used by the assembled verifier proof: executable
+shells come from the generated rule inventory, and every inert carrier capable
+of reinstalling code is one of the exact rows owned by that verifier. -/
+def NormalProofMachineOwnedState (space : List Atom) : Prop :=
+  NormalProofMachineState space ∧ NormalVerifierInternalRowsIntact space
+
+/-- The additions made by the selected directive preserve both halves of the
+owned state.  This is a local semantic obligation on the actual matched rows,
+not a syntactic promise attached to a rule name. -/
+def NormalProofMachineOwnedAdditionsClosed (space : List Atom) : Prop :=
+  ∀ directive,
+    selectNextScheduled (cSupportedSourceExecFacts space) = some directive →
+    let rows := (Conformance.Computable.cmatchInputSpec []
+      (directive.atom :: space.erase directive.atom)
+      directive.rule.input).map Prod.fst
+    ReflectiveAddedRawWithin normalProofMachineRawFacts rows
+        directive.rule.tmpl ∧
+      ReflectiveAddedAtomsWithin NormalVerifierInternalRowIntact rows
+        directive.rule.tmpl
+
+/-! ## Matcher-backed origin of reflectively reloaded code -/
+
+/-- In a three-factor compatible input, every returned substitution records
+an actual witness for the final factor.  Keeping this witness is essential
+when the final factor is a verifier-owned row whose payload is later emitted
+as executable code. -/
+private theorem cmatchInputSpec_three_last_witness
+    {space : List Atom} {first second third : Atom}
+    {substitution : Subst}
+    (member : substitution ∈
+      (Conformance.Computable.cmatchInputSpec [] space
+        (.compat (mkPattern [first, second, third]))).map Prod.fst) :
+    ∃ before atom,
+      atom ∈ space ∧
+        Conformance.Computable.cmatchAtom before third atom =
+          some substitution := by
+  rw [List.mem_map] at member
+  obtain ⟨⟨found, witnesses⟩, foundMember, foundEq⟩ := member
+  change found = substitution at foundEq
+  subst substitution
+  simp only [Conformance.Computable.cmatchInputSpec, mkPattern,
+    Conformance.Computable.cmatchPattern,
+    Conformance.Computable.cmatchPattern.go, List.mem_flatMap] at foundMember
+  obtain ⟨⟨afterFirst, firstAtom⟩, _firstMatch,
+    afterFirstMember⟩ := foundMember
+  obtain ⟨⟨afterSecond, secondAtom⟩, _secondMatch,
+    afterSecondMember⟩ := afterFirstMember
+  obtain ⟨⟨afterThird, thirdAtom⟩, thirdMatch,
+    finished⟩ := afterSecondMember
+  simp only [List.mem_singleton, Prod.mk.injEq] at finished
+  rcases finished with ⟨substEq, _witnessEq⟩
+  subst afterThird
+  refine ⟨afterSecond, thirdAtom, ?_, ?_⟩
+  · rw [List.mem_filterMap] at thirdMatch
+    obtain ⟨candidate, candidateMember, candidateMatch⟩ := thirdMatch
+    simp only [Option.map_eq_some_iff] at candidateMatch
+    obtain ⟨candidateSubst, _matched, pairEq⟩ := candidateMatch
+    cases pairEq
+    exact candidateMember
+  · rw [List.mem_filterMap] at thirdMatch
+    obtain ⟨candidate, _candidateMember, candidateMatch⟩ := thirdMatch
+    simp only [Option.map_eq_some_iff] at candidateMatch
+    obtain ⟨candidateSubst, matched, pairEq⟩ := candidateMatch
+    cases pairEq
+    exact matched
+
+/-- The same three-factor match retains the whole substitution chain.  This
+lets later factors be proved not to alter opaque values captured by the first
+factor. -/
+private theorem cmatchInputSpec_three_match_chain
+    {space : List Atom} {first second third : Atom}
+    {substitution : Subst}
+    (member : substitution ∈
+      (Conformance.Computable.cmatchInputSpec [] space
+        (.compat (mkPattern [first, second, third]))).map Prod.fst) :
+    ∃ afterFirst afterSecond firstAtom secondAtom thirdAtom,
+      firstAtom ∈ space ∧ secondAtom ∈ space ∧ thirdAtom ∈ space ∧
+        Conformance.Computable.cmatchAtom [] first firstAtom =
+          some afterFirst ∧
+        Conformance.Computable.cmatchAtom afterFirst second secondAtom =
+          some afterSecond ∧
+        Conformance.Computable.cmatchAtom afterSecond third thirdAtom =
+          some substitution := by
+  rw [List.mem_map] at member
+  obtain ⟨⟨found, witnesses⟩, foundMember, foundEq⟩ := member
+  change found = substitution at foundEq
+  subst substitution
+  simp only [Conformance.Computable.cmatchInputSpec, mkPattern,
+    Conformance.Computable.cmatchPattern,
+    Conformance.Computable.cmatchPattern.go, List.mem_flatMap] at foundMember
+  obtain ⟨⟨afterFirst, firstAtom⟩, firstMatch,
+    afterFirstMember⟩ := foundMember
+  obtain ⟨⟨afterSecond, secondAtom⟩, secondMatch,
+    afterSecondMember⟩ := afterFirstMember
+  obtain ⟨⟨afterThird, thirdAtom⟩, thirdMatch,
+    finished⟩ := afterSecondMember
+  simp only [List.mem_singleton, Prod.mk.injEq] at finished
+  rcases finished with ⟨substEq, _witnessEq⟩
+  subst afterThird
+  rw [List.mem_filterMap] at firstMatch secondMatch thirdMatch
+  obtain ⟨firstCandidate, firstMember, firstResult⟩ := firstMatch
+  obtain ⟨secondCandidate, secondMember, secondResult⟩ := secondMatch
+  obtain ⟨thirdCandidate, thirdMember, thirdResult⟩ := thirdMatch
+  simp only [Option.map_eq_some_iff] at firstResult secondResult thirdResult
+  obtain ⟨firstSubst, firstMatched, firstEq⟩ := firstResult
+  obtain ⟨secondSubst, secondMatched, secondEq⟩ := secondResult
+  obtain ⟨thirdSubst, thirdMatched, thirdEq⟩ := thirdResult
+  cases firstEq
+  cases secondEq
+  cases thirdEq
+  exact ⟨afterFirst, afterSecond, firstAtom, secondAtom, thirdAtom,
+    firstMember, secondMember, thirdMember,
+    firstMatched, secondMatched, thirdMatched⟩
+
+/-- Matching a two-cell tagged row recovers both the concrete payload and its
+binding, even when the payload itself contains expression-local variables. -/
+private theorem matchAtom_tagged_row_payload
+    {substitution result : Subst} {atom : Atom} {tag variableName : String}
+    (matched : matchAtom substitution
+      (.expression [.symbol tag, .var variableName]) atom = some result) :
+    ∃ payload,
+      atom = .expression [.symbol tag, payload] ∧
+        result.lookup variableName = some payload := by
+  have relational := matchAtom_sound matched
+  cases relational with
+  | expr_cons head tail =>
+      cases head
+      cases tail with
+      | expr_cons payloadMatch nilMatch =>
+          cases payloadMatch with
+          | var_fresh _ =>
+              cases nilMatch
+              refine ⟨_, rfl, ?_⟩
+              simp [Subst.lookup]
+          | var_bound lookup =>
+              cases nilMatch
+              exact ⟨_, rfl, lookup⟩
+
+/-- Matching the dispatch reloader's executable shell recovers its opaque
+input and output byte expressions without requiring those captured values to
+be structurally ground. -/
+private theorem matchAtom_dispatch_reload_shell
+    {result : Subst} {atom : Atom}
+    (matched : matchAtom [] normalDispatchReloadSelfTemplate atom =
+      some result) :
+    ∃ input output,
+      atom = .expression
+        [.symbol "exec", normalDispatchReloadLocation, input, output] ∧
+        result.lookup "reload-self-input" = some input ∧
+        result.lookup "reload-self-output" = some output := by
+  have relational := matchAtom_sound matched
+  cases relational with
+  | expr_cons execMatch tail1 =>
+      cases execMatch
+      cases tail1 with
+      | expr_cons locationMatch tail2 =>
+          cases locationMatch with
+          | expr_cons locationHead locationTail =>
+              cases locationHead
+              cases locationTail with
+              | expr_cons locationName locationNil =>
+                  cases locationName
+                  cases locationNil
+                  cases tail2 with
+                  | expr_cons inputMatch tail3 =>
+                      cases inputMatch with
+                      | var_fresh _ =>
+                          cases tail3 with
+                          | expr_cons outputMatch nilMatch =>
+                              cases outputMatch with
+                              | var_fresh _ =>
+                                  cases nilMatch
+                                  refine ⟨_, _, rfl, ?_, ?_⟩
+                                  · simp [Subst.lookup]
+                                  · simp [Subst.lookup]
+                              | var_bound outputLookup =>
+                                  cases nilMatch
+                                  exact ⟨_, _, rfl, by simp [Subst.lookup],
+                                    outputLookup⟩
+                      | var_bound inputLookup =>
+                          cases tail3 with
+                          | expr_cons outputMatch nilMatch =>
+                              cases outputMatch with
+                              | var_fresh _ =>
+                                  cases nilMatch
+                                  exact ⟨_, _, rfl, inputLookup,
+                                    by simp [Subst.lookup]⟩
+                              | var_bound outputLookup =>
+                                  cases nilMatch
+                                  exact ⟨_, _, rfl, inputLookup,
+                                    outputLookup⟩
+
+/-- Reinstalling the dispatch reloader itself also preserves code origin:
+its input and output are captured from an executable shell already present in
+the owned space (or from the explicitly prepended selected directive). -/
+theorem normalDispatchReload_captured_self_raw_authorized
+    {space : List Atom} {substitution : Subst} {captured : Atom}
+    {raw : RawExecFact}
+    (state : NormalProofMachineOwnedState space)
+    (rowMember : substitution ∈
+      (Conformance.Computable.cmatchInputSpec []
+        (normalDispatchReloadDirective.atom ::
+          space.erase normalDispatchReloadDirective.atom)
+        normalDispatchReloadDirective.rule.input).map Prod.fst)
+    (instantiates :
+      instantiateTemplateAtom? substitution
+          normalDispatchReloadSelfTemplate = some captured)
+    (extracts : extractRawExecFact captured = some raw) :
+    raw ∈ normalProofMachineRawFacts := by
+  have rowMember' : substitution ∈
+      (Conformance.Computable.cmatchInputSpec []
+        (normalDispatchReloadDirective.atom ::
+          space.erase normalDispatchReloadDirective.atom)
+        (.compat (mkPattern
+          [normalDispatchReloadSelfTemplate,
+           normalDispatchReloadTriggerTemplate,
+           normalDispatchReloadRuleTemplate]))).map Prod.fst := by
+    simpa [normalDispatchReloadDirective, normalDispatchReloadPatternAtoms]
+      using rowMember
+  obtain ⟨afterFirst, afterSecond, firstAtom, secondAtom, thirdAtom,
+      firstMember, _secondMember, _thirdMember,
+      firstMatched, secondMatched, thirdMatched⟩ :=
+    cmatchInputSpec_three_match_chain rowMember'
+  rw [Conformance.cmatchAtom_eq_matchAtom] at firstMatched secondMatched
+  rw [Conformance.cmatchAtom_eq_matchAtom] at thirdMatched
+  obtain ⟨input, output, firstEq, inputLookup, outputLookup⟩ :=
+    matchAtom_dispatch_reload_shell firstMatched
+  have finalExtends : substitution.lookupExtends afterFirst :=
+    Subst.lookupExtends_trans
+      (matchAtom_lookupExtends secondMatched)
+      (matchAtom_lookupExtends thirdMatched)
+  have finalInputLookup : substitution.lookup "reload-self-input" =
+      some input :=
+    finalExtends "reload-self-input" input inputLookup
+  have finalOutputLookup : substitution.lookup "reload-self-output" =
+      some output :=
+    finalExtends "reload-self-output" output outputLookup
+  have instantiationFacts :
+      templateCovered substitution normalDispatchReloadSelfTemplate = true ∧
+        applySubst substitution normalDispatchReloadSelfTemplate = captured := by
+    simpa [instantiateTemplateAtom?] using instantiates
+  have appliedEq :
+      applySubst substitution normalDispatchReloadSelfTemplate = captured :=
+    instantiationFacts.2
+  have appliedFirst :
+      applySubst substitution normalDispatchReloadSelfTemplate = firstAtom := by
+    rw [firstEq]
+    change Atom.expression
+      [.symbol "exec", normalDispatchReloadLocation,
+        (substitution.lookup "reload-self-input").getD
+          (.var "reload-self-input"),
+        (substitution.lookup "reload-self-output").getD
+          (.var "reload-self-output")] =
+      Atom.expression
+        [.symbol "exec", normalDispatchReloadLocation, input, output]
+    rw [finalInputLookup, finalOutputLookup]
+    rfl
+  have capturedEq : captured = firstAtom := by
+    exact appliedEq.symm.trans appliedFirst
+  rw [capturedEq] at extracts
+  rcases List.mem_cons.mp firstMember with selected | prior
+  · rw [selected] at extracts
+    exact List.mem_filterMap.mpr
+      ⟨normalDispatchReloadDirective.atom,
+        by simp [normalProofMachineRules, normalDispatchReloadDirective],
+        extracts⟩
+  · apply state.1.2 raw
+    exact List.mem_filterMap.mpr
+      ⟨firstAtom, List.mem_of_mem_erase prior, extracts⟩
+
+/-- The dispatch reloader can emit only a rule recovered from the exact
+verifier-owned dispatch relation.  This is the symbolic dual of the hostile
+row counterexample above: ownership, not a suggestive row name, authorizes the
+captured executable payload. -/
+theorem normalDispatchReload_captured_rule_authorized
+    {space : List Atom} {substitution : Subst} {captured : Atom}
+    (state : NormalProofMachineOwnedState space)
+    (rowMember : substitution ∈
+      (Conformance.Computable.cmatchInputSpec []
+        (normalDispatchReloadDirective.atom ::
+          space.erase normalDispatchReloadDirective.atom)
+        normalDispatchReloadDirective.rule.input).map Prod.fst)
+    (instantiates :
+      instantiateTemplateAtom? substitution (.var "reload-rule") =
+        some captured) :
+    captured ∈ normalProofMachineRules := by
+  have rowMember' : substitution ∈
+      (Conformance.Computable.cmatchInputSpec []
+        (normalDispatchReloadDirective.atom ::
+          space.erase normalDispatchReloadDirective.atom)
+        (.compat (mkPattern
+          [normalDispatchReloadSelfTemplate,
+           normalDispatchReloadTriggerTemplate,
+           normalDispatchReloadRuleTemplate]))).map Prod.fst := by
+    simpa [normalDispatchReloadDirective, normalDispatchReloadPatternAtoms]
+      using rowMember
+  obtain ⟨before, witness, witnessMember, matched⟩ :=
+    cmatchInputSpec_three_last_witness rowMember'
+  rw [Conformance.cmatchAtom_eq_matchAtom] at matched
+  obtain ⟨payload, witnessEq, payloadLookup⟩ :=
+    matchAtom_tagged_row_payload matched
+  have capturedEq : captured = payload := by
+    simp [instantiateTemplateAtom?, templateCovered, applySubst,
+      payloadLookup] at instantiates
+    exact instantiates.symm
+  subst captured
+  have witnessInSpace : witness ∈ space := by
+    rcases List.mem_cons.mp witnessMember with equal | erased
+    · rw [witnessEq] at equal
+      simp [normalDispatchReloadDirective, normalDispatchReloadRule] at equal
+    · exact List.mem_of_mem_erase erased
+  have authorizedRow := state.2 witness witnessInSpace
+  have protectedShape : isVerifierOwnedInternalRowShape witness = true := by
+    rw [witnessEq]
+    rfl
+  have authorized := authorizedRow protectedShape
+  rw [witnessEq] at authorized
+  have payloadMember : payload ∈ normalDispatchReloadableRules := by
+    simpa [normalVerifierInternalRows, normalDispatchRuleRows,
+    normalDispatchRuleRow, normalBodyMatchRuleBundle,
+      normalBodyBuildRuleBundle] using authorized
+  change payload ∈
+    normalDispatchReloadableRules ++
+      [normalDispatchReloadRule, normalAcceptRule]
+  exact List.mem_append_left _ payloadMember
+
+/-- Consequently, any captured dispatch payload which parses as executable
+belongs to the exact raw-executable inventory generated for the verifier. -/
+theorem normalDispatchReload_captured_raw_authorized
+    {space : List Atom} {substitution : Subst} {captured : Atom}
+    {raw : RawExecFact}
+    (state : NormalProofMachineOwnedState space)
+    (rowMember : substitution ∈
+      (Conformance.Computable.cmatchInputSpec []
+        (normalDispatchReloadDirective.atom ::
+          space.erase normalDispatchReloadDirective.atom)
+        normalDispatchReloadDirective.rule.input).map Prod.fst)
+    (instantiates :
+      instantiateTemplateAtom? substitution (.var "reload-rule") =
+        some captured)
+    (extracts : extractRawExecFact captured = some raw) :
+    raw ∈ normalProofMachineRawFacts := by
+  exact List.mem_filterMap.mpr
+    ⟨captured,
+      normalDispatchReload_captured_rule_authorized state rowMember
+      instantiates,
+      extracts⟩
+
+/-- Every executable atom introduced by the dispatch reloader is authorized:
+the self shell comes from an existing executable witness, and the variable
+payload comes from an exact verifier-owned dispatch row. -/
+theorem normalDispatchReload_additions_raw_closed
+    {space : List Atom} (state : NormalProofMachineOwnedState space) :
+    let rows := (Conformance.Computable.cmatchInputSpec []
+      (normalDispatchReloadDirective.atom ::
+        space.erase normalDispatchReloadDirective.atom)
+      normalDispatchReloadDirective.rule.input).map Prod.fst
+    ReflectiveAddedRawWithin normalProofMachineRawFacts rows
+      normalDispatchReloadDirective.rule.tmpl := by
+  dsimp only
+  intro atom added raw extracts
+  rcases added with
+    ⟨sink, sinkMember, authored, sinkEq,
+      substitution, rowMember, instantiates⟩
+  subst sink
+  have authoredCases :
+      authored = normalDispatchReloadSelfTemplate ∨
+        authored = .var "reload-rule" := by
+    simpa [normalDispatchReloadDirective, normalDispatchReloadSinks,
+      mkTemplate] using sinkMember
+  cases authoredCases with
+  | inl selfSink =>
+    rw [selfSink] at instantiates
+    exact normalDispatchReload_captured_self_raw_authorized state rowMember
+      instantiates extracts
+  | inr ruleSink =>
+    rw [ruleSink] at instantiates
+    exact normalDispatchReload_captured_raw_authorized state rowMember
+      instantiates extracts
+
+theorem NormalProofMachineOwnedState.fire
+    {space : List Atom} (state : NormalProofMachineOwnedState space)
+    (directive : SourceExecFact)
+    (directiveMember : directive ∈ normalProofMachineDirectives)
+    (addedRawWithin :
+      ReflectiveAddedRawWithin normalProofMachineRawFacts
+        ((Conformance.Computable.cmatchInputSpec []
+          (directive.atom :: space.erase directive.atom)
+          directive.rule.input).map Prod.fst)
+        directive.rule.tmpl)
+    (addedInternalWithin :
+      ReflectiveAddedAtomsWithin NormalVerifierInternalRowIntact
+        ((Conformance.Computable.cmatchInputSpec []
+          (directive.atom :: space.erase directive.atom)
+          directive.rule.input).map Prod.fst)
+        directive.rule.tmpl) :
+    NormalProofMachineOwnedState
+      (cFireReflectiveSourceExecFact space directive) := by
+  have supported := normalProofMachineDirective_support_set directiveMember
+  exact ⟨state.1.fire directive directiveMember addedRawWithin,
+    cFireReflectiveSourceExecFact_atomsWithin
+      NormalVerifierInternalRowIntact space directive supported state.2
+        addedInternalWithin⟩
+
+/-- One scheduler-selected step preserves verifier code ownership whenever the
+selected rule's concrete additions satisfy the two explicit origin checks. -/
+theorem NormalProofMachineOwnedState.step
+    {space target : List Atom}
+    (state : NormalProofMachineOwnedState space)
+    (closed : NormalProofMachineOwnedAdditionsClosed space)
+    (moved : cReflectiveSourceWorkQueueStep .leaveInert space = some target) :
+    NormalProofMachineOwnedState target := by
+  unfold cReflectiveSourceWorkQueueStep at moved
+  cases selected : selectNextScheduled (cSupportedSourceExecFacts space) with
+  | none => simp [selected] at moved
+  | some directive =>
+      simp only [selected] at moved
+      have targetEq : cFireReflectiveSourceExecFact space directive = target :=
+        Option.some.inj moved
+      subst target
+      rcases closed directive selected with ⟨rawClosed, internalClosed⟩
+      exact state.fire directive
+        (normalProofMachine_supportedWithin_of_rawWithin space state.1.2
+          directive (selectNextScheduled_mem selected))
+        rawClosed internalClosed
+
+/-- Source-relative closure for the strong assembled-machine invariant. -/
+def NormalProofMachineOwnedClosedFrom (fuel : Nat)
+    (source : List Atom) : Prop :=
+  ∀ residual,
+    CReflectiveReachable .leaveInert fuel source residual →
+    NormalProofMachineOwnedAdditionsClosed residual
+
+theorem NormalProofMachineOwnedState.of_reachable
+    {fuel : Nat} {source target : List Atom}
+    (initial : NormalProofMachineOwnedState source)
+    (closedFrom : NormalProofMachineOwnedClosedFrom fuel source)
+    (reachable : CReflectiveReachable .leaveInert fuel source target) :
+    NormalProofMachineOwnedState target := by
+  induction reachable with
+  | refl => exact initial
+  | step moved tail induction =>
+      have middleState := initial.step (closedFrom _ .refl) moved
+      apply induction middleState
+      intro residual residualReachable
+      exact closedFrom residual (.step moved residualReachable)
+
+/-- A source-relative proof of both executable origin and protected-row
+ownership constructs an authored-MM2 adequacy trace for the whole bounded run.
+This is the scalable theorem used by symbolic assembled-machine inductions. -/
+def normalProofMachineOwnedAdequateTrace_of_closedFrom
+    (fuel : Nat) (source : List Atom)
+    (initial : NormalProofMachineOwnedState source)
+    (closedFrom : NormalProofMachineOwnedClosedFrom fuel source) :
+    CReflectiveAdequateTrace .leaveInert fuel source
+      (cReflectiveSourceWorkQueueRunN .leaveInert fuel source).1 :=
+  cReflectiveSourceWorkQueueRunN_adequateTrace .leaveInert fuel source
+    (fun _ reachable =>
+      (initial.of_reachable closedFrom reachable).1.reflectiveInvariant)
+
+private def normalDispatchReloadRawFact : RawExecFact where
+  atom := normalDispatchReloadRule
+  loc := normalDispatchReloadLocation
+  inputExpr := normalDispatchReloadInput
+  templateExpr := normalDispatchReloadOutput
+
+private theorem normalDispatchReloadRawFact_authorized :
+    normalDispatchReloadRawFact ∈ normalProofMachineRawFacts := by
+  decide +kernel
+
+private theorem forgedNormalReloadSpace_minimal_state :
+    NormalProofMachineState forgedNormalReloadSpace := by
+  constructor
+  · decide +kernel
+  · intro raw member
+    have equal : raw = normalDispatchReloadRawFact := by
+      simpa [cRawExecFacts, forgedNormalReloadSpace,
+        normalDispatchReloadRawFact, normalDispatchReloadRule,
+        normalDispatchRuleRow, extractRawExecFact] using member
+    exact equal ▸ normalDispatchReloadRawFact_authorized
+
+/-- The hostile reload carrier passes the raw-executable whitelist but fails
+the verifier-owned-row invariant.  This separates the strong admission state
+from the deliberately minimal execution state. -/
+theorem forged_internal_reload_refutes_owned_state :
+    ¬ NormalProofMachineOwnedState forgedNormalReloadSpace := by
+  intro state
+  have intact := state.2 (normalDispatchRuleRow forgedNormalExec)
+    (by simp [forgedNormalReloadSpace])
+  have internalShape :
+      isVerifierOwnedInternalRowShape
+          (normalDispatchRuleRow forgedNormalExec) = true := by
+    rfl
+  have authorized := intact internalShape
+  have notAuthorized :
+      normalDispatchRuleRow forgedNormalExec ∉ normalVerifierInternalRows := by
+    decide +kernel
+  exact notAuthorized authorized
+
+/-- The negative example genuinely isolates the missing ownership half: its
+minimal structural state is valid even though its strong state is not. -/
+theorem forged_internal_reload_minimal_but_not_owned :
+    NormalProofMachineState forgedNormalReloadSpace ∧
+      ¬ NormalProofMachineOwnedState forgedNormalReloadSpace :=
+  ⟨forgedNormalReloadSpace_minimal_state,
+    forged_internal_reload_refutes_owned_state⟩
+
 def normalAssertionReloadRules : List Atom :=
   normalDispatchReloadableRules
 
@@ -11431,6 +11956,36 @@ def orderedSourceEventPreludeRules : List Atom :=
    sourceTheoremStartRule, sourceTheoremSuccessRule,
    sourceTheoremCommitRule]
 
+theorem normalProofMachineRules_no_internal_row_shape :
+    normalProofMachineRules.all (fun atom =>
+      !(isVerifierOwnedInternalRowShape atom)) = true := by
+  decide +kernel
+
+theorem orderedSourceEventPreludeRules_no_internal_row_shape :
+    orderedSourceEventPreludeRules.all (fun atom =>
+      !(isVerifierOwnedInternalRowShape atom)) = true := by
+  decide +kernel
+
+theorem verifierRulesForNormalSlice_no_internal_row_shape
+    (operation : SourceOperation) :
+    (verifierRulesForNormalSlice operation).all (fun atom =>
+      !(isVerifierOwnedInternalRowShape atom)) = true := by
+  cases operation <;>
+    simp [verifierRulesForNormalSlice,
+      normalProofMachineRules_no_internal_row_shape]
+
+theorem verifierRulesForNormalSpine_no_internal_row_shape
+    (operations : List SourceOperation) :
+    (operations.flatMap verifierRulesForNormalSlice).all (fun atom =>
+      !(isVerifierOwnedInternalRowShape atom)) = true := by
+  rw [List.all_eq_true]
+  intro atom member
+  rw [List.mem_flatMap] at member
+  obtain ⟨operation, _, atomMember⟩ := member
+  exact (List.all_eq_true.mp
+    (verifierRulesForNormalSlice_no_internal_row_shape operation))
+      atom atomMember
+
 /-- A database- and proof-independent verifier artifact generated from the
 supplied Metamath operation presentation for the supplied MM2 target.  The
 coverage split prevents the current normal slice from masquerading as the
@@ -11460,6 +12015,40 @@ def transformNormalVerifierSlice (source : MetamathVerifierGSLT)
   rules := orderedSourceEventPreludeRules ++
     source.operations.flatMap verifierRulesForNormalSlice
 
+theorem transformNormalVerifierSlice_rules_no_internal_row_shape
+    (source : MetamathVerifierGSLT) (target : MM2Target) :
+    (transformNormalVerifierSlice source target).rules.all (fun atom =>
+      !(isVerifierOwnedInternalRowShape atom)) = true := by
+  change (orderedSourceEventPreludeRules ++
+      source.operations.flatMap verifierRulesForNormalSlice).all (fun atom =>
+        !(isVerifierOwnedInternalRowShape atom)) = true
+  simpa only [List.all_append, Bool.and_eq_true] using
+    And.intro orderedSourceEventPreludeRules_no_internal_row_shape
+      (verifierRulesForNormalSpine_no_internal_row_shape source.operations)
+
+/-- The generated verifier artifact owns every protected inert row in its
+program.  Its executable rules cannot forge a second protected row because
+their top-level shape is disjoint. -/
+theorem transformNormalVerifierSlice_internal_rows_intact
+    (source : MetamathVerifierGSLT) (target : MM2Target) :
+    NormalVerifierInternalRowsIntact
+      (transformNormalVerifierSlice source target).program := by
+  unfold NormalVerifierInternalRowsIntact AtomsWithin
+  intro atom member
+  unfold NormalVerifierInternalRowIntact
+  intro internalShape
+  rw [GenericVerifierSliceArtifact.program, List.mem_append] at member
+  rcases member with internal | rule
+  · simpa [transformNormalVerifierSlice] using internal
+  · have safe :=
+      (List.all_eq_true.mp
+        (transformNormalVerifierSlice_rules_no_internal_row_shape source target))
+        atom rule
+    have absent : isVerifierOwnedInternalRowShape atom = false := by
+      simpa only [Bool.not_eq_true'] using safe
+    rw [absent] at internalShape
+    contradiction
+
 /-- The sole clean composition boundary for source-event input.  External
 callers supply the proof-carrying admission object, not an arbitrary list of
 MM2 atoms; the program contains exactly the generated verifier followed by
@@ -11468,6 +12057,26 @@ def composeAdmittedNormalProgram (source : MetamathVerifierGSLT)
     (target : MM2Target) {owner : Atom}
     (input : AdmittedSourceEventInput owner) : List Atom :=
   (transformNormalVerifierSlice source target).program ++ input.initialRows
+
+/-- The executable entry space contains protected code rows only from the
+generated verifier artifact.  Canonicalized source data cannot contribute a
+row whose payload is later reinstalled as executable code. -/
+theorem composeAdmittedNormalProgram_internal_rows_intact
+    (source : MetamathVerifierGSLT) (target : MM2Target) {owner : Atom}
+    (input : AdmittedSourceEventInput owner) :
+    NormalVerifierInternalRowsIntact
+      (composeAdmittedNormalProgram source target input) := by
+  unfold NormalVerifierInternalRowsIntact AtomsWithin
+  intro atom member
+  unfold NormalVerifierInternalRowIntact
+  intro internalShape
+  rw [composeAdmittedNormalProgram, List.mem_append] at member
+  rcases member with verifier | external
+  · exact transformNormalVerifierSlice_internal_rows_intact source target
+      atom verifier internalShape
+  · have absent := input.initialRows_no_verifier_internal atom external
+    rw [absent] at internalShape
+    contradiction
 
 @[simp] theorem composeAdmittedNormalProgram_exact
     (source : MetamathVerifierGSLT) (target : MM2Target) {owner : Atom}
@@ -11492,6 +12101,97 @@ theorem authored_transformNormalVerifierSlice_rules
         sourceTheoremStartRule :: sourceTheoremSuccessRule ::
         sourceTheoremCommitRule :: normalProofMachineRules := by
   rfl
+
+/-- Exact executable-rule inventory of the currently covered authored
+Metamath verifier slice.  It includes ordered source-event admission and the
+normal proof machine, but not the protected inert code carriers. -/
+def authoredNormalVerifierRules : List Atom :=
+  orderedSourceEventPreludeRules ++ normalProofMachineRules
+
+def authoredNormalVerifierDirectives : List SourceExecFact :=
+  authoredNormalVerifierRules.filterMap extractSupportedSourceExecFact
+
+def authoredNormalVerifierRawFacts : List RawExecFact :=
+  authoredNormalVerifierRules.filterMap extractRawExecFact
+
+theorem authoredNormalVerifierRules_eq_transform
+    (target : MM2Target) :
+    authoredNormalVerifierRules =
+      (transformNormalVerifierSlice authoredMetamathVerifierGSLT target).rules := by
+  rw [authored_transformNormalVerifierSlice_rules]
+  rfl
+
+theorem authoredNormalVerifierDirectives_atoms_exact :
+    authoredNormalVerifierDirectives.map SourceExecFact.atom =
+      authoredNormalVerifierRules := by
+  decide +kernel
+
+theorem authoredNormalVerifierRawFacts_atoms_exact :
+    authoredNormalVerifierRawFacts.map RawExecFact.atom =
+      authoredNormalVerifierRules := by
+  decide +kernel
+
+theorem authoredNormalVerifierRawFacts_decode_exact :
+    authoredNormalVerifierRawFacts.map decodeSupportedSourceExec =
+      authoredNormalVerifierDirectives.map some := by
+  decide +kernel
+
+theorem authoredNormalVerifierRawFact_decodes
+    {raw : RawExecFact} {directive : SourceExecFact}
+    (member : raw ∈ authoredNormalVerifierRawFacts)
+    (decoded : decodeSupportedSourceExec raw = some directive) :
+    directive ∈ authoredNormalVerifierDirectives := by
+  have decodedMember : some directive ∈
+      authoredNormalVerifierRawFacts.map decodeSupportedSourceExec :=
+    List.mem_map.mpr ⟨raw, member, decoded⟩
+  rw [authoredNormalVerifierRawFacts_decode_exact] at decodedMember
+  rcases List.mem_map.mp decodedMember with
+    ⟨actual, actualMember, equal⟩
+  exact (Option.some.inj equal) ▸ actualMember
+
+theorem authoredNormalVerifierDirectives_key_injective :
+    KeyInjective authoredNormalVerifierDirectives := by
+  intro left right leftMember rightMember keysEqual
+  exact List.inj_on_of_nodup_map
+    (l := authoredNormalVerifierDirectives)
+    (f := fun directive => SchedulerKey.key directive)
+    (by decide +kernel) leftMember rightMember keysEqual
+
+theorem authoredNormalVerifierRawFacts_key_injective :
+    KeyInjective authoredNormalVerifierRawFacts := by
+  intro left right leftMember rightMember keysEqual
+  exact List.inj_on_of_nodup_map
+    (l := authoredNormalVerifierRawFacts)
+    (f := fun raw => SchedulerKey.key raw)
+    (by decide +kernel) leftMember rightMember keysEqual
+
+theorem authoredNormalVerifierDirectives_all_support_set :
+    authoredNormalVerifierDirectives.all (fun directive =>
+      directive.rule.tmpl.sinks.all reflectiveSupportSetSinkB) = true := by
+  decide +kernel
+
+theorem authoredNormalVerifierDirective_support_set
+    {directive : SourceExecFact}
+    (member : directive ∈ authoredNormalVerifierDirectives) :
+    ReflectiveSupportSetTemplate directive.rule.tmpl := by
+  apply (all_reflectiveSupportSetSinkB_eq_true_iff directive.rule.tmpl).1
+  exact (List.all_eq_true.mp
+    authoredNormalVerifierDirectives_all_support_set) directive member
+
+/-- Any duplicate-free state whose executable shells come from the actual
+authored verifier transformation is adequate to the support-valued MM2
+semantics for its next scheduled step. -/
+theorem authoredNormalVerifier_reflective_invariant
+    (space : List Atom) (nodup : space.Nodup)
+    (rawWithin : RawExecFactsWithin authoredNormalVerifierRawFacts space) :
+    ReflectiveWorkQueueInvariant space :=
+  reflectiveWorkQueueInvariant_of_ruleInventory
+    authoredNormalVerifierRawFacts authoredNormalVerifierDirectives space
+    nodup rawWithin authoredNormalVerifierRawFact_decodes
+    authoredNormalVerifierDirectives_key_injective
+    authoredNormalVerifierRawFacts_key_injective
+    (fun _ member =>
+      authoredNormalVerifierDirective_support_set member)
 
 @[simp] theorem authored_transformNormalVerifierSlice_internalRows
     (target : MM2Target) :
@@ -11822,6 +12522,20 @@ theorem normal_step_rule_uses_reflective_capture :
 #print axioms NormalProofMachineState.step
 #print axioms NormalProofMachineState.of_reachable
 #print axioms normalProofMachineAdequateTrace_of_closedFrom
+#print axioms forged_internal_reload_refutes_minimal_global_closure
+#print axioms normalVerifierInternalRows_intact
+#print axioms normalDispatchReload_captured_rule_authorized
+#print axioms normalDispatchReload_captured_raw_authorized
+#print axioms NormalProofMachineOwnedState.fire
+#print axioms NormalProofMachineOwnedState.step
+#print axioms NormalProofMachineOwnedState.of_reachable
+#print axioms normalProofMachineOwnedAdequateTrace_of_closedFrom
+#print axioms forged_internal_reload_refutes_owned_state
+#print axioms forged_internal_reload_minimal_but_not_owned
+#print axioms normalProofMachineRules_no_internal_row_shape
+#print axioms verifierRulesForNormalSpine_no_internal_row_shape
+#print axioms transformNormalVerifierSlice_internal_rows_intact
+#print axioms composeAdmittedNormalProgram_internal_rows_intact
 #print axioms normalProofMachineRules_surface_safe
 #print axioms normalVerifierInternalRows_surface_safe
 #print axioms extract_normalBodyReloadRule_exact
@@ -11844,6 +12558,16 @@ theorem normal_step_rule_uses_reflective_capture :
 #print axioms MetamathVerifierGSLT.no_input_without_normal_operation
 #print axioms MetamathVerifierGSLT.native_type_iff_source_step
 #print axioms authored_transformNormalVerifierSlice_rules
+#print axioms authoredNormalVerifierRules_eq_transform
+#print axioms authoredNormalVerifierDirectives_atoms_exact
+#print axioms authoredNormalVerifierRawFacts_atoms_exact
+#print axioms authoredNormalVerifierRawFacts_decode_exact
+#print axioms authoredNormalVerifierRawFact_decodes
+#print axioms authoredNormalVerifierDirectives_key_injective
+#print axioms authoredNormalVerifierRawFacts_key_injective
+#print axioms authoredNormalVerifierDirectives_all_support_set
+#print axioms authoredNormalVerifierDirective_support_set
+#print axioms authoredNormalVerifier_reflective_invariant
 #print axioms composeAdmittedNormalProgram_exact
 #print axioms authored_transformNormalVerifierSlice_uncovered_nonempty
 #print axioms empty_state_has_no_hypothesis_lookup_rows

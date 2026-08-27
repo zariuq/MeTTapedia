@@ -1,16 +1,16 @@
-import Mettapedia.GSLT.LanguageDef.C0PureNTT
+import Mettapedia.GSLT.LanguageDef.ExternalCallMachine
 import Mettapedia.OSLF.MeTTaIL.RelationQueryAdmission
 
 /-!
-# Constructive transition admission for C0-pure
+# Constructive transition admission for the external-call machine
 
-These lemmas turn explicit relation-environment rows into authored C0
+These lemmas turn explicit relation-environment rows into authored external-call
 transitions.  They are parameterized by opaque programs, stores, labels, and
 values, so downstream compiler proofs do not unfold a generated program while
 proving generic matcher and premise plumbing.
 -/
 
-namespace Mettapedia.GSLT.LanguageDef.C0PureTransitionAdmission
+namespace Mettapedia.GSLT.LanguageDef.ExternalCallMachineTransitionAdmission
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
@@ -18,7 +18,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.OSLF.MeTTaIL.RelationQueryAdmission
-open Mettapedia.GSLT.LanguageDef.C0PureNTT
+open Mettapedia.GSLT.LanguageDef.ExternalCallMachine
 
 def consumedBindings
     (program pc store fuel receipt nextFuel : Pattern) : Bindings :=
@@ -117,22 +117,22 @@ theorem match_fetch_call_instruction
       matchRelationArgs
         (consumedBindings program pc store fuel receipt nextFuel)
         [v "program", v "pc",
-          a "c0:call-binary"
+          a "external-call:call-binary"
             [v "external", v "ifValue", v "ifLanguageFault",
              v "ifEngineFault", v "ifResourceFault"]]
         [program, pc,
-          a "c0:call-binary"
+          a "external-call:call-binary"
             [external, ifValue, ifLanguageFault, ifEngineFault,
              ifResourceFault]] := by
   let seed := consumedBindings program pc store fuel receipt nextFuel
   let extension := callInstructionBindings external ifValue
     ifLanguageFault ifEngineFault ifResourceFault
   let instructionSchema :=
-    a "c0:call-binary"
+    a "external-call:call-binary"
       [v "external", v "ifValue", v "ifLanguageFault",
        v "ifEngineFault", v "ifResourceFault"]
   let instruction :=
-    a "c0:call-binary"
+    a "external-call:call-binary"
       [external, ifValue, ifLanguageFault, ifEngineFault,
        ifResourceFault]
   have applied : applyBindings seed instructionSchema = instructionSchema := by
@@ -190,14 +190,14 @@ theorem match_call_external_value
         (callFetchedBindings program pc store fuel receipt nextFuel
           external ifValue ifLanguageFault ifEngineFault ifResourceFault)
         [v "program", v "external", v "store",
-          a "c0:external-value" [v "nextStore"]]
+          a "external-call:external-value" [v "nextStore"]]
         [program, external, store,
-          a "c0:external-value" [nextStore]] := by
+          a "external-call:external-value" [nextStore]] := by
   let seed := callFetchedBindings program pc store fuel receipt nextFuel
     external ifValue ifLanguageFault ifEngineFault ifResourceFault
   let extension : Bindings := [("nextStore", nextStore)]
-  let outcomeSchema := a "c0:external-value" [v "nextStore"]
-  let outcome := a "c0:external-value" [nextStore]
+  let outcomeSchema := a "external-call:external-value" [v "nextStore"]
+  let outcome := a "external-call:external-value" [nextStore]
   have applied : applyBindings seed outcomeSchema = outcomeSchema := by
     simp [seed, outcomeSchema, callFetchedBindings, consumedBindings,
       runMatchBindings, a, v, applyBindings]
@@ -275,13 +275,13 @@ theorem match_fetch_branch_instruction
       matchRelationArgs
         (consumedBindings program pc store fuel receipt nextFuel)
         [v "program", v "pc",
-          a "c0:branch-zero" [v "slot", v "ifZero", v "ifNonzero"]]
-        [program, pc, a "c0:branch-zero" [slot, ifZero, ifNonzero]] := by
+          a "external-call:branch-zero" [v "slot", v "ifZero", v "ifNonzero"]]
+        [program, pc, a "external-call:branch-zero" [slot, ifZero, ifNonzero]] := by
   let seed := consumedBindings program pc store fuel receipt nextFuel
   let extension := branchInstructionBindings slot ifZero ifNonzero
   let instructionSchema :=
-    a "c0:branch-zero" [v "slot", v "ifZero", v "ifNonzero"]
-  let instruction := a "c0:branch-zero" [slot, ifZero, ifNonzero]
+    a "external-call:branch-zero" [v "slot", v "ifZero", v "ifNonzero"]
+  let instruction := a "external-call:branch-zero" [slot, ifZero, ifNonzero]
   have applied : applyBindings seed instructionSchema = instructionSchema := by
     simp [seed, instructionSchema, consumedBindings, runMatchBindings,
       a, v, applyBindings]
@@ -388,33 +388,33 @@ theorem branchTransition_mem_rewriteAt
     (test : String)
     (program pc store fuel receipt nextFuel slot ifZero ifNonzero value
       target : Pattern)
-    (ruleMember : rule ∈ c0Pure.rewrites)
+    (ruleMember : rule ∈ externalCallLanguage.rewrites)
     (rulePremises : rule.premises = [
-      query "C0ConsumeFuel" [v "fuel", v "nextFuel"],
-      fetch (a "c0:branch-zero" [v "slot", v "ifZero", v "ifNonzero"]),
-      query "C0ReadSlot" [v "store", v "slot", v "value"],
+      query "ExternalCallConsumeFuel" [v "fuel", v "nextFuel"],
+      fetch (a "external-call:branch-zero" [v "slot", v "ifZero", v "ifNonzero"]),
+      query "ExternalCallReadSlot" [v "store", v "slot", v "value"],
       query test [v "value"]])
     (ruleLeft : rule.left =
       run (v "program") (v "pc") (v "store") (v "fuel") (v "receipt"))
     (ruleTarget :
-      applyBindingsForRule c0Pure rule
+      applyBindingsForRule externalCallLanguage rule
         (branchReadBindings program pc store fuel receipt nextFuel
           slot ifZero ifNonzero value) =
         run program target store nextFuel (stepReceipt pc receipt))
     (consumeRow :
-      [fuel, nextFuel] ∈ relationEnv.tuples "C0ConsumeFuel"
+      [fuel, nextFuel] ∈ relationEnv.tuples "ExternalCallConsumeFuel"
         ([v "fuel", v "nextFuel"].map
           (applyBindings
             (runMatchBindings program pc store fuel receipt))))
     (fetchRow :
-      [program, pc, a "c0:branch-zero" [slot, ifZero, ifNonzero]] ∈
-        relationEnv.tuples "C0FetchInstruction"
+      [program, pc, a "external-call:branch-zero" [slot, ifZero, ifNonzero]] ∈
+        relationEnv.tuples "ExternalCallFetchInstruction"
           ([v "program", v "pc",
-            a "c0:branch-zero" [v "slot", v "ifZero", v "ifNonzero"]].map
+            a "external-call:branch-zero" [v "slot", v "ifZero", v "ifNonzero"]].map
             (applyBindings
               (consumedBindings program pc store fuel receipt nextFuel))))
     (readRow :
-      [store, slot, value] ∈ relationEnv.tuples "C0ReadSlot"
+      [store, slot, value] ∈ relationEnv.tuples "ExternalCallReadSlot"
         ([v "store", v "slot", v "value"].map
           (applyBindings
             (branchFetchedBindings program pc store fuel receipt nextFuel
@@ -426,7 +426,7 @@ theorem branchTransition_mem_rewriteAt
             (branchReadBindings program pc store fuel receipt nextFuel
               slot ifZero ifNonzero value)))) :
     run program target store nextFuel (stepReceipt pc receipt) ∈
-      rewriteAt (engineBasePremises relationEnv) c0Pure 1
+      rewriteAt (engineBasePremises relationEnv) externalCallLanguage 1
         (run program pc store fuel receipt) := by
   let start := runMatchBindings program pc store fuel receipt
   let afterFuel := consumedBindings program pc store fuel receipt nextFuel
@@ -435,8 +435,8 @@ theorem branchTransition_mem_rewriteAt
   let final := branchReadBindings program pc store fuel receipt nextFuel
     slot ifZero ifNonzero value
   have consumePremise :
-      afterFuel ∈ premiseStepWithEnv relationEnv c0Pure start
-        (query "C0ConsumeFuel" [v "fuel", v "nextFuel"]) := by
+      afterFuel ∈ premiseStepWithEnv relationEnv externalCallLanguage start
+        (query "ExternalCallConsumeFuel" [v "fuel", v "nextFuel"]) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
       (tuple := [fuel, nextFuel])
       (extension := [("nextFuel", nextFuel)])
@@ -446,12 +446,12 @@ theorem branchTransition_mem_rewriteAt
     · simpa [start, afterFuel] using
         merge_consume_fuel program pc store fuel receipt nextFuel
   have fetchPremise :
-      afterFetch ∈ premiseStepWithEnv relationEnv c0Pure afterFuel
-        (fetch (a "c0:branch-zero"
+      afterFetch ∈ premiseStepWithEnv relationEnv externalCallLanguage afterFuel
+        (fetch (a "external-call:branch-zero"
           [v "slot", v "ifZero", v "ifNonzero"])) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
       (tuple := [program, pc,
-        a "c0:branch-zero" [slot, ifZero, ifNonzero]])
+        a "external-call:branch-zero" [slot, ifZero, ifNonzero]])
       (extension := branchInstructionBindings slot ifZero ifNonzero)
     · exact fetchRow
     · simpa [afterFuel] using
@@ -461,8 +461,8 @@ theorem branchTransition_mem_rewriteAt
         merge_fetch_branch_instruction program pc store fuel receipt nextFuel
           slot ifZero ifNonzero
   have readPremise :
-      final ∈ premiseStepWithEnv relationEnv c0Pure afterFetch
-        (query "C0ReadSlot" [v "store", v "slot", v "value"]) := by
+      final ∈ premiseStepWithEnv relationEnv externalCallLanguage afterFetch
+        (query "ExternalCallReadSlot" [v "store", v "slot", v "value"]) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
       (tuple := [store, slot, value])
       (extension := [("value", value)])
@@ -474,7 +474,7 @@ theorem branchTransition_mem_rewriteAt
         merge_read_branch_slot program pc store fuel receipt nextFuel
           slot ifZero ifNonzero value
   have testPremise :
-      final ∈ premiseStepWithEnv relationEnv c0Pure final
+      final ∈ premiseStepWithEnv relationEnv externalCallLanguage final
         (query test [v "value"]) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
       (tuple := [value]) (extension := [])
@@ -483,7 +483,7 @@ theorem branchTransition_mem_rewriteAt
       simp [final, branchReadBindings, Bindings.lookup]
     · simp [mergeBindings]
   have premiseEvidence :
-      PremisesAt (engineBasePremises relationEnv) c0Pure 0 start
+      PremisesAt (engineBasePremises relationEnv) externalCallLanguage 0 start
         rule.premises final := by
     rw [rulePremises]
     exact .cons (.relationQuery (by
@@ -517,12 +517,12 @@ theorem match_fetch_return_value
     [("slot", slot)] ∈
       matchRelationArgs
         (consumedBindings program pc store fuel receipt nextFuel)
-        [v "program", v "pc", a "c0:return-value" [v "slot"]]
-        [program, pc, a "c0:return-value" [slot]] := by
+        [v "program", v "pc", a "external-call:return-value" [v "slot"]]
+        [program, pc, a "external-call:return-value" [slot]] := by
   let seed := consumedBindings program pc store fuel receipt nextFuel
   let extension : Bindings := [("slot", slot)]
-  let instructionSchema := a "c0:return-value" [v "slot"]
-  let instruction := a "c0:return-value" [slot]
+  let instructionSchema := a "external-call:return-value" [v "slot"]
+  let instruction := a "external-call:return-value" [slot]
   have applied : applyBindings seed instructionSchema = instructionSchema := by
     simp [seed, instructionSchema, consumedBindings, runMatchBindings,
       a, v, applyBindings]
@@ -612,24 +612,24 @@ theorem returnValueTransition_mem_rewriteAt
     (relationEnv : RelationEnv)
     (program pc store fuel receipt nextFuel slot value : Pattern)
     (consumeRow :
-      [fuel, nextFuel] ∈ relationEnv.tuples "C0ConsumeFuel"
+      [fuel, nextFuel] ∈ relationEnv.tuples "ExternalCallConsumeFuel"
         ([v "fuel", v "nextFuel"].map
           (applyBindings
             (runMatchBindings program pc store fuel receipt))))
     (fetchRow :
-      [program, pc, a "c0:return-value" [slot]] ∈
-        relationEnv.tuples "C0FetchInstruction"
-          ([v "program", v "pc", a "c0:return-value" [v "slot"]].map
+      [program, pc, a "external-call:return-value" [slot]] ∈
+        relationEnv.tuples "ExternalCallFetchInstruction"
+          ([v "program", v "pc", a "external-call:return-value" [v "slot"]].map
             (applyBindings
               (consumedBindings program pc store fuel receipt nextFuel))))
     (readRow :
-      [store, slot, value] ∈ relationEnv.tuples "C0ReadSlot"
+      [store, slot, value] ∈ relationEnv.tuples "ExternalCallReadSlot"
         ([v "store", v "slot", v "value"].map
           (applyBindings
             (returnFetchedBindings program pc store fuel receipt nextFuel
               slot)))) :
-    halted (a "c0:outcome-value" [value]) (stepReceipt pc receipt) ∈
-      rewriteAt (engineBasePremises relationEnv) c0Pure 1
+    halted (a "external-call:outcome-value" [value]) (stepReceipt pc receipt) ∈
+      rewriteAt (engineBasePremises relationEnv) externalCallLanguage 1
         (run program pc store fuel receipt) := by
   let start := runMatchBindings program pc store fuel receipt
   let afterFuel := consumedBindings program pc store fuel receipt nextFuel
@@ -638,8 +638,8 @@ theorem returnValueTransition_mem_rewriteAt
   let final := returnReadBindings program pc store fuel receipt nextFuel
     slot value
   have consumePremise :
-      afterFuel ∈ premiseStepWithEnv relationEnv c0Pure start
-        (query "C0ConsumeFuel" [v "fuel", v "nextFuel"]) := by
+      afterFuel ∈ premiseStepWithEnv relationEnv externalCallLanguage start
+        (query "ExternalCallConsumeFuel" [v "fuel", v "nextFuel"]) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
       (tuple := [fuel, nextFuel])
       (extension := [("nextFuel", nextFuel)])
@@ -649,10 +649,10 @@ theorem returnValueTransition_mem_rewriteAt
     · simpa [start, afterFuel] using
         merge_consume_fuel program pc store fuel receipt nextFuel
   have fetchPremise :
-      afterFetch ∈ premiseStepWithEnv relationEnv c0Pure afterFuel
-        (fetch (a "c0:return-value" [v "slot"])) := by
+      afterFetch ∈ premiseStepWithEnv relationEnv externalCallLanguage afterFuel
+        (fetch (a "external-call:return-value" [v "slot"])) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
-      (tuple := [program, pc, a "c0:return-value" [slot]])
+      (tuple := [program, pc, a "external-call:return-value" [slot]])
       (extension := [("slot", slot)])
     · exact fetchRow
     · simpa [afterFuel] using
@@ -660,8 +660,8 @@ theorem returnValueTransition_mem_rewriteAt
     · simpa [afterFuel, afterFetch] using
         merge_fetch_return_value program pc store fuel receipt nextFuel slot
   have readPremise :
-      final ∈ premiseStepWithEnv relationEnv c0Pure afterFetch
-        (query "C0ReadSlot" [v "store", v "slot", v "value"]) := by
+      final ∈ premiseStepWithEnv relationEnv externalCallLanguage afterFetch
+        (query "ExternalCallReadSlot" [v "store", v "slot", v "value"]) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
       (tuple := [store, slot, value])
       (extension := [("value", value)])
@@ -671,7 +671,7 @@ theorem returnValueTransition_mem_rewriteAt
     · simpa [afterFetch, final] using
         merge_read_return_slot program pc store fuel receipt nextFuel slot value
   have premiseEvidence :
-      PremisesAt (engineBasePremises relationEnv) c0Pure 0 start
+      PremisesAt (engineBasePremises relationEnv) externalCallLanguage 0 start
         returnValueTransition.premises final := by
     simp only [returnValueTransition]
     exact .cons (.relationQuery (by
@@ -683,7 +683,7 @@ theorem returnValueTransition_mem_rewriteAt
           (.nil final)))
   apply mem_rewriteAt_iff_stepAt.mpr
   refine .rule ?_ ?_ premiseEvidence ?_
-  · simp [c0Pure, c0PureTransitions]
+  · simp [externalCallLanguage, externalCallLanguageTransitions]
   · rw [match_run_transition returnValueTransition rfl]
     simp [start]
   · simp [returnValueTransition, applyBindingsForRule_eq_syntactic,
@@ -694,10 +694,10 @@ theorem match_fetch_return_declined
     (program pc store fuel receipt nextFuel : Pattern) :
     [] ∈ matchRelationArgs
       (consumedBindings program pc store fuel receipt nextFuel)
-      [v "program", v "pc", a "c0:return-declined"]
-      [program, pc, a "c0:return-declined"] := by
+      [v "program", v "pc", a "external-call:return-declined"]
+      [program, pc, a "external-call:return-declined"] := by
   let seed := consumedBindings program pc store fuel receipt nextFuel
-  let instruction := a "c0:return-declined"
+  let instruction := a "external-call:return-declined"
   have instructionMatched :
       [] ∈ matchRelationArgument seed instruction instruction := by
     change [] ∈ matchPattern (applyBindings seed instruction) instruction
@@ -721,24 +721,24 @@ theorem returnDeclinedTransition_mem_rewriteAt
     (relationEnv : RelationEnv)
     (program pc store fuel receipt nextFuel : Pattern)
     (consumeRow :
-      [fuel, nextFuel] ∈ relationEnv.tuples "C0ConsumeFuel"
+      [fuel, nextFuel] ∈ relationEnv.tuples "ExternalCallConsumeFuel"
         ([v "fuel", v "nextFuel"].map
           (applyBindings
             (runMatchBindings program pc store fuel receipt))))
     (fetchRow :
-      [program, pc, a "c0:return-declined"] ∈
-        relationEnv.tuples "C0FetchInstruction"
-          ([v "program", v "pc", a "c0:return-declined"].map
+      [program, pc, a "external-call:return-declined"] ∈
+        relationEnv.tuples "ExternalCallFetchInstruction"
+          ([v "program", v "pc", a "external-call:return-declined"].map
             (applyBindings
               (consumedBindings program pc store fuel receipt nextFuel)))) :
-    halted (a "c0:outcome-declined") (stepReceipt pc receipt) ∈
-      rewriteAt (engineBasePremises relationEnv) c0Pure 1
+    halted (a "external-call:outcome-declined") (stepReceipt pc receipt) ∈
+      rewriteAt (engineBasePremises relationEnv) externalCallLanguage 1
         (run program pc store fuel receipt) := by
   let start := runMatchBindings program pc store fuel receipt
   let final := consumedBindings program pc store fuel receipt nextFuel
   have consumePremise :
-      final ∈ premiseStepWithEnv relationEnv c0Pure start
-        (query "C0ConsumeFuel" [v "fuel", v "nextFuel"]) := by
+      final ∈ premiseStepWithEnv relationEnv externalCallLanguage start
+        (query "ExternalCallConsumeFuel" [v "fuel", v "nextFuel"]) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
       (tuple := [fuel, nextFuel])
       (extension := [("nextFuel", nextFuel)])
@@ -748,17 +748,17 @@ theorem returnDeclinedTransition_mem_rewriteAt
     · simpa [start, final] using
         merge_consume_fuel program pc store fuel receipt nextFuel
   have fetchPremise :
-      final ∈ premiseStepWithEnv relationEnv c0Pure final
-        (fetch (a "c0:return-declined")) := by
+      final ∈ premiseStepWithEnv relationEnv externalCallLanguage final
+        (fetch (a "external-call:return-declined")) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
-      (tuple := [program, pc, a "c0:return-declined"])
+      (tuple := [program, pc, a "external-call:return-declined"])
       (extension := [])
     · exact fetchRow
     · simpa [final] using
         match_fetch_return_declined program pc store fuel receipt nextFuel
     · simp [mergeBindings]
   have premiseEvidence :
-      PremisesAt (engineBasePremises relationEnv) c0Pure 0 start
+      PremisesAt (engineBasePremises relationEnv) externalCallLanguage 0 start
         returnDeclinedTransition.premises final := by
     simp only [returnDeclinedTransition]
     exact .cons (.relationQuery (by
@@ -768,49 +768,49 @@ theorem returnDeclinedTransition_mem_rewriteAt
         (.nil final))
   apply mem_rewriteAt_iff_stepAt.mpr
   refine .rule ?_ ?_ premiseEvidence ?_
-  · simp [c0Pure, c0PureTransitions]
+  · simp [externalCallLanguage, externalCallLanguageTransitions]
   · rw [match_run_transition returnDeclinedTransition rfl]
     simp [start]
   · simp [returnDeclinedTransition, applyBindingsForRule_eq_syntactic,
       final, consumedBindings, runMatchBindings, applyBindings,
       halted, stepReceipt, run, a, v]
 
-/-- Exact result of the authored `c0:call-value` edge from three declared
+/-- Exact result of the authored `external-call:call-value` edge from three declared
 external rows: fuel consumption, instruction fetch, and external return. -/
 theorem callValueTransition_mem_rewriteAt
     (relationEnv : RelationEnv)
     (program pc store fuel receipt nextFuel external
       ifValue ifLanguageFault ifEngineFault ifResourceFault nextStore : Pattern)
     (consumeRow :
-      [fuel, nextFuel] ∈ relationEnv.tuples "C0ConsumeFuel"
+      [fuel, nextFuel] ∈ relationEnv.tuples "ExternalCallConsumeFuel"
         ([v "fuel", v "nextFuel"].map
           (applyBindings
             (runMatchBindings program pc store fuel receipt))))
     (fetchRow :
       [program, pc,
-        a "c0:call-binary"
+        a "external-call:call-binary"
           [external, ifValue, ifLanguageFault, ifEngineFault,
            ifResourceFault]] ∈
-        relationEnv.tuples "C0FetchInstruction"
+        relationEnv.tuples "ExternalCallFetchInstruction"
           ([v "program", v "pc",
-            a "c0:call-binary"
+            a "external-call:call-binary"
               [v "external", v "ifValue", v "ifLanguageFault",
                v "ifEngineFault", v "ifResourceFault"]].map
             (applyBindings
               (consumedBindings program pc store fuel receipt nextFuel))))
     (callRow :
-      [program, external, store, a "c0:external-value" [nextStore]] ∈
-        relationEnv.tuples "C0CallBinaryExternal"
+      [program, external, store, a "external-call:external-value" [nextStore]] ∈
+        relationEnv.tuples "ExternalCallCallBinaryExternal"
           ([v "program", v "external", v "store",
-            a "c0:external-value" [v "nextStore"]].map
+            a "external-call:external-value" [v "nextStore"]].map
             (applyBindings
               (callFetchedBindings program pc store fuel receipt nextFuel
                 external ifValue ifLanguageFault ifEngineFault
                 ifResourceFault)))) :
     run program ifValue nextStore nextFuel
-        (externalReceipt external (a "c0:external-value" [nextStore])
+        (externalReceipt external (a "external-call:external-value" [nextStore])
           pc receipt) ∈
-      rewriteAt (engineBasePremises relationEnv) c0Pure 1
+      rewriteAt (engineBasePremises relationEnv) externalCallLanguage 1
         (run program pc store fuel receipt) := by
   let start := runMatchBindings program pc store fuel receipt
   let afterFuel := consumedBindings program pc store fuel receipt nextFuel
@@ -820,8 +820,8 @@ theorem callValueTransition_mem_rewriteAt
     external ifValue ifLanguageFault ifEngineFault ifResourceFault nextStore
 
   have consumePremise :
-      afterFuel ∈ premiseStepWithEnv relationEnv c0Pure start
-        (query "C0ConsumeFuel" [v "fuel", v "nextFuel"]) := by
+      afterFuel ∈ premiseStepWithEnv relationEnv externalCallLanguage start
+        (query "ExternalCallConsumeFuel" [v "fuel", v "nextFuel"]) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
       (tuple := [fuel, nextFuel])
       (extension := [("nextFuel", nextFuel)])
@@ -832,13 +832,13 @@ theorem callValueTransition_mem_rewriteAt
         merge_consume_fuel program pc store fuel receipt nextFuel
 
   have fetchPremise :
-      afterFetch ∈ premiseStepWithEnv relationEnv c0Pure afterFuel
-        (fetch (a "c0:call-binary"
+      afterFetch ∈ premiseStepWithEnv relationEnv externalCallLanguage afterFuel
+        (fetch (a "external-call:call-binary"
           [v "external", v "ifValue", v "ifLanguageFault",
            v "ifEngineFault", v "ifResourceFault"])) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
       (tuple := [program, pc,
-        a "c0:call-binary"
+        a "external-call:call-binary"
           [external, ifValue, ifLanguageFault, ifEngineFault,
            ifResourceFault]])
       (extension := callInstructionBindings external ifValue
@@ -852,13 +852,13 @@ theorem callValueTransition_mem_rewriteAt
           external ifValue ifLanguageFault ifEngineFault ifResourceFault
 
   have callPremise :
-      final ∈ premiseStepWithEnv relationEnv c0Pure afterFetch
-        (query "C0CallBinaryExternal"
+      final ∈ premiseStepWithEnv relationEnv externalCallLanguage afterFetch
+        (query "ExternalCallCallBinaryExternal"
           [v "program", v "external", v "store",
-           a "c0:external-value" [v "nextStore"]]) := by
+           a "external-call:external-value" [v "nextStore"]]) := by
     apply premiseStepWithEnv_relationQuery_of_env_tuple
       (tuple := [program, external, store,
-        a "c0:external-value" [nextStore]])
+        a "external-call:external-value" [nextStore]])
       (extension := [("nextStore", nextStore)])
     · exact callRow
     · simpa [afterFetch] using
@@ -871,7 +871,7 @@ theorem callValueTransition_mem_rewriteAt
           nextStore
 
   have premiseEvidence :
-      PremisesAt (engineBasePremises relationEnv) c0Pure 0 start
+      PremisesAt (engineBasePremises relationEnv) externalCallLanguage 0 start
         callValueTransition.premises final := by
     simp only [callValueTransition, callRule]
     exact .cons (.relationQuery (by
@@ -884,7 +884,7 @@ theorem callValueTransition_mem_rewriteAt
 
   apply mem_rewriteAt_iff_stepAt.mpr
   refine .rule ?_ ?_ premiseEvidence ?_
-  · simp [c0Pure, c0PureTransitions]
+  · simp [externalCallLanguage, externalCallLanguageTransitions]
   · rw [match_run_transition callValueTransition rfl]
     simp [start]
   · simp [callValueTransition, callRule, applyBindingsForRule_eq_syntactic,
@@ -892,4 +892,4 @@ theorem callValueTransition_mem_rewriteAt
       runMatchBindings, applyBindings, externalReceipt,
       stepReceipt, run, a, v]
 
-end Mettapedia.GSLT.LanguageDef.C0PureTransitionAdmission
+end Mettapedia.GSLT.LanguageDef.ExternalCallMachineTransitionAdmission

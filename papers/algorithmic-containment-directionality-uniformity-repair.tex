@@ -1,0 +1,364 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+
+\geometry{margin=1in}
+\setlist{nosep}
+
+\newtheorem{definition}{Definition}[section]
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{remark}[definition]{Remark}
+
+\newcommand{\bits}[1]{\lvert #1\rvert}
+\newcommand{\pair}[2]{\langle #1,#2\rangle}
+\newcommand{\K}{K}
+\newcommand{\Eone}{E_1}
+\newcommand{\Etwo}{E_2}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\title{Algorithmic Containment:\\
+Directionality, Uniformity, and a Self-Delimiting Repair}
+\author{MeTTapedia Formalization Project}
+\date{August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Franz's proposal to understand implication through containment between
+generative descriptions gives a promising non-probabilistic world-model
+semantics for inference.  We report a source-level and machine-checked audit
+of the two principal results in the 2026 formulation.  The displayed proof of
+Theorem~1 reverses a directional mutual-information premise and later uses a
+feature-compression hypothesis absent from its theorem statement.  The
+directional step can be repaired with an explicit symmetry-of-information
+loss, while the compression premise should be stated.  The construction in
+Theorem~2 asks a program to recover a feature from
+$\pair{g^*}{\K(g^*)}$, but its encoded parameter transports the program and
+residual without transporting the exact value $\K(g^*)$.  We give a uniform
+self-delimiting repair carrying the triple $(\K(g^*),t,p)$ and prove its
+extraction, reconstruction, injectivity, and finite slack ledger in Lean.
+
+These findings invalidate the two displayed proof routes, not the research
+programme.  The corrected construction establishes exact image inclusion and
+additive-slack feature transfer.  Completing the fully universal prefix-
+complexity theorem still requires an effective conditional prefix machine,
+the strong conditional chain rule, and symmetry of information with uniform
+constants.  We state that boundary explicitly and invite correction of any
+source interpretation in this preliminary note.
+\end{abstract}
+
+\section{Scope, conventions, and attribution}
+
+The theory audited here is due to Arthur Franz, especially
+\emph{Grounded Reasoning: Implication as Algorithmic Containment}
+\cite{franz2026}, building on the incremental-compression theory of Franz,
+Antonenko, and Soletskyi \cite{franz2021} and the earlier programme
+\cite{franz2016}.  The prefix-complexity chain rule and symmetry results are
+standard algorithmic-information theory; our reference point is
+Li and Vit\'anyi \cite{livitanyi2019}.
+
+The following distinctions are essential.
+
+\begin{itemize}
+  \item $\K(a\mid b)$ is prefix Kolmogorov complexity relative to one fixed
+        universal prefix machine.
+  \item The 2026 paper defines directional information by
+        $I(a:b)=\K(a)-\K(a\mid b)$.  It is not definitionally symmetric.
+  \item An $O(1)$ or $O(\log n)$ statement is meaningful here only as a
+        uniform family statement: its hidden constant cannot depend on the
+        particular strings being bounded.
+  \item Exact featurehood, requiring
+        $\bits f+\bits p<\bits x$, is different from featurehood with an
+        additive logarithmic slack.  Our formalization gives them different
+        types.
+\end{itemize}
+
+This note distinguishes three judgments: a displayed proof may be invalid; a
+theorem statement may require an omitted premise; and an existential theorem
+may remain true by a repaired construction.  We do not infer the last judgment
+from either of the first two.
+
+\section{Theorem 1: the directional step}
+
+Theorem~1 of \cite{franz2026} assumes, in the paper's notation,
+\begin{align}
+  f(p)&=x,\\
+  \K(g\mid x)&=O(\log\bits x),\\
+  I(p:f,g)&=O(1),
+\end{align}
+and concludes $\K(g\mid f)=O(\log\bits x)$.
+
+With the paper's directional definition, its third premise expands as
+\[
+  \K(p)-\K(p\mid f,g)=O(1).
+\]
+Equation~(16) of the proof instead uses
+\[
+  \K(f,g\mid p)=\K(f,g)+O(1).
+\]
+That is the reverse orientation.  It does not follow by unfolding the stated
+definition.  A finite conditional prefix-machine example in the formal audit
+realizes the two directional values as exactly zero and one bit, so the swap is
+not a definitional equality.
+
+The appropriate repair is not to declare mutual information exactly
+symmetric.  Rather, one introduces the explicit symmetry ledger
+\begin{equation}
+  \K(f,g)+\K(p\mid f,g)
+  \leq
+  \K(p)+\K(f,g\mid p)+s_{\mathrm{sym}},
+  \label{eq:symledger}
+\end{equation}
+where $s_{\mathrm{sym}}$ is logarithmic under the usual size controls.
+Combining the source-oriented genericity inequality
+\[
+  \K(p)\leq\K(p\mid f,g)+s_{\mathrm{gen}}
+\]
+with \eqref{eq:symledger} gives the orientation actually used later:
+\[
+  \K(f,g)\leq\K(f,g\mid p)+s_{\mathrm{gen}}+s_{\mathrm{sym}}.
+\]
+This cancellation is a theorem over natural numbers; no signed subtraction is
+needed in the proof ledger.
+
+\subsection{The omitted compression premise}
+
+The displayed assumptions of Theorem~1 do not include
+\begin{equation}
+  \bits f+\bits p<\bits x.
+  \label{eq:featurecompression}
+\end{equation}
+The proof nevertheless invokes \eqref{eq:featurecompression} after its
+equation~(19) to infer $\bits f<\bits x$ and hence to bound the cost of
+transporting $\K(f)$.  The premise belongs in the theorem statement.  It is
+available in Corollary~1 because that corollary assumes that $f$ is a feature
+of $x$, but it is absent from the more general theorem as displayed.
+
+\subsection{Uniform corrected form}
+
+The machine-checked repair proves the following finite statement.  Assume:
+
+\begin{enumerate}
+  \item explicit programs for $f(p)=x$ and for recovering $g$ from $x$;
+  \item representability of every complexity term used in a shortest-program
+        argument;
+  \item fixed, condition-uniform simulations of application, projection,
+        literal, indexing, and pairing machines;
+  \item a strong conditional chain rule with one uniform additive constant;
+  \item the direct genericity inequality, or the source inequality together
+        with an explicit symmetry ledger; and
+  \item the compression premise \eqref{eq:featurecompression}.
+\end{enumerate}
+
+Then
+\[
+  \K(g\mid f)
+  \leq \K(g\mid x)+2\log_2(\bits x+1)+C,
+\]
+where $C$ is displayed as a sum of the fixed compiler, chain-rule,
+genericity, and symmetry slacks.  The formal proof uses only natural-number
+inequalities.  The strong chain rule and symmetry theorem are currently
+interfaces rather than constructed instances; consequently this is a proved
+reduction of Theorem~1 to standard effective AIT infrastructure, not yet a
+closed construction of that infrastructure.
+
+A subtle uniformity point matters here.  A machine that hard-wires particular
+conditions can establish an inequality for those particular strings, but its
+compiler length may grow with those strings.  Such a machine cannot witness a
+family-uniform $O(1)$.  The corrected formal proof therefore uses fixed
+projection machines whose code is independent of $f,p,g,$ and $x$.
+
+\section{Theorem 2: the missing complexity index}
+
+Theorem~2 chooses a shortest program $t$ witnessing
+\[
+  \bits t=\K(f\mid g^*,\K(g^*)).
+\]
+Thus $t$ expects both $g^*$ and the exact integer $\K(g^*)$ as auxiliary
+input.  The construction then sets
+\[
+  q=\Etwo(t)p
+\]
+and says that a fixed interpreter reconstructs $f$ from $(g^*,t)$.  The
+encoded parameter contains $t$ and $p$, but not $\K(g^*)$.  In general the
+missing integer is not computable from $g^*$; supplying it by a program whose
+length is uniform in $g^*$ is precisely what cannot be assumed.
+
+This is a gap in the displayed construction.  It does not by itself disprove
+the existential conclusion of Theorem~2.
+
+\subsection{A self-delimiting repair}
+
+Let $k=\K(g^*)$, and encode
+\[
+  q'=\Etwo\bigl(\Etwo(\operatorname{bin}(k))t\bigr)p.
+\]
+Equivalently, $q'$ is a nested self-delimiting encoding of the triple
+$(k,t,p)$.  A single fixed wrapper now:
+
+\begin{enumerate}
+  \item decodes $k,t,p$ from $q'$;
+  \item runs $t$ with condition $\pair{g^*}{\operatorname{bin}(k)}$ to obtain
+        $f$; and
+  \item runs $f$ on $p$.
+\end{enumerate}
+
+No complexity oracle is used.  The wrapper is uniform in all four strings.
+The corresponding descriptive program first uses the old descriptive program
+to recover $p$ from the source and then emits the same triple $(k,t,p)$.
+Hence extraction and reconstruction are both executable, rather than merely
+an image-membership assertion.
+
+The exact residual length is
+\begin{align}
+  \bits{q'}={}&
+  \bits{\Etwo(\operatorname{bin}(k))t}
+  +2\bits{\operatorname{bin}
+      (\bits{\Etwo(\operatorname{bin}(k))t})}+1
+  +\bits p.
+  \label{eq:qprimelength}
+\end{align}
+The formalization proves this identity and the logarithmic upper bound.  It
+also proves the necessary negative control: the map that transports only
+$(t,p)$ is not injective as an encoding of triples $(k,t,p)$, since it erases
+the first coordinate.
+
+\subsection{What is proved, and what remains}
+
+Let $G(g^*)$ be the tagged wrapper generator and let
+$H(k,t)=\Etwo(\operatorname{bin}(k))t$.  Suppose the finite
+description-transfer inequality
+\begin{equation}
+  \bits{G(g^*)}+\bits{H(k,t)}
+  \leq \bits f+s_{\mathrm{transfer}}
+  \label{eq:transfer}
+\end{equation}
+holds.  The executable Lean theorem proves that every strict $f$-feature
+witness $f(p)=y$ becomes a $G(g^*)$-feature witness with slack
+\[
+  s_{\mathrm{transfer}}
+  +2\bits{\operatorname{bin}(\bits{H(k,t)})}+1.
+\]
+The same fixed generator works for every such $p$.  Therefore the repaired
+construction proves exact image inclusion and a universal additive-slack
+feature implication.  A concrete finite positive instance is included.
+
+Two boundaries should not be blurred.
+
+\begin{itemize}
+  \item The result is additive-slack featurehood, not the strict featurehood
+        defined by $\bits g+\bits q<\bits y$.  The earlier theory already
+        notes a logarithmic slack, and the formal types preserve that
+        distinction.
+  \item Deriving \eqref{eq:transfer} from the source's prefix-complexity
+        premises still depends on the strong chain rule and the shortest-
+        feature bounds.  The 2021 incompressibility theorem supplies the
+        one-sided estimate $\bits{g^*}\leq\K(g^*)+O(1)$ needed in that ledger.
+        The equality written as equation~(29) in the 2026 proof is stronger
+        than the cited theorem, but the stronger direction is unnecessary.
+\end{itemize}
+
+\section{Machine-checked artifact map}
+
+The audit is organized by concept rather than by author or paper:
+
+\begin{center}
+\begin{tabular}{L{0.38\linewidth}L{0.53\linewidth}}
+\toprule
+Module & Role \\
+\midrule
+\path{KolmogorovComplexity.SelfDelimitingCode} &
+$\Eone/\Etwo$ round trips, prefix-free ranges, exact and logarithmic lengths,
+and a negative comparison with unary headers. \\
+\path{KolmogorovComplexity.DirectionalInformation} &
+Finite machine separating the two directional information values. \\
+\path{KolmogorovComplexity.ContainmentRepair} &
+Fixed machine transformations, explicit Nat ledgers, and corrected direct-
+and source-orientation forms of Theorem~1. \\
+\path{WorldModel.ContainmentEncoding} &
+Indexed triple residual, decoder round trip, injectivity, length bound, and
+the index-erasure counterexample. \\
+\path{WorldModel.FeatureContainmentConstruction} &
+Executable wrapper, cross-algorithm implication, exact slack transfer, and a
+nonvacuous finite positive instance. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All listed crown theorems are free of admitted proofs and new axioms.  Their
+reported dependencies are the ordinary logical foundations already used by
+Lean and Mathlib.  The interfaces for the effective strong chain rule,
+universal prefix simulation, and full symmetry theorem remain visibly
+undischarged; no theorem in the artifact pretends otherwise.
+
+\section{Assessment}
+
+The source issues are substantive but localized.
+
+\begin{center}
+\begin{tabular}{L{0.29\linewidth}L{0.62\linewidth}}
+\toprule
+Claim & Audit status \\
+\midrule
+Theorem~1 proof as printed &
+Invalid at equation~(16); it also uses an unstated compression premise. \\
+Corrected Theorem~1 &
+Reduced in Lean to fixed machine simulations, the strong conditional chain
+rule, and an explicit symmetry bound. \\
+Theorem~2 construction as printed &
+Incomplete because the condition $\K(g^*)$ needed by $t$ is not transported. \\
+Repaired image inclusion &
+Proved operationally using the indexed residual $(\K(g^*),t,p)$. \\
+Repaired compression transfer &
+Proved with an exact finite slack from an explicit description-transfer
+inequality; the remaining AIT derivation of that inequality is open. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The strongest surviving idea is also the most useful for world-model
+semantics: a generative premise and residual jointly produce a world, and a
+consequence is model-level only when it is stable under admissible residual
+variation rather than smuggled in by one residual.  The repaired formalization
+makes that idea proof-relevant.  It therefore supports continued development
+of algorithmic containment while separating recoverability, uniformity,
+strict compression, logarithmic slack, and efficient discoverability.
+
+\begin{thebibliography}{9}
+
+\bibitem{franz2026}
+A. Franz,
+``Grounded Reasoning: Implication as Algorithmic Containment,''
+in \emph{Artificial General Intelligence (AGI 2026)}, LNAI 16854,
+pp. 238--252, 2026.
+\href{https://doi.org/10.1007/978-3-032-33010-9_15}
+{doi:10.1007/978-3-032-33010-9\_15}.
+
+\bibitem{franz2021}
+A. Franz, O. Antonenko, and R. Soletskyi,
+``A Theory of Incremental Compression,''
+\emph{Information Sciences}, vol. 547, pp. 28--48, 2021.
+\href{https://doi.org/10.1016/j.ins.2020.08.035}
+{doi:10.1016/j.ins.2020.08.035}.
+
+\bibitem{franz2016}
+A. Franz,
+``Some Theorems on Incremental Compression,''
+in \emph{Artificial General Intelligence (AGI 2016)}, pp. 74--83, 2016.
+
+\bibitem{livitanyi2019}
+M. Li and P. Vit\'anyi,
+\emph{An Introduction to Kolmogorov Complexity and Its Applications},
+4th ed., Springer, 2019.
+
+\end{thebibliography}
+
+\end{document}

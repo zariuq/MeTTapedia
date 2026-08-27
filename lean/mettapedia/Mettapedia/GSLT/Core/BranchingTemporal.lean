@@ -127,6 +127,33 @@ def run {Node Answer : Type*} (system : BranchingSystem Node Answer)
   | 0, snapshot => snapshot
   | fuel + 1, snapshot => tick system scheduler (run system scheduler fuel snapshot)
 
+/-- Resuming for one step and then for `fuel` steps is the same deterministic
+execution as requesting `fuel + 1` steps at once. -/
+theorem run_succ_from_tick {Node Answer : Type*}
+    (system : BranchingSystem Node Answer) (scheduler : Scheduler Node)
+    (fuel : Nat) (snapshot : Snapshot Node Answer) :
+    run system scheduler (fuel + 1) snapshot =
+      run system scheduler fuel (tick system scheduler snapshot) := by
+  induction fuel with
+  | zero => rfl
+  | succ fuel inductionHypothesis =>
+      simp only [run]
+      exact congrArg (tick system scheduler) inductionHypothesis
+
+/-- Observation fuel composes exactly, so a liveness argument may resume from
+any finite prefix without changing the execution. -/
+theorem run_add {Node Answer : Type*}
+    (system : BranchingSystem Node Answer) (scheduler : Scheduler Node)
+    (left right : Nat) (snapshot : Snapshot Node Answer) :
+    run system scheduler (left + right) snapshot =
+      run system scheduler right (run system scheduler left snapshot) := by
+  induction right with
+  | zero => rw [Nat.add_zero]; rfl
+  | succ right inductionHypothesis =>
+      rw [Nat.add_succ]
+      simp only [run]
+      rw [inductionHypothesis]
+
 theorem events_prefix_tick {Node Answer : Type*}
     (system : BranchingSystem Node Answer) (scheduler : Scheduler Node)
     (snapshot : Snapshot Node Answer) :
@@ -438,6 +465,63 @@ def FairFrom {Node Answer : Type*} (system : BranchingSystem Node Answer)
     ∃ fuel,
       selected scheduler (run system scheduler fuel (initial roots)).frontier =
         some node
+
+/-- FIFO scheduling selects every occurrence already present in a finite live
+frontier.  Successors generated while waiting are appended behind the target,
+so its finite predecessor count strictly decreases at each step. -/
+theorem breadthFirst_selects_member {Node Answer : Type*}
+    [DecidableEq Node] (system : BranchingSystem Node Answer)
+    (snapshot : Snapshot Node Answer) {node : Node}
+    (member : node ∈ snapshot.frontier) :
+    ∃ fuel, selected Scheduler.breadthFirst
+      (run system Scheduler.breadthFirst fuel snapshot).frontier = some node := by
+  induction debtEq : snapshot.frontier.idxOf node using
+      Nat.strong_induction_on generalizing snapshot with
+  | h debtEq inductionHypothesis =>
+      cases frontierEq : snapshot.frontier with
+      | nil => simp [frontierEq] at member
+      | cons head tail =>
+          by_cases headTarget : head = node
+          · refine ⟨0, ?_⟩
+            simp [run, selected, Scheduler.breadthFirst, frontierEq, headTarget]
+          · have memberTail : node ∈ tail := by
+              simpa [frontierEq, Ne.symm headTarget] using member
+            let next := tick system Scheduler.breadthFirst snapshot
+            have nextFrontier :
+                next.frontier = tail ++ system.successors head := by
+              simp [next, tick, Scheduler.breadthFirst, frontierEq]
+            have currentDebt :
+                snapshot.frontier.idxOf node = tail.idxOf node + 1 := by
+              rw [frontierEq, List.idxOf_cons_ne tail headTarget]
+            have nextDebt : next.frontier.idxOf node = tail.idxOf node := by
+              rw [nextFrontier, List.idxOf_append_of_mem memberTail]
+            have nextMember : node ∈ next.frontier := by
+              rw [nextFrontier]
+              simp [memberTail]
+            have decreases :
+                next.frontier.idxOf node < snapshot.frontier.idxOf node := by
+              rw [nextDebt, currentDebt]
+              omega
+            obtain ⟨fuel, selectedTarget⟩ := inductionHypothesis _
+              (by simpa only [debtEq] using decreases) next nextMember rfl
+            refine ⟨fuel + 1, ?_⟩
+            rw [run_succ_from_tick]
+            exact selectedTarget
+
+/-- Breadth-first scheduling is fair for every finitely branching system.
+The finite `List` successor interface is the branching premise; the generated
+process itself may still be infinite. -/
+theorem breadthFirst_fair {Node Answer : Type*} [DecidableEq Node]
+    (system : BranchingSystem Node Answer) (roots : List Node) :
+    FairFrom system Scheduler.breadthFirst roots := by
+  intro node live
+  obtain ⟨prefixFuel, member⟩ := live
+  obtain ⟨extraFuel, selectedTarget⟩ :=
+    breadthFirst_selects_member system
+      (run system Scheduler.breadthFirst prefixFuel (initial roots)) member
+  refine ⟨prefixFuel + extraFuel, ?_⟩
+  rw [run_add]
+  exact selectedTarget
 
 /-- Fairness reaches every finitely generated node, not just roots that were
 present initially. -/

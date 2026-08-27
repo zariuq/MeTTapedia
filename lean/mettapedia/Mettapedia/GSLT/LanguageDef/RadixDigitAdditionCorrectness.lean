@@ -1,18 +1,18 @@
-import Mettapedia.GSLT.LanguageDef.WaltersZantemaDAToC1
+import Mettapedia.GSLT.LanguageDef.WaltersZantemaDAToRadixDigitMachine
 import Mettapedia.GSLT.LanguageDef.WaltersZantemaDAAddition
 
 /-!
-# Universal loop facts for the C1 digit-addition program
+# Universal loop facts for the radix-digit addition program
 
-These lemmas expose the loop invariant of the target C1 program.  They are
+These lemmas expose the loop invariant of the target radix-digit program. They are
 stated over an arbitrary finite lookup table; source-language correctness is
 connected separately through the table extracted from the DA rules.
 -/
 
-namespace Mettapedia.GSLT.LanguageDef.C1AdditionCorrectness
+namespace Mettapedia.GSLT.LanguageDef.RadixDigitAdditionCorrectness
 
-open Mettapedia.GSLT.LanguageDef.C1DigitMachine
-open Mettapedia.GSLT.LanguageDef.WaltersZantemaDAToC1
+open Mettapedia.GSLT.LanguageDef.RadixDigitMachine
+open Mettapedia.GSLT.LanguageDef.WaltersZantemaDAToRadixDigitMachine
 
 def additionSchema (outputLimit : Nat) : Schema := {
   radix := 2
@@ -298,7 +298,7 @@ def terminalEvents : Receipt := [
   .execute 16 "return"]
 
 /-- A complete finite addition trace through a supplied target table.  Its
-indices record the exact C1 instruction budget and receipt suffix. -/
+indices record the exact RadixDigit instruction budget and receipt suffix. -/
 inductive AdditionTrace (table : FiniteTable) :
     List Nat → List Nat → Nat → List Nat → Receipt → Nat → Prop where
   | done : AdditionTrace table [] [] 0 [] terminalEvents 8
@@ -552,7 +552,7 @@ theorem exists_addition_trace {table : FiniteTable}
           exact ⟨digit :: digits, bothEvents rowIndex origins ++ events,
             8 + steps, .both lookup firstValid secondValid digitValid rest⟩
 
-/-- Every finite table trace is executed by the actual C1 addition loop with
+/-- Every finite table trace is executed by the actual RadixDigit addition loop with
 the exact instruction count, value, and receipt suffix carried by the trace. -/
 theorem loop_executes_trace
     {table : FiniteTable} {leftRemaining rightRemaining digits : List Nat}
@@ -836,4 +836,4 @@ theorem radixTwo_compiled_addition_no_invention
 #print axioms radixTwo_compiled_addition_preserves
 #print axioms radixTwo_compiled_addition_no_invention
 
-end Mettapedia.GSLT.LanguageDef.C1AdditionCorrectness
+end Mettapedia.GSLT.LanguageDef.RadixDigitAdditionCorrectness

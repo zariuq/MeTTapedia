@@ -40,6 +40,8 @@ import Mettapedia.Languages.Metamath.MM2SourceEventTransformation
 import Mettapedia.Languages.Metamath.MM2Target
 import Mettapedia.Languages.Metamath.MM2OrderedEventVerifier
 import Mettapedia.Languages.Metamath.MM2Transformation
+import Mettapedia.Languages.Metamath.MM2SourceActionPlan
+import Mettapedia.Languages.Metamath.MM2SourceActionExecution
 import Mettapedia.Languages.Metamath.MM2NormalStackCorrespondence
 import Mettapedia.Languages.Metamath.MM2NormalProofCorrespondence
 import Mettapedia.Languages.Metamath.MM2TransformationCanary

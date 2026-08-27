@@ -4,8 +4,9 @@ import Mettapedia.OSLF.MeTTaIL.Syntax
 # Canonical five-field LanguageDef wire projection
 
 This renderer is deliberately partial.  It accepts the first-order constructor,
-free-variable, application, and relation-query profile used by the DA and C1
-presentations, and rejects unsupported syntax rather than erasing it.
+free-variable, application, and relation-query profile used by the
+Walters--Zantema and radix-digit-machine presentations, and rejects
+unsupported syntax rather than erasing it.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.CanonicalWire

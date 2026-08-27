@@ -607,6 +607,54 @@ theorem mem_cApplyReflectiveTemplate_of_supportSet
         exact ⟨laterSink, by simp [laterMember], authored,
           equal, witness⟩
 
+/-- Every atom in a concrete carrier satisfies a structural predicate.  This
+is used for verifier-owned inert rows whose safety cannot be expressed by the
+top-level executable whitelist alone. -/
+def AtomsWithin (property : Atom → Prop) (space : List Atom) : Prop :=
+  ∀ atom ∈ space, property atom
+
+/-- Every atom introduced by an authored add sink satisfies a structural
+predicate. -/
+def ReflectiveAddedAtomsWithin (property : Atom → Prop)
+    (rows : List Subst) (template : Template) : Prop :=
+  ∀ atom, ReflectiveAddedAtom rows template.sinks atom → property atom
+
+/-- Add/remove execution preserves any atom-local invariant when the input
+and all actual additions satisfy it. -/
+theorem cApplyReflectiveTemplate_atomsWithin
+    (property : Atom → Prop) (space : List Atom) (rows : List Subst)
+    (template : Template)
+    (supported : ReflectiveSupportSetTemplate template)
+    (sourceWithin : AtomsWithin property space)
+    (addedWithin : ReflectiveAddedAtomsWithin property rows template) :
+    AtomsWithin property
+      (cApplyReflectiveTemplate space rows template) := by
+  intro atom member
+  rcases mem_cApplyReflectiveTemplate_of_supportSet space rows template
+      supported member with prior | added
+  · exact sourceWithin atom prior
+  · exact addedWithin atom added
+
+/-- One reflective firing preserves any atom-local invariant under the same
+authorization condition for its actual additions. -/
+theorem cFireReflectiveSourceExecFact_atomsWithin
+    (property : Atom → Prop) (space : List Atom)
+    (directive : SourceExecFact)
+    (supported : ReflectiveSupportSetTemplate directive.rule.tmpl)
+    (sourceWithin : AtomsWithin property space)
+    (addedWithin : ReflectiveAddedAtomsWithin property
+      ((Conformance.Computable.cmatchInputSpec []
+        (directive.atom :: space.erase directive.atom)
+        directive.rule.input).map Prod.fst)
+      directive.rule.tmpl) :
+    AtomsWithin property
+      (cFireReflectiveSourceExecFact space directive) := by
+  apply cApplyReflectiveTemplate_atomsWithin
+  · exact supported
+  · intro atom member
+    exact sourceWithin atom (List.mem_of_mem_erase member)
+  · exact addedWithin
+
 /-- Every executable shell currently present belongs to the declared target
 artifact. -/
 def RawExecFactsWithin (allowed : List RawExecFact)
@@ -891,6 +939,68 @@ theorem reflectiveWorkQueueInvariant_of_supportSet
     reflectiveSourceFiringAgreement_of_supportAlignment space directive nodup
       (rawTemplates raw directive selected decoded)
       (reflectiveSourceRowSupportAlignment_of_nodup space directive nodup)
+
+/-- If every raw executable shell in a space belongs to an emitted artifact
+and decoding the artifact is closed in its supported-directive inventory,
+then every supported directive visible in the space belongs to that inventory.
+This is the generic rule-origin bridge used by presentation compilers. -/
+theorem supportedSourceExecFactsWithin_of_rawExecFactsWithin
+    (allowedRaw : List RawExecFact)
+    (allowedDirectives : List SourceExecFact)
+    (space : List Atom)
+    (rawWithin : RawExecFactsWithin allowedRaw space)
+    (decodeClosed : ∀ {raw directive},
+      raw ∈ allowedRaw → decodeSupportedSourceExec raw = some directive →
+        directive ∈ allowedDirectives) :
+    ∀ directive ∈ cSupportedSourceExecFacts space,
+      directive ∈ allowedDirectives := by
+  intro directive member
+  rcases List.mem_filterMap.mp member with
+    ⟨atom, atomMember, extracted⟩
+  unfold extractSupportedSourceExecFact at extracted
+  cases rawEq : extractRawExecFact atom with
+  | none => simp [rawEq] at extracted
+  | some raw =>
+      simp [rawEq] at extracted
+      have rawMember : raw ∈ cRawExecFacts space :=
+        List.mem_filterMap.mpr ⟨atom, atomMember, rawEq⟩
+      exact decodeClosed (rawWithin raw rawMember) extracted
+
+/-- A finite emitted-rule inventory licenses the concrete-to-authored MM2
+invariant for every duplicate-free state whose executable shells come from
+that inventory.  The theorem is presentation-independent: callers must
+supply the actual emitted inventories and their decoding, key, and sink laws. -/
+theorem reflectiveWorkQueueInvariant_of_ruleInventory
+    (allowedRaw : List RawExecFact)
+    (allowedDirectives : List SourceExecFact)
+    (space : List Atom)
+    (nodup : space.Nodup)
+    (rawWithin : RawExecFactsWithin allowedRaw space)
+    (decodeClosed : ∀ {raw directive},
+      raw ∈ allowedRaw → decodeSupportedSourceExec raw = some directive →
+        directive ∈ allowedDirectives)
+    (directiveKeys : KeyInjective allowedDirectives)
+    (rawKeys : KeyInjective allowedRaw)
+    (supportSet : ∀ directive ∈ allowedDirectives,
+      ReflectiveSupportSetTemplate directive.rule.tmpl) :
+    ReflectiveWorkQueueInvariant space := by
+  have supportedWithin :=
+    supportedSourceExecFactsWithin_of_rawExecFactsWithin allowedRaw
+      allowedDirectives space rawWithin decodeClosed
+  apply reflectiveWorkQueueInvariant_of_supportSet space nodup
+  · intro left right leftMember rightMember keysEqual
+    exact directiveKeys left right
+      (supportedWithin left leftMember) (supportedWithin right rightMember)
+      keysEqual
+  · intro left right leftMember rightMember keysEqual
+    exact rawKeys left right (rawWithin left leftMember)
+      (rawWithin right rightMember) keysEqual
+  · intro directive selected
+    exact supportSet directive
+      (supportedWithin directive (selectNextScheduled_mem selected))
+  · intro raw directive selected decoded
+    exact supportSet directive
+      (decodeClosed (rawWithin raw (selectNextScheduled_mem selected)) decoded)
 
 /-- A proof-relevant concrete execution trace carrying the exact realization
 obligations at every nontrivial source state.  This is the strong boundary:
@@ -1255,6 +1365,12 @@ theorem unbound_output_variable_rejected :
 #print axioms insertSupport_nodup
 #print axioms cApplyReflectiveTemplate_nodup
 #print axioms cFireReflectiveSourceExecFact_nodup
+#print axioms mem_cApplyReflectiveTemplate_of_supportSet
+#print axioms cApplyReflectiveTemplate_atomsWithin
+#print axioms cFireReflectiveSourceExecFact_atomsWithin
+#print axioms supportedSourceExecFactsWithin_of_rawExecFactsWithin
+#print axioms reflectiveWorkQueueInvariant_of_ruleInventory
+#print axioms cFireReflectiveSourceExecFact_rawExecFactsWithin
 #print axioms reflectiveSourceRowSupportAlignment_of_nodup
 #print axioms applyReflectiveSinkBatch_eq_of_rows_toFinset_eq
 #print axioms reflectiveWorkQueueInvariant_of_supportSet

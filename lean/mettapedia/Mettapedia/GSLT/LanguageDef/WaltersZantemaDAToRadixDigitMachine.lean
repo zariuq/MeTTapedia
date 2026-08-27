@@ -1,20 +1,22 @@
 import Mettapedia.GSLT.LanguageDef.WaltersZantemaDA
-import Mettapedia.GSLT.LanguageDef.C1DigitMachine
+import Mettapedia.GSLT.LanguageDef.RadixDigitMachine
 
 /-!
-# Presentation-sensitive Walters--Zantema DA to C1 compilation
+# Presentation-sensitive Walters--Zantema DA to radix-digit compilation
 
-This module inspects a supplied finite DA `LanguageDef`, extracts its rule
-families structurally, and derives finite C1 tables and instruction graphs.
+Here DA means the digit-as-unary-operator rewrite system from Walters and
+Zantema, *Rewrite systems for integer arithmetic* (RTA 1995). This module
+inspects a supplied finite DA `LanguageDef`, extracts its rule families
+structurally, and derives finite radix-digit tables and instruction graphs.
 Rule names are retained only as provenance.  Digit/carry behavior is read from
 the supplied left- and right-hand sides.
 -/
 
-namespace Mettapedia.GSLT.LanguageDef.WaltersZantemaDAToC1
+namespace Mettapedia.GSLT.LanguageDef.WaltersZantemaDAToRadixDigitMachine
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.WaltersZantemaDA
-open Mettapedia.GSLT.LanguageDef.C1DigitMachine
+open Mettapedia.GSLT.LanguageDef.RadixDigitMachine
 
 structure Origin where
   index : Nat
@@ -457,7 +459,7 @@ def popDigit : List Nat -> Nat × List Nat
   | digit :: digits => (digit, digits)
 
 /-- Independent finite evaluation of one source-derived digit-addition table.
-The target-loop proof relates this recursion to the lower-level C1 program. -/
+The target-loop proof relates this recursion to the lower-level RadixDigit program. -/
 def addUsingTableFuel (table : FiniteTable) :
     Nat -> List Nat -> List Nat -> Nat -> Option DigitVectorResult
   | 0, _, _, _ => none
@@ -521,7 +523,7 @@ def multiplicationTableFromProfile? (profile : Profile)
   pure firstRows.flatten
 
 /-- Grade-school digit multiplication over a rule-derived bounded table.  The
-loop graph is fixed C1 control; every digit product and carry result is literal
+loop graph is fixed RadixDigit control; every digit product and carry result is literal
 data derived from Rules 4, 6, 8, and 10. -/
 def multiplicationProgram (table : FiniteTable) : Program := [
   ⟨"left-length", .length 0 1 1⟩,
@@ -561,7 +563,7 @@ def tableBehavior (table : FiniteTable) : List (List Nat × List Nat) :=
 
 def additionProgramBehavior? (program : Program) :
     Option (List (List Nat × List Nat)) := do
-  let cell <- C1DigitMachine.at? program 13
+  let cell <- RadixDigitMachine.at? program 13
   match cell.instruction with
   | .lookup _ _ table _ => some (tableBehavior table)
   | _ => none
@@ -617,18 +619,18 @@ theorem radixTwo_multiplication_compiles :
     (compileMultiplication? (language radixTwo)).isSome := by
   decide +kernel
 
-theorem radixTwo_seven_plus_one_c1 :
+theorem radixTwo_seven_plus_one_target :
     let program := (compileAddition? (language radixTwo)).getD []
     terminalOutcome?
-        (runSteps C1DigitMachine.radixTwo 100
+        (runSteps RadixDigitMachine.radixTwo 100
           (initialAdditionConfig program [1, 1, 1] [1] 100)) =
       some (.value [0, 0, 0, 1]) := by
   decide +kernel
 
-theorem radixTwo_seven_times_six_c1 :
+theorem radixTwo_seven_times_six_target :
     let program := (compileMultiplication? (language radixTwo)).getD []
     terminalOutcome?
-        (runSteps { C1DigitMachine.radixTwo with registerLimit := 10 } 1000
+        (runSteps { RadixDigitMachine.radixTwo with registerLimit := 10 } 1000
           (initialMultiplicationConfig program [1, 1, 1] [0, 1, 1] 1000)) =
       some (.value [0, 1, 0, 1, 0, 1]) := by
   decide +kernel
@@ -637,11 +639,11 @@ theorem dropped_carry_changes_compiled_behavior :
     let original := (compileAddition? (language radixTwo)).getD []
     let changed := (compileAddition? droppedCarryLanguage).getD []
     terminalOutcome?
-        (runSteps C1DigitMachine.radixTwo 100
+        (runSteps RadixDigitMachine.radixTwo 100
           (initialAdditionConfig original [1] [1] 100)) =
         some (.value [0, 1]) ∧
       terminalOutcome?
-        (runSteps C1DigitMachine.radixTwo 100
+        (runSteps RadixDigitMachine.radixTwo 100
           (initialAdditionConfig changed [1] [1] 100)) =
         some (.value [0]) := by
   decide +kernel
@@ -662,11 +664,11 @@ theorem changed_rule10_changes_multiplication :
     let original := (compileMultiplication? (language radixTwo)).getD []
     let changed := (compileMultiplication? changedRule10ProductLanguage).getD []
     terminalOutcome?
-        (runSteps { C1DigitMachine.radixTwo with registerLimit := 10 } 100
+        (runSteps { RadixDigitMachine.radixTwo with registerLimit := 10 } 100
           (initialMultiplicationConfig original [1] [1] 100)) =
         some (.value [1]) ∧
       terminalOutcome?
-        (runSteps { C1DigitMachine.radixTwo with registerLimit := 10 } 100
+        (runSteps { RadixDigitMachine.radixTwo with registerLimit := 10 } 100
           (initialMultiplicationConfig changed [1] [1] 100)) =
         some (.value [0]) := by
   decide +kernel
@@ -676,4 +678,16 @@ theorem rename_only_preserves_behavior_table :
       (compileAddition? (language radixTwo)).bind additionProgramBehavior? := by
   decide +kernel
 
-end Mettapedia.GSLT.LanguageDef.WaltersZantemaDAToC1
+#print axioms radixTwo_addition_compiles
+#print axioms radixTwo_multiplication_compiles
+#print axioms radixTwo_inspects
+#print axioms radixTwo_seven_plus_one_target
+#print axioms radixTwo_seven_times_six_target
+#print axioms dropped_carry_changes_compiled_behavior
+#print axioms deleted_carry_rejects_compilation
+#print axioms add_changed_to_mul_rejects_compilation
+#print axioms deleted_rule6_rejects_multiplication
+#print axioms changed_rule10_changes_multiplication
+#print axioms rename_only_preserves_behavior_table
+
+end Mettapedia.GSLT.LanguageDef.WaltersZantemaDAToRadixDigitMachine

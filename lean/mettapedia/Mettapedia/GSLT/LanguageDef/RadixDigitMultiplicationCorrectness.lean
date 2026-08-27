@@ -1,22 +1,22 @@
-import Mettapedia.GSLT.LanguageDef.C1AdditionCorrectness
+import Mettapedia.GSLT.LanguageDef.RadixDigitAdditionCorrectness
 import Mettapedia.GSLT.LanguageDef.WaltersZantemaDAMultiplication
 
 /-!
-# Universal loop facts for the C1 digit-multiplication program
+# Universal loop facts for the radix-digit multiplication program
 
 The target program is the fixed grade-school loop from
-`WaltersZantemaDAToC1`.  Its bounded digit table is extracted from the supplied
+`WaltersZantemaDAToRadixDigitMachine`.  Its bounded digit table is extracted from the supplied
 closed DA presentation.  The results below keep the table-row receipts and
 source-rule origins in the target execution trace.
 -/
 
-namespace Mettapedia.GSLT.LanguageDef.C1MultiplicationCorrectness
+namespace Mettapedia.GSLT.LanguageDef.RadixDigitMultiplicationCorrectness
 
 set_option maxHeartbeats 1000000
 
-open Mettapedia.GSLT.LanguageDef.C1DigitMachine
-open Mettapedia.GSLT.LanguageDef.C1AdditionCorrectness
-open Mettapedia.GSLT.LanguageDef.WaltersZantemaDAToC1
+open Mettapedia.GSLT.LanguageDef.RadixDigitMachine
+open Mettapedia.GSLT.LanguageDef.RadixDigitAdditionCorrectness
+open Mettapedia.GSLT.LanguageDef.WaltersZantemaDAToRadixDigitMachine
 
 def multiplicationSchema (outputLimit : Nat) : Schema := {
   radix := 2
@@ -268,7 +268,7 @@ theorem radixTwoMultiplicationTable_binary :
       simp [radixTwoExpectedMultiplicationTable, lookupTable?, lookupTableFrom?]
 
 /-- The write operation used by the inner-loop invariant.  It is the exact
-non-faulting branch of the C1 `write` instruction. -/
+non-faulting branch of the RadixDigit `write` instruction. -/
 def writeDigit? (digits : List Nat) (index digit : Nat) : Option (List Nat) :=
   if digits.length < index then none
   else if index = digits.length then some (digits ++ [digit])
@@ -1742,7 +1742,7 @@ theorem radixTwo_compiled_multiplication_no_invention
       Nat.pow_zero, one_mul, zero_add] using denotation
 
 /-- The source DA multiplication graph and the certified execution graph of
-the compiled C1 program are the same relation on natural numbers.  The target
+the compiled RadixDigit program are the same relation on natural numbers.  The target
 side retains the complete event trace and source-rule origins. -/
 theorem radixTwo_source_iff_compiled_multiplication
     (first second result : Nat) :
@@ -1805,4 +1805,4 @@ theorem radixTwo_source_iff_compiled_multiplication
 #print axioms radixTwo_compiled_multiplication_no_invention
 #print axioms radixTwo_source_iff_compiled_multiplication
 
-end Mettapedia.GSLT.LanguageDef.C1MultiplicationCorrectness
+end Mettapedia.GSLT.LanguageDef.RadixDigitMultiplicationCorrectness

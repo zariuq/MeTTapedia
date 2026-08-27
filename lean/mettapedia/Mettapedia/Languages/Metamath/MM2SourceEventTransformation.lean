@@ -580,16 +580,55 @@ boundary; it does not assign operational meaning to an outcome. -/
 def isVerifierTerminalObservation : Atom → Bool
   | .expression (.symbol tag :: _) =>
       tag == "mm-accepted" || tag == "mm-rejected" ||
-        tag == "mm-fault" || tag == "mm-incomplete"
+        tag == "mm-fault" || tag == "mm-incomplete" ||
+        tag == "mm-source-theorem-admitted" ||
+        tag == "mm-source-theorem-rejected"
+  | _ => false
+
+/-- Recognize the inert row shapes whose payloads are executable verifier
+code.  They are not scheduler-visible `exec` shells, so the executable-space
+boundary must exclude them separately. -/
+def isVerifierOwnedInternalRowShape : Atom → Bool
+  | .expression (.symbol tag :: _) =>
+      tag == "mm-internal-body-match-rules" ||
+        tag == "mm-internal-body-build-rules" ||
+        tag == "mm-internal-normal-dispatch-rule" ||
+        tag == "mm-internal-source-verifier-rule" ||
+        tag == "mm-normal-final-formula-candidate"
   | _ => false
 
 /-- Initial verifier data is passive when it is neither a scheduler-visible
-`exec` shell nor a terminal verdict.  This is an entry-boundary property, not
-an assertion that all later verifier-owned control and stack rows are public
-input. -/
+`exec` shell, a terminal verdict, nor an inert carrier of verifier code.  This
+is an entry-boundary property, not an assertion that all later verifier-owned
+control and stack rows are public input. -/
 def isProofNeutralInitialAtom (atom : Atom) : Bool :=
-  (Mettapedia.Languages.ProcessCalculi.MORK.extractRawExecFact atom).isNone &&
-    !(isVerifierTerminalObservation atom)
+  ((Mettapedia.Languages.ProcessCalculi.MORK.extractRawExecFact atom).isNone &&
+    !(isVerifierTerminalObservation atom)) &&
+    !(isVerifierOwnedInternalRowShape atom)
+
+/-- A directly authored inert dispatch row is rejected at the same boundary
+as an executable shell or pre-authored verdict. -/
+@[simp] theorem verifier_owned_dispatch_row_not_proofNeutral
+    (payload : Atom) :
+    isProofNeutralInitialAtom
+      (.expression
+        [.symbol "mm-internal-normal-dispatch-rule", payload]) = false := by
+  simp [isProofNeutralInitialAtom, isVerifierOwnedInternalRowShape]
+
+@[simp] theorem final_formula_candidate_not_proofNeutral
+    (proof formula : Atom) :
+    isProofNeutralInitialAtom
+      (.expression
+        [.symbol "mm-normal-final-formula-candidate", proof, formula]) =
+      false := by
+  simp [isProofNeutralInitialAtom, isVerifierOwnedInternalRowShape]
+
+@[simp] theorem source_theorem_rejection_not_proofNeutral
+    (payload : List Atom) :
+    isProofNeutralInitialAtom
+      (.expression (.symbol "mm-source-theorem-rejected" :: payload)) =
+      false := by
+  simp [isProofNeutralInitialAtom, isVerifierTerminalObservation]
 
 structure SourceEventArtifact where
   statements : List RawStatement
@@ -1015,8 +1054,21 @@ theorem AdmittedSourceEventInput.initialRows_no_exec_or_terminal
       isVerifierTerminalObservation row = false := by
   have allRows := List.all_eq_true.mp input.initialRows_all_proofNeutral
   have safe := allRows row member
-  simpa only [isProofNeutralInitialAtom, Bool.and_eq_true,
-    Option.isNone_iff_eq_none, Bool.not_eq_true'] using safe
+  simp only [isProofNeutralInitialAtom, Bool.and_eq_true,
+    Option.isNone_iff_eq_none, Bool.not_eq_true'] at safe
+  exact safe.1
+
+/-- Canonicalized source input cannot forge the inert rows from which reload
+directives recover executable verifier code. -/
+theorem AdmittedSourceEventInput.initialRows_no_verifier_internal
+    {owner : Atom} (input : AdmittedSourceEventInput owner)
+    (row : Atom) (member : row ∈ input.initialRows) :
+    isVerifierOwnedInternalRowShape row = false := by
+  have allRows := List.all_eq_true.mp input.initialRows_all_proofNeutral
+  have safe := allRows row member
+  simp only [isProofNeutralInitialAtom, Bool.and_eq_true,
+    Option.isNone_iff_eq_none, Bool.not_eq_true'] at safe
+  exact safe.2
 
 /-- Total admission for transformed or directly authored source-event rows. -/
 def admitSourceEventInput (owner : Atom) (rows : List Atom) :
@@ -1251,6 +1303,8 @@ example (site labelSpan typeSpan bodySpan proofSpan separator terminator :
 #print axioms canonicalSourceEventRows_all_proofNeutral
 #print axioms validateSourceEventInput_of_transformSegmentedSource_ok
 #print axioms AdmittedSourceEventInput.initialRows_no_exec_or_terminal
+#print axioms AdmittedSourceEventInput.initialRows_no_verifier_internal
+#print axioms verifier_owned_dispatch_row_not_proofNeutral
 #print axioms admitSourceEventInput_of_transformSegmentedSource_ok
 #print axioms constant_event_inhabits_source_native_type
 

@@ -2,12 +2,12 @@ import Mettapedia.GSLT.LanguageDef.ArithmeticExtension
 import Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting
 
 /-!
-# Arithmetic-GSLT → CArith0: the first vertical GSLT2C pilot
+# Arithmetic GSLT to external-call-machine pilot
 
 This module instantiates the sealed two-sided hosting criterion
 (`BehavioralHosting`: forward preservation plus no-invention at one declared
-observation) for the smallest useful compilation pipeline with a C-shaped
-target: the shared exact-integer arithmetic core hosted by `CArith0`, a
+observation) for the smallest useful compilation pipeline with an explicit
+libcall-lowering target: the shared exact-integer arithmetic core hosted by a
 guarded external-call machine parameterized by an independent external-call
 relation.
 
@@ -17,7 +17,7 @@ relation.
   integers, four partial at a zero divisor — not any surface syntax.  No lexical or parsing claim is
   made here; surface operators are treated only in the elaboration layer,
   which maps dialect surface forms into the single shared core.
-* The target models a Bedrock2-shaped C calling discipline: a guard, an
+* The target models a guarded calling discipline: a guard, an
   external relation with a contractual precondition, and a halt.  An
   unguarded external call at a zero divisor has **no step**: the undefined
   behavior of the external library is represented as stuckness, never as an
@@ -46,7 +46,7 @@ elaborate differently per dialect while sharing one arithmetic core:
   as a post-composition on the same core outcome.
 -/
 
-namespace Mettapedia.GSLT.LanguageDef.ArithmeticCArith0Pilot
+namespace Mettapedia.GSLT.LanguageDef.ArithmeticExternalCallPilot
 
 open Mettapedia.GSLT
 open Mettapedia.GSLT.IndexedOperational
@@ -109,7 +109,7 @@ def arithGSLT : GSLT where
     intro t u u' hw hu
     cases hu; exact hw
 
-/-! ## The target machine: CArith0
+/-! ## The target machine: ExternalCall
 
 A guarded external-call discipline.  `start` dispatches: at the undefined
 point of a partial operation the guard halts with `declined`; otherwise
@@ -117,7 +117,7 @@ control passes to an independently supplied external relation.  This follows
 Bedrock2's `ExtSpec` boundary in the smallest form needed by the pilot. -/
 
 /-- Target instructions are not source operations with a C name attached.
-They are the complete operation family understood by this C-subset target.
+They are the complete operation family understood by this external-call target.
 The compiler below must establish their correspondence with `CoreOp`; the
 printer later consumes only this target syntax. -/
 inductive CompiledOp where
@@ -247,7 +247,7 @@ example : ¬ TargetMeaning referenceExternal (.callExt .tquot 1 0) := by
   cases meaningful with
   | callExt h => exact h (by decide)
 
-def cArith0GSLT (external : ExternalCallSpec) : GSLT where
+def externalCallGSLT (external : ExternalCallSpec) : GSLT where
   Term := CTerm
   equations := eqSetoid CTerm
   rewrites := CStep external
@@ -279,7 +279,7 @@ def sourceObject : ObservedOperationalObject Outcome where
 
 def targetObject (external : ExternalCallSpec) :
     ObservedOperationalObject Outcome where
-  operational := ⟨cArith0GSLT external, TargetMeaning external⟩
+  operational := ⟨externalCallGSLT external, TargetMeaning external⟩
   observe := fun {_ last} _ => cObs last
 
 /-! ## The compiler -/
@@ -291,13 +291,13 @@ def compileTerm : ATerm → CTerm
 /-- One route step in the target. -/
 private def one {external : ExternalCallSpec} {s t : CTerm}
     (h : CStep external s t) :
-    ExecutionPath (cArith0GSLT external) s t :=
+    ExecutionPath (externalCallGSLT external) s t :=
   .cons ⟨h⟩ (.refl t)
 
 /-- Two route steps in the target. -/
 private def two {external : ExternalCallSpec} {s m t : CTerm}
     (h₁ : CStep external s m) (h₂ : CStep external m t) :
-    ExecutionPath (cArith0GSLT external) s t :=
+    ExecutionPath (externalCallGSLT external) s t :=
   .cons ⟨h₁⟩ (.cons ⟨h₂⟩ (.refl t))
 
 /-- Inversion: the only step from an application evaluates it. -/
@@ -318,7 +318,7 @@ step hypothesis is used only propositionally (inversion), as it must be. -/
 def compileStep {external : ExternalCallSpec}
     (adequate : ExternalCallAdequacy external)
     {s t : ATerm} (step : AStep s t) :
-    ExecutionPath (cArith0GSLT external) (compileTerm s) (compileTerm t) := by
+    ExecutionPath (externalCallGSLT external) (compileTerm s) (compileTerm t) := by
   cases s with
   | done op a b o => exact (astep_done step).elim
   | prog op a b =>
@@ -327,13 +327,13 @@ def compileStep {external : ExternalCallSpec}
       by_cases h : undefinedAt op b
       · have targetH : (compileSyntax op).undefinedAt b :=
           (compileSyntax_undefinedAt op b).2 h
-        show ExecutionPath (cArith0GSLT external) (.start (compileSyntax op) a b)
+        show ExecutionPath (externalCallGSLT external) (.start (compileSyntax op) a b)
           (.halted (compileSyntax op) a b (coreSem op a b))
         rw [coreSem_pos h a]
         exact one (CStep.toFault targetH)
       · have targetH : ¬ (compileSyntax op).undefinedAt b :=
           fun bad => h ((compileSyntax_undefinedAt op b).1 bad)
-        show ExecutionPath (cArith0GSLT external) (.start (compileSyntax op) a b)
+        show ExecutionPath (externalCallGSLT external) (.start (compileSyntax op) a b)
           (.halted (compileSyntax op) a b (coreSem op a b))
         rw [coreSem_neg h a]
         have returned := adequate.complete (compileSyntax op) a b targetH
@@ -359,7 +359,7 @@ def preservesCompiledMeaning {external : ExternalCallSpec}
 
 def realization {external : ExternalCallSpec}
     (adequate : ExternalCallAdequacy external) :
-    OperationalRealization arithGSLT (cArith0GSLT external) where
+    OperationalRealization arithGSLT (externalCallGSLT external) where
   mapTerm := compileTerm
   mapEquiv := by intro l r h; cases h; rfl
   mapStep := compileStep adequate
@@ -391,7 +391,7 @@ theorem no_step_from_halted {external : ExternalCallSpec}
 /-- Complete executions out of a halted state are trivial. -/
 theorem path_from_halted {external : ExternalCallSpec}
     {program : CompiledOp} {a b : Int} {o : Outcome} {t : CTerm}
-    (path : ExecutionPath (cArith0GSLT external) (.halted program a b o) t) :
+    (path : ExecutionPath (externalCallGSLT external) (.halted program a b o) t) :
     t = .halted program a b o := by
   cases path with
   | refl => rfl
@@ -404,7 +404,7 @@ contractual precondition leave no other observable endpoint. -/
 theorem target_observation_forces_core {external : ExternalCallSpec}
     (adequate : ExternalCallAdequacy external)
     {op : CoreOp} {a b : Int} {t : CTerm} {v : Outcome}
-    (path : ExecutionPath (cArith0GSLT external)
+    (path : ExecutionPath (externalCallGSLT external)
       (.start (compileSyntax op) a b) t)
     (hobs : cObs t = some v) : v = coreSem op a b := by
   cases path with
@@ -438,10 +438,10 @@ theorem target_observation_forces_core {external : ExternalCallSpec}
 
 /-! ## The two-sided hosting theorem -/
 
-/-- CArith0 hosts the arithmetic core: forward preservation and no-invention
-at the declared observation.  This is the first executable-C-shaped instance
+/-- ExternalCall hosts the arithmetic core: forward preservation and no-invention
+at the declared observation. This is an executable external-call instance
 of the sealed hosting criterion. -/
-def arithHostedByCArith0 {external : ExternalCallSpec}
+def arithHostedByExternalCall {external : ExternalCallSpec}
     (adequate : ExternalCallAdequacy external) :
     BehavioralHosting sourceObject (targetObject external) where
   forward := forward adequate
@@ -467,11 +467,11 @@ theorem hosting_exact {external : ExternalCallSpec}
     (initial : ATerm) (v : Outcome) :
     ProducesObservation (targetObject external) (compileTerm initial) v ↔
       ProducesObservation sourceObject initial v :=
-  (arithHostedByCArith0 adequate).produces_iff initial v
+  (arithHostedByExternalCall adequate).produces_iff initial v
 
 /-! ## The permanent negative witness
 
-A deterministic target that invents one behavior.  `CBad` extends CArith0
+A deterministic target that invents one behavior.  `CBad` extends ExternalCall
 with a single spontaneous step from the declined halt to an invented value.
 Every state still has at most one successor — determinism holds — yet
 no-invention fails.  Determinism alone can never discharge the backward
@@ -532,7 +532,7 @@ theorem cbad_deterministic {s t t' : CTerm}
       | invent => rfl
 
 private def liftPath {s t : CTerm} :
-    ExecutionPath (cArith0GSLT referenceExternal) s t →
+    ExecutionPath (externalCallGSLT referenceExternal) s t →
       ExecutionPath cBadGSLT s t
   | .refl _ => .refl _
   | .cons head rest => .cons ⟨CBadStep.lift head.down⟩ (liftPath rest)
@@ -666,13 +666,13 @@ def opTag : CoreOp → String
   | .trem => "trem" | .frem => "frem"
 
 def cEnum : CompiledOp → String
-  | .add => "CETTA_CARITH0_ADD"
-  | .sub => "CETTA_CARITH0_SUB"
-  | .mul => "CETTA_CARITH0_MUL"
-  | .tquot => "CETTA_CARITH0_TQUOT"
-  | .fquot => "CETTA_CARITH0_FQUOT"
-  | .trem => "CETTA_CARITH0_TREM"
-  | .frem => "CETTA_CARITH0_FREM"
+  | .add => "CETTA_EXTERNAL_CALL_ADD"
+  | .sub => "CETTA_EXTERNAL_CALL_SUB"
+  | .mul => "CETTA_EXTERNAL_CALL_MUL"
+  | .tquot => "CETTA_EXTERNAL_CALL_TQUOT"
+  | .fquot => "CETTA_EXTERNAL_CALL_FQUOT"
+  | .trem => "CETTA_EXTERNAL_CALL_TREM"
+  | .frem => "CETTA_EXTERNAL_CALL_FREM"
 
 /-- Emit one guarded C function from the compiled syntax.  The guard branch
 prints the decline; the call branch invokes the GMP external named by the
@@ -692,51 +692,51 @@ def emitFunction (op : CoreOp) : String :=
 /-- A test-only library header for embedding the generated target in CeTTa's
 shadow qualification.  Production arithmetic does not include this interface. -/
 def emitShadowHeader : String :=
-  "/* Generated test-only CArith0 shadow interface.\n" ++
+  "/* Generated test-only ExternalCall shadow interface.\n" ++
   "   It is qualification evidence, not a production evaluator. */\n" ++
-  "#ifndef CETTA_CARITH0_SHADOW_V1_GENERATED_H\n" ++
-  "#define CETTA_CARITH0_SHADOW_V1_GENERATED_H\n\n" ++
+  "#ifndef CETTA_EXTERNAL_CALL_SHADOW_V1_GENERATED_H\n" ++
+  "#define CETTA_EXTERNAL_CALL_SHADOW_V1_GENERATED_H\n\n" ++
   "#include <gmp.h>\n\n" ++
   "typedef enum {\n" ++
   String.join (allOps.map (fun op =>
     "    " ++ cEnum (compileSyntax op) ++ ",\n")) ++
-  "} CettaCArith0Op;\n\n" ++
+  "} CettaExternalCallOp;\n\n" ++
   "typedef enum {\n" ++
-  "    CETTA_CARITH0_VALUE,\n" ++
-  "    CETTA_CARITH0_DECLINED,\n" ++
-  "    CETTA_CARITH0_INVALID_OPERATION\n" ++
-  "} CettaCArith0Status;\n\n" ++
-  "CettaCArith0Status cetta_carith0_shadow_eval_v1(\n" ++
-  "    CettaCArith0Op op, mpz_t result, const mpz_t lhs, const mpz_t rhs);\n\n" ++
+  "    CETTA_EXTERNAL_CALL_VALUE,\n" ++
+  "    CETTA_EXTERNAL_CALL_DECLINED,\n" ++
+  "    CETTA_EXTERNAL_CALL_INVALID_OPERATION\n" ++
+  "} CettaExternalCallStatus;\n\n" ++
+  "CettaExternalCallStatus cetta_external_call_shadow_eval_v1(\n" ++
+  "    CettaExternalCallOp op, mpz_t result, const mpz_t lhs, const mpz_t rhs);\n\n" ++
   "#endif\n"
 
 private def emitShadowCase (op : CoreOp) : String :=
   let c := compileSyntax op
   let guard := if c.guard then
-      "        if (mpz_sgn(rhs) == 0) return CETTA_CARITH0_DECLINED;\n"
+      "        if (mpz_sgn(rhs) == 0) return CETTA_EXTERNAL_CALL_DECLINED;\n"
     else ""
   "    case " ++ cEnum c ++ ":\n" ++ guard ++
   "        " ++ cSymbol c ++ "(result, lhs, rhs);\n" ++
-  "        return CETTA_CARITH0_VALUE;\n"
+  "        return CETTA_EXTERNAL_CALL_VALUE;\n"
 
 /-- Test-only embeddable C generated from the same `CompiledOp` syntax as the
 standalone pilot.  Its execution is a separately qualified realization of the
 target relation, not part of the Lean hosting theorem. -/
 def emitShadowSource : String :=
-  "#include \"tests/generated/carith0_shadow_v1.generated.h\"\n\n" ++
-  "CettaCArith0Status cetta_carith0_shadow_eval_v1(\n" ++
-  "    CettaCArith0Op op, mpz_t result, const mpz_t lhs, const mpz_t rhs) {\n" ++
+  "#include \"tests/generated/external_call_shadow_v1.generated.h\"\n\n" ++
+  "CettaExternalCallStatus cetta_external_call_shadow_eval_v1(\n" ++
+  "    CettaExternalCallOp op, mpz_t result, const mpz_t lhs, const mpz_t rhs) {\n" ++
   "    switch (op) {\n" ++
   String.join (allOps.map emitShadowCase) ++
   "    default:\n" ++
-  "        return CETTA_CARITH0_INVALID_OPERATION;\n" ++
+  "        return CETTA_EXTERNAL_CALL_INVALID_OPERATION;\n" ++
   "    }\n}\n"
 
 def emitProgram : String :=
-  "/* CArith0 pilot: generated from the compiled syntax of the hosted\n" ++
+  "/* ExternalCall pilot: generated from the compiled syntax of the hosted\n" ++
   "   arithmetic core.  Protocol: lines of `<op> <a> <b>`; output is the\n" ++
   "   decimal result or `declined`.  Generated text is an unverified\n" ++
-  "   boundary; see ArithmeticCArith0Pilot.lean for the hosting proof. */\n" ++
+  "   boundary; see ArithmeticExternalCallPilot.lean for the hosting proof. */\n" ++
   "#include <stdio.h>\n#include <string.h>\n#include <gmp.h>\n\n" ++
   String.join (allOps.map emitFunction) ++
   "\nint main(void) {\n" ++
@@ -758,4 +758,4 @@ def referenceLine (op : CoreOp) (a b : Int) : String :=
   | .val z => toString z
   | .declined => "declined"
 
-end Mettapedia.GSLT.LanguageDef.ArithmeticCArith0Pilot
+end Mettapedia.GSLT.LanguageDef.ArithmeticExternalCallPilot

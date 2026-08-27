@@ -1,0 +1,619 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  citecolor=green!45!black,
+  urlcolor=blue!55!black,
+  pdftitle={Coordination Is Not Simplicity}
+}
+
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}[definition]{Theorem}
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{example}[definition]{Example}
+\newtheorem{counterexample}[definition]{Counterexample}
+\theoremstyle{remark}
+\newtheorem{remark}[definition]{Remark}
+
+\newcommand{\MHC}{\mathsf{MHC}}
+\newcommand{\Comp}{\mathsf{Completion}}
+\newcommand{\Weak}{\mathsf{Weak}}
+\newcommand{\Code}{\mathsf{Code}}
+\newcommand{\Route}{\mathsf{Route}}
+\newcommand{\Step}{\mathsf{Step}}
+\newcommand{\Lean}{\textsc{Lean}}
+
+\title{\textbf{Coordination Is Not Simplicity:}\\
+Hierarchical Complexity, Weakness, Razors, and Governed Uptake}
+\author{Oru\v{z}i \and Zarathustra Goertzel}
+\date{Working paper, August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Hierarchical coordination, semantic freedom, weighted distinction, and
+description length are often discussed as if they were interchangeable notions
+of complexity.  We formalize them as separate observations of richer objects
+and prove that none determines the others without additional premises.  Our
+starting point is the Model of Hierarchical Complexity (MHC): an organization
+is a chain when every permutation of its component actions has the same
+outcome, and a coordination when some permutation changes the outcome.  We
+extend this finitary account to arbitrary occurrence types and ordinal ranks,
+recover the published natural-number theory as a specialization, and isolate
+the hypotheses behind its finite cost law.
+
+The formalization connects MHC to typed completion fibres, Bennett weakness,
+Goertzel's quantale-valued weakness, code-relative selection, and proof-relevant
+GSLT execution.  Independent completion factors as a product and independent
+local execution commutes; relational coupling alone need not create an MHC
+coordination.  A four-axis model gives bidirectional non-factorization witnesses
+for hierarchical rank, completion cardinality, a nonuniform quantale score,
+and code length.  Bennett's recoding result is then scoped precisely: it
+obstructs a representation-invariant strict shorter-code selector, but does not
+refute necessity-qualified ontological parsimony, reliability theorems for a
+fixed model class, or fixed-vocabulary semantic invariance.
+
+Finally, we formalize Crawford and Hammer's no-bypass condition for epistemic
+resolve and test a proposed MHC reading of GSLT structure.  The latter does not
+yield a context-free stage assignment.  One indexed naturality square is a
+chain under endpoint observation and a coordination under proof-relevant route
+observation.  Hierarchical order is therefore earned from an explicit outcome
+observer, actual execution witnesses, and homogeneous child ranks; it is not a
+label attached to a syntax, language transport, or software layer.  All stated
+results are mechanized in Lean 4 with positive and negative controls.
+\end{abstract}
+
+\tableofcontents
+
+\section{Four questions that should not share one scalar}
+
+Suppose a system coordinates two procedures, admits many compatible futures,
+has a short encoding, and receives a high score under a weighted valuation.
+Four different questions have been asked:
+
+\begin{enumerate}[label=(\arabic*)]
+  \item Does permuting the procedures change their observed outcome?
+  \item How many completions remain compatible with the system's commitments?
+  \item Which distinctions matter under the declared valuation layer?
+  \item How long is the system's description in the declared codebook?
+\end{enumerate}
+
+The first is operational, the second extensional, the third valuation-relative,
+and the fourth representational.  A reduction between them can be useful, but
+it must be a theorem with visible hypotheses.  Treating them as synonyms hides
+exactly the distinctions needed for composition, generalization, and safe
+self-modification.
+
+Our method is therefore information-first.  We retain an action tree before
+its ordinal rank, a completion fibre before its cardinality, an event before
+its quantale value, a codebook before its length, and an update path before a
+Boolean gate verdict.  Numerical readouts are derived only after their domain
+and observer have been named.
+
+\section{Infinite-primary hierarchical complexity}
+
+\subsection{Schedules, chains, and coordinations}
+
+Let $I$ be an arbitrary type of action occurrences.  A schedule is a
+permutation $\sigma : I \simeq I$, and a schedule semantics is a map
+\[
+  s : (I\simeq I) \longrightarrow O
+\]
+to a declared outcome type $O$.
+
+\begin{definition}[Chain and coordination]
+A schedule semantics $s$ is a \emph{chain} when
+\[
+  \forall \sigma\,\tau,\quad s(\sigma)=s(\tau).
+\]
+It is a \emph{coordination} when
+\[
+  \exists \sigma\,\tau,\quad s(\sigma)\ne s(\tau).
+\]
+\end{definition}
+
+This is the permutation criterion presented by Commons and Pekker
+\cite{commonspekker2008}.  It is sharper than saying that a higher action
+``non-arbitrarily organizes'' lower actions: an outcome and two schedules must
+exhibit the organization or its invariance.
+
+The ambient formalization permits arbitrary $I$.  Its actions form
+well-founded, arbitrarily branching trees.  A simple action has rank zero.  An
+invariant compound action takes the supremum of its child ranks; an
+order-sensitive compound action takes the ordinal successor of that supremum:
+\[
+\begin{aligned}
+ h(\mathsf{simple}) &= 0,\\
+ h(\mathsf{chain}(a_i)_{i\in I}) &= \sup_{i\in I} h(a_i),\\
+ h(\mathsf{coordination}(a_i)_{i\in I})
+   &= \operatorname{succ}\!\left(\sup_{i\in I} h(a_i)\right).
+\end{aligned}
+\]
+
+The last equation distinguishes successor coordination from limit formation.
+A countably branching chain whose child ranks range over all finite ordinals
+has rank $\omega$ without performing one additional coordination.
+
+\subsection{Recovering the finitary theory}
+
+Finite branching is a property of the ambient action tree, not the definition
+of action.  Under finite branching, every rank lies below $\omega$ and hence is
+a natural number.  A recursive admissibility predicate recovers the additional
+Commons--Pekker condition that coordinated children have equal order.
+
+The Lean development proves the familiar consequences inside this
+specialization: order trichotomy and transitivity, maximum order for chains,
+successor order for homogeneous coordinations, and a no-gaps predecessor
+subaction.  Commons and Pekker's concrete examples are also computed rather
+than merely named:
+
+\begin{itemize}
+  \item the separated operations $1+2$ and $3\times4$ are schedule invariant;
+  \item the two schedules of $2\times(3+4)$ compute $14$ and $10$ and therefore
+        form a coordination.
+\end{itemize}
+
+\subsection{What the exponential law does and does not say}
+
+For a finite, atomically decomposed, homogeneous binary hierarchy, the minimum
+number of simple leaves needed at order $n$ is
+\[
+  \varphi_n = 2^n.
+\]
+The formal result has two parts: every such action has at least $2^n$ simple
+leaves, and a binary tower attains the bound.  Thus $2^n$ is a minimum theorem,
+not a definition of order.
+
+Two negative controls prevent an illicit transfinite extrapolation.  The
+countably branching limit chain has $\aleph_0$ leaves, while
+$2^{\aleph_0}>\aleph_0$.  Moreover, an inhabited atomless decomposition is not
+well-founded and admits no strictly decreasing ordinal rank.  Consequently,
+finite leaf counting is not an invariant of gunky or infinitely branching
+organization.
+
+\section{Completion geometry and level introduction}
+
+\subsection{Principal fibres before Bennett cardinality}
+
+Let $(P,\leq)$ be a preorder.  The principal completion fibre below $p$ is
+\[
+  \Comp(p) := \{q:P\mid q\leq p\}.
+\]
+This order-theoretic object is primary.  Bennett's finite weakness is recovered
+as the cardinal readout $|\Comp(p)|$ when the fibre is finite.
+
+For the product order on $P\times Q$, the formalization constructs an exact
+equivalence
+\[
+  \Comp(p,q) \simeq \Comp(p)\times\Comp(q).
+\]
+Finite weakness therefore multiplies under independent composition.  An
+interacting composition is represented instead by a compatibility-indexed
+subfibre
+\[
+  \{(x,y):\Comp(p)\times\Comp(q)\mid C(x,y)\}.
+\]
+Strict compatibility can make this inclusion non-surjective.
+
+The distinction between geometry and dynamics is essential.  A strict
+relational coupling may still be schedule invariant.  Conversely, two
+transformations on a shared state form a coordination exactly when their
+composites disagree at the declared initial state.
+
+\begin{theorem}[Binary operational bridge]
+For a binary process with transformations $L,R$ and initial state $x$,
+endpoint schedule semantics is a chain exactly when
+\[
+  R(L(x))=L(R(x)),
+\]
+and a coordination exactly when the two sides differ.
+\end{theorem}
+
+Component-local transformations on a product commute automatically.  With
+equal-ranked children, the corresponding chain preserves their common rank;
+a noncommuting coordination raises it by one.
+
+\subsection{HC2 and C2 against task generations}
+
+The existing Bennett task-refinement relation is transitive.  It therefore
+cannot itself be a unit-ranked immediate-child relation.  A three-task example
+has both a direct one-edge refinement witness and a mediated two-edge witness
+between the same endpoints.  More generally, if two refinement edges compose,
+then assigning a rank increase of exactly one to every broad refinement edge
+produces inconsistent rank equations.
+
+This is not a defect in Bennett's relation.  It identifies the additional data
+needed for intrinsic levels.  A \emph{unit-ranked presentation} chooses an
+immediate-step relation, proves that each step raises rank by one, and proves
+that each chosen step is a valid Bennett refinement.  Exact paths in this
+presentation have endpoint-determined length and a no-gaps spectrum.
+
+The resulting verdicts are:
+
+\begin{itemize}
+  \item C2 holds for realized witness-path lengths, but these lengths are not
+        intrinsic when the broad relation has shortcuts;
+  \item C2 is intrinsic for a unit-ranked level presentation;
+  \item HC2 is earned for equal-depth sources under one common target;
+  \item systems terminology or broad refinement alone does not imply HC2.
+\end{itemize}
+
+\section{Four independent axes}
+
+One finite candidate type retains four informative fields: an MHC action, a
+completion set, a weighted pair event, and a codeword.  Four scalar readouts
+are then defined:
+\[
+  h,\qquad |\Comp|,\qquad q,\qquad \ell.
+\]
+Here $h$ is hierarchical rank, $|\Comp|$ is Bennett weakness, $q$ is a declared
+nonuniform quantale value, and $\ell$ is code length.
+
+\begin{theorem}[Pairwise non-factorization]
+For each of the six unordered pairs among
+\[
+  h,\qquad |\Comp|,\qquad q,\qquad \ell,
+\]
+there are
+candidates with equal first readout and unequal second readout, and candidates
+with equal second readout and unequal first readout.
+\end{theorem}
+
+All witnesses inhabit the same candidate space.  The codewords used in the
+description-length witnesses are prefix-incomparable, so the separation is not
+an artifact of one word extending another.
+
+The negative result does not ban reductions.  It requires their premises to
+be stated.  For the complete pair event $S\times S$,
+\[
+  |S\times S|=|S|^2,
+\]
+so pair cardinality factors through Bennett weakness and preserves and reflects
+its finite order.  For the diagonal event $\{(s,s):s\in S\}$, cardinality is
+exactly $|S|$.  Arbitrary nonuniform valuations need satisfy neither reduction.
+
+\section{Ockham steelmanned and Bennett scoped}
+
+\subsection{Several razors, not one target}
+
+``Ockham's razor'' names a family of doctrines.  At least the following should
+be separated:
+
+\begin{itemize}
+  \item necessity-qualified ontological economy;
+  \item economy of explanatory assumptions or causes;
+  \item evidentially constrained theory choice;
+  \item a Bayesian prior favoring a declared simplicity measure;
+  \item predictive-risk or class-capacity control justified by a reliability
+        theorem;
+  \item algorithmic coding criteria;
+  \item MDL or MML model-plus-data message length.
+\end{itemize}
+
+Bennett's finite recoding argument targets a nontrivial strict
+shorter-code-is-better selector when it is proposed as a
+representation-invariant ideal \cite{bennett2026}.  It does not by itself
+refute every item in the list.
+
+The formal ontological profile first requires explanatory sufficiency and only
+then minimizes unnecessary entities.  A theory with one necessary entity is
+optimal over a theory with an additional redundant entity.  A theory with zero
+entities but inadequate explanatory power is inadmissible.  Since this profile
+does not inspect a codebook, it is invariant under recoding.
+
+\subsection{Finite dyadic approximation and recoding}
+
+For a nonempty finite hypothesis type and a strictly positive probability mass
+$p$, the formalization constructs an explicit prefix codebook whose normalized
+dyadic weights $q$ satisfy
+\[
+  \frac{1}{2}p(h) < q(h) \leq 2p(h)
+\]
+for every hypothesis $h$.  The construction uses equal-length injective tags
+and minimally rounded dyadic depths; its Kraft sum and normalization bounds are
+proved directly.
+
+Separately, every selector which strictly prefers shorter words reverses some
+preference whenever two unequal codeword lengths can be transposed.  This
+transposition theorem has no finiteness premise.  A unary self-delimiting
+codebook supplies a countably infinite witness.
+
+The infinite boundary is explicit.  The unary codebook on $\mathbb N$ realizes
+the geometric mass $2^{-(n+1)}$, whose total is one.  No strictly positive
+uniform real mass is summable over $\mathbb N$, and no uncountable hypothesis
+type injects into finite binary strings.  We do not claim a general countable
+factor-two theorem without the corresponding infinite coding construction.
+
+\subsection{Fixed vocabulary versus changing observer}
+
+Bennett's continuous invariance theorem keeps the embodied vocabulary and
+measure fixed and changes coordinates by a function-preserving
+reparameterization.  If $F(\phi(\theta))=F(\theta)$, then the realized policy in
+the fixed vocabulary is identical, so every extensional weakness readout is
+identical.
+
+This is compatible with observer relativity.  Holding the realized function
+fixed while changing the vocabulary can change the visible policy cardinality.
+The two results concern different transformations:
+\[
+\begin{array}{lll}
+\text{coordinate change} & \text{fixed vocabulary and semantics}
+  & \Longrightarrow \text{weakness invariant},\\
+\text{observer change} & \text{different visible programs or distinctions}
+  & \Longrightarrow \text{cardinality may change}.
+\end{array}
+\]
+Measure-theoretic $\mu$-weakness and finite cardinal weakness are therefore not
+identified.
+
+\section{Layer-relative valuations}
+
+Goertzel's quantale proposal treats weakness as a valuation-dependent algebraic
+construction rather than a single scalar \cite{goertzel2026}.  The
+formalization distinguishes exact recoveries from genuinely new profiles.
+
+\subsection{Diagonal and complete-pair events}
+
+The injective map $s\mapsto(s,s)$ defines a diagonal event.  Its cardinality is
+exactly Bennett's admitted-world count, so its finite preference order is
+preserved and reflected.  The complete-pair event $S\times S$ instead has
+cardinality $|S|^2$.  A two-world canary gives diagonal cardinality two and
+complete-pair cardinality four.
+
+The diagonal here is the categorical diagonal in the category of types.  The
+cardinality theorem is not a Lawvere diagonal argument: it has no evaluator,
+self-application, weak point-surjectivity, fixed-point-free endomorphism, or
+negation \cite{lawvere1969}.
+
+\subsection{Logical entropy, graphtropy, and messages}
+
+Logical entropy is treated as distinction probability following Ellerman
+\cite{ellerman2017}.  Maximizing distinctions and minimizing distinctions are
+opposite profiles over the same score.  On a Boolean carrier, discrete and
+indiscrete partitions reverse preference between these profiles.
+
+Graphtropy is defined over a declared distinction graph.  Adding distinction
+edges decreases the missing-distinction score.  This fixes the edge polarity
+in the type of the profile rather than hiding it in terminology.
+
+For an MDL-like construction, a finite multiset is used as the free
+commutative message monoid.  An atomic cost extends uniquely to an additive
+message evaluator.  Unit atomic cost recovers ordinary message length and the
+two-part model-plus-data comparison.  A nonuniform valuation reverses a length
+comparison and does not factor through message cardinality.  This object is
+called an additive valuation, not a quantale: completeness and distributivity
+over arbitrary joins would require additional proofs.
+
+\section{Epistemic resolve requires no bypass}
+
+Crawford and Hammer describe epistemic resolve as a governed pathway from
+recruitment through coupling, write-back, and downstream enforcement, together
+with the absence of a parallel route that can change durable state outside the
+pathway \cite{crawfordhammer2026}.  The last clause is not implied by checking
+the local gates of one episode.
+
+The formal model retains the information item, before and after states, and the
+actual path of every update.  It separates:
+
+\begin{itemize}
+  \item local governance of an adjudicative episode;
+  \item no bypass for any path producing the same durable transition or an
+        equivalent downstream effect;
+  \item strict resolve, in which every actual durable change has a resolving
+        episode;
+  \item architectural resolve, in which normal updates are governed and
+        abnormal drift is detected and routed through a mediated correction.
+\end{itemize}
+
+\begin{theorem}[Gate passage is incomplete]
+There is a finite architecture in which every local gate admits an update, yet
+another path writes durable state and affects later behavior without coupling.
+Hence local gate passage does not imply complete mediation.
+\end{theorem}
+
+A positive architecture has only the governed durable write and satisfies
+strict resolve.  A corrective architecture satisfies the realistic
+architectural condition while failing strict resolve, proving that the two
+readings are genuinely different.
+
+\section{What MHC says about GSLT structure}
+
+The tempting analogy is to label one presentation ``systematic'', language
+transport ``metasystematic'', and cross-language composition ``paradigmatic''.
+The formal test rejects an unconditional assignment.
+
+\subsection{Actual execution witnesses}
+
+A binary operational schedule inside a GSLT contains a common initial term,
+two state transformations, and four one-step witnesses for the two length-two
+execution orders.  Endpoint semantics is a chain exactly when the endpoints
+commute and a coordination exactly when they differ.
+
+The interleaving product supplies a positive chain: a left component step and a
+right component step form a commuting square and leave two simple children at
+rank zero.  An authored interacting sum supplies a positive coordination:
+alpha-then-beta and beta-then-alpha reach distinct terms and raise two simple
+children to rank one.  Crucially, interaction was not used as a synonym for
+coordination; endpoint inequality is proved.
+
+\subsection{One naturality square, two MHC classifications}
+
+An indexed operational GSLT retains two routes around its naturality square:
+\[
+\begin{aligned}
+  r_1 &= \text{reduce in the source fibre, then transport},\\
+  r_2 &= \text{transport, then reduce in the target fibre}.
+\end{aligned}
+\]
+The routes have the same source and endpoint and are joined by a proof-relevant
+two-cell.  Their first step constructors are nevertheless distinct.
+
+\begin{theorem}[Observer-relative MHC classification]
+For every indexed naturality square generated by a source step,
+\begin{enumerate}[label=(\alph*)]
+  \item endpoint observation classifies the two schedules as a chain;
+  \item complete route observation classifies them as a coordination.
+\end{enumerate}
+\end{theorem}
+
+The second result is not obtained from proof irrelevance: a finite first-step
+observer separates an under-transport computation from an immediate transport
+step, proving the complete routes unequal.
+
+This is the tested divergence requested by the stack-alignment hypothesis.
+GSLT presentation, transport, or cross-language composition alone determines
+no context-free MHC stage.  A stage reading is licensed only after specifying
+the outcome observer, proving actual schedule sensitivity or invariance, and
+supplying homogeneous child ranks.  Endpoint equality and path identity answer
+different questions, and neither should silently replace the other.
+
+\section{Formal theorem map and scope}
+
+\begin{center}
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{.24\textwidth}
+                >{\raggedright\arraybackslash}p{.31\textwidth}
+                >{\raggedright\arraybackslash}p{.35\textwidth}}
+\toprule
+Module family & Positive result & Negative or boundary result \\
+\midrule
+Hierarchical complexity
+  & arbitrary schedules, ordinal rank, finite recovery, $\varphi_n=2^n$
+  & $\omega$ limit and atomless obstructions \\
+Principal completion
+  & product equivalence and finite cardinal product law
+  & strict compatibility subfibre is not generally surjective \\
+Enactive level bridge
+  & unit-ranked paths give intrinsic levels, HC2 homogeneity, no gaps
+  & transitive broad refinement admits shortcut lengths and no unit rank \\
+Axis independence
+  & complete-pair cardinality reduces to squared Bennett weakness
+  & all four scalar axes fail pairwise factorization in both directions \\
+Prior coding
+  & finite factor-two construction and exact geometric infinite prior
+  & recoding reversal, no positive uniform mass on $\mathbb N$, no uncountable codebook \\
+Bennett reparameterization
+  & fixed-vocabulary function-preserving invariance
+  & changing the observer changes visible cardinality \\
+Quantale razor valuations
+  & diagonal recovery, explicit entropy and message profiles
+  & polarity reversals and non-factorization under nonuniform valuation \\
+Epistemic resolve
+  & strict and corrective governed architectures
+  & local gate passage admits a durable coupling bypass \\
+GSLT hierarchical complexity
+  & independent chain and noncommuting coordination witnesses
+  & one naturality square changes class with its observer \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The development does not formalize empirical claims assigning human subjects
+to developmental stages.  It formalizes the transferable coordination and
+measurement structure.  It also does not claim that hierarchical order,
+weakness, quantale value, description length, probability, or runtime cost are
+universally reducible.  Each positive reduction above names the hypotheses that
+make it true.
+
+\section{Conclusion}
+
+The common theory is not a new master scalar.  It is a discipline for keeping
+informative structures separate until a theorem relates them.
+
+MHC contributes an operational level-introduction rule: order rises when
+permuting homogeneous lower actions changes the declared outcome.  Bennett
+contributes semantic openness inside a fixed embodied language and a sharp
+warning against treating code length as a representation-invariant ideal.
+Goertzel contributes valuation-relative composition and exact specializations
+that explain both agreement and reversal among weakness measures.  Crawford
+and Hammer contribute the global no-bypass quantifier missing from local gate
+checks.  GSLT execution contributes proof-relevant routes which reveal that
+endpoint agreement does not erase computational organization.
+
+Together these results support open-ended cognitive systems that retain their
+paths, declare their observations, and earn each quotient or optimization by a
+factorization, commutation, or mediation theorem.
+
+\begin{thebibliography}{99}
+
+\bibitem{commonsrichardskuhn1982}
+M. L. Commons, F. A. Richards, and D. Kuhn.
+Systematic and metasystematic reasoning: a case for a level of reasoning beyond
+Piaget's stage of formal operations.
+\emph{Child Development}, 53(4):1058--1069, 1982.
+
+\bibitem{commonsetal1998}
+M. L. Commons, E. J. Trudeau, S. A. Stein, F. A. Richards, and S. R. Krause.
+Hierarchical complexity of tasks shows the existence of developmental stages.
+\emph{Developmental Review}, 18:237--278, 1998.
+doi:10.1006/drev.1998.0467.
+
+\bibitem{commons2008}
+M. L. Commons.
+Introduction to the Model of Hierarchical Complexity and its relationship to
+postformal action.
+\emph{World Futures}, 64:305--320, 2008.
+doi:10.1080/02604020802301105.
+
+\bibitem{commonspekker2008}
+M. L. Commons and A. Pekker.
+Presenting the formal theory of hierarchical complexity.
+\emph{World Futures}, 64:375--382, 2008.
+doi:10.1080/02604020802301204.
+
+\bibitem{bennett2026}
+M. T. Bennett.
+The Wrong Razor.
+In M. Ikl\'e, A. Franz, M. Kemendo, and N. Lowy, editors,
+\emph{Artificial General Intelligence}, LNAI 16854, pages 48--61, 2026.
+
+\bibitem{goertzel2026}
+B. Goertzel.
+Weakness Is All You Need: Quantale Weakness as a Unifying Principle for
+Cognition.
+In M. Ikl\'e, A. Franz, M. Kemendo, and N. Lowy, editors,
+\emph{Artificial General Intelligence}, LNAI 16854, pages 307--323, 2026.
+
+\bibitem{crawfordhammer2026}
+K. Crawford and P. Hammer.
+Epistemic Resolve: Governed Uptake and the Architecture of Mind.
+In M. Ikl\'e, A. Franz, M. Kemendo, and N. Lowy, editors,
+\emph{Artificial General Intelligence}, LNAI 16854, pages 192--205, 2026.
+
+\bibitem{ellerman2017}
+D. Ellerman.
+An introduction to logical entropy and its relation to Shannon entropy.
+\emph{International Journal of Semantic Computing}, 11(2):121--145, 2017.
+
+\bibitem{wallaceboulton1968}
+C. S. Wallace and D. M. Boulton.
+An information measure for classification.
+\emph{The Computer Journal}, 11(2):185--194, 1968.
+
+\bibitem{rissanen1978}
+J. Rissanen.
+Modeling by shortest data description.
+\emph{Automatica}, 14(5):465--471, 1978.
+
+\bibitem{lawvere1969}
+F. W. Lawvere.
+Diagonal arguments and cartesian closed categories.
+In \emph{Category Theory, Homology Theory and Their Applications II},
+Lecture Notes in Mathematics 92, pages 134--145. Springer, 1969.
+
+\end{thebibliography}
+
+\end{document}

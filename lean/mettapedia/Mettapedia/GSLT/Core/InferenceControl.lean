@@ -102,6 +102,66 @@ def run (system : BranchingSystem Node Answer)
   | 0, snapshot => snapshot
   | fuel + 1, snapshot => tick system controller (run system controller fuel snapshot)
 
+/-- Stateful observation budgets compose exactly.  Resumption carries both
+the live search occurrences and the controller's memory; neither component is
+reconstructed from the emitted answers. -/
+theorem run_add (system : BranchingSystem Node Answer)
+    (controller : Controller Node Answer Memory)
+    (left right : Nat) (snapshot : Snapshot Node Answer Memory) :
+    run system controller (left + right) snapshot =
+      run system controller right (run system controller left snapshot) := by
+  induction right with
+  | zero => rw [Nat.add_zero]; rfl
+  | succ right inductionHypothesis =>
+      rw [Nat.add_succ]
+      simp only [run]
+      rw [inductionHypothesis]
+
+private theorem reorder_nil (controller : Controller Node Answer Memory)
+    (memory : Memory) : (controller.scheduler memory).reorder [] = [] := by
+  have lengthZero : ((controller.scheduler memory).reorder []).length = 0 := by
+    simpa using
+      ((controller.scheduler memory).reorder_complete []).length_eq
+  exact List.length_eq_zero_iff.mp lengthZero
+
+/-- A controller cannot manufacture work or update its private memory after
+the search frontier is exhausted. -/
+theorem tick_eq_self_of_frontier_nil
+    (system : BranchingSystem Node Answer)
+    (controller : Controller Node Answer Memory)
+    (snapshot : Snapshot Node Answer Memory)
+    (empty : snapshot.search.frontier = []) :
+    tick system controller snapshot = snapshot := by
+  have reordered :
+      (controller.scheduler snapshot.memory).reorder
+          snapshot.search.frontier = [] := by
+    rw [empty, reorder_nil]
+  simp [tick, BranchingTemporal.tick, reordered]
+
+theorem run_eq_self_of_frontier_nil
+    (system : BranchingSystem Node Answer)
+    (controller : Controller Node Answer Memory)
+    (snapshot : Snapshot Node Answer Memory)
+    (empty : snapshot.search.frontier = []) (fuel : Nat) :
+    run system controller fuel snapshot = snapshot := by
+  induction fuel with
+  | zero => rfl
+  | succ fuel inductionHypothesis =>
+      simp only [run, inductionHypothesis]
+      exact tick_eq_self_of_frontier_nil system controller snapshot empty
+
+/-- Once a stateful controlled run has completed, a larger observation budget
+cannot retract completion or alter controller memory. -/
+theorem completion_persists
+    (system : BranchingSystem Node Answer)
+    (controller : Controller Node Answer Memory)
+    (snapshot : Snapshot Node Answer Memory) (small extra : Nat)
+    (complete :
+      (run system controller small snapshot).search.frontier = []) :
+    run system controller extra (run system controller small snapshot) =
+      run system controller small snapshot := by
+  exact run_eq_self_of_frontier_nil system controller _ complete extra
+
 @[simp] theorem tick_search (system : BranchingSystem Node Answer)
     (controller : Controller Node Answer Memory)
     (snapshot : Snapshot Node Answer Memory) :
@@ -711,6 +771,8 @@ example :
 end Examples
 
 #print axioms Snapshot.sound_run
+#print axioms Snapshot.run_add
+#print axioms Snapshot.completion_persists
 #print axioms Snapshot.account_run
 #print axioms Snapshot.completed_controllers_bag_agree
 #print axioms Snapshot.run_completes_at_rank

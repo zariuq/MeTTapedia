@@ -162,6 +162,52 @@ def normalProofMachineRunInvariantCheck : Nat → List Atom → Bool
         | none => true
         | some next => normalProofMachineRunInvariantCheck fuel next
 
+/-- Replayable invariant for the complete currently authored verifier slice:
+the ordered event prelude and the normal proof machine share one scheduler and
+one emitted rule inventory. -/
+def authoredNormalVerifierInvariantCheck (space : List Atom) : Bool :=
+  decide space.Nodup &&
+    (cRawExecFacts space).all (fun raw =>
+      decide (raw ∈ authoredNormalVerifierRawFacts))
+
+theorem authoredNormalVerifierInvariantCheck_sound
+    {space : List Atom}
+    (accepted : authoredNormalVerifierInvariantCheck space = true) :
+    ReflectiveWorkQueueInvariant space := by
+  simp only [authoredNormalVerifierInvariantCheck, Bool.and_eq_true,
+    List.all_eq_true, decide_eq_true_eq] at accepted
+  exact authoredNormalVerifier_reflective_invariant space accepted.1
+    accepted.2
+
+def authoredNormalVerifierRunInvariantCheck : Nat → List Atom → Bool
+  | 0, space => authoredNormalVerifierInvariantCheck space
+  | fuel + 1, space =>
+      authoredNormalVerifierInvariantCheck space &&
+        match cReflectiveSourceWorkQueueStep .leaveInert space with
+        | none => true
+        | some next => authoredNormalVerifierRunInvariantCheck fuel next
+
+/-- Successful replay of the combined inventory invariant constructs one
+continuous adequate trace against the authored support-valued MM2 semantics. -/
+def authoredNormalVerifierAdequateTraceOfCheck
+    (fuel : Nat) (source : List Atom)
+    (accepted : authoredNormalVerifierRunInvariantCheck fuel source = true) :
+    CReflectiveAdequateTrace .leaveInert fuel source
+      (cReflectiveSourceWorkQueueRunN .leaveInert fuel source).1 := by
+  induction fuel generalizing source with
+  | zero => exact .refl
+  | succ fuel induction =>
+      rw [authoredNormalVerifierRunInvariantCheck,
+        Bool.and_eq_true] at accepted
+      have currentInvariant :=
+        authoredNormalVerifierInvariantCheck_sound accepted.1
+      simp only [cReflectiveSourceWorkQueueRunN]
+      cases moved : cReflectiveSourceWorkQueueStep .leaveInert source with
+      | none => exact .refl
+      | some next =>
+          simp only [moved] at accepted
+          exact .step currentInvariant moved (induction next accepted.2)
+
 /-- A successful bounded invariant certificate constructs one continuous,
 proof-relevant adequate trace of the actual assembled queue execution. -/
 def normalProofMachineAdequateTraceOfCheck
@@ -278,6 +324,31 @@ theorem assertionCanary_target_accepts :
   unfold TargetAcceptsWithin
   decide +kernel
 
+/-- The same 160-step assembled assertion run retains duplicate freedom and
+the exact generated-exec whitelist at every visited state.  This is a finite,
+replayable instance of the source-relative closure obligation; it does not
+claim that hostile spaces containing forged verifier-internal rows are safe. -/
+theorem assertionCanary_run_invariant_check :
+    normalProofMachineRunInvariantCheck 160 assertionCanaryProgram = true := by
+  decide +kernel
+
+/-- The complete assertion canary is one continuous concrete run adequate to
+the authored support-valued MM2 GSLT, including the intermediate stack cell
+produced by the hypothesis phase and consumed by the assertion phases. -/
+def assertionCanary_adequateTrace :
+    CReflectiveAdequateTrace .leaveInert 160 assertionCanaryProgram
+      (cReflectiveSourceWorkQueueRunN .leaveInert 160
+        assertionCanaryProgram).1 :=
+  normalProofMachineAdequateTraceOfCheck 160 assertionCanaryProgram
+    assertionCanary_run_invariant_check
+
+def assertionCanary_supportNativeTypeTrace :
+    ReflectiveSupportNativeTypeTrace .leaveInert
+      assertionCanaryProgram.toFinset
+      (cReflectiveSourceWorkQueueRunN .leaveInert 160
+        assertionCanaryProgram).1.toFinset :=
+  assertionCanary_adequateTrace.toSupportNativeTypeTrace
+
 /-- The assertion canary therefore supplies one concrete state-threaded run
 through the assembled normal verifier, including terminal acceptance. -/
 theorem assertionCanary_has_reachable_terminal :
@@ -352,6 +423,33 @@ theorem orderedTheoremNormalJoin_target_admits :
       70 := by
   unfold TargetAcceptsWithin
   decide +kernel
+
+/-- Every state visited by the ordered-event plus normal-proof canary retains
+the exact executable inventory generated from the authored verifier slice. -/
+theorem orderedTheoremNormalJoin_run_invariant_check :
+    authoredNormalVerifierRunInvariantCheck 70
+      orderedTheoremNormalJoinProgram = true := by
+  decide +kernel
+
+/-- The complete ordered theorem canary is one state-threaded concrete run
+adequate to the authored support-valued MM2 GSLT.  This joins source dispatch,
+normal proof execution, terminal success, and conditional commit without
+reconstructing a phase-local space. -/
+noncomputable def orderedTheoremNormalJoin_adequateTrace :
+    CReflectiveAdequateTrace .leaveInert 70
+      orderedTheoremNormalJoinProgram
+      (cReflectiveSourceWorkQueueRunN .leaveInert 70
+        orderedTheoremNormalJoinProgram).1 :=
+  authoredNormalVerifierAdequateTraceOfCheck 70
+    orderedTheoremNormalJoinProgram
+    orderedTheoremNormalJoin_run_invariant_check
+
+noncomputable def orderedTheoremNormalJoin_supportNativeTypeTrace :
+    ReflectiveSupportNativeTypeTrace .leaveInert
+      orderedTheoremNormalJoinProgram.toFinset
+      (cReflectiveSourceWorkQueueRunN .leaveInert 70
+        orderedTheoremNormalJoinProgram).1.toFinset :=
+  orderedTheoremNormalJoin_adequateTrace.toSupportNativeTypeTrace
 
 /-- Ordered source dispatch, normal proof execution, and conditional theorem
 commit coexist in one OSLF-classified executable trace. -/
@@ -462,6 +560,8 @@ theorem invalid_earlier_theorem_cannot_authorize_later_reference :
 #print axioms hypothesisCanaryProgram_raw_facts
 #print axioms hypothesisCanaryProgram_reflective_invariant
 #print axioms normalProofMachineAdequateTraceOfCheck
+#print axioms authoredNormalVerifierInvariantCheck_sound
+#print axioms authoredNormalVerifierAdequateTraceOfCheck
 #print axioms hypothesisCanary_run_invariant_check
 #print axioms hypothesisCanary_adequateTrace
 #print axioms hypothesisCanary_supportNativeTypeTrace
@@ -472,10 +572,16 @@ theorem invalid_earlier_theorem_cannot_authorize_later_reference :
 #print axioms hypothesisCanary_nativeTypeTraceWitness
 #print axioms severedHypothesisCanary_does_not_accept
 #print axioms assertionCanary_target_accepts
+#print axioms assertionCanary_run_invariant_check
+#print axioms assertionCanary_adequateTrace
+#print axioms assertionCanary_supportNativeTypeTrace
 #print axioms assertionCanary_has_reachable_terminal
 #print axioms assertionCanary_nativeTypeTraceWitness
 #print axioms severedAssertionCanary_does_not_accept
 #print axioms orderedTheoremNormalJoin_target_admits
+#print axioms orderedTheoremNormalJoin_run_invariant_check
+#print axioms orderedTheoremNormalJoin_adequateTrace
+#print axioms orderedTheoremNormalJoin_supportNativeTypeTrace
 #print axioms orderedTheoremNormalJoin_nativeTypeTraceWitness
 #print axioms orderedTheoremNormalJoin_without_prepared_does_not_admit
 #print axioms invalid_earlier_theorem_cannot_authorize_later_reference

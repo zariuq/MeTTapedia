@@ -1,15 +1,15 @@
-import Mettapedia.GSLT.LanguageDef.C0PureNTT
-import Mettapedia.GSLT.LanguageDef.C0PureTransitionAdmission
+import Mettapedia.GSLT.LanguageDef.ExternalCallMachine
+import Mettapedia.GSLT.LanguageDef.ExternalCallMachineTransitionAdmission
 import Mettapedia.GSLT.LanguageDef.ExactArithmeticNTT
-import Mettapedia.GSLT.LanguageDef.ArithmeticCArith0Pilot
+import Mettapedia.GSLT.LanguageDef.ArithmeticExternalCallPilot
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-!
-# Exact-arithmetic syntax lowering into authored C0
+# Exact-arithmetic lowering into the authored external-call machine
 
 This module defines the first compiler boundary between the independently
-authored exact-arithmetic and C0 language definitions.  It lowers each
-canonical arithmetic operation term to a C0 program term.  Partial operations
+authored exact-arithmetic and external-call language definitions. It lowers each
+canonical arithmetic operation term to an external-call program term. Partial operations
 receive an explicit zero-divisor branch before the external call; total
 operations call the external directly.
 
@@ -22,7 +22,7 @@ structures, emitted C, GMP, linked execution, and NIK admission remain
 separate realization boundaries.
 -/
 
-namespace Mettapedia.GSLT.LanguageDef.ExactArithmeticToC0
+namespace Mettapedia.GSLT.LanguageDef.ExactArithmeticToExternalCall
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
@@ -33,71 +33,71 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.GSLT.LanguageDef.ArithmeticExtension.ExactInteger
-open Mettapedia.GSLT.LanguageDef.C0PureNTT
-open Mettapedia.GSLT.LanguageDef.C0PureTransitionAdmission
+open Mettapedia.GSLT.LanguageDef.ExternalCallMachine
+open Mettapedia.GSLT.LanguageDef.ExternalCallMachineTransitionAdmission
 open Mettapedia.GSLT.LanguageDef.ExactArithmeticNTT
 
 def a (label : String) (arguments : List Pattern := []) : Pattern :=
   .apply label arguments
 
 def natPattern : Nat → Pattern
-  | 0 => a "c0:nat-zero"
-  | n + 1 => a "c0:nat-succ" [natPattern n]
+  | 0 => a "external-call:nat-zero"
+  | n + 1 => a "external-call:nat-succ" [natPattern n]
 
 def slot (index : Nat) : Pattern :=
-  a "c0:slot-id" [natPattern index]
+  a "external-call:slot-id" [natPattern index]
 
 def label (index : Nat) : Pattern :=
-  a "c0:label" [natPattern index]
+  a "external-call:label" [natPattern index]
 
 def external (index : Nat) : Pattern :=
-  a "c0:external-id" [natPattern index]
+  a "external-call:external-id" [natPattern index]
 
 /-- A builtin-string atom in the canonical theorem-side pattern carrier. -/
 private def stringAtom (value : String) : Pattern := a value
 
 def fault (className : String) : Pattern :=
-  a "c0:fault" [stringAtom className]
+  a "external-call:fault" [stringAtom className]
 
 private def instructionList : List Pattern → Pattern
-  | [] => a "c0:instruction-nil"
+  | [] => a "external-call:instruction-nil"
   | instruction :: rest =>
-      a "c0:instruction-cons" [instruction, instructionList rest]
+      a "external-call:instruction-cons" [instruction, instructionList rest]
 
 private def externalList : List Pattern → Pattern
-  | [] => a "c0:external-nil"
+  | [] => a "external-call:external-nil"
   | declaration :: rest =>
-      a "c0:external-cons" [declaration, externalList rest]
+      a "external-call:external-cons" [declaration, externalList rest]
 
 def targetLinkName : CoreOp → String
-  | .add => "cetta_csubset_exact_integer_add_v1"
-  | .sub => "cetta_csubset_exact_integer_sub_v1"
-  | .mul => "cetta_csubset_exact_integer_mul_v1"
-  | .tquot => "cetta_csubset_exact_integer_tquot_v1"
-  | .fquot => "cetta_csubset_exact_integer_fquot_v1"
-  | .trem => "cetta_csubset_exact_integer_trem_v1"
-  | .frem => "cetta_csubset_exact_integer_frem_v1"
+  | .add => "cetta_external_call_exact_integer_add_v1"
+  | .sub => "cetta_external_call_exact_integer_sub_v1"
+  | .mul => "cetta_external_call_exact_integer_mul_v1"
+  | .tquot => "cetta_external_call_exact_integer_tquot_v1"
+  | .fquot => "cetta_external_call_exact_integer_fquot_v1"
+  | .trem => "cetta_external_call_exact_integer_trem_v1"
+  | .frem => "cetta_external_call_exact_integer_frem_v1"
 
 private def binaryExternal (operation : CoreOp) : Pattern :=
-  a "c0:binary-external"
+  a "external-call:binary-external"
     [external 0, stringAtom (targetLinkName operation),
      slot 0, slot 1, slot 2]
 
 private def callExternal (value language engine resource : Nat) : Pattern :=
-  a "c0:call-binary"
+  a "external-call:call-binary"
     [external 0, label value, label language, label engine, label resource]
 
-private def returnValue : Pattern := a "c0:return-value" [slot 2]
-private def returnDeclined : Pattern := a "c0:return-declined"
+private def returnValue : Pattern := a "external-call:return-value" [slot 2]
+private def returnDeclined : Pattern := a "external-call:return-declined"
 private def returnLanguageFault : Pattern :=
-  a "c0:return-language-fault" [fault "language-fault"]
+  a "external-call:return-language-fault" [fault "language-fault"]
 private def returnEngineFault : Pattern :=
-  a "c0:return-engine-fault" [fault "engine-fault"]
+  a "external-call:return-engine-fault" [fault "engine-fault"]
 private def returnResourceFault : Pattern :=
-  a "c0:return-resource-fault" [fault "resource-fault"]
+  a "external-call:return-resource-fault" [fault "resource-fault"]
 
 private def totalProgram (operation : CoreOp) : Pattern :=
-  a "c0:program"
+  a "external-call:program"
     [instructionList [
        callExternal 1 2 3 4,
        returnValue,
@@ -108,9 +108,9 @@ private def totalProgram (operation : CoreOp) : Pattern :=
      label 0]
 
 private def guardedProgram (operation : CoreOp) : Pattern :=
-  a "c0:program"
+  a "external-call:program"
     [instructionList [
-       a "c0:branch-zero" [slot 1, label 1, label 2],
+       a "external-call:branch-zero" [slot 1, label 1, label 2],
        returnDeclined,
        callExternal 3 4 5 6,
        returnValue,
@@ -142,7 +142,7 @@ def decodeSourceOperation? : Pattern → Option CoreOp
   | .apply "arith:frem" [] => some .frem
   | _ => none
 
-/-- The typed compiler into the authored C0 program vocabulary. -/
+/-- The typed compiler into the authored ExternalCall program vocabulary. -/
 def compileCoreOperation (operation : CoreOp) : Pattern :=
   if operation.isPartial then guardedProgram operation else totalProgram operation
 
@@ -187,28 +187,28 @@ theorem malformed_add_rejected :
   rfl
 
 def instructionCount? : Pattern → Option Nat
-  | .apply "c0:instruction-nil" [] => some 0
-  | .apply "c0:instruction-cons" [_instruction, rest] =>
+  | .apply "external-call:instruction-nil" [] => some 0
+  | .apply "external-call:instruction-cons" [_instruction, rest] =>
       (instructionCount? rest).map Nat.succ
   | _ => none
 
 def beginsWithZeroGuard : Pattern → Bool
-  | .apply "c0:program"
-      [.apply "c0:instruction-cons"
-        [.apply "c0:branch-zero" [_slot, _zero, _nonzero], _rest],
+  | .apply "external-call:program"
+      [.apply "external-call:instruction-cons"
+        [.apply "external-call:branch-zero" [_slot, _zero, _nonzero], _rest],
        _externals, _entry] => true
   | _ => false
 
 def beginsWithExternalCall : Pattern → Bool
-  | .apply "c0:program"
-      [.apply "c0:instruction-cons"
-        [.apply "c0:call-binary"
+  | .apply "external-call:program"
+      [.apply "external-call:instruction-cons"
+        [.apply "external-call:call-binary"
           [_external, _value, _language, _engine, _resource], _rest],
        _externals, _entry] => true
   | _ => false
 
 def programInstructionCount? : Pattern → Option Nat
-  | .apply "c0:program" [instructions, _externals, _entry] =>
+  | .apply "external-call:program" [instructions, _externals, _entry] =>
       instructionCount? instructions
   | _ => none
 
@@ -222,7 +222,7 @@ theorem compiled_layout (operation : CoreOp) :
   cases operation <;> decide
 
 /-- Operation identity survives compilation through the external link name,
-so distinct arithmetic operations cannot collapse to one C0 program. -/
+so distinct arithmetic operations cannot collapse to one ExternalCall program. -/
 theorem compileCoreOperation_injective :
     Function.Injective compileCoreOperation := by
   intro first second equal
@@ -281,7 +281,7 @@ theorem decode_compiled_operation_sound {target : Pattern} {operation : CoreOp}
   · contradiction
 
 /-- A partial operation emitted without its zero-divisor branch is outside
-the compiler image, even though the raw C0 vocabulary can express it. -/
+the compiler image, even though the raw ExternalCall vocabulary can express it. -/
 theorem unguarded_tquot_not_in_compiler_image :
     ¬ CompilerImage (totalProgram .tquot) := by
   intro image
@@ -328,11 +328,11 @@ theorem compiler_vocabulary_is_authored :
          "arith:fquot", "arith:trem", "arith:frem"],
       sourceLabel ∈ exactArithmetic.terms.map (·.label)) ∧
     (∀ targetLabel ∈
-        ["c0:program", "c0:branch-zero", "c0:call-binary",
-         "c0:return-value", "c0:return-declined",
-         "c0:return-language-fault", "c0:return-engine-fault",
-         "c0:return-resource-fault", "c0:binary-external"],
-      targetLabel ∈ c0Pure.terms.map (·.label)) := by
+        ["external-call:program", "external-call:branch-zero", "external-call:call-binary",
+         "external-call:return-value", "external-call:return-declined",
+         "external-call:return-language-fault", "external-call:return-engine-fault",
+         "external-call:return-resource-fault", "external-call:binary-external"],
+      targetLabel ∈ externalCallLanguage.terms.map (·.label)) := by
   decide
 
 /-! ## Executable source-to-target canaries
@@ -343,33 +343,33 @@ zero test; they are not a universal external-call adequacy theorem.
 -/
 
 private def exactInteger (name : String) : Pattern :=
-  a "c0:exact-integer" [a name]
+  a "external-call:exact-integer" [a name]
 
-def slotEmpty : Pattern := a "c0:slot-empty"
-def slotValue (value : Pattern) : Pattern := a "c0:slot-value" [value]
-def storeNil : Pattern := a "c0:store-nil"
+def slotEmpty : Pattern := a "external-call:slot-empty"
+def slotValue (value : Pattern) : Pattern := a "external-call:slot-value" [value]
+def storeNil : Pattern := a "external-call:store-nil"
 def storeCons (value rest : Pattern) : Pattern :=
-  a "c0:store-cons" [value, rest]
+  a "external-call:store-cons" [value, rest]
 
 def store3 (first second third : Pattern) : Pattern :=
   storeCons first (storeCons second (storeCons third storeNil))
 
-private def fuelInfinite : Pattern := a "c0:fuel-infinite"
-def receiptNil : Pattern := a "c0:receipt-nil"
+private def fuelInfinite : Pattern := a "external-call:fuel-infinite"
+def receiptNil : Pattern := a "external-call:receipt-nil"
 
 private def run (program pc store receipt : Pattern) : Pattern :=
-  a "c0:run" [program, pc, store, fuelInfinite, receipt]
+  a "external-call:run" [program, pc, store, fuelInfinite, receipt]
 
 private def halted (outcome receipt : Pattern) : Pattern :=
-  a "c0:halted" [outcome, receipt]
+  a "external-call:halted" [outcome, receipt]
 
 def stepReceipt (pc receipt : Pattern) : Pattern :=
-  a "c0:receipt-cons" [a "c0:step-event" [pc], receipt]
+  a "external-call:receipt-cons" [a "external-call:step-event" [pc], receipt]
 
 def externalReceipt
     (externalId outcome pc receipt : Pattern) : Pattern :=
-  a "c0:receipt-cons"
-    [a "c0:external-event" [externalId, outcome], stepReceipt pc receipt]
+  a "external-call:receipt-cons"
+    [a "external-call:external-event" [externalId, outcome], stepReceipt pc receipt]
 
 private def addTwo : Pattern := exactInteger "integer:2"
 private def addThree : Pattern := exactInteger "integer:3"
@@ -383,18 +383,18 @@ private def addResultStore : Pattern :=
   store3 (slotValue addTwo) (slotValue addThree) (slotValue addFive)
 
 private def addExternalOutcome : Pattern :=
-  a "c0:external-value" [addResultStore]
+  a "external-call:external-value" [addResultStore]
 
 def addDemoRelationEnv : RelationEnv where
   tuples := fun relation _arguments =>
-    if relation == "C0ConsumeFuel" then
+    if relation == "ExternalCallConsumeFuel" then
       [[fuelInfinite, fuelInfinite]]
-    else if relation == "C0FetchInstruction" then
+    else if relation == "ExternalCallFetchInstruction" then
       [[compileCoreOperation .add, label 0, callExternal 1 2 3 4],
        [compileCoreOperation .add, label 1, returnValue]]
-    else if relation == "C0CallBinaryExternal" then
+    else if relation == "ExternalCallCallBinaryExternal" then
       [[compileCoreOperation .add, external 0, addStore, addExternalOutcome]]
-    else if relation == "C0ReadSlot" then
+    else if relation == "ExternalCallReadSlot" then
       [[addResultStore, slot 2, addFive]]
     else
       []
@@ -403,14 +403,14 @@ private def addStart : Pattern :=
   run (compileCoreOperation .add) (label 0) addStore receiptNil
 
 private def addDone : Pattern :=
-  halted (a "c0:outcome-value" [addFive])
+  halted (a "external-call:outcome-value" [addFive])
     (stepReceipt (label 1)
       (externalReceipt (external 0) addExternalOutcome (label 0) receiptNil))
 
-/-- The compiled addition program executes through C0's authored call and
+/-- The compiled addition program executes through ExternalCall's authored call and
 return rules to the same endpoint as the exact-arithmetic source demo. -/
 theorem compiled_add_executes_exactly :
-    normalizeFirstUsing addDemoRelationEnv c0Pure 1 2 addStart = addDone := by
+    normalizeFirstUsing addDemoRelationEnv externalCallLanguage 1 2 addStart = addDone := by
   decide +kernel
 
 private def tquotStore : Pattern :=
@@ -418,15 +418,15 @@ private def tquotStore : Pattern :=
 
 def tquotZeroDemoRelationEnv : RelationEnv where
   tuples := fun relation _arguments =>
-    if relation == "C0ConsumeFuel" then
+    if relation == "ExternalCallConsumeFuel" then
       [[fuelInfinite, fuelInfinite]]
-    else if relation == "C0FetchInstruction" then
+    else if relation == "ExternalCallFetchInstruction" then
       [[compileCoreOperation .tquot, label 0,
-        a "c0:branch-zero" [slot 1, label 1, label 2]],
+        a "external-call:branch-zero" [slot 1, label 1, label 2]],
        [compileCoreOperation .tquot, label 1, returnDeclined]]
-    else if relation == "C0ReadSlot" then
+    else if relation == "ExternalCallReadSlot" then
       [[tquotStore, slot 1, zero]]
-    else if relation == "C0IsZero" then
+    else if relation == "ExternalCallIsZero" then
       [[zero]]
     else
       []
@@ -435,40 +435,40 @@ private def tquotZeroStart : Pattern :=
   run (compileCoreOperation .tquot) (label 0) tquotStore receiptNil
 
 private def tquotZeroDone : Pattern :=
-  halted (a "c0:outcome-declined")
+  halted (a "external-call:outcome-declined")
     (stepReceipt (label 1) (stepReceipt (label 0) receiptNil))
 
 /-- The zero divisor takes the authored guard and never reaches the external
 call relation. -/
 theorem compiled_tquot_zero_declines_exactly :
-    normalizeFirstUsing tquotZeroDemoRelationEnv c0Pure 1 2 tquotZeroStart =
+    normalizeFirstUsing tquotZeroDemoRelationEnv externalCallLanguage 1 2 tquotZeroStart =
       tquotZeroDone := by
   decide +kernel
 
 /-- Negative control: the guarded zero-divisor execution cannot invent the
 value returned by the positive addition path. -/
 theorem compiled_tquot_zero_does_not_invent_add_value :
-    normalizeFirstUsing tquotZeroDemoRelationEnv c0Pure 1 2 tquotZeroStart ≠
+    normalizeFirstUsing tquotZeroDemoRelationEnv externalCallLanguage 1 2 tquotZeroStart ≠
       addDone := by
   decide +kernel
 
-/-! ## Universal authored-C0 reference execution
+/-! ## Universal authored-ExternalCall reference execution
 
 The finite canaries above are useful diagnostics.  This section supplies the
 next stronger boundary: a relation environment for every exact operation and
 integer pair.  Its external result is computed by the independently defined
-target operation from `ArithmeticCArith0Pilot`, never by `coreSem` or by the C
+target operation from `ArithmeticExternalCallPilot`, never by `coreSem` or by the C
 implementation.  A separate theorem then connects that target operation to
 the source mathematical semantics.
 
 This reference environment models only the admitted successful exact-integer
 external.  Language, engine, resource, and finite-fuel outcomes remain part of
-the authored C0 GSLT and require their own realization contracts.
+the authored ExternalCall GSLT and require their own realization contracts.
 -/
 
 private def targetOperation (operation : CoreOp) :
-    ArithmeticCArith0Pilot.CompiledOp :=
-  ArithmeticCArith0Pilot.compileSyntax operation
+    ArithmeticExternalCallPilot.CompiledOp :=
+  ArithmeticExternalCallPilot.compileSyntax operation
 
 def targetUndefinedAt (operation : CoreOp) (second : Int) : Prop :=
   (targetOperation operation).undefinedAt second
@@ -484,7 +484,7 @@ def targetValue (operation : CoreOp) (first second : Int) : Int :=
 
 def integerAtom (value : Int) : Pattern := a (toString value)
 def exactIntegerValue (value : Int) : Pattern :=
-  a "c0:exact-integer" [integerAtom value]
+  a "external-call:exact-integer" [integerAtom value]
 
 def inputStore (first second : Int) : Pattern :=
   store3 (slotValue (exactIntegerValue first))
@@ -497,7 +497,7 @@ def resultStore (operation : CoreOp) (first second : Int) : Pattern :=
 
 def targetExternalValue
     (operation : CoreOp) (first second : Int) : Pattern :=
-  a "c0:external-value" [resultStore operation first second]
+  a "external-call:external-value" [resultStore operation first second]
 
 private def totalFetchRows (operation : CoreOp) : List (List Pattern) :=
   let program := compileCoreOperation operation
@@ -512,7 +512,7 @@ private def totalFetchRows (operation : CoreOp) : List (List Pattern) :=
 private def guardedFetchRows (operation : CoreOp) : List (List Pattern) :=
   let program := compileCoreOperation operation
   [
-    [program, label 0, a "c0:branch-zero" [slot 1, label 1, label 2]],
+    [program, label 0, a "external-call:branch-zero" [slot 1, label 1, label 2]],
     [program, label 1, returnDeclined],
     [program, label 2, callExternal 3 4 5 6],
     [program, label 3, returnValue],
@@ -525,25 +525,25 @@ private def fetchRows (operation : CoreOp) : List (List Pattern) :=
   if operation.isPartial then guardedFetchRows operation
   else totalFetchRows operation
 
-/-- A request-local, independently target-defined realization of C0's open
+/-- A request-local, independently target-defined realization of ExternalCall's open
 relations.  Returning complete tuples lets the generic relation-query matcher
 bind outputs while checking every already-bound input. -/
-def arithmeticC0ReferenceEnv
+def arithmeticExternalCallReferenceEnv
     (operation : CoreOp) (first second : Int) : RelationEnv where
   tuples := fun relation _arguments =>
-    if relation == "C0ConsumeFuel" then
+    if relation == "ExternalCallConsumeFuel" then
       [[fuelInfinite, fuelInfinite]]
-    else if relation == "C0FetchInstruction" then
+    else if relation == "ExternalCallFetchInstruction" then
       fetchRows operation
-    else if relation == "C0ReadSlot" then
+    else if relation == "ExternalCallReadSlot" then
       [[inputStore first second, slot 1, exactIntegerValue second],
        [resultStore operation first second, slot 2,
         exactIntegerValue (targetValue operation first second)]]
-    else if relation == "C0IsZero" then
+    else if relation == "ExternalCallIsZero" then
       if second = 0 then [[exactIntegerValue second]] else []
-    else if relation == "C0IsNonzero" then
+    else if relation == "ExternalCallIsNonzero" then
       if second = 0 then [] else [[exactIntegerValue second]]
-    else if relation == "C0CallBinaryExternal" then
+    else if relation == "ExternalCallCallBinaryExternal" then
       if targetUndefinedAt operation second then [] else
         [[compileCoreOperation operation, external 0,
           inputStore first second,
@@ -551,17 +551,17 @@ def arithmeticC0ReferenceEnv
     else
       []
 
-def compiledC0Start (operation : CoreOp) (first second : Int) : Pattern :=
+def compiledExternalCallStart (operation : CoreOp) (first second : Int) : Pattern :=
   run (compileCoreOperation operation) (label 0)
     (inputStore first second) receiptNil
 
-def compiledC0Outcome (operation : CoreOp) (first second : Int) : Pattern :=
+def compiledExternalCallOutcome (operation : CoreOp) (first second : Int) : Pattern :=
   if targetUndefinedAt operation second then
-    a "c0:outcome-declined"
+    a "external-call:outcome-declined"
   else
-    a "c0:outcome-value" [exactIntegerValue (targetValue operation first second)]
+    a "external-call:outcome-value" [exactIntegerValue (targetValue operation first second)]
 
-def compiledC0Receipt (operation : CoreOp) (first second : Int) : Pattern :=
+def compiledExternalCallReceipt (operation : CoreOp) (first second : Int) : Pattern :=
   if targetUndefinedAt operation second then
     stepReceipt (label 1) (stepReceipt (label 0) receiptNil)
   else if operation.isPartial then
@@ -574,48 +574,48 @@ def compiledC0Receipt (operation : CoreOp) (first second : Int) : Pattern :=
       (externalReceipt (external 0)
         (targetExternalValue operation first second) (label 0) receiptNil)
 
-def compiledC0Done (operation : CoreOp) (first second : Int) : Pattern :=
-  halted (compiledC0Outcome operation first second)
-    (compiledC0Receipt operation first second)
+def compiledExternalCallDone (operation : CoreOp) (first second : Int) : Pattern :=
+  halted (compiledExternalCallOutcome operation first second)
+    (compiledExternalCallReceipt operation first second)
 
 theorem targetUndefinedAt_iff
     (operation : CoreOp) (second : Int) :
     targetUndefinedAt operation second ↔ undefinedAt operation second := by
-  exact ArithmeticCArith0Pilot.compileSyntax_undefinedAt operation second
+  exact ArithmeticExternalCallPilot.compileSyntax_undefinedAt operation second
 
 theorem targetValue_eq
     (operation : CoreOp) (first second : Int) :
     targetValue operation first second = operation.fn first second := by
   exact congrFun
-    (congrFun (ArithmeticCArith0Pilot.compileSyntax_fn operation) first) second
+    (congrFun (ArithmeticExternalCallPilot.compileSyntax_fn operation) first) second
 
-/-- C0's target-side value and definedness contracts agree with the shared
-mathematical exact-integer semantics.  The C0 relation environment above does
+/-- ExternalCall's target-side value and definedness contracts agree with the shared
+mathematical exact-integer semantics.  The ExternalCall relation environment above does
 not use this theorem in its definition. -/
-theorem compiledC0Outcome_commutes
+theorem compiledExternalCallOutcome_commutes
     (operation : CoreOp) (first second : Int) :
-    compiledC0Outcome operation first second =
+    compiledExternalCallOutcome operation first second =
       match coreSem operation first second with
-      | .declined => a "c0:outcome-declined"
-      | .val value => a "c0:outcome-value" [exactIntegerValue value] := by
+      | .declined => a "external-call:outcome-declined"
+      | .val value => a "external-call:outcome-value" [exactIntegerValue value] := by
   by_cases undefined : undefinedAt operation second
   · have targetUndefined : targetUndefinedAt operation second :=
-      (ArithmeticCArith0Pilot.compileSyntax_undefinedAt operation second).2
+      (ArithmeticExternalCallPilot.compileSyntax_undefinedAt operation second).2
         undefined
     rw [coreSem_pos undefined first]
-    simp [compiledC0Outcome, targetUndefined]
+    simp [compiledExternalCallOutcome, targetUndefined]
   · have targetDefined : ¬ targetUndefinedAt operation second :=
       fun targetUndefined => undefined
-        ((ArithmeticCArith0Pilot.compileSyntax_undefinedAt operation second).1
+        ((ArithmeticExternalCallPilot.compileSyntax_undefinedAt operation second).1
           targetUndefined)
     rw [coreSem_neg undefined first]
-    simp [compiledC0Outcome, targetDefined, targetValue, targetOperation]
+    simp [compiledExternalCallOutcome, targetDefined, targetValue, targetOperation]
 
-/-- The configuration reached by the first authored C0 transition.  Making
+/-- The configuration reached by the first authored ExternalCall transition.  Making
 this configuration explicit is the first node in the compiler-image trace;
 later steps can be proved and composed without asking the generic engine to
 normalize an opaque multi-step computation in one reduction. -/
-def compiledC0AfterFirst
+def compiledExternalCallAfterFirst
     (operation : CoreOp) (first second : Int) : Pattern :=
   let program := compileCoreOperation operation
   if targetUndefinedAt operation second then
@@ -629,19 +629,19 @@ def compiledC0AfterFirst
       (externalReceipt (external 0)
         (targetExternalValue operation first second) (label 0) receiptNil)
 
-private theorem match_compiledC0Start
+private theorem match_compiledExternalCallStart
     (rule : RewriteRule)
     (leftShape : rule.left =
-      C0PureNTT.run (C0PureNTT.v "program") (C0PureNTT.v "pc")
-        (C0PureNTT.v "store") (C0PureNTT.v "fuel")
-        (C0PureNTT.v "receipt"))
+      ExternalCallMachine.run (ExternalCallMachine.v "program") (ExternalCallMachine.v "pc")
+        (ExternalCallMachine.v "store") (ExternalCallMachine.v "fuel")
+        (ExternalCallMachine.v "receipt"))
     (operation : CoreOp) (first second : Int) :
-    matchPatternForRule c0Pure rule
-        (compiledC0Start operation first second) =
-      [C0PureNTT.runMatchBindings (compileCoreOperation operation)
+    matchPatternForRule externalCallLanguage rule
+        (compiledExternalCallStart operation first second) =
+      [ExternalCallMachine.runMatchBindings (compileCoreOperation operation)
         (label 0) (inputStore first second) fuelInfinite receiptNil] := by
-  simpa [compiledC0Start, run, C0PureNTT.run, a, C0PureNTT.a] using
-    C0PureNTT.match_run_transition rule leftShape
+  simpa [compiledExternalCallStart, run, ExternalCallMachine.run, a, ExternalCallMachine.a] using
+    ExternalCallMachine.match_run_transition rule leftShape
       (compileCoreOperation operation) (label 0)
       (inputStore first second) fuelInfinite receiptNil
 
@@ -649,35 +649,35 @@ private theorem match_compiledC0Start
 compiled start configuration with the same proof-relevant binding order.
 Their premises, not an implementation-side dispatcher, select the applicable
 edge. -/
-theorem compiledC0Start_matches_entry_transitions
+theorem compiledExternalCallStart_matches_entry_transitions
     (operation : CoreOp) (first second : Int) :
-    let bindings := C0PureNTT.runMatchBindings
+    let bindings := ExternalCallMachine.runMatchBindings
       (compileCoreOperation operation) (label 0)
       (inputStore first second) fuelInfinite receiptNil
-    matchPatternForRule c0Pure C0PureNTT.callValueTransition
-        (compiledC0Start operation first second) = [bindings] ∧
-      matchPatternForRule c0Pure C0PureNTT.branchZeroTransition
-        (compiledC0Start operation first second) = [bindings] ∧
-      matchPatternForRule c0Pure C0PureNTT.branchNonzeroTransition
-        (compiledC0Start operation first second) = [bindings] := by
+    matchPatternForRule externalCallLanguage ExternalCallMachine.callValueTransition
+        (compiledExternalCallStart operation first second) = [bindings] ∧
+      matchPatternForRule externalCallLanguage ExternalCallMachine.branchZeroTransition
+        (compiledExternalCallStart operation first second) = [bindings] ∧
+      matchPatternForRule externalCallLanguage ExternalCallMachine.branchNonzeroTransition
+        (compiledExternalCallStart operation first second) = [bindings] := by
   exact ⟨
-    match_compiledC0Start C0PureNTT.callValueTransition rfl
+    match_compiledExternalCallStart ExternalCallMachine.callValueTransition rfl
       operation first second,
-    match_compiledC0Start C0PureNTT.branchZeroTransition rfl
+    match_compiledExternalCallStart ExternalCallMachine.branchZeroTransition rfl
       operation first second,
-    match_compiledC0Start C0PureNTT.branchNonzeroTransition rfl
+    match_compiledExternalCallStart ExternalCallMachine.branchNonzeroTransition rfl
       operation first second⟩
 
 /-- Undefined target calls are absent from the independently target-defined
-external relation.  The C0 guard therefore cannot be bypassed by an oracle
+external relation.  The ExternalCall guard therefore cannot be bypassed by an oracle
 row at a zero divisor. -/
 theorem referenceEnv_no_external_when_undefined
     (operation : CoreOp) (first second : Int)
     (undefined : targetUndefinedAt operation second)
     (arguments : List Pattern) :
-    (arithmeticC0ReferenceEnv operation first second).tuples
-        "C0CallBinaryExternal" arguments = [] := by
-  simp [arithmeticC0ReferenceEnv, undefined]
+    (arithmeticExternalCallReferenceEnv operation first second).tuples
+        "ExternalCallCallBinaryExternal" arguments = [] := by
+  simp [arithmeticExternalCallReferenceEnv, undefined]
 
 /-- At every defined input the reference environment contains exactly the
 one target-operation row, including the compiled program and resulting
@@ -686,12 +686,12 @@ theorem referenceEnv_external_exact_when_defined
     (operation : CoreOp) (first second : Int)
     (defined : ¬ targetUndefinedAt operation second)
     (arguments : List Pattern) :
-    (arithmeticC0ReferenceEnv operation first second).tuples
-        "C0CallBinaryExternal" arguments =
+    (arithmeticExternalCallReferenceEnv operation first second).tuples
+        "ExternalCallCallBinaryExternal" arguments =
       [[compileCoreOperation operation, external 0,
         inputStore first second,
         targetExternalValue operation first second]] := by
-  simp [arithmeticC0ReferenceEnv, defined]
+  simp [arithmeticExternalCallReferenceEnv, defined]
 
 /-! ## Exact query fibres on the compiler image
 
@@ -705,12 +705,12 @@ private theorem referenceEnv_consume_exact
     (operation : CoreOp) (first second : Int)
     (program pc store receipt : Pattern) :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (runMatchBindings program pc store fuelInfinite receipt)
         consumeFuel =
       [consumedBindings program pc store fuelInfinite receipt fuelInfinite] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, consumeFuel, query, C0PureNTT.v,
+    arithmeticExternalCallReferenceEnv, consumeFuel, query, ExternalCallMachine.v,
     runMatchBindings, consumedBindings,
     matchRelationArgs, matchRelationArgument, Bindings.lookup,
     applyBindings, mergeBindings]
@@ -719,19 +719,19 @@ private theorem referenceEnv_total_fetch_call_exact
     (operation : CoreOp) (first second : Int)
     (total : operation.isPartial = false) :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil fuelInfinite)
-        (fetch (C0PureNTT.a "c0:call-binary"
-          [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-           C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-           C0PureNTT.v "ifResourceFault"])) =
+        (fetch (ExternalCallMachine.a "external-call:call-binary"
+          [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+           ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+           ExternalCallMachine.v "ifResourceFault"])) =
       [callFetchedBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil fuelInfinite
         (external 0) (label 1) (label 2) (label 3) (label 4)] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, totalFetchRows, total,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, totalFetchRows, total,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, natPattern, a,
     consumedBindings, callFetchedBindings, runMatchBindings,
@@ -743,15 +743,15 @@ private theorem referenceEnv_total_fetch_branch_empty
     (operation : CoreOp) (first second : Int)
     (total : operation.isPartial = false) :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil fuelInfinite)
-        (fetch (C0PureNTT.a "c0:branch-zero"
-          [C0PureNTT.v "slot", C0PureNTT.v "ifZero",
-           C0PureNTT.v "ifNonzero"])) = [] := by
+        (fetch (ExternalCallMachine.a "external-call:branch-zero"
+          [ExternalCallMachine.v "slot", ExternalCallMachine.v "ifZero",
+           ExternalCallMachine.v "ifNonzero"])) = [] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, totalFetchRows, total,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, totalFetchRows, total,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, slot, natPattern, fault, a,
     consumedBindings, runMatchBindings, matchRelationArgs,
@@ -762,15 +762,15 @@ private theorem referenceEnv_total_fetch_noncall_empty
     (operation : CoreOp) (first second : Int)
     (total : operation.isPartial = false)
     (instructionName : String) (arguments : List Pattern)
-    (notCall : instructionName ≠ "c0:call-binary") :
+    (notCall : instructionName ≠ "external-call:call-binary") :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil fuelInfinite)
-        (fetch (C0PureNTT.a instructionName arguments)) = [] := by
+        (fetch (ExternalCallMachine.a instructionName arguments)) = [] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, totalFetchRows, total,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, totalFetchRows, total,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, natPattern, fault, a,
     consumedBindings, runMatchBindings, matchRelationArgs,
@@ -782,22 +782,22 @@ private theorem referenceEnv_call_value_exact
     (pc ifValue ifLanguageFault ifEngineFault ifResourceFault receipt : Pattern)
     (defined : ¬ targetUndefinedAt operation second) :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (callFetchedBindings (compileCoreOperation operation) pc
           (inputStore first second) fuelInfinite receipt fuelInfinite
           (external 0) ifValue ifLanguageFault ifEngineFault
           ifResourceFault)
-        (query "C0CallBinaryExternal"
-          [C0PureNTT.v "program", C0PureNTT.v "external",
-           C0PureNTT.v "store",
-           C0PureNTT.a "c0:external-value" [C0PureNTT.v "nextStore"]]) =
+        (query "ExternalCallCallBinaryExternal"
+          [ExternalCallMachine.v "program", ExternalCallMachine.v "external",
+           ExternalCallMachine.v "store",
+           ExternalCallMachine.a "external-call:external-value" [ExternalCallMachine.v "nextStore"]]) =
       [callValueBindings (compileCoreOperation operation) pc
         (inputStore first second) fuelInfinite receipt fuelInfinite
         (external 0) ifValue ifLanguageFault ifEngineFault
         ifResourceFault (resultStore operation first second)] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, defined, targetExternalValue,
-    query, C0PureNTT.a, C0PureNTT.v, external, natPattern, a,
+    arithmeticExternalCallReferenceEnv, defined, targetExternalValue,
+    query, ExternalCallMachine.a, ExternalCallMachine.v, external, natPattern, a,
     callFetchedBindings, callValueBindings, consumedBindings,
     runMatchBindings, matchRelationArgs, matchRelationArgument,
     matchPattern, matchArgs, Bindings.lookup, applyBindings, mergeBindings]
@@ -806,20 +806,20 @@ private theorem referenceEnv_call_nonvalue_empty
     (operation : CoreOp) (first second : Int)
     (pc ifValue ifLanguageFault ifEngineFault ifResourceFault receipt : Pattern)
     (defined : ¬ targetUndefinedAt operation second)
-    (outcomeTag : String) (notValue : outcomeTag ≠ "c0:external-value") :
+    (outcomeTag : String) (notValue : outcomeTag ≠ "external-call:external-value") :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (callFetchedBindings (compileCoreOperation operation) pc
           (inputStore first second) fuelInfinite receipt fuelInfinite
           (external 0) ifValue ifLanguageFault ifEngineFault
           ifResourceFault)
-        (query "C0CallBinaryExternal"
-          [C0PureNTT.v "program", C0PureNTT.v "external",
-           C0PureNTT.v "store",
-           C0PureNTT.a outcomeTag [C0PureNTT.v "fault"]]) = [] := by
+        (query "ExternalCallCallBinaryExternal"
+          [ExternalCallMachine.v "program", ExternalCallMachine.v "external",
+           ExternalCallMachine.v "store",
+           ExternalCallMachine.a outcomeTag [ExternalCallMachine.v "fault"]]) = [] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, defined, targetExternalValue,
-    query, C0PureNTT.a, C0PureNTT.v, external, natPattern, a,
+    arithmeticExternalCallReferenceEnv, defined, targetExternalValue,
+    query, ExternalCallMachine.a, ExternalCallMachine.v, external, natPattern, a,
     callFetchedBindings, consumedBindings, runMatchBindings,
     matchRelationArgs, matchRelationArgument, matchPattern,
     Bindings.lookup, applyBindings, mergeBindings, notValue]
@@ -828,16 +828,16 @@ private theorem referenceEnv_total_fetch_return_value_exact
     (operation : CoreOp) (first second : Int)
     (total : operation.isPartial = false) (receipt : Pattern) :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 1)
           (resultStore operation first second) fuelInfinite receipt fuelInfinite)
-        (fetch (C0PureNTT.a "c0:return-value" [C0PureNTT.v "slot"])) =
+        (fetch (ExternalCallMachine.a "external-call:return-value" [ExternalCallMachine.v "slot"])) =
       [returnFetchedBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite receipt fuelInfinite
         (slot 2)] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, totalFetchRows, total,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, totalFetchRows, total,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, slot, natPattern, fault, a,
     consumedBindings, returnFetchedBindings, runMatchBindings,
@@ -848,15 +848,15 @@ private theorem referenceEnv_total_fetch_at_one_nonreturn_empty
     (operation : CoreOp) (first second : Int)
     (total : operation.isPartial = false) (receipt : Pattern)
     (instructionName : String) (arguments : List Pattern)
-    (notReturn : instructionName ≠ "c0:return-value") :
+    (notReturn : instructionName ≠ "external-call:return-value") :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 1)
           (resultStore operation first second) fuelInfinite receipt fuelInfinite)
-        (fetch (C0PureNTT.a instructionName arguments)) = [] := by
+        (fetch (ExternalCallMachine.a instructionName arguments)) = [] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, totalFetchRows, total,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, totalFetchRows, total,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, slot, natPattern, fault, a,
     consumedBindings, runMatchBindings, matchRelationArgs,
@@ -867,18 +867,18 @@ private theorem referenceEnv_read_result_exact
     (operation : CoreOp) (first second : Int)
     (pc receipt : Pattern) :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (returnFetchedBindings (compileCoreOperation operation) pc
           (resultStore operation first second) fuelInfinite receipt fuelInfinite
           (slot 2))
-        (query "C0ReadSlot"
-          [C0PureNTT.v "store", C0PureNTT.v "slot",
-           C0PureNTT.v "value"]) =
+        (query "ExternalCallReadSlot"
+          [ExternalCallMachine.v "store", ExternalCallMachine.v "slot",
+           ExternalCallMachine.v "value"]) =
       [returnReadBindings (compileCoreOperation operation) pc
         (resultStore operation first second) fuelInfinite receipt fuelInfinite
         (slot 2) (exactIntegerValue (targetValue operation first second))] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, query, C0PureNTT.v,
+    arithmeticExternalCallReferenceEnv, query, ExternalCallMachine.v,
     returnFetchedBindings, returnReadBindings, consumedBindings,
     runMatchBindings, slot, natPattern, exactIntegerValue, integerAtom, a,
     matchRelationArgs, matchRelationArgument,
@@ -888,18 +888,18 @@ private theorem referenceEnv_guarded_fetch_branch_exact
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true) :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil fuelInfinite)
-        (fetch (C0PureNTT.a "c0:branch-zero"
-          [C0PureNTT.v "slot", C0PureNTT.v "ifZero",
-           C0PureNTT.v "ifNonzero"])) =
+        (fetch (ExternalCallMachine.a "external-call:branch-zero"
+          [ExternalCallMachine.v "slot", ExternalCallMachine.v "ifZero",
+           ExternalCallMachine.v "ifNonzero"])) =
       [branchFetchedBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil fuelInfinite
         (slot 1) (label 1) (label 2)] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows, hPartial,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows, hPartial,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnDeclined, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, slot, natPattern, fault, a,
     consumedBindings, branchFetchedBindings, runMatchBindings,
@@ -910,15 +910,15 @@ private theorem referenceEnv_guarded_fetch_zero_nonbranch_empty
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true)
     (instructionName : String) (arguments : List Pattern)
-    (notBranch : instructionName ≠ "c0:branch-zero") :
+    (notBranch : instructionName ≠ "external-call:branch-zero") :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil fuelInfinite)
-        (fetch (C0PureNTT.a instructionName arguments)) = [] := by
+        (fetch (ExternalCallMachine.a instructionName arguments)) = [] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows, hPartial,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows, hPartial,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnDeclined, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, slot, natPattern, fault, a,
     consumedBindings, runMatchBindings, matchRelationArgs,
@@ -928,18 +928,18 @@ private theorem referenceEnv_guarded_fetch_zero_nonbranch_empty
 private theorem referenceEnv_read_guard_input_exact
     (operation : CoreOp) (first second : Int) :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (branchFetchedBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil fuelInfinite
           (slot 1) (label 1) (label 2))
-        (query "C0ReadSlot"
-          [C0PureNTT.v "store", C0PureNTT.v "slot",
-           C0PureNTT.v "value"]) =
+        (query "ExternalCallReadSlot"
+          [ExternalCallMachine.v "store", ExternalCallMachine.v "slot",
+           ExternalCallMachine.v "value"]) =
       [branchReadBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil fuelInfinite
         (slot 1) (label 1) (label 2) (exactIntegerValue second)] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, query, C0PureNTT.v,
+    arithmeticExternalCallReferenceEnv, query, ExternalCallMachine.v,
     branchFetchedBindings, branchReadBindings, consumedBindings,
     runMatchBindings, slot, label, natPattern, exactIntegerValue,
     inputStore, resultStore, store3, storeCons, storeNil, slotValue,
@@ -953,11 +953,11 @@ private theorem referenceEnv_zero_test_exact
       (label 0) (inputStore first second) fuelInfinite receiptNil fuelInfinite
       (slot 1) (label 1) (label 2) (exactIntegerValue second)
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure bindings
-        (query "C0IsZero" [C0PureNTT.v "value"]) = [bindings] := by
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage bindings
+        (query "ExternalCallIsZero" [ExternalCallMachine.v "value"]) = [bindings] := by
   subst second
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, query, C0PureNTT.v,
+    arithmeticExternalCallReferenceEnv, query, ExternalCallMachine.v,
     branchReadBindings, branchFetchedBindings, consumedBindings,
     runMatchBindings, Bindings.lookup, exactIntegerValue, integerAtom,
     matchRelationArgs, matchRelationArgument, applyBindings, mergeBindings]
@@ -969,11 +969,11 @@ private theorem referenceEnv_nonzero_test_empty_at_zero
       (label 0) (inputStore first second) fuelInfinite receiptNil fuelInfinite
       (slot 1) (label 1) (label 2) (exactIntegerValue second)
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure bindings
-        (query "C0IsNonzero" [C0PureNTT.v "value"]) = [] := by
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage bindings
+        (query "ExternalCallIsNonzero" [ExternalCallMachine.v "value"]) = [] := by
   subst second
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, query]
+    arithmeticExternalCallReferenceEnv, query]
 
 private theorem referenceEnv_nonzero_test_exact
     (operation : CoreOp) (first second : Int)
@@ -982,10 +982,10 @@ private theorem referenceEnv_nonzero_test_exact
       (label 0) (inputStore first second) fuelInfinite receiptNil fuelInfinite
       (slot 1) (label 1) (label 2) (exactIntegerValue second)
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure bindings
-        (query "C0IsNonzero" [C0PureNTT.v "value"]) = [bindings] := by
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage bindings
+        (query "ExternalCallIsNonzero" [ExternalCallMachine.v "value"]) = [bindings] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, query, nonzeroDivisor, C0PureNTT.v,
+    arithmeticExternalCallReferenceEnv, query, nonzeroDivisor, ExternalCallMachine.v,
     branchReadBindings, branchFetchedBindings, consumedBindings,
     runMatchBindings, Bindings.lookup, exactIntegerValue, integerAtom,
     matchRelationArgs, matchRelationArgument, applyBindings, mergeBindings]
@@ -997,17 +997,17 @@ private theorem referenceEnv_zero_test_empty_at_nonzero
       (label 0) (inputStore first second) fuelInfinite receiptNil fuelInfinite
       (slot 1) (label 1) (label 2) (exactIntegerValue second)
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure bindings
-        (query "C0IsZero" [C0PureNTT.v "value"]) = [] := by
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage bindings
+        (query "ExternalCallIsZero" [ExternalCallMachine.v "value"]) = [] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, query, nonzeroDivisor]
+    arithmeticExternalCallReferenceEnv, query, nonzeroDivisor]
 
 private theorem guarded_zero_branch_premises_exact
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true)
     (zeroDivisor : second = 0) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         branchZeroTransition.premises
         (runMatchBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil) =
@@ -1029,7 +1029,7 @@ private theorem guarded_zero_nonzero_branch_premises_empty
     (hPartial : operation.isPartial = true)
     (zeroDivisor : second = 0) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         branchNonzeroTransition.premises
         (runMatchBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil) = [] := by
@@ -1048,7 +1048,7 @@ private theorem guarded_nonzero_branch_premises_exact
     (hPartial : operation.isPartial = true)
     (nonzeroDivisor : second ≠ 0) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         branchNonzeroTransition.premises
         (runMatchBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil) =
@@ -1070,7 +1070,7 @@ private theorem guarded_nonzero_zero_branch_premises_empty
     (hPartial : operation.isPartial = true)
     (nonzeroDivisor : second ≠ 0) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         branchZeroTransition.premises
         (runMatchBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil) = [] := by
@@ -1090,7 +1090,7 @@ private theorem total_call_premises_exact
     (total : operation.isPartial = false)
     (defined : ¬ targetUndefinedAt operation second) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         callValueTransition.premises
         (runMatchBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil) =
@@ -1112,7 +1112,7 @@ private theorem total_branch_premises_empty
     (total : operation.isPartial = false)
     (name test target : String) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (branchRule name test target).premises
         (runMatchBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil) = [] := by
@@ -1128,12 +1128,12 @@ private theorem total_call_nonvalue_premises_empty
     (total : operation.isPartial = false)
     (defined : ¬ targetUndefinedAt operation second)
     (name target outcomeTag : String)
-    (notValue : outcomeTag ≠ "c0:external-value") :
+    (notValue : outcomeTag ≠ "external-call:external-value") :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (callRule name target false
-          (C0PureNTT.a outcomeTag [C0PureNTT.v "fault"])
-          (C0PureNTT.v "store")).premises
+          (ExternalCallMachine.a outcomeTag [ExternalCallMachine.v "fault"])
+          (ExternalCallMachine.v "store")).premises
         (runMatchBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil) = [] := by
   simp only [callRule, applyPremisesWithEnv, List.foldl_cons,
@@ -1150,11 +1150,11 @@ private theorem total_noncall_premises_empty
     (operation : CoreOp) (first second : Int)
     (total : operation.isPartial = false)
     (instructionName : String) (arguments : List Pattern)
-    (notCall : instructionName ≠ "c0:call-binary")
+    (notCall : instructionName ≠ "external-call:call-binary")
     (remaining : List Premise) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
-        (consumeFuel :: fetch (C0PureNTT.a instructionName arguments) ::
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+        (consumeFuel :: fetch (ExternalCallMachine.a instructionName arguments) ::
           remaining)
         (runMatchBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil) = [] := by
@@ -1175,11 +1175,11 @@ private theorem guarded_start_nonbranch_premises_empty
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true)
     (instructionName : String) (arguments : List Pattern)
-    (notBranch : instructionName ≠ "c0:branch-zero")
+    (notBranch : instructionName ≠ "external-call:branch-zero")
     (remaining : List Premise) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
-        (consumeFuel :: fetch (C0PureNTT.a instructionName arguments) ::
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+        (consumeFuel :: fetch (ExternalCallMachine.a instructionName arguments) ::
           remaining)
         (runMatchBindings (compileCoreOperation operation) (label 0)
           (inputStore first second) fuelInfinite receiptNil) = [] := by
@@ -1196,14 +1196,14 @@ private theorem guarded_start_nonbranch_premises_empty
       simp only [List.foldl_cons, List.flatMap_nil]
       exact inductionHypothesis
 
-/-! ## Universal traces assembled from named authored C0 edges -/
+/-! ## Universal traces assembled from named authored ExternalCall edges -/
 
-private theorem admittedC0Step
+private theorem admittedExternalCallStep
     {relationEnv : RelationEnv} {source target : Pattern}
     (member : target ∈
-      rewriteAt (engineBasePremises relationEnv) c0Pure 1 source) :
-    langReducesUsing relationEnv c0Pure source target :=
-  exec_to_langReducesUsing relationEnv c0Pure ⟨1, member⟩
+      rewriteAt (engineBasePremises relationEnv) externalCallLanguage 1 source) :
+    langReducesUsing relationEnv externalCallLanguage source target :=
+  exec_to_langReducesUsing relationEnv externalCallLanguage ⟨1, member⟩
 
 private def totalCallReceipt
     (operation : CoreOp) (first second : Int) : Pattern :=
@@ -1220,7 +1220,7 @@ private theorem total_return_premises_exact
     (operation : CoreOp) (first second : Int)
     (total : operation.isPartial = false) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         returnValueTransition.premises
         (runMatchBindings (compileCoreOperation operation) (label 1)
           (resultStore operation first second) fuelInfinite
@@ -1243,11 +1243,11 @@ private theorem total_after_call_nonreturn_premises_empty
     (operation : CoreOp) (first second : Int)
     (total : operation.isPartial = false)
     (instructionName : String) (arguments : List Pattern)
-    (notReturn : instructionName ≠ "c0:return-value")
+    (notReturn : instructionName ≠ "external-call:return-value")
     (remaining : List Premise) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
-        (consumeFuel :: fetch (C0PureNTT.a instructionName arguments) ::
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+        (consumeFuel :: fetch (ExternalCallMachine.a instructionName arguments) ::
           remaining)
         (runMatchBindings (compileCoreOperation operation) (label 1)
           (resultStore operation first second) fuelInfinite
@@ -1269,15 +1269,15 @@ private theorem total_after_call_nonreturn_premises_empty
 private theorem match_totalAfterCall
     (rule : RewriteRule)
     (leftShape : rule.left =
-      C0PureNTT.run (C0PureNTT.v "program") (C0PureNTT.v "pc")
-        (C0PureNTT.v "store") (C0PureNTT.v "fuel")
-        (C0PureNTT.v "receipt"))
+      ExternalCallMachine.run (ExternalCallMachine.v "program") (ExternalCallMachine.v "pc")
+        (ExternalCallMachine.v "store") (ExternalCallMachine.v "fuel")
+        (ExternalCallMachine.v "receipt"))
     (operation : CoreOp) (first second : Int) :
-    matchPatternForRule c0Pure rule (totalAfterCall operation first second) =
+    matchPatternForRule externalCallLanguage rule (totalAfterCall operation first second) =
       [runMatchBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite
         (totalCallReceipt operation first second)] := by
-  simpa [totalAfterCall, run, C0PureNTT.run, a, C0PureNTT.a] using
+  simpa [totalAfterCall, run, ExternalCallMachine.run, a, ExternalCallMachine.a] using
     match_run_transition rule leftShape
       (compileCoreOperation operation) (label 1)
       (resultStore operation first second) fuelInfinite
@@ -1289,51 +1289,51 @@ private theorem total_start_step_unique
     (defined : ¬ targetUndefinedAt operation second)
     {target : Pattern}
     (step :
-      langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure (compiledC0Start operation first second) target) :
+      langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage (compiledExternalCallStart operation first second) target) :
     target = totalAfterCall operation first second := by
   have root :
-      RootStep (arithmeticC0ReferenceEnv operation first second) c0Pure
-        (compiledC0Start operation first second) target :=
+      RootStep (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+        (compiledExternalCallStart operation first second) target :=
     (step_iff_rootStep_of_noncontextualRules
-      c0Pure_rules_noncontextual).mp step
+      externalCallLanguage_rules_noncontextual).mp step
   rcases root with
     ⟨rule, ruleMember, initialBindings, matched,
       finalBindings, premises, targetEq⟩
-  change rule ∈ c0PureTransitions at ruleMember
-  simp only [c0PureTransitions, List.mem_cons, List.mem_nil_iff,
+  change rule ∈ externalCallLanguageTransitions at ruleMember
+  simp only [externalCallLanguageTransitions, List.mem_cons, List.mem_nil_iff,
     or_false] at ruleMember
   rcases ruleMember with
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
   · simp [matchPatternForRule_eq_syntactic, fuelExhaustedRule,
-      compiledC0Start, run, C0PureNTT.run, fuelInfinite,
-      a, C0PureNTT.a, C0PureNTT.v, matchPattern, matchArgs] at matched
+      compiledExternalCallStart, run, ExternalCallMachine.run, fuelInfinite,
+      a, ExternalCallMachine.a, ExternalCallMachine.v, matchPattern, matchArgs] at matched
   all_goals
-    rw [match_compiledC0Start _ rfl operation first second] at matched
+    rw [match_compiledExternalCallStart _ rfl operation first second] at matched
     simp only [List.mem_singleton] at matched
     subst initialBindings
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (branchRule "c0:branch-zero" "C0IsZero" "ifZero").premises
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (branchRule "external-call:branch-zero" "ExternalCallIsZero" "ifZero").premises
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [total_branch_premises_empty operation first second total
-      "c0:branch-zero" "C0IsZero" "ifZero"] at premises
+      "external-call:branch-zero" "ExternalCallIsZero" "ifZero"] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (branchRule "c0:branch-nonzero" "C0IsNonzero" "ifNonzero").premises
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (branchRule "external-call:branch-nonzero" "ExternalCallIsNonzero" "ifNonzero").premises
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [total_branch_premises_empty operation first second total
-      "c0:branch-nonzero" "C0IsNonzero" "ifNonzero"] at premises
+      "external-call:branch-nonzero" "ExternalCallIsNonzero" "ifNonzero"] at premises
     simp at premises
   · rw [total_call_premises_exact operation first second total defined]
       at premises
     simp only [List.mem_singleton] at premises
     subst finalBindings
     calc
-      target = applyBindingsForRule c0Pure callValueTransition
+      target = applyBindingsForRule externalCallLanguage callValueTransition
           (callValueBindings (compileCoreOperation operation) (label 0)
             (inputStore first second) fuelInfinite receiptNil fuelInfinite
             (external 0) (label 1) (label 2) (label 3) (label 4)
@@ -1343,90 +1343,90 @@ private theorem total_start_step_unique
           applyBindingsForRule_eq_syntactic, callValueBindings,
           callFetchedBindings, consumedBindings, runMatchBindings,
           totalAfterCall, totalCallReceipt, targetExternalValue, externalReceipt,
-          C0PureNTT.externalReceipt, stepReceipt, C0PureNTT.stepReceipt,
-          run, C0PureNTT.run, C0PureNTT.a, C0PureNTT.v,
+          ExternalCallMachine.externalReceipt, stepReceipt, ExternalCallMachine.stepReceipt,
+          run, ExternalCallMachine.run, ExternalCallMachine.a, ExternalCallMachine.v,
           applyBindings, a]
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (callRule "c0:call-language-fault" "ifLanguageFault" false
-        (C0PureNTT.a "c0:external-language-fault" [C0PureNTT.v "fault"])
-        (C0PureNTT.v "store")).premises
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (callRule "external-call:call-language-fault" "ifLanguageFault" false
+        (ExternalCallMachine.a "external-call:external-language-fault" [ExternalCallMachine.v "fault"])
+        (ExternalCallMachine.v "store")).premises
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [total_call_nonvalue_premises_empty operation first second total
-      defined "c0:call-language-fault" "ifLanguageFault"
-      "c0:external-language-fault" (by decide)] at premises
+      defined "external-call:call-language-fault" "ifLanguageFault"
+      "external-call:external-language-fault" (by decide)] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (callRule "c0:call-engine-fault" "ifEngineFault" false
-        (C0PureNTT.a "c0:external-engine-fault" [C0PureNTT.v "fault"])
-        (C0PureNTT.v "store")).premises
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (callRule "external-call:call-engine-fault" "ifEngineFault" false
+        (ExternalCallMachine.a "external-call:external-engine-fault" [ExternalCallMachine.v "fault"])
+        (ExternalCallMachine.v "store")).premises
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [total_call_nonvalue_premises_empty operation first second total
-      defined "c0:call-engine-fault" "ifEngineFault"
-      "c0:external-engine-fault" (by decide)] at premises
+      defined "external-call:call-engine-fault" "ifEngineFault"
+      "external-call:external-engine-fault" (by decide)] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (callRule "c0:call-resource-fault" "ifResourceFault" false
-        (C0PureNTT.a "c0:external-resource-fault" [C0PureNTT.v "fault"])
-        (C0PureNTT.v "store")).premises
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (callRule "external-call:call-resource-fault" "ifResourceFault" false
+        (ExternalCallMachine.a "external-call:external-resource-fault" [ExternalCallMachine.v "fault"])
+        (ExternalCallMachine.v "store")).premises
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [total_call_nonvalue_premises_empty operation first second total
-      defined "c0:call-resource-fault" "ifResourceFault"
-      "c0:external-resource-fault" (by decide)] at premises
+      defined "external-call:call-resource-fault" "ifResourceFault"
+      "external-call:external-resource-fault" (by decide)] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
       (consumeFuel :: fetch
-        (C0PureNTT.a "c0:return-value" [C0PureNTT.v "slot"]) ::
-        [query "C0ReadSlot"
-          [C0PureNTT.v "store", C0PureNTT.v "slot",
-           C0PureNTT.v "value"]])
+        (ExternalCallMachine.a "external-call:return-value" [ExternalCallMachine.v "slot"]) ::
+        [query "ExternalCallReadSlot"
+          [ExternalCallMachine.v "store", ExternalCallMachine.v "slot",
+           ExternalCallMachine.v "value"]])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [total_noncall_premises_empty operation first second total
-      "c0:return-value" [C0PureNTT.v "slot"] (by decide) _] at premises
+      "external-call:return-value" [ExternalCallMachine.v "slot"] (by decide) _] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:return-declined") :: [])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:return-declined") :: [])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [total_noncall_premises_empty operation first second total
-      "c0:return-declined" [] (by decide) []] at premises
+      "external-call:return-declined" [] (by decide) []] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
       (consumeFuel :: fetch
-        (C0PureNTT.a "c0:return-language-fault" [C0PureNTT.v "fault"]) :: [])
+        (ExternalCallMachine.a "external-call:return-language-fault" [ExternalCallMachine.v "fault"]) :: [])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [total_noncall_premises_empty operation first second total
-      "c0:return-language-fault" [C0PureNTT.v "fault"]
+      "external-call:return-language-fault" [ExternalCallMachine.v "fault"]
       (by decide) []] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
       (consumeFuel :: fetch
-        (C0PureNTT.a "c0:return-engine-fault" [C0PureNTT.v "fault"]) :: [])
+        (ExternalCallMachine.a "external-call:return-engine-fault" [ExternalCallMachine.v "fault"]) :: [])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [total_noncall_premises_empty operation first second total
-      "c0:return-engine-fault" [C0PureNTT.v "fault"]
+      "external-call:return-engine-fault" [ExternalCallMachine.v "fault"]
       (by decide) []] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
       (consumeFuel :: fetch
-        (C0PureNTT.a "c0:return-resource-fault" [C0PureNTT.v "fault"]) :: [])
+        (ExternalCallMachine.a "external-call:return-resource-fault" [ExternalCallMachine.v "fault"]) :: [])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [total_noncall_premises_empty operation first second total
-      "c0:return-resource-fault" [C0PureNTT.v "fault"]
+      "external-call:return-resource-fault" [ExternalCallMachine.v "fault"]
       (by decide) []] at premises
     simp at premises
 
@@ -1436,198 +1436,198 @@ private theorem total_after_call_step_unique
     (defined : ¬ targetUndefinedAt operation second)
     {target : Pattern}
     (step :
-      langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure (totalAfterCall operation first second) target) :
-    target = compiledC0Done operation first second := by
+      langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage (totalAfterCall operation first second) target) :
+    target = compiledExternalCallDone operation first second := by
   have root :
-      RootStep (arithmeticC0ReferenceEnv operation first second) c0Pure
+      RootStep (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (totalAfterCall operation first second) target :=
     (step_iff_rootStep_of_noncontextualRules
-      c0Pure_rules_noncontextual).mp step
+      externalCallLanguage_rules_noncontextual).mp step
   rcases root with
     ⟨rule, ruleMember, initialBindings, matched,
       finalBindings, premises, targetEq⟩
-  change rule ∈ c0PureTransitions at ruleMember
-  simp only [c0PureTransitions, List.mem_cons, List.mem_nil_iff,
+  change rule ∈ externalCallLanguageTransitions at ruleMember
+  simp only [externalCallLanguageTransitions, List.mem_cons, List.mem_nil_iff,
     or_false] at ruleMember
   rcases ruleMember with
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
   · simp [matchPatternForRule_eq_syntactic, fuelExhaustedRule,
-      totalAfterCall, totalCallReceipt, run, C0PureNTT.run, fuelInfinite,
-      a, C0PureNTT.a, C0PureNTT.v, matchPattern, matchArgs] at matched
+      totalAfterCall, totalCallReceipt, run, ExternalCallMachine.run, fuelInfinite,
+      a, ExternalCallMachine.a, ExternalCallMachine.v, matchPattern, matchArgs] at matched
   all_goals
     rw [match_totalAfterCall _ rfl operation first second] at matched
     simp only [List.mem_singleton] at matched
     subst initialBindings
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:branch-zero"
-        [C0PureNTT.v "slot", C0PureNTT.v "ifZero",
-         C0PureNTT.v "ifNonzero"]) ::
-        [query "C0ReadSlot"
-          [C0PureNTT.v "store", C0PureNTT.v "slot", C0PureNTT.v "value"],
-         query "C0IsZero" [C0PureNTT.v "value"]])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:branch-zero"
+        [ExternalCallMachine.v "slot", ExternalCallMachine.v "ifZero",
+         ExternalCallMachine.v "ifNonzero"]) ::
+        [query "ExternalCallReadSlot"
+          [ExternalCallMachine.v "store", ExternalCallMachine.v "slot", ExternalCallMachine.v "value"],
+         query "ExternalCallIsZero" [ExternalCallMachine.v "value"]])
       (runMatchBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite
         (totalCallReceipt operation first second)) at premises
     rw [total_after_call_nonreturn_premises_empty operation first second total
-      "c0:branch-zero"
-      [C0PureNTT.v "slot", C0PureNTT.v "ifZero", C0PureNTT.v "ifNonzero"]
+      "external-call:branch-zero"
+      [ExternalCallMachine.v "slot", ExternalCallMachine.v "ifZero", ExternalCallMachine.v "ifNonzero"]
       (by decide) _] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:branch-zero"
-        [C0PureNTT.v "slot", C0PureNTT.v "ifZero",
-         C0PureNTT.v "ifNonzero"]) ::
-        [query "C0ReadSlot"
-          [C0PureNTT.v "store", C0PureNTT.v "slot", C0PureNTT.v "value"],
-         query "C0IsNonzero" [C0PureNTT.v "value"]])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:branch-zero"
+        [ExternalCallMachine.v "slot", ExternalCallMachine.v "ifZero",
+         ExternalCallMachine.v "ifNonzero"]) ::
+        [query "ExternalCallReadSlot"
+          [ExternalCallMachine.v "store", ExternalCallMachine.v "slot", ExternalCallMachine.v "value"],
+         query "ExternalCallIsNonzero" [ExternalCallMachine.v "value"]])
       (runMatchBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite
         (totalCallReceipt operation first second)) at premises
     rw [total_after_call_nonreturn_premises_empty operation first second total
-      "c0:branch-zero"
-      [C0PureNTT.v "slot", C0PureNTT.v "ifZero", C0PureNTT.v "ifNonzero"]
+      "external-call:branch-zero"
+      [ExternalCallMachine.v "slot", ExternalCallMachine.v "ifZero", ExternalCallMachine.v "ifNonzero"]
       (by decide) _] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:call-binary"
-        [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-         C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-         C0PureNTT.v "ifResourceFault"]) ::
-        [query "C0CallBinaryExternal"
-          [C0PureNTT.v "program", C0PureNTT.v "external",
-           C0PureNTT.v "store",
-           C0PureNTT.a "c0:external-value" [C0PureNTT.v "nextStore"]]])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:call-binary"
+        [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+         ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+         ExternalCallMachine.v "ifResourceFault"]) ::
+        [query "ExternalCallCallBinaryExternal"
+          [ExternalCallMachine.v "program", ExternalCallMachine.v "external",
+           ExternalCallMachine.v "store",
+           ExternalCallMachine.a "external-call:external-value" [ExternalCallMachine.v "nextStore"]]])
       (runMatchBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite
         (totalCallReceipt operation first second)) at premises
     rw [total_after_call_nonreturn_premises_empty operation first second total
-      "c0:call-binary"
-      [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-       C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-       C0PureNTT.v "ifResourceFault"] (by decide) _] at premises
+      "external-call:call-binary"
+      [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+       ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+       ExternalCallMachine.v "ifResourceFault"] (by decide) _] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:call-binary"
-        [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-         C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-         C0PureNTT.v "ifResourceFault"]) ::
-        [query "C0CallBinaryExternal"
-          [C0PureNTT.v "program", C0PureNTT.v "external",
-           C0PureNTT.v "store",
-           C0PureNTT.a "c0:external-language-fault"
-             [C0PureNTT.v "fault"]]])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:call-binary"
+        [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+         ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+         ExternalCallMachine.v "ifResourceFault"]) ::
+        [query "ExternalCallCallBinaryExternal"
+          [ExternalCallMachine.v "program", ExternalCallMachine.v "external",
+           ExternalCallMachine.v "store",
+           ExternalCallMachine.a "external-call:external-language-fault"
+             [ExternalCallMachine.v "fault"]]])
       (runMatchBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite
         (totalCallReceipt operation first second)) at premises
     rw [total_after_call_nonreturn_premises_empty operation first second total
-      "c0:call-binary"
-      [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-       C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-       C0PureNTT.v "ifResourceFault"] (by decide) _] at premises
+      "external-call:call-binary"
+      [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+       ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+       ExternalCallMachine.v "ifResourceFault"] (by decide) _] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:call-binary"
-        [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-         C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-         C0PureNTT.v "ifResourceFault"]) ::
-        [query "C0CallBinaryExternal"
-          [C0PureNTT.v "program", C0PureNTT.v "external",
-           C0PureNTT.v "store",
-           C0PureNTT.a "c0:external-engine-fault"
-             [C0PureNTT.v "fault"]]])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:call-binary"
+        [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+         ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+         ExternalCallMachine.v "ifResourceFault"]) ::
+        [query "ExternalCallCallBinaryExternal"
+          [ExternalCallMachine.v "program", ExternalCallMachine.v "external",
+           ExternalCallMachine.v "store",
+           ExternalCallMachine.a "external-call:external-engine-fault"
+             [ExternalCallMachine.v "fault"]]])
       (runMatchBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite
         (totalCallReceipt operation first second)) at premises
     rw [total_after_call_nonreturn_premises_empty operation first second total
-      "c0:call-binary"
-      [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-       C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-       C0PureNTT.v "ifResourceFault"] (by decide) _] at premises
+      "external-call:call-binary"
+      [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+       ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+       ExternalCallMachine.v "ifResourceFault"] (by decide) _] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:call-binary"
-        [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-         C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-         C0PureNTT.v "ifResourceFault"]) ::
-        [query "C0CallBinaryExternal"
-          [C0PureNTT.v "program", C0PureNTT.v "external",
-           C0PureNTT.v "store",
-           C0PureNTT.a "c0:external-resource-fault"
-             [C0PureNTT.v "fault"]]])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:call-binary"
+        [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+         ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+         ExternalCallMachine.v "ifResourceFault"]) ::
+        [query "ExternalCallCallBinaryExternal"
+          [ExternalCallMachine.v "program", ExternalCallMachine.v "external",
+           ExternalCallMachine.v "store",
+           ExternalCallMachine.a "external-call:external-resource-fault"
+             [ExternalCallMachine.v "fault"]]])
       (runMatchBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite
         (totalCallReceipt operation first second)) at premises
     rw [total_after_call_nonreturn_premises_empty operation first second total
-      "c0:call-binary"
-      [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-       C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-       C0PureNTT.v "ifResourceFault"] (by decide) _] at premises
+      "external-call:call-binary"
+      [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+       ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+       ExternalCallMachine.v "ifResourceFault"] (by decide) _] at premises
     simp at premises
   · rw [total_return_premises_exact operation first second total] at premises
     simp only [List.mem_singleton] at premises
     subst finalBindings
     calc
-      target = applyBindingsForRule c0Pure returnValueTransition
+      target = applyBindingsForRule externalCallLanguage returnValueTransition
           (returnReadBindings (compileCoreOperation operation) (label 1)
             (resultStore operation first second) fuelInfinite
             (totalCallReceipt operation first second) fuelInfinite (slot 2)
             (exactIntegerValue (targetValue operation first second))) :=
         targetEq.symm
-      _ = compiledC0Done operation first second := by
+      _ = compiledExternalCallDone operation first second := by
         simp [returnValueTransition, applyBindingsForRule_eq_syntactic,
           returnReadBindings, returnFetchedBindings, consumedBindings,
-          runMatchBindings, compiledC0Done, compiledC0Outcome,
-          compiledC0Receipt, total, defined, totalCallReceipt,
+          runMatchBindings, compiledExternalCallDone, compiledExternalCallOutcome,
+          compiledExternalCallReceipt, total, defined, totalCallReceipt,
           targetExternalValue, exactIntegerValue, stepReceipt,
-          C0PureNTT.stepReceipt, halted, C0PureNTT.halted,
-          C0PureNTT.a, C0PureNTT.v, applyBindings, a]
+          ExternalCallMachine.stepReceipt, halted, ExternalCallMachine.halted,
+          ExternalCallMachine.a, ExternalCallMachine.v, applyBindings, a]
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:return-declined") :: [])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:return-declined") :: [])
       (runMatchBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite
         (totalCallReceipt operation first second)) at premises
     rw [total_after_call_nonreturn_premises_empty operation first second total
-      "c0:return-declined" [] (by decide) []] at premises
+      "external-call:return-declined" [] (by decide) []] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
       (consumeFuel :: fetch
-        (C0PureNTT.a "c0:return-language-fault" [C0PureNTT.v "fault"]) :: [])
+        (ExternalCallMachine.a "external-call:return-language-fault" [ExternalCallMachine.v "fault"]) :: [])
       (runMatchBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite
         (totalCallReceipt operation first second)) at premises
     rw [total_after_call_nonreturn_premises_empty operation first second total
-      "c0:return-language-fault" [C0PureNTT.v "fault"]
+      "external-call:return-language-fault" [ExternalCallMachine.v "fault"]
       (by decide) []] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
       (consumeFuel :: fetch
-        (C0PureNTT.a "c0:return-engine-fault" [C0PureNTT.v "fault"]) :: [])
+        (ExternalCallMachine.a "external-call:return-engine-fault" [ExternalCallMachine.v "fault"]) :: [])
       (runMatchBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite
         (totalCallReceipt operation first second)) at premises
     rw [total_after_call_nonreturn_premises_empty operation first second total
-      "c0:return-engine-fault" [C0PureNTT.v "fault"]
+      "external-call:return-engine-fault" [ExternalCallMachine.v "fault"]
       (by decide) []] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
       (consumeFuel :: fetch
-        (C0PureNTT.a "c0:return-resource-fault" [C0PureNTT.v "fault"]) :: [])
+        (ExternalCallMachine.a "external-call:return-resource-fault" [ExternalCallMachine.v "fault"]) :: [])
       (runMatchBindings (compileCoreOperation operation) (label 1)
         (resultStore operation first second) fuelInfinite
         (totalCallReceipt operation first second)) at premises
     rw [total_after_call_nonreturn_premises_empty operation first second total
-      "c0:return-resource-fault" [C0PureNTT.v "fault"]
+      "external-call:return-resource-fault" [ExternalCallMachine.v "fault"]
       (by decide) []] at premises
     simp at premises
 
@@ -1655,15 +1655,15 @@ private theorem referenceEnv_guarded_fetch_declined_exact
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true) (receipt : Pattern) :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 1)
           (inputStore first second) fuelInfinite receipt fuelInfinite)
-        (fetch (C0PureNTT.a "c0:return-declined")) =
+        (fetch (ExternalCallMachine.a "external-call:return-declined")) =
       [consumedBindings (compileCoreOperation operation) (label 1)
         (inputStore first second) fuelInfinite receipt fuelInfinite] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows, hPartial,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows, hPartial,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnDeclined, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, slot, natPattern, fault, a,
     consumedBindings, runMatchBindings, matchRelationArgs,
@@ -1674,15 +1674,15 @@ private theorem referenceEnv_guarded_fetch_at_one_nondeclined_empty
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true) (receipt : Pattern)
     (instructionName : String) (arguments : List Pattern)
-    (notDeclined : instructionName ≠ "c0:return-declined") :
+    (notDeclined : instructionName ≠ "external-call:return-declined") :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 1)
           (inputStore first second) fuelInfinite receipt fuelInfinite)
-        (fetch (C0PureNTT.a instructionName arguments)) = [] := by
+        (fetch (ExternalCallMachine.a instructionName arguments)) = [] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows, hPartial,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows, hPartial,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnDeclined, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, slot, natPattern, fault, a,
     consumedBindings, runMatchBindings, matchRelationArgs,
@@ -1693,19 +1693,19 @@ private theorem referenceEnv_guarded_fetch_call_exact
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true) (receipt : Pattern) :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 2)
           (inputStore first second) fuelInfinite receipt fuelInfinite)
-        (fetch (C0PureNTT.a "c0:call-binary"
-          [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-           C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-           C0PureNTT.v "ifResourceFault"])) =
+        (fetch (ExternalCallMachine.a "external-call:call-binary"
+          [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+           ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+           ExternalCallMachine.v "ifResourceFault"])) =
       [callFetchedBindings (compileCoreOperation operation) (label 2)
         (inputStore first second) fuelInfinite receipt fuelInfinite
         (external 0) (label 3) (label 4) (label 5) (label 6)] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows, hPartial,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows, hPartial,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnDeclined, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, slot, natPattern, fault, a,
     consumedBindings, callFetchedBindings, runMatchBindings,
@@ -1716,15 +1716,15 @@ private theorem referenceEnv_guarded_fetch_at_two_noncall_empty
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true) (receipt : Pattern)
     (instructionName : String) (arguments : List Pattern)
-    (notCall : instructionName ≠ "c0:call-binary") :
+    (notCall : instructionName ≠ "external-call:call-binary") :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 2)
           (inputStore first second) fuelInfinite receipt fuelInfinite)
-        (fetch (C0PureNTT.a instructionName arguments)) = [] := by
+        (fetch (ExternalCallMachine.a instructionName arguments)) = [] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows, hPartial,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows, hPartial,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnDeclined, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, slot, natPattern, fault, a,
     consumedBindings, runMatchBindings, matchRelationArgs,
@@ -1735,16 +1735,16 @@ private theorem referenceEnv_guarded_fetch_return_value_exact
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true) (receipt : Pattern) :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 3)
           (resultStore operation first second) fuelInfinite receipt fuelInfinite)
-        (fetch (C0PureNTT.a "c0:return-value" [C0PureNTT.v "slot"])) =
+        (fetch (ExternalCallMachine.a "external-call:return-value" [ExternalCallMachine.v "slot"])) =
       [returnFetchedBindings (compileCoreOperation operation) (label 3)
         (resultStore operation first second) fuelInfinite receipt fuelInfinite
         (slot 2)] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows, hPartial,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows, hPartial,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnDeclined, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, slot, natPattern, fault, a,
     consumedBindings, returnFetchedBindings, runMatchBindings,
@@ -1755,15 +1755,15 @@ private theorem referenceEnv_guarded_fetch_at_three_nonreturn_empty
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true) (receipt : Pattern)
     (instructionName : String) (arguments : List Pattern)
-    (notReturn : instructionName ≠ "c0:return-value") :
+    (notReturn : instructionName ≠ "external-call:return-value") :
     premiseStepWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (consumedBindings (compileCoreOperation operation) (label 3)
           (resultStore operation first second) fuelInfinite receipt fuelInfinite)
-        (fetch (C0PureNTT.a instructionName arguments)) = [] := by
+        (fetch (ExternalCallMachine.a instructionName arguments)) = [] := by
   simp [premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
-    arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows, hPartial,
-    fetch, query, C0PureNTT.a, C0PureNTT.v, callExternal,
+    arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows, hPartial,
+    fetch, query, ExternalCallMachine.a, ExternalCallMachine.v, callExternal,
     returnValue, returnDeclined, returnLanguageFault, returnEngineFault,
     returnResourceFault, label, external, slot, natPattern, fault, a,
     consumedBindings, runMatchBindings, matchRelationArgs,
@@ -1774,7 +1774,7 @@ private theorem guarded_decline_premises_exact
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         returnDeclinedTransition.premises
         (runMatchBindings (compileCoreOperation operation) (label 1)
           (inputStore first second) fuelInfinite guardedBranchReceipt) =
@@ -1792,11 +1792,11 @@ private theorem guarded_after_decline_nondeclined_premises_empty
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true)
     (instructionName : String) (arguments : List Pattern)
-    (notDeclined : instructionName ≠ "c0:return-declined")
+    (notDeclined : instructionName ≠ "external-call:return-declined")
     (remaining : List Premise) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
-        (consumeFuel :: fetch (C0PureNTT.a instructionName arguments) ::
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+        (consumeFuel :: fetch (ExternalCallMachine.a instructionName arguments) ::
           remaining)
         (runMatchBindings (compileCoreOperation operation) (label 1)
           (inputStore first second) fuelInfinite guardedBranchReceipt) = [] := by
@@ -1819,7 +1819,7 @@ private theorem guarded_call_premises_exact
     (hPartial : operation.isPartial = true)
     (defined : ¬ targetUndefinedAt operation second) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         callValueTransition.premises
         (runMatchBindings (compileCoreOperation operation) (label 2)
           (inputStore first second) fuelInfinite guardedBranchReceipt) =
@@ -1843,12 +1843,12 @@ private theorem guarded_call_nonvalue_premises_empty
     (hPartial : operation.isPartial = true)
     (defined : ¬ targetUndefinedAt operation second)
     (name target outcomeTag : String)
-    (notValue : outcomeTag ≠ "c0:external-value") :
+    (notValue : outcomeTag ≠ "external-call:external-value") :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         (callRule name target false
-          (C0PureNTT.a outcomeTag [C0PureNTT.v "fault"])
-          (C0PureNTT.v "store")).premises
+          (ExternalCallMachine.a outcomeTag [ExternalCallMachine.v "fault"])
+          (ExternalCallMachine.v "store")).premises
         (runMatchBindings (compileCoreOperation operation) (label 2)
           (inputStore first second) fuelInfinite guardedBranchReceipt) = [] := by
   simp only [callRule, applyPremisesWithEnv, List.foldl_cons,
@@ -1866,11 +1866,11 @@ private theorem guarded_after_branch_noncall_premises_empty
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true)
     (instructionName : String) (arguments : List Pattern)
-    (notCall : instructionName ≠ "c0:call-binary")
+    (notCall : instructionName ≠ "external-call:call-binary")
     (remaining : List Premise) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
-        (consumeFuel :: fetch (C0PureNTT.a instructionName arguments) ::
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+        (consumeFuel :: fetch (ExternalCallMachine.a instructionName arguments) ::
           remaining)
         (runMatchBindings (compileCoreOperation operation) (label 2)
           (inputStore first second) fuelInfinite guardedBranchReceipt) = [] := by
@@ -1892,7 +1892,7 @@ private theorem guarded_return_premises_exact
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
         returnValueTransition.premises
         (runMatchBindings (compileCoreOperation operation) (label 3)
           (resultStore operation first second) fuelInfinite
@@ -1916,11 +1916,11 @@ private theorem guarded_after_call_nonreturn_premises_empty
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true)
     (instructionName : String) (arguments : List Pattern)
-    (notReturn : instructionName ≠ "c0:return-value")
+    (notReturn : instructionName ≠ "external-call:return-value")
     (remaining : List Premise) :
     applyPremisesWithEnv
-        (arithmeticC0ReferenceEnv operation first second) c0Pure
-        (consumeFuel :: fetch (C0PureNTT.a instructionName arguments) ::
+        (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+        (consumeFuel :: fetch (ExternalCallMachine.a instructionName arguments) ::
           remaining)
         (runMatchBindings (compileCoreOperation operation) (label 3)
           (resultStore operation first second) fuelInfinite
@@ -1943,15 +1943,15 @@ private theorem guarded_after_call_nonreturn_premises_empty
 private theorem match_guardedAfterBranch
     (rule : RewriteRule)
     (leftShape : rule.left =
-      C0PureNTT.run (C0PureNTT.v "program") (C0PureNTT.v "pc")
-        (C0PureNTT.v "store") (C0PureNTT.v "fuel")
-        (C0PureNTT.v "receipt"))
+      ExternalCallMachine.run (ExternalCallMachine.v "program") (ExternalCallMachine.v "pc")
+        (ExternalCallMachine.v "store") (ExternalCallMachine.v "fuel")
+        (ExternalCallMachine.v "receipt"))
     (operation : CoreOp) (first second : Int) (targetLabel : Nat) :
-    matchPatternForRule c0Pure rule
+    matchPatternForRule externalCallLanguage rule
         (guardedAfterBranch operation first second targetLabel) =
       [runMatchBindings (compileCoreOperation operation) (label targetLabel)
         (inputStore first second) fuelInfinite guardedBranchReceipt] := by
-  simpa [guardedAfterBranch, run, C0PureNTT.run, a, C0PureNTT.a] using
+  simpa [guardedAfterBranch, run, ExternalCallMachine.run, a, ExternalCallMachine.a] using
     match_run_transition rule leftShape
       (compileCoreOperation operation) (label targetLabel)
       (inputStore first second) fuelInfinite guardedBranchReceipt
@@ -1959,63 +1959,63 @@ private theorem match_guardedAfterBranch
 private theorem match_guardedAfterCall
     (rule : RewriteRule)
     (leftShape : rule.left =
-      C0PureNTT.run (C0PureNTT.v "program") (C0PureNTT.v "pc")
-        (C0PureNTT.v "store") (C0PureNTT.v "fuel")
-        (C0PureNTT.v "receipt"))
+      ExternalCallMachine.run (ExternalCallMachine.v "program") (ExternalCallMachine.v "pc")
+        (ExternalCallMachine.v "store") (ExternalCallMachine.v "fuel")
+        (ExternalCallMachine.v "receipt"))
     (operation : CoreOp) (first second : Int) :
-    matchPatternForRule c0Pure rule
+    matchPatternForRule externalCallLanguage rule
         (guardedAfterCall operation first second) =
       [runMatchBindings (compileCoreOperation operation) (label 3)
         (resultStore operation first second) fuelInfinite
         (guardedExternalReceipt operation first second)] := by
-  simpa [guardedAfterCall, run, C0PureNTT.run, a, C0PureNTT.a] using
+  simpa [guardedAfterCall, run, ExternalCallMachine.run, a, ExternalCallMachine.a] using
     match_run_transition rule leftShape
       (compileCoreOperation operation) (label 3)
       (resultStore operation first second) fuelInfinite
       (guardedExternalReceipt operation first second)
 
-/-- A running C0 state is deterministic whenever every non-fuel rule's
+/-- A running ExternalCall state is deterministic whenever every non-fuel rule's
 reachable premise fibre resolves to the same target.  This packages the
 common root-step inversion without assuming global determinism of arbitrary
-relation environments or arbitrary C0 programs. -/
+relation environments or arbitrary ExternalCall programs. -/
 private theorem running_step_unique_from_resolver
     (relationEnv : RelationEnv)
     (program pc store receipt desired : Pattern)
     (resolve : ∀ rule,
-      rule ∈ c0PureTransitions →
-      rule.name ≠ "c0:fuel-exhausted" →
+      rule ∈ externalCallLanguageTransitions →
+      rule.name ≠ "external-call:fuel-exhausted" →
       ∀ finalBindings,
-        finalBindings ∈ applyPremisesWithEnv relationEnv c0Pure rule.premises
+        finalBindings ∈ applyPremisesWithEnv relationEnv externalCallLanguage rule.premises
           (runMatchBindings program pc store fuelInfinite receipt) →
-        applyBindingsForRule c0Pure rule finalBindings = desired)
+        applyBindingsForRule externalCallLanguage rule finalBindings = desired)
     {target : Pattern}
-    (step : langReducesUsing relationEnv c0Pure
+    (step : langReducesUsing relationEnv externalCallLanguage
       (run program pc store receipt) target) :
     target = desired := by
-  have root : RootStep relationEnv c0Pure
+  have root : RootStep relationEnv externalCallLanguage
       (run program pc store receipt) target :=
     (step_iff_rootStep_of_noncontextualRules
-      c0Pure_rules_noncontextual).mp step
+      externalCallLanguage_rules_noncontextual).mp step
   rcases root with
     ⟨rule, ruleMember, initialBindings, matched,
       finalBindings, premises, targetEq⟩
-  change rule ∈ c0PureTransitions at ruleMember
-  simp only [c0PureTransitions, List.mem_cons, List.mem_nil_iff,
+  change rule ∈ externalCallLanguageTransitions at ruleMember
+  simp only [externalCallLanguageTransitions, List.mem_cons, List.mem_nil_iff,
     or_false] at ruleMember
   rcases ruleMember with
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
   · simp [matchPatternForRule_eq_syntactic, fuelExhaustedRule,
-      run, C0PureNTT.run, fuelInfinite,
-      a, C0PureNTT.a, C0PureNTT.v, matchPattern, matchArgs] at matched
+      run, ExternalCallMachine.run, fuelInfinite,
+      a, ExternalCallMachine.a, ExternalCallMachine.v, matchPattern, matchArgs] at matched
   all_goals
-    change initialBindings ∈ matchPatternForRule c0Pure _
-      (C0PureNTT.run program pc store fuelInfinite receipt) at matched
+    change initialBindings ∈ matchPatternForRule externalCallLanguage _
+      (ExternalCallMachine.run program pc store fuelInfinite receipt) at matched
     rw [match_run_transition _ rfl program pc store fuelInfinite receipt]
       at matched
     simp only [List.mem_singleton] at matched
     subst initialBindings
     exact targetEq.symm.trans
-      (resolve _ (by simp [c0PureTransitions]) (by decide)
+      (resolve _ (by simp [externalCallLanguageTransitions]) (by decide)
         finalBindings premises)
 
 private theorem guarded_start_step_unique_from_fibres
@@ -2025,49 +2025,49 @@ private theorem guarded_start_step_unique_from_fibres
     (zeroFinal nonzeroFinal : Option Bindings)
     (zeroPremises :
       applyPremisesWithEnv
-          (arithmeticC0ReferenceEnv operation first second) c0Pure
+          (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
           branchZeroTransition.premises
           (runMatchBindings (compileCoreOperation operation) (label 0)
             (inputStore first second) fuelInfinite receiptNil) =
         zeroFinal.toList)
     (nonzeroPremises :
       applyPremisesWithEnv
-          (arithmeticC0ReferenceEnv operation first second) c0Pure
+          (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
           branchNonzeroTransition.premises
           (runMatchBindings (compileCoreOperation operation) (label 0)
             (inputStore first second) fuelInfinite receiptNil) =
         nonzeroFinal.toList)
     (zeroTarget : ∀ finalBindings,
       zeroFinal = some finalBindings →
-        applyBindingsForRule c0Pure branchZeroTransition finalBindings =
+        applyBindingsForRule externalCallLanguage branchZeroTransition finalBindings =
           desired)
     (nonzeroTarget : ∀ finalBindings,
       nonzeroFinal = some finalBindings →
-        applyBindingsForRule c0Pure branchNonzeroTransition finalBindings =
+        applyBindingsForRule externalCallLanguage branchNonzeroTransition finalBindings =
           desired)
     {target : Pattern}
     (step :
-      langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure (compiledC0Start operation first second) target) :
+      langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage (compiledExternalCallStart operation first second) target) :
     target = desired := by
   have root :
-      RootStep (arithmeticC0ReferenceEnv operation first second) c0Pure
-        (compiledC0Start operation first second) target :=
+      RootStep (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+        (compiledExternalCallStart operation first second) target :=
     (step_iff_rootStep_of_noncontextualRules
-      c0Pure_rules_noncontextual).mp step
+      externalCallLanguage_rules_noncontextual).mp step
   rcases root with
     ⟨rule, ruleMember, initialBindings, matched,
       finalBindings, premises, targetEq⟩
-  change rule ∈ c0PureTransitions at ruleMember
-  simp only [c0PureTransitions, List.mem_cons, List.mem_nil_iff,
+  change rule ∈ externalCallLanguageTransitions at ruleMember
+  simp only [externalCallLanguageTransitions, List.mem_cons, List.mem_nil_iff,
     or_false] at ruleMember
   rcases ruleMember with
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
   · simp [matchPatternForRule_eq_syntactic, fuelExhaustedRule,
-      compiledC0Start, run, C0PureNTT.run, fuelInfinite,
-      a, C0PureNTT.a, C0PureNTT.v, matchPattern, matchArgs] at matched
+      compiledExternalCallStart, run, ExternalCallMachine.run, fuelInfinite,
+      a, ExternalCallMachine.a, ExternalCallMachine.v, matchPattern, matchArgs] at matched
   all_goals
-    rw [match_compiledC0Start _ rfl operation first second] at matched
+    rw [match_compiledExternalCallStart _ rfl operation first second] at matched
     simp only [List.mem_singleton] at matched
     subst initialBindings
   · rw [zeroPremises] at premises
@@ -2085,128 +2085,128 @@ private theorem guarded_start_step_unique_from_fibres
         subst finalBindings
         exact targetEq.symm.trans (nonzeroTarget admitted nonzeroCase)
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:call-binary"
-        [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-         C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-         C0PureNTT.v "ifResourceFault"]) ::
-        [query "C0CallBinaryExternal"
-          [C0PureNTT.v "program", C0PureNTT.v "external",
-           C0PureNTT.v "store",
-           C0PureNTT.a "c0:external-value" [C0PureNTT.v "nextStore"]]])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:call-binary"
+        [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+         ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+         ExternalCallMachine.v "ifResourceFault"]) ::
+        [query "ExternalCallCallBinaryExternal"
+          [ExternalCallMachine.v "program", ExternalCallMachine.v "external",
+           ExternalCallMachine.v "store",
+           ExternalCallMachine.a "external-call:external-value" [ExternalCallMachine.v "nextStore"]]])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [guarded_start_nonbranch_premises_empty operation first second hPartial
-      "c0:call-binary"
-      [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-       C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-       C0PureNTT.v "ifResourceFault"] (by decide) _] at premises
+      "external-call:call-binary"
+      [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+       ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+       ExternalCallMachine.v "ifResourceFault"] (by decide) _] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:call-binary"
-        [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-         C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-         C0PureNTT.v "ifResourceFault"]) ::
-        [query "C0CallBinaryExternal"
-          [C0PureNTT.v "program", C0PureNTT.v "external",
-           C0PureNTT.v "store",
-           C0PureNTT.a "c0:external-language-fault"
-             [C0PureNTT.v "fault"]]])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:call-binary"
+        [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+         ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+         ExternalCallMachine.v "ifResourceFault"]) ::
+        [query "ExternalCallCallBinaryExternal"
+          [ExternalCallMachine.v "program", ExternalCallMachine.v "external",
+           ExternalCallMachine.v "store",
+           ExternalCallMachine.a "external-call:external-language-fault"
+             [ExternalCallMachine.v "fault"]]])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [guarded_start_nonbranch_premises_empty operation first second hPartial
-      "c0:call-binary"
-      [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-       C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-       C0PureNTT.v "ifResourceFault"] (by decide) _] at premises
+      "external-call:call-binary"
+      [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+       ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+       ExternalCallMachine.v "ifResourceFault"] (by decide) _] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:call-binary"
-        [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-         C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-         C0PureNTT.v "ifResourceFault"]) ::
-        [query "C0CallBinaryExternal"
-          [C0PureNTT.v "program", C0PureNTT.v "external",
-           C0PureNTT.v "store",
-           C0PureNTT.a "c0:external-engine-fault"
-             [C0PureNTT.v "fault"]]])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:call-binary"
+        [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+         ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+         ExternalCallMachine.v "ifResourceFault"]) ::
+        [query "ExternalCallCallBinaryExternal"
+          [ExternalCallMachine.v "program", ExternalCallMachine.v "external",
+           ExternalCallMachine.v "store",
+           ExternalCallMachine.a "external-call:external-engine-fault"
+             [ExternalCallMachine.v "fault"]]])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [guarded_start_nonbranch_premises_empty operation first second hPartial
-      "c0:call-binary"
-      [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-       C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-       C0PureNTT.v "ifResourceFault"] (by decide) _] at premises
+      "external-call:call-binary"
+      [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+       ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+       ExternalCallMachine.v "ifResourceFault"] (by decide) _] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:call-binary"
-        [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-         C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-         C0PureNTT.v "ifResourceFault"]) ::
-        [query "C0CallBinaryExternal"
-          [C0PureNTT.v "program", C0PureNTT.v "external",
-           C0PureNTT.v "store",
-           C0PureNTT.a "c0:external-resource-fault"
-             [C0PureNTT.v "fault"]]])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:call-binary"
+        [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+         ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+         ExternalCallMachine.v "ifResourceFault"]) ::
+        [query "ExternalCallCallBinaryExternal"
+          [ExternalCallMachine.v "program", ExternalCallMachine.v "external",
+           ExternalCallMachine.v "store",
+           ExternalCallMachine.a "external-call:external-resource-fault"
+             [ExternalCallMachine.v "fault"]]])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [guarded_start_nonbranch_premises_empty operation first second hPartial
-      "c0:call-binary"
-      [C0PureNTT.v "external", C0PureNTT.v "ifValue",
-       C0PureNTT.v "ifLanguageFault", C0PureNTT.v "ifEngineFault",
-       C0PureNTT.v "ifResourceFault"] (by decide) _] at premises
+      "external-call:call-binary"
+      [ExternalCallMachine.v "external", ExternalCallMachine.v "ifValue",
+       ExternalCallMachine.v "ifLanguageFault", ExternalCallMachine.v "ifEngineFault",
+       ExternalCallMachine.v "ifResourceFault"] (by decide) _] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
       (consumeFuel :: fetch
-        (C0PureNTT.a "c0:return-value" [C0PureNTT.v "slot"]) ::
-        [query "C0ReadSlot"
-          [C0PureNTT.v "store", C0PureNTT.v "slot",
-           C0PureNTT.v "value"]])
+        (ExternalCallMachine.a "external-call:return-value" [ExternalCallMachine.v "slot"]) ::
+        [query "ExternalCallReadSlot"
+          [ExternalCallMachine.v "store", ExternalCallMachine.v "slot",
+           ExternalCallMachine.v "value"]])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [guarded_start_nonbranch_premises_empty operation first second hPartial
-      "c0:return-value" [C0PureNTT.v "slot"] (by decide) _] at premises
+      "external-call:return-value" [ExternalCallMachine.v "slot"] (by decide) _] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
-      (consumeFuel :: fetch (C0PureNTT.a "c0:return-declined") :: [])
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+      (consumeFuel :: fetch (ExternalCallMachine.a "external-call:return-declined") :: [])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [guarded_start_nonbranch_premises_empty operation first second hPartial
-      "c0:return-declined" [] (by decide) []] at premises
+      "external-call:return-declined" [] (by decide) []] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
       (consumeFuel :: fetch
-        (C0PureNTT.a "c0:return-language-fault" [C0PureNTT.v "fault"]) :: [])
+        (ExternalCallMachine.a "external-call:return-language-fault" [ExternalCallMachine.v "fault"]) :: [])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [guarded_start_nonbranch_premises_empty operation first second hPartial
-      "c0:return-language-fault" [C0PureNTT.v "fault"]
+      "external-call:return-language-fault" [ExternalCallMachine.v "fault"]
       (by decide) []] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
       (consumeFuel :: fetch
-        (C0PureNTT.a "c0:return-engine-fault" [C0PureNTT.v "fault"]) :: [])
+        (ExternalCallMachine.a "external-call:return-engine-fault" [ExternalCallMachine.v "fault"]) :: [])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [guarded_start_nonbranch_premises_empty operation first second hPartial
-      "c0:return-engine-fault" [C0PureNTT.v "fault"]
+      "external-call:return-engine-fault" [ExternalCallMachine.v "fault"]
       (by decide) []] at premises
     simp at premises
   · change finalBindings ∈ applyPremisesWithEnv
-      (arithmeticC0ReferenceEnv operation first second) c0Pure
+      (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
       (consumeFuel :: fetch
-        (C0PureNTT.a "c0:return-resource-fault" [C0PureNTT.v "fault"]) :: [])
+        (ExternalCallMachine.a "external-call:return-resource-fault" [ExternalCallMachine.v "fault"]) :: [])
       (runMatchBindings (compileCoreOperation operation) (label 0)
         (inputStore first second) fuelInfinite receiptNil) at premises
     rw [guarded_start_nonbranch_premises_empty operation first second hPartial
-      "c0:return-resource-fault" [C0PureNTT.v "fault"]
+      "external-call:return-resource-fault" [ExternalCallMachine.v "fault"]
       (by decide) []] at premises
     simp at premises
 
@@ -2216,8 +2216,8 @@ private theorem guarded_zero_start_step_unique
     (zeroDivisor : second = 0)
     {target : Pattern}
     (step :
-      langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure (compiledC0Start operation first second) target) :
+      langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage (compiledExternalCallStart operation first second) target) :
     target = guardedAfterBranch operation first second 1 := by
   let final := branchReadBindings (compileCoreOperation operation) (label 0)
     (inputStore first second) fuelInfinite receiptNil fuelInfinite
@@ -2237,8 +2237,8 @@ private theorem guarded_zero_start_step_unique
       applyBindingsForRule_eq_syntactic, branchReadBindings,
       branchFetchedBindings, consumedBindings, runMatchBindings,
       guardedAfterBranch, guardedBranchReceipt,
-      stepReceipt, C0PureNTT.stepReceipt,
-      run, C0PureNTT.run, C0PureNTT.a, C0PureNTT.v,
+      stepReceipt, ExternalCallMachine.stepReceipt,
+      run, ExternalCallMachine.run, ExternalCallMachine.a, ExternalCallMachine.v,
       applyBindings, a]
   · intro admitted admittedEq
     simp at admittedEq
@@ -2250,8 +2250,8 @@ private theorem guarded_nonzero_start_step_unique
     (nonzeroDivisor : second ≠ 0)
     {target : Pattern}
     (step :
-      langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure (compiledC0Start operation first second) target) :
+      langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage (compiledExternalCallStart operation first second) target) :
     target = guardedAfterBranch operation first second 2 := by
   let final := branchReadBindings (compileCoreOperation operation) (label 0)
     (inputStore first second) fuelInfinite receiptNil fuelInfinite
@@ -2273,8 +2273,8 @@ private theorem guarded_nonzero_start_step_unique
       applyBindingsForRule_eq_syntactic, branchReadBindings,
       branchFetchedBindings, consumedBindings, runMatchBindings,
       guardedAfterBranch, guardedBranchReceipt,
-      stepReceipt, C0PureNTT.stepReceipt,
-      run, C0PureNTT.run, C0PureNTT.a, C0PureNTT.v,
+      stepReceipt, ExternalCallMachine.stepReceipt,
+      run, ExternalCallMachine.run, ExternalCallMachine.a, ExternalCallMachine.v,
       applyBindings, a]
   · exact step
 
@@ -2284,16 +2284,16 @@ private theorem guarded_decline_step_unique
     (undefined : targetUndefinedAt operation second)
     {target : Pattern}
     (step :
-      langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure (guardedAfterBranch operation first second 1) target) :
-    target = compiledC0Done operation first second := by
+      langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage (guardedAfterBranch operation first second 1) target) :
+    target = compiledExternalCallDone operation first second := by
   apply running_step_unique_from_resolver
-    (arithmeticC0ReferenceEnv operation first second)
+    (arithmeticExternalCallReferenceEnv operation first second)
     (compileCoreOperation operation) (label 1) (inputStore first second)
-    guardedBranchReceipt (compiledC0Done operation first second)
+    guardedBranchReceipt (compiledExternalCallDone operation first second)
   · intro rule ruleMember nonFuel finalBindings premises
-    change rule ∈ c0PureTransitions at ruleMember
-    simp only [c0PureTransitions, List.mem_cons, List.mem_nil_iff,
+    change rule ∈ externalCallLanguageTransitions at ruleMember
+    simp only [externalCallLanguageTransitions, List.mem_cons, List.mem_nil_iff,
       or_false] at ruleMember
     rcases ruleMember with
       rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
@@ -2306,13 +2306,13 @@ private theorem guarded_decline_step_unique
          subst finalBindings
          simp [returnDeclinedTransition, applyBindingsForRule_eq_syntactic,
            consumedBindings, runMatchBindings,
-           compiledC0Done, compiledC0Outcome, compiledC0Receipt, undefined,
-           guardedBranchReceipt, stepReceipt, C0PureNTT.stepReceipt,
-           halted, C0PureNTT.halted, C0PureNTT.a, C0PureNTT.v,
+           compiledExternalCallDone, compiledExternalCallOutcome, compiledExternalCallReceipt, undefined,
+           guardedBranchReceipt, stepReceipt, ExternalCallMachine.stepReceipt,
+           halted, ExternalCallMachine.halted, ExternalCallMachine.a, ExternalCallMachine.v,
            applyBindings, a])
       | (change finalBindings ∈ applyPremisesWithEnv
-            (arithmeticC0ReferenceEnv operation first second) c0Pure
-            (consumeFuel :: fetch (C0PureNTT.a _ _) :: _)
+            (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+            (consumeFuel :: fetch (ExternalCallMachine.a _ _) :: _)
             (runMatchBindings (compileCoreOperation operation) (label 1)
               (inputStore first second) fuelInfinite guardedBranchReceipt)
             at premises
@@ -2327,16 +2327,16 @@ private theorem guarded_call_step_unique
     (defined : ¬ targetUndefinedAt operation second)
     {target : Pattern}
     (step :
-      langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure (guardedAfterBranch operation first second 2) target) :
+      langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage (guardedAfterBranch operation first second 2) target) :
     target = guardedAfterCall operation first second := by
   apply running_step_unique_from_resolver
-    (arithmeticC0ReferenceEnv operation first second)
+    (arithmeticExternalCallReferenceEnv operation first second)
     (compileCoreOperation operation) (label 2) (inputStore first second)
     guardedBranchReceipt (guardedAfterCall operation first second)
   · intro rule ruleMember nonFuel finalBindings premises
-    change rule ∈ c0PureTransitions at ruleMember
-    simp only [c0PureTransitions, List.mem_cons, List.mem_nil_iff,
+    change rule ∈ externalCallLanguageTransitions at ruleMember
+    simp only [externalCallLanguageTransitions, List.mem_cons, List.mem_nil_iff,
       or_false] at ruleMember
     rcases ruleMember with
       rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
@@ -2352,15 +2352,15 @@ private theorem guarded_call_step_unique
            callValueBindings, callFetchedBindings, consumedBindings,
            runMatchBindings, guardedAfterCall, guardedExternalReceipt,
            guardedBranchReceipt, targetExternalValue,
-           externalReceipt, C0PureNTT.externalReceipt,
-           stepReceipt, C0PureNTT.stepReceipt,
-           run, C0PureNTT.run, C0PureNTT.a, C0PureNTT.v,
+           externalReceipt, ExternalCallMachine.externalReceipt,
+           stepReceipt, ExternalCallMachine.stepReceipt,
+           run, ExternalCallMachine.run, ExternalCallMachine.a, ExternalCallMachine.v,
            applyBindings, a])
       | (change finalBindings ∈ applyPremisesWithEnv
-            (arithmeticC0ReferenceEnv operation first second) c0Pure
+            (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
             (callRule _ _ false
-              (C0PureNTT.a _ [C0PureNTT.v "fault"])
-              (C0PureNTT.v "store")).premises
+              (ExternalCallMachine.a _ [ExternalCallMachine.v "fault"])
+              (ExternalCallMachine.v "store")).premises
             (runMatchBindings (compileCoreOperation operation) (label 2)
               (inputStore first second) fuelInfinite guardedBranchReceipt)
             at premises
@@ -2369,8 +2369,8 @@ private theorem guarded_call_step_unique
             at premises
          simp at premises)
       | (change finalBindings ∈ applyPremisesWithEnv
-            (arithmeticC0ReferenceEnv operation first second) c0Pure
-            (consumeFuel :: fetch (C0PureNTT.a _ _) :: _)
+            (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+            (consumeFuel :: fetch (ExternalCallMachine.a _ _) :: _)
             (runMatchBindings (compileCoreOperation operation) (label 2)
               (inputStore first second) fuelInfinite guardedBranchReceipt)
             at premises
@@ -2385,18 +2385,18 @@ private theorem guarded_return_step_unique
     (defined : ¬ targetUndefinedAt operation second)
     {target : Pattern}
     (step :
-      langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure (guardedAfterCall operation first second) target) :
-    target = compiledC0Done operation first second := by
+      langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage (guardedAfterCall operation first second) target) :
+    target = compiledExternalCallDone operation first second := by
   apply running_step_unique_from_resolver
-    (arithmeticC0ReferenceEnv operation first second)
+    (arithmeticExternalCallReferenceEnv operation first second)
     (compileCoreOperation operation) (label 3)
     (resultStore operation first second)
     (guardedExternalReceipt operation first second)
-    (compiledC0Done operation first second)
+    (compiledExternalCallDone operation first second)
   · intro rule ruleMember nonFuel finalBindings premises
-    change rule ∈ c0PureTransitions at ruleMember
-    simp only [c0PureTransitions, List.mem_cons, List.mem_nil_iff,
+    change rule ∈ externalCallLanguageTransitions at ruleMember
+    simp only [externalCallLanguageTransitions, List.mem_cons, List.mem_nil_iff,
       or_false] at ruleMember
     rcases ruleMember with
       rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
@@ -2409,16 +2409,16 @@ private theorem guarded_return_step_unique
          subst finalBindings
          simp [returnValueTransition, applyBindingsForRule_eq_syntactic,
            returnReadBindings, returnFetchedBindings, consumedBindings,
-           runMatchBindings, compiledC0Done, compiledC0Outcome,
-           compiledC0Receipt, hPartial, defined,
+           runMatchBindings, compiledExternalCallDone, compiledExternalCallOutcome,
+           compiledExternalCallReceipt, hPartial, defined,
            guardedExternalReceipt, guardedBranchReceipt,
            targetExternalValue, exactIntegerValue,
-           stepReceipt, C0PureNTT.stepReceipt,
-           halted, C0PureNTT.halted, C0PureNTT.a, C0PureNTT.v,
+           stepReceipt, ExternalCallMachine.stepReceipt,
+           halted, ExternalCallMachine.halted, ExternalCallMachine.a, ExternalCallMachine.v,
            applyBindings, a])
       | (change finalBindings ∈ applyPremisesWithEnv
-            (arithmeticC0ReferenceEnv operation first second) c0Pure
-            (consumeFuel :: fetch (C0PureNTT.a _ _) :: _)
+            (arithmeticExternalCallReferenceEnv operation first second) externalCallLanguage
+            (consumeFuel :: fetch (ExternalCallMachine.a _ _) :: _)
             (runMatchBindings (compileCoreOperation operation) (label 3)
               (resultStore operation first second) fuelInfinite
               (guardedExternalReceipt operation first second))
@@ -2432,16 +2432,16 @@ private theorem total_call_step
     (operation : CoreOp) (first second : Int)
     (total : operation.isPartial = false)
     (defined : ¬ targetUndefinedAt operation second) :
-    langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-      c0Pure (compiledC0Start operation first second)
+    langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+      externalCallLanguage (compiledExternalCallStart operation first second)
       (totalAfterCall operation first second) := by
-  apply admittedC0Step
-  simpa [compiledC0Start, totalAfterCall, totalCallReceipt,
-    run, C0PureNTT.run,
-    externalReceipt, C0PureNTT.externalReceipt, targetExternalValue,
-    stepReceipt, C0PureNTT.stepReceipt, a, C0PureNTT.a] using
+  apply admittedExternalCallStep
+  simpa [compiledExternalCallStart, totalAfterCall, totalCallReceipt,
+    run, ExternalCallMachine.run,
+    externalReceipt, ExternalCallMachine.externalReceipt, targetExternalValue,
+    stepReceipt, ExternalCallMachine.stepReceipt, a, ExternalCallMachine.a] using
     (callValueTransition_mem_rewriteAt
-      (relationEnv := arithmeticC0ReferenceEnv operation first second)
+      (relationEnv := arithmeticExternalCallReferenceEnv operation first second)
       (program := compileCoreOperation operation)
       (pc := label 0) (store := inputStore first second)
       (fuel := fuelInfinite) (receipt := receiptNil)
@@ -2449,28 +2449,28 @@ private theorem total_call_step
       (ifValue := label 1) (ifLanguageFault := label 2)
       (ifEngineFault := label 3) (ifResourceFault := label 4)
       (nextStore := resultStore operation first second)
-      (by simp [arithmeticC0ReferenceEnv])
-      (by simp [arithmeticC0ReferenceEnv, fetchRows, totalFetchRows, total,
-        callExternal, a, C0PureNTT.a])
-      (by simp [arithmeticC0ReferenceEnv, defined, targetExternalValue,
-        a, C0PureNTT.a]))
+      (by simp [arithmeticExternalCallReferenceEnv])
+      (by simp [arithmeticExternalCallReferenceEnv, fetchRows, totalFetchRows, total,
+        callExternal, a, ExternalCallMachine.a])
+      (by simp [arithmeticExternalCallReferenceEnv, defined, targetExternalValue,
+        a, ExternalCallMachine.a]))
 
 private theorem total_return_step
     (operation : CoreOp) (first second : Int)
     (total : operation.isPartial = false)
     (defined : ¬ targetUndefinedAt operation second) :
-    langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-      c0Pure (totalAfterCall operation first second)
-      (compiledC0Done operation first second) := by
-  apply admittedC0Step
-  simpa [totalAfterCall, totalCallReceipt, compiledC0Done, compiledC0Outcome,
-    compiledC0Receipt, total, defined, run, halted,
-    C0PureNTT.run, C0PureNTT.halted,
-    externalReceipt, C0PureNTT.externalReceipt,
-    stepReceipt, C0PureNTT.stepReceipt, targetExternalValue,
-    exactIntegerValue, a, C0PureNTT.a] using
+    langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+      externalCallLanguage (totalAfterCall operation first second)
+      (compiledExternalCallDone operation first second) := by
+  apply admittedExternalCallStep
+  simpa [totalAfterCall, totalCallReceipt, compiledExternalCallDone, compiledExternalCallOutcome,
+    compiledExternalCallReceipt, total, defined, run, halted,
+    ExternalCallMachine.run, ExternalCallMachine.halted,
+    externalReceipt, ExternalCallMachine.externalReceipt,
+    stepReceipt, ExternalCallMachine.stepReceipt, targetExternalValue,
+    exactIntegerValue, a, ExternalCallMachine.a] using
     (returnValueTransition_mem_rewriteAt
-      (relationEnv := arithmeticC0ReferenceEnv operation first second)
+      (relationEnv := arithmeticExternalCallReferenceEnv operation first second)
       (program := compileCoreOperation operation)
       (pc := label 1) (store := resultStore operation first second)
       (fuel := fuelInfinite)
@@ -2478,93 +2478,93 @@ private theorem total_return_step
         (targetExternalValue operation first second) (label 0) receiptNil)
       (nextFuel := fuelInfinite) (slot := slot 2)
       (value := exactIntegerValue (targetValue operation first second))
-      (by simp [arithmeticC0ReferenceEnv])
-      (by simp [arithmeticC0ReferenceEnv, fetchRows, totalFetchRows, total,
-        returnValue, a, C0PureNTT.a])
-      (by simp [arithmeticC0ReferenceEnv, exactIntegerValue, a]))
+      (by simp [arithmeticExternalCallReferenceEnv])
+      (by simp [arithmeticExternalCallReferenceEnv, fetchRows, totalFetchRows, total,
+        returnValue, a, ExternalCallMachine.a])
+      (by simp [arithmeticExternalCallReferenceEnv, exactIntegerValue, a]))
 
 private theorem guarded_zero_branch_step
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true)
     (zeroDivisor : second = 0) :
-    langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-      c0Pure (compiledC0Start operation first second)
+    langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+      externalCallLanguage (compiledExternalCallStart operation first second)
       (guardedAfterBranch operation first second 1) := by
-  apply admittedC0Step
-  simpa [compiledC0Start, guardedAfterBranch, guardedBranchReceipt,
-    run, C0PureNTT.run,
-    stepReceipt, C0PureNTT.stepReceipt, a, C0PureNTT.a] using
+  apply admittedExternalCallStep
+  simpa [compiledExternalCallStart, guardedAfterBranch, guardedBranchReceipt,
+    run, ExternalCallMachine.run,
+    stepReceipt, ExternalCallMachine.stepReceipt, a, ExternalCallMachine.a] using
     (branchTransition_mem_rewriteAt
-      (relationEnv := arithmeticC0ReferenceEnv operation first second)
-      (rule := branchZeroTransition) (test := "C0IsZero")
+      (relationEnv := arithmeticExternalCallReferenceEnv operation first second)
+      (rule := branchZeroTransition) (test := "ExternalCallIsZero")
       (program := compileCoreOperation operation)
       (pc := label 0) (store := inputStore first second)
       (fuel := fuelInfinite) (receipt := receiptNil)
       (nextFuel := fuelInfinite) (slot := slot 1)
       (ifZero := label 1) (ifNonzero := label 2)
       (value := exactIntegerValue second) (target := label 1)
-      (by simp [c0Pure, c0PureTransitions])
+      (by simp [externalCallLanguage, externalCallLanguageTransitions])
       rfl rfl
       (by simp [branchZeroTransition, branchRule,
         applyBindingsForRule_eq_syntactic, branchReadBindings,
         branchFetchedBindings, consumedBindings, runMatchBindings,
-        applyBindings, C0PureNTT.run, C0PureNTT.stepReceipt,
-        C0PureNTT.a, C0PureNTT.v])
-      (by simp [arithmeticC0ReferenceEnv])
-      (by simp [arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows,
-        hPartial, a, C0PureNTT.a])
-      (by simp [arithmeticC0ReferenceEnv, exactIntegerValue, a])
-      (by simp [arithmeticC0ReferenceEnv, zeroDivisor,
+        applyBindings, ExternalCallMachine.run, ExternalCallMachine.stepReceipt,
+        ExternalCallMachine.a, ExternalCallMachine.v])
+      (by simp [arithmeticExternalCallReferenceEnv])
+      (by simp [arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows,
+        hPartial, a, ExternalCallMachine.a])
+      (by simp [arithmeticExternalCallReferenceEnv, exactIntegerValue, a])
+      (by simp [arithmeticExternalCallReferenceEnv, zeroDivisor,
         exactIntegerValue, a]))
 
 private theorem guarded_nonzero_branch_step
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true)
     (nonzeroDivisor : second ≠ 0) :
-    langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-      c0Pure (compiledC0Start operation first second)
+    langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+      externalCallLanguage (compiledExternalCallStart operation first second)
       (guardedAfterBranch operation first second 2) := by
-  apply admittedC0Step
-  simpa [compiledC0Start, guardedAfterBranch, guardedBranchReceipt,
-    run, C0PureNTT.run,
-    stepReceipt, C0PureNTT.stepReceipt, a, C0PureNTT.a] using
+  apply admittedExternalCallStep
+  simpa [compiledExternalCallStart, guardedAfterBranch, guardedBranchReceipt,
+    run, ExternalCallMachine.run,
+    stepReceipt, ExternalCallMachine.stepReceipt, a, ExternalCallMachine.a] using
     (branchTransition_mem_rewriteAt
-      (relationEnv := arithmeticC0ReferenceEnv operation first second)
-      (rule := branchNonzeroTransition) (test := "C0IsNonzero")
+      (relationEnv := arithmeticExternalCallReferenceEnv operation first second)
+      (rule := branchNonzeroTransition) (test := "ExternalCallIsNonzero")
       (program := compileCoreOperation operation)
       (pc := label 0) (store := inputStore first second)
       (fuel := fuelInfinite) (receipt := receiptNil)
       (nextFuel := fuelInfinite) (slot := slot 1)
       (ifZero := label 1) (ifNonzero := label 2)
       (value := exactIntegerValue second) (target := label 2)
-      (by simp [c0Pure, c0PureTransitions])
+      (by simp [externalCallLanguage, externalCallLanguageTransitions])
       rfl rfl
       (by simp [branchNonzeroTransition, branchRule,
         applyBindingsForRule_eq_syntactic, branchReadBindings,
         branchFetchedBindings, consumedBindings, runMatchBindings,
-        applyBindings, C0PureNTT.run, C0PureNTT.stepReceipt,
-        C0PureNTT.a, C0PureNTT.v])
-      (by simp [arithmeticC0ReferenceEnv])
-      (by simp [arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows,
-        hPartial, a, C0PureNTT.a])
-      (by simp [arithmeticC0ReferenceEnv, exactIntegerValue, a])
-      (by simp [arithmeticC0ReferenceEnv, nonzeroDivisor,
+        applyBindings, ExternalCallMachine.run, ExternalCallMachine.stepReceipt,
+        ExternalCallMachine.a, ExternalCallMachine.v])
+      (by simp [arithmeticExternalCallReferenceEnv])
+      (by simp [arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows,
+        hPartial, a, ExternalCallMachine.a])
+      (by simp [arithmeticExternalCallReferenceEnv, exactIntegerValue, a])
+      (by simp [arithmeticExternalCallReferenceEnv, nonzeroDivisor,
         exactIntegerValue, a]))
 
 private theorem guarded_call_step
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true)
     (defined : ¬ targetUndefinedAt operation second) :
-    langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-      c0Pure (guardedAfterBranch operation first second 2)
+    langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+      externalCallLanguage (guardedAfterBranch operation first second 2)
       (guardedAfterCall operation first second) := by
-  apply admittedC0Step
+  apply admittedExternalCallStep
   simpa [guardedAfterBranch, guardedAfterCall, guardedBranchReceipt,
-    guardedExternalReceipt, run, C0PureNTT.run,
-    externalReceipt, C0PureNTT.externalReceipt, targetExternalValue,
-    stepReceipt, C0PureNTT.stepReceipt, a, C0PureNTT.a] using
+    guardedExternalReceipt, run, ExternalCallMachine.run,
+    externalReceipt, ExternalCallMachine.externalReceipt, targetExternalValue,
+    stepReceipt, ExternalCallMachine.stepReceipt, a, ExternalCallMachine.a] using
     (callValueTransition_mem_rewriteAt
-      (relationEnv := arithmeticC0ReferenceEnv operation first second)
+      (relationEnv := arithmeticExternalCallReferenceEnv operation first second)
       (program := compileCoreOperation operation)
       (pc := label 2) (store := inputStore first second)
       (fuel := fuelInfinite)
@@ -2573,29 +2573,29 @@ private theorem guarded_call_step
       (ifValue := label 3) (ifLanguageFault := label 4)
       (ifEngineFault := label 5) (ifResourceFault := label 6)
       (nextStore := resultStore operation first second)
-      (by simp [arithmeticC0ReferenceEnv])
-      (by simp [arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows,
-        hPartial, callExternal, a, C0PureNTT.a])
-      (by simp [arithmeticC0ReferenceEnv, defined, targetExternalValue,
-        a, C0PureNTT.a]))
+      (by simp [arithmeticExternalCallReferenceEnv])
+      (by simp [arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows,
+        hPartial, callExternal, a, ExternalCallMachine.a])
+      (by simp [arithmeticExternalCallReferenceEnv, defined, targetExternalValue,
+        a, ExternalCallMachine.a]))
 
 private theorem guarded_return_step
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true)
     (defined : ¬ targetUndefinedAt operation second) :
-    langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-      c0Pure (guardedAfterCall operation first second)
-      (compiledC0Done operation first second) := by
-  apply admittedC0Step
+    langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+      externalCallLanguage (guardedAfterCall operation first second)
+      (compiledExternalCallDone operation first second) := by
+  apply admittedExternalCallStep
   simpa [guardedAfterCall, guardedExternalReceipt, guardedBranchReceipt,
-    compiledC0Done, compiledC0Outcome,
-    compiledC0Receipt, hPartial, defined, run, halted,
-    C0PureNTT.run, C0PureNTT.halted,
-    externalReceipt, C0PureNTT.externalReceipt,
-    stepReceipt, C0PureNTT.stepReceipt, targetExternalValue,
-    exactIntegerValue, a, C0PureNTT.a] using
+    compiledExternalCallDone, compiledExternalCallOutcome,
+    compiledExternalCallReceipt, hPartial, defined, run, halted,
+    ExternalCallMachine.run, ExternalCallMachine.halted,
+    externalReceipt, ExternalCallMachine.externalReceipt,
+    stepReceipt, ExternalCallMachine.stepReceipt, targetExternalValue,
+    exactIntegerValue, a, ExternalCallMachine.a] using
     (returnValueTransition_mem_rewriteAt
-      (relationEnv := arithmeticC0ReferenceEnv operation first second)
+      (relationEnv := arithmeticExternalCallReferenceEnv operation first second)
       (program := compileCoreOperation operation)
       (pc := label 3) (store := resultStore operation first second)
       (fuel := fuelInfinite)
@@ -2604,53 +2604,53 @@ private theorem guarded_return_step
         (stepReceipt (label 0) receiptNil))
       (nextFuel := fuelInfinite) (slot := slot 2)
       (value := exactIntegerValue (targetValue operation first second))
-      (by simp [arithmeticC0ReferenceEnv])
-      (by simp [arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows,
-        hPartial, returnValue, a, C0PureNTT.a])
-      (by simp [arithmeticC0ReferenceEnv, exactIntegerValue, a]))
+      (by simp [arithmeticExternalCallReferenceEnv])
+      (by simp [arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows,
+        hPartial, returnValue, a, ExternalCallMachine.a])
+      (by simp [arithmeticExternalCallReferenceEnv, exactIntegerValue, a]))
 
 private theorem guarded_decline_step
     (operation : CoreOp) (first second : Int)
     (hPartial : operation.isPartial = true)
     (undefined : targetUndefinedAt operation second) :
-    langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-      c0Pure (guardedAfterBranch operation first second 1)
-      (compiledC0Done operation first second) := by
-  apply admittedC0Step
+    langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+      externalCallLanguage (guardedAfterBranch operation first second 1)
+      (compiledExternalCallDone operation first second) := by
+  apply admittedExternalCallStep
   simpa [guardedAfterBranch, guardedBranchReceipt,
-    compiledC0Done, compiledC0Outcome,
-    compiledC0Receipt, undefined, run, halted,
-    C0PureNTT.run, C0PureNTT.halted,
-    stepReceipt, C0PureNTT.stepReceipt, a, C0PureNTT.a] using
+    compiledExternalCallDone, compiledExternalCallOutcome,
+    compiledExternalCallReceipt, undefined, run, halted,
+    ExternalCallMachine.run, ExternalCallMachine.halted,
+    stepReceipt, ExternalCallMachine.stepReceipt, a, ExternalCallMachine.a] using
     (returnDeclinedTransition_mem_rewriteAt
-      (relationEnv := arithmeticC0ReferenceEnv operation first second)
+      (relationEnv := arithmeticExternalCallReferenceEnv operation first second)
       (program := compileCoreOperation operation)
       (pc := label 1) (store := inputStore first second)
       (fuel := fuelInfinite)
       (receipt := stepReceipt (label 0) receiptNil)
       (nextFuel := fuelInfinite)
-      (by simp [arithmeticC0ReferenceEnv])
-      (by simp [arithmeticC0ReferenceEnv, fetchRows, guardedFetchRows,
-        hPartial, returnDeclined, a, C0PureNTT.a]))
+      (by simp [arithmeticExternalCallReferenceEnv])
+      (by simp [arithmeticExternalCallReferenceEnv, fetchRows, guardedFetchRows,
+        hPartial, returnDeclined, a, ExternalCallMachine.a]))
 
-/-- Every exact operation and integer pair has an explicit finite authored-C0
+/-- Every exact operation and integer pair has an explicit finite authored-ExternalCall
 trace to the declared outcome and ordered receipt.  Total operations take two
 edges; defined partial operations take three; zero divisors take the guarded
 decline path and never require an external-call row. -/
-theorem compiledC0_reaches_declared_done
+theorem compiledExternalCall_reaches_declared_done
     (operation : CoreOp) (first second : Int) :
     Relation.ReflTransGen
-      (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure)
-      (compiledC0Start operation first second)
-      (compiledC0Done operation first second) := by
+      (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage)
+      (compiledExternalCallStart operation first second)
+      (compiledExternalCallDone operation first second) := by
   by_cases hPartial : operation.isPartial = true
   · by_cases undefined : targetUndefinedAt operation second
     · have targetUndefined :
-          (ArithmeticCArith0Pilot.compileSyntax operation).undefinedAt second := by
+          (ArithmeticExternalCallPilot.compileSyntax operation).undefinedAt second := by
         simpa [targetUndefinedAt, targetOperation] using undefined
       have sourceUndefined : undefinedAt operation second :=
-        (ArithmeticCArith0Pilot.compileSyntax_undefinedAt
+        (ArithmeticExternalCallPilot.compileSyntax_undefinedAt
           operation second).1 targetUndefined
       have zeroDivisor : second = 0 := sourceUndefined.2
       exact Relation.ReflTransGen.tail
@@ -2664,7 +2664,7 @@ theorem compiledC0_reaches_declared_done
         have sourceUndefined : undefinedAt operation second :=
           ⟨hPartial, zeroDivisor⟩
         have targetUndefined :=
-          (ArithmeticCArith0Pilot.compileSyntax_undefinedAt
+          (ArithmeticExternalCallPilot.compileSyntax_undefinedAt
             operation second).2 sourceUndefined
         simpa [targetUndefinedAt, targetOperation] using targetUndefined
       exact Relation.ReflTransGen.tail
@@ -2679,10 +2679,10 @@ theorem compiledC0_reaches_declared_done
     have defined : ¬ targetUndefinedAt operation second := by
       intro targetUndefined
       have compiledUndefined :
-          (ArithmeticCArith0Pilot.compileSyntax operation).undefinedAt second := by
+          (ArithmeticExternalCallPilot.compileSyntax operation).undefinedAt second := by
         simpa [targetUndefinedAt, targetOperation] using targetUndefined
       have sourceUndefined : undefinedAt operation second :=
-        (ArithmeticCArith0Pilot.compileSyntax_undefinedAt
+        (ArithmeticExternalCallPilot.compileSyntax_undefinedAt
           operation second).1 compiledUndefined
       exact hPartial sourceUndefined.1
     exact Relation.ReflTransGen.tail
@@ -2690,15 +2690,15 @@ theorem compiledC0_reaches_declared_done
         (total_call_step operation first second total defined))
       (total_return_step operation first second total defined)
 
-private theorem no_step_from_compiledC0Done
+private theorem no_step_from_compiledExternalCallDone
     (operation : CoreOp) (first second : Int) (target : Pattern) :
-    ¬ langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-      c0Pure (compiledC0Done operation first second) target := by
-  simpa [compiledC0Done, halted, C0PureNTT.halted, a, C0PureNTT.a] using
+    ¬ langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+      externalCallLanguage (compiledExternalCallDone operation first second) target := by
+  simpa [compiledExternalCallDone, halted, ExternalCallMachine.halted, a, ExternalCallMachine.a] using
     (no_step_from_halted
-      (arithmeticC0ReferenceEnv operation first second)
-      (compiledC0Outcome operation first second)
-      (compiledC0Receipt operation first second) target)
+      (arithmeticExternalCallReferenceEnv operation first second)
+      (compiledExternalCallOutcome operation first second)
+      (compiledExternalCallReceipt operation first second) target)
 
 /-- Every target reachable from a compiled total-operation start is one of
 the two running phases or the declared terminal configuration. -/
@@ -2708,12 +2708,12 @@ private theorem total_reachable_classification
     (defined : ¬ targetUndefinedAt operation second)
     {target : Pattern}
     (path : Relation.ReflTransGen
-      (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure)
-      (compiledC0Start operation first second) target) :
-    target = compiledC0Start operation first second ∨
+      (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage)
+      (compiledExternalCallStart operation first second) target) :
+    target = compiledExternalCallStart operation first second ∨
       target = totalAfterCall operation first second ∨
-      target = compiledC0Done operation first second := by
+      target = compiledExternalCallDone operation first second := by
   induction path with
   | refl => exact Or.inl rfl
   | tail prior edge inductionHypothesis =>
@@ -2725,7 +2725,7 @@ private theorem total_reachable_classification
         exact Or.inr (Or.inr
           (total_after_call_step_unique operation first second total defined edge))
       · subst atDone
-        exact (no_step_from_compiledC0Done operation first second _ edge).elim
+        exact (no_step_from_compiledExternalCallDone operation first second _ edge).elim
 
 /-- Reachable total-operation completion reflects both the declared outcome
 and the exact ordered receipt.  This is the proof-relevant no-invention half
@@ -2736,17 +2736,17 @@ private theorem total_halted_no_invention
     (defined : ¬ targetUndefinedAt operation second)
     (outcome receipt : Pattern)
     (path : Relation.ReflTransGen
-      (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure)
-      (compiledC0Start operation first second) (halted outcome receipt)) :
-    outcome = compiledC0Outcome operation first second ∧
-      receipt = compiledC0Receipt operation first second := by
+      (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage)
+      (compiledExternalCallStart operation first second) (halted outcome receipt)) :
+    outcome = compiledExternalCallOutcome operation first second ∧
+      receipt = compiledExternalCallReceipt operation first second := by
   rcases total_reachable_classification operation first second total defined
       path with atStart | atAfterCall | atDone
-  · simp [compiledC0Start, run, halted, a] at atStart
+  · simp [compiledExternalCallStart, run, halted, a] at atStart
   · simp [totalAfterCall, run, halted, a] at atAfterCall
-  · simpa [compiledC0Done, halted, C0PureNTT.halted,
-      a, C0PureNTT.a] using atDone
+  · simpa [compiledExternalCallDone, halted, ExternalCallMachine.halted,
+      a, ExternalCallMachine.a] using atDone
 
 private theorem guarded_zero_reachable_classification
     (operation : CoreOp) (first second : Int)
@@ -2755,12 +2755,12 @@ private theorem guarded_zero_reachable_classification
     (zeroDivisor : second = 0)
     {target : Pattern}
     (path : Relation.ReflTransGen
-      (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure)
-      (compiledC0Start operation first second) target) :
-    target = compiledC0Start operation first second ∨
+      (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage)
+      (compiledExternalCallStart operation first second) target) :
+    target = compiledExternalCallStart operation first second ∨
       target = guardedAfterBranch operation first second 1 ∨
-      target = compiledC0Done operation first second := by
+      target = compiledExternalCallDone operation first second := by
   induction path with
   | refl => exact Or.inl rfl
   | tail prior edge inductionHypothesis =>
@@ -2774,7 +2774,7 @@ private theorem guarded_zero_reachable_classification
           (guarded_decline_step_unique operation first second
             hPartial undefined edge))
       · subst atDone
-        exact (no_step_from_compiledC0Done operation first second _ edge).elim
+        exact (no_step_from_compiledExternalCallDone operation first second _ edge).elim
 
 private theorem guarded_nonzero_reachable_classification
     (operation : CoreOp) (first second : Int)
@@ -2783,13 +2783,13 @@ private theorem guarded_nonzero_reachable_classification
     (nonzeroDivisor : second ≠ 0)
     {target : Pattern}
     (path : Relation.ReflTransGen
-      (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure)
-      (compiledC0Start operation first second) target) :
-    target = compiledC0Start operation first second ∨
+      (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage)
+      (compiledExternalCallStart operation first second) target) :
+    target = compiledExternalCallStart operation first second ∨
       target = guardedAfterBranch operation first second 2 ∨
       target = guardedAfterCall operation first second ∨
-      target = compiledC0Done operation first second := by
+      target = compiledExternalCallDone operation first second := by
   induction path with
   | refl => exact Or.inl rfl
   | tail prior edge inductionHypothesis =>
@@ -2808,7 +2808,7 @@ private theorem guarded_nonzero_reachable_classification
           (guarded_return_step_unique operation first second
             hPartial defined edge)))
       · subst atDone
-        exact (no_step_from_compiledC0Done operation first second _ edge).elim
+        exact (no_step_from_compiledExternalCallDone operation first second _ edge).elim
 
 private theorem guarded_zero_halted_no_invention
     (operation : CoreOp) (first second : Int)
@@ -2817,18 +2817,18 @@ private theorem guarded_zero_halted_no_invention
     (zeroDivisor : second = 0)
     (outcome receipt : Pattern)
     (path : Relation.ReflTransGen
-      (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure)
-      (compiledC0Start operation first second) (halted outcome receipt)) :
-    outcome = compiledC0Outcome operation first second ∧
-      receipt = compiledC0Receipt operation first second := by
+      (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage)
+      (compiledExternalCallStart operation first second) (halted outcome receipt)) :
+    outcome = compiledExternalCallOutcome operation first second ∧
+      receipt = compiledExternalCallReceipt operation first second := by
   rcases guarded_zero_reachable_classification
       operation first second hPartial undefined zeroDivisor path with
     atStart | atAfterBranch | atDone
-  · simp [compiledC0Start, run, halted, a] at atStart
+  · simp [compiledExternalCallStart, run, halted, a] at atStart
   · simp [guardedAfterBranch, run, halted, a] at atAfterBranch
-  · simpa [compiledC0Done, halted, C0PureNTT.halted,
-      a, C0PureNTT.a] using atDone
+  · simpa [compiledExternalCallDone, halted, ExternalCallMachine.halted,
+      a, ExternalCallMachine.a] using atDone
 
 private theorem guarded_nonzero_halted_no_invention
     (operation : CoreOp) (first second : Int)
@@ -2837,40 +2837,40 @@ private theorem guarded_nonzero_halted_no_invention
     (nonzeroDivisor : second ≠ 0)
     (outcome receipt : Pattern)
     (path : Relation.ReflTransGen
-      (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure)
-      (compiledC0Start operation first second) (halted outcome receipt)) :
-    outcome = compiledC0Outcome operation first second ∧
-      receipt = compiledC0Receipt operation first second := by
+      (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage)
+      (compiledExternalCallStart operation first second) (halted outcome receipt)) :
+    outcome = compiledExternalCallOutcome operation first second ∧
+      receipt = compiledExternalCallReceipt operation first second := by
   rcases guarded_nonzero_reachable_classification
       operation first second hPartial defined nonzeroDivisor path with
     atStart | atAfterBranch | atAfterCall | atDone
-  · simp [compiledC0Start, run, halted, a] at atStart
+  · simp [compiledExternalCallStart, run, halted, a] at atStart
   · simp [guardedAfterBranch, run, halted, a] at atAfterBranch
   · simp [guardedAfterCall, run, halted, a] at atAfterCall
-  · simpa [compiledC0Done, halted, C0PureNTT.halted,
-      a, C0PureNTT.a] using atDone
+  · simpa [compiledExternalCallDone, halted, ExternalCallMachine.halted,
+      a, ExternalCallMachine.a] using atDone
 
-/-- Every halted configuration reachable from the compiled C0 image reflects
+/-- Every halted configuration reachable from the compiled ExternalCall image reflects
 the independently declared outcome and the exact ordered receipt.  Together
-with `compiledC0_reaches_declared_done`, this is preservation and
+with `compiledExternalCall_reaches_declared_done`, this is preservation and
 proof-relevant no-invention for all seven operations and all integer inputs. -/
-theorem compiledC0_halted_no_invention
+theorem compiledExternalCall_halted_no_invention
     (operation : CoreOp) (first second : Int)
     (outcome receipt : Pattern)
     (path : Relation.ReflTransGen
-      (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure)
-      (compiledC0Start operation first second) (halted outcome receipt)) :
-    outcome = compiledC0Outcome operation first second ∧
-      receipt = compiledC0Receipt operation first second := by
+      (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage)
+      (compiledExternalCallStart operation first second) (halted outcome receipt)) :
+    outcome = compiledExternalCallOutcome operation first second ∧
+      receipt = compiledExternalCallReceipt operation first second := by
   by_cases hPartial : operation.isPartial = true
   · by_cases undefined : targetUndefinedAt operation second
     · have targetUndefined :
-          (ArithmeticCArith0Pilot.compileSyntax operation).undefinedAt second := by
+          (ArithmeticExternalCallPilot.compileSyntax operation).undefinedAt second := by
         simpa [targetUndefinedAt, targetOperation] using undefined
       have sourceUndefined : undefinedAt operation second :=
-        (ArithmeticCArith0Pilot.compileSyntax_undefinedAt
+        (ArithmeticExternalCallPilot.compileSyntax_undefinedAt
           operation second).1 targetUndefined
       exact guarded_zero_halted_no_invention operation first second
         hPartial undefined sourceUndefined.2 outcome receipt path
@@ -2880,7 +2880,7 @@ theorem compiledC0_halted_no_invention
         have sourceUndefined : undefinedAt operation second :=
           ⟨hPartial, zeroDivisor⟩
         have targetUndefined :=
-          (ArithmeticCArith0Pilot.compileSyntax_undefinedAt
+          (ArithmeticExternalCallPilot.compileSyntax_undefinedAt
             operation second).2 sourceUndefined
         simpa [targetUndefinedAt, targetOperation] using targetUndefined
       exact guarded_nonzero_halted_no_invention operation first second
@@ -2890,28 +2890,28 @@ theorem compiledC0_halted_no_invention
     have defined : ¬ targetUndefinedAt operation second := by
       intro targetUndefined
       have compiledUndefined :
-          (ArithmeticCArith0Pilot.compileSyntax operation).undefinedAt second := by
+          (ArithmeticExternalCallPilot.compileSyntax operation).undefinedAt second := by
         simpa [targetUndefinedAt, targetOperation] using targetUndefined
       have sourceUndefined : undefinedAt operation second :=
-        (ArithmeticCArith0Pilot.compileSyntax_undefinedAt
+        (ArithmeticExternalCallPilot.compileSyntax_undefinedAt
           operation second).1 compiledUndefined
       exact hPartial sourceUndefined.1
     exact total_halted_no_invention operation first second total defined
       outcome receipt path
 
 /-- Negative control: no different outcome or receipt can be reached from a
-compiled start under the same authored C0 relation environment. -/
-theorem compiledC0_cannot_invent_completion
+compiled start under the same authored ExternalCall relation environment. -/
+theorem compiledExternalCall_cannot_invent_completion
     (operation : CoreOp) (first second : Int)
     (outcome receipt : Pattern)
-    (different : outcome ≠ compiledC0Outcome operation first second ∨
-      receipt ≠ compiledC0Receipt operation first second) :
+    (different : outcome ≠ compiledExternalCallOutcome operation first second ∨
+      receipt ≠ compiledExternalCallReceipt operation first second) :
     ¬ Relation.ReflTransGen
-      (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-        c0Pure)
-      (compiledC0Start operation first second) (halted outcome receipt) := by
+      (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+        externalCallLanguage)
+      (compiledExternalCallStart operation first second) (halted outcome receipt) := by
   intro path
-  have reflected := compiledC0_halted_no_invention
+  have reflected := compiledExternalCall_halted_no_invention
     operation first second outcome receipt path
   rcases different with outcomeDifferent | receiptDifferent
   · exact outcomeDifferent reflected.1
@@ -3077,56 +3077,61 @@ theorem exactArithmetic_reaches_declared_done
 /-- The universal source step and the universal target trace meet at the same
 mathematical arithmetic observation.  The target retains its independently
 authored ordered receipt in addition to that shared observation. -/
-theorem exactArithmetic_to_C0_preserves_observation
+theorem exactArithmetic_to_ExternalCall_preserves_observation
     (operation : CoreOp) (first second : Int) :
     langReducesUsing (arithmeticSourceReferenceEnv operation first second)
         exactArithmetic (arithmeticSourceStart operation first second)
         (arithmeticSourceDone operation first second) ∧
       Relation.ReflTransGen
-        (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-          c0Pure)
-        (compiledC0Start operation first second)
-        (compiledC0Done operation first second) ∧
-      compiledC0Outcome operation first second =
+        (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+          externalCallLanguage)
+        (compiledExternalCallStart operation first second)
+        (compiledExternalCallDone operation first second) ∧
+      compiledExternalCallOutcome operation first second =
         match coreSem operation first second with
-        | .declined => a "c0:outcome-declined"
+        | .declined => a "external-call:outcome-declined"
         | .val value =>
-            a "c0:outcome-value" [exactIntegerValue value] := by
+            a "external-call:outcome-value" [exactIntegerValue value] := by
   exact ⟨exactArithmetic_reaches_declared_done operation first second,
-    compiledC0_reaches_declared_done operation first second,
-    compiledC0Outcome_commutes operation first second⟩
+    compiledExternalCall_reaches_declared_done operation first second,
+    compiledExternalCallOutcome_commutes operation first second⟩
 
 /-- Request-local two-sided compiler square at the declared completion
 observation.  The source owns the mathematical result; the target must reach
 that result, cannot reach a different result, and must retain its exact
 ordered receipt. -/
-theorem exactArithmetic_to_C0_hosts_completion
+theorem exactArithmetic_to_ExternalCall_hosts_completion
     (operation : CoreOp) (first second : Int) :
     langReducesUsing (arithmeticSourceReferenceEnv operation first second)
         exactArithmetic (arithmeticSourceStart operation first second)
         (arithmeticSourceDone operation first second) ∧
       Relation.ReflTransGen
-        (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-          c0Pure)
-        (compiledC0Start operation first second)
-        (compiledC0Done operation first second) ∧
+        (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+          externalCallLanguage)
+        (compiledExternalCallStart operation first second)
+        (compiledExternalCallDone operation first second) ∧
       ∀ outcome receipt,
         Relation.ReflTransGen
-          (langReducesUsing (arithmeticC0ReferenceEnv operation first second)
-            c0Pure)
-          (compiledC0Start operation first second) (halted outcome receipt) →
+          (langReducesUsing (arithmeticExternalCallReferenceEnv operation first second)
+            externalCallLanguage)
+          (compiledExternalCallStart operation first second) (halted outcome receipt) →
         outcome =
             (match coreSem operation first second with
-            | .declined => a "c0:outcome-declined"
+            | .declined => a "external-call:outcome-declined"
             | .val value =>
-                a "c0:outcome-value" [exactIntegerValue value]) ∧
-          receipt = compiledC0Receipt operation first second := by
+                a "external-call:outcome-value" [exactIntegerValue value]) ∧
+          receipt = compiledExternalCallReceipt operation first second := by
   refine ⟨exactArithmetic_reaches_declared_done operation first second,
-    compiledC0_reaches_declared_done operation first second, ?_⟩
+    compiledExternalCall_reaches_declared_done operation first second, ?_⟩
   intro outcome receipt path
-  have reflected := compiledC0_halted_no_invention
+  have reflected := compiledExternalCall_halted_no_invention
     operation first second outcome receipt path
   exact ⟨reflected.1.trans
-    (compiledC0Outcome_commutes operation first second), reflected.2⟩
+    (compiledExternalCallOutcome_commutes operation first second), reflected.2⟩
 
-end Mettapedia.GSLT.LanguageDef.ExactArithmeticToC0
+#print axioms compiler_vocabulary_is_authored
+#print axioms compiledExternalCall_halted_no_invention
+#print axioms exactArithmetic_to_ExternalCall_preserves_observation
+#print axioms exactArithmetic_to_ExternalCall_hosts_completion
+
+end Mettapedia.GSLT.LanguageDef.ExactArithmeticToExternalCall
