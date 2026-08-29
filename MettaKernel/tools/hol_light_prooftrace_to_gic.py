@@ -3,7 +3,7 @@
 
 The ProofTrace JSONL and this adapter are untrusted source transport.  The
 emitted MeTTa artifact is accepted only when the generated LanguageDef
-presentation and generic inference checker validate its complete proof DAG.
+language and generic inference checker validate its complete proof DAG.
 """
 
 from __future__ import annotations
@@ -398,7 +398,7 @@ def render_fact_rule(rule_id: str, relation: str, arity: int) -> str:
         (f"(FVar {json.dumps(name)})" for name in names), "LNil", "LCons"
     )
     conclusion = f"(PApp {json.dumps(f'$hol.rel.{relation}')} {arguments})"
-    return f"(GRule {json.dumps(rule_id)} {formals} LNil {conclusion})"
+    return f"(GRuleV1 {json.dumps(rule_id)} {formals} LNil {conclusion} LNil)"
 
 
 def render_node(node: DagNode) -> str:
@@ -517,7 +517,7 @@ class Lowerer:
         try:
             formal_names = self.formals[rule_id]
         except KeyError as error:
-            raise TraceError(f"generated presentation lacks rule {rule_id}") from error
+            raise TraceError(f"generated language lacks rule {rule_id}") from error
         missing = [name for name in formal_names if name not in environment]
         if missing:
             raise TraceError(f"{rule_id}: adapter did not bind generated formals {missing}")
@@ -966,11 +966,11 @@ def render_artifact(
         "; The source JSONL and adapter remain untrusted until source correspondence is proved.",
         "; Side-relation rules are explicit source-oracle schemas, not proved HOL algorithms.",
         *(f"; SHA256 {name} {digest}" for name, digest in hashes.items()),
-        "!(import! &self hol_source_presentations_generated_v0)",
+        "!(import! &self hol_source_languages_generated_v0)",
         "",
         f"(= (hl-source-vocabulary) {vocabulary})",
         f"(= (hl-source-fact-rules) {fact_rules})",
-        "(= (hl-source-presentation) (hl-source-presentation-with (hl-source-vocabulary) (hl-source-fact-rules)))",
+        "(= (hl-source-language) (hl-source-language-with (hl-source-vocabulary) (hl-source-fact-rules)))",
         f"(= (hl-source-goal) {render_pattern(root_goal)})",
         *chunk_definitions,
         f"(= (hl-source-prefix-chunks) {chunks})",
@@ -1014,7 +1014,7 @@ def render_artifact(
         [
             "",
             "(= (hl-source-terminal-checks)",
-            "   (case (gic-build-index (hl-source-presentation))",
+            "   (case (gic-build-index (hl-source-language))",
             "     (((GICIndexOK $space)",
             "        (case (gic-index-check-dag-chunks $space (hl-source-prefix-chunks))",
             "          ((DagOK",
@@ -1030,7 +1030,7 @@ def render_artifact(
             "               False))",
             "           ($_ False))))",
             "      ($_ False))))",
-            "!(assertEqual (gic-presentation-valid (hl-source-presentation)) True)",
+            "!(assertEqual (gic-language-valid (hl-source-language)) True)",
             "!(assertEqual (hl-source-terminal-checks) True)",
             f"!(HOLLightSourceGICSummary {json.dumps(root_name)} {len(lowerer.seen)} {len(lowerer.facts)} 6 6 0)",
             "",
@@ -1044,7 +1044,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--proofs", type=Path, required=True)
     parser.add_argument("--theorems", type=Path, required=True)
     parser.add_argument("--names", type=Path, required=True)
-    parser.add_argument("--presentation", type=Path, required=True)
+    parser.add_argument("--language", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
@@ -1061,12 +1061,12 @@ def main() -> int:
 
     proofs = read_json_lines(arguments.proofs)
     theorems = read_theorems(arguments.theorems)
-    formals = read_formals(arguments.presentation, "HL")
+    formals = read_formals(arguments.language, "HL")
     hashes = {
         arguments.proofs.name: file_sha256(arguments.proofs),
         arguments.theorems.name: file_sha256(arguments.theorems),
         arguments.names.name: file_sha256(arguments.names),
-        arguments.presentation.name: file_sha256(arguments.presentation),
+        arguments.language.name: file_sha256(arguments.language),
     }
     artifact_id = hashlib.sha256("".join(hashes.values()).encode("ascii")).hexdigest()[:16]
     lowerer = Lowerer(proofs, theorems, formals, artifact_id)

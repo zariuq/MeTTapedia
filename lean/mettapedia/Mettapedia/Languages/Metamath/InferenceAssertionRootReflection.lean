@@ -1,5 +1,7 @@
 import Mettapedia.Languages.Metamath.InferenceAssertionSideReflection
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Bounded reflection of one projected assertion root
 
@@ -35,8 +37,8 @@ The original final side child determines the canonical result.  The returned
 generated node uses a freshly proved canonical local application but retains
 the exact original leading and side proof artifacts. -/
 theorem assertionRawRoot_reflects
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView} {bodies : List Pattern}
     {resultBody : Pattern} {ruleInstance : RuleInstance}
     (hassertion : assertion ∈ projection.assertions)
@@ -132,8 +134,8 @@ theorem assertionRawRoot_reflects
 child vector to the raw normal form without changing the child erasure, then
 invokes `assertionRawRoot_reflects`. -/
 theorem assertionRawShapeFields_reflect
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {formulaPattern : Pattern}
     (application : RuleApplication target ruleInstance premises
@@ -210,8 +212,8 @@ theorem assertionRawShapeFields_reflect
 
 /-- Positive boundary: the bounded theorem exposes a canonical generated
 assertion tree while retaining exact erasure of the supplied original root. -/
-example {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView} {bodies : List Pattern}
     {resultBody : Pattern} {ruleInstance : RuleInstance}
     (hassertion : assertion ∈ projection.assertions)
@@ -260,8 +262,8 @@ private def unclassifiedGroundResultBody : Pattern :=
 /-- Negative boundary: even though this body is ground syntax, a complete
 side vector cannot certify it as an assertion result because it is outside
 the canonical encoded-body image. -/
-example {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView} {bodies : List Pattern}
     {actuals : List ConstantHeadedFormula}
     {substitution : FiniteSubstitution}

@@ -1,12 +1,12 @@
 import Mathlib.CategoryTheory.Category.Basic
 import Mettapedia.GSLT.LanguageDef.InferenceCheckerDAG
-import Mettapedia.GSLT.LanguageDef.InferencePresentationExtension
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageExtension
 import Mettapedia.GSLT.LanguageDef.CalculusExtension
 
 /-!
-# Proof-carrying GSLT presentations
+# Proof-carrying GSLT definitions
 
-A CertificateGSLT begins with a validated finite proof-theoretic presentation.  Its
+A CertificateGSLT begins with a validated finite proof-theoretic definition.  Its
 primitive rules generate derivations; chronological proof DAGs share
 previously checked derivations without changing the presented judgment.  The
 context-and-substitution structure needed for the stronger algebraic
@@ -27,47 +27,47 @@ open CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferenceCheckerDAG
-open Mettapedia.GSLT.LanguageDef.InferencePresentationExtension
+open Mettapedia.GSLT.LanguageDef.CalculusLanguageExtension
 open Mettapedia.GSLT.LanguageDef.InferenceExtension
 open Mettapedia.GSLT.LanguageDef.CalculusAsLanguage
 open Mettapedia.GSLT.LanguageDef.CalculusExtension
 
-/-- A validated proof-theoretic presentation.  Source identity and source
+/-- A validated proof-theoretic definition.  Source identity and source
 adequacy remain separate structures: this object records exactly the language,
 judgments, rules, and validation evidence consumed by the generic checker. -/
 structure Object where
-  presentation : ValidatedPresentation
+  definition : ValidatedCalculusLanguageDef
 
 namespace Object
 
 /-- The exact authored calculus-GSLT document underlying a certificate-GSLT object.
-The checker-facing presentation is therefore a validated elaboration target,
+The checker-facing definition is therefore a validated elaboration target,
 not an ungrounded record beside the GSLT theory. -/
 def authoredSource (object : Object) : CalculusSyntax :=
-  CalculusExtension.authoredSource object.presentation.1
+  CalculusExtension.authoredSource object.definition.1
 
 /-- The authored document elaborates to exactly the calculus checked by the
 certificate-GSLT object. -/
 @[simp] theorem authoredSource_elaborates (object : Object) :
     elaborate object.authoredSource =
-      some object.presentation.1.calculus := by
+      some object.definition.1.toCalculus := by
   simp [authoredSource]
 
 /-- Elaborating the source together with its base recovers the exact
 checker-facing definition. -/
 @[simp] theorem authoredSource_recovers (object : Object) :
-    elaborateDefinition? object.presentation.1.language object.authoredSource =
-      some object.presentation.1 := by
+    elaborateDefinition? object.definition.1.toLanguageDef object.authoredSource =
+      some object.definition.1 := by
   simp [authoredSource]
 
 /-- Certificate-GSLT derivability is reachability in the GSLT derived from the
 authored calculus document. -/
 theorem derivability_via_authoredSource (object : Object) (goals : GoalState) :
-    elaborate object.authoredSource = some object.presentation.1.calculus ∧
-      (Nonempty (DerivationList object.presentation goals) ↔
-        (proofSearchGSLT object.presentation).MultiStep goals []) :=
+    elaborate object.authoredSource = some object.definition.1.toCalculus ∧
+      (Nonempty (DerivationList object.definition goals) ↔
+        (proofSearchGSLT object.definition).MultiStep goals []) :=
   ⟨object.authoredSource_elaborates,
-    derivationList_nonempty_iff_proofSearch object.presentation goals⟩
+    derivationList_nonempty_iff_proofSearch object.definition goals⟩
 
 end Object
 
@@ -79,19 +79,19 @@ structure RuleRetaining where
 
 namespace RuleRetaining
 
-/-- Construct the strict view directly from a validated presentation. -/
-def ofPresentation (presentation : ValidatedPresentation) : RuleRetaining :=
-  ⟨⟨presentation⟩⟩
+/-- Construct the strict view directly from a validated definition. -/
+def ofDefinition (definition : ValidatedCalculusLanguageDef) : RuleRetaining :=
+  ⟨⟨definition⟩⟩
 
-/-- The validated presentation checked at this object. -/
-abbrev presentation (object : RuleRetaining) : ValidatedPresentation :=
-  object.toCertificateGSLT.presentation
+/-- The validated definition checked at this object. -/
+abbrev definition (object : RuleRetaining) : ValidatedCalculusLanguageDef :=
+  object.toCertificateGSLT.definition
 
 /-- A strict certificate-GSLT arrow retains every source rule lookup exactly.
 Consequently the existing generic derivation transport is derived from this
 field, rather than postulated as a second semantic authority. -/
 structure Morphism (source target : RuleRetaining) : Type where
-  refines : RuleLookupRefines source.presentation target.presentation
+  refines : RuleLookupRefines source.definition target.definition
 
 namespace Morphism
 
@@ -102,7 +102,7 @@ instance {source target : RuleRetaining} :
 
 /-- Identity retains every rule lookup. -/
 def id (object : RuleRetaining) : Morphism object object :=
-  ⟨RuleLookupRefines.refl object.presentation⟩
+  ⟨RuleLookupRefines.refl object.definition⟩
 
 /-- Composition is transitivity of exact rule retention. -/
 def comp {first second third : RuleRetaining}
@@ -113,25 +113,25 @@ def comp {first second third : RuleRetaining}
 /-- Transport a Type-valued derivation along a strict certificate-GSLT arrow. -/
 def mapDerivation {source target : RuleRetaining}
     (morphism : Morphism source target) {goal : Pattern}
-    (derivation : Derivation source.presentation goal) :
-    Derivation target.presentation goal :=
+    (derivation : Derivation source.definition goal) :
+    Derivation target.definition goal :=
   derivation.transport morphism.refines
 
 /-- Transport a checked raw proof while retaining its exact proof tree. -/
 def mapCheckedProof {source target : RuleRetaining}
     (morphism : Morphism source target) {goal : Pattern}
-    (proof : CheckedProof source.presentation goal) :
-    CheckedProof target.presentation goal :=
+    (proof : CheckedProof source.definition goal) :
+    CheckedProof target.definition goal :=
   proof.transport morphism.refines
 
 @[simp] theorem mapCheckedProof_payload
     {source target : RuleRetaining} (morphism : Morphism source target)
-    {goal : Pattern} (proof : CheckedProof source.presentation goal) :
+    {goal : Pattern} (proof : CheckedProof source.definition goal) :
     (morphism.mapCheckedProof proof).1 = proof.1 := rfl
 
 end Morphism
 
-/-- Validated proof presentations and exact rule-retaining arrows form a
+/-- Validated proof definitions and exact rule-retaining arrows form a
 category.  The laws reduce to proof irrelevance after transitivity has built
 the composite refinement. -/
 instance : Category RuleRetaining where
@@ -150,11 +150,11 @@ theorem hom_ext {source target : RuleRetaining}
   change Morphism source target at first second
   exact Subsingleton.elim first second
 
-/-- Every validated append-only presentation extension is a strict
+/-- Every validated append-only definition extension is a strict
 certificate-GSLT arrow. -/
-def ofValidatedExtension {base : ValidatedPresentation}
-    (extension : ValidatedExtension base) :
-    ofPresentation base ⟶ ofPresentation extension.target :=
+def ofValidatedExtension {base : ValidatedCalculusLanguageDef}
+    (extension : ValidatedCalculusLanguageExtension base) :
+    ofDefinition base ⟶ ofDefinition extension.target :=
   ⟨extension.refines⟩
 
 /-- A missing source rule makes a strict arrow impossible.  This negative
@@ -162,8 +162,8 @@ boundary prevents the category from degenerating into an indiscrete category
 whose arrows merely assert their desired conclusion. -/
 theorem hom_isEmpty_of_missing
     {source target : RuleRetaining} {ruleId : RuleId} {rule : RuleSchema}
-    (sourceHas : source.presentation.1.lookupRule? ruleId = some rule)
-    (targetMissing : target.presentation.1.lookupRule? ruleId = none) :
+    (sourceHas : source.definition.1.lookupRule? ruleId = some rule)
+    (targetMissing : target.definition.1.lookupRule? ruleId = none) :
     IsEmpty (source ⟶ target) := by
   constructor
   intro morphism
@@ -178,7 +178,7 @@ acyclicity proposition is trusted separately. -/
 structure CheckedDAG (object : RuleRetaining) (goal : Pattern) where
   rootId : Nat
   blocks : List (List DAGNode)
-  accepted : checkDAGBlocks object.presentation goal rootId blocks = true
+  accepted : checkDAGBlocks object.definition goal rootId blocks = true
 
 namespace CheckedDAG
 
@@ -186,25 +186,25 @@ namespace CheckedDAG
 derivation with the same erasure. -/
 theorem exactDerivation {object : RuleRetaining} {goal : Pattern}
     (dag : CheckedDAG object goal) :
-    ∃ (proof : RawProof) (derivation : Derivation object.presentation goal),
-      expandDAGBlocks? object.presentation goal dag.rootId dag.blocks =
+    ∃ (proof : RawProof) (derivation : Derivation object.definition goal),
+      expandDAGBlocks? object.definition goal dag.rootId dag.blocks =
           some proof ∧
         derivation.erase = proof :=
   checkDAGBlocks_exact_derivation dag.accepted
 
 /-- Strict certificate-GSLT arrows preserve the meaning of every accepted DAG.
-The same reconstructed raw proof is accepted by the target presentation and
+The same reconstructed raw proof is accepted by the target definition and
 has a transported target derivation.  This is the basic naturality square for
 the generic DAG checker. -/
 theorem transportMeaning {source target : RuleRetaining} {goal : Pattern}
     (morphism : source ⟶ target) (dag : CheckedDAG source goal) :
-    ∃ (proof : RawProof) (derivation : Derivation target.presentation goal),
-      expandDAGBlocks? source.presentation goal dag.rootId dag.blocks =
+    ∃ (proof : RawProof) (derivation : Derivation target.definition goal),
+      expandDAGBlocks? source.definition goal dag.rootId dag.blocks =
           some proof ∧
         derivation.erase = proof ∧
-        checkRaw target.presentation goal proof = true := by
+        checkRaw target.definition goal proof = true := by
   rcases dag.exactDerivation with ⟨proof, sourceDerivation, expanded, erased⟩
-  let targetDerivation : Derivation target.presentation goal :=
+  let targetDerivation : Derivation target.definition goal :=
     morphism.mapDerivation sourceDerivation
   refine ⟨proof, targetDerivation, expanded, ?_, ?_⟩
   · change (sourceDerivation.transport morphism.refines).erase = proof

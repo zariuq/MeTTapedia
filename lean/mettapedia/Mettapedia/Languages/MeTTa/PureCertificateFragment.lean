@@ -1,8 +1,8 @@
 import Mettapedia.Languages.MeTTa.ElaboratedCoreBase
-import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
-import Mettapedia.Languages.MeTTa.PureKernel.Context
-import Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
-import Mettapedia.Languages.MeTTa.PureKernel.Typing
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.CoreEmbedding
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.Context
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.Typing
 
 /-!
 # Restricted Pure Certificate Fragment
@@ -24,15 +24,15 @@ syntax yet.
 
 namespace Mettapedia.Languages.MeTTa.ElaboratedCore
 
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.Context
-open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
-open Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
-open Mettapedia.Languages.MeTTa.PureKernel.Typing
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Context
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.CoreEmbedding
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Typing
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-- Small binder-aware concrete syntax for the first real pure fragment above
-`PureKernel`.
+`IntrinsicPure`.
 
 This mirrors the trusted Pure syntax closely on purpose: the immediate goal is
 to make the first dual-view certificate real, not to invent a second kernel. -/
@@ -148,7 +148,7 @@ structure PureCertificate where
 
 This is the first nontrivial "both views at once" object:
 - one binder-aware source term,
-- one trusted PureKernel term,
+- one trusted IntrinsicPure term,
 - one shared MeTTa artifact,
 - and a proof that the two downstream views agree. -/
 structure SharedPureOverlapCertificate where
@@ -160,7 +160,7 @@ structure SharedPureOverlapCertificate where
   artifact_eq_pure : pure.artifact.pattern = quoteClosedTm pure.term
 
 def SharedPureOverlapCertificate.backendName (_ : SharedPureOverlapCertificate) : String :=
-  "PureKernel+Artifact"
+  "IntrinsicPure+Artifact"
 
 def certifyPureSyntax (sourceTerm : PureSyntaxTerm 0) : SharedPureOverlapCertificate :=
   let pure : PureCertificate := {
@@ -178,7 +178,7 @@ def certifyPureSyntax (sourceTerm : PureSyntaxTerm 0) : SharedPureOverlapCertifi
   }
 
 theorem certifyPureSyntax_backendName (term : PureSyntaxTerm 0) :
-    (certifyPureSyntax term).backendName = "PureKernel+Artifact" := rfl
+    (certifyPureSyntax term).backendName = "IntrinsicPure+Artifact" := rfl
 
 theorem certifyPureSyntax_overlapClass (term : PureSyntaxTerm 0) :
     (certifyPureSyntax term).overlapClass = OverlapClass.artifactOnly := rfl
@@ -283,7 +283,7 @@ def CheckedPureCertificate.overlapClass (cert : CheckedPureCertificate) : Overla
   | .overlap cert => cert.overlapClass
 
 def CheckedPureCertificate.backendName (_ : CheckedPureCertificate) : String :=
-  "PureKernel+TypedCertificate"
+  "IntrinsicPure+TypedCertificate"
 
 /-- First explicit judgment layer above checked Pure certificates. -/
 structure PureCertificateJudgment where

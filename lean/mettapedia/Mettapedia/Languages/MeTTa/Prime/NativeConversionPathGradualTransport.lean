@@ -30,15 +30,15 @@ open Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability
 open Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability.State
 open Mettapedia.Languages.MeTTa.Prime.NativeConversionPathNIKSelection
 open Mettapedia.Languages.MeTTa.Prime.NativeGradualDependentGuarantee
-open Mettapedia.Languages.MeTTa.PureKernel.Universe
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredDeclarationSignature
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyConversionPath
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyPresentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyReceiptNaturality
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyTypedConversion
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration.ComputationAuthority
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredDeclarationSignature
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyConversionPath
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyPresentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyReceiptNaturality
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyTypedConversion
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration.ComputationAuthority
 
 noncomputable section
 

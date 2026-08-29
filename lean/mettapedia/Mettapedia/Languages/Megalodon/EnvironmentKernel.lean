@@ -604,14 +604,12 @@ def definition : CalculusLanguageDef :=
       additionalJudgments
     rules := PolymorphicKernel.definition.rules ++ additionalRules }
 
-def presentation : Presentation := definition.toNested
-
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 3000000 in
-theorem presentation_valid : presentation.isValidV2 = true := by
-  have hvalidate : presentation.language.validate = [] := by
+theorem definition_valid : definition.isValid = true := by
+  have hvalidate : definition.toLanguageDef.validate = [] := by
     apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-      simp [presentation, definition, additionalConstructors,
+      simp [definition, definition, additionalConstructors,
         MathdataKernel.polymorphicReuseName, implicationReuseTermName,
         implicationReuseKnownName,
         PolymorphicKernel.definition, TermQuantifiedKernel.definition,
@@ -620,19 +618,19 @@ theorem presentation_valid : presentation.isValidV2 = true := by
         TermQuantifiedKernel.expressionConstructor,
         LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
         TypeExpr.baseNames]
-  unfold Presentation.isValidV2 Presentation.isValidV1
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [presentation, definition, additionalConstructors,
+  simp [definition, definition, additionalConstructors,
     MathdataKernel.polymorphicReuseName, implicationReuseTermName,
     implicationReuseKnownName,
     additionalJudgments, additionalRules,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn, RuleSchema.isValidV1,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
-    patternsHaveNoCollectionRest, Presentation.judgmentSchemaValid,
+    patternsHaveNoCollectionRest, CalculusLanguageDef.judgmentSchemaValid,
     fixedConstructorsValid, fixedConstructorListsValid,
     languageHasConstructorArity, Pattern.isWellScoped,
     Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
@@ -718,284 +716,284 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     List.eraseDups, List.eraseDupsBy]
   simp (config := { maxSteps := 3000000, decide := true })
 
-def validated : ValidatedPresentation := ⟨presentation, presentation_valid⟩
+def validated : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 @[simp] private theorem lookup_shiftTypeVarZeroRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-type-var-zero") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-type-var-zero") =
       some shiftTypeVarZeroRule := by
   rfl
 
 @[simp] private theorem lookup_addZeroRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-term-add-zero") =
       some TermQuantifiedKernel.addZeroRule := by
   rfl
 
 @[simp] private theorem lookup_addSuccRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-term-add-succ") =
       some TermQuantifiedKernel.addSuccRule := by
   rfl
 
 @[simp] private theorem lookup_lessZeroRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-term-less-zero") =
       some TermQuantifiedKernel.lessZeroRule := by
   rfl
 
 @[simp] private theorem lookup_lessSuccRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-term-less-succ") =
       some TermQuantifiedKernel.lessSuccRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTypeVarBelowRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-type-var-below") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-type-var-below") =
       some shiftTypeVarBelowRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTypeVarSuccRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-type-var-succ") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-type-var-succ") =
       some shiftTypeVarSuccRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTypePropRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-type-prop") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-type-prop") =
       some shiftTypePropRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTypeBaseRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-type-base") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-type-base") =
       some shiftTypeBaseRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTypeArrRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-type-arr") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-type-arr") =
       some shiftTypeArrRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTypeAllRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-type-all") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-type-all") =
       some shiftTypeAllRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeVarEqualRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-var-equal") =
       some substituteTypeVarEqualRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeVarBelowRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-var-below") =
       some substituteTypeVarBelowRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeVarAboveRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-var-above") =
       some substituteTypeVarAboveRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypePropRule :
-    presentation.lookupRule? (ruleId "megalodon-env-substitute-type-prop") =
+    definition.lookupRule? (ruleId "megalodon-env-substitute-type-prop") =
       some substituteTypePropRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeBaseRule :
-    presentation.lookupRule? (ruleId "megalodon-env-substitute-type-base") =
+    definition.lookupRule? (ruleId "megalodon-env-substitute-type-base") =
       some substituteTypeBaseRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeArrRule :
-    presentation.lookupRule? (ruleId "megalodon-env-substitute-type-arr") =
+    definition.lookupRule? (ruleId "megalodon-env-substitute-type-arr") =
       some substituteTypeArrRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeAllRule :
-    presentation.lookupRule? (ruleId "megalodon-env-substitute-type-all") =
+    definition.lookupRule? (ruleId "megalodon-env-substitute-type-all") =
       some substituteTypeAllRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeTermVarRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-term-var") =
       some substituteTypeTermVarRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeTermNamedRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-term-named") =
       some substituteTypeTermNamedRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeTermPrimRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-term-prim") =
       some substituteTypeTermPrimRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeTermAppRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-term-app") =
       some substituteTypeTermAppRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeTermLamRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-term-lam") =
       some substituteTypeTermLamRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeTermImpRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-term-imp") =
       some substituteTypeTermImpRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeTermAllRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-term-all") =
       some substituteTypeTermAllRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeTermTypeAppRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-term-type-app") =
       some substituteTypeTermTypeAppRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeTermTypeLamRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-term-type-lam") =
       some substituteTypeTermTypeLamRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTypeTermTypeAllRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-type-term-type-all") =
       some substituteTypeTermTypeAllRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermVarZeroRule :
-    presentation.lookupRule? (ruleId "megalodon-term-shift-var-zero") =
+    definition.lookupRule? (ruleId "megalodon-term-shift-var-zero") =
       some TermQuantifiedKernel.shiftVarAtZeroRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermVarBelowRule :
-    presentation.lookupRule? (ruleId "megalodon-term-shift-var-below") =
+    definition.lookupRule? (ruleId "megalodon-term-shift-var-below") =
       some TermQuantifiedKernel.shiftVarBelowRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermVarSuccRule :
-    presentation.lookupRule? (ruleId "megalodon-term-shift-var-succ") =
+    definition.lookupRule? (ruleId "megalodon-term-shift-var-succ") =
       some TermQuantifiedKernel.shiftVarSuccRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermNamedRule :
-    presentation.lookupRule? (ruleId "megalodon-term-shift-named") =
+    definition.lookupRule? (ruleId "megalodon-term-shift-named") =
       some TermQuantifiedKernel.shiftNamedRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermPrimRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-term-prim") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-term-prim") =
       some shiftTermPrimRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermAppRule :
-    presentation.lookupRule? (ruleId "megalodon-term-shift-app") =
+    definition.lookupRule? (ruleId "megalodon-term-shift-app") =
       some TermQuantifiedKernel.shiftAppRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermLamRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-term-lam") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-term-lam") =
       some shiftTermLamRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermImpRule :
-    presentation.lookupRule? (ruleId "megalodon-term-shift-imp") =
+    definition.lookupRule? (ruleId "megalodon-term-shift-imp") =
       some TermQuantifiedKernel.shiftImpRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermAllRule :
-    presentation.lookupRule? (ruleId "megalodon-term-shift-all") =
+    definition.lookupRule? (ruleId "megalodon-term-shift-all") =
       some TermQuantifiedKernel.shiftAllRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermTypeAppRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-term-type-app") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-term-type-app") =
       some shiftTermTypeAppRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermTypeLamRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-term-type-lam") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-term-type-lam") =
       some shiftTermTypeLamRule := by
   rfl
 
 @[simp] private theorem lookup_shiftTermTypeAllRule :
-    presentation.lookupRule? (ruleId "megalodon-env-shift-term-type-all") =
+    definition.lookupRule? (ruleId "megalodon-env-shift-term-type-all") =
       some shiftTermTypeAllRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermVarEqualRule :
-    presentation.lookupRule? (ruleId "megalodon-term-subst-var-equal") =
+    definition.lookupRule? (ruleId "megalodon-term-subst-var-equal") =
       some TermQuantifiedKernel.substVarEqualRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermVarBelowRule :
-    presentation.lookupRule? (ruleId "megalodon-term-subst-var-below") =
+    definition.lookupRule? (ruleId "megalodon-term-subst-var-below") =
       some TermQuantifiedKernel.substVarBelowRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermVarAboveRule :
-    presentation.lookupRule? (ruleId "megalodon-term-subst-var-above") =
+    definition.lookupRule? (ruleId "megalodon-term-subst-var-above") =
       some TermQuantifiedKernel.substVarAboveRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermNamedRule :
-    presentation.lookupRule? (ruleId "megalodon-term-subst-named") =
+    definition.lookupRule? (ruleId "megalodon-term-subst-named") =
       some TermQuantifiedKernel.substNamedRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermPrimRule :
-    presentation.lookupRule? (ruleId "megalodon-env-substitute-term-prim") =
+    definition.lookupRule? (ruleId "megalodon-env-substitute-term-prim") =
       some substituteTermPrimRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermAppRule :
-    presentation.lookupRule? (ruleId "megalodon-term-subst-app") =
+    definition.lookupRule? (ruleId "megalodon-term-subst-app") =
       some TermQuantifiedKernel.substAppRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermLamRule :
-    presentation.lookupRule? (ruleId "megalodon-env-substitute-term-lam") =
+    definition.lookupRule? (ruleId "megalodon-env-substitute-term-lam") =
       some substituteTermLamRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermImpRule :
-    presentation.lookupRule? (ruleId "megalodon-term-subst-imp") =
+    definition.lookupRule? (ruleId "megalodon-term-subst-imp") =
       some TermQuantifiedKernel.substImpRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermAllRule :
-    presentation.lookupRule? (ruleId "megalodon-term-subst-all") =
+    definition.lookupRule? (ruleId "megalodon-term-subst-all") =
       some TermQuantifiedKernel.substAllRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermTypeAppRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-term-type-app") =
       some substituteTermTypeAppRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermTypeLamRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-term-type-lam") =
       some substituteTermTypeLamRule := by
   rfl
 
 @[simp] private theorem lookup_substituteTermTypeAllRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-env-substitute-term-type-all") =
       some substituteTermTypeAllRule := by
   rfl
@@ -2508,7 +2506,7 @@ theorem polymorphic_reuse_document_accepted :
     checkRaw validated polymorphicReuseDocumentGoal
       polymorphicReuseDocumentArticle = true := by
   simp (config := { maxSteps := 4000000, decide := true })
-    [checkRaw, checkRawChildren, instantiateRule?, Presentation.lookupRule?,
+    [checkRaw, checkRawChildren, instantiateRule?, CalculusLanguageDef.lookupRule?,
       instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
       instantiateSchemaAt?, lookupArgumentAt?,
       polymorphicReuseDocumentGoal,
@@ -2525,7 +2523,7 @@ theorem polymorphic_reuse_document_accepted :
       polymorphicReuseFinalEnvironment, polymorphicReuseDeclarations,
       polymorphicReuseDeclaration, encodeDeclarations, encodeEnvironment,
       encodePrimitiveTypes, encodeKnown, node,
-      validated, presentation, definition, additionalConstructors,
+      validated, definition, definition, additionalConstructors,
       additionalJudgments, additionalRules,
       shiftTypeVarZeroRule, shiftTypeVarBelowRule, shiftTypeVarSuccRule,
       shiftTypePropRule, shiftTypeBaseRule, shiftTypeArrRule,
@@ -2797,7 +2795,7 @@ theorem implication_reuse_document_accepted :
     checkRaw validated implicationReuseDocumentGoal
       implicationReuseDocumentArticle = true := by
   simp (config := { maxSteps := 4000000, decide := true })
-    [ checkRaw, checkRawChildren, instantiateRule?, Presentation.lookupRule?,
+    [ checkRaw, checkRawChildren, instantiateRule?, CalculusLanguageDef.lookupRule?,
       instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
       instantiateSchemaAt?, lookupArgumentAt?,
       implicationReuseDocumentGoal, implicationReuseDocumentArticle,
@@ -2811,7 +2809,7 @@ theorem implication_reuse_document_accepted :
       implicationReuseProposition, implicationReuseTerm,
       implicationReuseTermName, implicationReuseKnownName,
       encodeDeclarations, encodeEnvironment, encodePrimitiveTypes, encodeKnown,
-      node, validated, presentation, definition, additionalConstructors,
+      node, validated, definition, definition, additionalConstructors,
       additionalJudgments, additionalRules, proofImpIntroRule,
       proofImpElimRule, proofBaseRule, proofKnownRule, knownHereRule,
       documentNilRule, documentConsRule, rule, ruleId,

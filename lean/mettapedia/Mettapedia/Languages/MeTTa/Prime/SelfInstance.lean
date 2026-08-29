@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.NativeTypeTheoryDerivation
+import Mettapedia.Languages.MeTTa.TypeTheory.StagedReflective.Presentation
 import Mettapedia.Languages.MeTTa.Prime.DataFibration
 
 /-!
@@ -19,7 +19,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.MeTTa.Prime.SelfInstance
 
 open Mettapedia.GSLT.LanguageDef
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.DataFibration
 
 /-! ## The actual Prime language as held Data -/
@@ -70,7 +70,7 @@ theorem currentPrimeSelfData_level_does_not_collapse :
 native quotation former. -/
 def quoteHeldLanguage
     (value : Data Nat FamiliesCode.decode validatedLanguageDataType) :
-    NativeRawTm 0 0 :=
+    StagedReflectiveTm 0 0 :=
   nativeQuotedLanguage 0 (eval value)
 
 /-- The Data self-instance and the previously selected quoted Prime language
@@ -88,8 +88,8 @@ theorem currentPrimeSelfData_roundtrip :
 
 /-- The native quotation bridge also strictly raises reflective syntax depth. -/
 theorem currentPrimeSelfData_strict_reflective_increase :
-    (NativeRawTm.language (eval currentPrimeSelfData) :
-        NativeRawTm 1 0).reflectiveDepth <
+    (StagedReflectiveTm.language (eval currentPrimeSelfData) :
+        StagedReflectiveTm 1 0).reflectiveDepth <
       (quoteHeldLanguage currentPrimeSelfData).reflectiveDepth := by
   simpa [quoteHeldLanguage, quotedCurrentPrimeLanguage] using
     quotedCurrentPrimeLanguage_strictly_raises

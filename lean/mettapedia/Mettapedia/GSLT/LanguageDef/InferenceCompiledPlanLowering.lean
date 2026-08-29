@@ -2,9 +2,9 @@ import Mettapedia.GSLT.LanguageDef.InferenceChecker
 import Mettapedia.GSLT.LanguageDef.CompiledPlanLowering
 
 /-!
-# Lowering admitted inference presentations to compiled plans
+# Lowering admitted calculus languages to compiled plans
 
-This module connects the generic inference-presentation authority to the exact
+This module connects the generic calculus-language authority to the exact
 compiled finite-Horn carrier.  The admitted fragment is discovered locally:
 
 * rule schemas satisfy the ordinary V1 binding checks;
@@ -14,12 +14,12 @@ compiled finite-Horn carrier.  The admitted fragment is discovered locally:
 * names and physical variable counts fit the compiled carrier.
 
 Unsupported binder, substitution, collection, and side-condition forms fail
-closed.  They remain valid inference presentations and may be handled by a
+closed.  They remain valid calculus languages and may be handled by a
 richer generated machine; they are not silently assigned finite-Horn meaning.
 
 The final theorem composes this recognizer with independent translation
 validation and exact `CGP1` admission: every emitted packet reconstructs the
-meaning obtained from the admitted source presentation.
+meaning obtained from the admitted source definition.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.InferenceCompiledPlanLowering
@@ -43,7 +43,7 @@ def physicalName? (value : String) : Option (List UInt8) :=
   if bytesNonempty bytes && textEncodable? bytes then some bytes else none
 
 /-- Resolve one authored metavariable name to its declared physical slot.
-`RuleSchema.isValidV1` supplies uniqueness; this function additionally checks
+`RuleSchema.isLocallyValid` supplies uniqueness; this function additionally checks
 the depth-zero and `UInt32` boundaries of the finite-Horn realization. -/
 def variableSlot? (formals : List (String × Nat))
     (name : String) : Option UInt32 := do
@@ -320,62 +320,62 @@ theorem mapM_isSome_eq_all (f : α → Option β) :
 /-- Standalone rule entry point.  V1 validity remains the source binding
 authority rather than being inferred from a successful physical lowering. -/
 def lowerRule? (rule : RuleSchema) : Option TypedRule :=
-  if InferenceChecker.RuleSchema.isValidV1 rule then
+  if InferenceChecker.RuleSchema.isLocallyValid rule then
     lowerAdmittedRule? rule
   else
     none
 
-/-- Fragment recognition for an already admitted inference presentation. -/
-def lowerValidatedPresentation?
-    (presentation : ValidatedPresentation) : Option TypedProgram :=
-  presentation.1.rules.mapM lowerAdmittedRule?
+/-- Fragment recognition for an already admitted calculus language. -/
+def lowerValidatedDefinition?
+    (definition : ValidatedCalculusLanguageDef) : Option TypedProgram :=
+  definition.1.rules.mapM lowerAdmittedRule?
 
-theorem lowerValidatedPresentation?_isSome
-    (presentation : ValidatedPresentation) :
-    (lowerValidatedPresentation? presentation).isSome =
-      presentation.1.rules.all admittedRuleSupported := by
-  simp [lowerValidatedPresentation?, mapM_isSome_eq_all,
+theorem lowerValidatedDefinition?_isSome
+    (definition : ValidatedCalculusLanguageDef) :
+    (lowerValidatedDefinition? definition).isSome =
+      definition.1.rules.all admittedRuleSupported := by
+  simp [lowerValidatedDefinition?, mapM_isSome_eq_all,
     lowerAdmittedRule?_isSome]
 
-/-- V2 presentation admission precedes fragment recognition. -/
-def lowerPresentation? (presentation : Presentation) : Option TypedProgram :=
-  if valid : InferenceChecker.Presentation.isValidV2 presentation = true then
-    lowerValidatedPresentation? ⟨presentation, valid⟩
+/-- Whole-language admission precedes fragment recognition. -/
+def lowerDefinition? (definition : CalculusLanguageDef) : Option TypedProgram :=
+  if valid : definition.isValid = true then
+    lowerValidatedDefinition? ⟨definition, valid⟩
   else
     none
 
-def admittedMeaning? (presentation : Presentation) : Option AdmittedProgram :=
-  (lowerPresentation? presentation).map TypedProgram.toAdmitted
+def admittedMeaning? (definition : CalculusLanguageDef) : Option AdmittedProgram :=
+  (lowerDefinition? definition).map TypedProgram.toAdmitted
 
 def admittedValidatedMeaning?
-    (presentation : ValidatedPresentation) : Option AdmittedProgram :=
-  (lowerValidatedPresentation? presentation).map TypedProgram.toAdmitted
+    (definition : ValidatedCalculusLanguageDef) : Option AdmittedProgram :=
+  (lowerValidatedDefinition? definition).map TypedProgram.toAdmitted
 
 def compileValidatedBytes?
-    (presentation : ValidatedPresentation) : Option (List UInt8) := do
-  let source <- lowerValidatedPresentation? presentation
+    (definition : ValidatedCalculusLanguageDef) : Option (List UInt8) := do
+  let source <- lowerValidatedDefinition? definition
   CompiledPlanLowering.compileBytes? source
 
-def compileBytes? (presentation : Presentation) : Option (List UInt8) := do
-  let source <- lowerPresentation? presentation
+def compileBytes? (definition : CalculusLanguageDef) : Option (List UInt8) := do
+  let source <- lowerDefinition? definition
   CompiledPlanLowering.compileBytes? source
 
-theorem lowerPresentation?_success_valid
-    {presentation : Presentation} {source : TypedProgram}
-    (success : lowerPresentation? presentation = some source) :
-    presentation.isValidV2 = true := by
-  unfold lowerPresentation? at success
-  by_cases valid : presentation.isValidV2 = true
+theorem lowerDefinition?_success_valid
+    {definition : CalculusLanguageDef} {source : TypedProgram}
+    (success : lowerDefinition? definition = some source) :
+    definition.isValid = true := by
+  unfold lowerDefinition? at success
+  by_cases valid : definition.isValid = true
   · exact valid
   · simp [valid] at success
 
 /-- Source-to-packet soundness for the recognized finite-Horn fragment. -/
 theorem compileBytes?_sound
-    {presentation : Presentation} {bytes : List UInt8}
-    (success : compileBytes? presentation = some bytes) :
-    admitBytes? bytes = admittedMeaning? presentation := by
+    {definition : CalculusLanguageDef} {bytes : List UInt8}
+    (success : compileBytes? definition = some bytes) :
+    admitBytes? bytes = admittedMeaning? definition := by
   unfold compileBytes? at success
-  cases lowered : lowerPresentation? presentation with
+  cases lowered : lowerDefinition? definition with
   | none =>
       simp [lowered] at success
   | some source =>
@@ -384,14 +384,14 @@ theorem compileBytes?_sound
         CompiledPlanLowering.compileBytes?_sound success
       simp [admittedMeaning?, lowered, packetSound]
 
-/-- The validated-presentation entry point preserves the independently
+/-- The validated-definition entry point preserves the independently
 reconstructed source meaning without repeating source admission. -/
 theorem compileValidatedBytes?_sound
-    {presentation : ValidatedPresentation} {bytes : List UInt8}
-    (success : compileValidatedBytes? presentation = some bytes) :
-    admitBytes? bytes = admittedValidatedMeaning? presentation := by
+    {definition : ValidatedCalculusLanguageDef} {bytes : List UInt8}
+    (success : compileValidatedBytes? definition = some bytes) :
+    admitBytes? bytes = admittedValidatedMeaning? definition := by
   unfold compileValidatedBytes? at success
-  cases lowered : lowerValidatedPresentation? presentation with
+  cases lowered : lowerValidatedDefinition? definition with
   | none =>
       simp [lowered] at success
   | some source =>
@@ -408,31 +408,31 @@ def binaryRule : RuleSchema :=
     premises := []
     conclusion := .apply "pair" [.fvar "x", .fvar "y"] }
 
-def binaryPresentation : Presentation :=
-  { language := LanguageDef.empty "compiled-plan-binary"
-    calculus :=
-      { judgments := [{ head := "pair", arity := 2 }]
-        rules := [binaryRule] } }
+def binaryDefinition : CalculusLanguageDef :=
+  CalculusLanguageDef.extend (LanguageDef.empty "compiled-plan-binary")
+    { judgments := [{ head := "pair", arity := 2 }]
+      rules := [binaryRule] }
 
 private theorem emptyLanguage_validate (name : String) :
     (LanguageDef.empty name).validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [LanguageDef.empty, LanguageDef.typeNames]
 
-theorem binaryPresentation_valid :
-    binaryPresentation.isValidV2 = true := by
-  simp [binaryPresentation, InferenceChecker.Presentation.isValidV2,
-    InferenceChecker.Presentation.judgmentSignatureValid,
-    InferenceChecker.Presentation.judgmentHeads,
-    InferenceChecker.Presentation.isValidV1,
-    InferenceChecker.Presentation.ruleIds,
+theorem binaryDefinition_valid :
+    binaryDefinition.isValid = true := by
+  simp [binaryDefinition, CalculusLanguageDef.extend,
+    CalculusLanguageDef.isValid,
+    CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.hasValidLocalRules,
+    CalculusLanguageDef.ruleIds,
     emptyLanguage_validate, binaryRule,
     InferenceChecker.RuleSchema.isValidIn,
-    InferenceChecker.Presentation.judgmentSchemaValid,
-    InferenceChecker.Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?,
     InferenceChecker.fixedConstructorListsValid,
     InferenceChecker.fixedConstructorsValid,
-    InferenceChecker.RuleSchema.isValidV1,
+    InferenceChecker.RuleSchema.isLocallyValid,
     InferenceChecker.RuleSchema.metavariableNames,
     InferenceChecker.RuleSchema.occurrences,
     InferenceChecker.RuleSchema.patterns,
@@ -451,7 +451,7 @@ theorem lowerRule?_binaryRule :
   simp [lowerRule?, lowerAdmittedRule?, binaryRule, binaryTypedRule,
     physicalName?, stringBytes,
     variableSlot?, lowerPattern?, lowerPatterns?,
-    InferenceChecker.RuleSchema.isValidV1,
+    InferenceChecker.RuleSchema.isLocallyValid,
     InferenceChecker.RuleSchema.metavariableNames,
     InferenceChecker.RuleSchema.occurrences,
     InferenceChecker.RuleSchema.patterns,
@@ -465,19 +465,20 @@ theorem lowerRule?_binaryRule :
     bytesNonempty, Term.isApplication]
   decide
 
-theorem lowerPresentation?_binaryPresentation :
-    lowerPresentation? binaryPresentation = some binaryTypedProgram := by
-  unfold lowerPresentation?
-  rw [dif_pos binaryPresentation_valid]
-  simp [lowerValidatedPresentation?, binaryPresentation,
+theorem lowerDefinition?_binaryDefinition :
+    lowerDefinition? binaryDefinition = some binaryTypedProgram := by
+  unfold lowerDefinition?
+  rw [dif_pos binaryDefinition_valid]
+  simp [lowerValidatedDefinition?, binaryDefinition,
+    CalculusLanguageDef.extend,
     lowerAdmittedRule?, binaryRule, binaryTypedProgram, physicalName?,
     stringBytes, variableSlot?, lowerPattern?, lowerPatterns?,
     textEncodable?, bytesNulFree, bytesNonempty, Term.isApplication]
   decide
 
-theorem compileBytes?_binaryPresentation :
-    compileBytes? binaryPresentation = some binaryBytes := by
-  simp [compileBytes?, lowerPresentation?_binaryPresentation,
+theorem compileBytes?_binaryDefinition :
+    compileBytes? binaryDefinition = some binaryBytes := by
+  simp [compileBytes?, lowerDefinition?_binaryDefinition,
     CompiledPlanLowering.compileBytes?_binary_typed_program]
 
 def binderRule : RuleSchema :=
@@ -487,8 +488,8 @@ def binderRule : RuleSchema :=
     conclusion := .apply "holds" [.lambda none (.fvar "body")] }
 
 theorem binderRule_validV1 :
-    InferenceChecker.RuleSchema.isValidV1 binderRule = true := by
-  simp [binderRule, InferenceChecker.RuleSchema.isValidV1,
+    InferenceChecker.RuleSchema.isLocallyValid binderRule = true := by
+  simp [binderRule, InferenceChecker.RuleSchema.isLocallyValid,
     InferenceChecker.RuleSchema.metavariableNames,
     InferenceChecker.RuleSchema.occurrences,
     InferenceChecker.RuleSchema.patterns,

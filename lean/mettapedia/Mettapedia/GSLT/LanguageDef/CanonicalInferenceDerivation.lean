@@ -14,7 +14,7 @@ erasure.  Positive rule semantics can therefore interpret it directly.  No
 post-hoc checker appears inside the interpreted computation.
 
 Canonical-premise closure is then characterized operationally: when a
-presentation has the closure law, a supported root is enough to lift every
+definition has the closure law, a supported root is enough to lift every
 ordinary derivation into a canonical derivation.  Without that law, the
 nodewise carrier remains available and prevents a hidden noncanonical premise
 from being smuggled beneath a canonical conclusion.
@@ -38,39 +38,39 @@ mutual
 /-- A checked derivation whose conclusion and every recursive premise are in
 the exact image of the intrinsic judgment codec. -/
 inductive CanonicalDerivation {Certificate : Type uCertificate}
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (codec : PartialCodec Certificate Pattern) : Pattern → Type uCertificate where
   | byRule (ruleInstance : RuleInstance) {premises : List Pattern}
       {conclusion : Pattern}
       (support : InImage codec conclusion)
       (application :
-        RuleApplication presentation ruleInstance premises conclusion)
-      (children : CanonicalDerivationList presentation codec premises) :
-      CanonicalDerivation presentation codec conclusion
+        RuleApplication definition ruleInstance premises conclusion)
+      (children : CanonicalDerivationList definition codec premises) :
+      CanonicalDerivation definition codec conclusion
 
 /-- Ordered canonical children retain duplicate occurrences and their exact
 premise slots. -/
 inductive CanonicalDerivationList {Certificate : Type uCertificate}
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (codec : PartialCodec Certificate Pattern) :
     List Pattern → Type uCertificate where
-  | nil : CanonicalDerivationList presentation codec []
+  | nil : CanonicalDerivationList definition codec []
   | cons {premise : Pattern} {premises : List Pattern}
-      (head : CanonicalDerivation presentation codec premise)
-      (tail : CanonicalDerivationList presentation codec premises) :
-      CanonicalDerivationList presentation codec (premise :: premises)
+      (head : CanonicalDerivation definition codec premise)
+      (tail : CanonicalDerivationList definition codec premises) :
+      CanonicalDerivationList definition codec (premise :: premises)
 
 end
 
 namespace CanonicalDerivation
 
 variable {Certificate : Type uCertificate}
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {codec : PartialCodec Certificate Pattern}
 
 /-- The root support carried by a canonical derivation. -/
 def support {goal : Pattern}
-    (derivation : CanonicalDerivation presentation codec goal) :
+    (derivation : CanonicalDerivation definition codec goal) :
     InImage codec goal := by
   cases derivation with
   | byRule _ support _ _ => exact support
@@ -80,15 +80,15 @@ mutual
 /-- Forget only canonical-image support, recovering the identical checked
 derivation tree. -/
 def toDerivation {goal : Pattern} :
-    CanonicalDerivation presentation codec goal → Derivation presentation goal
+    CanonicalDerivation definition codec goal → Derivation definition goal
   | .byRule ruleInstance _ application children =>
       .byRule ruleInstance application
         (toDerivationList children)
 
 /-- Pointwise forgetting for ordered children. -/
 def toDerivationList {premises : List Pattern} :
-    CanonicalDerivationList presentation codec premises →
-      DerivationList presentation premises
+    CanonicalDerivationList definition codec premises →
+      DerivationList definition premises
   | .nil => .nil
   | .cons head tail =>
       .cons head.toDerivation (toDerivationList tail)
@@ -97,21 +97,21 @@ end
 
 /-- Raw erasure is inherited from the unchanged ordinary derivation. -/
 def erase {goal : Pattern}
-    (derivation : CanonicalDerivation presentation codec goal) : RawProof :=
+    (derivation : CanonicalDerivation definition codec goal) : RawProof :=
   derivation.toDerivation.erase
 
 /-- Every canonical derivation is accepted by the original checker with its
 exact raw erasure. -/
 theorem checkRaw_erase {goal : Pattern}
-    (derivation : CanonicalDerivation presentation codec goal) :
-    InferenceChecker.checkRaw presentation goal derivation.erase = true :=
+    (derivation : CanonicalDerivation definition codec goal) :
+    InferenceChecker.checkRaw definition goal derivation.erase = true :=
   InferenceChecker.checkRaw_erase derivation.toDerivation
 
 /-- A goal outside the intrinsic image has no canonical derivation, even if a
-raw presentation happens to derive the same wire. -/
+raw definition happens to derive the same wire. -/
 theorem false_of_not_inImage {goal : Pattern}
     (unsupported : ¬ InImage codec goal)
-    (derivation : CanonicalDerivation presentation codec goal) : False :=
+    (derivation : CanonicalDerivation definition codec goal) : False :=
   unsupported derivation.support
 
 end CanonicalDerivation
@@ -125,28 +125,28 @@ exact codec image.  Successful checking is a boundary operation; native
 interpretation below consumes the resulting canonical derivation instead of
 calling this function again. -/
 def checkCanonicalRaw {Certificate : Type uCertificate}
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (codec : PartialCodec Certificate Pattern) : Pattern → RawProof → Bool
   | goal, .node ruleInstance children =>
       match decodeCanonical? codec goal with
       | none => false
       | some _ =>
-          match instantiateRule? presentation ruleInstance with
+          match instantiateRule? definition ruleInstance with
           | none => false
           | some (premises, conclusion) =>
               decide (conclusion = goal) &&
-                checkCanonicalRawChildren presentation codec premises children
+                checkCanonicalRawChildren definition codec premises children
 termination_by _ proof => sizeOf proof
 
 /-- Ordered recursive canonical checking for premise occurrences. -/
 def checkCanonicalRawChildren {Certificate : Type uCertificate}
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (codec : PartialCodec Certificate Pattern) :
     List Pattern → List RawProof → Bool
   | [], [] => true
   | premise :: premises, child :: children =>
-      checkCanonicalRaw presentation codec premise child &&
-        checkCanonicalRawChildren presentation codec premises children
+      checkCanonicalRaw definition codec premise child &&
+        checkCanonicalRawChildren definition codec premises children
   | _, _ => false
 termination_by _ children => sizeOf children
 
@@ -159,11 +159,11 @@ mutual
 a nodewise canonical derivation of the same goal and the same tree. -/
 theorem checkCanonicalRaw_sound
     {Certificate : Type uCertificate}
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {codec : PartialCodec Certificate Pattern}
     {goal : Pattern} {raw : RawProof}
-    (accepted : checkCanonicalRaw presentation codec goal raw = true) :
-    ∃ derivation : CanonicalDerivation presentation codec goal,
+    (accepted : checkCanonicalRaw definition codec goal raw = true) :
+    ∃ derivation : CanonicalDerivation definition codec goal,
       derivation.erase = raw := by
   cases raw with
   | node ruleInstance children =>
@@ -175,7 +175,7 @@ theorem checkCanonicalRaw_sound
             ⟨certificate,
               (decodeCanonical?_eq_some_iff codec goal certificate).1
                 decoded |>.2⟩
-          cases instantiated : instantiateRule? presentation ruleInstance with
+          cases instantiated : instantiateRule? definition ruleInstance with
           | none => simp [decoded, instantiated] at accepted
           | some result =>
               rcases result with ⟨premises, conclusion⟩
@@ -184,7 +184,7 @@ theorem checkCanonicalRaw_sound
               rcases accepted with ⟨conclusionEquality, childrenAccepted⟩
               subst goal
               have application :
-                  RuleApplication presentation ruleInstance premises
+                  RuleApplication definition ruleInstance premises
                     conclusion :=
                 instantiateRule?_eq_some_iff_application.mp instantiated
               rcases checkCanonicalRawChildren_sound childrenAccepted with
@@ -199,12 +199,12 @@ termination_by sizeOf raw
 /-- Exact soundness for ordered children. -/
 theorem checkCanonicalRawChildren_sound
     {Certificate : Type uCertificate}
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {codec : PartialCodec Certificate Pattern}
     {premises : List Pattern} {raw : List RawProof}
     (accepted :
-      checkCanonicalRawChildren presentation codec premises raw = true) :
-    ∃ derivations : CanonicalDerivationList presentation codec premises,
+      checkCanonicalRawChildren definition codec premises raw = true) :
+    ∃ derivations : CanonicalDerivationList definition codec premises,
       (CanonicalDerivation.toDerivationList derivations).erase = raw := by
   cases premises with
   | nil =>
@@ -236,11 +236,11 @@ mutual
 boundary always succeeds. -/
 theorem CanonicalDerivation.checkCanonicalRaw_erase
     {Certificate : Type uCertificate}
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {codec : PartialCodec Certificate Pattern}
     {goal : Pattern}
-    (derivation : CanonicalDerivation presentation codec goal) :
-    checkCanonicalRaw presentation codec goal derivation.erase = true := by
+    (derivation : CanonicalDerivation definition codec goal) :
+    checkCanonicalRaw definition codec goal derivation.erase = true := by
   cases derivation with
   | byRule ruleInstance support application children =>
       have decodedSome : (decodeCanonical? codec goal).isSome = true :=
@@ -260,11 +260,11 @@ theorem CanonicalDerivation.checkCanonicalRaw_erase
 /-- Completeness for ordered child erasures. -/
 theorem CanonicalDerivationList.checkCanonicalRawChildren_erase
     {Certificate : Type uCertificate}
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {codec : PartialCodec Certificate Pattern}
     {premises : List Pattern}
-    (derivations : CanonicalDerivationList presentation codec premises) :
-    checkCanonicalRawChildren presentation codec premises
+    (derivations : CanonicalDerivationList definition codec premises) :
+    checkCanonicalRawChildren definition codec premises
         (CanonicalDerivation.toDerivationList derivations).erase = true := by
   cases derivations with
   | nil => simp [CanonicalDerivation.toDerivationList,
@@ -280,11 +280,11 @@ end
 /-- Exact admission theorem for the check-once boundary. -/
 theorem checkCanonicalRaw_iff_exists_derivation_erases
     {Certificate : Type uCertificate}
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {codec : PartialCodec Certificate Pattern}
     (goal : Pattern) (raw : RawProof) :
-    checkCanonicalRaw presentation codec goal raw = true ↔
-      ∃ derivation : CanonicalDerivation presentation codec goal,
+    checkCanonicalRaw definition codec goal raw = true ↔
+      ∃ derivation : CanonicalDerivation definition codec goal,
         derivation.erase = raw := by
   constructor
   · exact checkCanonicalRaw_sound
@@ -293,10 +293,10 @@ theorem checkCanonicalRaw_iff_exists_derivation_erases
 
 /-! ## Direct positive interpretation -/
 
-namespace PositivePresentationSemantics
+namespace PositiveCalculusLanguageSemantics
 
 variable {Certificate : Type uCertificate}
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {codec : PartialCodec Certificate Pattern}
     {Evidence : Certificate → Type uEvidence}
 
@@ -305,8 +305,8 @@ mutual
 /-- Interpret a nodewise canonical derivation directly into the positive
 native fibre. -/
 def interpretCanonical
-    (semantics : PositivePresentationSemantics presentation codec Evidence) :
-    {goal : Pattern} → CanonicalDerivation presentation codec goal →
+    (semantics : PositiveCalculusLanguageSemantics definition codec Evidence) :
+    {goal : Pattern} → CanonicalDerivation definition codec goal →
       PositiveFibre codec Evidence goal
   | _, .byRule _ support application children =>
       semantics.ruleMeaning application support
@@ -314,9 +314,9 @@ def interpretCanonical
 
 /-- Ordered positive interpretation retains every premise occurrence. -/
 def interpretCanonicalList
-    (semantics : PositivePresentationSemantics presentation codec Evidence) :
+    (semantics : PositiveCalculusLanguageSemantics definition codec Evidence) :
     {premises : List Pattern} →
-      CanonicalDerivationList presentation codec premises →
+      CanonicalDerivationList definition codec premises →
       EvidenceList (PositiveFibre codec Evidence) premises
   | [], .nil => .nil
   | _ :: _, .cons head tail =>
@@ -325,14 +325,14 @@ def interpretCanonicalList
 
 end
 
-end PositivePresentationSemantics
+end PositiveCalculusLanguageSemantics
 
 /-! ## Closure lifts supported ordinary derivations -/
 
 namespace CanonicalPremiseClosed
 
 variable {Certificate : Type uCertificate}
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {codec : PartialCodec Certificate Pattern}
 
 mutual
@@ -340,9 +340,9 @@ mutual
 /-- Under canonical-premise closure, root support recursively supplies the
 support field at every ordinary derivation node. -/
 def liftDerivation
-    (closed : CanonicalPremiseClosed presentation codec) :
-    {goal : Pattern} → InImage codec goal → Derivation presentation goal →
-      CanonicalDerivation presentation codec goal
+    (closed : CanonicalPremiseClosed definition codec) :
+    {goal : Pattern} → InImage codec goal → Derivation definition goal →
+      CanonicalDerivation definition codec goal
   | _, support, .byRule ruleInstance application children =>
       .byRule ruleInstance support application
         (liftDerivationList closed
@@ -351,10 +351,10 @@ def liftDerivation
 /-- Ordered recursive lifting; support is selected by exact occurrence, not
 by deduplicated membership. -/
 def liftDerivationList
-    (closed : CanonicalPremiseClosed presentation codec) :
+    (closed : CanonicalPremiseClosed definition codec) :
     {premises : List Pattern} → PremisesInImage codec premises →
-      DerivationList presentation premises →
-      CanonicalDerivationList presentation codec premises
+      DerivationList definition premises →
+      CanonicalDerivationList definition codec premises
   | [], _, .nil => .nil
   | premise :: premises, support, .cons head tail =>
       .cons
@@ -368,9 +368,9 @@ end
 mutual
 
 @[simp] theorem liftDerivation_toDerivation
-    (closed : CanonicalPremiseClosed presentation codec)
+    (closed : CanonicalPremiseClosed definition codec)
     {goal : Pattern} (support : InImage codec goal)
-    (derivation : Derivation presentation goal) :
+    (derivation : Derivation definition goal) :
     (liftDerivation closed support derivation).toDerivation = derivation := by
   cases derivation with
   | byRule ruleInstance application children =>
@@ -379,9 +379,9 @@ mutual
           (closed ruleInstance _ _ application support) children]
 
 @[simp] theorem liftDerivationList_toDerivationList
-    (closed : CanonicalPremiseClosed presentation codec)
+    (closed : CanonicalPremiseClosed definition codec)
     {premises : List Pattern} (support : PremisesInImage codec premises)
-    (derivations : DerivationList presentation premises) :
+    (derivations : DerivationList definition premises) :
     CanonicalDerivation.toDerivationList
         (liftDerivationList closed support derivations) =
       derivations := by
@@ -399,19 +399,19 @@ end
 
 /-- Closure lifting preserves the exact raw proof artifact. -/
 @[simp] theorem liftDerivation_erase
-    (closed : CanonicalPremiseClosed presentation codec)
+    (closed : CanonicalPremiseClosed definition codec)
     {goal : Pattern} (support : InImage codec goal)
-    (derivation : Derivation presentation goal) :
+    (derivation : Derivation definition goal) :
     (liftDerivation closed support derivation).erase = derivation.erase := by
   simp [CanonicalDerivation.erase]
 
 /-- Exact raw-checker characterization on a supported root of a
-canonical-premise-closed presentation. -/
+canonical-premise-closed definition. -/
 theorem checkRaw_iff_exists_canonical_erases
-    (closed : CanonicalPremiseClosed presentation codec)
+    (closed : CanonicalPremiseClosed definition codec)
     {goal : Pattern} (support : InImage codec goal) (raw : RawProof) :
-    InferenceChecker.checkRaw presentation goal raw = true ↔
-      ∃ derivation : CanonicalDerivation presentation codec goal,
+    InferenceChecker.checkRaw definition goal raw = true ↔
+      ∃ derivation : CanonicalDerivation definition codec goal,
         derivation.erase = raw := by
   constructor
   · intro accepted
@@ -450,8 +450,8 @@ theorem aliasPattern_not_inImage :
   cases certificate <;> simp [boolPatternCodec, aliasPattern] at equality
 
 theorem tolerantAlias_has_no_canonicalDerivation
-    (presentation : ValidatedPresentation) :
-    CanonicalDerivation presentation boolPatternCodec aliasPattern → False :=
+    (definition : ValidatedCalculusLanguageDef) :
+    CanonicalDerivation definition boolPatternCodec aliasPattern → False :=
   CanonicalDerivation.false_of_not_inImage aliasPattern_not_inImage
 
 end Canary
@@ -459,7 +459,7 @@ end Canary
 #print axioms CanonicalDerivation.checkRaw_erase
 #print axioms CanonicalDerivation.false_of_not_inImage
 #print axioms checkCanonicalRaw_iff_exists_derivation_erases
-#print axioms PositivePresentationSemantics.interpretCanonical
+#print axioms PositiveCalculusLanguageSemantics.interpretCanonical
 #print axioms CanonicalPremiseClosed.liftDerivation_toDerivation
 #print axioms CanonicalPremiseClosed.liftDerivation_erase
 #print axioms CanonicalPremiseClosed.checkRaw_iff_exists_canonical_erases

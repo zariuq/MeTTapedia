@@ -11,7 +11,7 @@ term and proof contexts, matching `Mathdata.extr_propofpf`.
 The executable specimen is reconstructed by Megalodon from a theorem inside
 an `SType` section.  Its outer type closure, term closure, implication proof,
 and term-quantifier proof are all checked by the same finite coGSLT
-presentation.  Conversion, named known proofs, and polymorphic term
+definition.  Conversion, named known proofs, and polymorphic term
 application remain separate later layers.
 -/
 
@@ -265,29 +265,27 @@ def definition : CalculusLanguageDef :=
       additionalJudgments
     rules := TermQuantifiedKernel.definition.rules ++ additionalRules }
 
-def presentation : Presentation := definition.toNested
-
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 1000000 in
-theorem presentation_valid : presentation.isValidV2 = true := by
-  have hvalidate : presentation.language.validate = [] := by
+theorem definition_valid : definition.isValid = true := by
+  have hvalidate : definition.toLanguageDef.validate = [] := by
     apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-      simp [presentation, definition, TermQuantifiedKernel.definition,
+      simp [definition, definition, TermQuantifiedKernel.definition,
         TermQuantifiedKernel.constructors,
         TermQuantifiedKernel.expressionType,
         TermQuantifiedKernel.expressionConstructor,
         LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
         TypeExpr.baseNames]
-  unfold Presentation.isValidV2 Presentation.isValidV1
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [presentation, definition, additionalJudgments, additionalRules,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn, RuleSchema.isValidV1,
+  simp [definition, definition, additionalJudgments, additionalRules,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
-    patternsHaveNoCollectionRest, Presentation.judgmentSchemaValid,
+    patternsHaveNoCollectionRest, CalculusLanguageDef.judgmentSchemaValid,
     fixedConstructorsValid, fixedConstructorListsValid,
     languageHasConstructorArity, Pattern.isWellScoped,
     Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
@@ -339,7 +337,7 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     List.eraseDups, List.eraseDupsBy]
   simp (config := { maxSteps := 1000000, decide := true })
 
-def validated : ValidatedPresentation := ⟨presentation, presentation_valid⟩
+def validated : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 def coGSLTDefinition : ExtendedLanguageDef calculusLayer :=
   definition.toExtended
@@ -568,7 +566,7 @@ set_option maxRecDepth 100000 in
 set_option maxHeartbeats 2000000 in
 theorem polymorphic_forall_identity_accepted :
     checkRaw validated goal article = true := by
-  simp [checkRaw, validated, presentation, definition,
+  simp [checkRaw, validated, definition, definition,
     additionalJudgments, additionalRules, rule, ruleId,
     plainVarRule, plainPropRule, plainBaseRule, plainArrRule,
     typeVarZeroRule, typeVarSuccRule, typeNamedZeroRule,
@@ -625,7 +623,7 @@ theorem polymorphic_forall_identity_accepted :
     addZeroOneArticle, shiftBoundVarArticle, shiftProofNilArticle,
     substituteForallBodyArticle, substitutePArticle,
     substituteBoundVarArticle, shiftVarZeroByZeroArticle,
-    addZeroZeroArticle, node, instantiateRule?, Presentation.lookupRule?,
+    addZeroZeroArticle, node, instantiateRule?, CalculusLanguageDef.lookupRule?,
     RuleSchema.sideConditionsHold, instantiateSchema?, instantiateSchemas?,
     goal, goalTerm, theoremBody, forallDomain, forallBody,
     shiftedForallDomain, shiftedForallBody, pType,
@@ -636,7 +634,7 @@ theorem polymorphic_forall_identity_accepted :
     TermQuantifiedKernel.encodeNat, plainType, hasType, proves, lessThan,
     shiftProofContext, substituteTerm, a, m]
   simp (config := { maxSteps := 2000000, decide := true })
-    [checkRaw, checkRawChildren, instantiateRule?, Presentation.lookupRule?,
+    [checkRaw, checkRawChildren, instantiateRule?, CalculusLanguageDef.lookupRule?,
       instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
       instantiateSchemasAt?, lookupArgumentAt?]
 

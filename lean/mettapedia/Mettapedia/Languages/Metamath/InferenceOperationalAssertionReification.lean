@@ -1,5 +1,7 @@
 import Mettapedia.Languages.Metamath.InferenceOperationalSubstitutionReification
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Canonical assertion evidence from operational Metamath data
 
@@ -296,8 +298,8 @@ theorem assertionApplicationSemantics_of_operational
 constructs a proof-relevant local generated assertion node.  Leading native
 proofs of the actual formulas remain external. -/
 theorem generatedAssertionNode_of_operational
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView)
     (hmember : assertion ∈ projection.assertions)
     (callerActiveNames : List String)
@@ -345,8 +347,8 @@ theorem generatedAssertionNode_of_operational
 indexed by the canonical authored finite substitution itself, not merely by an
 existential finite substitution that happens to be constructed canonically. -/
 theorem generatedAssertionNode_of_operational_exact
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView)
     (hmember : assertion ∈ projection.assertions)
     (callerActiveNames : List String)

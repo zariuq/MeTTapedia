@@ -21,7 +21,7 @@ open Mettapedia.GSLT.Dynamics
 open Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational
 open Mettapedia.GSLT.LanguageDef.NIKIndexedExecutionAdmission
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFamilyFibration
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFibration

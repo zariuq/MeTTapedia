@@ -1,10 +1,10 @@
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTInterpretation
 
 /-!
-# Set-valued semantics of certificate-GSLT presentations
+# Set-valued semantics of certificate-GSLT definitions
 
-A proof-theoretic presentation is intensional: it declares judgments and the
-rules generating their derivations.  A model realizes that presentation by a
+A proof-theoretic definition is intensional: it declares judgments and the
+rules generating their derivations.  A model realizes that definition by a
 family of carrier types, one for each ground judgment, together with an action
 of every admitted rule application on the carriers of its ordered premises.
 
@@ -69,13 +69,13 @@ def ofFn {carrier : Pattern → Type u} :
 
 end RealizationList
 
-/-- A set-valued model of a validated semantic presentation. -/
+/-- A set-valued model of a validated semantic definition. -/
 structure Model (object : Object) where
   carrier : Pattern → Type u
   onRule :
     ∀ (ruleInstance : RuleInstance) {premises : List Pattern}
       {conclusion : Pattern},
-      RuleApplication object.presentation ruleInstance premises conclusion →
+      RuleApplication object.definition ruleInstance premises conclusion →
         RealizationList carrier premises → carrier conclusion
 
 namespace Model
@@ -85,14 +85,14 @@ mutual
 /-- Fold a closed derivation into a model. -/
 def denote {object : Object} (model : Model.{u} object)
     {goal : Pattern} :
-    Derivation object.presentation goal → model.carrier goal
+    Derivation object.definition goal → model.carrier goal
   | .byRule ruleInstance application children =>
       model.onRule ruleInstance application (model.denoteList children)
 
 /-- Fold ordered closed premise derivations pointwise. -/
 def denoteList {object : Object} (model : Model.{u} object)
     {goals : List Pattern} :
-    DerivationList object.presentation goals →
+    DerivationList object.definition goals →
       RealizationList model.carrier goals
   | .nil => .nil
   | .cons head tail => .cons (model.denote head) (model.denoteList tail)
@@ -105,7 +105,7 @@ mutual
 occurrences. -/
 def denoteOpen {object : Object} (model : Model.{u} object)
     {context : List Pattern} {goal : Pattern}
-    (derivation : OpenDerivation object.presentation context goal)
+    (derivation : OpenDerivation object.definition context goal)
     (environment : RealizationList model.carrier context) :
     model.carrier goal :=
   match derivation with
@@ -117,7 +117,7 @@ def denoteOpen {object : Object} (model : Model.{u} object)
 /-- Interpret an ordered vector of open derivations pointwise. -/
 def denoteOpenList {object : Object} (model : Model.{u} object)
     {context goals : List Pattern}
-    (derivations : OpenDerivationList object.presentation context goals)
+    (derivations : OpenDerivationList object.definition context goals)
     (environment : RealizationList model.carrier context) :
     RealizationList model.carrier goals :=
   match derivations with
@@ -133,7 +133,7 @@ interpretation. -/
 theorem denoteOpenList_ofFn {object : Object} (model : Model.{u} object)
     {context goals : List Pattern}
     (entries : (index : Fin goals.length) →
-      OpenDerivation object.presentation context (goals.get index))
+      OpenDerivation object.definition context (goals.get index))
     (environment : RealizationList model.carrier context) :
     model.denoteOpenList (OpenDerivationList.ofFn goals entries) environment =
       RealizationList.ofFn goals
@@ -153,7 +153,7 @@ environment itself. -/
     {context : List Pattern}
     (environment : RealizationList model.carrier context) :
     model.denoteOpenList
-        (assumptionEnvironment object.presentation context) environment =
+        (assumptionEnvironment object.definition context) environment =
       environment := by
   rw [assumptionEnvironment, denoteOpenList_ofFn]
   simpa only [denoteOpen] using RealizationList.ofFn_get environment
@@ -165,9 +165,9 @@ composition. -/
 theorem denoteOpen_bind {object : Object} (model : Model.{u} object)
     {sourceContext targetContext : List Pattern} {goal : Pattern}
     (derivation :
-      OpenDerivation object.presentation sourceContext goal)
+      OpenDerivation object.definition sourceContext goal)
     (substitution :
-      OpenDerivationList object.presentation targetContext sourceContext)
+      OpenDerivationList object.definition targetContext sourceContext)
     (environment : RealizationList model.carrier targetContext) :
     model.denoteOpen (derivation.bind substitution) environment =
       model.denoteOpen derivation
@@ -185,9 +185,9 @@ theorem denoteOpen_bind {object : Object} (model : Model.{u} object)
 theorem denoteOpenList_bind {object : Object} (model : Model.{u} object)
     {sourceContext targetContext goals : List Pattern}
     (derivations :
-      OpenDerivationList object.presentation sourceContext goals)
+      OpenDerivationList object.definition sourceContext goals)
     (substitution :
-      OpenDerivationList object.presentation targetContext sourceContext)
+      OpenDerivationList object.definition targetContext sourceContext)
     (environment : RealizationList model.carrier targetContext) :
     model.denoteOpenList (derivations.bind substitution) environment =
       model.denoteOpenList derivations
@@ -203,7 +203,7 @@ theorem denoteOpenList_bind {object : Object} (model : Model.{u} object)
 theorem denoteOpenList_get {object : Object} (model : Model.{u} object)
     {context goals : List Pattern}
     (derivations :
-      OpenDerivationList object.presentation context goals)
+      OpenDerivationList object.definition context goals)
     (environment : RealizationList model.carrier context)
     (index : Fin goals.length) :
     (model.denoteOpenList derivations environment).get index =
@@ -246,7 +246,7 @@ theorem denoteOpen_map {source target : Object}
     (interpretation : Interpretation source target)
     (targetModel : Model.{u} target)
     {context : List Pattern} {goal : Pattern}
-    (derivation : OpenDerivation source.presentation context goal)
+    (derivation : OpenDerivation source.definition context goal)
     (environment : RealizationList targetModel.carrier context) :
     targetModel.denoteOpen (interpretation.mapOpen derivation) environment =
       (pullback interpretation targetModel).denoteOpen derivation environment := by
@@ -264,7 +264,7 @@ theorem denoteOpenList_map {source target : Object}
     (targetModel : Model.{u} target)
     {context goals : List Pattern}
     (derivations :
-      OpenDerivationList source.presentation context goals)
+      OpenDerivationList source.definition context goals)
     (environment : RealizationList targetModel.carrier context) :
     targetModel.denoteOpenList
         (interpretation.mapOpenList derivations) environment =
@@ -280,7 +280,7 @@ theorem denoteOpenList_map {source target : Object}
 
 end
 
-/-- Pullback reverses composition of presentation interpretations. -/
+/-- Pullback reverses composition of definition interpretations. -/
 theorem pullback_comp {first middle last : Object}
     (earlier : Interpretation first middle)
     (later : Interpretation middle last)
@@ -302,7 +302,7 @@ mutual
 unique empty environment. -/
 @[simp] theorem denoteOpen_ofClosed {object : Object}
     (model : Model.{u} object) {goal : Pattern}
-    (derivation : Derivation object.presentation goal) :
+    (derivation : Derivation object.definition goal) :
     model.denoteOpen (OpenDerivation.ofClosed (context := []) derivation)
         .nil =
       model.denote derivation := by
@@ -315,7 +315,7 @@ unique empty environment. -/
 /-- Pointwise closed/open denotation agreement. -/
 @[simp] theorem denoteOpenList_ofClosed {object : Object}
     (model : Model.{u} object) {goals : List Pattern}
-    (derivations : DerivationList object.presentation goals) :
+    (derivations : DerivationList object.definition goals) :
     model.denoteOpenList
         (OpenDerivationList.ofClosed (context := []) derivations) .nil =
       model.denoteList derivations := by
@@ -333,7 +333,7 @@ mutual
 /-- Closing an empty-context open derivation preserves its denotation. -/
 theorem denote_close {object : Object} (model : Model.{u} object)
     {goal : Pattern}
-    (derivation : OpenDerivation object.presentation [] goal) :
+    (derivation : OpenDerivation object.definition [] goal) :
     model.denote derivation.close =
       model.denoteOpen derivation .nil := by
   cases derivation with
@@ -346,7 +346,7 @@ theorem denote_close {object : Object} (model : Model.{u} object)
 /-- Closing an empty-context vector preserves pointwise denotation. -/
 theorem denoteList_close {object : Object} (model : Model.{u} object)
     {goals : List Pattern}
-    (derivations : OpenDerivationList object.presentation [] goals) :
+    (derivations : OpenDerivationList object.definition [] goals) :
     model.denoteList derivations.close =
       model.denoteOpenList derivations .nil := by
   cases derivations with
@@ -361,7 +361,7 @@ end
 theorem denote_mapDerivation {source target : Object}
     (interpretation : Interpretation source target)
     (targetModel : Model.{u} target) {goal : Pattern}
-    (derivation : Derivation source.presentation goal) :
+    (derivation : Derivation source.definition goal) :
     targetModel.denote (interpretation.mapDerivation derivation) =
       (pullback interpretation targetModel).denote derivation := by
   unfold Interpretation.mapDerivation

@@ -90,61 +90,61 @@ def StepAuthority.Complete {AuthorityId : Type uAuthority} {theory : GSLT}
   ∀ claim, claim.Meaning →
     ∃ certificate, authority.check claim certificate = true
 
-/-- A CertificateGSLT presentation sound for exact GSLT edges. -/
-abbrev StepPresentationAdequacy (theory : GSLT)
-    (presentation : ValidatedPresentation) :=
-  JudgmentPresentationAdequacy (StepClaim theory) StepClaim.Meaning presentation
+/-- A CertificateGSLT definition sound for exact GSLT edges. -/
+abbrev StepEncodingAdequacy (theory : GSLT)
+    (definition : ValidatedCalculusLanguageDef) :=
+  JudgmentEncodingAdequacy (StepClaim theory) StepClaim.Meaning definition
 
-/-- A two-sided CertificateGSLT presentation of exact GSLT edges. -/
-abbrev ExactStepPresentation (theory : GSLT)
-    (presentation : ValidatedPresentation) :=
-  ExactJudgmentPresentation (StepClaim theory) StepClaim.Meaning presentation
+/-- A two-sided CertificateGSLT definition of exact GSLT edges. -/
+abbrev ExactStepEncoding (theory : GSLT)
+    (definition : ValidatedCalculusLanguageDef) :=
+  ExactJudgmentEncoding (StepClaim theory) StepClaim.Meaning definition
 
 /-- The ordinary CertificateGSLT wire checker becomes a local OSLF edge authority
 once its edge adequacy theorem is supplied. -/
 def wireStepAuthority {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {theory : GSLT}
-    {presentation : ValidatedPresentation}
-    (adequacy : StepPresentationAdequacy theory presentation) :
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : StepEncodingAdequacy theory definition) :
     StepAuthority AuthorityId theory where
   id := authorityId
   Certificate := WireArticle
   check := (judgmentWireAuthority authorityId adequacy).check
   sound := (judgmentWireAuthority authorityId adequacy).sound
 
-/-- An exact local-step presentation supplies both soundness and certificate
+/-- An exact local-step definition supplies both soundness and certificate
 completeness for the ordinary versioned CertificateGSLT article checker. -/
 def exactWireStepAuthority {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {theory : GSLT}
-    {presentation : ValidatedPresentation}
-    (adequacy : ExactStepPresentation theory presentation) :
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : ExactStepEncoding theory definition) :
     StepAuthority AuthorityId theory :=
-  wireStepAuthority authorityId adequacy.toJudgmentPresentationAdequacy
+  wireStepAuthority authorityId adequacy.toJudgmentEncodingAdequacy
 
-/-- Two-sided presentation adequacy is exactly the missing hypothesis needed
+/-- Two-sided definition adequacy is exactly the missing hypothesis needed
 to make local CertificateGSLT article replay complete for every real GSLT edge. -/
 theorem exactWireStepAuthority_complete {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {theory : GSLT}
-    {presentation : ValidatedPresentation}
-    (adequacy : ExactStepPresentation theory presentation) :
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : ExactStepEncoding theory definition) :
     (exactWireStepAuthority authorityId adequacy).Complete := by
   intro claim meaningful
   exact (judgmentWireAuthority_correspondence authorityId adequacy claim).2
     meaningful
 
-/-- An open CertificateGSLT presentation sound for exact GSLT edges. -/
-abbrev OpenStepPresentationAdequacy (theory : GSLT)
-    (presentation : ValidatedPresentation) :=
-  OpenJudgmentPresentationAdequacy
-    (StepClaim theory) StepClaim.Meaning presentation
+/-- An open CertificateGSLT definition sound for exact GSLT edges. -/
+abbrev OpenStepEncodingAdequacy (theory : GSLT)
+    (definition : ValidatedCalculusLanguageDef) :=
+  OpenJudgmentEncodingAdequacy
+    (StepClaim theory) StepClaim.Meaning definition
 
 /-- Query rows, collection decompositions, binder/substitution facts, and
 capability receipts close an open local edge only through their separately
 sound discharger. -/
 def dischargedOpenWireStepAuthority {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {theory : GSLT}
-    {presentation : ValidatedPresentation}
-    (adequacy : OpenStepPresentationAdequacy theory presentation)
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : OpenStepEncodingAdequacy theory definition)
     (discharger : PremiseDischarger.{uPremiseCertificate}
       adequacy.premiseMeaning) : StepAuthority AuthorityId theory where
   id := authorityId

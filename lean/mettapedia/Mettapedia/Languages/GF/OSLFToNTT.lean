@@ -4,7 +4,7 @@ import Mettapedia.Languages.GF.StoreToLogicalForm
 import Mettapedia.Languages.GF.WorldModelVisibleBridge
 import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 import Mettapedia.OSLF.QuantifiedFormula2
-import Mettapedia.CategoryTheory.NativeTypeTheory
+import Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 import Mettapedia.CategoryTheory.PLNInstance
 
 /-!
@@ -22,7 +22,7 @@ with the current grounded coverage boundary given by the generated
 English/Czech `PaperAmbiguity` slice.
 
 What this file still does:
-- packages the handcrafted evidence semantics with NativeTypeTheory;
+- packages the handcrafted evidence semantics with StagedReflectivePresentation;
 - supports downstream modules that still depend on the legacy world-model lane.
 
 What this file does not do:
@@ -31,11 +31,11 @@ What this file does not do:
 - expand grounded Czech coverage.
 
 Within that explicit legacy scope, it composes the handcrafted OSLF evidence
-semantics with NativeTypeTheory (Grothendieck construction ∫ Sub), completing
+semantics with StagedReflectivePresentation (Grothendieck construction ∫ Sub), completing
 the pipeline:
 
 ```
-  GF → Pattern → GrammarState → QFormula2 → BinaryEvidence → NativeTypeTheory
+  GF → Pattern → GrammarState → QFormula2 → BinaryEvidence → StagedReflectivePresentation
 ```
 
 The bridge exploits `PLNFiber X = BinaryEvidence`, making the Grothendieck
@@ -61,13 +61,13 @@ open Mettapedia.Languages.GF.VisibleLayerGFInstance
 open Mettapedia.Languages.GF.StoreToLogicalForm
 open Mettapedia.Languages.GF.WorldModelVisibleBridge
 open Mettapedia.CategoryTheory.PLNInstance
-open Mettapedia.CategoryTheory.NativeTypeTheory
+open Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-! ## 1. BinaryEvidence → NT Object -/
 
 /-- Construct an NT object from a PLN proposition type and an evidence value. -/
-def evidenceToNT (X : PLNObj) (e : BinaryEvidence) : NativeTypeBundle :=
+def evidenceToNT (X : PLNObj) (e : BinaryEvidence) : EvidenceObject :=
   Sigma.mk X e
 
 theorem evidenceToNT_fst (X : PLNObj) (e : BinaryEvidence) :
@@ -86,14 +86,14 @@ def evidenceToNT_hom (X : PLNObj) (e₁ e₂ : BinaryEvidence) (h : e₁ ≤ e�
 /-- Evaluate a quantified formula to an NT object. -/
 noncomputable def formulaToNT (R : Pattern → Pattern → Prop) (I : QEvidenceAtomSem)
     (Dom : Domain2) (env : VarEnv2) (φ : QFormula2) (p : Pattern)
-    (X : PLNObj) : NativeTypeBundle :=
+    (X : PLNObj) : EvidenceObject :=
   evidenceToNT X (qsemE2 R I Dom env φ p)
 
 /-- Signature canary for `formulaToNT`.
     If `formulaToNT` changes shape, this definition fails to typecheck. -/
 abbrev FormulaToNTSig : Type :=
   (Pattern → Pattern → Prop) → QEvidenceAtomSem →
-  Domain2 → VarEnv2 → QFormula2 → Pattern → PLNObj → NativeTypeBundle
+  Domain2 → VarEnv2 → QFormula2 → Pattern → PLNObj → EvidenceObject
 
 noncomputable def formulaToNT_signature_canary : FormulaToNTSig := formulaToNT
 
@@ -110,14 +110,14 @@ noncomputable def formulaToNT_hom (R : Pattern → Pattern → Prop) (I : QEvide
 /-- Evaluate a grammar state to an NT object via the full combined semantics. -/
 noncomputable def grammarStateToNT (cfg : VisibleCfg) (π : WorldModelSemantics.TemporalPolicy)
     (I : QEvidenceAtomSem) (Dom : Domain2) (φ : QFormula2)
-    (s : GrammarState) (X : PLNObj) : NativeTypeBundle :=
+    (s : GrammarState) (X : PLNObj) : EvidenceObject :=
   evidenceToNT X (gsemE2Full cfg π I Dom φ s)
 
 /-- Signature canary for `grammarStateToNT`.
     If `grammarStateToNT` changes shape, this definition fails to typecheck. -/
 abbrev GrammarStateToNTSig : Type :=
   VisibleCfg → WorldModelSemantics.TemporalPolicy →
-  QEvidenceAtomSem → Domain2 → QFormula2 → GrammarState → PLNObj → NativeTypeBundle
+  QEvidenceAtomSem → Domain2 → QFormula2 → GrammarState → PLNObj → EvidenceObject
 
 noncomputable def grammarStateToNT_signature_canary : GrammarStateToNTSig := grammarStateToNT
 
@@ -196,7 +196,7 @@ theorem closed_frame_NT_eq
          ↓ qsemE2 evaluation                     -- BinaryEvidence semantics
   BinaryEvidence                                         -- Frame-valued truth
          ↓ evidenceToNT                           -- Grothendieck pairing
-  NativeTypeTheory                                 -- NTT category (∫ Sub)
+  StagedReflectivePresentation                                 -- NTT category (∫ Sub)
 ```
 
 Properties preserved: monotonicity (`formulaToNT_hom`), scope ordering

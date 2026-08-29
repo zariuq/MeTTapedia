@@ -10,7 +10,7 @@ The generic authority distinctions become concrete at the existing
 CertificateGSLT boundary.
 
 * The versioned chronological article checker is an exact certificate
-  authority for derivations of an admitted presentation.
+  authority for derivations of an admitted definition.
 * Finite trace checking is freely generated from a locally complete edge
   authority; it is a combinator over the local checker rather than a new
   semantic root.
@@ -73,17 +73,17 @@ theorem semanticChecker_authority
 /-- The actual versioned article checker, viewed through the generic checker
 interface. -/
 def wireChecker {AuthorityId : Type uAuthority}
-    (authorityId : AuthorityId) (presentation : ValidatedPresentation) :=
-  semanticChecker (wireArticleAuthority authorityId presentation)
+    (authorityId : AuthorityId) (definition : ValidatedCalculusLanguageDef) :=
+  semanticChecker (wireArticleAuthority authorityId definition)
 
 /-- CertificateGSLT's chronological wire checker is exact for the derivation family
-of the admitted presentation. -/
+of the admitted definition. -/
 theorem wireChecker_authority
     {AuthorityId : Type uAuthority} (authorityId : AuthorityId)
-    (presentation : ValidatedPresentation) :
-    (wireChecker authorityId presentation).Authority
-      (fun goal => Nonempty (Derivation presentation goal)) where
-  sound := semanticChecker_sound (wireArticleAuthority authorityId presentation)
+    (definition : ValidatedCalculusLanguageDef) :
+    (wireChecker authorityId definition).Authority
+      (fun goal => Nonempty (Derivation definition goal)) where
+  sound := semanticChecker_sound (wireArticleAuthority authorityId definition)
   complete := by
     intro goal derivable
     obtain ⟨proof⟩ := derivable
@@ -102,17 +102,17 @@ def wireArticleCodec : Checker.PartialCodec WireArticle WireTerm where
 /-- Replay canonical symbolic wire terms rather than already-decoded article
 values.  Malformed or noncanonical input fails during decoding. -/
 def wireTermChecker {AuthorityId : Type uAuthority}
-    (authorityId : AuthorityId) (presentation : ValidatedPresentation) :=
-  Checker.onWire (wireChecker authorityId presentation) wireArticleCodec
+    (authorityId : AuthorityId) (definition : ValidatedCalculusLanguageDef) :=
+  Checker.onWire (wireChecker authorityId definition) wireArticleCodec
 
 /-- The exact derivation authority survives fail-closed wire decoding. -/
 theorem wireTermChecker_authority
     {AuthorityId : Type uAuthority} (authorityId : AuthorityId)
-    (presentation : ValidatedPresentation) :
-    (wireTermChecker authorityId presentation).Authority
-      (fun goal => Nonempty (Derivation presentation goal)) :=
+    (definition : ValidatedCalculusLanguageDef) :
+    (wireTermChecker authorityId definition).Authority
+      (fun goal => Nonempty (Derivation definition goal)) :=
   Checker.onWire_authority wireArticleCodec
-    (wireChecker_authority authorityId presentation)
+    (wireChecker_authority authorityId definition)
 
 /-! ## Exact finite GSLT traces -/
 

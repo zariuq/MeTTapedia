@@ -77,11 +77,11 @@ structure RelationalInterpretation (source target : Object) where
   onRule :
     ∀ (ruleInstance : RuleInstance) {premises : List Pattern}
       {conclusion : Pattern},
-      RuleApplication source.presentation ruleInstance premises conclusion →
+      RuleApplication source.definition ruleInstance premises conclusion →
       (premiseTargets : RelatedContext Related premises) →
       Σ targetConclusion,
         Related conclusion targetConclusion ×
-          OpenDerivation target.presentation premiseTargets.targets
+          OpenDerivation target.definition premiseTargets.targets
             targetConclusion
 
 namespace RelationalInterpretation
@@ -93,7 +93,7 @@ structure OpenResult {source target : Object}
     (targetContext : List Pattern) (sourceGoal : Pattern) where
   targetGoal : Pattern
   related : interpretation.Related sourceGoal targetGoal
-  derivation : OpenDerivation target.presentation targetContext targetGoal
+  derivation : OpenDerivation target.definition targetContext targetGoal
 
 /-- Result of translating one closed source derivation. -/
 structure ClosedResult {source target : Object}
@@ -101,7 +101,7 @@ structure ClosedResult {source target : Object}
     (sourceGoal : Pattern) where
   targetGoal : Pattern
   related : interpretation.Related sourceGoal targetGoal
-  derivation : Derivation target.presentation targetGoal
+  derivation : Derivation target.definition targetGoal
 
 /-- Ordered translation results for rule premises. -/
 inductive OpenResultList {source target : Object}
@@ -152,7 +152,7 @@ def derivations {source target : Object}
     {targetContext : List Pattern} :
     {sourceGoals : List Pattern} →
       (results : OpenResultList interpretation targetContext sourceGoals) →
-      OpenDerivationList target.presentation targetContext results.targetGoals
+      OpenDerivationList target.definition targetContext results.targetGoals
   | _, .nil => .nil
   | _, .cons head tail => .cons head.derivation tail.derivations
 
@@ -166,7 +166,7 @@ def mapOpen {source target : Object}
     (interpretation : RelationalInterpretation.{u} source target)
     {sourceContext : List Pattern} {goal : Pattern}
     (context : RelatedContext interpretation.Related sourceContext) :
-    OpenDerivation source.presentation sourceContext goal →
+    OpenDerivation source.definition sourceContext goal →
       OpenResult interpretation context.targets goal
   | .assumption index =>
       { targetGoal := context.targets.get (context.targetIndex index)
@@ -176,7 +176,7 @@ def mapOpen {source target : Object}
       let translated := mapOpenList interpretation context children
       let realized := interpretation.onRule ruleInstance application
         translated.relatedContext
-      let targetDerivations : OpenDerivationList target.presentation
+      let targetDerivations : OpenDerivationList target.definition
           context.targets translated.relatedContext.targets := by
         simpa only [OpenResultList.relatedContext_targets] using
           translated.derivations
@@ -189,7 +189,7 @@ def mapOpenList {source target : Object}
     (interpretation : RelationalInterpretation.{u} source target)
     {sourceContext goals : List Pattern}
     (context : RelatedContext interpretation.Related sourceContext) :
-    OpenDerivationList source.presentation sourceContext goals →
+    OpenDerivationList source.definition sourceContext goals →
       OpenResultList interpretation context.targets goals
   | .nil => .nil
   | .cons head tail =>
@@ -202,7 +202,7 @@ end
 witness remain data rather than being existentially truncated. -/
 def mapDerivation {source target : Object}
     (interpretation : RelationalInterpretation.{u} source target)
-    {goal : Pattern} (derivation : Derivation source.presentation goal) :
+    {goal : Pattern} (derivation : Derivation source.definition goal) :
     ClosedResult interpretation goal :=
   let translated := interpretation.mapOpen (.nil)
     (OpenDerivation.ofClosed (context := []) derivation)
@@ -215,10 +215,10 @@ def mapDerivation {source target : Object}
 /-- Equality-related target premises can be used as the ordered assumptions
 expected by an ordinary judgment-preserving interpretation. -/
 private def equalityAssumptions
-    {presentation : ValidatedPresentation} {premises : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {premises : List Pattern}
     (context : RelatedContext (fun source target => PLift (source = target))
       premises) :
-    OpenDerivationList presentation context.targets premises :=
+    OpenDerivationList definition context.targets premises :=
   OpenDerivationList.ofFn premises fun index => by
     rw [(context.relatedAt index).down]
     exact .assumption (context.targetIndex index)
@@ -294,11 +294,11 @@ theorem right_targets : ∀ {sources : List Pattern}
 end CompositeContext
 
 /-- Change only the premise context of an open derivation along an equality. -/
-private def castContext {presentation : ValidatedPresentation}
+private def castContext {definition : ValidatedCalculusLanguageDef}
     {first second : List Pattern} {goal : Pattern}
     (same : first = second)
-    (derivation : OpenDerivation presentation first goal) :
-    OpenDerivation presentation second goal :=
+    (derivation : OpenDerivation definition first goal) :
+    OpenDerivation definition second goal :=
   same ▸ derivation
 
 /-- Compose proof-relevant translations.  The intermediate judgment and both

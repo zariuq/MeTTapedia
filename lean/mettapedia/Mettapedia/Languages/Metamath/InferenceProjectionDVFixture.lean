@@ -108,7 +108,7 @@ def fullFixtureDB : RuntimeDB :=
 private def rid (value : String) : RuleId := { value }
 
 def axYZRule? : Option RuleSchema := do
-  let presentation ← rawPresentation? prefixDB
+  let presentation ← rawDefinition? prefixDB
   presentation.lookupRule? (rid "ax-yz")
 
 private def name (value : String) : Pattern := encodeString value

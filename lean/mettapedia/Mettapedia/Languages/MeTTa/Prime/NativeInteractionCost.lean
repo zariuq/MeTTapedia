@@ -24,7 +24,7 @@ open Mettapedia.Algebra
 open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.InteractionComposition
 open Mettapedia.GSLT.Core.InteractionEvent
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 

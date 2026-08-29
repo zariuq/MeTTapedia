@@ -1,8 +1,8 @@
 import Mettapedia.GSLT.LanguageDef.WaltersZantemaDAAddition
 import Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 import Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
-import Mettapedia.OSLF.Framework.NativeTypeTheory
-import Mettapedia.OSLF.Framework.RecursiveNativeType
+import Mettapedia.OSLF.StructuralModal.Formula
+import Mettapedia.OSLF.StructuralModal.Recursive
 
 /-!
 # Native types of contextual Walters--Zantema DA reduction
@@ -13,7 +13,7 @@ DA constructors.  This module runs OSLF over that contextual relation itself,
 rather than silently replacing it by the root-only presentation.
 
 The spatial endpoints below include both exact finite native types for
-particular numerals and an indexed least-fixed-point native type for the full
+particular numerals and an indexed least-fixed-point structural-modal formula for the full
 unbounded canonical-numeral language.
 -/
 
@@ -25,7 +25,7 @@ open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
 open Mettapedia.OSLF.Framework.DerivedModalities
-open Mettapedia.OSLF.Framework.NativeTypeTheory
+open Mettapedia.OSLF.StructuralModal
 
 /-! ## The actual contextual operational GSLT -/
 
@@ -137,10 +137,10 @@ def contextualClosure (schema : Schema) :
     rfl
   mapStep := Context.plug_step schema
 
-/-! ## Exact finite spatial native types for numerals -/
+/-! ## Exact finite structural formulas for numerals -/
 
 /-- Pattern-level edge span obtained by erasing typed contextual DA steps.
-Spatial native types use only its carrier; modal native types retain the exact
+Structural formulas use only its carrier; modal formulas retain the exact
 typed step witness in each edge. -/
 def contextualPatternSpan (schema : Schema) : ReductionSpan Pattern where
   Edge := (contextualTheory schema).LabeledStep
@@ -148,16 +148,16 @@ def contextualPatternSpan (schema : Schema) : ReductionSpan Pattern where
   target := fun edge => edge.target.toPattern
 
 /-- Exact finite spatial shape of one least-significant-digit-first numeral. -/
-def numeralNativeType : List Nat → NativeType
+def numeralFormula : List Nat → Formula
   | [] => .headed "da:empty" []
   | index :: digits =>
-      .headed (digitLabel index) [numeralNativeType digits]
+      .headed (digitLabel index) [numeralFormula digits]
 
 /-- The generated finite spatial type denotes exactly its numeral pattern. -/
-theorem satisfies_numeralNativeType_iff (schema : Schema)
+theorem satisfies_numeralFormula_iff (schema : Schema)
     (digits : List Nat) (pattern : Pattern) :
     satisfiesOver (contextualPatternSpan schema)
-        (numeralNativeType digits) pattern ↔
+        (numeralFormula digits) pattern ↔
       pattern = patternOfDigits digits := by
   induction digits generalizing pattern with
   | nil =>
@@ -188,22 +188,22 @@ theorem satisfies_numeralNativeType_iff (schema : Schema)
         · simpa [patternOfDigits, WaltersZantemaDA.digit, a] using shape
         · exact ⟨(inductionHypothesis _).mpr rfl, trivial⟩
 
-/-- Exact finite native shape of the canonical encoding of one natural. -/
-def encodedNumeralNativeType (schema : Schema) (number : Nat) : NativeType :=
-  numeralNativeType (encodeDigits schema number)
+/-- Exact finite structural-modal shape of the canonical encoding of one natural. -/
+def encodedNumeralFormula (schema : Schema) (number : Nat) : Formula :=
+  numeralFormula (encodeDigits schema number)
 
-theorem satisfies_encodedNumeralNativeType_iff (schema : Schema)
+theorem satisfies_encodedNumeralFormula_iff (schema : Schema)
     (number : Nat) (pattern : Pattern) :
     satisfiesOver (contextualPatternSpan schema)
-        (encodedNumeralNativeType schema number) pattern ↔
+        (encodedNumeralFormula schema number) pattern ↔
       pattern = encodePattern schema number := by
-  exact satisfies_numeralNativeType_iff schema (encodeDigits schema number) pattern
+  exact satisfies_numeralFormula_iff schema (encodeDigits schema number) pattern
 
-/-! ## Recursive spatial native type for all canonical numerals -/
+/-! ## Recursive structural-modal formula for all canonical numerals -/
 
 namespace CanonicalRecursive
 
-open Mettapedia.OSLF.Framework.RecursiveNativeType
+open Mettapedia.OSLF.StructuralModal.Recursive
 
 /-- The recursive analysis distinguishes all canonical numerals from the
 nonempty canonical numerals used beneath an outer digit. -/
@@ -221,16 +221,16 @@ inductive Branch (schema : Schema) where
   | positiveBase (digit : Fin schema.radix) (nonzero : digit.val ≠ 0)
   | positiveCons (digit : Fin schema.radix)
 
-private def emptyNativeType : NativeType := .headed "da:empty" []
+private def emptyFormula : Formula := .headed "da:empty" []
 
 def describe (schema : Schema) : Branch schema → BranchDescription State
   | .canonicalEmpty => ⟨.canonical, "da:empty", []⟩
   | .canonicalBase digit _ =>
-      ⟨.canonical, digitLabel digit.val, [.native emptyNativeType]⟩
+      ⟨.canonical, digitLabel digit.val, [.formula emptyFormula]⟩
   | .canonicalCons digit =>
       ⟨.canonical, digitLabel digit.val, [.recur .positive]⟩
   | .positiveBase digit _ =>
-      ⟨.positive, digitLabel digit.val, [.native emptyNativeType]⟩
+      ⟨.positive, digitLabel digit.val, [.formula emptyFormula]⟩
   | .positiveCons digit =>
       ⟨.positive, digitLabel digit.val, [.recur .positive]⟩
 
@@ -264,11 +264,11 @@ def Meaning (schema : Schema) : State → Pattern → Prop
       ∃ digits, digits ≠ [] ∧ CanonicalDigits schema digits ∧
         pattern = patternOfDigits digits
 
-private theorem empty_native_iff (schema : Schema) (pattern : Pattern) :
-    satisfiesOver (contextualPatternSpan schema) emptyNativeType pattern ↔
+private theorem empty_formula_iff (schema : Schema) (pattern : Pattern) :
+    satisfiesOver (contextualPatternSpan schema) emptyFormula pattern ↔
       pattern = empty := by
-  simpa [emptyNativeType, numeralNativeType, patternOfDigits] using
-    satisfies_numeralNativeType_iff schema [] pattern
+  simpa [emptyFormula, numeralFormula, patternOfDigits] using
+    satisfies_numeralFormula_iff schema [] pattern
 
 private theorem cons_canonical (schema : Schema) {digit : Nat} {digits : List Nat}
     (digitRange : digit < schema.radix)
@@ -316,7 +316,7 @@ private theorem positive_of_canonical (schema : Schema) {digits : List Nat}
           simpa using canonical.2 (List.cons_ne_nil digit [])
         exact Satisfies.intro (signature := signature schema)
           (Branch.positiveBase ⟨digit, digitRange⟩ digitNonzero)
-          [empty] rfl (.native ((empty_native_iff schema empty).2 rfl) .nil)
+          [empty] rfl (.formula ((empty_formula_iff schema empty).2 rfl) .nil)
 
 private theorem canonical_inhabited (schema : Schema) {digits : List Nat}
     (canonical : CanonicalDigits schema digits) :
@@ -342,7 +342,7 @@ private theorem canonical_inhabited (schema : Schema) {digits : List Nat}
           simpa using canonical.2 (List.cons_ne_nil digit [])
         exact Satisfies.intro (signature := signature schema)
           (Branch.canonicalBase ⟨digit, digitRange⟩ digitNonzero)
-          [empty] rfl (.native ((empty_native_iff schema empty).2 rfl) .nil)
+          [empty] rfl (.formula ((empty_formula_iff schema empty).2 rfl) .nil)
 
 private theorem meaning_closed (schema : Schema) :
     Closed (contextualPatternSpan schema) (signature schema) (Meaning schema) := by
@@ -369,8 +369,8 @@ private theorem meaning_closed (schema : Schema) :
               change State.canonical = state at output
               subst state
               change satisfiesOver (contextualPatternSpan schema)
-                emptyNativeType child ∧ True at childrenEvidence
-              have childEmpty := (empty_native_iff schema child).1 childrenEvidence.1
+                emptyFormula child ∧ True at childrenEvidence
+              have childEmpty := (empty_formula_iff schema child).1 childrenEvidence.1
               refine ⟨[digit.val], ?_, ?_⟩
               · simp [CanonicalDigits, digit.isLt, nonzero]
               · subst child
@@ -407,8 +407,8 @@ private theorem meaning_closed (schema : Schema) :
               change State.positive = state at output
               subst state
               change satisfiesOver (contextualPatternSpan schema)
-                emptyNativeType child ∧ True at childrenEvidence
-              have childEmpty := (empty_native_iff schema child).1 childrenEvidence.1
+                emptyFormula child ∧ True at childrenEvidence
+              have childEmpty := (empty_formula_iff schema child).1 childrenEvidence.1
               refine ⟨[digit.val], by simp, ?_, ?_⟩
               · simp [CanonicalDigits, digit.isLt, nonzero]
               · subst child
@@ -512,7 +512,7 @@ theorem radixTwo_droppedCarry_not_inhabited :
 #print axioms satisfies_exactTarget_iff_step
 #print axioms exactTarget_native_preserves_denotation
 #print axioms contextualClosure
-#print axioms satisfies_numeralNativeType_iff
+#print axioms satisfies_numeralFormula_iff
 #print axioms CanonicalRecursive.inhabits_canonical_iff
 #print axioms CanonicalRecursive.inhabits_positive_iff
 #print axioms CanonicalRecursive.encodePattern_inhabits_canonical

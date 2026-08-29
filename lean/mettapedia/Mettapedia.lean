@@ -99,7 +99,7 @@ import Mettapedia.Algebra.TemporalQuantale
 import Mettapedia.CategoryTheory.FuzzyFrame
 import Mettapedia.CategoryTheory.LambdaTheory
 import Mettapedia.CategoryTheory.PLNInstance
-import Mettapedia.CategoryTheory.NativeTypeTheory
+import Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 import Mettapedia.CategoryTheory.PLNTerms
 import Mettapedia.CategoryTheory.ModalTypes
 import Mettapedia.CategoryTheory.Hypercube
@@ -144,6 +144,7 @@ import Mettapedia.Logic.MarkovLogicIndividuationBridge
 import Mettapedia.Logic.GunkyMereology
 import Mettapedia.Logic.StoneGunkDuality
 import Mettapedia.Logic.Metaphysics
+import Mettapedia.Logic.LawsOfForm
 import Mettapedia.UniversalAI.SolomonoffPrior
 import Mettapedia.UniversalAI.UniversalMachineBoundary
 import Mettapedia.UniversalAI.IncrementalCompressionBridge
@@ -181,7 +182,7 @@ import Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLConsequence
 import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelFOLCompleteness
 import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridge
 import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridgeRegression
-import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelIntrinsicPureBridge
 import Mettapedia.PLN.WorldModel.PLNWorldModelInstitution
 import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine
 import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge
@@ -194,6 +195,7 @@ import Mettapedia.KR.ConceptGeometry.AbstractInheritance
 import Mettapedia.KR.ConceptGeometry.Bridges
 import Mettapedia.NARS
 import Mettapedia.Evidence
+import Mettapedia.Cybernetics
 import Mettapedia.Enactive
 import Mettapedia.PLN.WorldModel.Experiment
 -- PLN confidence/strength/ITV characterization tower (finite + infinite:
@@ -291,9 +293,13 @@ import Mettapedia.Computability.HutterComputability
 import Mettapedia.Computability.HutterComputabilityClosure
 import Mettapedia.Computability.HutterComputabilityENNReal
 import Mettapedia.Computability.HutterComputabilityRational
+import Mettapedia.Computability.PartialEvaluation
+import Mettapedia.Computability.PartialEvaluationTransformation
+import Mettapedia.Computability.InterpreterMediatedSpecialization
 import Mettapedia.Computability.KolmogorovComplexity.Conditional
 import Mettapedia.Computability.KolmogorovComplexity.ConditionalInterpreter
 import Mettapedia.Computability.KolmogorovComplexity.ConditionalPlainComplexity
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalPlainPrefix
 import Mettapedia.Computability.KolmogorovComplexity.CompressiveFeature
 import Mettapedia.Computability.KolmogorovComplexity.ConditionalChainRule
 import Mettapedia.Computability.KolmogorovComplexity.ConditionalPrefixBridge

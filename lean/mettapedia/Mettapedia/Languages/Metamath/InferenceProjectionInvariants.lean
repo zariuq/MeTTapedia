@@ -14,6 +14,7 @@ No assertion-application or runtime-step correspondence is claimed here.
 
 namespace Mettapedia.Languages.Metamath.InferenceProjection
 
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.Metamath.MMLean4Bridge
 
@@ -171,14 +172,14 @@ theorem projectedAssertion_floatingVariableNames_nodup
       (prefixProjectionValid_of_projectPrefix?_eq_some db projection hproject)
       hmember
 
-/-- A successfully generated raw presentation likewise exposes the validation
+/-- A successfully generated raw calculus language likewise exposes the validation
 gate independently of later V2 admission. -/
-theorem prefixProjectionValid_of_presentationOfProjection?_eq_some
-    (projection : PrefixProjection) (presentation : Presentation)
+theorem prefixProjectionValid_of_calculusLanguageDefOfProjection?_eq_some
+    (projection : PrefixProjection) (language : CalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some presentation) :
+      calculusLanguageDefOfProjection? projection = some language) :
     prefixProjectionValid projection = true := by
-  unfold presentationOfProjection? at hprojection
+  unfold calculusLanguageDefOfProjection? at hprojection
   simp only [Option.bind_eq_bind] at hprojection
   rw [Option.bind_eq_some_iff] at hprojection
   rcases hprojection with ⟨_witness, hguard, _⟩
@@ -188,18 +189,18 @@ theorem prefixProjectionValid_of_presentationOfProjection?_eq_some
   · simp at hguard
 
 /-- Consequently a projected assertion used to generate a successful
-presentation has distinct floating keys. -/
+calculus language has distinct floating keys. -/
 theorem generatedAssertion_floatingVariableNames_nodup
-    (projection : PrefixProjection) (presentation : Presentation)
+    (projection : PrefixProjection) (language : CalculusLanguageDef)
     (assertion : AssertionView)
     (hprojection :
-      presentationOfProjection? projection = some presentation)
+      calculusLanguageDefOfProjection? projection = some language)
     (hmember : assertion ∈ projection.assertions) :
     (floatingVariableNames assertion.hypotheses).Nodup :=
   assertion_floatingVariableNames_nodup_of_prefixProjectionValid
     projection assertion
-      (prefixProjectionValid_of_presentationOfProjection?_eq_some
-        projection presentation hprojection)
+      (prefixProjectionValid_of_calculusLanguageDefOfProjection?_eq_some
+        projection language hprojection)
       hmember
 
 section Examples

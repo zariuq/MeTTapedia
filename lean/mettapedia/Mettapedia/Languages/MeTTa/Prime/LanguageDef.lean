@@ -16,6 +16,28 @@ reflective interpretation remain coGSLT-authored extension fibres.  They are
 not hidden fields of the five-field record.
 -/
 
+/-!
+# Exploratory Prime presentation (spec probe)
+
+**Status: work in progress, not a specification.**  This LanguageDef is one
+agent's probe of Prime's design space: the MeTTaZero query/evaluate machines
+plus unit, quotation, name evaluation, Need requests, dependency markers, and
+receipts.  Nothing here has been ratified as Prime's semantics; the name
+`metta-prime-spec-probe` is deliberately provisional so that no later reader
+mistakes it for a decision.
+
+Known defects, pinned as theorems in `Prime/NucleusDerivedModalTyping.lean`:
+this probe puts reduction in a separate `Process` sort, whereas the settled
+Prime principle is that *atoms reduce and data does not* — evaluable atoms are
+the processes, inert data are the names.  Under that principle
+`prime-quote`/`prime-drop` are the rho quote/drop modalities
+(`quote_quoting_iff_atoms_reduce`); under the probe's `Process` sort they are
+classified neutral, so the probe contradicts the principle on this point and
+must be revised, not the principle.  Separately, the sort `Alternatives` is
+declared but has no constructor, so nondeterminism is named without being
+generated (the `probeWithChoice` extension shows the repair).
+-/
+
 namespace Mettapedia.Languages.MeTTa.Prime.LanguageDef
 
 open Mettapedia.GSLT
@@ -183,7 +205,7 @@ def reflectedDemandRewrite : RewriteRule :=
 
 /-- Prime extends, rather than replaces, the exact Zero declarations. -/
 def language : LanguageDef :=
-  { name := "metta-prime-nucleus"
+  { name := "metta-prime-spec-probe"
     types := MeTTaZero.language.types ++ [nameType, receiptType]
     terms := MeTTaZero.language.terms ++
       [unitConstructor, quoteConstructor, dropConstructor, evaluateNameConstructor,

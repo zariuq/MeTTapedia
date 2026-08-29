@@ -18,6 +18,7 @@ recursive child-reflection layer: leading `Proves` children and the final
 namespace Mettapedia.Languages.Metamath.InferenceProjection
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.Metamath.MMLean4Bridge
 open Mettapedia.Languages.Metamath.InferenceEncoding
@@ -99,7 +100,7 @@ def rawAssertionConclusion (assertion : AssertionView)
 ordinary schema-instantiation witnesses so callers can reconstruct the exact
 `AssertionApplicationView` without assuming an inverse to syntax decoding. -/
 def AssertionRawApplicationShape
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (ruleInstance : RuleInstance) (premises : List Pattern)
     (formulaPattern : Pattern) : Prop :=
   ∃ assertion : AssertionView, ∃ bodies : List Pattern, ∃ resultBody : Pattern,
@@ -153,13 +154,13 @@ private theorem assertionHypothesisFormalsFrom_length
         simp [assertionHypothesisFormalsFrom, ih]
 
 private theorem ruleId_eq_of_lookup
-    {presentation : Presentation} {ruleId : RuleId} {rule : RuleSchema}
+    {presentation : CalculusLanguageDef} {ruleId : RuleId} {rule : RuleSchema}
     (hlookup : presentation.lookupRule? ruleId = some rule) :
     ruleId = rule.id := by
   have hfind :
       presentation.rules.find?
           (fun candidate => decide (candidate.id = ruleId)) = some rule := by
-    simpa [Presentation.lookupRule?] using hlookup
+    simpa [CalculusLanguageDef.lookupRule?] using hlookup
   have hid : decide (rule.id = ruleId) = true := by
     exact List.find?_some
       (p := fun candidate : RuleSchema => decide (candidate.id = ruleId))
@@ -167,7 +168,7 @@ private theorem ruleId_eq_of_lookup
   exact (of_decide_eq_true hid).symm
 
 private theorem assertionRuleFormalNames_nodup_of_lookup
-    (target : ValidatedPresentation) (callerFrame : RuntimeFrame)
+    (target : ValidatedCalculusLanguageDef) (callerFrame : RuntimeFrame)
     (assertion : AssertionView)
     (hlookup :
       target.1.lookupRule? ⟨assertion.label⟩ =
@@ -175,7 +176,7 @@ private theorem assertionRuleFormalNames_nodup_of_lookup
     ((assertionRule callerFrame assertion).metavariables.map Prod.fst).Nodup := by
   have hvalidIn := rule_isValidIn_of_lookup target hlookup
   have hvalidV1 :
-      RuleSchema.isValidV1 (assertionRule callerFrame assertion) = true := by
+      RuleSchema.isLocallyValid (assertionRule callerFrame assertion) = true := by
     simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalidIn
     exact hvalidIn.1
   have hunique :
@@ -183,7 +184,7 @@ private theorem assertionRuleFormalNames_nodup_of_lookup
           (assertionRule callerFrame assertion)).eraseDups).length =
         (RuleSchema.metavariableNames
           (assertionRule callerFrame assertion)).length := by
-    simp only [RuleSchema.isValidV1, Bool.and_eq_true, beq_iff_eq] at hvalidV1
+    simp only [RuleSchema.isLocallyValid, Bool.and_eq_true, beq_iff_eq] at hvalidV1
     exact hvalidV1.1.1.1.1.1.2
   exact nodup_of_eraseDups_length_eq _ (by
     simpa [RuleSchema.metavariableNames] using hunique)
@@ -861,7 +862,7 @@ form.  The forward direction contains all substantive alignment and schema
 instantiation work; the reverse direction merely forgets the derived normal
 form equations. -/
 theorem assertionApplicationView_iff_rawShape
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {formulaPattern : Pattern} :
     AssertionApplicationView projection target ruleInstance premises

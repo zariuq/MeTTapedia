@@ -17,7 +17,7 @@ leaf multiset, resulting state, and the claimed binary evidence.
 The checker is exact for the independently defined `QueryMeaning`.  It also
 projects to the existing multiset-indexed and set-indexed WM judgments, and
 then to the existing OSLF atom semantics.  A separately admitted exact
-CertificateGSLT presentation of the same judgment is proved extensionally equivalent
+CertificateGSLT definition of the same judgment is proved extensionally equivalent
 to revision-tree replay.
 -/
 
@@ -29,6 +29,7 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.KernelAuthority
 open Mettapedia.GSLT.LanguageDef.NIKDefaultProfile
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.Framework.EvidenceSemantics
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge
@@ -314,7 +315,7 @@ theorem accepted_implies_WMQueryJudgment
       observationAuthority) claim certificate accepted
   exact ⟨meaning.1.toWMJudgmentMulti.toWMJudgment, meaning.2⟩
 
-/-! ## NIK and CertificateGSLT presentations of the same judgment -/
+/-! ## NIK and CertificateGSLT authorities for the same judgment -/
 
 /-- Occurrence-exact WM queries as one ordinary NIK authority fibre. -/
 def family
@@ -336,17 +337,17 @@ def family
     (replayChecker_authority observe observationChecker
       observationAuthority).toProjection
 
-/-- Any exact CertificateGSLT presentation of occurrence-exact WM query meaning. -/
+/-- Any exact CertificateGSLT definition for occurrence-exact WM query meaning. -/
 def semanticCertificateGSLT
     {State : Type uState} {Query : Type uQuery}
     {Observation : Type uObservation} [EvidenceType State]
     (observe : State → Query → Observation)
-    {presentation : ValidatedPresentation}
-    (adequacy : ExactJudgmentPresentation (QueryClaim State Query Observation)
-      (QueryMeaning observe) presentation) :
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : ExactJudgmentEncoding (QueryClaim State Query Observation)
+      (QueryMeaning observe) definition) :
     SemanticallyCompleteCertificateGSLT (QueryClaim State Query Observation)
       (QueryMeaning observe) where
-  presentation := presentation
+  definition := definition
   adequacy := adequacy
 
 /-- Exact CertificateGSLT article replay and native revision-tree replay agree on
@@ -362,9 +363,9 @@ theorem certificateGSLT_article_iff_revisionTree
       Checker (QueryClaim State Query Observation) ObservationCertificate)
     (observationAuthority :
       observationChecker.Authority (ObservationMeaning observe))
-    {presentation : ValidatedPresentation}
-    (adequacy : ExactJudgmentPresentation (QueryClaim State Query Observation)
-      (QueryMeaning observe) presentation)
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : ExactJudgmentEncoding (QueryClaim State Query Observation)
+      (QueryMeaning observe) definition)
     (claim : QueryClaim State Query Observation) :
     (∃ article,
         ((semanticCertificateGSLT observe adequacy).checker authorityId).check

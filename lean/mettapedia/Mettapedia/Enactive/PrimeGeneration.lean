@@ -1,5 +1,5 @@
 import Mettapedia.Enactive.Basic
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.OutcomeContract
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.OutcomeContract
 
 /-!
 # Scoped task generations and Prime authority growth
@@ -25,7 +25,7 @@ namespace Mettapedia.Enactive.PrimeGeneration
 
 open Mettapedia.Enactive
 open Mettapedia.TypeTheory.AuthorityTheory
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.OutcomeContract
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.OutcomeContract
 
 universe uEstablished uRefuted uBoundary uIncomplete uWorld
 

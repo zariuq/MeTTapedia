@@ -1,0 +1,35 @@
+import Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissFaultSinkCanary
+import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveSinkBatchLastAdd
+
+set_option autoImplicit false
+set_option maxRecDepth 100000
+
+namespace Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissFaultPresentCanary
+
+open Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupCanary
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupCanary
+open Mettapedia.Languages.Metamath.MM2CompressedProofExecution
+open Mettapedia.Languages.ProcessCalculi.MORK
+open Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveComputable
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissFaultInstantiationCanary
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissFaultSinkCanary
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissFaultSliceMatchCanary
+
+theorem speculative_miss_fault_present :
+    missingOneFault ∈ speculativeMissAfterFrontierFault := by
+  rcases speculative_miss_fault_instantiation_witness with
+    ⟨substitution, rowMember, instantiates⟩
+  rcases speculative_miss_fault_sink_is_last with ⟨before, sinksEq⟩
+  unfold speculativeMissAfterFrontierFault
+  unfold cFireReflectiveSourceExecFact cApplyReflectiveTemplate
+  rw [sinksEq]
+  exact mem_cApplyReflectiveSinkBatch_append_add_of_row
+    speculativeMissFrontierFaultRows
+    (speculativeMissAfterFrontierProofProbe.erase
+      compressedHeapLookupFaultDirective.atom)
+    before missingHeapReferenceFaultTemplate missingOneFault substitution
+    rowMember instantiates
+
+#print axioms speculative_miss_fault_present
+
+end Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissFaultPresentCanary

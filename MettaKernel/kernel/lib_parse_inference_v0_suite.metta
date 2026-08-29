@@ -1,8 +1,8 @@
 !(import! &self lib_parse_inference_v0)
 
-(= (lpi:presentation-class $result)
+(= (lpi:language-class $result)
    (case $result
-     (((LPInferencePresentation $presentation) Presentation)
+     (((LPInferenceLanguage $language) Language)
       ((LPInferenceError $reason) Error)
       ($other Other))))
 
@@ -61,35 +61,44 @@
      (Cons (Prod bind Expr (Cons (HlB Expr Scope) Nil))
        (Cons (VarD x Expr) Nil))))
 
-(= (lpi:validity-pair $presentation)
-   (ValidityPair
-     (gic-presentation-valid $presentation)
-     (lib_parse:indexed-presentation-valid $presentation)))
+(= (lpi:validity-pair $language)
+   (case $language
+     (((GInferenceLanguageV1
+          $version $constructors $judgments $rules $conversion)
+       (ValidityPair
+         (gic-language-valid $language)
+         (lib_parse:indexed-language-fields-valid
+           $version $constructors $judgments $rules $conversion)))
+      ($_ (ValidityPair False False)))))
 
-(= (lpi:duplicate-first-rule $presentation)
-   (case $presentation
-     (((GPresentation $constructors $judgments
-          (LCons $rule $rest))
-       (GPresentation $constructors $judgments
-         (LCons $rule (LCons $rule $rest))))
+(= (lpi:duplicate-first-rule $language)
+   (case $language
+     (((GInferenceLanguageV1 $version $constructors $judgments
+          (LCons $rule $rest) $conversion)
+       (GInferenceLanguageV1 $version $constructors $judgments
+         (LCons $rule (LCons $rule $rest)) $conversion))
       ($other $other))))
 
-(= (lpi:drop-first-constructor $presentation)
-   (case $presentation
-     (((GPresentation (LCons $first $rest) $judgments $rules)
-       (GPresentation $rest $judgments $rules))
+(= (lpi:drop-first-constructor $language)
+   (case $language
+     (((GInferenceLanguageV1 $version
+          (LCons $first $rest) $judgments $rules $conversion)
+       (GInferenceLanguageV1 $version
+         $rest $judgments $rules $conversion))
       ($other $other))))
 
-(= (lpi:change-first-constructor-arity $presentation)
-   (case $presentation
-     (((GPresentation
-          (LCons (CDecl $head $arity) $rest) $judgments $rules)
-       (GPresentation
-         (LCons (CDecl $head (+ $arity 1)) $rest) $judgments $rules))
+(= (lpi:change-first-constructor-arity $language)
+   (case $language
+     (((GInferenceLanguageV1 $version
+          (LCons (CDecl $head $arity) $rest)
+          $judgments $rules $conversion)
+       (GInferenceLanguageV1 $version
+         (LCons (CDecl $head (+ $arity 1)) $rest)
+         $judgments $rules $conversion))
       ($other $other))))
 
-(= (lpi:check-dag-blocks $presentation $goal $root $blocks)
-   (case (gic-build-index $presentation)
+(= (lpi:check-dag-blocks $language $goal $root $blocks)
+   (case (gic-build-index $language)
      (((GICIndexOK $space)
        (gic-index-check-dag-blocks-valid $space $goal $root $blocks))
       ($_ False))))
@@ -98,7 +107,7 @@
    (case $result
      (((LPInferenceDagBlocks $goal $root $blocks $count)
        (lpi:check-dag-blocks
-         (lib_parse:raw-dag-presentation $grammar $source $tokens)
+         (lib_parse:raw-dag-language $grammar $source $tokens)
          $goal $root $blocks))
       ($other False))))
 
@@ -106,7 +115,7 @@
    (case $result
      (((LPInferenceDagBlocks $goal $root $blocks $count)
        (lpi:check-dag-blocks
-         (lib_parse:raw-dag-presentation $grammar $source $tokens)
+         (lib_parse:raw-dag-language $grammar $source $tokens)
          $goal 0 $blocks))
       ($other False))))
 
@@ -115,7 +124,7 @@
      (((LPInferenceDagBlocks $goal $root
           (LCons (LCons $first (LCons $second LNil)) LNil) $count)
        (lpi:check-dag-blocks
-         (lib_parse:raw-dag-presentation $grammar $source $tokens)
+         (lib_parse:raw-dag-language $grammar $source $tokens)
          $goal $root
          (LCons (LCons $second (LCons $first LNil)) LNil)))
       ($other False))))
@@ -129,7 +138,7 @@
             LNil)
           $count)
        (lpi:check-dag-blocks
-         (lib_parse:raw-dag-presentation $grammar $source $tokens)
+         (lib_parse:raw-dag-language $grammar $source $tokens)
          $goal $root
          (LCons
            (LCons $first
@@ -147,7 +156,7 @@
             LNil)
           $count)
        (lpi:check-dag-blocks
-         (lib_parse:raw-dag-presentation $grammar $source $tokens)
+         (lib_parse:raw-dag-language $grammar $source $tokens)
          $goal $root
          (LCons
            (LCons (GDNode $first-id $first-instance $first-children)
@@ -161,7 +170,7 @@
      (((LPInferenceDagBlocks $goal $root
           (LCons (LCons $first (LCons $second LNil)) LNil) $count)
        (lpi:check-dag-blocks
-         (lib_parse:raw-dag-presentation $grammar $source $tokens)
+         (lib_parse:raw-dag-language $grammar $source $tokens)
          $goal $root
          (LCons (LCons $second LNil)
            (LCons (LCons $first LNil) LNil))))
@@ -179,10 +188,10 @@
 
 !(assertEqual
   (collapse
-    (lpi:presentation-class
-      (lib_parse:generate-presentation
+    (lpi:language-class
+      (lib_parse:generate-language
         (lpi:terminal-grammar) "terminal-source" (lpi:terminal-tokens))))
-  (Presentation))
+  (Language))
 
 !(assertEqual
   (collapse
@@ -197,7 +206,7 @@
 !(assertEqual
   (collapse
     (lpi:validity-pair
-      (lib_parse:raw-presentation
+      (lib_parse:raw-language
         (lpi:terminal-grammar) "terminal-source" (lpi:terminal-tokens))))
   ((ValidityPair True True)))
 
@@ -205,18 +214,18 @@
   (collapse
     (lpi:validity-pair
       (lpi:duplicate-first-rule
-        (lib_parse:raw-presentation
+        (lib_parse:raw-language
           (lpi:terminal-grammar) "terminal-source" (lpi:terminal-tokens)))))
   ((ValidityPair False False)))
 
 ; The native producer is an optimization of the executable reference, not a
-; second presentation semantics.  Pin exact equality across every v0 form.
+; second language semantics.  Pin exact equality across every v0 form.
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-presentation
+      (gparse:inference-language
         (lpi:terminal-grammar) "terminal-source" (lpi:terminal-tokens))
-      (lib_parse:raw-presentation
+      (lib_parse:raw-language
         (lpi:terminal-grammar) "terminal-source" (lpi:terminal-tokens))))
   (True))
 
@@ -225,129 +234,129 @@
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-presentation
+      (gparse:inference-language
         (lpi:terminal-grammar) "terminal-source"
         (lpi:terminal-tokens-flat))
-      (lib_parse:raw-presentation
+      (lib_parse:raw-language
         (lpi:terminal-grammar) "terminal-source" (lpi:terminal-tokens))))
   (True))
 
 !(assertEqual
   (collapse
-    (lpi:presentation-class
-      (lib_parse:presentation-candidate
+    (lpi:language-class
+      (lib_parse:language-candidate
         (lpi:terminal-grammar) "terminal-source"
         (lpi:terminal-tokens-flat))))
-  (Presentation))
+  (Language))
 
 !(assertEqual
   (collapse
-    (lpi:presentation-class
-      (lib_parse:presentation-candidate
+    (lpi:language-class
+      (lib_parse:language-candidate
         (lpi:terminal-grammar) "" (lpi:terminal-tokens-flat))))
   (Error))
 
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-presentation
+      (gparse:inference-language
         (lpi:recursive-grammar) "recursive-source" (lpi:recursive-tokens))
-      (lib_parse:raw-presentation
+      (lib_parse:raw-language
         (lpi:recursive-grammar) "recursive-source" (lpi:recursive-tokens))))
   (True))
 
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-presentation
+      (gparse:inference-language
         (lpi:variable-grammar) "variable-source" (lpi:variable-tokens))
-      (lib_parse:raw-presentation
+      (lib_parse:raw-language
         (lpi:variable-grammar) "variable-source" (lpi:variable-tokens))))
   (True))
 
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-presentation
+      (gparse:inference-language
         (lpi:lexical-grammar) "lexical-source" (lpi:lexical-tokens))
-      (lib_parse:raw-presentation
+      (lib_parse:raw-language
         (lpi:lexical-grammar) "lexical-source" (lpi:lexical-tokens))))
   (True))
 
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-presentation
+      (gparse:inference-language
         (lpi:empty-grammar) "empty-source" Nil)
-      (lib_parse:raw-presentation
+      (lib_parse:raw-language
         (lpi:empty-grammar) "empty-source" Nil)))
   (True))
 
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-presentation
+      (gparse:inference-language
         (lpi:mixed-binder-grammar) "mixed-source"
         (Cons (lpi:lexical-token) (Cons x Nil)))
-      (lib_parse:raw-presentation
+      (lib_parse:raw-language
         (lpi:mixed-binder-grammar) "mixed-source"
         (Cons (lpi:lexical-token) (Cons x Nil)))))
   (True))
 
-; The compact native presentation is exactly the independent MeTTa reference
+; The compact native language is exactly the independent MeTTa reference
 ; across terminals, recursion, VarD, LexD, empty productions, and binders.
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-dag-presentation
+      (gparse:inference-dag-language
         (lpi:terminal-grammar) "terminal-source" (lpi:terminal-tokens))
-      (lib_parse:raw-dag-presentation
+      (lib_parse:raw-dag-language
         (lpi:terminal-grammar) "terminal-source" (lpi:terminal-tokens))))
   (True))
 
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-dag-presentation
+      (gparse:inference-dag-language
         (lpi:recursive-grammar) "recursive-source" (lpi:recursive-tokens))
-      (lib_parse:raw-dag-presentation
+      (lib_parse:raw-dag-language
         (lpi:recursive-grammar) "recursive-source" (lpi:recursive-tokens))))
   (True))
 
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-dag-presentation
+      (gparse:inference-dag-language
         (lpi:variable-grammar) "variable-source" (lpi:variable-tokens))
-      (lib_parse:raw-dag-presentation
+      (lib_parse:raw-dag-language
         (lpi:variable-grammar) "variable-source" (lpi:variable-tokens))))
   (True))
 
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-dag-presentation
+      (gparse:inference-dag-language
         (lpi:lexical-grammar) "lexical-source" (lpi:lexical-tokens))
-      (lib_parse:raw-dag-presentation
+      (lib_parse:raw-dag-language
         (lpi:lexical-grammar) "lexical-source" (lpi:lexical-tokens))))
   (True))
 
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-dag-presentation
+      (gparse:inference-dag-language
         (lpi:empty-grammar) "empty-source" Nil)
-      (lib_parse:raw-dag-presentation
+      (lib_parse:raw-dag-language
         (lpi:empty-grammar) "empty-source" Nil)))
   (True))
 
 !(assertEqual
   (collapse
     (==
-      (gparse:inference-dag-presentation
+      (gparse:inference-dag-language
         (lpi:mixed-binder-grammar) "mixed-source"
         (Cons (lpi:lexical-token) (Cons x Nil)))
-      (lib_parse:raw-dag-presentation
+      (lib_parse:raw-dag-language
         (lpi:mixed-binder-grammar) "mixed-source"
         (Cons (lpi:lexical-token) (Cons x Nil)))))
   (True))
@@ -355,7 +364,7 @@
 !(assertEqual
   (collapse
     (lpi:validity-pair
-      (lib_parse:raw-dag-presentation
+      (lib_parse:raw-dag-language
         (lpi:terminal-grammar) "terminal-source" (lpi:terminal-tokens))))
   ((ValidityPair True True)))
 
@@ -407,7 +416,7 @@
   (collapse
     (lpi:validity-pair
       (lpi:drop-first-constructor
-        (lib_parse:raw-presentation
+        (lib_parse:raw-language
           (lpi:terminal-grammar) "terminal-source" (lpi:terminal-tokens)))))
   ((ValidityPair False False)))
 
@@ -415,7 +424,7 @@
   (collapse
     (lpi:validity-pair
       (lpi:change-first-constructor-arity
-        (lib_parse:raw-presentation
+        (lib_parse:raw-language
           (lpi:terminal-grammar) "terminal-source" (lpi:terminal-tokens)))))
   ((ValidityPair False False)))
 
@@ -480,8 +489,8 @@
 
 !(assertEqual
   (collapse
-    (lpi:presentation-class
-      (lib_parse:generate-presentation
+    (lpi:language-class
+      (lib_parse:generate-language
         (lpi:terminal-grammar) "terminal-source" malformed)))
   (Error))
 

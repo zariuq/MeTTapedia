@@ -14,8 +14,9 @@ frontier realization:
 
 A branch image contains several state components.  Components compose by
 their weakest capture capacity, so adding an effect can never make a branch
-more portable.  A controller request that is not admitted falls back to the
-strongest admitted storage mode; it never deletes a semantic alternative.
+more portable.  A controller request that is not admitted is refused
+explicitly.  Storage admission never substitutes another controller or
+traversal policy.
 
 Scheduling priority remains orthogonal.  KBO, an authored valuation, or a
 learned ranker may order work inside any admitted storage realization without
@@ -162,16 +163,16 @@ theorem profile_all_multiShot_iff (components : List CaptureCapacity) :
 are intentionally absent from this type. -/
 inductive StorageMode where
   | inline
-  | exclusiveDepthFirst
-  | ownedFrontier
+  | exclusiveOneShot
+  | ownedMultiShot
 deriving DecidableEq, Repr
 
 namespace StorageMode
 
 def requiredCapacity : StorageMode → CaptureCapacity
   | .inline => .inlineOnly
-  | .exclusiveDepthFirst => .oneShot
-  | .ownedFrontier => .multiShot
+  | .exclusiveOneShot => .oneShot
+  | .ownedMultiShot => .multiShot
 
 end StorageMode
 
@@ -183,83 +184,81 @@ instance (available : CaptureCapacity) (mode : StorageMode) :
   unfold Admitted
   infer_instance
 
-/-- Choose the requested realization when admitted; otherwise fall back to an
-exclusive DFS choice point, and finally to inline execution. -/
-def selectStorage (available : CaptureCapacity)
-    (requested : StorageMode) : StorageMode :=
-  if Admitted available requested then requested
-  else if Admitted available .exclusiveDepthFirst then
-    .exclusiveDepthFirst
-  else
-    .inline
+/-- Admit exactly the requested realization.  A failed admission does not
+select a different controller or storage policy. -/
+def admitStorage (available : CaptureCapacity)
+    (requested : StorageMode) : Option StorageMode :=
+  if Admitted available requested then some requested else none
 
-/-- An explicit admission result retains both the requested and realized
-storage modes.  A caller may lawfully continue with the realized fallback,
-but cannot report that an unavailable BFS/best-first request was honored. -/
-structure StorageDecision where
+/-- An explicit admission result retains the requested mode and either that
+exact realization or refusal. -/
+structure StorageAdmission where
   requested : StorageMode
-  realized : StorageMode
+  realized : Option StorageMode
 deriving DecidableEq, Repr
 
-namespace StorageDecision
+namespace StorageAdmission
 
-def honored (decision : StorageDecision) : Prop :=
-  decision.realized = decision.requested
+def honored (decision : StorageAdmission) : Prop :=
+  decision.realized = some decision.requested
 
-instance (decision : StorageDecision) : Decidable decision.honored := by
+instance (decision : StorageAdmission) : Decidable decision.honored := by
   unfold honored
   infer_instance
 
-end StorageDecision
+end StorageAdmission
 
-def decideStorage (available : CaptureCapacity)
-    (requested : StorageMode) : StorageDecision :=
-  ⟨requested, selectStorage available requested⟩
+def storageAdmission (available : CaptureCapacity)
+    (requested : StorageMode) : StorageAdmission :=
+  ⟨requested, admitStorage available requested⟩
 
-theorem decideStorage_realized_admitted
+theorem storageAdmission_realized_admitted
     (available : CaptureCapacity) (requested : StorageMode) :
-    Admitted available (decideStorage available requested).realized := by
+    ∀ realized,
+      (storageAdmission available requested).realized = some realized →
+      Admitted available realized := by
   cases available <;> cases requested <;> decide
 
-theorem decideStorage_honored_iff
+theorem storageAdmission_honored_iff
     (available : CaptureCapacity) (requested : StorageMode) :
-    (decideStorage available requested).honored ↔
+    (storageAdmission available requested).honored ↔
       Admitted available requested := by
   cases available <;> cases requested <;> decide
 
-theorem selectStorage_admitted
+theorem admitStorage_admitted
     (available : CaptureCapacity) (requested : StorageMode) :
-    Admitted available (selectStorage available requested) := by
+    ∀ realized,
+      admitStorage available requested = some realized →
+      Admitted available realized := by
   cases available <;> cases requested <;> decide
 
-theorem selectStorage_eq_requested_of_admitted
+theorem admitStorage_eq_requested_of_admitted
     {available : CaptureCapacity} {requested : StorageMode}
     (admitted : Admitted available requested) :
-    selectStorage available requested = requested := by
-  simp [selectStorage, admitted]
+    admitStorage available requested = some requested := by
+  simp [admitStorage, admitted]
 
 /-- A one-shot profile cannot be mislabeled as an owned multi-shot frontier. -/
-theorem oneShot_rejects_ownedFrontier :
-    ¬ Admitted .oneShot .ownedFrontier := by
+theorem oneShot_rejects_ownedMultiShot :
+    ¬ Admitted .oneShot .ownedMultiShot := by
   decide
 
-/-- Declining an owned frontier on a one-shot profile preserves the existing
-exclusive DFS realization rather than pruning alternatives. -/
-theorem oneShot_ownedFrontier_falls_back_to_depthFirst :
-    selectStorage .oneShot .ownedFrontier = .exclusiveDepthFirst := by
+/-- A one-shot profile refuses an owned frontier; admission does not silently
+substitute exclusive depth-first execution. -/
+theorem oneShot_ownedMultiShot_is_refused :
+    admitStorage .oneShot .ownedMultiShot = none := by
   decide
 
-theorem oneShot_ownedFrontier_is_explicitly_degraded :
-    (decideStorage .oneShot .ownedFrontier).realized =
-        .exclusiveDepthFirst ∧
-      ¬ (decideStorage .oneShot .ownedFrontier).honored := by
+theorem oneShot_ownedMultiShot_is_explicitly_refused :
+    (storageAdmission .oneShot .ownedMultiShot).realized = none ∧
+      ¬ (storageAdmission .oneShot .ownedMultiShot).honored := by
   decide
 
 /-- An inline-only component prevents construction of either kind of stored
 choice point. -/
 theorem inlineOnly_rejects_choice_points :
-    ¬ Admitted .inlineOnly .exclusiveDepthFirst ∧
-      ¬ Admitted .inlineOnly .ownedFrontier := by
+    ¬ Admitted .inlineOnly .exclusiveOneShot ∧
+      ¬ Admitted .inlineOnly .ownedMultiShot := by
   decide
 
 namespace Canaries
@@ -299,36 +298,36 @@ def transactionProfile : List CaptureCapacity :=
 def borrowedProfile : List CaptureCapacity :=
   [capacity .pureGoal, capacity .borrowedForeignState]
 
-theorem pure_profile_admits_owned_frontier :
-    Admitted (profileCapacity pureProfile) .ownedFrontier := by
+theorem pure_profile_admits_owned_multiShot :
+    Admitted (profileCapacity pureProfile) .ownedMultiShot := by
   decide
 
 theorem rollback_trail_profile_admits_only_exclusive_choice :
-    Admitted (profileCapacity rollbackTrailProfile) .exclusiveDepthFirst ∧
-      ¬ Admitted (profileCapacity rollbackTrailProfile) .ownedFrontier := by
+    Admitted (profileCapacity rollbackTrailProfile) .exclusiveOneShot ∧
+      ¬ Admitted (profileCapacity rollbackTrailProfile) .ownedMultiShot := by
   decide
 
 /-- Positive control: changing only the physical binding realization from a
 rollback trail to an independently owned ABT image admits a multi-shot
 frontier without introducing another binding authority. -/
-theorem owned_binding_image_admits_owned_frontier :
-    Admitted (profileCapacity ownedBindingProfile) .ownedFrontier := by
+theorem owned_binding_image_admits_owned_multiShot :
+    Admitted (profileCapacity ownedBindingProfile) .ownedMultiShot := by
   decide
 
 /-- Negative control: adding a linear transaction to an otherwise portable
 profile cannot manufacture multi-shot ownership. -/
-theorem linear_transaction_blocks_owned_frontier :
+theorem linear_transaction_blocks_owned_multiShot :
     profileCapacity transactionProfile = .oneShot ∧
-      selectStorage (profileCapacity transactionProfile) .ownedFrontier =
-        .exclusiveDepthFirst := by
+      admitStorage (profileCapacity transactionProfile) .ownedMultiShot =
+        none := by
   decide
 
 /-- Negative control: borrowed state that cannot outlive the current dynamic
-extent forces inline execution even when the controller requests BFS. -/
-theorem borrowed_state_forces_inline :
+extent refuses an owned frontier without selecting a replacement policy. -/
+theorem borrowed_state_refuses_owned_multiShot :
     profileCapacity borrowedProfile = .inlineOnly ∧
-      selectStorage (profileCapacity borrowedProfile) .ownedFrontier =
-        .inline := by
+      admitStorage (profileCapacity borrowedProfile) .ownedMultiShot =
+        none := by
   decide
 
 end Canaries
@@ -338,16 +337,16 @@ end Canaries
 #print axioms profileCapacity_append
 #print axioms profileCapacity_perm
 #print axioms profile_all_multiShot_iff
-#print axioms selectStorage_admitted
-#print axioms decideStorage_realized_admitted
-#print axioms decideStorage_honored_iff
-#print axioms oneShot_rejects_ownedFrontier
-#print axioms oneShot_ownedFrontier_falls_back_to_depthFirst
-#print axioms oneShot_ownedFrontier_is_explicitly_degraded
-#print axioms Canaries.pure_profile_admits_owned_frontier
+#print axioms admitStorage_admitted
+#print axioms storageAdmission_realized_admitted
+#print axioms storageAdmission_honored_iff
+#print axioms oneShot_rejects_ownedMultiShot
+#print axioms oneShot_ownedMultiShot_is_refused
+#print axioms oneShot_ownedMultiShot_is_explicitly_refused
+#print axioms Canaries.pure_profile_admits_owned_multiShot
 #print axioms Canaries.rollback_trail_profile_admits_only_exclusive_choice
-#print axioms Canaries.owned_binding_image_admits_owned_frontier
-#print axioms Canaries.linear_transaction_blocks_owned_frontier
-#print axioms Canaries.borrowed_state_forces_inline
+#print axioms Canaries.owned_binding_image_admits_owned_multiShot
+#print axioms Canaries.linear_transaction_blocks_owned_multiShot
+#print axioms Canaries.borrowed_state_refuses_owned_multiShot
 
 end Mettapedia.GSLT.Core.BranchCaptureAlgebra

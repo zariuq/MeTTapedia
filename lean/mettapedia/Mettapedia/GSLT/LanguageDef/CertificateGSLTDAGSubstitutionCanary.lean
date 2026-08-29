@@ -43,7 +43,7 @@ private def ruleShare : RuleSchema :=
     premises := [judgmentB, judgmentB]
     conclusion := judgmentC }
 
-private def subPresentation : Presentation :=
+private def subPresentation : CalculusLanguageDef :=
   { language := LanguageDef.empty "certificate-gslt-sub"
     calculus :=
       { judgments :=
@@ -58,14 +58,14 @@ private theorem emptyLanguage_validate (name : String) :
     simp [LanguageDef.empty, LanguageDef.typeNames]
 
 private theorem subPresentation_valid :
-    subPresentation.isValidV2 = true := by
-  simp [subPresentation, Presentation.isValidV2,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.isValidV1, Presentation.ruleIds, emptyLanguage_validate,
+    subCalculusLanguageDef.isValid = true := by
+  simp [subPresentation, CalculusLanguageDef.isValid,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.hasValidLocalRules, CalculusLanguageDef.ruleIds, emptyLanguage_validate,
     ruleAB, ruleShare, judgmentA, judgmentB, judgmentC,
-    RuleSchema.isValidIn, Presentation.judgmentSchemaValid,
-    Presentation.lookupJudgment?, fixedConstructorListsValid,
-    RuleSchema.isValidV1, RuleSchema.metavariableNames,
+    RuleSchema.isValidIn, CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, fixedConstructorListsValid,
+    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
     RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
@@ -75,7 +75,7 @@ private theorem subPresentation_valid :
     Pattern.hasCanonicalBinderMetadataList]
   decide
 
-private def subValidated : ValidatedPresentation :=
+private def subValidated : ValidatedCalculusLanguageDef :=
   ⟨subPresentation, subPresentation_valid⟩
 
 private def subObject : Object := ⟨subValidated⟩
@@ -87,7 +87,7 @@ private theorem ab_instantiates :
     instantiateRule? subValidated instanceAB =
       some ([judgmentA], judgmentB) := by
   simp [instantiateRule?, subValidated, subPresentation, ruleAB, ruleShare,
-    instanceAB, judgmentA, judgmentB, Presentation.lookupRule?,
+    instanceAB, judgmentA, judgmentB, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, instantiateSchemas?, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemasAt?]
 
@@ -95,7 +95,7 @@ private theorem share_instantiates :
     instantiateRule? subValidated instanceShare =
       some ([judgmentB, judgmentB], judgmentC) := by
   simp [instantiateRule?, subValidated, subPresentation, ruleAB, ruleShare,
-    instanceShare, judgmentB, judgmentC, Presentation.lookupRule?,
+    instanceShare, judgmentB, judgmentC, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, instantiateSchemas?, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemasAt?]
 
@@ -219,7 +219,7 @@ theorem composition_separates_compact_and_expanded_cost :
 /-! ## The packaged operation on the same fixture -/
 
 private theorem environmentDAG_expands :
-    expandOpenDAGBlocks? subObject.presentation [judgmentA] judgmentB
+    expandOpenDAGBlocks? subObject.definition [judgmentA] judgmentB
       environmentDAG.rootId environmentDAG.blocks =
       some environmentExpansion := by
   simp [environmentDAG, environmentNode, environmentExpansion, subObject,
@@ -228,7 +228,7 @@ private theorem environmentDAG_expands :
     findOpenDAGEntry?, ab_instantiates, judgmentA]
 
 private theorem outerDAG_expands :
-    expandOpenDAGBlocks? subObject.presentation [judgmentB] judgmentC
+    expandOpenDAGBlocks? subObject.definition [judgmentB] judgmentC
       outerDAG.rootId outerDAG.blocks = some outerExpansion := by
   simp [outerDAG, outerNode, outerExpansion, subObject,
     expandOpenDAGBlocks?, checkOpenDAGBlocks?, checkOpenDAGNodes?,

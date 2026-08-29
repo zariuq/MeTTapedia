@@ -37,6 +37,7 @@ import Mettapedia.Languages.Metamath.SourceStateGSLT
 import Mettapedia.Languages.Metamath.SourceStateNativeTypes
 import Mettapedia.Languages.Metamath.MM2DataEncoding
 import Mettapedia.Languages.Metamath.MM2SourceEventTransformation
+import Mettapedia.Languages.Metamath.MM2NormalDataRows
 import Mettapedia.Languages.Metamath.MM2Target
 import Mettapedia.Languages.Metamath.MM2OrderedEventVerifier
 import Mettapedia.Languages.Metamath.MM2Transformation

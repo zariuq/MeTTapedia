@@ -12,6 +12,7 @@ projector's distinct-name invariant to `SubstitutionKeysUnique`.
 
 namespace Mettapedia.Languages.Metamath.InferenceProjection.AssertionApplication
 
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.Languages.Metamath.MMLean4Bridge
 open Mettapedia.Languages.Metamath.InferenceEncoding
 open Mettapedia.Languages.Metamath.InferenceProjection
@@ -83,14 +84,14 @@ theorem HypothesisInstances.substitutionKeysUnique_of_projectedAssertion
 /-- The same invariant is available from exact successful presentation
 generation, before composing with generic node evidence. -/
 theorem HypothesisInstances.substitutionKeysUnique_of_generatedAssertion
-    (projection : PrefixProjection) (presentation : Presentation)
+    (projection : PrefixProjection) (presentation : CalculusLanguageDef)
     {assertion : AssertionView}
     {actuals : List ConstantHeadedFormula}
     {substitution : FiniteSubstitution}
     (instances :
       HypothesisInstances assertion.hypotheses actuals substitution)
     (hprojection :
-      presentationOfProjection? projection = some presentation)
+      calculusLanguageDefOfProjection? projection = some presentation)
     (hmember : assertion ∈ projection.assertions) :
     SubstitutionKeysUnique substitution :=
   instances.substitutionKeysUnique

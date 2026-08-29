@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.InferenceNormalStepReflection
 import Mettapedia.Languages.Metamath.MM2Transformation
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Proof-occurrence stacks at the Metamath-to-MM2 boundary
 
@@ -49,7 +51,7 @@ proof position. -/
 tree.  Assertion labels remain present because the emitted assertion result
 rule records them; endpoint formula equality is not enough. -/
 @[simp] def generatedRootOccurrenceAtom
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula} (proofOffset : Nat) :
     GeneratedProvesTree projection target formula → Atom
   | .active _ _ => natAtom proofOffset
@@ -62,7 +64,7 @@ rows.  `stackOffset` locates the first stack cell; `proofOffset` locates the
 first authored label.  Every tree is nonempty, so its root is the final label
 of its own postfix interval. -/
 def mm2StackRows
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (proofOwner : Atom) (stackOffset proofOffset : Nat) :
     GeneratedProvesForest projection target formulas → List Atom
@@ -74,7 +76,7 @@ def mm2StackRows
           (proofOffset + head.labels.length) tail
 
 @[simp] theorem mm2StackRows_length
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas)
     (proofOwner : Atom) (stackOffset proofOffset : Nat) :
@@ -90,7 +92,7 @@ termination_by sizeOf forest
 and postfix-proof offsets advance by the exact sizes retained on the source
 side. -/
 theorem mm2StackRows_append
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {leftFormulas rightFormulas : List ConstantHeadedFormula}
     (left : GeneratedProvesForest projection target leftFormulas)
     (right : GeneratedProvesForest projection target rightFormulas)
@@ -115,7 +117,7 @@ theorem mm2StackRows_append
 /-- Appending one active-hypothesis tree produces exactly the stack cell
 emitted by the generic MM2 hypothesis directive. -/
 theorem mm2StackRows_append_active
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas)
     (hypothesis : HypothesisView)
@@ -135,7 +137,7 @@ the root at the next stack position and at the exact postfix occurrence after
 all child labels.  This is the stable-boundary shape that the MM2 assertion
 macro-step must realize. -/
 theorem mm2StackRows_append_assertion
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas actuals : List ConstantHeadedFormula}
     {assertion : AssertionView} {result : ConstantHeadedFormula}
     {substitution : FiniteSubstitution}
@@ -487,7 +489,7 @@ precondition used by the emitted MM2 floating directive.  Its source proof
 child is present at the same postfix occurrence that the target retains in
 the resulting assertion-child edge. -/
 theorem HypothesisInstances.floating_fires_mm2
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {hypothesisLabel typecode variableName : String}
     {hypotheses : List HypothesisView}
     {actual : ConstantHeadedFormula}
@@ -543,7 +545,7 @@ theorem HypothesisInstances.floating_fires_mm2
 ordinary scheduled MM2 transition and its exact OSLF-generated target
 observation, retaining both substitution and proof-occurrence evidence. -/
 theorem HypothesisInstances.floating_inhabits_mm2_target_native_type
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {hypothesisLabel typecode variableName : String}
     {hypotheses : List HypothesisView}
     {actual : ConstantHeadedFormula}
@@ -596,7 +598,7 @@ theorem HypothesisInstances.floating_inhabits_mm2_target_native_type
 typecode precondition for the emitted MM2 body-match request.  Discharging
 the requested body match is a separate semantic obligation. -/
 theorem HypothesisInstances.essential_starts_mm2_match
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {hypothesisLabel : String} {formula actual : ConstantHeadedFormula}
     {hypotheses : List HypothesisView}
     {actuals : List ConstantHeadedFormula}
@@ -646,7 +648,7 @@ theorem HypothesisInstances.essential_starts_mm2_match
 /-- The independent essential-hypothesis constructor licenses an ordinary
 scheduled MM2 body-match request and its exact OSLF-generated target type. -/
 theorem HypothesisInstances.essential_inhabits_mm2_target_native_type
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {hypothesisLabel : String} {formula actual : ConstantHeadedFormula}
     {hypotheses : List HypothesisView}
     {actuals : List ConstantHeadedFormula}
@@ -695,7 +697,7 @@ theorem HypothesisInstances.essential_inhabits_mm2_target_native_type
 and the actual emitted MM2 directive starts the corresponding substitution
 match while retaining the source child occurrence in its continuation. -/
 theorem admittedSourceAssertion_essential_fires_match
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (source : AdmittedSourceScope) (mm2Target : MM2Target)
     (scopeOwner proofOwner : Atom)
     (assertionPosition : Nat)
@@ -1367,8 +1369,8 @@ This is deliberately a macro-step boundary: it relates the source result
 judgment to the complete target result-building trace without identifying the
 target's administrative reversal and reload steps with source proof steps. -/
 theorem GeneratedAssertionNode.result_has_complete_mm2_directive_trace
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView}
     (hassertion : assertion ∈ projection.assertions)
     {actuals : List ConstantHeadedFormula}
@@ -1424,7 +1426,7 @@ typecode equality.  Stating this without tying the step to the residual
 floating bindings remain available when later essential hypotheses are
 checked against the completed substitution. -/
 theorem floating_has_complete_mm2_directive_step_of_typecode_eq
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {hypothesisLabel typecode variableName : String}
     {actual : ConstantHeadedFormula}
     (typecodeEqual : actual.typecode = typecode)
@@ -1469,7 +1471,7 @@ substitution, independently of how the residual `HypothesisInstances` tail
 represents only later floating bindings.  This is the compositional form used
 by the ordered mandatory-hypothesis fold. -/
 theorem essential_has_complete_mm2_directive_trace_of_semantics
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {hypothesisLabel : String} {formula actual : ConstantHeadedFormula}
     {substitution : FiniteSubstitution}
     (typecodeEqual : actual.typecode = formula.typecode)
@@ -1544,7 +1546,7 @@ theorem essential_has_complete_mm2_directive_trace_of_semantics
 /-- One target floating-hypothesis macro-step, stated independently of the
 source proof that licenses it. -/
 def NormalFloatingHypothesisDirectiveStep
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {actual : ConstantHeadedFormula}
     (child : GeneratedProvesTree projection target actual)
     (scopeOwner proofOwner : Atom)
@@ -1573,7 +1575,7 @@ def NormalFloatingHypothesisDirectiveStep
               childOccurrence ∈ phaseTarget
 
 theorem normalFloatingHypothesisDirectiveStep_of_typecode_eq
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {hypothesisLabel typecode variableName : String}
     {actual : ConstantHeadedFormula}
     (typecodeEqual : actual.typecode = typecode)
@@ -1595,7 +1597,7 @@ theorem normalFloatingHypothesisDirectiveStep_of_typecode_eq
 /-- One target essential-hypothesis macro-step under the completed source
 substitution. -/
 def NormalEssentialHypothesisDirectiveStep
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula actual : ConstantHeadedFormula}
     (substitution : FiniteSubstitution)
     (child : GeneratedProvesTree projection target actual)
@@ -1643,7 +1645,7 @@ def NormalEssentialHypothesisDirectiveStep
           normalAssertionReloadAtom proofOwner ∈ completeTarget
 
 theorem normalEssentialHypothesisDirectiveStep_of_semantics
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {hypothesisLabel : String} {formula actual : ConstantHeadedFormula}
     {substitution : FiniteSubstitution}
     (typecodeEqual : actual.typecode = formula.typecode)
@@ -1671,7 +1673,7 @@ substitution; every essential hypothesis is checked against the same fixed
 substitution.  Thus recursion over the source constructor never drops an
 earlier binding that a later essential hypothesis may need. -/
 inductive NormalHypothesisDirectiveTrace
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (scopeOwner proofOwner : Atom)
     (proofPosition nextProofPosition : Nat) (assertionLabel : String)
     (hypothesisEnd stackBase : Nat)
@@ -1744,7 +1746,7 @@ inductive NormalHypothesisDirectiveTrace
         hypothesisPosition stackPosition proofOffset
 
 private theorem normalHypothesisDirectiveTrace_of_semantics_aux
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (scopeOwner proofOwner : Atom)
     (proofPosition nextProofPosition : Nat) (assertionLabel : String)
     (hypothesisEnd stackBase : Nat)
@@ -1829,7 +1831,7 @@ private theorem normalHypothesisDirectiveTrace_of_semantics_aux
 MM2 directive trace, with every target step classified by OSLF-derived NTT
 evidence and every child proof occurrence retained. -/
 theorem normalHypothesisDirectiveTrace_of_semantics
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (scopeOwner proofOwner : Atom)
     (proofPosition nextProofPosition : Nat) (assertionLabel : String)
     (stackBase : Nat)
@@ -1855,7 +1857,7 @@ theorem normalHypothesisDirectiveTrace_of_semantics
 recovers both the exact residual floating substitution and every essential
 hypothesis check against the fixed completed substitution. -/
 theorem NormalHypothesisDirectiveTrace.reflects_semantics
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {scopeOwner proofOwner : Atom}
     {proofPosition nextProofPosition : Nat} {assertionLabel : String}
     {hypothesisEnd stackBase : Nat}
@@ -1891,7 +1893,7 @@ if and only if the independently authored Metamath hypothesis judgments hold.
 The forward direction is the no-invention half; the backward direction
 constructs every target step with its OSLF-derived native-type evidence. -/
 theorem normalHypothesisDirectiveTrace_iff_semantics
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (scopeOwner proofOwner : Atom)
     (proofPosition nextProofPosition : Nat) (assertionLabel : String)
     (stackBase : Nat)
@@ -1921,8 +1923,8 @@ the generic scheduled MM2 hypothesis machine.  The theorem consumes the real
 generated rule application and side-condition derivations; it does not assume
 a separately supplied or pre-approved substitution. -/
 theorem GeneratedAssertionNode.hypotheses_have_complete_mm2_directive_trace
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView}
     (hassertion : assertion ∈ projection.assertions)
     {actuals : List ConstantHeadedFormula}
@@ -2550,13 +2552,13 @@ theorem normalDVListsDirectiveTrace_iff_semantics
 has distinct endpoints.  This is extracted from the presentation's actual
 validation gate rather than assumed by the MM2 trace. -/
 theorem generatedAssertion_dvPairNamesDistinct
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView}
     (hassertion : assertion ∈ projection.assertions) :
     DVPairNamesDistinct assertion.frame.dj.toList := by
   have projectionValid : prefixProjectionValid projection = true :=
-    prefixProjectionValid_of_presentationOfProjection?_eq_some projection
+    prefixProjectionValid_of_calculusLanguageDefOfProjection?_eq_some projection
       target.1 hprojection
   simp only [prefixProjectionValid, Bool.and_eq_true] at projectionValid
   have assertionValid : assertionViewValid projection.declaredConstants
@@ -2580,8 +2582,8 @@ theorem generatedAssertion_dvPairNamesDistinct
 actual finish transition, every ordered callee pair, both replacement bodies,
 and the final result-builder transition. -/
 theorem GeneratedAssertionNode.dv_has_complete_mm2_directive_trace
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView}
     (hassertion : assertion ∈ projection.assertions)
     {actuals : List ConstantHeadedFormula}
@@ -2679,7 +2681,7 @@ application after its ordered child proofs are present.  It records the exact
 hypothesis, DV, result-building, and publication phases and their OSLF-derived
 native types. -/
 structure NormalAssertionApplicationDirectiveTrace
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (callerFrame : Mettapedia.Languages.Metamath.MMLean4Bridge.RuntimeFrame)
     (assertion : AssertionView)
     (actuals : List ConstantHeadedFormula)
@@ -2715,7 +2717,7 @@ structure NormalAssertionApplicationDirectiveTrace
 independent Metamath assertion-application semantics holds.  The backward
 direction is compilation; the forward direction is no-invention. -/
 theorem normalAssertionApplicationDirectiveTrace_nonempty_iff_semantics
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (callerFrame : Mettapedia.Languages.Metamath.MMLean4Bridge.RuntimeFrame)
     (assertion : AssertionView)
     (actuals : List ConstantHeadedFormula)
@@ -2782,8 +2784,8 @@ theorem normalAssertionApplicationDirectiveTrace_nonempty_iff_semantics
 /-- The existing generated Metamath node and the complete scheduled MM2
 macro-trace have exactly the same assertion-application content. -/
 theorem generatedAssertionNode_nonempty_iff_normalAssertionDirectiveTrace
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView}
     (hassertion : assertion ∈ projection.assertions)
     (actuals : List ConstantHeadedFormula)
@@ -2812,8 +2814,8 @@ MM2 assertion macro-trace with the very same substitution.  This is the
 proof-relevant forward half used when recursively compiling a whole normal
 proof tree; no existentially chosen replacement substitution is introduced. -/
 theorem GeneratedAssertionNode.has_complete_mm2_application_trace
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView}
     (hassertion : assertion ∈ projection.assertions)
     {actuals : List ConstantHeadedFormula}
@@ -2855,7 +2857,7 @@ generic body-match, and completion directives.  The theorem compares this
 semantic macro-step without equating MM2's administrative scheduler trace to
 one source step. -/
 theorem HypothesisInstances.essential_has_complete_mm2_directive_trace
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {hypothesisLabel : String} {formula actual : ConstantHeadedFormula}
     {hypotheses : List HypothesisView}
     {actuals : List ConstantHeadedFormula}
@@ -2933,7 +2935,7 @@ scheduling produces the exact OSLF target type and terminal observation.  This
 theorem deliberately does not claim that the whole emitted program has already
 been lifted to this boundary. -/
 theorem GeneratedProvesTree.terminal_inhabits_mm2_target_native_type
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     (scopeOwner proofOwner theoremLabel : Atom) :
@@ -2956,7 +2958,7 @@ theorem GeneratedProvesTree.terminal_inhabits_mm2_target_native_type
 
 /-! ## Discriminating examples -/
 
-example {projection : PrefixProjection} {target : ValidatedPresentation}
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (hypothesis : HypothesisView)
     (member : hypothesis ∈ projection.activeHypotheses)
     (proofOwner : Atom) :

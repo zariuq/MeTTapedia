@@ -1,5 +1,7 @@
 import Mettapedia.Languages.Metamath.InferenceGeneratedProvesExecution
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Structural algebra for generated Metamath proof forests
 
@@ -32,7 +34,7 @@ open Mettapedia.Languages.Metamath.InferenceProjection
 /-- Concatenate two source-pinned forests while retaining the exact appended
 formula-list index. -/
 def GeneratedProvesForest.append
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {leftFormulas rightFormulas : List ConstantHeadedFormula}
     (left : GeneratedProvesForest projection target leftFormulas)
     (right : GeneratedProvesForest projection target rightFormulas) :
@@ -42,7 +44,7 @@ def GeneratedProvesForest.append
   | .cons head tail => .cons head (tail.append right)
 
 @[simp] theorem GeneratedProvesForest.labels_append
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {leftFormulas rightFormulas : List ConstantHeadedFormula}
     (left : GeneratedProvesForest projection target leftFormulas)
     (right : GeneratedProvesForest projection target rightFormulas) :
@@ -55,7 +57,7 @@ def GeneratedProvesForest.append
 termination_by sizeOf left
 
 @[simp] theorem GeneratedProvesForest.canonicalRawProofs_append
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {leftFormulas rightFormulas : List ConstantHeadedFormula}
     (left : GeneratedProvesForest projection target leftFormulas)
     (right : GeneratedProvesForest projection target rightFormulas) :
@@ -72,8 +74,8 @@ termination_by sizeOf left
 /-- The native derivation-list erasure of structural append is the exact
 ordered append of the two original erasures. -/
 theorem GeneratedProvesForest.erase_toDerivationList_append
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {leftFormulas rightFormulas : List ConstantHeadedFormula}
     (left : GeneratedProvesForest projection target leftFormulas)
     (right : GeneratedProvesForest projection target rightFormulas) :
@@ -90,7 +92,7 @@ theorem GeneratedProvesForest.erase_toDerivationList_append
 /-- An exact split keeps both original-order subforests and an equality saying
 that structural append reconstructs the supplied forest. -/
 structure GeneratedProvesForest.ExactSplit
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (leftIndex rightIndex : List ConstantHeadedFormula)
     (forest : GeneratedProvesForest projection target
       (leftIndex ++ rightIndex)) where
@@ -101,7 +103,7 @@ structure GeneratedProvesForest.ExactSplit
 /-- Split at the formula-list index boundary.  Every tree and every proof field
 is reused from the input forest. -/
 def GeneratedProvesForest.splitExact
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (leftIndex rightIndex : List ConstantHeadedFormula)
     (forest : GeneratedProvesForest projection target
       (leftIndex ++ rightIndex)) :
@@ -120,7 +122,7 @@ def GeneratedProvesForest.splitExact
           rw [splitTail.append_eq] }
 
 theorem GeneratedProvesForest.ExactSplit.labels_eq
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {leftIndex rightIndex : List ConstantHeadedFormula}
     {forest : GeneratedProvesForest projection target
       (leftIndex ++ rightIndex)}
@@ -129,7 +131,7 @@ theorem GeneratedProvesForest.ExactSplit.labels_eq
   rw [← GeneratedProvesForest.labels_append, split.append_eq]
 
 theorem GeneratedProvesForest.ExactSplit.canonicalRawProofs_eq
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {leftIndex rightIndex : List ConstantHeadedFormula}
     {forest : GeneratedProvesForest projection target
       (leftIndex ++ rightIndex)}
@@ -144,7 +146,7 @@ theorem GeneratedProvesForest.ExactSplit.canonicalRawProofs_eq
 /-- Extract the one stored tree from a forest whose formula index is a
 singleton. -/
 def GeneratedProvesForest.singletonTree
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target [formula]) :
     GeneratedProvesTree projection target formula :=
@@ -152,7 +154,7 @@ def GeneratedProvesForest.singletonTree
   | .cons tree .nil => tree
 
 @[simp] theorem GeneratedProvesForest.singleton_reconstruct
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target [formula]) :
     (.cons forest.singletonTree .nil :
@@ -164,7 +166,7 @@ def GeneratedProvesForest.singletonTree
 The forward direction uses the existing fact that every stored tree emits at
 least one authored label. -/
 theorem GeneratedProvesForest.labels_eq_nil_iff
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas) :
     forest.labels = [] ↔ formulas = [] := by
@@ -181,7 +183,7 @@ theorem GeneratedProvesForest.labels_eq_nil_iff
 
 /-! ## Positive and negative boundaries -/
 
-example {projection : PrefixProjection} {target : ValidatedPresentation}
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {leftFormulas rightFormulas : List ConstantHeadedFormula}
     (left : GeneratedProvesForest projection target leftFormulas)
     (right : GeneratedProvesForest projection target rightFormulas) :
@@ -189,7 +191,7 @@ example {projection : PrefixProjection} {target : ValidatedPresentation}
       left.canonicalRawProofs ++ right.canonicalRawProofs := by
   exact left.canonicalRawProofs_append right
 
-example {projection : PrefixProjection} {target : ValidatedPresentation}
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {leftFormulas rightFormulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target
       (leftFormulas ++ rightFormulas)) :
@@ -197,14 +199,14 @@ example {projection : PrefixProjection} {target : ValidatedPresentation}
     split.leftForest.append split.rightForest = forest := by
   exact (forest.splitExact leftFormulas rightFormulas).append_eq
 
-example {projection : PrefixProjection} {target : ValidatedPresentation}
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target [formula]) :
     (.cons forest.singletonTree .nil :
       GeneratedProvesForest projection target [formula]) = forest := by
   exact forest.singleton_reconstruct
 
-example {projection : PrefixProjection} {target : ValidatedPresentation}
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula} {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target (formula :: formulas)) :
     forest.labels ≠ [] := by

@@ -1,5 +1,8 @@
 import Mettapedia.Cybernetics.ObservedVariety
 import Mettapedia.Cybernetics.DistinctionConservation
+import Mettapedia.Cybernetics.MultiscaleGoal
+import Mettapedia.Cybernetics.StructurePreservingRepair
+import Mettapedia.Cybernetics.ReflexiveValence
 import Mettapedia.Cybernetics.ConstrainedVariety
 import Mettapedia.Cybernetics.RelationalClosure
 import Mettapedia.Cybernetics.Individuation

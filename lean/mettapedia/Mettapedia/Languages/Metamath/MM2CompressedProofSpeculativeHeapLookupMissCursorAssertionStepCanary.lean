@@ -1,0 +1,24 @@
+import Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissInertProofPlanCanary
+
+set_option autoImplicit false
+
+namespace Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissCursorAssertionStepCanary
+
+open Mettapedia.Languages.Metamath.MM2CompressedProofExecution
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupCanary
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissCursorFaultCanary
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissInertPlanData
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissInertFaultPlanCanary
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissInertProofPlanCanary
+open Mettapedia.Languages.ProcessCalculi.MORK
+open Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveComputable
+
+theorem speculative_miss_cursor_assertion_selected_continuously :
+    cReflectiveSourceWorkQueueStep .leaveInert
+        speculativeMissAfterCursorFaultProbe =
+      some speculativeMissAfterCursorAssertionProbe := by
+  decide +kernel
+
+#print axioms speculative_miss_cursor_assertion_selected_continuously
+
+end Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissCursorAssertionStepCanary

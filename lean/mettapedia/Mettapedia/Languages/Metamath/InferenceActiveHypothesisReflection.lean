@@ -19,6 +19,7 @@ recursive reflection of arbitrary child derivations.
 namespace Mettapedia.Languages.Metamath.InferenceProjection
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.Metamath.InferenceEncoding
 open Mettapedia.Languages.Metamath.InferenceHypothesisStepAgreement
@@ -30,8 +31,8 @@ open Mettapedia.Languages.Metamath.InferenceGeneratedProvesExecution
 output: its source hypothesis, canonical nullary rule instance, empty premise
 list, and exact encoded conclusion. -/
 theorem ActiveHypothesisApplicationView.exact
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {formulaPattern : Pattern}
     (view : ActiveHypothesisApplicationView projection target ruleInstance
@@ -52,7 +53,7 @@ theorem ActiveHypothesisApplicationView.exact
       List.find? (fun candidate : RuleSchema =>
         decide (candidate.id = ruleInstance.ruleId)) target.1.rules =
           some (activeHypothesisRule hypothesis) := by
-    simpa [Presentation.lookupRule?] using hlookup
+    simpa [CalculusLanguageDef.lookupRule?] using hlookup
   have hidBool :
       decide ((activeHypothesisRule hypothesis).id =
         ruleInstance.ruleId) = true := by
@@ -94,7 +95,7 @@ active branch of projected source-rule classification.  The constructor keeps
 the classifier attached to the same dependent root data; it does not assume
 canonical outputs. -/
 inductive ActiveHypothesisDerivationRootView
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     {formulaPattern : Pattern} :
     Derivation target (proves formulaPattern) → Prop where
   | intro {ruleInstance : RuleInstance} {premises : List Pattern}
@@ -111,8 +112,8 @@ inductive ActiveHypothesisDerivationRootView
 the corresponding canonical generated active leaf.  The reflected leaf and
 the original derivation have exactly equal raw erasures. -/
 theorem ActiveHypothesisDerivationRootView.reflect
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {formulaPattern : Pattern}
     (derivation : Derivation target (proves formulaPattern))
     (rootView :
@@ -142,8 +143,8 @@ theorem ActiveHypothesisDerivationRootView.reflect
 /-- The root classifier is inhabited by every canonical generated active
 hypothesis leaf. -/
 theorem activeHypothesisDerivation_rootView
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {hypothesis : HypothesisView}
     (hmember : hypothesis ∈ projection.activeHypotheses) :
     ActiveHypothesisDerivationRootView projection target
@@ -170,8 +171,8 @@ theorem activeHypothesisDerivation_rootView
 
 /-- Positive boundary: the exact active-root result is available from raw
 classification evidence alone. -/
-example {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {formulaPattern : Pattern}
     (view : ActiveHypothesisApplicationView projection target ruleInstance
@@ -186,8 +187,8 @@ example {projection : PrefixProjection} {target : ValidatedPresentation}
 /-- Negative boundary: a rule instance with any argument cannot be an active
 hypothesis root, since every generated active-hypothesis schema is nullary. -/
 theorem not_activeHypothesisApplicationView_of_arguments_ne_nil
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {formulaPattern : Pattern}
     (harguments : ruleInstance.arguments ≠ []) :
@@ -203,8 +204,8 @@ theorem not_activeHypothesisApplicationView_of_arguments_ne_nil
 /-- Negative boundary: an active-classified root cannot conclude a pattern
 different from every retained active hypothesis encoding. -/
 theorem not_activeHypothesisDerivationRootView_of_formula_mismatch
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {formulaPattern : Pattern}
     (derivation : Derivation target (proves formulaPattern))
     (hmismatch : ∀ hypothesis : HypothesisView,

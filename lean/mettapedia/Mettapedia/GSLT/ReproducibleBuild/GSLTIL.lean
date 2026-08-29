@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.ReproducibleBuild.Composition
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.GSLTILExactImage
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.GSLTILExactImage
 
 /-!
 # Relational GSLT-IL builds and their exact functional boundary
@@ -30,11 +30,11 @@ open Mettapedia.GSLT.LooseRelationEquipment
 open Mettapedia.GSLT.ReproducibleBuild.Composition
 open Mettapedia.GSLT.IndexedOperational
 
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.RelationalInternalLanguage
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.GSLTILExactImage
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
-open Mettapedia.Languages.MeTTa.NativeTypeTheory.PrimeNeedProofFlow
-open Mettapedia.Languages.MeTTa.NativeTypeTheory.PrimeGSLTILReturnedFibre
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RelationalInternalLanguage
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.GSLTILExactImage
+open Mettapedia.Languages.MeTTa.StagedReflective
+open Mettapedia.Languages.MeTTa.StagedReflective.PrimeNeedProofFlow
+open Mettapedia.Languages.MeTTa.StagedReflective.PrimeGSLTILReturnedFibre
 
 universe u uDeclared uMiddleObserved uFinalObserved
 

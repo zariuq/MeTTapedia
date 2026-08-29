@@ -10,6 +10,16 @@ queries used by mainline PeTTa.  It follows the clause order of `get-type` and
 `get-metatype` rather than the optional `typecheck-v2` or `typecheck-v3`
 languages.
 
+The updateable reference baseline for this presentation is
+`trueagi-io/PeTTa`, branch `fix/minimal-space-owned-eval-20260827`, commit
+`91c27146b129f4d54776362ddb58898568f4665f`.  At that revision the modeled
+clauses are `src/metta.pl:180-215` (`get-type`, `space-get-type`, and their
+candidate relations) and `src/metta.pl:217-224` (`get-metatype`).  The space
+selection used by typed guards is in `src/translator.pl:94-102`.  Moving this
+baseline requires rechecking those clauses and rerunning the maintained
+cross-runtime fixture gate; the commit records qualification, not a promise
+that mainline PeTTa will stop evolving.
+
 The carrier distinguishes Prolog variables, numbers, strings, atoms, and
 lists.  Arrow declarations and ordinary type annotations are already resolved
 ground occurrences from one atomspace revision.  Polymorphic declaration

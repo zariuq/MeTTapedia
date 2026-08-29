@@ -285,7 +285,7 @@ def materializeSharedArticle? (article : SharedWireArticle) :
 
 /-- Decode and materialize the physical article, then invoke the existing
 admitted checker.  Sharing never becomes semantic authority. -/
-def checkSharedPacket (presentation : ValidatedPresentation)
+def checkSharedPacket (definition : ValidatedCalculusLanguageDef)
     (goal : Pattern) (term : CettaTerm) : Bool :=
   match decodeSharedWireArticle term with
   | none => false
@@ -293,13 +293,13 @@ def checkSharedPacket (presentation : ValidatedPresentation)
       match materializeSharedArticle? shared with
       | none => false
       | some article =>
-          if article.target = goal then checkWireArticle presentation article
+          if article.target = goal then checkWireArticle definition article
           else false
 
-theorem checkSharedPacket_sound (presentation : ValidatedPresentation)
+theorem checkSharedPacket_sound (definition : ValidatedCalculusLanguageDef)
     (goal : Pattern) (term : CettaTerm)
-    (accepted : checkSharedPacket presentation goal term = true) :
-    Nonempty (Derivation presentation goal) := by
+    (accepted : checkSharedPacket definition goal term = true) :
+    Nonempty (Derivation definition goal) := by
   simp only [checkSharedPacket] at accepted
   split at accepted <;> rename_i decoded
   · contradiction

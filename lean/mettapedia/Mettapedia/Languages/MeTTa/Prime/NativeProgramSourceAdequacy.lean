@@ -28,7 +28,7 @@ open Mettapedia.GSLT.Core.InteractionComposition
 open Mettapedia.GSLT.LanguageDef.TotalGSLT
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.MeTTaIL.Engine
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation
 open Mettapedia.Languages.MeTTa.Prime.NativeProgramElaboration
@@ -189,7 +189,7 @@ theorem pattern_mem_source {package : ProgramPlan}
 a closed native runtime-pattern term. -/
 def endpoint {package : ProgramPlan} (occurrence : ProgramOccurrence package) :
     rhoInterpretation.Endpoint
-      (.pattern occurrence.pattern : NativeRawTm 0 0) :=
+      (.pattern occurrence.pattern : StagedReflectiveTm 0 0) :=
   rhoPatternEndpoint occurrence.pattern
 
 end ProgramOccurrence
@@ -282,7 +282,7 @@ theorem authored_request_return_source_adequate :
 interpretation even though authored runtime-pattern occurrences are admitted.
 Program quotation does not collapse Prime's static constructors into rho. -/
 theorem dependent_function_remains_outside_source_interaction
-    (domain : NativeRawTm 0 0) (body : NativeRawTm 0 1) :
+    (domain : StagedReflectiveTm 0 0) (body : StagedReflectiveTm 0 1) :
     rhoInterpretation.lower? (.pi domain body) = none :=
   rfl
 

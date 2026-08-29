@@ -13,7 +13,7 @@ This module exposes a concrete atom-level endpoint for the composed route:
 - MeTTaFullLegacy-to-NTT evidence lifting, and
 - WM query-judgment obligations.
 
-It is intentionally assumption-parameterized and does not change PureKernel/
+It is intentionally assumption-parameterized and does not change IntrinsicPure/
 OSLF semantics.
 -/
 

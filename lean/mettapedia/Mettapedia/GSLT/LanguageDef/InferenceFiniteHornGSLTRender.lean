@@ -1,10 +1,10 @@
 import Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 /-!
-# Finite-Horn GSLT projection of inference presentations
+# Finite-Horn GSLT projection of calculus language definitions
 
 This module renders the constructor-only, first-order fragment of an inference
-presentation as a `gslt-presentation-v1` artifact.  The artifact is semantic
+language definition as a `gslt-presentation-v1` artifact.  The artifact is semantic
 source data for the staged CeTTa pipeline; it is not an execution trace and it
 does not add a runtime checker.
 
@@ -47,10 +47,10 @@ abbrev OperatorKey := String × Nat
 
 /-- Positive-arity constructors and judgments form the finite-Horn signature,
 in authored order. -/
-def operatorSignature (presentation : Presentation) : List OperatorKey :=
-  ((presentation.language.terms.map fun declaration =>
+def operatorSignature (definition : CalculusLanguageDef) : List OperatorKey :=
+  ((definition.terms.map fun declaration =>
       (declaration.label, declaration.params.length)) ++
-    (presentation.calculus.judgments.map fun declaration =>
+    (definition.judgments.map fun declaration =>
       (declaration.head, declaration.arity))).filter
         (fun declaration => declaration.2 > 0)
 
@@ -130,66 +130,62 @@ def renderOperators? : List OperatorKey → Option (List String)
       some (head :: tail)
 
 /-- Render one complete `gslt-presentation-v1`, retaining authored rule order. -/
-def renderPresentation? (presentation : Presentation) : Option String := do
-  if !safeSymbol presentation.language.name then
+def renderDefinition? (definition : CalculusLanguageDef) : Option String := do
+  if !safeSymbol definition.name then
     none
   else
-    let signature := operatorSignature presentation
+    let signature := operatorSignature definition
     if !noDuplicateOperators signature then
       none
     else
       let operators ← renderOperators? signature
-      let rules ← renderRules? signature presentation.rules
+      let rules ← renderRules? signature definition.rules
       some <|
-        s!"(gslt-presentation-v1 {presentation.language.name}\n" ++
+        s!"(gslt-presentation-v1 {definition.name}\n" ++
         "  (signature\n" ++ String.intercalate "\n" operators ++ "\n  )\n" ++
         "  (equations)\n" ++
         "  (rewrites\n" ++ String.intercalate "\n" rules ++ "\n  ))\n"
 
-private def positivePresentation : Presentation :=
-  { language :=
-      { name := "PositiveFiniteHorn"
-        types := []
-        terms := []
-        equations := []
-        rewrites := [] }
-    calculus :=
-      { judgments := [{ head := "holds", arity := 1 }]
-        rules :=
-          [{ id := ⟨"holds-seed"⟩
-             metavariables := []
-             premises := []
-             conclusion := .apply "holds" [.apply "seed" []] }] } }
+private def positiveDefinition : CalculusLanguageDef :=
+  { name := "PositiveFiniteHorn"
+    types := []
+    terms := []
+    equations := []
+    rewrites := []
+    judgments := [{ head := "holds", arity := 1 }]
+    rules :=
+      [{ id := ⟨"holds-seed"⟩
+         metavariables := []
+         premises := []
+         conclusion := .apply "holds" [.apply "seed" []] }] }
 
 /-- Positive canary: a constructor-only judgment becomes a valid finite-Horn
-presentation with its judgment operator derived into the signature. -/
-theorem positivePresentation_renders :
-    (renderPresentation? positivePresentation).isSome = true := by
-  simp [renderPresentation?, positivePresentation, operatorSignature,
+definition with its judgment operator derived into the signature. -/
+theorem positiveDefinition_renders :
+    (renderDefinition? positiveDefinition).isSome = true := by
+  simp [renderDefinition?, positiveDefinition, operatorSignature,
     renderOperators?, renderOperator?, renderRules?, renderRule?, renderTerm?,
     renderTerms?, safeSymbol, safeVariable, safeToken, safeTokenCharacter,
     integerToken, noDuplicateOperators, isApplication]
 
-private def negativePresentation : Presentation :=
-  { language :=
-      { name := "NegativeFiniteHorn"
-        types := []
-        terms := []
-        equations := []
-        rewrites := [] }
-    calculus :=
-      { judgments := [{ head := "holds", arity := 1 }]
-        rules :=
-          [{ id := ⟨"unsafe rule name"⟩
-             metavariables := []
-             premises := []
-             conclusion := .apply "holds" [.apply "seed" []] }] } }
+private def negativeDefinition : CalculusLanguageDef :=
+  { name := "NegativeFiniteHorn"
+    types := []
+    terms := []
+    equations := []
+    rewrites := []
+    judgments := [{ head := "holds", arity := 1 }]
+    rules :=
+      [{ id := ⟨"unsafe rule name"⟩
+         metavariables := []
+         premises := []
+         conclusion := .apply "holds" [.apply "seed" []] }] }
 
 /-- Negative canary: unsafe external names are refused, never quoted into a
 different schema object. -/
-theorem negativePresentation_is_refused :
-    renderPresentation? negativePresentation = none := by
-  simp [renderPresentation?, negativePresentation, operatorSignature,
+theorem negativeDefinition_is_refused :
+    renderDefinition? negativeDefinition = none := by
+  simp [renderDefinition?, negativeDefinition, operatorSignature,
     renderOperators?, renderOperator?, renderRules?, renderRule?, safeSymbol,
     safeVariable, safeToken, safeTokenCharacter, integerToken,
     noDuplicateOperators, isApplication]

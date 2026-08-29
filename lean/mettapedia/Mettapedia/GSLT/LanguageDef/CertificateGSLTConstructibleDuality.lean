@@ -35,7 +35,7 @@ knowledge, the anytime discipline of the budget layer extended to both
 lanes.
 
 This is not yet Patterson's full logic: no connectives, Kripke semantics,
-judgment-level strong negation, or lane-swapping presentation interpretation
+judgment-level strong negation, or lane-swapping definition interpretation
 is claimed.  `FourVerdict.strongNegation` is only the corresponding operation
 on the four evidence statuses.
 -/
@@ -172,81 +172,81 @@ theorem fourOfLanes_knowledge_mono
 
 /-- Whether an offered certificate is accepted for a goal; no certificate
 is never acceptance. -/
-def laneAccepted (presentation : ValidatedPresentation) (goal : Pattern) :
+def laneAccepted (definition : ValidatedCalculusLanguageDef) (goal : Pattern) :
     Option RawProof → Bool
   | none => false
-  | some proof => checkRaw presentation goal proof
+  | some proof => checkRaw definition goal proof
 
 /-- The four-valued verdict of a positive and a negative goal against
 offered certificates. -/
-def pairedVerdict (presentation : ValidatedPresentation)
+def pairedVerdict (definition : ValidatedCalculusLanguageDef)
     (positiveGoal negativeGoal : Pattern)
     (positiveCertificate negativeCertificate : Option RawProof) :
     FourVerdict :=
-  fourOfLanes (laneAccepted presentation positiveGoal positiveCertificate)
-    (laneAccepted presentation negativeGoal negativeCertificate)
+  fourOfLanes (laneAccepted definition positiveGoal positiveCertificate)
+    (laneAccepted definition negativeGoal negativeCertificate)
 
-private theorem laneAccepted_true {presentation : ValidatedPresentation}
+private theorem laneAccepted_true {definition : ValidatedCalculusLanguageDef}
     {goal : Pattern} {certificate : Option RawProof}
-    (accepted : laneAccepted presentation goal certificate = true) :
-    Nonempty (Derivation presentation goal) := by
+    (accepted : laneAccepted definition goal certificate = true) :
+    Nonempty (Derivation definition goal) := by
   cases certificate with
   | none => simp [laneAccepted] at accepted
   | some proof => exact checkRaw_soundness accepted
 
 /-- An established verdict certifies the positive judgment. -/
 theorem pairedVerdict_established_sound
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {positiveGoal negativeGoal : Pattern}
     {positiveCertificate negativeCertificate : Option RawProof}
-    (established : pairedVerdict presentation positiveGoal negativeGoal
+    (established : pairedVerdict definition positiveGoal negativeGoal
       positiveCertificate negativeCertificate = .established) :
-    Nonempty (Derivation presentation positiveGoal) := by
+    Nonempty (Derivation definition positiveGoal) := by
   unfold pairedVerdict fourOfLanes at established
-  cases acceptedPositive : laneAccepted presentation positiveGoal
+  cases acceptedPositive : laneAccepted definition positiveGoal
       positiveCertificate with
   | true => exact laneAccepted_true acceptedPositive
   | false =>
       exfalso
       rw [acceptedPositive] at established
-      cases acceptedNegative : laneAccepted presentation negativeGoal
+      cases acceptedNegative : laneAccepted definition negativeGoal
           negativeCertificate <;>
         rw [acceptedNegative] at established <;> cases established
 
 /-- A refuted verdict certifies the negative judgment. -/
 theorem pairedVerdict_refuted_sound
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {positiveGoal negativeGoal : Pattern}
     {positiveCertificate negativeCertificate : Option RawProof}
-    (refuted : pairedVerdict presentation positiveGoal negativeGoal
+    (refuted : pairedVerdict definition positiveGoal negativeGoal
       positiveCertificate negativeCertificate = .refuted) :
-    Nonempty (Derivation presentation negativeGoal) := by
+    Nonempty (Derivation definition negativeGoal) := by
   unfold pairedVerdict fourOfLanes at refuted
-  cases acceptedNegative : laneAccepted presentation negativeGoal
+  cases acceptedNegative : laneAccepted definition negativeGoal
       negativeCertificate with
   | true => exact laneAccepted_true acceptedNegative
   | false =>
       exfalso
       rw [acceptedNegative] at refuted
-      cases acceptedPositive : laneAccepted presentation positiveGoal
+      cases acceptedPositive : laneAccepted definition positiveGoal
           positiveCertificate <;>
         rw [acceptedPositive] at refuted <;> cases refuted
 
 /-- A conflicted verdict certifies *both* judgments: checked evidence on
 both sides, held together without explosion. -/
 theorem pairedVerdict_conflicted_sound
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {positiveGoal negativeGoal : Pattern}
     {positiveCertificate negativeCertificate : Option RawProof}
-    (conflicted : pairedVerdict presentation positiveGoal negativeGoal
+    (conflicted : pairedVerdict definition positiveGoal negativeGoal
       positiveCertificate negativeCertificate = .conflicted) :
-    Nonempty (Derivation presentation positiveGoal) ∧
-      Nonempty (Derivation presentation negativeGoal) := by
+    Nonempty (Derivation definition positiveGoal) ∧
+      Nonempty (Derivation definition negativeGoal) := by
   unfold pairedVerdict fourOfLanes at conflicted
-  cases acceptedPositive : laneAccepted presentation positiveGoal
+  cases acceptedPositive : laneAccepted definition positiveGoal
       positiveCertificate <;>
     rw [acceptedPositive] at conflicted <;>
-    cases acceptedNegative : laneAccepted presentation negativeGoal
+    cases acceptedNegative : laneAccepted definition negativeGoal
         negativeCertificate <;>
       rw [acceptedNegative] at conflicted
   case true.true =>
@@ -258,11 +258,11 @@ theorem pairedVerdict_conflicted_sound
 Together with `pairedVerdict_conflicted_sound`, this pins the positive case in
 both directions for explicitly supplied evidence. -/
 theorem pairedVerdict_conflicted_complete
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {positiveGoal negativeGoal : Pattern}
-    (positive : Derivation presentation positiveGoal)
-    (negative : Derivation presentation negativeGoal) :
-    pairedVerdict presentation positiveGoal negativeGoal
+    (positive : Derivation definition positiveGoal)
+    (negative : Derivation definition negativeGoal) :
+    pairedVerdict definition positiveGoal negativeGoal
       (some positive.erase) (some negative.erase) = .conflicted := by
   simp [pairedVerdict, laneAccepted, fourOfLanes, checkRaw_erase]
 
@@ -270,10 +270,10 @@ theorem pairedVerdict_conflicted_complete
 established status.  This is about offered evidence, not non-derivability of
 the negative goal. -/
 theorem pairedVerdict_established_of_derivation
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {positiveGoal negativeGoal : Pattern}
-    (positive : Derivation presentation positiveGoal) :
-    pairedVerdict presentation positiveGoal negativeGoal
+    (positive : Derivation definition positiveGoal) :
+    pairedVerdict definition positiveGoal negativeGoal
       (some positive.erase) none = .established := by
   simp [pairedVerdict, laneAccepted, fourOfLanes, checkRaw_erase]
 
@@ -281,22 +281,22 @@ theorem pairedVerdict_established_of_derivation
 refuted status.  This is about offered evidence, not non-derivability of the
 positive goal. -/
 theorem pairedVerdict_refuted_of_derivation
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {positiveGoal negativeGoal : Pattern}
-    (negative : Derivation presentation negativeGoal) :
-    pairedVerdict presentation positiveGoal negativeGoal
+    (negative : Derivation definition negativeGoal) :
+    pairedVerdict definition positiveGoal negativeGoal
       none (some negative.erase) = .refuted := by
   simp [pairedVerdict, laneAccepted, fourOfLanes, checkRaw_erase]
 
 /-- Supplying certificates where none were offered moves the verdict only
 upward in the knowledge order. -/
 theorem pairedVerdict_knowledge_mono_from_empty
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {positiveGoal negativeGoal : Pattern}
     (positiveCertificate negativeCertificate : Option RawProof) :
     FourVerdict.knowledgeLE
-      (pairedVerdict presentation positiveGoal negativeGoal none none)
-      (pairedVerdict presentation positiveGoal negativeGoal
+      (pairedVerdict definition positiveGoal negativeGoal none none)
+      (pairedVerdict definition positiveGoal negativeGoal
         positiveCertificate negativeCertificate) = true := by
   apply fourOfLanes_knowledge_mono <;> simp [laneAccepted]
 

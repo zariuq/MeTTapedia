@@ -1,7 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTClone
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTDAGSubstitution
-import Mettapedia.GSLT.LanguageDef.CertificateGSLTStepPresentability
-import Mettapedia.GSLT.LanguageDef.CertificateGSLTStepPresentation
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTTraceSchemaBoundary
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTStepTraceLanguage
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTStepAdequacyGeneral
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTWireFormat
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTArticleIdentity
@@ -26,12 +26,12 @@ import Mettapedia.GSLT.LanguageDef.CertificateGSLTConstructibleDuality
 # Certificate-GSLT framework
 
 This module is the canonical import for the proof-theoretic GSLT nucleus.  It
-collects validated semantic presentations, strict refinement, open
+collects validated semantic definitions, strict refinement, open
 derivations and their substitution calculus, derivation-valued
 interpretations, set-valued models, indexed categories of derivations and
 models, executable open-proof checking, chronological DAG evidence, exact DAG
 transport under refinement, the multisorted-clone structure carried by each
-presentation, and sharing-preserving substitution of checked chronological
+definition, and sharing-preserving substitution of checked chronological
 artifacts with its exact expansion and cost laws.  It also exposes the
 proof-carrying direct-trace generator, the collection-rest admission
 boundary, general two-sided trace adequacy over the gated adequate

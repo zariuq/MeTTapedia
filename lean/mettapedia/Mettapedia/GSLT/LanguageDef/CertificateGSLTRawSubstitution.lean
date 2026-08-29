@@ -291,9 +291,9 @@ end RawOpenProof
 namespace OpenDerivationList
 
 /-- Erasure preserves ordered length. -/
-theorem length_eraseOpen {presentation : ValidatedPresentation}
+theorem length_eraseOpen {definition : ValidatedCalculusLanguageDef}
     {context goals : List Pattern}
-    (derivations : OpenDerivationList presentation context goals) :
+    (derivations : OpenDerivationList definition context goals) :
     derivations.eraseOpen.length = goals.length := by
   cases derivations with
   | nil => rfl
@@ -302,9 +302,9 @@ theorem length_eraseOpen {presentation : ValidatedPresentation}
 
 /-- Positional lookup of an erased environment is erasure of the typed
 lookup. -/
-theorem eraseOpen_getD {presentation : ValidatedPresentation}
+theorem eraseOpen_getD {definition : ValidatedCalculusLanguageDef}
     {context goals : List Pattern}
-    (derivations : OpenDerivationList presentation context goals)
+    (derivations : OpenDerivationList definition context goals)
     (index : Fin goals.length) (fallback : RawOpenProof) :
     derivations.eraseOpen.getD index.val fallback =
       (derivations.get index).eraseOpen := by
@@ -322,11 +322,11 @@ mutual
 
 /-- Erasing a plugged derivation is raw substitution of the erasures. -/
 theorem OpenDerivation.eraseOpen_bind
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {sourceContext targetContext : List Pattern} {goal : Pattern}
-    (derivation : OpenDerivation presentation sourceContext goal)
+    (derivation : OpenDerivation definition sourceContext goal)
     (environment :
-      OpenDerivationList presentation targetContext sourceContext) :
+      OpenDerivationList definition targetContext sourceContext) :
     (derivation.bind environment).eraseOpen =
       RawOpenProof.substitute environment.eraseOpen derivation.eraseOpen := by
   cases derivation with
@@ -341,11 +341,11 @@ theorem OpenDerivation.eraseOpen_bind
 
 /-- Pointwise erasure/plugging exchange for ordered children. -/
 theorem OpenDerivationList.eraseOpen_bind
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {sourceContext targetContext goals : List Pattern}
-    (derivations : OpenDerivationList presentation sourceContext goals)
+    (derivations : OpenDerivationList definition sourceContext goals)
     (environment :
-      OpenDerivationList presentation targetContext sourceContext) :
+      OpenDerivationList definition targetContext sourceContext) :
     (derivations.bind environment).eraseOpen =
       RawOpenProof.substituteList environment.eraseOpen
         derivations.eraseOpen := by

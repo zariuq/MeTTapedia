@@ -88,13 +88,13 @@ def resolveOpenDAGChildren? (context : List Pattern)
   | _, _ => none
 
 /-- Check and append one chronological open-DAG node. -/
-def checkOpenDAGNode? (presentation : ValidatedPresentation)
+def checkOpenDAGNode? (definition : ValidatedCalculusLanguageDef)
     (context : List Pattern) (entries : List OpenDAGEntry)
     (node : OpenDAGNode) : Option (List OpenDAGEntry) :=
   match findOpenDAGEntry? entries node.id with
   | some _ => none
   | none =>
-      match instantiateRule? presentation node.ruleInstance with
+      match instantiateRule? definition node.ruleInstance with
       | none => none
       | some (premises, conclusion) =>
           match resolveOpenDAGChildren? context entries premises node.children with
@@ -106,59 +106,59 @@ def checkOpenDAGNode? (presentation : ValidatedPresentation)
                    proof := .node node.ruleInstance children } :: entries)
 
 /-- Check a chronological node list. -/
-def checkOpenDAGNodes? (presentation : ValidatedPresentation)
+def checkOpenDAGNodes? (definition : ValidatedCalculusLanguageDef)
     (context : List Pattern) :
     List OpenDAGEntry → List OpenDAGNode → Option (List OpenDAGEntry)
   | entries, [] => some entries
   | entries, node :: nodes => do
-      let next ← checkOpenDAGNode? presentation context entries node
-      checkOpenDAGNodes? presentation context next nodes
+      let next ← checkOpenDAGNode? definition context entries node
+      checkOpenDAGNodes? definition context next nodes
 
 /-- Check bounded transport blocks while retaining one chronological
 environment. -/
-def checkOpenDAGBlocks? (presentation : ValidatedPresentation)
+def checkOpenDAGBlocks? (definition : ValidatedCalculusLanguageDef)
     (context : List Pattern) :
     List OpenDAGEntry → List (List OpenDAGNode) → Option (List OpenDAGEntry)
   | entries, [] => some entries
   | entries, block :: blocks => do
-      let next ← checkOpenDAGNodes? presentation context entries block
-      checkOpenDAGBlocks? presentation context next blocks
+      let next ← checkOpenDAGNodes? definition context entries block
+      checkOpenDAGBlocks? definition context next blocks
 
 /-- Reconstruct the selected root after checking every chronological block. -/
-def expandOpenDAGBlocks? (presentation : ValidatedPresentation)
+def expandOpenDAGBlocks? (definition : ValidatedCalculusLanguageDef)
     (context : List Pattern) (goal : Pattern) (rootId : Nat)
     (blocks : List (List OpenDAGNode)) : Option RawOpenProof := do
-  let entries ← checkOpenDAGBlocks? presentation context [] blocks
+  let entries ← checkOpenDAGBlocks? definition context [] blocks
   let root ← findOpenDAGEntry? entries rootId
   if root.goal = goal then some root.proof else none
 
 /-- Boolean executable boundary for open proof DAGs. -/
-def checkOpenDAGBlocks (presentation : ValidatedPresentation)
+def checkOpenDAGBlocks (definition : ValidatedCalculusLanguageDef)
     (context : List Pattern) (goal : Pattern) (rootId : Nat)
     (blocks : List (List OpenDAGNode)) : Bool :=
-  (expandOpenDAGBlocks? presentation context goal rootId blocks).isSome
+  (expandOpenDAGBlocks? definition context goal rootId blocks).isSome
 
-private def OpenDAGEnvironmentSound (presentation : ValidatedPresentation)
+private def OpenDAGEnvironmentSound (definition : ValidatedCalculusLanguageDef)
     (context : List Pattern) (entries : List OpenDAGEntry) : Prop :=
   ∀ entry ∈ entries,
-    checkOpenRaw presentation context entry.goal entry.proof = true
+    checkOpenRaw definition context entry.goal entry.proof = true
 
 private theorem emptyOpenDAGEnvironmentSound
-    (presentation : ValidatedPresentation) (context : List Pattern) :
-    OpenDAGEnvironmentSound presentation context [] := by
+    (definition : ValidatedCalculusLanguageDef) (context : List Pattern) :
+    OpenDAGEnvironmentSound definition context [] := by
   intro entry membership
   simp at membership
 
 private theorem resolveOpenDAGReference?_sound
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {entries : List OpenDAGEntry}
-    (sound : OpenDAGEnvironmentSound presentation context entries)
+    (sound : OpenDAGEnvironmentSound definition context entries)
     {expected : Pattern} {reference : OpenDAGReference}
     {proof : RawOpenProof}
     (resolved :
       resolveOpenDAGReference? context entries expected reference =
         some proof) :
-    checkOpenRaw presentation context expected proof = true := by
+    checkOpenRaw definition context expected proof = true := by
   cases reference with
   | premise index =>
       simp only [resolveOpenDAGReference?] at resolved
@@ -183,14 +183,14 @@ private theorem resolveOpenDAGReference?_sound
           · simp [found, same] at resolved
 
 private theorem resolveOpenDAGChildren?_sound
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {entries : List OpenDAGEntry}
-    (sound : OpenDAGEnvironmentSound presentation context entries) :
+    (sound : OpenDAGEnvironmentSound definition context entries) :
     ∀ {premises : List Pattern} {references : List OpenDAGReference}
       {proofs : List RawOpenProof},
       resolveOpenDAGChildren? context entries premises references =
           some proofs →
-        checkOpenRawChildren presentation context premises proofs = true := by
+        checkOpenRawChildren definition context premises proofs = true := by
   intro premises
   induction premises with
   | nil =>
@@ -225,18 +225,18 @@ private theorem resolveOpenDAGChildren?_sound
                       inductionHypothesis rest⟩
 
 private theorem checkOpenDAGNode?_sound
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {entries next : List OpenDAGEntry} {node : OpenDAGNode}
-    (sound : OpenDAGEnvironmentSound presentation context entries)
+    (sound : OpenDAGEnvironmentSound definition context entries)
     (checked :
-      checkOpenDAGNode? presentation context entries node = some next) :
-    OpenDAGEnvironmentSound presentation context next := by
+      checkOpenDAGNode? definition context entries node = some next) :
+    OpenDAGEnvironmentSound definition context next := by
   unfold checkOpenDAGNode? at checked
   cases duplicate : findOpenDAGEntry? entries node.id with
   | some entry => simp [duplicate] at checked
   | none =>
       simp only [duplicate] at checked
-      cases instantiated : instantiateRule? presentation node.ruleInstance with
+      cases instantiated : instantiateRule? definition node.ruleInstance with
       | none => simp [instantiated] at checked
       | some result =>
           rcases result with ⟨premises, conclusion⟩
@@ -257,12 +257,12 @@ private theorem checkOpenDAGNode?_sound
               · exact sound entry membership
 
 private theorem checkOpenDAGNodes?_sound
-    {presentation : ValidatedPresentation} {context : List Pattern} :
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern} :
     ∀ {entries : List OpenDAGEntry} {nodes : List OpenDAGNode}
       {next : List OpenDAGEntry},
-      OpenDAGEnvironmentSound presentation context entries →
-      checkOpenDAGNodes? presentation context entries nodes = some next →
-      OpenDAGEnvironmentSound presentation context next := by
+      OpenDAGEnvironmentSound definition context entries →
+      checkOpenDAGNodes? definition context entries nodes = some next →
+      OpenDAGEnvironmentSound definition context next := by
   intro entries nodes
   induction nodes generalizing entries with
   | nil =>
@@ -273,19 +273,19 @@ private theorem checkOpenDAGNodes?_sound
   | cons node nodes inductionHypothesis =>
       intro next sound checked
       simp only [checkOpenDAGNodes?] at checked
-      cases first : checkOpenDAGNode? presentation context entries node with
+      cases first : checkOpenDAGNode? definition context entries node with
       | none => simp [first] at checked
       | some middle =>
           simp only [first] at checked
           exact inductionHypothesis (checkOpenDAGNode?_sound sound first) checked
 
 private theorem checkOpenDAGBlocks?_sound
-    {presentation : ValidatedPresentation} {context : List Pattern} :
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern} :
     ∀ {entries : List OpenDAGEntry} {blocks : List (List OpenDAGNode)}
       {next : List OpenDAGEntry},
-      OpenDAGEnvironmentSound presentation context entries →
-      checkOpenDAGBlocks? presentation context entries blocks = some next →
-      OpenDAGEnvironmentSound presentation context next := by
+      OpenDAGEnvironmentSound definition context entries →
+      checkOpenDAGBlocks? definition context entries blocks = some next →
+      OpenDAGEnvironmentSound definition context next := by
   intro entries blocks
   induction blocks generalizing entries with
   | nil =>
@@ -296,7 +296,7 @@ private theorem checkOpenDAGBlocks?_sound
   | cons block blocks inductionHypothesis =>
       intro next sound checked
       simp only [checkOpenDAGBlocks?] at checked
-      cases first : checkOpenDAGNodes? presentation context entries block with
+      cases first : checkOpenDAGNodes? definition context entries block with
       | none => simp [first] at checked
       | some middle =>
           simp only [first] at checked
@@ -305,15 +305,15 @@ private theorem checkOpenDAGBlocks?_sound
 
 /-- Successful open-DAG expansion produces an accepted exact open proof tree. -/
 theorem expandOpenDAGBlocks?_sound
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {goal : Pattern} {rootId : Nat} {blocks : List (List OpenDAGNode)}
     {proof : RawOpenProof}
     (expanded :
-      expandOpenDAGBlocks? presentation context goal rootId blocks =
+      expandOpenDAGBlocks? definition context goal rootId blocks =
         some proof) :
-    checkOpenRaw presentation context goal proof = true := by
+    checkOpenRaw definition context goal proof = true := by
   unfold expandOpenDAGBlocks? at expanded
-  cases checked : checkOpenDAGBlocks? presentation context [] blocks with
+  cases checked : checkOpenDAGBlocks? definition context [] blocks with
   | none => simp [checked] at expanded
   | some entries =>
       simp only [checked] at expanded
@@ -325,24 +325,24 @@ theorem expandOpenDAGBlocks?_sound
             subst proof
             rw [← same]
             exact checkOpenDAGBlocks?_sound
-              (emptyOpenDAGEnvironmentSound presentation context) checked
+              (emptyOpenDAGEnvironmentSound definition context) checked
               root (findOpenDAGEntry?_eq_some_mem found)
           · simp [found, same] at expanded
 
 /-- A checked open DAG reconstructs an exact typed open derivation. -/
 theorem checkOpenDAGBlocks_exact_derivation
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {goal : Pattern} {rootId : Nat} {blocks : List (List OpenDAGNode)}
     (checked :
-      checkOpenDAGBlocks presentation context goal rootId blocks = true) :
+      checkOpenDAGBlocks definition context goal rootId blocks = true) :
     ∃ (proof : RawOpenProof)
-      (derivation : OpenDerivation presentation context goal),
-      expandOpenDAGBlocks? presentation context goal rootId blocks =
+      (derivation : OpenDerivation definition context goal),
+      expandOpenDAGBlocks? definition context goal rootId blocks =
           some proof ∧
         derivation.eraseOpen = proof := by
   unfold checkOpenDAGBlocks at checked
   cases expanded :
-      expandOpenDAGBlocks? presentation context goal rootId blocks with
+      expandOpenDAGBlocks? definition context goal rootId blocks with
   | none => simp [expanded] at checked
   | some proof =>
       have accepted := expandOpenDAGBlocks?_sound expanded
@@ -356,6 +356,6 @@ structure CheckedOpenDAG (object : Object) (context : List Pattern)
   rootId : Nat
   blocks : List (List OpenDAGNode)
   accepted :
-    checkOpenDAGBlocks object.presentation context goal rootId blocks = true
+    checkOpenDAGBlocks object.definition context goal rootId blocks = true
 
 end Mettapedia.GSLT.LanguageDef.CertificateGSLT

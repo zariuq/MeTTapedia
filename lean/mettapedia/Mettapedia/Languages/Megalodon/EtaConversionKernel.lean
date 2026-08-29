@@ -110,14 +110,12 @@ private def reduceEtaRule : RuleSchema :=
 def definition : CalculusLanguageDef :=
   DefinitionConversionKernel.definition
 
-def presentation : Presentation := definition.toNested
-
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 10000000 in
-theorem presentation_valid : presentation.isValidV2 = true := by
-  exact DefinitionConversionKernel.presentation_valid
+theorem definition_valid : definition.isValid = true := by
+  exact DefinitionConversionKernel.definition_valid
 
-def validated : ValidatedPresentation := ⟨presentation, presentation_valid⟩
+def validated : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 def coGSLTDefinition : ExtendedLanguageDef calculusLayer :=
   definition.toExtended
@@ -135,72 +133,72 @@ theorem definition_ruleLookupRefines :
   exact RuleLookupRefines.refl DefinitionConversionKernel.validated
 
 @[simp] private theorem lookup_reduceEtaRule :
-    presentation.lookupRule? (ruleId "megalodon-def-reduce-eta") =
+    definition.lookupRule? (ruleId "megalodon-def-reduce-eta") =
       some reduceEtaRule := by
   rfl
 
 @[simp] private theorem lookup_typeNamedZeroRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-poly-term-named-zero") =
       some PolymorphicKernel.typeNamedZeroRule := by
   rfl
 
 @[simp] private theorem lookup_typeNamedSuccRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-poly-term-named-succ") =
       some PolymorphicKernel.typeNamedSuccRule := by
   rfl
 
 @[simp] private theorem lookup_typeAppRule :
-    presentation.lookupRule? (ruleId "megalodon-poly-term-app") =
+    definition.lookupRule? (ruleId "megalodon-poly-term-app") =
       some PolymorphicKernel.typeAppRule := by
   rfl
 
 @[simp] private theorem lookup_proofHypZeroRule :
-    presentation.lookupRule? (ruleId "megalodon-poly-proof-hyp-zero") =
+    definition.lookupRule? (ruleId "megalodon-poly-proof-hyp-zero") =
       some PolymorphicKernel.proofHypZeroRule := by
   rfl
 
 @[simp] private theorem lookup_proofImpIntroRule :
-    presentation.lookupRule? (ruleId "megalodon-poly-proof-imp-intro") =
+    definition.lookupRule? (ruleId "megalodon-poly-proof-imp-intro") =
       some PolymorphicKernel.proofImpIntroRule := by
   rfl
 
 @[simp] private theorem lookup_environmentProofBaseRule :
-    presentation.lookupRule? (ruleId "megalodon-env-proof-base") =
+    definition.lookupRule? (ruleId "megalodon-env-proof-base") =
       some EnvironmentKernel.proofBaseRule := by
   rfl
 
 @[simp] private theorem lookup_reduceAppArgumentRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-def-reduce-app-argument") =
       some DefinitionConversionKernel.reduceAppArgumentRule := by
   rfl
 
 @[simp] private theorem lookup_reduceImpCodomainRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-def-reduce-imp-codomain") =
       some DefinitionConversionKernel.reduceImpCodomainRule := by
   rfl
 
 @[simp] private theorem lookup_pathReflRule :
-    presentation.lookupRule? (ruleId "megalodon-def-path-refl") =
+    definition.lookupRule? (ruleId "megalodon-def-path-refl") =
       some DefinitionConversionKernel.pathReflRule := by
   rfl
 
 @[simp] private theorem lookup_pathStepRule :
-    presentation.lookupRule? (ruleId "megalodon-def-path-step") =
+    definition.lookupRule? (ruleId "megalodon-def-path-step") =
       some DefinitionConversionKernel.pathStepRule := by
   rfl
 
 @[simp] private theorem lookup_conversionCommonRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         (ruleId "megalodon-def-conversion-common") =
       some DefinitionConversionKernel.conversionCommonRule := by
   rfl
 
 @[simp] private theorem lookup_fullProofRule :
-    presentation.lookupRule? (ruleId "megalodon-def-proof") =
+    definition.lookupRule? (ruleId "megalodon-def-proof") =
       some DefinitionConversionKernel.fullProofRule := by
   rfl
 
@@ -259,7 +257,7 @@ theorem compileEtaReduction_checked
     TermQuantifiedKernel.encodeTm,
     TermQuantifiedKernel.encodeNat, TermQuantifiedKernel.a]
   simpa [validated, DefinitionConversionKernel.validated,
-    DefinitionConversionKernel.presentation,
+    DefinitionConversionKernel.definition,
     EnvironmentKernel.validated, TermQuantifiedKernel.shiftTerm,
     TermQuantifiedKernel.encodeTm, TermQuantifiedKernel.encodeTp,
     TermQuantifiedKernel.encodeNat, TermQuantifiedKernel.a,
@@ -703,21 +701,21 @@ theorem eta_document_wrong_goal_rejected :
     TermQuantifiedKernel.encodeProofContext, TermQuantifiedKernel.encodeNat,
     TermQuantifiedKernel.a, a] at goalsEqual
 
-open Mettapedia.GSLT.LanguageDef.InferencePresentationWire
+open Mettapedia.GSLT.LanguageDef.InferenceLanguageWire
 
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 10000000 in
 /-- Every fixed constructor occurrence in the exact eta article is declared
 by the checker-facing runtime projection. -/
 theorem eta_document_closed_payload :
-    (RuntimePresentation.ofPresentation presentation).proofPayloadsValid
+    (RuntimeInferenceLanguage.ofDefinition definition).proofPayloadsValid
         etaDocumentArticle = true := by
   simp (config := { maxSteps := 10000000, decide := true })
-    [ RuntimePresentation.ofPresentation,
-      RuntimePresentation.proofPayloadsValid,
-      RuntimePresentation.proofPayloadListsValid,
-      RuntimePresentation.fixedConstructorListsValid,
-      RuntimePresentation.fixedConstructorsValid,
+    [ RuntimeInferenceLanguage.ofDefinition,
+      RuntimeInferenceLanguage.proofPayloadsValid,
+      RuntimeInferenceLanguage.proofPayloadListsValid,
+      RuntimeInferenceLanguage.fixedConstructorListsValid,
+      RuntimeInferenceLanguage.fixedConstructorsValid,
       etaDocumentArticle, node,
       DefinitionConversionKernel.compileProjection_nil,
       DefinitionConversionKernel.compileProjection_parameter,
@@ -728,7 +726,7 @@ theorem eta_document_closed_payload :
       etaSynthesizedPathArticle, etaDeclaredPathArticle,
       etaPathReflArticle, etaPropositionReductionArticle,
       etaApplicationReductionArticle, etaReductionArticle,
-      compileEtaReduction, presentation, definition,
+      compileEtaReduction, definition, definition,
       DefinitionConversionKernel.definition,
       DefinitionConversionKernel.additionalConstructors,
       EnvironmentKernel.definition, EnvironmentKernel.additionalConstructors,

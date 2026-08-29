@@ -18,6 +18,19 @@ The input and output rules follow current mainline PeTTa:
 * `%Undefined%`, `_`, and `Atom` outputs are unchecked; and
 * ordinary outputs use the same soft-cut query order.
 
+The updateable reference baseline is `trueagi-io/PeTTa`, branch
+`fix/minimal-space-owned-eval-20260827`, commit
+`91c27146b129f4d54776362ddb58898568f4665f`, containing the late-type
+coherence repair `9c036a506b7c2bf14b26d7034f95add5e371d4ce`.  The direct source
+clauses are `src/translator.pl:94-102` (space-sensitive soft-cut guard),
+`src/translator.pl:650-704` (ordered typed-call branches and output guard),
+and `src/translator.pl:707-717` (raw, unchecked, and checked inputs).
+`src/filereader.pl:13-25` and `src/spaces.pl:9-45` establish coherent
+predeclaration, ownership, and recompilation after type mutation.  The Lean
+revision is an artifact-generation coordinate for that coherent program; it
+is not presented as a literal SWI-Prolog revision field.  Advancing the
+reference requires a clause diff and cross-runtime requalification.
+
 Argument evaluation and the called function's own semantics are adjacent
 authorities.  This kernel consumes their values but does not pretend to prove
 how those values were computed.  The optional boundary article near the end

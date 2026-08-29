@@ -36,8 +36,8 @@ it never withdraws the raw execution path.
 
 namespace Mettapedia.Languages.MeTTa.Prime.NativeTypedQuotation
 
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
-open Mettapedia.Languages.MeTTa.NativeTypeTheory.NativeModalTyping
+open Mettapedia.Languages.MeTTa.StagedReflective
+open Mettapedia.Languages.MeTTa.StagedReflective.NativeModalTyping
 open Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.MeTTaSyntaxQuotation
@@ -77,7 +77,7 @@ deriving Repr, DecidableEq
 namespace NativeCode
 
 /-- Interpret one code at an explicitly selected stage. -/
-def interpret (stage : Nat) : NativeCode binders → NativeRawTm stage binders
+def interpret (stage : Nat) : NativeCode binders → StagedReflectiveTm stage binders
   | .var index => .var index
   | .u0 => .u0
   | .u1 => .u1
@@ -741,8 +741,8 @@ end NativeCode
 /-- The result requested by the typed quotation crown: a closed native term,
 its inferred native type, and an actual native typing derivation. -/
 structure ClosedTyping where
-  term : NativeRawTm 0 0
-  type : NativeRawTm 0 0
+  term : StagedReflectiveTm 0 0
+  type : StagedReflectiveTm 0 0
   typing : NativeCanary.ClosedNativeTyping term type
 
 /-- Elaborate one parsed MeTTa pattern into a closed native typing package. -/
@@ -864,7 +864,7 @@ example :
 
 /-- Typed evidence is optional: the same request pattern remains available
 as an unchecked raw plan with no certification premise. -/
-def rawRequestStillRuns : RawPlan (NativeRawTm 0 0) :=
+def rawRequestStillRuns : RawPlan (StagedReflectiveTm 0 0) :=
   ⟨.pattern (metta% petta "(request ticket-7 (payload datum))")⟩
 
 end Mettapedia.Languages.MeTTa.Prime.NativeTypedQuotation

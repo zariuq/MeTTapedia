@@ -3,7 +3,7 @@ import Mettapedia.GSLT.LanguageDef.CertificateGSLTArticleIdentity
 /-!
 # Canaries for the versioned article wire semantics
 
-A three-node chronological article over a small authored presentation is
+A three-node chronological article over a small authored definition is
 accepted, both directly and through its canonical wire rendering.  Every
 structural and semantic mutation the ABI must reject is then exercised as a
 compiled negative: version tamper, unknown rule identifier, malformed
@@ -19,7 +19,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 
-/-! ## The authored presentation -/
+/-! ## The authored definition -/
 
 private def wireType : TypeDecl := TypeDecl.plain "WT"
 
@@ -70,24 +70,24 @@ private def wireCalculus :
   { judgments := [⟨"WJ", 1⟩, ⟨"WK", 1⟩, ⟨"WL", 2⟩]
     rules := [axJ, upK, pairL, needK] }
 
-private def wirePresentation : Presentation :=
-  { language := wireLanguage, calculus := wireCalculus }
+private def wireDefinition : CalculusLanguageDef :=
+  CalculusLanguageDef.extend wireLanguage wireCalculus
 
-private theorem wire_validate : wirePresentation.language.validate = [] := by
+private theorem wire_validate : wireDefinition.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-    simp [wirePresentation, wireLanguage, wireType, wireA,
+    simp [wireDefinition, wireLanguage, wireType, wireA,
       LanguageDef.typeNames, TermParam.typeExpr, TypeDecl.plain]
 
-private theorem wire_valid : wirePresentation.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+private theorem wire_valid : wireDefinition.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [wire_validate]
-  simp [wirePresentation, wireCalculus, wireLanguage, wireType, wireA, axJ, upK, pairL,
+  simp [wireDefinition, wireCalculus, wireLanguage, wireType, wireA, axJ, upK, pairL,
     needK, termA, judgJ, judgK, judgL,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -95,35 +95,35 @@ private theorem wire_valid : wirePresentation.isValidV2 = true := by
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
-private def validated : ValidatedPresentation :=
-  ⟨wirePresentation, wire_valid⟩
+private def validated : ValidatedCalculusLanguageDef :=
+  ⟨wireDefinition, wire_valid⟩
 
 /-! ## Rule instantiation computations -/
 
 private theorem axJ_instantiates :
     instantiateRule? validated ⟨⟨"wire-ax-j"⟩, []⟩ =
       some ([], judgJ termA) := by
-  simp [instantiateRule?, validated, wirePresentation, wireCalculus, wireLanguage, axJ,
-    upK, pairL, needK, Presentation.lookupRule?, argumentsValidAt,
+  simp [instantiateRule?, validated, wireDefinition, wireCalculus, wireLanguage, axJ,
+    upK, pairL, needK, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchemas?, instantiateSchema?,
     instantiateSchemasAt?, instantiateSchemaAt?, judgJ, termA]
 
 private theorem upK_instantiates :
     instantiateRule? validated ⟨⟨"wire-up-k"⟩, []⟩ =
       some ([judgJ termA], judgK termA) := by
-  simp [instantiateRule?, validated, wirePresentation, wireCalculus, wireLanguage, axJ,
-    upK, pairL, needK, Presentation.lookupRule?, argumentsValidAt,
+  simp [instantiateRule?, validated, wireDefinition, wireCalculus, wireLanguage, axJ,
+    upK, pairL, needK, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchemas?, instantiateSchema?,
     instantiateSchemasAt?, instantiateSchemaAt?, judgJ, judgK, termA]
 
 private theorem pairL_instantiates :
     instantiateRule? validated ⟨⟨"wire-pair-l"⟩, []⟩ =
       some ([judgJ termA, judgK termA], judgL termA termA) := by
-  simp [instantiateRule?, validated, wirePresentation, wireCalculus, wireLanguage, axJ,
-    upK, pairL, needK, Presentation.lookupRule?, argumentsValidAt,
+  simp [instantiateRule?, validated, wireDefinition, wireCalculus, wireLanguage, axJ,
+    upK, pairL, needK, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchemas?, instantiateSchema?,
     instantiateSchemasAt?, instantiateSchemaAt?, judgJ, judgK, judgL, termA]
 
@@ -175,8 +175,8 @@ theorem unknown_rule_rejected :
   simp [checkWireArticle, wireArticleVersion, checkOpenDAGBlocks,
     expandOpenDAGBlocks?, checkOpenDAGBlocks?, checkOpenDAGNodes?,
     checkOpenDAGNode?, findOpenDAGEntry?, instantiateRule?, validated,
-    wirePresentation, wireCalculus, wireLanguage, axJ, upK, pairL, needK,
-    Presentation.lookupRule?]
+    wireDefinition, wireCalculus, wireLanguage, axJ, upK, pairL, needK,
+    CalculusLanguageDef.lookupRule?]
 
 /-- Non-ground rule-instance arguments reject. -/
 theorem malformed_argument_rejected :
@@ -186,8 +186,8 @@ theorem malformed_argument_rejected :
   simp [checkWireArticle, wireArticleVersion, checkOpenDAGBlocks,
     expandOpenDAGBlocks?, checkOpenDAGBlocks?, checkOpenDAGNodes?,
     checkOpenDAGNode?, findOpenDAGEntry?, instantiateRule?, validated,
-    wirePresentation, wireCalculus, wireLanguage, axJ, upK, pairL, needK,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    wireDefinition, wireCalculus, wireLanguage, axJ, upK, pairL, needK,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     Pattern.isGroundAt]
 
 /-- Duplicate node identifiers reject. -/
@@ -307,7 +307,7 @@ theorem tampered_rendering_rejected :
   rw [checkWireTerm_encodeArticle]
   exact version_tamper_rejected
 
-/-! ## Conservative presentation evolution -/
+/-! ## Conservative definition evolution -/
 
 private def extraJ : RuleSchema :=
   { id := ⟨"wire-extra-j"⟩
@@ -322,26 +322,26 @@ private def extendedCalculus :
     Mettapedia.GSLT.LanguageDef.InferenceExtension.ProofCalculus :=
   { wireCalculus with rules := wireCalculus.rules ++ [extraJ] }
 
-private def extendedPresentation : Presentation :=
-  { language := extendedLanguage, calculus := extendedCalculus }
+private def extendedDefinition : CalculusLanguageDef :=
+  CalculusLanguageDef.extend extendedLanguage extendedCalculus
 
 private theorem extended_validate :
-    extendedPresentation.language.validate = [] := by
+    extendedDefinition.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-    simp [extendedPresentation, extendedLanguage, wireLanguage, wireType,
+    simp [extendedDefinition, extendedLanguage, wireLanguage, wireType,
       wireA, LanguageDef.typeNames, TermParam.typeExpr, TypeDecl.plain]
 
-private theorem extended_valid : extendedPresentation.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+private theorem extended_valid : extendedDefinition.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [extended_validate]
-  simp [extendedPresentation, extendedCalculus, extendedLanguage,
+  simp [extendedDefinition, extendedCalculus, extendedLanguage,
     wireCalculus, wireLanguage, wireType, wireA,
     axJ, upK, pairL, needK, extraJ, termA,
-    judgJ, judgK, judgL, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    judgJ, judgK, judgL, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -349,11 +349,11 @@ private theorem extended_valid : extendedPresentation.isValidV2 = true := by
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
-private def extendedValidated : ValidatedPresentation :=
-  ⟨extendedPresentation, extended_valid⟩
+private def extendedValidated : ValidatedCalculusLanguageDef :=
+  ⟨extendedDefinition, extended_valid⟩
 
 private theorem base_refines_extension :
     RuleLookupRefines validated extendedValidated := by
@@ -374,10 +374,10 @@ private def extraArticle : WireArticle :=
 private theorem extra_rule_instantiates :
     instantiateRule? extendedValidated ⟨⟨"wire-extra-j"⟩, []⟩ =
       some ([], judgJ termA) := by
-  simp [instantiateRule?, extendedValidated, extendedPresentation,
+  simp [instantiateRule?, extendedValidated, extendedDefinition,
     extendedCalculus, wireCalculus,
     extendedLanguage, wireLanguage, axJ, upK, pairL, needK, extraJ,
-    Presentation.lookupRule?, argumentsValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchemas?, instantiateSchema?,
     instantiateSchemasAt?, instantiateSchemaAt?, judgJ, termA]
 
@@ -395,9 +395,9 @@ theorem new_article_does_not_transport_backward :
   · simp [checkWireArticle, extraArticle, wireArticleVersion,
       checkOpenDAGBlocks, expandOpenDAGBlocks?, checkOpenDAGBlocks?,
       checkOpenDAGNodes?, checkOpenDAGNode?, findOpenDAGEntry?,
-      instantiateRule?, validated, wirePresentation, wireCalculus,
+      instantiateRule?, validated, wireDefinition, wireCalculus,
       wireLanguage, axJ, upK,
-      pairL, needK, Presentation.lookupRule?, judgJ, termA]
+      pairL, needK, CalculusLanguageDef.lookupRule?, judgJ, termA]
 
 /-! ## Reviewer finding: unreachable nodes are accepted
 
@@ -470,7 +470,7 @@ theorem rooted_checker_separates_dead_node :
   · simp [checkRootedArticle, article_accepted, goodArticle_rooted]
   · simp [checkRootedArticle, deadNodeArticle_not_rooted]
 
-/-- Local rule agreement in action: extending the presentation with a rule
+/-- Local rule agreement in action: extending the definition with a rule
 the article never cites cannot change its acceptance, in either direction.
 This is the property a large library needs — the earlier whole-table
 transport says nothing once the table grows. -/

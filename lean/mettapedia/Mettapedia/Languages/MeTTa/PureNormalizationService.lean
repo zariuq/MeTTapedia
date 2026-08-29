@@ -1,6 +1,6 @@
 import Mettapedia.Languages.MeTTa.PureCheckingService
-import Mettapedia.Languages.MeTTa.PureKernel.DefEq
-import Mettapedia.Languages.MeTTa.PureKernel.Parallel
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.DefEq
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.Parallel
 
 /-!
 # Pure Canonicalization Service
@@ -16,13 +16,13 @@ stepper, but it is not the same thing as a final executable normal form.
 
 namespace Mettapedia.Languages.MeTTa.ElaboratedCore
 
-open Mettapedia.Languages.MeTTa.PureKernel
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.Reduction
-open Mettapedia.Languages.MeTTa.PureKernel.Confluence
-open Mettapedia.Languages.MeTTa.PureKernel.Parallel
-open Mettapedia.Languages.MeTTa.PureKernel.Typing
-open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Reduction
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Confluence
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Parallel
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Typing
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
 
 structure CanonicalClosedPureTerm where
   input : PureTm 0

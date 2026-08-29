@@ -183,7 +183,7 @@ load-bearing facts together: an independent source-rule derivation, admission
 of the exact GSLT package, a native derivation in the generated presentation,
 and exact recovery of the submitted proof term. -/
 structure HOLLightAnchorCertificate
-    (derivation : Derivation holLightAdmittedSource.presentation holLightGoal) :
+    (derivation : Derivation holLightAdmittedSource.definition holLightGoal) :
     Prop where
   sourceDerivation :
     Nonempty (HOLLightSource.Derives [propositionP] propositionP)
@@ -196,7 +196,7 @@ structure HOLLightAnchorCertificate
 
 /-- Exact checked anchor for the selected HOL Light source fragment. -/
 theorem holLight_checked_native_anchor :
-    ∃ derivation : Derivation holLightAdmittedSource.presentation holLightGoal,
+    ∃ derivation : Derivation holLightAdmittedSource.definition holLightGoal,
       HOLLightAnchorCertificate derivation := by
   rcases holLightEqMpProof_exact_derivation with ⟨derivation, herasure⟩
   exact
@@ -209,7 +209,7 @@ theorem holLight_checked_native_anchor :
 /-- HOL4 receives its own certificate because its hypothesis discipline and
 primitive rules are not identified with HOL Light's without a bridge theorem. -/
 structure HOL4AnchorCertificate
-    (derivation : Derivation hol4AdmittedSource.presentation hol4Goal) : Prop where
+    (derivation : Derivation hol4AdmittedSource.definition hol4Goal) : Prop where
   sourceDerivation :
     Nonempty
       (HOL4Source.Derives ∅ (.implication propositionP propositionP))
@@ -222,7 +222,7 @@ structure HOL4AnchorCertificate
 
 /-- Exact checked anchor for the selected HOL4 source fragment. -/
 theorem hol4_checked_native_anchor :
-    ∃ derivation : Derivation hol4AdmittedSource.presentation hol4Goal,
+    ∃ derivation : Derivation hol4AdmittedSource.definition hol4Goal,
       HOL4AnchorCertificate derivation := by
   rcases hol4DischProof_exact_derivation with ⟨derivation, herasure⟩
   exact

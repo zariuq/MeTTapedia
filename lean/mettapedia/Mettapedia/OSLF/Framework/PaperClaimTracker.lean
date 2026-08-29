@@ -70,7 +70,7 @@ def paperClaimList : List PaperClaim :=
     "dependent_parametric_generated_type_system_extension", .proven⟩
   -- Native Type Theory paper (Native_Type_Theory.pdf), OSLF-facing subset
   , ⟨"NTT.pdf", "§3", "Native type = (sort, predicate) pair",
-    "NativeTypeOf / NatType / NatTypeFiber", .proven⟩
+    "NativeTypeOf / NativeType / NativeTypeFiber", .proven⟩
   , ⟨"NTT.pdf", "§3-§5 (endpoint subset)", "Full presheaf Grothendieck category endpoint",
     "fullPresheafGrothendieckCategory", .proven⟩
   , ⟨"NTT.pdf", "§3-§5 (endpoint subset)", "Scoped ↔ full presheaf comparison endpoint",
@@ -141,19 +141,19 @@ theorem fullNTTParity_closed :
 #check @Mettapedia.OSLF.Framework.GeneratedTyping.dependent_parametric_generated_type_system_extension
 
 -- Native Type Theory
-#check @Mettapedia.OSLF.NativeType.NatTypeFiber
-#check @Mettapedia.OSLF.NativeType.fullPresheafGrothendieckCategory
-#check @Mettapedia.OSLF.NativeType.scoped_full_scoped_obj_roundtrip
-#check @Mettapedia.OSLF.NativeType.full_route_restriction_equivalence_package
+#check @Mettapedia.OSLF.PresheafNativeType.NativeTypeFiber
+#check @Mettapedia.OSLF.PresheafNativeType.fullPresheafGrothendieckCategory
+#check @Mettapedia.OSLF.PresheafNativeType.scoped_full_scoped_obj_roundtrip
+#check @Mettapedia.OSLF.PresheafNativeType.full_route_restriction_equivalence_package
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_full_internal_logic_bridge_package
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_rulePack
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_rulePack
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_prop12
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_prop12_pack
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piOmega_translation_endpoint
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piSigmaOmegaProp_translation_endpoint
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piProp_colax_rules
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piSigmaProp_colax_rules
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piOmega_translation_endpoint
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piSigmaOmegaProp_translation_endpoint
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piProp_colax_rules
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piSigmaProp_colax_rules
 
 -- TOGL
 #check @Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing

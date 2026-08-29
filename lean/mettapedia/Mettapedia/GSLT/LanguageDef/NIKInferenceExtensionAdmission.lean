@@ -4,7 +4,7 @@ import Mettapedia.GSLT.LanguageDef.NIKIndexedExecutionAdmission
 /-!
 # NIK admission of proof-relevant inference extensions
 
-A learned presentation participates in NIK through two ordinary semantic
+A learned definition participates in NIK through two ordinary semantic
 refinement cells, not through a special learning authority:
 
 1. a validated extension transports every old derivation while preserving its
@@ -22,7 +22,7 @@ namespace Mettapedia.GSLT.LanguageDef.NIKInferenceExtensionAdmission
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.InferencePresentationExtension
+open Mettapedia.GSLT.LanguageDef.CalculusLanguageExtension
 open Mettapedia.GSLT.LanguageDef.InferenceProofRelevantSemanticExtension
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.NIKIndexedExecutionAdmission
@@ -33,50 +33,50 @@ universe uState uMeaning
 /-! ## Checked and interpreted proof states -/
 
 /-- A goal together with its exact checked derivation. -/
-structure CheckedState (presentation : ValidatedPresentation) where
+structure CheckedState (definition : ValidatedCalculusLanguageDef) where
   goal : Pattern
-  derivation : Derivation presentation goal
+  derivation : Derivation definition goal
 
 /-- The proof-artifact execution family relates checked states that expose the
 same indexed goal and exact raw proof.  It lives in `Type` so it can serve as a
 proof-relevant loose arrow while its equality fields remain propositions. -/
-structure CheckedExecutionEvidence {presentation : ValidatedPresentation}
-    (first last : CheckedState presentation) : Type where
+structure CheckedExecutionEvidence {definition : ValidatedCalculusLanguageDef}
+    (first last : CheckedState definition) : Type where
   goalEq : first.goal = last.goal
   eraseEq : first.derivation.erase = last.derivation.erase
 
 /-- Lift the small proof-artifact evidence into the state universe selected by
 the common indexed-execution doctrine. -/
-def CheckedExecution {presentation : ValidatedPresentation}
-    (first last : ULift.{uState} (CheckedState presentation)) : Type uState :=
+def CheckedExecution {definition : ValidatedCalculusLanguageDef}
+    (first last : ULift.{uState} (CheckedState definition)) : Type uState :=
   ULift (CheckedExecutionEvidence first.down last.down)
 
 /-- The observation is the exact raw proof at the source occurrence. -/
-def checkedObject (presentation : ValidatedPresentation) :
+def checkedObject (definition : ValidatedCalculusLanguageDef) :
     IndexedObservedOperationalObject.{uState, 0} RawProof where
   operational :=
-    { State := ULift.{uState} (CheckedState presentation)
+    { State := ULift.{uState} (CheckedState definition)
       Execution := CheckedExecution
       Meaning := fun _ => True }
   observe := fun {first} {_last} _ => some first.down.derivation.erase
 
 /-- Interpreted states retain the complete checked state; semantic evidence is
 additional structure, never a replacement for the proof program. -/
-structure InterpretedState (presentation : ValidatedPresentation)
+structure InterpretedState (definition : ValidatedCalculusLanguageDef)
     (Meaning : Pattern → Type uMeaning) where
-  checked : CheckedState presentation
+  checked : CheckedState definition
   evidence : Meaning checked.goal
 
-def InterpretedExecution {presentation : ValidatedPresentation}
+def InterpretedExecution {definition : ValidatedCalculusLanguageDef}
     {Meaning : Pattern → Type uMeaning}
-    (first last : InterpretedState presentation Meaning) : Type uMeaning :=
+    (first last : InterpretedState definition Meaning) : Type uMeaning :=
   ULift (CheckedExecutionEvidence first.checked last.checked)
 
-def interpretedObject (presentation : ValidatedPresentation)
+def interpretedObject (definition : ValidatedCalculusLanguageDef)
     (Meaning : Pattern → Type uMeaning) :
     IndexedObservedOperationalObject.{uMeaning, 0} RawProof where
   operational :=
-    { State := InterpretedState presentation Meaning
+    { State := InterpretedState definition Meaning
       Execution := InterpretedExecution
       Meaning := fun _ => True }
   observe := fun {first} {_last} _ => some first.checked.derivation.erase
@@ -85,26 +85,26 @@ def interpretedObject (presentation : ValidatedPresentation)
 
 /-- Validated extension transports a checked state without changing its goal
 or raw proof artifact. -/
-def transportState {base : ValidatedPresentation}
-    (extension : ValidatedExtension base) :
+def transportState {base : ValidatedCalculusLanguageDef}
+    (extension : ValidatedCalculusLanguageExtension base) :
     CheckedState base → CheckedState extension.target
   | ⟨goal, derivation⟩ => ⟨goal, extension.transport derivation⟩
 
-@[simp] theorem transportState_goal {base : ValidatedPresentation}
-    (extension : ValidatedExtension base) (state : CheckedState base) :
+@[simp] theorem transportState_goal {base : ValidatedCalculusLanguageDef}
+    (extension : ValidatedCalculusLanguageExtension base) (state : CheckedState base) :
     (transportState extension state).goal = state.goal :=
   rfl
 
-@[simp] theorem transportState_erase {base : ValidatedPresentation}
-    (extension : ValidatedExtension base) (state : CheckedState base) :
+@[simp] theorem transportState_erase {base : ValidatedCalculusLanguageDef}
+    (extension : ValidatedCalculusLanguageExtension base) (state : CheckedState base) :
     (transportState extension state).derivation.erase =
       state.derivation.erase :=
   Derivation.erase_transport extension.refines state.derivation
 
-/-- The proof-preserving presentation extension is an observation-preserving
+/-- The proof-preserving definition extension is an observation-preserving
 indexed refinement. -/
-def transportRefinement {base : ValidatedPresentation}
-    (extension : ValidatedExtension base) :
+def transportRefinement {base : ValidatedCalculusLanguageDef}
+    (extension : ValidatedCalculusLanguageExtension base) :
     IndexedObservedRefinement (checkedObject base)
       (checkedObject extension.target) where
   refinement :=
@@ -124,7 +124,7 @@ def transportRefinement {base : ValidatedPresentation}
 /-- Proof-relevant interpretation adds semantic evidence while preserving the
 exact checked derivation. -/
 noncomputable def interpretState
-    {base : ValidatedPresentation} {extension : ValidatedExtension base}
+    {base : ValidatedCalculusLanguageDef} {extension : ValidatedCalculusLanguageExtension base}
     {Meaning : Pattern → Type uMeaning}
     (semantics : SemanticExtension base extension Meaning) :
     CheckedState extension.target →
@@ -133,7 +133,7 @@ noncomputable def interpretState
       ⟨state, semantics.interpret state.derivation⟩
 
 @[simp] theorem interpretState_checked
-    {base : ValidatedPresentation} {extension : ValidatedExtension base}
+    {base : ValidatedCalculusLanguageDef} {extension : ValidatedCalculusLanguageExtension base}
     {Meaning : Pattern → Type uMeaning}
     (semantics : SemanticExtension base extension Meaning)
     (state : CheckedState extension.target) :
@@ -143,7 +143,7 @@ noncomputable def interpretState
 /-- The proof-relevant semantic interpretation is an observation-preserving
 indexed refinement. -/
 noncomputable def interpretRefinement
-    {base : ValidatedPresentation} {extension : ValidatedExtension base}
+    {base : ValidatedCalculusLanguageDef} {extension : ValidatedCalculusLanguageExtension base}
     {Meaning : Pattern → Type uMeaning}
     (semantics : SemanticExtension base extension Meaning) :
     IndexedObservedRefinement (checkedObject extension.target)
@@ -156,15 +156,15 @@ noncomputable def interpretRefinement
 
 /-! ## Revision-indexed admission and composition -/
 
-def admitTransportAt {base : ValidatedPresentation}
-    (extension : ValidatedExtension base)
+def admitTransportAt {base : ValidatedCalculusLanguageDef}
+    (extension : ValidatedCalculusLanguageExtension base)
     (dependencies : DependencySystem) (revision : dependencies.Revision) :
     IndexedObservedAdmittedAt dependencies revision
       (checkedObject base) (checkedObject extension.target) where
   refinement := transportRefinement extension
 
 noncomputable def admitInterpretationAt
-    {base : ValidatedPresentation} {extension : ValidatedExtension base}
+    {base : ValidatedCalculusLanguageDef} {extension : ValidatedCalculusLanguageExtension base}
     {Meaning : Pattern → Type uMeaning}
     (semantics : SemanticExtension base extension Meaning)
     (dependencies : DependencySystem) (revision : dependencies.Revision) :
@@ -176,7 +176,7 @@ noncomputable def admitInterpretationAt
 /-- Extensions validated at different raw revisions compose only after both
 dependency views agree with one common current revision. -/
 noncomputable def admitCompositeAtCommonCurrent
-    {base : ValidatedPresentation} {extension : ValidatedExtension base}
+    {base : ValidatedCalculusLanguageDef} {extension : ValidatedCalculusLanguageExtension base}
     {Meaning : Pattern → Type uMeaning}
     (semantics : SemanticExtension base extension Meaning)
     (dependencies : DependencySystem)
@@ -193,7 +193,7 @@ noncomputable def admitCompositeAtCommonCurrent
     alignment
 
 noncomputable def activateComposite
-    {base : ValidatedPresentation} {extension : ValidatedExtension base}
+    {base : ValidatedCalculusLanguageDef} {extension : ValidatedCalculusLanguageExtension base}
     {Meaning : Pattern → Type uMeaning}
     (semantics : SemanticExtension base extension Meaning)
     (dependencies : DependencySystem)
@@ -209,7 +209,7 @@ noncomputable def activateComposite
 /-- Active composition retains the original goal, the exact old raw proof,
 and a target semantic inhabitant. -/
 theorem activeComposite_contract
-    {base : ValidatedPresentation} {extension : ValidatedExtension base}
+    {base : ValidatedCalculusLanguageDef} {extension : ValidatedCalculusLanguageExtension base}
     {Meaning : Pattern → Type uMeaning}
     (semantics : SemanticExtension base extension Meaning)
     (dependencies : DependencySystem)
@@ -238,9 +238,9 @@ theorem activeComposite_contract
 remain inhabited.  Admission adds a realization; its absence does not refute
 the source proof. -/
 theorem missing_admission_preserves_checked_state
-    {presentation : ValidatedPresentation}
-    (state : CheckedState presentation) :
-    Nonempty (CheckedState presentation) :=
+    {definition : ValidatedCalculusLanguageDef}
+    (state : CheckedState definition) :
+    Nonempty (CheckedState definition) :=
   ⟨state⟩
 
 #print axioms transportRefinement

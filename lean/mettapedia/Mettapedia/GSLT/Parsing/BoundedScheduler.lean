@@ -832,7 +832,7 @@ theorem compiledDerivation_eventually_scheduled
   exact ⟨fuel, candidate, member, stopEq, treeEq, replay⟩
 
 theorem sourceDerivation_eventually_scheduled
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint} {tree : ParseTree}
     (derivation : SourceDerivesAt presentation input presentation.start
       0 input.length tree) :
@@ -858,7 +858,7 @@ def scheduleForest (grammar : GuardCorrespondence.CompiledGrammar)
     ((scheduleRoot grammar input fuel).map fun candidate => candidate.certificate)
 
 theorem sourceDerivation_hasScheduledPackedWitness
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint} {tree : ParseTree}
     (derivation : SourceDerivesAt presentation input presentation.start
       0 input.length tree) :
@@ -910,7 +910,7 @@ theorem bounded_ambiguity_agreement
   rw [bounded_result_set_agreement]
 
 def BoundedComplete (forest : Forest)
-    (presentation : GuardCorrespondence.SourcePresentation)
+    (presentation : GuardCorrespondence.SourceDefinition)
     (input : List Codepoint) (fuel : Nat) : Prop :=
   ∀ tree,
     DerivesWithin (GuardCorrespondence.compile presentation) input fuel
@@ -918,7 +918,7 @@ def BoundedComplete (forest : Forest)
     ∃ certificate, PackedReplays forest presentation input certificate tree
 
 theorem scheduleForest_bounded_complete
-    (presentation : GuardCorrespondence.SourcePresentation)
+    (presentation : GuardCorrespondence.SourceDefinition)
     (input : List Codepoint) (fuel : Nat) :
     BoundedComplete
       (scheduleForest (GuardCorrespondence.compile presentation) input fuel)
@@ -941,7 +941,7 @@ theorem scheduleForest_bounded_complete
 
 /-! ## Executable scheduler controls -/
 
-def schedulerToyPresentation : GuardCorrespondence.SourcePresentation :=
+def schedulerToyPresentation : GuardCorrespondence.SourceDefinition :=
   { start := "start"
     rules := [
       { sourceRule := "left", category := "start",
@@ -972,7 +972,7 @@ theorem toyScheduleForest_retainsAlternatives :
     (scheduleForest schedulerToyGrammar [97] 1).families.length = 2 := by
   decide
 
-def leftRecursivePresentation : GuardCorrespondence.SourcePresentation :=
+def leftRecursivePresentation : GuardCorrespondence.SourceDefinition :=
   { start := "start"
     rules := [
       { sourceRule := "grow", category := "start",

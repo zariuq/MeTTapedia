@@ -7,7 +7,7 @@ import Mettapedia.OSLF.MeTTaIL.Syntax
 
 Judgment declarations, inference-rule schemas, and an optional rooted
 conversion interface are not fields of the term language.  They form an
-authored proof-presentation layer over it.
+authored proof-definition layer over it.
 
 This module gives that layer its own GSLT.  The calculus syntax includes one
 piece of genuine sugar, `axiom`, whose GSLT rewrite expands it to an ordinary
@@ -27,7 +27,7 @@ open Mettapedia.GSLT.Core.NonFactorization
 open Mettapedia.GSLT.LanguageDef.Extension
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
-/-- The proof-presentation payload attached to a term language. -/
+/-- The proof-definition payload attached to a term language. -/
 structure ProofCalculus where
   judgments : List JudgmentDecl := []
   rules : List RuleSchema := []
@@ -36,7 +36,7 @@ deriving Repr, DecidableEq
 
 namespace ProofCalculus
 
-/-- Empty proof presentation. -/
+/-- Empty proof definition. -/
 def empty : ProofCalculus := {}
 
 /-- Append independent declarations, failing when both sides claim a rooted
@@ -348,14 +348,14 @@ def decodeConversion (code : ConversionSyntax) : ConversionDecl :=
   cases code
   rfl
 
-/-- Canonical declarations of the proof-presentation language. -/
+/-- Canonical declarations of the proof-definition language. -/
 inductive CanonicalDeclaration where
   | judgment (declaration : JudgmentSyntax)
   | rule (schema : RuleSchemaSyntax)
   | conversion (declaration : ConversionSyntax)
 deriving Repr
 
-/-- Atomic syntax of the proof-presentation language.  `axiom` is syntax sugar
+/-- Atomic syntax of the proof-definition language.  `axiom` is syntax sugar
 for an ordinary rule with no metavariables, premises, or side conditions. -/
 inductive CalculusDeclarationSyntax where
   | canonical (declaration : CanonicalDeclaration)

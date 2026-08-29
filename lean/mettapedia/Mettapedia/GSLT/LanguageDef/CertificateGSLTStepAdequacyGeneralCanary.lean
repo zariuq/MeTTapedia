@@ -11,7 +11,7 @@ general adequacy theorem** — not through a hand-built fixture proof.
 Negative side, one compiled counterexample per fragment gate:
 
 * **modedness** — a rule whose right side reads an unbound metavariable is
-  rejected by the gate; its generated presentation proves a ground step the
+  rejected by the gate; its generated definition proves a ground step the
   language cannot take (soundness would fail);
 * **explicit substitution** — a rule whose right side is a `.subst` node is
   rejected by the gate; `applyBindings` evaluates the node while schema
@@ -100,7 +100,7 @@ private theorem pairAdequate :
     patternsMetavariableOccurrencesAt, termUnit, termThunkIdentity, termPair]
 
 private def directCanary : DirectTraceLanguage :=
-  ⟨pairLanguage, directTracePresentable_of_adequate pairAdequate⟩
+  ⟨pairLanguage, directTraceSupported_of_adequate pairAdequate⟩
 
 private theorem mkId_spelling :
     ("step-rewrite-" ++ "mk" : String) = "step-rewrite-mk" := rfl
@@ -109,25 +109,25 @@ private theorem pairCongId_spelling :
     ("step-rewrite-" ++ "pair-cong" : String) = "step-rewrite-pair-cong" := rfl
 
 private theorem canary_validate :
-    (stepPresentation directCanary).language.validate = [] := by
+    (stepTraceDefinition directCanary).toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-    simp [stepPresentation, directCanary, pairLanguage, genType, genUnit,
+    simp [stepTraceDefinition, directCanary, pairLanguage, genType, genUnit,
       genThunk, genPair, LanguageDef.typeNames, TermParam.typeExpr,
       TypeExpr.baseNames, TypeDecl.plain]
 
 private theorem canary_valid :
-    (stepPresentation directCanary).isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+    (stepTraceDefinition directCanary).isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [canary_validate]
-  simp [stepPresentation, directCanary, pairLanguage, genType, genUnit,
+  simp [stepTraceDefinition, directCanary, pairLanguage, genType, genUnit,
     genThunk, genPair, mkRule, pairCongRule, rewriteStepRule,
     rewritePremiseJudgments, stepReflRule, stepTransRule, termUnit,
     termThunkIdentity, termPair, mkId_spelling, pairCongId_spelling,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -135,7 +135,7 @@ private theorem canary_valid :
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
 /-! ## Declarative steps -/
@@ -240,7 +240,7 @@ theorem pair_trace_certificate :
   (directTrace_steps_adequacy directCanary pairAdequate canary_valid
     wellFormed_pairUnit).mpr (Relation.ReflTransGen.single pair_langReduces)
 
-/-- Soundness concretely: the generated presentation cannot certify a step
+/-- Soundness concretely: the generated definition cannot certify a step
 the language does not take. -/
 theorem no_unit_to_pair_certificate :
     ¬ Nonempty (Derivation (generatedValidated directCanary canary_valid)
@@ -294,7 +294,7 @@ theorem orphan_gate_rejects :
     patternsMetavariableOccurrencesAt, termUnit]
 
 private theorem orphanPresentable :
-    LanguageDef.directTracePresentable orphanLanguage = true := rfl
+    LanguageDef.directTraceSupported orphanLanguage = true := rfl
 
 private def orphanDirect : DirectTraceLanguage :=
   ⟨orphanLanguage, orphanPresentable⟩
@@ -303,24 +303,24 @@ private theorem orphanId_spelling :
     ("step-rewrite-" ++ "orphan" : String) = "step-rewrite-orphan" := rfl
 
 private theorem orphan_validate :
-    (stepPresentation orphanDirect).language.validate = [] := by
+    (stepTraceDefinition orphanDirect).toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-    simp [stepPresentation, orphanDirect, orphanLanguage, genType, genUnit,
+    simp [stepTraceDefinition, orphanDirect, orphanLanguage, genType, genUnit,
       genThunk, genPair, LanguageDef.typeNames, TermParam.typeExpr,
       TypeExpr.baseNames, TypeDecl.plain]
 
 private theorem orphan_valid :
-    (stepPresentation orphanDirect).isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+    (stepTraceDefinition orphanDirect).isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [orphan_validate]
-  simp [stepPresentation, orphanDirect, orphanLanguage, genType, genUnit,
+  simp [stepTraceDefinition, orphanDirect, orphanLanguage, genType, genUnit,
     genThunk, genPair, orphanRule, rewriteStepRule, rewritePremiseJudgments,
     stepReflRule, stepTransRule, termUnit, orphanId_spelling,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -328,16 +328,16 @@ private theorem orphan_valid :
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
 private theorem orphan_instantiates :
     instantiateRule? (generatedValidated orphanDirect orphan_valid)
         ⟨⟨"step-rewrite-orphan"⟩, [termUnit]⟩ =
       some ([], stepJudgment termUnit termUnit) := by
-  simp [instantiateRule?, generatedValidated, stepPresentation, orphanDirect,
+  simp [instantiateRule?, generatedValidated, stepTraceDefinition, orphanDirect,
     orphanLanguage, orphanRule, rewriteStepRule, rewritePremiseJudgments,
-    stepReflRule, stepTransRule, orphanId_spelling, Presentation.lookupRule?,
+    stepReflRule, stepTransRule, orphanId_spelling, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, termUnit, lookupArgumentAt?,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, stepJudgment, RuleSchema.sideConditionsHold,
@@ -345,7 +345,7 @@ private theorem orphan_instantiates :
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList]
 
-/-- The generated presentation accepts a ground certificate for
+/-- The generated definition accepts a ground certificate for
 `unit → unit`. -/
 theorem orphan_certificate :
     Nonempty (Derivation (generatedValidated orphanDirect orphan_valid)
@@ -372,7 +372,7 @@ theorem orphan_no_step : ¬ langReduces orphanLanguage termUnit termUnit := by
           simp [orphanRule, termUnit, applyBindings] at applyEq
 
 /-- **Modedness is necessary**: an unmoded rule is gate-rejected, and its
-generated presentation certifies a ground step the language cannot take. -/
+generated definition certifies a ground step the language cannot take. -/
 theorem moded_gate_necessary :
     languageDirectTraceAdequate orphanLanguage = false ∧
     Nonempty (Derivation (generatedValidated orphanDirect orphan_valid)
@@ -405,7 +405,7 @@ theorem subst_gate_rejects :
     rewriteDirectTraceAdequate, patternHoleSkeleton, substTarget, termUnit]
 
 private theorem substPresentable :
-    LanguageDef.directTracePresentable substLanguage = true := rfl
+    LanguageDef.directTraceSupported substLanguage = true := rfl
 
 private def substDirect : DirectTraceLanguage :=
   ⟨substLanguage, substPresentable⟩
@@ -415,25 +415,25 @@ private theorem substId_spelling :
   rfl
 
 private theorem subst_validate :
-    (stepPresentation substDirect).language.validate = [] := by
+    (stepTraceDefinition substDirect).toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-    simp [stepPresentation, substDirect, substLanguage, genType, genUnit,
+    simp [stepTraceDefinition, substDirect, substLanguage, genType, genUnit,
       genThunk, genPair, LanguageDef.typeNames, TermParam.typeExpr,
       TypeExpr.baseNames, TypeDecl.plain]
 
 private theorem subst_valid :
-    (stepPresentation substDirect).isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+    (stepTraceDefinition substDirect).isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [subst_validate]
-  simp [stepPresentation, substDirect, substLanguage, genType, genUnit,
+  simp [stepTraceDefinition, substDirect, substLanguage, genType, genUnit,
     genThunk, genPair, substRule, substTarget, rewriteStepRule,
     rewritePremiseJudgments, stepReflRule, stepTransRule, termUnit,
     substId_spelling,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -441,17 +441,17 @@ private theorem subst_valid :
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
 private theorem subst_instantiates :
     instantiateRule? (generatedValidated substDirect subst_valid)
         ⟨⟨"step-rewrite-subst-step"⟩, []⟩ =
       some ([], stepJudgment termUnit substTarget) := by
-  simp [instantiateRule?, generatedValidated, stepPresentation, substDirect,
+  simp [instantiateRule?, generatedValidated, stepTraceDefinition, substDirect,
     substLanguage, substRule, substTarget, rewriteStepRule,
     rewritePremiseJudgments, stepReflRule, stepTransRule, substId_spelling,
-    Presentation.lookupRule?, argumentsValidAt, termUnit,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, termUnit,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, stepJudgment, RuleSchema.sideConditionsHold]
 
@@ -518,7 +518,7 @@ theorem bag_gate_rejects :
     rewriteDirectTraceAdequate, patternHoleSkeleton]
 
 private theorem bagPresentable :
-    LanguageDef.directTracePresentable bagLanguage = true := rfl
+    LanguageDef.directTraceSupported bagLanguage = true := rfl
 
 private def bagDirect : DirectTraceLanguage := ⟨bagLanguage, bagPresentable⟩
 
@@ -526,24 +526,24 @@ private theorem bagId_spelling :
     ("step-rewrite-" ++ "bag-pair" : String) = "step-rewrite-bag-pair" := rfl
 
 private theorem bag_validate :
-    (stepPresentation bagDirect).language.validate = [] := by
+    (stepTraceDefinition bagDirect).toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-    simp [stepPresentation, bagDirect, bagLanguage, genType, genUnit,
+    simp [stepTraceDefinition, bagDirect, bagLanguage, genType, genUnit,
       genThunk, genPair, LanguageDef.typeNames, TermParam.typeExpr,
       TypeExpr.baseNames, TypeDecl.plain]
 
 private theorem bag_valid :
-    (stepPresentation bagDirect).isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+    (stepTraceDefinition bagDirect).isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [bag_validate]
-  simp [stepPresentation, bagDirect, bagLanguage, genType, genUnit,
+  simp [stepTraceDefinition, bagDirect, bagLanguage, genType, genUnit,
     genThunk, genPair, bagRule, rewriteStepRule, rewritePremiseJudgments,
     stepReflRule, stepTransRule, termPair, bagId_spelling,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -551,7 +551,7 @@ private theorem bag_valid :
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
 /-- The language takes the permuted step: bag matching may bind `x` to the
@@ -599,7 +599,7 @@ theorem bag_swap_no_certificate :
         instantiateRule?_eq_some_iff_application.mpr application
       simp only [instantiateRule?, generatedValidated_fst] at executable
       cases lookup :
-          (stepPresentation bagDirect).lookupRule? ruleInstance.ruleId with
+          (stepTraceDefinition bagDirect).lookupRule? ruleInstance.ruleId with
       | none => simp [lookup] at executable
       | some rule =>
           simp only [lookup] at executable
@@ -691,7 +691,7 @@ theorem query_gate_rejects :
 theorem query_ofLanguage?_none :
     DirectTraceLanguage.ofLanguage? queryLanguage = none :=
   DirectTraceLanguage.ofLanguage?_eq_none_of_unsupported
-    (by simp [LanguageDef.directTracePresentable,
-      RewriteRule.directTracePresentable, queryLanguage, queryRule])
+    (by simp [LanguageDef.directTraceSupported,
+      RewriteRule.directTraceSupported, queryLanguage, queryRule])
 
 end Mettapedia.GSLT.LanguageDef.CertificateGSLT.StepAdequacyGeneralCanary

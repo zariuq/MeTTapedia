@@ -998,19 +998,28 @@ def operationalPointIdentity (model : Model) :
 
 /-! ## Certificate-GSLT authoring as a hosted service -/
 
-/-- Runtime terms and proof-calculus documents may coexist in one authored
-GSLT document.  The proof-calculus summand retains its own equations and
-rewrites; it is not a field of Prime's evaluator. -/
+/-- Runtime terms and proof-calculus declarations coexist in one flat authored
+GSLT document.  The free-document closure is taken once, after the generator
+theories are combined, so a calculus document is never wrapped as one atom of
+another document. -/
 def proofHostingGSLT (model : Model) : GSLT :=
   (GSLT.compositeDocuments (kernelGSLT model)
-    canonicalCalculusAuthoringGSLT.authoring.theory).theory
+    canonicalCalculusAuthoringGSLT.generators).theory
+
+/-- Carrier canary: hosting has one document layer over runtime terms and
+individual authored calculus-declaration syntax. -/
+theorem proofHostingGSLT_term_is_flat_document (model : Model) :
+    (proofHostingGSLT model).Term =
+      List ((kernelGSLT model).Term ⊕
+        canonicalCalculusAuthoringGSLT.generators.Term) :=
+  rfl
 
 def runtimeHostingEmbedding (model : Model) :
     GSLT.Embedding (kernelGSLT model) (proofHostingGSLT model) :=
   GSLT.compositeDocumentsLeft _ _
 
 def calculusHostingEmbedding (model : Model) :
-    GSLT.Embedding canonicalCalculusAuthoringGSLT.authoring.theory
+    GSLT.Embedding canonicalCalculusAuthoringGSLT.generators
       (proofHostingGSLT model) :=
   GSLT.compositeDocumentsRight _ _
 

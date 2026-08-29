@@ -1,5 +1,5 @@
 import Mettapedia.Languages.Lean.Lean4LeanEnvironmentGrowth
-import Mettapedia.GSLT.Core.ProofRelevantPresentation
+import Mettapedia.GSLT.Core.ProofRelevantGSLT
 import Mettapedia.GSLT.Core.GSLTConstructions
 import Mettapedia.OSLF.Framework.IndexedModalFunctor
 import Mettapedia.OSLF.Framework.OSLFCertificateGSLTAuthority
@@ -30,7 +30,7 @@ namespace Mettapedia.Languages.Lean.Lean4LeanDirectedReduction
 open Lean4Lean
 open Mettapedia.GSLT
 open Mettapedia.GSLT.IndexedOperational
-open Mettapedia.GSLT.ProofRelevantPresentation
+open Mettapedia.GSLT.ProofRelevant
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
 open Mettapedia.OSLF.Framework.IndexedModalFunctor
@@ -222,18 +222,18 @@ def coreRawHeadGSLT (environment : VEnv) (universeParameters : Nat) : GSLT where
   Iff.rfl
 
 /-- Exact raw event fibres present the evaluator-facing GSLT. -/
-def coreRawHeadStepPresentation (environment : VEnv) (universeParameters : Nat) :
-    StepPresentation (coreRawHeadGSLT environment universeParameters) where
+def coreRawHeadStepEvidence (environment : VEnv) (universeParameters : Nat) :
+    StepEvidence (coreRawHeadGSLT environment universeParameters) where
   Evidence := CoreRawHeadEvent environment universeParameters
   erases_iff := by
     intro source target
     rfl
 
 /-- The evaluator-facing core bundled with raw event occurrences. -/
-def coreRawHeadPresentedGSLT (environment : VEnv) (universeParameters : Nat) :
-    PresentedGSLT where
+def coreRawHeadProofRelevantGSLT (environment : VEnv) (universeParameters : Nat) :
+    ProofRelevantGSLT where
   theory := coreRawHeadGSLT environment universeParameters
-  steps := coreRawHeadStepPresentation environment universeParameters
+  steps := coreRawHeadStepEvidence environment universeParameters
 
 /-- The proposition-valued typed refinement obtained by forgetting exact
 typed-event identity.  Structural equations are syntactic equality; typed
@@ -264,9 +264,9 @@ def coreHeadGSLT (environment : VEnv) (universeParameters : Nat)
   Iff.rfl
 
 /-- The authored event fibres present exactly the extensional GSLT steps. -/
-def coreHeadStepPresentation (environment : VEnv) (universeParameters : Nat)
+def coreHeadStepEvidence (environment : VEnv) (universeParameters : Nat)
     (context : List VExpr) (expectedType : VExpr) :
-    StepPresentation
+    StepEvidence
       (coreHeadGSLT environment universeParameters context expectedType) where
   Evidence := CoreHeadEvent environment universeParameters context expectedType
   erases_iff := by
@@ -274,10 +274,10 @@ def coreHeadStepPresentation (environment : VEnv) (universeParameters : Nat)
     rfl
 
 /-- The directed core bundled with its proof-relevant event presentation. -/
-def coreHeadPresentedGSLT (environment : VEnv) (universeParameters : Nat)
-    (context : List VExpr) (expectedType : VExpr) : PresentedGSLT where
+def coreHeadProofRelevantGSLT (environment : VEnv) (universeParameters : Nat)
+    (context : List VExpr) (expectedType : VExpr) : ProofRelevantGSLT where
   theory := coreHeadGSLT environment universeParameters context expectedType
-  steps := coreHeadStepPresentation environment universeParameters context expectedType
+  steps := coreHeadStepEvidence environment universeParameters context expectedType
 
 /-- The typed operational refinement embeds into the evaluator-facing raw
 calculus by erasing only typing evidence. -/

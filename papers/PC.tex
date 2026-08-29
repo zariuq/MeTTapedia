@@ -2228,6 +2228,19 @@ direct-hit counts or the measured retrieval cascade.  The outstanding architectu
 question is therefore improved query-conditioned retrieval, followed by a focused test
 of the recurrent-PC interaction, not another broad factorial over unchanged retrieval.
 
+\needspace{9\baselineskip}
+For architectural context only, a later backpropagation-only control kept the full
+AC--NMT recurrent carrier and search budget fixed while replacing reverse-postfix output
+with TGAD preorder actions, structural state features, and a legality mask (with $1.03\%$
+more parameters).  Across three paired seeds this raised mean valid output from
+$95.16\%$ to $99.52\%$ and unique programs from $2{,}435$ to $2{,}746$, while mean
+distinct whole-OEIS coverage was essentially unchanged ($1{,}169$ versus $1{,}175$) and
+conditional coverage per thousand unique candidates declined ($480$ to $428$).  The
+new-sequence sets were nevertheless complementary: ordinary and TGAD unions contained
+$1{,}128$ and $1{,}175$ A-numbers, only $260$ shared, and $2{,}043$ combined.  This
+supports TGAD as a portfolio-capable structural view; because both arms used
+backpropagation, it supplies no evidence for or against predictive coding.
+
 \paragraph{A local-module pilot, recorded but not evidential.}
 A subsequent pilot applied local predictive coding to a $2{,}115$-parameter recurrent
 adapter---two width-$32$ states, two scalar couplings, four damped iterations---attached to

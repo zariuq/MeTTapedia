@@ -7,7 +7,7 @@ import Mettapedia.GSLT.LanguageDef.ExtensionGluing
 
 `TypeSystemGSLT` presents a term language and one proof calculus of twenty-one
 rules over five judgment forms.  This module rebuilds that calculus from four
-layers and recovers its admission from theirs, so the presentation is assembled
+layers and recovers its admission from theirs, so the language definition is assembled
 rather than asserted.
 
 The dependency structure is a genuine directed graph, not a chain:
@@ -50,6 +50,7 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTLayers
 
 open Mettapedia.GSLT
 open Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceExtension
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.ExtensionComposition
@@ -134,20 +135,20 @@ theorem accumulated_eq_assembled : accumulated = assembled := by
 
 /-! ## Admission, stage by stage
 
-Each stage reuses the receipt recipe of the authored presentation; only the
+Each stage reuses the receipt recipe of the authored definition; only the
 calculus under test changes. -/
 
 local macro "admissionSimp" : tactic =>
-  `(tactic| simp [mergeOf, ProofCalculus.empty, AdmittedOver,
+  `(tactic| simp [CalculusLanguageDef.extend, mergeOf, ProofCalculus.empty, AdmittedOver,
       unionLayer, consistencyLayer, valueTypingLayer, guardLayer,
-      Presentation.ruleIds, Presentation.judgmentSignatureValid,
-      Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-      Presentation.lookupJudgment?, RuleSchema.isValidIn,
-      RuleSchema.isValidV1,
+      CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+      CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+      CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
+      RuleSchema.isLocallyValid,
       RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
       patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
       patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-      Presentation.judgmentSchemaValid, fixedConstructorsValid,
+      CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
       fixedConstructorListsValid, languageHasConstructorArity,
       Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
       Pattern.hasCanonicalBinderMetadata,
@@ -170,8 +171,8 @@ private theorem languageValidate : language.validate = [] := language_validate
 /-- Union membership is admitted on its own. -/
 theorem union_admitted :
     AdmittedOver language .empty unionLayer := by
-  unfold AdmittedOver Presentation.isValidV2 Presentation.isValidV1
-  rw [show (Presentation.mk language (mergeOf .empty unionLayer)).language.validate
+  unfold AdmittedOver CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
+  rw [show (CalculusLanguageDef.extend language (mergeOf .empty unionLayer)).toLanguageDef.validate
       = [] from languageValidate]
   admissionSimp
   decide
@@ -179,8 +180,8 @@ theorem union_admitted :
 /-- Consistency is admitted once union membership is present. -/
 theorem consistency_admitted_over_union :
     AdmittedOver language unionLayer consistencyLayer := by
-  unfold AdmittedOver Presentation.isValidV2 Presentation.isValidV1
-  rw [show (Presentation.mk language (mergeOf unionLayer consistencyLayer)).language.validate
+  unfold AdmittedOver CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
+  rw [show (CalculusLanguageDef.extend language (mergeOf unionLayer consistencyLayer)).toLanguageDef.validate
       = [] from languageValidate]
   admissionSimp
   decide
@@ -190,8 +191,8 @@ alone: it does not need the consistency layer.  This is the branch in the
 dependency graph, proved rather than observed. -/
 theorem valueTyping_independent_of_consistency :
     AdmittedOver language unionLayer valueTypingLayer := by
-  unfold AdmittedOver Presentation.isValidV2 Presentation.isValidV1
-  rw [show (Presentation.mk language (mergeOf unionLayer valueTypingLayer)).language.validate
+  unfold AdmittedOver CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
+  rw [show (CalculusLanguageDef.extend language (mergeOf unionLayer valueTypingLayer)).toLanguageDef.validate
       = [] from languageValidate]
   admissionSimp
   decide
@@ -199,9 +200,9 @@ theorem valueTyping_independent_of_consistency :
 /-- Stage one: consistency and union membership together. -/
 theorem stageOne :
     AdmittedOver language .empty (mergeOf consistencyLayer unionLayer) := by
-  unfold AdmittedOver Presentation.isValidV2 Presentation.isValidV1
-  rw [show (Presentation.mk language
-      (mergeOf .empty (mergeOf consistencyLayer unionLayer))).language.validate
+  unfold AdmittedOver CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
+  rw [show (CalculusLanguageDef.extend language
+      (mergeOf .empty (mergeOf consistencyLayer unionLayer))).toLanguageDef.validate
       = [] from languageValidate]
   admissionSimp
   decide
@@ -209,9 +210,9 @@ theorem stageOne :
 /-- Stage two: value typing over what stage one accumulated. -/
 theorem stageTwo :
     AdmittedOver language (mergeOf consistencyLayer unionLayer) valueTypingLayer := by
-  unfold AdmittedOver Presentation.isValidV2 Presentation.isValidV1
-  rw [show (Presentation.mk language
-      (mergeOf (mergeOf consistencyLayer unionLayer) valueTypingLayer)).language.validate
+  unfold AdmittedOver CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
+  rw [show (CalculusLanguageDef.extend language
+      (mergeOf (mergeOf consistencyLayer unionLayer) valueTypingLayer)).toLanguageDef.validate
       = [] from languageValidate]
   admissionSimp
   decide
@@ -220,8 +221,10 @@ theorem stageTwo :
 theorem stageThree :
     AdmittedOver language
       (mergeOf (mergeOf consistencyLayer unionLayer) valueTypingLayer) guardLayer := by
-  unfold AdmittedOver Presentation.isValidV2 Presentation.isValidV1
-  rw [show (Presentation.mk language accumulated).language.validate
+  unfold AdmittedOver CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
+  rw [show (CalculusLanguageDef.extend language
+      (mergeOf (mergeOf (mergeOf consistencyLayer unionLayer) valueTypingLayer)
+        guardLayer)).toLanguageDef.validate
       = [] from languageValidate]
   admissionSimp
   decide
@@ -291,7 +294,7 @@ This is a use of the general class, not a restatement of the PeTTa validator. -/
 theorem accumulated_compositional :
     CompositionalAdmittedOver language .empty accumulated := by
   have baseMerge :
-      calculusAuthoringGSLT.merge .empty
+      calculusAuthoringGSLT.toCompositionalElaboration.merge .empty
           (mergeOf (mergeOf consistencyLayer unionLayer) valueTypingLayer) =
         some (mergeOf (mergeOf consistencyLayer unionLayer) valueTypingLayer) :=
     calculusAuthoringGSLT.toPartialMonoid.unit_op _
@@ -299,9 +302,12 @@ theorem accumulated_compositional :
     GSLT.ContextualAdmission.admittedOver_stack
       (calculusAdmission language) baseMerge stageThree_compositional
   have canonical := append_eq_mergeOf stageThree_compatible
-  change proofCalculusMonoid.op
+  change ProofCalculus.append?
       (mergeOf (mergeOf consistencyLayer unionLayer) valueTypingLayer)
       guardLayer = some combined at combinedMerge
+  change ProofCalculus.append?
+      (mergeOf (mergeOf consistencyLayer unionLayer) valueTypingLayer)
+      guardLayer = _ at canonical
   rw [canonical] at combinedMerge
   cases combinedMerge
   exact admitted
@@ -317,12 +323,12 @@ declare. -/
 theorem consistency_not_admitted_alone :
     ¬ AdmittedOver language .empty consistencyLayer := by
   intro admitted
-  unfold AdmittedOver Presentation.isValidV2 at admitted
+  unfold AdmittedOver CalculusLanguageDef.isValid at admitted
   simp only [Bool.and_eq_true] at admitted
   have rulesAdmitted := admitted.1.2
   have rulesFail :
-      (Presentation.mk language (mergeOf .empty consistencyLayer)).rules.all
-        (RuleSchema.isValidIn (Presentation.mk language (mergeOf .empty consistencyLayer)))
+      (CalculusLanguageDef.extend language (mergeOf .empty consistencyLayer)).rules.all
+        (RuleSchema.isValidIn (CalculusLanguageDef.extend language (mergeOf .empty consistencyLayer)))
         = false := by
     admissionSimp
   rw [rulesFail] at rulesAdmitted
@@ -333,12 +339,12 @@ declare. -/
 theorem guard_not_admitted_alone :
     ¬ AdmittedOver language .empty guardLayer := by
   intro admitted
-  unfold AdmittedOver Presentation.isValidV2 at admitted
+  unfold AdmittedOver CalculusLanguageDef.isValid at admitted
   simp only [Bool.and_eq_true] at admitted
   have rulesAdmitted := admitted.1.2
   have rulesFail :
-      (Presentation.mk language (mergeOf .empty guardLayer)).rules.all
-        (RuleSchema.isValidIn (Presentation.mk language (mergeOf .empty guardLayer)))
+      (CalculusLanguageDef.extend language (mergeOf .empty guardLayer)).rules.all
+        (RuleSchema.isValidIn (CalculusLanguageDef.extend language (mergeOf .empty guardLayer)))
         = false := by
     admissionSimp
   rw [rulesFail] at rulesAdmitted
@@ -346,10 +352,10 @@ theorem guard_not_admitted_alone :
 
 /-! ## The authored receipt, recovered from the layers -/
 
-/-- **The presentation's admission follows from the staged one.**  The original
+/-- **The language definition's admission follows from the staged one.**  The original
 receipt is not assumed here; it is rebuilt from four layers that were each
 admitted against what came before. -/
-theorem presentation_valid_from_layers : presentation.isValidV2 = true := by
+theorem definition_valid_from_layers : definition.isValid = true := by
   have staged := stageThree
   unfold AdmittedOver at staged
   rwa [show mergeOf (mergeOf (mergeOf consistencyLayer unionLayer) valueTypingLayer)
@@ -361,10 +367,10 @@ theorem presentation_valid_from_layers : presentation.isValidV2 = true := by
 /-- The staged admission receipt as a point of the canonical contextual
 calculus fibre. -/
 def admittedTypeSystem : AdmittedCalculusAt language :=
-  ⟨calculus, presentation_valid_from_layers⟩
+  ⟨calculus, definition_valid_from_layers⟩
 
-/-- Recovering a validated presentation from the admitted fibre gives the
-existing PeTTa presentation exactly. -/
+/-- Recovering a validated language from the admitted fibre gives the
+existing PeTTa definition exactly. -/
 theorem admittedTypeSystem_checked :
     admittedTypeSystem.checked language = checked := by
   apply Subtype.ext
@@ -392,24 +398,24 @@ theorem assembledSource_elaborates :
     ProofCalculus.append?, consistencyLayer, unionLayer, valueTypingLayer,
     guardLayer, calculus]
 
-/-- The authored document builds the exact live checker `Presentation`. -/
+/-- The authored document builds the exact live checker language. -/
 theorem assembledSource_definition :
-    elaborateDefinition? language assembledSource = some presentation := by
-  simp [elaborateDefinition?, assembledSource_elaborates, presentation]
+    elaborateDefinition? language assembledSource = some definition := by
+  simp [elaborateDefinition?, assembledSource_elaborates, definition]
 
 /-- The authored document passes admission as the live checked definition. -/
 theorem assembledSource_admitted :
     admit? language assembledSource = some checked := by
   unfold admit?
   rw [assembledSource_definition]
-  simp [Presentation.validateV2?, checked, presentation_valid]
+  simp [CalculusLanguageDef.validate?, checked, definition_valid]
 
 /-- **Flagship conservative-extension theorem.**  The composed authored GSLT
 preserves the exact PeTTa term language, elaborates to the exact live calculus,
 and reduces every derivability question to reachability in a genuine GSLT. -/
 theorem typeSystem_conservativeExtension (goals : GoalState) :
-    checked.1.erase = language ∧
-      elaborate assembledSource = some checked.1.calculus ∧
+    checked.1.toLanguageDef = language ∧
+      elaborate assembledSource = some checked.1.toCalculus ∧
       (Nonempty (DerivationList checked goals) ↔
         (proofSearchGSLT checked).MultiStep goals []) :=
   admitted_source_adequacy assembledSource_admitted goals

@@ -28,7 +28,7 @@ import Mettapedia.OSLF.Framework.MATTProvableNow
 import Mettapedia.OSLF.Framework.MATTClaimMap
 import Mettapedia.OSLF.Framework.FULLStatus
 import Mettapedia.OSLF.Framework.TypeSynthesis
-import Mettapedia.OSLF.Framework.RecursiveNativeType
+import Mettapedia.OSLF.StructuralModal.Recursive
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefDSL
 import Mettapedia.OSLF.Framework.GeneratedTyping
 import Mettapedia.OSLF.Framework.SynthesisBridge

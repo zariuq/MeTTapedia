@@ -264,15 +264,15 @@ theorem RuleExtraction.instantiatedPremises_eq_applyBindings
 
 /-- A source-rule binding in the supported fragment becomes an actual
 declarative application of the corresponding generated checker rule.  The
-lookup hypothesis pins the generated rule inside the validated presentation;
+lookup hypothesis pins the generated rule inside the validated definition;
 the argument-validity hypothesis is the checker's explicit closed-data
 boundary. -/
 theorem RuleExtraction.ruleApplicationOfBinding
     {profile : InferenceExtraction.EvidenceProfile}
     (extraction : InferenceExtraction.RuleExtraction profile)
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     {bindings : Bindings} {arguments : List Pattern}
-    (hlookup : presentation.1.lookupRule? extraction.schema.id =
+    (hlookup : definition.1.lookupRule? extraction.schema.id =
       some extraction.schema)
     (hvalid : argumentsValidAt extraction.schema.metavariables arguments = true)
     (hpremises : BindingSchemasFragment extraction.schema.metavariables
@@ -281,7 +281,7 @@ theorem RuleExtraction.ruleApplicationOfBinding
       extraction.schema.conclusion)
     (harguments : argumentsOfBindings? extraction.schema.metavariables bindings =
       some arguments) :
-    RuleApplication presentation
+    RuleApplication definition
       { ruleId := extraction.schema.id, arguments := arguments }
       (extraction.schema.premises.map (applyBindings bindings))
       (applyBindings bindings extraction.schema.conclusion) := by

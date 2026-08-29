@@ -11,6 +11,7 @@ semantic relations are defined independently of proof trees and rule names.
 namespace Mettapedia.Languages.Metamath.InferenceSideConditionsSemantics
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.Metamath.MMLean4Bridge
 open Mettapedia.Languages.Metamath.InferenceEncoding
@@ -125,21 +126,21 @@ private theorem InstantiatesAt.apply_head_eq
   rfl
 
 private theorem lookup_appendNilRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.append.nil") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.append.nil") =
       some appendNilRule := by
-  simp [validatedSidePresentation, sidePresentation, sideRules,
-    Presentation.lookupRule?, appendNilSchema, appendConsSchema, ruleId,
+  simp [validatedSideDefinition, sideDefinition, sideRules,
+    CalculusLanguageDef.lookupRule?, appendNilSchema, appendConsSchema, ruleId,
     formal, metavariable]
 
 private theorem lookup_appendConsRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.append.cons") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.append.cons") =
       some appendConsRule := by
-  simp [validatedSidePresentation, sidePresentation, sideRules,
-    Presentation.lookupRule?, appendNilSchema, appendConsSchema, ruleId,
+  simp [validatedSideDefinition, sideDefinition, sideRules,
+    CalculusLanguageDef.lookupRule?, appendNilSchema, appendConsSchema, ruleId,
     formal, metavariable]
 
 private theorem appendNil_instantiates (right : List RuntimeSym) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.append.nil", arguments := [EncodedBody right] } =
       some ([], append Builder.nil (EncodedBody right) (EncodedBody right)) := by
   simp [instantiateRule?, lookup_appendNilRule, appendNilRule_eq_schema,
@@ -150,7 +151,7 @@ private theorem appendNil_instantiates (right : List RuntimeSym) :
 
 private theorem appendCons_instantiates (symbol : RuntimeSym)
     (left right : List RuntimeSym) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.append.cons"
           arguments :=
             [ encodeSym symbol, EncodedBody left, EncodedBody right
@@ -167,7 +168,7 @@ private theorem appendCons_instantiates (symbol : RuntimeSym)
     appendHead, EncodedBody, encodeListWith]
 
 private theorem appendProof_checks (left right : List RuntimeSym) :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
       (append (EncodedBody left) (EncodedBody right) (EncodedBody (left ++ right)))
       (appendProof left right) = true := by
   induction left with
@@ -182,11 +183,11 @@ private theorem appendApplication_decompose
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {leftPattern rightPattern resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (append leftPattern rightPattern resultPattern)) :
     ∃ rule : RuleSchema,
       (rule = appendNilRule ∨ rule = appendConsRule) ∧
-      validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule ∧
+      validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule ∧
       argumentsValidAt rule.metavariables ruleInstance.arguments = true ∧
       InstantiatesList rule.metavariables ruleInstance.arguments
         rule.premises premises ∧
@@ -194,10 +195,10 @@ private theorem appendApplication_decompose
         (append leftPattern rightPattern resultPattern) := by
   cases application with
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
+      have hvalid := rule_isValidIn_of_lookup validatedSideDefinition hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
-        change rule ∈ validatedSidePresentation.1.rules
+        change rule ∈ validatedSideDefinition.1.rules
         exact List.mem_of_find?_eq_some hlookup
       have hrule : rule = appendNilRule ∨ rule = appendConsRule := by
         cases hconclusionRule : rule.conclusion with
@@ -214,29 +215,29 @@ private theorem appendApplication_decompose
             simpa using hfiltered
         | bvar index =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | fvar name =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | lambda binder body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | multiLambda arity binders body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | subst body replacement =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | collection collectionType elements rest =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
       exact ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
 
 private theorem appendNil_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {right result : List RuntimeSym}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (append (EncodedBody []) (EncodedBody right) (EncodedBody result))) :
     premises = [] ∧ result = right := by
   rcases appendApplication_decompose application with
@@ -303,7 +304,7 @@ private theorem appendCons_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {symbol : RuntimeSym} {left right result : List RuntimeSym}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (append (EncodedBody (symbol :: left)) (EncodedBody right)
           (EncodedBody result))) :
     ∃ resultTail : List RuntimeSym,
@@ -386,7 +387,7 @@ private theorem appendCons_application_inv
 append. -/
 theorem append_derivation_sound (left right result : List RuntimeSym)
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (append (EncodedBody left) (EncodedBody right) (EncodedBody result))) :
     left ++ right = result := by
   induction left generalizing result with
@@ -411,7 +412,7 @@ theorem append_derivation_sound (left right result : List RuntimeSym)
 encodings. -/
 theorem append_derivable (left right : List RuntimeSym) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (append (EncodedBody left) (EncodedBody right)
           (EncodedBody (left ++ right)))) :=
   checkRaw_soundness (appendProof_checks left right)
@@ -420,7 +421,7 @@ theorem append_derivable (left right : List RuntimeSym) :
 runtime-symbol lists. -/
 theorem append_derivation_iff (left right result : List RuntimeSym) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (append (EncodedBody left) (EncodedBody right)
             (EncodedBody result))) ↔
       left ++ right = result := by
@@ -435,7 +436,7 @@ theorem append_derivation_iff (left right result : List RuntimeSym) :
 theorem append_not_derivable_of_ne (left right result : List RuntimeSym)
     (hresult : left ++ right ≠ result) :
     ¬Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (append (EncodedBody left) (EncodedBody right)
           (EncodedBody result))) := by
   intro derivable
@@ -577,22 +578,22 @@ private theorem lookupRules_filter :
   rfl
 
 private theorem lookup_lookupHereRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.lookup.here") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.lookup.here") =
       some lookupHereRule := by
-  simp [validatedSidePresentation, sidePresentation, sideRules,
-    Presentation.lookupRule?, appendNilSchema, appendConsSchema,
+  simp [validatedSideDefinition, sideDefinition, sideRules,
+    CalculusLanguageDef.lookupRule?, appendNilSchema, appendConsSchema,
     lookupHereSchema, ruleId, formal, metavariable]
 
 private theorem lookup_lookupThereRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.lookup.there") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.lookup.there") =
       some lookupThereRule := by
-  simp [validatedSidePresentation, sidePresentation, sideRules,
-    Presentation.lookupRule?, appendNilSchema, appendConsSchema,
+  simp [validatedSideDefinition, sideDefinition, sideRules,
+    CalculusLanguageDef.lookupRule?, appendNilSchema, appendConsSchema,
     lookupHereSchema, lookupThereSchema, ruleId, formal, metavariable]
 
 private theorem lookupHere_instantiates (binding : FormulaBinding)
     (rest : FiniteSubstitution) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.lookup.here"
           arguments :=
             [ encodeString binding.variableName
@@ -614,7 +615,7 @@ private theorem lookupHere_instantiates (binding : FormulaBinding)
 
 private theorem lookupThere_instantiates (head target : FormulaBinding)
     (rest : FiniteSubstitution) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.lookup.there"
           arguments :=
             [ EncodedBindings rest
@@ -648,7 +649,7 @@ the canonical encoded Lookup judgment. -/
 theorem lookup_derivable_of_mem (substitution : FiniteSubstitution)
     (target : FormulaBinding) (hmem : target ∈ substitution) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (EncodedLookup substitution target)) := by
   induction substitution with
   | nil => simp at hmem
@@ -663,7 +664,7 @@ theorem lookup_derivable_of_mem (substitution : FiniteSubstitution)
               , EncodedBody target.replacement.body
               , EncodedBindings rest ] }
         have happlication :
-            RuleApplication validatedSidePresentation ruleInstance []
+            RuleApplication validatedSideDefinition ruleInstance []
               (EncodedLookup (target :: rest) target) :=
           instantiateRule?_eq_some_iff_application.mp
             (lookupHere_instantiates target rest)
@@ -683,7 +684,7 @@ theorem lookup_derivable_of_mem (substitution : FiniteSubstitution)
               , encodeString head.replacement.typecode
               , EncodedBody head.replacement.body ] }
         have happlication :
-            RuleApplication validatedSidePresentation ruleInstance
+            RuleApplication validatedSideDefinition ruleInstance
               [EncodedLookup rest target]
               (EncodedLookup (head :: rest) target) :=
           instantiateRule?_eq_some_iff_application.mp
@@ -695,11 +696,11 @@ private theorem lookupApplication_decompose
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {substitutionPattern variablePattern typecodePattern bodyPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (lookup substitutionPattern variablePattern typecodePattern bodyPattern)) :
     ∃ rule : RuleSchema,
       (rule = lookupHereRule ∨ rule = lookupThereRule) ∧
-      validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule ∧
+      validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule ∧
       argumentsValidAt rule.metavariables ruleInstance.arguments = true ∧
       InstantiatesList rule.metavariables ruleInstance.arguments
         rule.premises premises ∧
@@ -707,10 +708,10 @@ private theorem lookupApplication_decompose
         (lookup substitutionPattern variablePattern typecodePattern bodyPattern) := by
   cases application with
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
+      have hvalid := rule_isValidIn_of_lookup validatedSideDefinition hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
-        change rule ∈ validatedSidePresentation.1.rules
+        change rule ∈ validatedSideDefinition.1.rules
         exact List.mem_of_find?_eq_some hlookup
       have hrule : rule = lookupHereRule ∨ rule = lookupThereRule := by
         cases hconclusionRule : rule.conclusion with
@@ -727,22 +728,22 @@ private theorem lookupApplication_decompose
             simpa using hfiltered
         | bvar index =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | fvar name =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | lambda binder body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | multiLambda arity binders body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | subst body replacement =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | collection collectionType elements rest =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
       exact ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
 
 private theorem argumentsValidAt_length_eq
@@ -780,7 +781,7 @@ private theorem lookupCons_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {head target : FormulaBinding} {rest : FiniteSubstitution}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (EncodedLookup (head :: rest) target)) :
     (head = target ∧ premises = []) ∨
       premises = [EncodedLookup rest target] := by
@@ -845,7 +846,7 @@ private theorem lookupRawCons_application_inv
     {head : FormulaBinding} {rest : FiniteSubstitution}
     {variableName : String} {typecodePattern bodyPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (lookup (encodeSubstitution (head :: rest))
           (encodeString variableName) typecodePattern bodyPattern)) :
     (head.variableName = variableName ∧
@@ -897,7 +898,7 @@ private theorem lookupNil_application_false
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {variableName : String} {typecodePattern bodyPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (lookup (encodeSubstitution []) (encodeString variableName)
           typecodePattern bodyPattern)) : False := by
   rcases lookupApplication_decompose application with
@@ -932,7 +933,7 @@ membership. -/
 theorem lookup_derivation_sound (substitution : FiniteSubstitution)
     (target : FormulaBinding)
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (EncodedLookup substitution target)) :
     target ∈ substitution := by
   induction substitution with
@@ -957,7 +958,7 @@ form needed by substitution soundness. -/
 theorem lookup_derivation_decodes (substitution : FiniteSubstitution)
     (variableName : String) (typecodePattern bodyPattern : Pattern)
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (lookup (encodeSubstitution substitution) (encodeString variableName)
           typecodePattern bodyPattern)) :
     ∃ replacement : ConstantHeadedFormula,
@@ -998,7 +999,7 @@ the duplicate-key behavior of the explicit calculus. -/
 theorem lookup_binding_derivation_iff
     (substitution : FiniteSubstitution) (target : FormulaBinding) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (EncodedLookup substitution target)) ↔
       target ∈ substitution := by
   constructor
@@ -1011,7 +1012,7 @@ variable-and-formula interface. -/
 theorem lookup_derivation_iff (substitution : FiniteSubstitution)
     (variableName : String) (replacement : ConstantHeadedFormula) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (lookup (encodeSubstitution substitution) (encodeString variableName)
             (encodeString replacement.typecode)
             (encodeListWith encodeSym replacement.body))) ↔
@@ -1024,7 +1025,7 @@ theorem lookup_not_derivable_of_not_mem
     (substitution : FiniteSubstitution) (target : FormulaBinding)
     (habsent : target ∉ substitution) :
     ¬Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (EncodedLookup substitution target)) := by
   intro derivable
   exact habsent ((lookup_binding_derivation_iff substitution target).mp derivable)
@@ -1081,13 +1082,13 @@ theorem lookup_derivation_functional
     {first second : ConstantHeadedFormula}
     (hfirst :
       Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (lookup (encodeSubstitution substitution) (encodeString variableName)
             (encodeString first.typecode)
             (encodeListWith encodeSym first.body))))
     (hsecond :
       Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (lookup (encodeSubstitution substitution) (encodeString variableName)
             (encodeString second.typecode)
             (encodeListWith encodeSym second.body)))) :
@@ -1102,7 +1103,7 @@ theorem duplicate_lookup_derivable (variableName : String)
     (first second : ConstantHeadedFormula)
     (rest : FiniteSubstitution) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (lookup
             (encodeSubstitution
               ({ variableName, replacement := first } ::
@@ -1110,7 +1111,7 @@ theorem duplicate_lookup_derivable (variableName : String)
             (encodeString variableName) (encodeString first.typecode)
             (encodeListWith encodeSym first.body))) ∧
       Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (lookup
             (encodeSubstitution
               ({ variableName, replacement := first } ::
@@ -1220,31 +1221,31 @@ private theorem varsRules_filter :
   rfl
 
 private theorem lookup_varsNilRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.vars.nil") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.vars.nil") =
       some varsNilRule := by
-  simp [validatedSidePresentation, sidePresentation, sideRules,
-    Presentation.lookupRule?, appendNilSchema, appendConsSchema,
+  simp [validatedSideDefinition, sideDefinition, sideRules,
+    CalculusLanguageDef.lookupRule?, appendNilSchema, appendConsSchema,
     lookupHereSchema, lookupThereSchema, varsNilSchema, ruleId, formal,
     metavariable]
 
 private theorem lookup_varsConstRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.vars.const") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.vars.const") =
       some varsConstRule := by
-  simp [validatedSidePresentation, sidePresentation, sideRules,
-    Presentation.lookupRule?, appendNilSchema, appendConsSchema,
+  simp [validatedSideDefinition, sideDefinition, sideRules,
+    CalculusLanguageDef.lookupRule?, appendNilSchema, appendConsSchema,
     lookupHereSchema, lookupThereSchema, varsNilSchema, varsConstSchema,
     ruleId, formal, metavariable]
 
 private theorem lookup_varsVarRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.vars.var") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.vars.var") =
       some varsVarRule := by
-  simp [validatedSidePresentation, sidePresentation, sideRules,
-    Presentation.lookupRule?, appendNilSchema, appendConsSchema,
+  simp [validatedSideDefinition, sideDefinition, sideRules,
+    CalculusLanguageDef.lookupRule?, appendNilSchema, appendConsSchema,
     lookupHereSchema, lookupThereSchema, varsNilSchema, varsConstSchema,
     varsVarSchema, ruleId, formal, metavariable]
 
 private theorem varsNil_instantiates :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.vars.nil", arguments := [] } =
       some ([], vars (EncodedBody []) (EncodedNames [])) := by
   simp [instantiateRule?, lookup_varsNilRule, varsNilRule_eq_schema,
@@ -1254,7 +1255,7 @@ private theorem varsNil_instantiates :
 
 private theorem varsConst_instantiates (name : String)
     (rest : List RuntimeSym) (result : List String) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.vars.const"
           arguments :=
             [encodeString name, EncodedBody rest, EncodedNames result] } =
@@ -1269,7 +1270,7 @@ private theorem varsConst_instantiates (name : String)
 
 private theorem varsVar_instantiates (name : String)
     (rest : List RuntimeSym) (result : List String) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.vars.var"
           arguments :=
             [encodeString name, EncodedBody rest, EncodedNames result] } =
@@ -1287,14 +1288,14 @@ private theorem varsVar_instantiates (name : String)
 list. -/
 theorem vars_derivable (body : List RuntimeSym) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (vars (EncodedBody body) (EncodedNames (BodyVariables body)))) := by
   induction body with
   | nil =>
       let ruleInstance : RuleInstance :=
         { ruleId := ruleId "$mm.vars.nil", arguments := [] }
       have happlication :
-          RuleApplication validatedSidePresentation ruleInstance []
+          RuleApplication validatedSideDefinition ruleInstance []
             (vars (EncodedBody []) (EncodedNames [])) :=
         instantiateRule?_eq_some_iff_application.mp varsNil_instantiates
       exact ⟨Derivation.byRule ruleInstance happlication .nil⟩
@@ -1308,7 +1309,7 @@ theorem vars_derivable (body : List RuntimeSym) :
                 [ encodeString name, EncodedBody rest
                 , EncodedNames (BodyVariables rest) ] }
           have happlication :
-              RuleApplication validatedSidePresentation ruleInstance
+              RuleApplication validatedSideDefinition ruleInstance
                 [vars (EncodedBody rest) (EncodedNames (BodyVariables rest))]
                 (vars (EncodedBody (.const name :: rest))
                   (EncodedNames (BodyVariables rest))) :=
@@ -1323,7 +1324,7 @@ theorem vars_derivable (body : List RuntimeSym) :
                 [ encodeString name, EncodedBody rest
                 , EncodedNames (BodyVariables rest) ] }
           have happlication :
-              RuleApplication validatedSidePresentation ruleInstance
+              RuleApplication validatedSideDefinition ruleInstance
                 [vars (EncodedBody rest) (EncodedNames (BodyVariables rest))]
                 (vars (EncodedBody (.var name :: rest))
                   (EncodedNames (name :: BodyVariables rest))) :=
@@ -1336,11 +1337,11 @@ private theorem varsApplication_decompose
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {bodyPattern resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (vars bodyPattern resultPattern)) :
     ∃ rule : RuleSchema,
       (rule = varsNilRule ∨ rule = varsConstRule ∨ rule = varsVarRule) ∧
-      validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule ∧
+      validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule ∧
       argumentsValidAt rule.metavariables ruleInstance.arguments = true ∧
       InstantiatesList rule.metavariables ruleInstance.arguments
         rule.premises premises ∧
@@ -1348,10 +1349,10 @@ private theorem varsApplication_decompose
         (vars bodyPattern resultPattern) := by
   cases application with
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
+      have hvalid := rule_isValidIn_of_lookup validatedSideDefinition hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
-        change rule ∈ validatedSidePresentation.1.rules
+        change rule ∈ validatedSideDefinition.1.rules
         exact List.mem_of_find?_eq_some hlookup
       have hrule :
           rule = varsNilRule ∨ rule = varsConstRule ∨ rule = varsVarRule := by
@@ -1369,29 +1370,29 @@ private theorem varsApplication_decompose
             simpa using hfiltered
         | bvar index =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | fvar name =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | lambda binder inner =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | multiLambda arity binders inner =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | subst inner replacement =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | collection collectionType elements rest =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
       exact ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
 
 private theorem varsNil_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {result : List String}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (vars (EncodedBody []) (EncodedNames result))) :
     premises = [] ∧ result = [] := by
   rcases varsApplication_decompose application with
@@ -1434,7 +1435,7 @@ private theorem varsConst_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {name : String} {rest : List RuntimeSym} {result : List String}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (vars (EncodedBody (.const name :: rest)) (EncodedNames result))) :
     premises = [vars (EncodedBody rest) (EncodedNames result)] := by
   rcases varsApplication_decompose application with
@@ -1477,7 +1478,7 @@ private theorem varsVar_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {name : String} {rest : List RuntimeSym} {result : List String}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (vars (EncodedBody (.var name :: rest)) (EncodedNames result))) :
     ∃ resultTail : List String,
       result = name :: resultTail ∧
@@ -1533,7 +1534,7 @@ private theorem varsVar_application_inv
 extraction. -/
 theorem vars_derivation_sound (body : List RuntimeSym) (result : List String)
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (vars (EncodedBody body) (EncodedNames result))) :
     result = BodyVariables body := by
   induction body generalizing result with
@@ -1572,7 +1573,7 @@ theorem vars_derivation_sound (body : List RuntimeSym) (result : List String)
 variable extraction. -/
 theorem vars_derivation_iff (body : List RuntimeSym) (result : List String) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (vars (EncodedBody body) (EncodedNames result))) ↔
       result = BodyVariables body := by
   constructor
@@ -1587,7 +1588,7 @@ derivation. -/
 theorem vars_not_derivable_of_ne (body : List RuntimeSym)
     (result : List String) (hne : result ≠ BodyVariables body) :
     ¬Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (vars (EncodedBody body) (EncodedNames result))) := by
   intro derivable
   exact hne ((vars_derivation_iff body result).mp derivable)
@@ -1596,7 +1597,7 @@ private theorem varsNil_raw_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (vars (EncodedBody []) resultPattern)) :
     premises = [] ∧ resultPattern = EncodedNames [] := by
   rcases varsApplication_decompose application with
@@ -1636,7 +1637,7 @@ private theorem varsConst_raw_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {name : String} {rest : List RuntimeSym} {resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (vars (EncodedBody (.const name :: rest)) resultPattern)) :
     premises = [vars (EncodedBody rest) resultPattern] := by
   rcases varsApplication_decompose application with
@@ -1678,7 +1679,7 @@ private theorem varsVar_raw_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {name : String} {rest : List RuntimeSym} {resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (vars (EncodedBody (.var name :: rest)) resultPattern)) :
     ∃ resultTailPattern : Pattern,
       resultPattern = Builder.cons (encodeString name) resultTailPattern ∧
@@ -1725,7 +1726,7 @@ result pattern to be the canonical ordered variable list. -/
 theorem vars_derivation_decodes (body : List RuntimeSym)
     (resultPattern : Pattern)
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (vars (EncodedBody body) resultPattern)) :
     resultPattern = EncodedNames (BodyVariables body) := by
   induction body generalizing resultPattern with
@@ -1767,7 +1768,7 @@ private theorem appendNil_raw_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {right : List RuntimeSym} {resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (append (EncodedBody []) (EncodedBody right) resultPattern)) :
     premises = [] ∧ resultPattern = EncodedBody right := by
   rcases appendApplication_decompose application with
@@ -1807,7 +1808,7 @@ private theorem appendCons_raw_application_inv
     {symbol : RuntimeSym} {left right : List RuntimeSym}
     {resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (append (EncodedBody (symbol :: left)) (EncodedBody right)
           resultPattern)) :
     ∃ resultTailPattern : Pattern,
@@ -1856,7 +1857,7 @@ append. -/
 theorem append_derivation_decodes (left right : List RuntimeSym)
     (resultPattern : Pattern)
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (append (EncodedBody left) (EncodedBody right) resultPattern)) :
     resultPattern = EncodedBody (left ++ right) := by
   induction left generalizing resultPattern with
@@ -1963,32 +1964,32 @@ private theorem substBodyRules_filter :
     Pattern.hasCanonicalBinderMetadataList]
 
 private theorem lookup_substBodyNilRule :
-    validatedSidePresentation.1.lookupRule?
+    validatedSideDefinition.1.lookupRule?
         (ruleId "$mm.subst-body.nil") = some substBodyNilRule := by
-  simp [validatedSidePresentation, sidePresentation, sideRules,
-    Presentation.lookupRule?, appendNilSchema, appendConsSchema,
+  simp [validatedSideDefinition, sideDefinition, sideRules,
+    CalculusLanguageDef.lookupRule?, appendNilSchema, appendConsSchema,
     lookupHereSchema, lookupThereSchema, substBodyNilSchema, ruleId, formal,
     metavariable]
 
 private theorem lookup_substBodyConstRule :
-    validatedSidePresentation.1.lookupRule?
+    validatedSideDefinition.1.lookupRule?
         (ruleId "$mm.subst-body.const") = some substBodyConstRule := by
-  simp [validatedSidePresentation, sidePresentation, sideRules,
-    Presentation.lookupRule?, appendNilSchema, appendConsSchema,
+  simp [validatedSideDefinition, sideDefinition, sideRules,
+    CalculusLanguageDef.lookupRule?, appendNilSchema, appendConsSchema,
     lookupHereSchema, lookupThereSchema, substBodyNilSchema,
     substBodyConstSchema, ruleId, formal, metavariable]
 
 private theorem lookup_substBodyVarRule :
-    validatedSidePresentation.1.lookupRule?
+    validatedSideDefinition.1.lookupRule?
         (ruleId "$mm.subst-body.var") = some substBodyVarRule := by
-  simp [validatedSidePresentation, sidePresentation, sideRules,
-    Presentation.lookupRule?, appendNilSchema, appendConsSchema,
+  simp [validatedSideDefinition, sideDefinition, sideRules,
+    CalculusLanguageDef.lookupRule?, appendNilSchema, appendConsSchema,
     lookupHereSchema, lookupThereSchema, substBodyNilSchema,
     substBodyConstSchema, substBodyVarSchema, ruleId, formal, metavariable]
 
 private theorem substBodyNil_instantiates
     (substitution : FiniteSubstitution) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.subst-body.nil"
           arguments := [encodeSubstitution substitution] } =
       some
@@ -2003,7 +2004,7 @@ private theorem substBodyNil_instantiates
 private theorem substBodyConst_instantiates
     (substitution : FiniteSubstitution) (name : String)
     (sourceTail resultTail : List RuntimeSym) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.subst-body.const"
           arguments :=
             [ encodeSubstitution substitution, encodeString name
@@ -2025,7 +2026,7 @@ private theorem substBodyVar_instantiates
     (substitution : FiniteSubstitution) (name : String)
     (replacement : ConstantHeadedFormula)
     (sourceTail resultTail : List RuntimeSym) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.subst-body.var"
           arguments :=
             [ encodeSubstitution substitution, encodeString name
@@ -2057,7 +2058,7 @@ theorem substBody_derivable {substitution : FiniteSubstitution}
     {source result : List RuntimeSym}
     (semantics : BodySubstitution substitution source result) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (substBody (encodeSubstitution substitution) (EncodedBody source)
           (EncodedBody result))) := by
   induction semantics with
@@ -2066,7 +2067,7 @@ theorem substBody_derivable {substitution : FiniteSubstitution}
         { ruleId := ruleId "$mm.subst-body.nil"
           arguments := [encodeSubstitution substitution] }
       have happlication :
-          RuleApplication validatedSidePresentation ruleInstance []
+          RuleApplication validatedSideDefinition ruleInstance []
             (substBody (encodeSubstitution substitution)
               (EncodedBody []) (EncodedBody [])) :=
         instantiateRule?_eq_some_iff_application.mp
@@ -2080,7 +2081,7 @@ theorem substBody_derivable {substitution : FiniteSubstitution}
             [ encodeSubstitution substitution, encodeString name
             , EncodedBody sourceTail, EncodedBody resultTail ] }
       have happlication :
-          RuleApplication validatedSidePresentation ruleInstance
+          RuleApplication validatedSideDefinition ruleInstance
             [substBody (encodeSubstitution substitution)
               (EncodedBody sourceTail) (EncodedBody resultTail)]
             (substBody (encodeSubstitution substitution)
@@ -2105,7 +2106,7 @@ theorem substBody_derivable {substitution : FiniteSubstitution}
             , EncodedBody resultTail
             , EncodedBody (replacement.body ++ resultTail) ] }
       have happlication :
-          RuleApplication validatedSidePresentation ruleInstance
+          RuleApplication validatedSideDefinition ruleInstance
             [ lookup (encodeSubstitution substitution) (encodeString name)
                 (encodeString replacement.typecode)
                 (EncodedBody replacement.body)
@@ -2126,12 +2127,12 @@ private theorem substBodyApplication_decompose
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {substitutionPattern sourcePattern resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (substBody substitutionPattern sourcePattern resultPattern)) :
     ∃ rule : RuleSchema,
       (rule = substBodyNilRule ∨ rule = substBodyConstRule ∨
         rule = substBodyVarRule) ∧
-      validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule ∧
+      validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule ∧
       argumentsValidAt rule.metavariables ruleInstance.arguments = true ∧
       InstantiatesList rule.metavariables ruleInstance.arguments
         rule.premises premises ∧
@@ -2139,10 +2140,10 @@ private theorem substBodyApplication_decompose
         (substBody substitutionPattern sourcePattern resultPattern) := by
   cases application with
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
+      have hvalid := rule_isValidIn_of_lookup validatedSideDefinition hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
-        change rule ∈ validatedSidePresentation.1.rules
+        change rule ∈ validatedSideDefinition.1.rules
         exact List.mem_of_find?_eq_some hlookup
       have hrule :
           rule = substBodyNilRule ∨ rule = substBodyConstRule ∨
@@ -2161,29 +2162,29 @@ private theorem substBodyApplication_decompose
             simpa using hfiltered
         | bvar index =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | fvar name =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | lambda binder body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | multiLambda arity binders body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | subst body replacement =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | collection collectionType elements rest =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
       exact ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
 
 private theorem substBodyNil_raw_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {substitution : FiniteSubstitution} {resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (substBody (encodeSubstitution substitution) (EncodedBody [])
           resultPattern)) :
     premises = [] ∧ resultPattern = EncodedBody [] := by
@@ -2234,7 +2235,7 @@ private theorem substBodyConst_raw_application_inv
     {substitution : FiniteSubstitution} {name : String}
     {sourceTail : List RuntimeSym} {resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (substBody (encodeSubstitution substitution)
           (EncodedBody (.const name :: sourceTail)) resultPattern)) :
     ∃ resultTailPattern : Pattern,
@@ -2295,7 +2296,7 @@ private theorem substBodyVar_raw_application_inv
     {substitution : FiniteSubstitution} {name : String}
     {sourceTail : List RuntimeSym} {resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (substBody (encodeSubstitution substitution)
           (EncodedBody (.var name :: sourceTail)) resultPattern)) :
     ∃ typecodePattern imagePattern resultTailPattern : Pattern,
@@ -2356,7 +2357,7 @@ to an ordinary substituted body satisfying the independent semantics. -/
 theorem substBody_derivation_decodes (substitution : FiniteSubstitution)
     (source : List RuntimeSym) (resultPattern : Pattern)
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (substBody (encodeSubstitution substitution) (EncodedBody source)
           resultPattern)) :
     ∃ result : List RuntimeSym,
@@ -2418,7 +2419,7 @@ substitution semantics. -/
 theorem substBody_derivation_sound (substitution : FiniteSubstitution)
     (source result : List RuntimeSym)
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (substBody (encodeSubstitution substitution) (EncodedBody source)
           (EncodedBody result))) :
     BodySubstitution substitution source result := by
@@ -2433,7 +2434,7 @@ ordinary-list body substitution. -/
 theorem substBody_derivation_iff (substitution : FiniteSubstitution)
     (source result : List RuntimeSym) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (substBody (encodeSubstitution substitution) (EncodedBody source)
             (EncodedBody result))) ↔
       BodySubstitution substitution source result := by
@@ -2448,7 +2449,7 @@ theorem substBody_not_derivable_of_not_semantics
     (substitution : FiniteSubstitution) (source result : List RuntimeSym)
     (hnot : ¬BodySubstitution substitution source result) :
     ¬Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (substBody (encodeSubstitution substitution) (EncodedBody source)
           (EncodedBody result))) := by
   intro derivable
@@ -2483,10 +2484,10 @@ private theorem applySubstRules_filter :
   rfl
 
 private theorem lookup_applySubstFormulaRule :
-    validatedSidePresentation.1.lookupRule?
+    validatedSideDefinition.1.lookupRule?
         (ruleId "$mm.apply-subst.formula") = some applySubstFormulaRule := by
-  simp [validatedSidePresentation, sidePresentation, sideRules,
-    Presentation.lookupRule?, appendNilSchema, appendConsSchema,
+  simp [validatedSideDefinition, sideDefinition, sideRules,
+    CalculusLanguageDef.lookupRule?, appendNilSchema, appendConsSchema,
     lookupHereSchema, lookupThereSchema, substBodyNilSchema,
     substBodyConstSchema, substBodyVarSchema, applySubstFormulaSchema, ruleId,
     formal, metavariable]
@@ -2494,7 +2495,7 @@ private theorem lookup_applySubstFormulaRule :
 private theorem applySubstFormula_instantiates
     (substitution : FiniteSubstitution) (typecode : String)
     (sourceBody resultBody : List RuntimeSym) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.apply-subst.formula"
           arguments :=
             [ encodeSubstitution substitution, encodeString typecode
@@ -2518,7 +2519,7 @@ theorem applySubst_derivable {substitution : FiniteSubstitution}
     {source result : ConstantHeadedFormula}
     (semantics : FormulaSubstitutionSemantics substitution source result) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (applySubst (encodeSubstitution substitution) (encodeFormula source)
           (encodeFormula result))) := by
   rcases source with ⟨sourceTypecode, sourceBody⟩
@@ -2534,7 +2535,7 @@ theorem applySubst_derivable {substitution : FiniteSubstitution}
         [ encodeSubstitution substitution, encodeString sourceTypecode
         , EncodedBody sourceBody, EncodedBody resultBody ] }
   have happlication :
-      RuleApplication validatedSidePresentation ruleInstance
+      RuleApplication validatedSideDefinition ruleInstance
         [substBody (encodeSubstitution substitution) (EncodedBody sourceBody)
           (EncodedBody resultBody)]
         (applySubst (encodeSubstitution substitution)
@@ -2550,11 +2551,11 @@ private theorem applySubstApplication_decompose
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {substitutionPattern sourcePattern resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (applySubst substitutionPattern sourcePattern resultPattern)) :
     ∃ rule : RuleSchema,
       rule = applySubstFormulaRule ∧
-      validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule ∧
+      validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule ∧
       argumentsValidAt rule.metavariables ruleInstance.arguments = true ∧
       InstantiatesList rule.metavariables ruleInstance.arguments
         rule.premises premises ∧
@@ -2562,10 +2563,10 @@ private theorem applySubstApplication_decompose
         (applySubst substitutionPattern sourcePattern resultPattern) := by
   cases application with
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
+      have hvalid := rule_isValidIn_of_lookup validatedSideDefinition hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
-        change rule ∈ validatedSidePresentation.1.rules
+        change rule ∈ validatedSideDefinition.1.rules
         exact List.mem_of_find?_eq_some hlookup
       have hrule : rule = applySubstFormulaRule := by
         cases hconclusionRule : rule.conclusion with
@@ -2582,22 +2583,22 @@ private theorem applySubstApplication_decompose
             simpa using hfiltered
         | bvar index =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | fvar name =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | lambda binder body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | multiLambda arity binders body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | subst body replacement =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | collection collectionType elements rest =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
       exact ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
 
 private theorem applySubst_application_inv
@@ -2606,7 +2607,7 @@ private theorem applySubst_application_inv
     {sourceTypecode resultTypecode : String}
     {sourceBody resultBody : List RuntimeSym}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (applySubst (encodeSubstitution substitution)
           (encodeFormula ⟨sourceTypecode, sourceBody⟩)
           (encodeFormula ⟨resultTypecode, resultBody⟩))) :
@@ -2638,7 +2639,7 @@ private theorem applySubst_raw_application_inv
     {substitution : FiniteSubstitution} {sourceTypecode : String}
     {sourceBody : List RuntimeSym} {resultPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (applySubst (encodeSubstitution substitution)
           (encodeFormula ⟨sourceTypecode, sourceBody⟩) resultPattern)) :
     ∃ resultBodyPattern : Pattern,
@@ -2673,7 +2674,7 @@ independent formula-substitution semantics. -/
 theorem applySubst_derivation_decodes (substitution : FiniteSubstitution)
     (source : ConstantHeadedFormula) (resultPattern : Pattern)
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (applySubst (encodeSubstitution substitution) (encodeFormula source)
           resultPattern)) :
     ∃ result : ConstantHeadedFormula,
@@ -2706,7 +2707,7 @@ theorem applySubst_not_derivable_of_result_not_encoded
       ∀ result : ConstantHeadedFormula,
         resultPattern ≠ encodeFormula result) :
     ¬Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (applySubst (encodeSubstitution substitution) (encodeFormula source)
           resultPattern)) := by
   rintro ⟨derivation⟩
@@ -2719,7 +2720,7 @@ rule can only produce the structural formula constructor. -/
 theorem applySubst_nil_result_not_derivable
     (substitution : FiniteSubstitution) (source : ConstantHeadedFormula) :
     ¬Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (applySubst (encodeSubstitution substitution) (encodeFormula source)
           Builder.nil)) := by
   apply applySubst_not_derivable_of_result_not_encoded
@@ -2733,7 +2734,7 @@ theorem applySubst_const_then_single_variable_derivable
     (typecode constantName variableName : String)
     (replacement : ConstantHeadedFormula) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (applySubst
           (encodeSubstitution
             [{ variableName := variableName, replacement := replacement }])
@@ -2765,7 +2766,7 @@ substitution semantics. -/
 theorem applySubst_derivation_sound (substitution : FiniteSubstitution)
     (source result : ConstantHeadedFormula)
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (applySubst (encodeSubstitution substitution) (encodeFormula source)
           (encodeFormula result))) :
     FormulaSubstitutionSemantics substitution source result := by
@@ -2789,7 +2790,7 @@ formula substitution. -/
 theorem applySubst_derivation_iff (substitution : FiniteSubstitution)
     (source result : ConstantHeadedFormula) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (applySubst (encodeSubstitution substitution) (encodeFormula source)
             (encodeFormula result))) ↔
       FormulaSubstitutionSemantics substitution source result := by
@@ -2805,7 +2806,7 @@ theorem applySubst_not_derivable_of_not_semantics
     (source result : ConstantHeadedFormula)
     (hnot : ¬FormulaSubstitutionSemantics substitution source result) :
     ¬Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (applySubst (encodeSubstitution substitution) (encodeFormula source)
           (encodeFormula result))) := by
   intro derivable
@@ -2867,12 +2868,12 @@ theorem applySubst_derivation_functional
     {source first second : ConstantHeadedFormula}
     (hfirst :
       Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (applySubst (encodeSubstitution substitution) (encodeFormula source)
             (encodeFormula first))))
     (hsecond :
       Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (applySubst (encodeSubstitution substitution) (encodeFormula source)
             (encodeFormula second)))) :
     first = second :=
@@ -3136,48 +3137,48 @@ private theorem dvOKRules_filter :
     sideRules.filter (ruleConclusionIs dvOKHead) = [dvOKRule] := by rfl
 
 private theorem lookup_memberHereRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.member.here") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.member.here") =
       some memberHereRule := by
   rfl
 
 private theorem lookup_memberThereRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.member.there") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.member.there") =
       some memberThereRule := by rfl
 
 private theorem lookup_dvRelForwardRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.dv-rel.forward") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.dv-rel.forward") =
       some dvRelForwardRule := by rfl
 
 private theorem lookup_dvRelReverseRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.dv-rel.reverse") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.dv-rel.reverse") =
       some dvRelReverseRule := by rfl
 
 private theorem lookup_allWithNilRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.all-with.nil") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.all-with.nil") =
       some allWithNilRule := by rfl
 
 private theorem lookup_allWithConsRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.all-with.cons") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.all-with.cons") =
       some allWithConsRule := by rfl
 
 private theorem lookup_allPairsNilRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.all-pairs.nil") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.all-pairs.nil") =
       some allPairsNilRule := by rfl
 
 private theorem lookup_allPairsConsRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.all-pairs.cons") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.all-pairs.cons") =
       some allPairsConsRule := by rfl
 
 private theorem lookup_dvListsNilRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.dv-lists.nil") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.dv-lists.nil") =
       some dvListsNilRule := by rfl
 
 private theorem lookup_dvListsConsRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.dv-lists.cons") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.dv-lists.cons") =
       some dvListsConsRule := by rfl
 
 private theorem lookup_dvOKRule :
-    validatedSidePresentation.1.lookupRule? (ruleId "$mm.dv-ok.frames") =
+    validatedSideDefinition.1.lookupRule? (ruleId "$mm.dv-ok.frames") =
       some dvOKRule := by rfl
 
 @[simp] private theorem encodeDVPair_isGroundAt (depth : Nat)
@@ -3227,7 +3228,7 @@ private theorem encodedDVPairs_injective :
 
 private theorem memberHere_instantiates (target : String × String)
     (rest : List (String × String)) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.member.here"
           arguments := [encodeDVPair target, EncodedDVPairs rest] } =
       some
@@ -3240,7 +3241,7 @@ private theorem memberHere_instantiates (target : String × String)
 
 private theorem memberThere_instantiates (target head : String × String)
     (rest : List (String × String)) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.member.there"
           arguments :=
             [encodeDVPair target, encodeDVPair head, EncodedDVPairs rest] } =
@@ -3257,7 +3258,7 @@ private theorem member_pair_derivable_of_mem
     (target : String × String) (pairs : List (String × String))
     (hmem : target ∈ pairs) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (member (encodeDVPair target) (EncodedDVPairs pairs))) := by
   induction pairs with
   | nil => simp at hmem
@@ -3268,7 +3269,7 @@ private theorem member_pair_derivable_of_mem
           { ruleId := ruleId "$mm.member.here"
             arguments := [encodeDVPair target, EncodedDVPairs rest] }
         have happlication :
-            RuleApplication validatedSidePresentation ruleInstance []
+            RuleApplication validatedSideDefinition ruleInstance []
               (member (encodeDVPair target)
                 (EncodedDVPairs (target :: rest))) :=
           instantiateRule?_eq_some_iff_application.mp
@@ -3283,7 +3284,7 @@ private theorem member_pair_derivable_of_mem
             arguments :=
               [encodeDVPair target, encodeDVPair head, EncodedDVPairs rest] }
         have happlication :
-            RuleApplication validatedSidePresentation ruleInstance
+            RuleApplication validatedSideDefinition ruleInstance
               [member (encodeDVPair target) (EncodedDVPairs rest)]
               (member (encodeDVPair target)
                 (EncodedDVPairs (head :: rest))) :=
@@ -3296,11 +3297,11 @@ private theorem memberApplication_decompose
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {valuePattern valuesPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (member valuePattern valuesPattern)) :
     ∃ rule : RuleSchema,
       (rule = memberHereRule ∨ rule = memberThereRule) ∧
-      validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule ∧
+      validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule ∧
       argumentsValidAt rule.metavariables ruleInstance.arguments = true ∧
       InstantiatesList rule.metavariables ruleInstance.arguments
         rule.premises premises ∧
@@ -3308,10 +3309,10 @@ private theorem memberApplication_decompose
         (member valuePattern valuesPattern) := by
   cases application with
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
+      have hvalid := rule_isValidIn_of_lookup validatedSideDefinition hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
-        change rule ∈ validatedSidePresentation.1.rules
+        change rule ∈ validatedSideDefinition.1.rules
         exact List.mem_of_find?_eq_some hlookup
       have hrule : rule = memberHereRule ∨ rule = memberThereRule := by
         cases hconclusionRule : rule.conclusion with
@@ -3328,29 +3329,29 @@ private theorem memberApplication_decompose
             simpa using hfiltered
         | bvar index =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | fvar name =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | lambda binder body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | multiLambda arity binders body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | subst body replacement =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | collection collectionType elements rest =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
       exact ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
 
 private theorem memberNil_application_false
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {target : String × String}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (member (encodeDVPair target) (EncodedDVPairs []))) : False := by
   rcases memberApplication_decompose application with
     ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
@@ -3379,7 +3380,7 @@ private theorem memberCons_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {target head : String × String} {rest : List (String × String)}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (member (encodeDVPair target) (EncodedDVPairs (head :: rest)))) :
     (head = target ∧ premises = []) ∨
       premises = [member (encodeDVPair target) (EncodedDVPairs rest)] := by
@@ -3418,7 +3419,7 @@ private theorem memberCons_application_inv
 private theorem member_pair_derivation_sound
     (target : String × String) (pairs : List (String × String))
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (member (encodeDVPair target) (EncodedDVPairs pairs))) :
     target ∈ pairs := by
   induction pairs with
@@ -3442,7 +3443,7 @@ membership. -/
 theorem member_pair_derivation_iff (target : String × String)
     (pairs : List (String × String)) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (member (encodeDVPair target) (EncodedDVPairs pairs))) ↔
       target ∈ pairs := by
   constructor
@@ -3452,7 +3453,7 @@ theorem member_pair_derivation_iff (target : String × String)
 
 private theorem dvRelForward_instantiates
     (pairs : List (String × String)) (left right : String) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.dv-rel.forward"
           arguments :=
             [EncodedDVPairs pairs, encodeString left, encodeString right] } =
@@ -3468,7 +3469,7 @@ private theorem dvRelForward_instantiates
 
 private theorem dvRelReverse_instantiates
     (pairs : List (String × String)) (left right : String) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.dv-rel.reverse"
           arguments :=
             [EncodedDVPairs pairs, encodeString left, encodeString right] } =
@@ -3485,7 +3486,7 @@ private theorem dvRelReverse_instantiates
 private theorem dvRel_derivable (pairs : List (String × String))
     (left right : String) (semantics : DVRelation pairs left right) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (dvRel (EncodedDVPairs pairs) (encodeString left)
           (encodeString right))) := by
   rcases semantics with hforward | hreverse
@@ -3496,7 +3497,7 @@ private theorem dvRel_derivable (pairs : List (String × String))
         arguments :=
           [EncodedDVPairs pairs, encodeString left, encodeString right] }
     have happlication :
-        RuleApplication validatedSidePresentation ruleInstance
+        RuleApplication validatedSideDefinition ruleInstance
           [member (encodeDVPair (left, right)) (EncodedDVPairs pairs)]
           (dvRel (EncodedDVPairs pairs) (encodeString left)
             (encodeString right)) :=
@@ -3510,7 +3511,7 @@ private theorem dvRel_derivable (pairs : List (String × String))
         arguments :=
           [EncodedDVPairs pairs, encodeString left, encodeString right] }
     have happlication :
-        RuleApplication validatedSidePresentation ruleInstance
+        RuleApplication validatedSideDefinition ruleInstance
           [member (encodeDVPair (right, left)) (EncodedDVPairs pairs)]
           (dvRel (EncodedDVPairs pairs) (encodeString left)
             (encodeString right)) :=
@@ -3522,11 +3523,11 @@ private theorem dvRelApplication_decompose
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {pairsPattern leftPattern rightPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (dvRel pairsPattern leftPattern rightPattern)) :
     ∃ rule : RuleSchema,
       (rule = dvRelForwardRule ∨ rule = dvRelReverseRule) ∧
-      validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule ∧
+      validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule ∧
       argumentsValidAt rule.metavariables ruleInstance.arguments = true ∧
       InstantiatesList rule.metavariables ruleInstance.arguments
         rule.premises premises ∧
@@ -3534,10 +3535,10 @@ private theorem dvRelApplication_decompose
         (dvRel pairsPattern leftPattern rightPattern) := by
   cases application with
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
+      have hvalid := rule_isValidIn_of_lookup validatedSideDefinition hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
-        change rule ∈ validatedSidePresentation.1.rules
+        change rule ∈ validatedSideDefinition.1.rules
         exact List.mem_of_find?_eq_some hlookup
       have hrule : rule = dvRelForwardRule ∨ rule = dvRelReverseRule := by
         cases hconclusionRule : rule.conclusion with
@@ -3554,29 +3555,29 @@ private theorem dvRelApplication_decompose
             simpa using hfiltered
         | bvar index =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | fvar name =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | lambda binder body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | multiLambda arity binders body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | subst body replacement =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | collection collectionType elements rest =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
       exact ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
 
 private theorem dvRel_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {pairs : List (String × String)} {left right : String}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (dvRel (EncodedDVPairs pairs) (encodeString left)
           (encodeString right))) :
     premises = [member (encodeDVPair (left, right)) (EncodedDVPairs pairs)] ∨
@@ -3619,7 +3620,7 @@ DV-pair list. -/
 theorem dvRel_derivation_iff (pairs : List (String × String))
     (left right : String) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (dvRel (EncodedDVPairs pairs) (encodeString left)
             (encodeString right))) ↔
       DVRelation pairs left right := by
@@ -3646,7 +3647,7 @@ theorem dvRel_derivation_iff (pairs : List (String × String))
 
 private theorem allWithNil_instantiates
     (pairs : List (String × String)) (left : String) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.all-with.nil"
           arguments := [EncodedDVPairs pairs, encodeString left] } =
       some
@@ -3661,7 +3662,7 @@ private theorem allWithNil_instantiates
 private theorem allWithCons_instantiates
     (pairs : List (String × String)) (left right : String)
     (rights : List String) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.all-with.cons"
           arguments :=
             [ EncodedDVPairs pairs, encodeString left, encodeString right
@@ -3684,7 +3685,7 @@ private theorem allWith_derivable (pairs : List (String × String))
     (left : String) (rights : List String)
     (semantics : AllWithSemantics pairs left rights) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (allWith (EncodedDVPairs pairs) (encodeString left)
           (EncodedNames rights))) := by
   induction rights with
@@ -3693,7 +3694,7 @@ private theorem allWith_derivable (pairs : List (String × String))
         { ruleId := ruleId "$mm.all-with.nil"
           arguments := [EncodedDVPairs pairs, encodeString left] }
       have happlication :
-          RuleApplication validatedSidePresentation ruleInstance []
+          RuleApplication validatedSideDefinition ruleInstance []
             (allWith (EncodedDVPairs pairs) (encodeString left)
               (EncodedNames [])) :=
         instantiateRule?_eq_some_iff_application.mp
@@ -3713,7 +3714,7 @@ private theorem allWith_derivable (pairs : List (String × String))
             [ EncodedDVPairs pairs, encodeString left, encodeString right
             , EncodedNames rights ] }
       have happlication :
-          RuleApplication validatedSidePresentation ruleInstance
+          RuleApplication validatedSideDefinition ruleInstance
             [ dvRel (EncodedDVPairs pairs) (encodeString left)
                 (encodeString right)
             , allWith (EncodedDVPairs pairs) (encodeString left)
@@ -3729,11 +3730,11 @@ private theorem allWithApplication_decompose
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {pairsPattern leftPattern rightsPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (allWith pairsPattern leftPattern rightsPattern)) :
     ∃ rule : RuleSchema,
       (rule = allWithNilRule ∨ rule = allWithConsRule) ∧
-      validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule ∧
+      validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule ∧
       argumentsValidAt rule.metavariables ruleInstance.arguments = true ∧
       InstantiatesList rule.metavariables ruleInstance.arguments
         rule.premises premises ∧
@@ -3741,10 +3742,10 @@ private theorem allWithApplication_decompose
         (allWith pairsPattern leftPattern rightsPattern) := by
   cases application with
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
+      have hvalid := rule_isValidIn_of_lookup validatedSideDefinition hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
-        change rule ∈ validatedSidePresentation.1.rules
+        change rule ∈ validatedSideDefinition.1.rules
         exact List.mem_of_find?_eq_some hlookup
       have hrule : rule = allWithNilRule ∨ rule = allWithConsRule := by
         cases hconclusionRule : rule.conclusion with
@@ -3761,29 +3762,29 @@ private theorem allWithApplication_decompose
             simpa using hfiltered
         | bvar index =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | fvar name =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | lambda binder body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | multiLambda arity binders body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | subst body replacement =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | collection collectionType elements rest =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
       exact ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
 
 private theorem allWithNil_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {pairs : List (String × String)} {left : String}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (allWith (EncodedDVPairs pairs) (encodeString left)
           (EncodedNames []))) :
     premises = [] := by
@@ -3813,7 +3814,7 @@ private theorem allWithCons_application_inv
     {pairs : List (String × String)} {left right : String}
     {rights : List String}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (allWith (EncodedDVPairs pairs) (encodeString left)
           (EncodedNames (right :: rights)))) :
     premises =
@@ -3852,7 +3853,7 @@ ordinary right-hand name list. -/
 theorem allWith_derivation_iff (pairs : List (String × String))
     (left : String) (rights : List String) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (allWith (EncodedDVPairs pairs) (encodeString left)
             (EncodedNames rights))) ↔
       AllWithSemantics pairs left rights := by
@@ -3882,7 +3883,7 @@ theorem allWith_derivation_iff (pairs : List (String × String))
 
 private theorem allPairsNil_instantiates
     (pairs : List (String × String)) (rights : List String) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.all-pairs.nil"
           arguments := [EncodedDVPairs pairs, EncodedNames rights] } =
       some
@@ -3897,7 +3898,7 @@ private theorem allPairsNil_instantiates
 private theorem allPairsCons_instantiates
     (pairs : List (String × String)) (left : String)
     (lefts rights : List String) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.all-pairs.cons"
           arguments :=
             [ EncodedDVPairs pairs, encodeString left, EncodedNames lefts
@@ -3920,7 +3921,7 @@ private theorem allPairs_derivable (pairs : List (String × String))
     (lefts rights : List String)
     (semantics : AllPairsSemantics pairs lefts rights) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (allPairs (EncodedDVPairs pairs) (EncodedNames lefts)
           (EncodedNames rights))) := by
   induction lefts with
@@ -3929,7 +3930,7 @@ private theorem allPairs_derivable (pairs : List (String × String))
         { ruleId := ruleId "$mm.all-pairs.nil"
           arguments := [EncodedDVPairs pairs, EncodedNames rights] }
       have happlication :
-          RuleApplication validatedSidePresentation ruleInstance []
+          RuleApplication validatedSideDefinition ruleInstance []
             (allPairs (EncodedDVPairs pairs) (EncodedNames [])
               (EncodedNames rights)) :=
         instantiateRule?_eq_some_iff_application.mp
@@ -3950,7 +3951,7 @@ private theorem allPairs_derivable (pairs : List (String × String))
             [ EncodedDVPairs pairs, encodeString left, EncodedNames lefts
             , EncodedNames rights ] }
       have happlication :
-          RuleApplication validatedSidePresentation ruleInstance
+          RuleApplication validatedSideDefinition ruleInstance
             [ allWith (EncodedDVPairs pairs) (encodeString left)
                 (EncodedNames rights)
             , allPairs (EncodedDVPairs pairs) (EncodedNames lefts)
@@ -3966,11 +3967,11 @@ private theorem allPairsApplication_decompose
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {pairsPattern leftsPattern rightsPattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (allPairs pairsPattern leftsPattern rightsPattern)) :
     ∃ rule : RuleSchema,
       (rule = allPairsNilRule ∨ rule = allPairsConsRule) ∧
-      validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule ∧
+      validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule ∧
       argumentsValidAt rule.metavariables ruleInstance.arguments = true ∧
       InstantiatesList rule.metavariables ruleInstance.arguments
         rule.premises premises ∧
@@ -3978,10 +3979,10 @@ private theorem allPairsApplication_decompose
         (allPairs pairsPattern leftsPattern rightsPattern) := by
   cases application with
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
+      have hvalid := rule_isValidIn_of_lookup validatedSideDefinition hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
-        change rule ∈ validatedSidePresentation.1.rules
+        change rule ∈ validatedSideDefinition.1.rules
         exact List.mem_of_find?_eq_some hlookup
       have hrule : rule = allPairsNilRule ∨ rule = allPairsConsRule := by
         cases hconclusionRule : rule.conclusion with
@@ -3998,29 +3999,29 @@ private theorem allPairsApplication_decompose
             simpa using hfiltered
         | bvar index =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | fvar name =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | lambda binder body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | multiLambda arity binders body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | subst body replacement =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | collection collectionType elements rest =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
       exact ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
 
 private theorem allPairsNil_application_inv
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {pairs : List (String × String)} {rights : List String}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (allPairs (EncodedDVPairs pairs) (EncodedNames [])
           (EncodedNames rights))) :
     premises = [] := by
@@ -4050,7 +4051,7 @@ private theorem allPairsCons_application_inv
     {pairs : List (String × String)} {left : String}
     {lefts rights : List String}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (allPairs (EncodedDVPairs pairs) (EncodedNames (left :: lefts))
           (EncodedNames rights))) :
     premises =
@@ -4090,7 +4091,7 @@ ordinary name lists. -/
 theorem allPairs_derivation_iff (pairs : List (String × String))
     (lefts rights : List String) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (allPairs (EncodedDVPairs pairs) (EncodedNames lefts)
             (EncodedNames rights))) ↔
       AllPairsSemantics pairs lefts rights := by
@@ -4158,7 +4159,7 @@ private theorem List.length_eq_eleven {alpha : Type} {values : List alpha} :
 private theorem dvListsNil_instantiates
     (substitution : FiniteSubstitution)
     (callerDV : List (String × String)) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.dv-lists.nil"
           arguments := [encodeSubstitution substitution, EncodedDVPairs callerDV] } =
       some
@@ -4174,7 +4175,7 @@ private theorem dvListsCons_instantiates
     (substitution : FiniteSubstitution)
     (callerDV rest : List (String × String)) (left right : String)
     (leftReplacement rightReplacement : ConstantHeadedFormula) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.dv-lists.cons"
           arguments :=
             [ encodeSubstitution substitution, EncodedDVPairs callerDV
@@ -4215,7 +4216,7 @@ private theorem dvLists_derivable (substitution : FiniteSubstitution)
     (callerDV calleeDV : List (String × String))
     (semantics : DVListsSemantics substitution callerDV calleeDV) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (dvLists (encodeSubstitution substitution) (EncodedDVPairs callerDV)
           (EncodedDVPairs calleeDV))) := by
   induction calleeDV with
@@ -4224,7 +4225,7 @@ private theorem dvLists_derivable (substitution : FiniteSubstitution)
         { ruleId := ruleId "$mm.dv-lists.nil"
           arguments := [encodeSubstitution substitution, EncodedDVPairs callerDV] }
       have happlication :
-          RuleApplication validatedSidePresentation ruleInstance []
+          RuleApplication validatedSideDefinition ruleInstance []
             (dvLists (encodeSubstitution substitution) (EncodedDVPairs callerDV)
               (EncodedDVPairs [])) :=
         instantiateRule?_eq_some_iff_application.mp
@@ -4262,7 +4263,7 @@ private theorem dvLists_derivable (substitution : FiniteSubstitution)
             , EncodedNames (BodyVariables leftReplacement.body)
             , EncodedNames (BodyVariables rightReplacement.body) ] }
       have happlication :
-          RuleApplication validatedSidePresentation ruleInstance
+          RuleApplication validatedSideDefinition ruleInstance
             [ lookup (encodeSubstitution substitution) (encodeString left)
                 (encodeString leftReplacement.typecode)
                 (EncodedBody leftReplacement.body)
@@ -4295,11 +4296,11 @@ private theorem dvListsApplication_decompose
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {substitutionPattern callerPattern calleePattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (dvLists substitutionPattern callerPattern calleePattern)) :
     ∃ rule : RuleSchema,
       (rule = dvListsNilRule ∨ rule = dvListsConsRule) ∧
-      validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule ∧
+      validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule ∧
       argumentsValidAt rule.metavariables ruleInstance.arguments = true ∧
       InstantiatesList rule.metavariables ruleInstance.arguments
         rule.premises premises ∧
@@ -4307,10 +4308,10 @@ private theorem dvListsApplication_decompose
         (dvLists substitutionPattern callerPattern calleePattern) := by
   cases application with
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
+      have hvalid := rule_isValidIn_of_lookup validatedSideDefinition hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
-        change rule ∈ validatedSidePresentation.1.rules
+        change rule ∈ validatedSideDefinition.1.rules
         exact List.mem_of_find?_eq_some hlookup
       have hrule : rule = dvListsNilRule ∨ rule = dvListsConsRule := by
         cases hconclusionRule : rule.conclusion with
@@ -4327,22 +4328,22 @@ private theorem dvListsApplication_decompose
             simpa using hfiltered
         | bvar index =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | fvar name =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | lambda binder body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | multiLambda arity binders body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | subst body replacement =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | collection collectionType elements rest =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
       exact ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
 
 private theorem dvListsNil_application_inv
@@ -4350,7 +4351,7 @@ private theorem dvListsNil_application_inv
     {substitution : FiniteSubstitution}
     {callerDV : List (String × String)}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (dvLists (encodeSubstitution substitution) (EncodedDVPairs callerDV)
           (EncodedDVPairs []))) :
     premises = [] := by
@@ -4381,7 +4382,7 @@ private theorem dvListsCons_application_inv
     {substitution : FiniteSubstitution}
     {callerDV rest : List (String × String)} {left right : String}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (dvLists (encodeSubstitution substitution) (EncodedDVPairs callerDV)
           (EncodedDVPairs ((left, right) :: rest)))) :
     ∃ typecode1 body1 typecode2 body2 variables1 variables2 : Pattern,
@@ -4428,7 +4429,7 @@ private theorem dvLists_derivation_sound
     (substitution : FiniteSubstitution)
     (callerDV calleeDV : List (String × String))
     (derivation :
-      Derivation validatedSidePresentation
+      Derivation validatedSideDefinition
         (dvLists (encodeSubstitution substitution) (EncodedDVPairs callerDV)
           (EncodedDVPairs calleeDV))) :
     DVListsSemantics substitution callerDV calleeDV := by
@@ -4500,7 +4501,7 @@ substitution condition. -/
 theorem dvLists_derivation_iff (substitution : FiniteSubstitution)
     (callerDV calleeDV : List (String × String)) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (dvLists (encodeSubstitution substitution) (EncodedDVPairs callerDV)
             (EncodedDVPairs calleeDV))) ↔
       DVListsSemantics substitution callerDV calleeDV := by
@@ -4511,7 +4512,7 @@ theorem dvLists_derivation_iff (substitution : FiniteSubstitution)
 
 private theorem dvOK_instantiates (substitution : FiniteSubstitution)
     (callerFrame calleeFrame : RuntimeFrame) :
-    instantiateRule? validatedSidePresentation
+    instantiateRule? validatedSideDefinition
         { ruleId := ruleId "$mm.dv-ok.frames"
           arguments :=
             [ encodeSubstitution substitution
@@ -4535,7 +4536,7 @@ private theorem dvOK_derivable (substitution : FiniteSubstitution)
     (callerFrame calleeFrame : RuntimeFrame)
     (semantics : DVOKSemantics substitution callerFrame calleeFrame) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (dvOK (encodeSubstitution substitution) (encodeFrame callerFrame)
           (encodeFrame calleeFrame))) := by
   rcases dvLists_derivable substitution callerFrame.dj.toList
@@ -4549,7 +4550,7 @@ private theorem dvOK_derivable (substitution : FiniteSubstitution)
         , EncodedDVPairs calleeFrame.dj.toList
         , EncodedNames calleeFrame.hyps.toList ] }
   have happlication :
-      RuleApplication validatedSidePresentation ruleInstance
+      RuleApplication validatedSideDefinition ruleInstance
         [dvLists (encodeSubstitution substitution)
           (EncodedDVPairs callerFrame.dj.toList)
           (EncodedDVPairs calleeFrame.dj.toList)]
@@ -4563,11 +4564,11 @@ private theorem dvOKApplication_decompose
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {substitutionPattern callerPattern calleePattern : Pattern}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (dvOK substitutionPattern callerPattern calleePattern)) :
     ∃ rule : RuleSchema,
       rule = dvOKRule ∧
-      validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule ∧
+      validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule ∧
       argumentsValidAt rule.metavariables ruleInstance.arguments = true ∧
       InstantiatesList rule.metavariables ruleInstance.arguments
         rule.premises premises ∧
@@ -4575,10 +4576,10 @@ private theorem dvOKApplication_decompose
         (dvOK substitutionPattern callerPattern calleePattern) := by
   cases application with
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
+      have hvalid := rule_isValidIn_of_lookup validatedSideDefinition hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
-        change rule ∈ validatedSidePresentation.1.rules
+        change rule ∈ validatedSideDefinition.1.rules
         exact List.mem_of_find?_eq_some hlookup
       have hrule : rule = dvOKRule := by
         cases hconclusionRule : rule.conclusion with
@@ -4595,22 +4596,22 @@ private theorem dvOKApplication_decompose
             simpa using hfiltered
         | bvar index =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | fvar name =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | lambda binder body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | multiLambda arity binders body =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | subst body replacement =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
         | collection collectionType elements rest =>
             rw [hconclusionRule] at hshape
-            simp [Presentation.hasJudgmentShape] at hshape
+            simp [CalculusLanguageDef.hasJudgmentShape] at hshape
       exact ⟨rule, hrule, hlookup, harguments, hpremises, hconclusion⟩
 
 private theorem dvOK_application_inv
@@ -4618,7 +4619,7 @@ private theorem dvOK_application_inv
     {substitution : FiniteSubstitution}
     {callerFrame calleeFrame : RuntimeFrame}
     (application :
-      RuleApplication validatedSidePresentation ruleInstance premises
+      RuleApplication validatedSideDefinition ruleInstance premises
         (dvOK (encodeSubstitution substitution) (encodeFrame callerFrame)
           (encodeFrame calleeFrame))) :
     premises =
@@ -4645,7 +4646,7 @@ independent ordinary-list DV semantics. -/
 theorem dvOK_derivation_iff (substitution : FiniteSubstitution)
     (callerFrame calleeFrame : RuntimeFrame) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (dvOK (encodeSubstitution substitution) (encodeFrame callerFrame)
             (encodeFrame calleeFrame))) ↔
       DVOKSemantics substitution callerFrame calleeFrame := by
@@ -4676,7 +4677,7 @@ theorem dvOK_singleton_derivable (substitution : FiniteSubstitution)
         (BodyVariables leftReplacement.body)
         (BodyVariables rightReplacement.body)) :
     Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (dvOK (encodeSubstitution substitution) (encodeFrame callerFrame)
           (encodeFrame
             { dj := [(left, right)].toArray
@@ -4698,7 +4699,7 @@ theorem dvOK_missing_left_binding_not_derivable
       ∀ replacement : ConstantHeadedFormula,
         ¬LookupSemantics substitution left replacement) :
     ¬Nonempty
-      (Derivation validatedSidePresentation
+      (Derivation validatedSideDefinition
         (dvOK (encodeSubstitution substitution) (encodeFrame callerFrame)
           (encodeFrame
             { dj := [(left, right)].toArray
@@ -4855,7 +4856,7 @@ theorem dvOK_derivation_implies_spec_dvOK
             (⟨variableName⟩ : Metamath.Spec.Variable))
     (derivable :
       Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (dvOK (encodeSubstitution substitution) (encodeFrame callerFrame)
             (encodeFrame calleeFrame)))) :
     Metamath.Spec.dvOK activeVariables

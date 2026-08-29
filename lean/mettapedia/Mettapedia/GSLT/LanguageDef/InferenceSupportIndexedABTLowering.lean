@@ -203,9 +203,9 @@ theorem instantiateSchema?_eq_supportSubstitution
 support lowering. -/
 theorem ruleSchema_formalNames_nodup_of_validV1
     {rule : RuleSchema}
-    (valid : InferenceChecker.RuleSchema.isValidV1 rule = true) :
+    (valid : InferenceChecker.RuleSchema.isLocallyValid rule = true) :
     (rule.metavariables.map Prod.fst).Nodup := by
-  unfold InferenceChecker.RuleSchema.isValidV1 at valid
+  unfold InferenceChecker.RuleSchema.isLocallyValid at valid
   simp only [Bool.and_eq_true] at valid
   exact (Mettapedia.Util.LinearHash.eraseDupsLength_eq_true_iff_nodup
     (InferenceChecker.RuleSchema.metavariableNames rule)).mp
@@ -234,7 +234,7 @@ action with no additional trusted binding premise. -/
 theorem ruleSchema_instantiate_eq_supportSubstitution
     {rule : RuleSchema} {arguments : List Pattern}
     {schema result : Pattern}
-    (ruleValid : InferenceChecker.RuleSchema.isValidV1 rule = true)
+    (ruleValid : InferenceChecker.RuleSchema.isLocallyValid rule = true)
     (argumentsValid :
       argumentsValidAt rule.metavariables arguments = true)
     (checked :
@@ -798,11 +798,11 @@ end PatternABT
 support-indexed ABT environment.  Premise order, the instantiated conclusion,
 the exact rule occurrence, physical argument support, and side-condition
 evidence are all retained. -/
-inductive ABTRuleApplication (presentation : ValidatedPresentation)
+inductive ABTRuleApplication (definition : ValidatedCalculusLanguageDef)
     (ruleInstance : RuleInstance) (premises : List Pattern)
     (conclusion : Pattern) : Prop where
   | intro (rule : RuleSchema)
-      (lookup : presentation.1.lookupRule? ruleInstance.ruleId = some rule)
+      (lookup : definition.1.lookupRule? ruleInstance.ruleId = some rule)
       (argumentsSupported :
         PatternABT.argumentsSupportedAt
           rule.metavariables ruleInstance.arguments = true)
@@ -820,22 +820,22 @@ inductive ABTRuleApplication (presentation : ValidatedPresentation)
             (assignmentOfArguments
               rule.metavariables ruleInstance.arguments) 0 rule.conclusion =
           conclusion) :
-      ABTRuleApplication presentation ruleInstance premises conclusion
+      ABTRuleApplication definition ruleInstance premises conclusion
 
 /-- Every declarative application admitted by NIK has one whole-rule physical
 ABT lowering.  No additional uniqueness, coverage, or binding premise is
 trusted at this boundary. -/
 theorem ruleApplication_toABTRuleApplication
-    {presentation : ValidatedPresentation} {ruleInstance : RuleInstance}
+    {definition : ValidatedCalculusLanguageDef} {ruleInstance : RuleInstance}
     {premises : List Pattern} {conclusion : Pattern}
     (application :
-      RuleApplication presentation ruleInstance premises conclusion) :
-    ABTRuleApplication presentation ruleInstance premises conclusion := by
+      RuleApplication definition ruleInstance premises conclusion) :
+    ABTRuleApplication definition ruleInstance premises conclusion := by
   cases application with
   | intro rule lookup argumentsValid sideConditionsValid
       premisesInstantiate conclusionInstantiates =>
-      have validIn := rule_isValidIn_of_lookup presentation lookup
-      have validV1 : RuleSchema.isValidV1 rule = true := by
+      have validIn := rule_isValidIn_of_lookup definition lookup
+      have validV1 : RuleSchema.isLocallyValid rule = true := by
         simp only [RuleSchema.isValidIn, Bool.and_eq_true] at validIn
         exact validIn.1
       have namesUnique := ruleSchema_formalNames_nodup_of_validV1 validV1
@@ -852,12 +852,12 @@ theorem ruleApplication_toABTRuleApplication
 /-- Successful executable rule replay therefore produces the same whole-rule
 support-indexed ABT certificate. -/
 theorem instantiateRule?_eq_some_implies_abt
-    {presentation : ValidatedPresentation} {ruleInstance : RuleInstance}
+    {definition : ValidatedCalculusLanguageDef} {ruleInstance : RuleInstance}
     {premises : List Pattern} {conclusion : Pattern}
     (checked :
-      instantiateRule? presentation ruleInstance =
+      instantiateRule? definition ruleInstance =
         some (premises, conclusion)) :
-    ABTRuleApplication presentation ruleInstance premises conclusion :=
+    ABTRuleApplication definition ruleInstance premises conclusion :=
   ruleApplication_toABTRuleApplication
     (instantiateRule?_eq_some_iff_application.mp checked)
 
@@ -866,21 +866,21 @@ mutual
 /-- A proof-relevant derivation whose every local application is represented
 by the physical support-indexed ABT lowering. -/
 inductive ABTDerivation
-    (presentation : ValidatedPresentation) : Pattern → Type where
+    (definition : ValidatedCalculusLanguageDef) : Pattern → Type where
   | byRule (ruleInstance : RuleInstance) {premises : List Pattern}
       {conclusion : Pattern}
       (application :
-        ABTRuleApplication presentation ruleInstance premises conclusion)
-      (children : ABTDerivationList presentation premises) :
-      ABTDerivation presentation conclusion
+        ABTRuleApplication definition ruleInstance premises conclusion)
+      (children : ABTDerivationList definition premises) :
+      ABTDerivation definition conclusion
 
 inductive ABTDerivationList
-    (presentation : ValidatedPresentation) : List Pattern → Type where
-  | nil : ABTDerivationList presentation []
+    (definition : ValidatedCalculusLanguageDef) : List Pattern → Type where
+  | nil : ABTDerivationList definition []
   | cons {premise : Pattern} {premises : List Pattern}
-      (head : ABTDerivation presentation premise)
-      (tail : ABTDerivationList presentation premises) :
-      ABTDerivationList presentation (premise :: premises)
+      (head : ABTDerivation definition premise)
+      (tail : ABTDerivationList definition premises) :
+      ABTDerivationList definition (premise :: premises)
 
 end
 
@@ -889,16 +889,16 @@ mutual
 /-- Lower every authenticated node of a logical derivation through the same
 physical ABT interpretation. -/
 def derivationToABT
-    {presentation : ValidatedPresentation} {goal : Pattern} :
-    Derivation presentation goal → ABTDerivation presentation goal
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} :
+    Derivation definition goal → ABTDerivation definition goal
   | .byRule ruleInstance application children =>
       .byRule ruleInstance (ruleApplication_toABTRuleApplication application)
         (derivationListToABT children)
 
 def derivationListToABT
-    {presentation : ValidatedPresentation} {premises : List Pattern} :
-    DerivationList presentation premises →
-      ABTDerivationList presentation premises
+    {definition : ValidatedCalculusLanguageDef} {premises : List Pattern} :
+    DerivationList definition premises →
+      ABTDerivationList definition premises
   | .nil => .nil
   | .cons head tail => .cons (derivationToABT head) (derivationListToABT tail)
 
@@ -909,14 +909,14 @@ mutual
 
 /-- Erase a physical ABT derivation to the same chronological proof article. -/
 def ABTDerivation.erase
-    {presentation : ValidatedPresentation} {goal : Pattern} :
-    ABTDerivation presentation goal → RawProof
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} :
+    ABTDerivation definition goal → RawProof
   | .byRule ruleInstance _ children =>
       .node ruleInstance (ABTDerivationList.erase children)
 
 def ABTDerivationList.erase
-    {presentation : ValidatedPresentation} {premises : List Pattern} :
-    ABTDerivationList presentation premises → List RawProof
+    {definition : ValidatedCalculusLanguageDef} {premises : List Pattern} :
+    ABTDerivationList definition premises → List RawProof
   | .nil => []
   | .cons head tail => head.erase :: tail.erase
 
@@ -926,8 +926,8 @@ mutual
 
 /-- Whole-derivation ABT lowering is observationally exact at the proof wire. -/
 @[simp] theorem derivationToABT_erase
-    {presentation : ValidatedPresentation} {goal : Pattern}
-    (derivation : Derivation presentation goal) :
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern}
+    (derivation : Derivation definition goal) :
     ABTDerivation.erase (derivationToABT derivation) =
       Derivation.erase derivation := by
   cases derivation with
@@ -936,8 +936,8 @@ mutual
         derivationListToABT_erase children, Derivation.erase]
 
 @[simp] theorem derivationListToABT_erase
-    {presentation : ValidatedPresentation} {premises : List Pattern}
-    (derivations : DerivationList presentation premises) :
+    {definition : ValidatedCalculusLanguageDef} {premises : List Pattern}
+    (derivations : DerivationList definition premises) :
     ABTDerivationList.erase (derivationListToABT derivations) =
       DerivationList.erase derivations := by
   cases derivations with

@@ -229,7 +229,7 @@ inductive SourceFactor where
     Unlike `SourceFactor`s which query/constrain the space, guards only inspect
     the current substitution and accept or reject it.
 
-    Design rationale (Council directive): keep workspace-facing operations
+    Design rationale: keep workspace-facing operations
     (`SourceFactor`) separate from substitution-level conditions (`SourceGuard`). -/
 inductive SourceGuard where
   /-- Freshness guard: resolve variable `v` through the substitution,

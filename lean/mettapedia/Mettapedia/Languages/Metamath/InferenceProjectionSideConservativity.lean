@@ -15,6 +15,7 @@ language, nor does it restrict derivations of `Proves` goals.
 namespace Mettapedia.Languages.Metamath.InferenceProjection
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.Metamath.InferenceEncoding
 open Mettapedia.Languages.Metamath.InferenceSideConditions
@@ -62,11 +63,11 @@ termination_by results.length
 the reserved side heads. -/
 theorem isSideJudgment_of_sidePresentation_hasJudgmentShape
     {judgment : Pattern}
-    (hshape : sidePresentation.hasJudgmentShape judgment = true) :
+    (hshape : sideDefinition.hasJudgmentShape judgment = true) :
     IsSideJudgment judgment := by
   cases judgment with
   | apply head arguments =>
-      unfold Presentation.hasJudgmentShape Presentation.lookupJudgment? at hshape
+      unfold CalculusLanguageDef.hasJudgmentShape CalculusLanguageDef.lookupJudgment? at hshape
       change
         (match judgmentDecls.filter (fun (declaration : JudgmentDecl) =>
             declaration.head == head &&
@@ -92,7 +93,7 @@ theorem isSideJudgment_of_sidePresentation_hasJudgmentShape
                 simp only [Bool.and_eq_true, beq_iff_eq] at hparts
                 exact hparts.2.1
               have hmemDecl : declaration ∈ judgmentDecls := by
-                simpa [sidePresentation, sideCalculus] using hparts.1
+                simpa [sideDefinition, sideCalculus] using hparts.1
               have hheadReserved :
                   declaration.head ∈ reservedJudgmentHeads := by
                 have hmap :
@@ -105,7 +106,7 @@ theorem isSideJudgment_of_sidePresentation_hasJudgmentShape
           | cons second tail =>
               simp [hfound] at hshape
   | bvar | fvar | lambda | multiLambda | subst | collection =>
-      simp [Presentation.hasJudgmentShape] at hshape
+      simp [CalculusLanguageDef.hasJudgmentShape] at hshape
 
 /-- Premises of every standalone side rule remain inside the side-judgment
 fragment.  This derives from V2 validation rather than an enumeration of the
@@ -114,15 +115,15 @@ theorem sideRule_premises_all_isSideJudgment
     {rule : RuleSchema} (hmem : rule ∈ sideRules) :
     AllSideJudgments rule.premises := by
   intro premise hpremise
-  have hvalid := rule_isValidIn_of_mem validatedSidePresentation (by
-    simpa [validatedSidePresentation, sidePresentation, sideCalculus] using hmem)
+  have hvalid := rule_isValidIn_of_mem validatedSideDefinition (by
+    simpa [validatedSideDefinition, sideDefinition, sideCalculus] using hmem)
   simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalid
   have hpremiseValid :
-      sidePresentation.judgmentSchemaValid premise = true :=
+      sideDefinition.judgmentSchemaValid premise = true :=
     (List.all_eq_true.mp hvalid.2.1) premise (by
       simp [RuleSchema.patterns, hpremise])
   exact isSideJudgment_of_sidePresentation_hasJudgmentShape
-    (Presentation.hasJudgmentShape_of_judgmentSchemaValid hpremiseValid)
+    (CalculusLanguageDef.hasJudgmentShape_of_judgmentSchemaValid hpremiseValid)
 
 /-- Every generated source rule has exactly the source-provability outer
 head. -/
@@ -166,24 +167,24 @@ theorem generatedSourceRule_instantiation_not_isSideJudgment
 table, the standalone presentation finds that exact same rule.  No global
 conservativity or reverse lookup refinement is asserted. -/
 theorem standalone_lookup_of_projected_lookup_of_sideRule
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hrules :
       target.1.rules = sideRules ++ generatedSourceRules projection)
     {ruleInstance : RuleInstance} {rule : RuleSchema}
     (hlookup :
       target.1.lookupRule? ruleInstance.ruleId = some rule)
     (hside : rule ∈ sideRules) :
-    validatedSidePresentation.1.lookupRule? ruleInstance.ruleId = some rule := by
+    validatedSideDefinition.1.lookupRule? ruleInstance.ruleId = some rule := by
   have hid : decide (rule.id = ruleInstance.ruleId) = true := by
     have hlookupFind :
         List.find? (fun candidate : RuleSchema =>
           decide (candidate.id = ruleInstance.ruleId)) target.1.rules =
             some rule := by
-      simpa [Presentation.lookupRule?] using hlookup
+      simpa [CalculusLanguageDef.lookupRule?] using hlookup
     exact List.find?_some
       (p := fun candidate : RuleSchema =>
         decide (candidate.id = ruleInstance.ruleId)) hlookupFind
-  unfold Presentation.lookupRule? at hlookup ⊢
+  unfold CalculusLanguageDef.lookupRule? at hlookup ⊢
   rw [hrules] at hlookup
   cases hsideLookup :
       sideRules.find? (fun candidate => decide (candidate.id = ruleInstance.ruleId)) with
@@ -194,7 +195,7 @@ theorem standalone_lookup_of_projected_lookup_of_sideRule
       rw [List.find?_append, hsideLookup] at hlookup
       have hselected : selectedRule = rule := Option.some.inj hlookup
       subst selectedRule
-      simpa [validatedSidePresentation, sidePresentation, sideCalculus]
+      simpa [validatedSideDefinition, sideDefinition, sideCalculus]
         using hsideLookup
 
 /-! ## Application and tree restriction -/
@@ -202,7 +203,7 @@ theorem standalone_lookup_of_projected_lookup_of_sideRule
 /-- Local reflection together with the recursive closure invariant needed to
 restrict an entire ordered derivation tree. -/
 def SideApplicationReflects
-    (source target : ValidatedPresentation) : Prop :=
+    (source target : ValidatedCalculusLanguageDef) : Prop :=
   ∀ {ruleInstance : RuleInstance} {premises : List Pattern}
       {conclusion : Pattern},
     IsSideJudgment conclusion →
@@ -214,10 +215,10 @@ def SideApplicationReflects
 side head.  The generated-rule case is impossible because its instantiated
 conclusion retains `provesHead`. -/
 theorem sideApplicationReflects_of_generated_rules
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hrules :
       target.1.rules = sideRules ++ generatedSourceRules projection) :
-    SideApplicationReflects validatedSidePresentation target := by
+    SideApplicationReflects validatedSideDefinition target := by
   intro ruleInstance premises conclusion hside happlication
   cases happlication with
   | intro rule hlookup harguments hsideConditions hpremises hconclusion =>
@@ -241,12 +242,12 @@ theorem sideApplicationReflects_of_generated_rules
 
 /-- Successful projection gives the concrete local reflection interface. -/
 theorem sideApplicationReflects_of_projection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1) :
-    SideApplicationReflects validatedSidePresentation target :=
+      calculusLanguageDefOfProjection? projection = some target.1) :
+    SideApplicationReflects validatedSideDefinition target :=
   sideApplicationReflects_of_generated_rules projection target
-    (rules_eq_of_presentationOfProjection?_eq_some
+    (rules_eq_of_calculusLanguageDefOfProjection?_eq_some
       projection target.1 hprojection)
 
 mutual
@@ -254,7 +255,7 @@ mutual
 /-- Restrict a derivation whose root and recursively generated premises stay
 inside the side-judgment fragment. -/
 def restrictSideDerivation
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (hreflects : SideApplicationReflects source target)
     {goal : Pattern} (hgoal : IsSideJudgment goal) :
     Derivation target goal → Derivation source goal
@@ -265,7 +266,7 @@ def restrictSideDerivation
 
 /-- Ordered premise lists restrict pointwise without permutation or loss. -/
 def restrictSideDerivationList
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (hreflects : SideApplicationReflects source target)
     {premises : List Pattern} (hsides : AllSideJudgments premises) :
     DerivationList target premises → DerivationList source premises
@@ -285,7 +286,7 @@ mutual
 /-- Restriction preserves the exact raw tree, including every ordered child
 position. -/
 @[simp] theorem erase_restrictSideDerivation
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (hreflects : SideApplicationReflects source target)
     {goal : Pattern} (hgoal : IsSideJudgment goal)
     (derivation : Derivation target goal) :
@@ -298,7 +299,7 @@ position. -/
 
 /-- Exact erasure preservation for restricted ordered premise lists. -/
 @[simp] theorem erase_restrictSideDerivationList
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (hreflects : SideApplicationReflects source target)
     {premises : List Pattern} (hsides : AllSideJudgments premises)
     (derivations : DerivationList target premises) :
@@ -313,73 +314,73 @@ position. -/
 
 end
 
-/-! ## Successfully projected presentations -/
+/-! ## Successfully projected definitions -/
 
-/-- A standalone side derivation lifts to a successfully projected and V2
-validated presentation through exact rule-lookup refinement. -/
+/-- A standalone side derivation lifts to a successfully projected and
+validated definition through exact rule-lookup refinement. -/
 def liftSideDerivationToProjection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {goal : Pattern}
-    (derivation : Derivation validatedSidePresentation goal) :
+    (derivation : Derivation validatedSideDefinition goal) :
     Derivation target goal :=
   derivation.transport
-    (validatedSidePresentation_refines_of_projection
+    (validatedSideDefinition_refines_of_projection
       projection target hprojection)
 
-/-- Lifting changes only the presentation index, not the raw evidence. -/
+/-- Lifting changes only the definition index, not the raw evidence. -/
 @[simp] theorem erase_liftSideDerivationToProjection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {goal : Pattern}
-    (derivation : Derivation validatedSidePresentation goal) :
+    (derivation : Derivation validatedSideDefinition goal) :
     (liftSideDerivationToProjection projection target hprojection
       derivation).erase = derivation.erase := by
   exact Derivation.erase_transport
-    (validatedSidePresentation_refines_of_projection
+    (validatedSideDefinition_refines_of_projection
       projection target hprojection) derivation
 
 /-- A standalone checked proof lifts with the identical untrusted raw proof
 payload. -/
 def liftSideCheckedProofToProjection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {goal : Pattern}
-    (proof : CheckedProof validatedSidePresentation goal) :
+    (proof : CheckedProof validatedSideDefinition goal) :
     CheckedProof target goal :=
   proof.transport
-    (validatedSidePresentation_refines_of_projection
+    (validatedSideDefinition_refines_of_projection
       projection target hprojection)
 
 @[simp] theorem liftSideCheckedProofToProjection_payload
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {goal : Pattern}
-    (proof : CheckedProof validatedSidePresentation goal) :
+    (proof : CheckedProof validatedSideDefinition goal) :
     (liftSideCheckedProofToProjection projection target hprojection proof).1 =
       proof.1 := rfl
 
 /-- A projected derivation of a side judgment restricts back to the standalone
 calculus.  This theorem intentionally has no analogue here for `Proves`. -/
 def restrictSideDerivationFromProjection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {goal : Pattern} (hgoal : IsSideJudgment goal)
     (derivation : Derivation target goal) :
-    Derivation validatedSidePresentation goal :=
+    Derivation validatedSideDefinition goal :=
   restrictSideDerivation
     (sideApplicationReflects_of_projection projection target hprojection)
     hgoal derivation
 
 @[simp] theorem erase_restrictSideDerivationFromProjection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {goal : Pattern} (hgoal : IsSideJudgment goal)
     (derivation : Derivation target goal) :
     (restrictSideDerivationFromProjection projection target hprojection
@@ -391,12 +392,12 @@ def restrictSideDerivationFromProjection
 /-- Acceptance of an exact raw tree for a projected side goal reflects to the
 standalone side checker. -/
 theorem checkRaw_true_standalone_of_projection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {goal : Pattern} (hgoal : IsSideJudgment goal) {proof : RawProof}
     (hcheck : checkRaw target goal proof = true) :
-    checkRaw validatedSidePresentation goal proof = true := by
+    checkRaw validatedSideDefinition goal proof = true := by
   rcases checkRaw_exists_derivation_with_exact_erasure hcheck with
     ⟨derivation, herasure⟩
   let restricted :=
@@ -409,15 +410,15 @@ theorem checkRaw_true_standalone_of_projection
 /-- On side-judgment goals the two checkers accept exactly the same raw proof
 trees. -/
 theorem checkRaw_standalone_iff_projection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {goal : Pattern} (hgoal : IsSideJudgment goal) (proof : RawProof) :
-    checkRaw validatedSidePresentation goal proof = true ↔
+    checkRaw validatedSideDefinition goal proof = true ↔
       checkRaw target goal proof = true := by
   constructor
   · exact checkRaw_true_of_ruleLookupRefines
-      (validatedSidePresentation_refines_of_projection
+      (validatedSideDefinition_refines_of_projection
         projection target hprojection)
   · exact checkRaw_true_standalone_of_projection
       projection target hprojection hgoal
@@ -425,19 +426,19 @@ theorem checkRaw_standalone_iff_projection
 /-- Restriction of a checked projected side proof preserves its exact raw
 payload. -/
 def restrictSideCheckedProofFromProjection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {goal : Pattern} (hgoal : IsSideJudgment goal)
     (proof : CheckedProof target goal) :
-    CheckedProof validatedSidePresentation goal :=
+    CheckedProof validatedSideDefinition goal :=
   ⟨proof.1, checkRaw_true_standalone_of_projection
     projection target hprojection hgoal proof.2⟩
 
 @[simp] theorem restrictSideCheckedProofFromProjection_payload
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {goal : Pattern} (hgoal : IsSideJudgment goal)
     (proof : CheckedProof target goal) :
     (restrictSideCheckedProofFromProjection projection target hprojection
@@ -446,11 +447,11 @@ def restrictSideCheckedProofFromProjection
 /-- Side-judgment derivability is conservative under a successful projection.
 Only inhabitation is compared; no proof-irrelevance claim is needed. -/
 theorem sideDerivation_nonempty_iff_projection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {goal : Pattern} (hgoal : IsSideJudgment goal) :
-    Nonempty (Derivation validatedSidePresentation goal) ↔
+    Nonempty (Derivation validatedSideDefinition goal) ↔
       Nonempty (Derivation target goal) := by
   constructor
   · rintro ⟨derivation⟩

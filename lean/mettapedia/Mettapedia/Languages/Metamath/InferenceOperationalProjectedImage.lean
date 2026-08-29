@@ -2,6 +2,8 @@ import Mettapedia.Languages.Metamath.InferenceOperationalSpecStepInversion
 import Mettapedia.Languages.Metamath.InferenceOperationalProjectionReification
 import Mettapedia.Languages.Metamath.InferenceActiveHypothesisLeaf
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Canonical projected images of singleton Metamath operational steps
 
@@ -56,8 +58,8 @@ has some retained source hypothesis as a canonical generated leaf.  The source
 label is existential because the operational hypothesis carrier erases it. -/
 theorem proofValidFrom_single_projected_useHyp_image
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (initial final : List Metamath.Spec.Expr)
     (hypothesis : Metamath.Spec.Hyp)
     (hvalid : Metamath.Spec.ProofValidFrom
@@ -115,9 +117,9 @@ as a preimage.  Operational floating typing and DV validity come directly
 from inversion; all structural/tag conditions come from successful projection. -/
 theorem proofValidFrom_single_projected_useAssertion_image
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
+    (target : ValidatedCalculusLanguageDef)
     (hproject : projectPrefix? db = some projection)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView)
     (hmember : assertion ∈ projection.assertions)
     (specSubstitution : Metamath.Spec.Subst)
@@ -221,9 +223,9 @@ provably extensionally identical to the supplied total function, including
 outside the finite callee key set. -/
 theorem canonicalGeneratedAssertionNode_toProofValidFrom
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
+    (target : ValidatedCalculusLanguageDef)
     (hproject : projectPrefix? db = some projection)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView)
     (hmember : assertion ∈ projection.assertions)
     (specSubstitution : Metamath.Spec.Subst)
@@ -282,9 +284,9 @@ The finite witness, actuals, and result are fixed canonically; the older
 operational suffix remains an explicit parameter. -/
 theorem canonicalGeneratedAssertionNode_nonempty_iff_singleProofValidFrom
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
+    (target : ValidatedCalculusLanguageDef)
     (hproject : projectPrefix? db = some projection)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView)
     (hmember : assertion ∈ projection.assertions)
     (specSubstitution : Metamath.Spec.Subst)

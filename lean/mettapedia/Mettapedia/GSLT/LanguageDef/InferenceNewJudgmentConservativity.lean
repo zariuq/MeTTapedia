@@ -20,7 +20,7 @@ namespace Mettapedia.GSLT.LanguageDef.InferenceNewJudgmentConservativity
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.InferencePresentationExtension
+open Mettapedia.GSLT.LanguageDef.CalculusLanguageExtension
 open Mettapedia.GSLT.LanguageDef.InferenceSemanticExtension
 open Mettapedia.GSLT.LanguageDef.ExtensionGluing
 
@@ -29,14 +29,14 @@ open Mettapedia.GSLT.LanguageDef.ExtensionGluing
 /-- Pointwise judgment-shape preservation for an instantiated ordered
 premise vector. -/
 theorem InstantiatesListAt.results_haveJudgmentShape
-    {presentation : Presentation} {formals : List (String × Nat)}
+    {definition : CalculusLanguageDef} {formals : List (String × Nat)}
     {arguments : List Pattern} {depth : Nat}
     {schemas results : List Pattern}
     (instantiates :
       InstantiatesListAt formals arguments depth schemas results)
     (schemaShapes : ∀ schema ∈ schemas,
-      presentation.hasJudgmentShape schema = true) :
-    ∀ result ∈ results, presentation.hasJudgmentShape result = true := by
+      definition.hasJudgmentShape schema = true) :
+    ∀ result ∈ results, definition.hasJudgmentShape result = true := by
   induction schemas generalizing results with
   | nil =>
       cases instantiates
@@ -57,26 +57,26 @@ theorem InstantiatesListAt.results_haveJudgmentShape
 /-- Every instantiated premise of a base rule application remains in the
 base judgment signature. -/
 theorem RuleApplication.premises_haveJudgmentShape
-    {presentation : ValidatedPresentation} {ruleInstance : RuleInstance}
+    {definition : ValidatedCalculusLanguageDef} {ruleInstance : RuleInstance}
     {premises : List Pattern} {conclusion : Pattern}
     (application :
-      RuleApplication presentation ruleInstance premises conclusion) :
+      RuleApplication definition ruleInstance premises conclusion) :
     ∀ premise ∈ premises,
-      presentation.1.hasJudgmentShape premise = true := by
+      definition.1.hasJudgmentShape premise = true := by
   cases application with
   | intro rule lookup argumentsValid sideConditionsValid
       premisesInstantiate conclusionInstantiates =>
-      have valid := rule_isValidIn_of_lookup presentation lookup
+      have valid := rule_isValidIn_of_lookup definition lookup
       have patternShapes :
           ∀ pattern ∈ RuleSchema.patterns rule,
-            presentation.1.hasJudgmentShape pattern = true := by
+            definition.1.hasJudgmentShape pattern = true := by
         intro pattern member
         have schemasValid :
             (RuleSchema.patterns rule).all
-                presentation.1.judgmentSchemaValid = true := by
+                definition.1.judgmentSchemaValid = true := by
           simp only [RuleSchema.isValidIn, Bool.and_eq_true] at valid
           exact valid.2.1
-        exact presentation.1.hasJudgmentShape_of_judgmentSchemaValid
+        exact definition.1.hasJudgmentShape_of_judgmentSchemaValid
           ((List.all_eq_true.mp schemasValid) pattern member)
       exact
         InferenceNewJudgmentConservativity.InstantiatesListAt.results_haveJudgmentShape
@@ -86,8 +86,8 @@ theorem RuleApplication.premises_haveJudgmentShape
 
 /-! ## Added rules cannot derive base judgments -/
 
-theorem ValidatedExtension.addedRule_not_baseShaped
-    {base : ValidatedPresentation} (extension : ValidatedExtension base)
+theorem ValidatedCalculusLanguageExtension.addedRule_not_baseShaped
+    {base : ValidatedCalculusLanguageDef} (extension : ValidatedCalculusLanguageExtension base)
     (policy : extension.policy = .newJudgmentsOnly)
     {rule : RuleSchema} (member : rule ∈ extension.extension.newRules)
     {ruleInstance : RuleInstance} {premises : List Pattern}
@@ -108,7 +108,7 @@ theorem ValidatedExtension.addedRule_not_baseShaped
       rw [policy] at policyHolds
       have actualPolicy :=
         (List.all_eq_true.mp (by
-          simpa [PresentationExtension.policyHolds] using policyHolds))
+          simpa [CalculusLanguageExtension.policyHolds] using policyHolds))
           actualRule member
       rcases actualRule with
         ⟨ruleId, metavariables, rulePremises, ruleConclusion,
@@ -118,7 +118,7 @@ theorem ValidatedExtension.addedRule_not_baseShaped
           have foundResult :
               (base.1.lookupJudgment?
                 constructor results.length).isSome = true := by
-            simpa [Presentation.hasJudgmentShape] using baseShape
+            simpa [CalculusLanguageDef.hasJudgmentShape] using baseShape
           have foundSchema :
               (base.1.lookupJudgment?
                 constructor schemas.length).isSome = true := by
@@ -143,9 +143,9 @@ theorem ValidatedExtension.addedRule_not_baseShaped
 mutual
 
 /-- A raw proof of an old judgment accepted by a `newJudgmentsOnly` target is
-accepted unchanged by the base presentation. -/
-theorem ValidatedExtension.checkRaw_true_base_of_newJudgmentsOnly
-    {base : ValidatedPresentation} (extension : ValidatedExtension base)
+accepted unchanged by the base definition. -/
+theorem ValidatedCalculusLanguageExtension.checkRaw_true_base_of_newJudgmentsOnly
+    {base : ValidatedCalculusLanguageDef} (extension : ValidatedCalculusLanguageExtension base)
     (policy : extension.policy = .newJudgmentsOnly)
     {goal : Pattern} (baseShape : base.1.hasJudgmentShape goal = true)
     {proof : RawProof}
@@ -174,20 +174,20 @@ theorem ValidatedExtension.checkRaw_true_base_of_newJudgmentsOnly
             instantiateRule?_eq_some_iff_application.mpr baseApplication
           simp only [baseLocal, decide_true, Bool.true_and]
           exact
-            InferenceNewJudgmentConservativity.ValidatedExtension.checkRawChildren_true_base_of_newJudgmentsOnly
+            InferenceNewJudgmentConservativity.ValidatedCalculusLanguageExtension.checkRawChildren_true_base_of_newJudgmentsOnly
               extension policy
               (InferenceNewJudgmentConservativity.RuleApplication.premises_haveJudgmentShape
                 baseApplication)
               childrenAccepted
         · exact False.elim
-            (InferenceNewJudgmentConservativity.ValidatedExtension.addedRule_not_baseShaped
+            (InferenceNewJudgmentConservativity.ValidatedCalculusLanguageExtension.addedRule_not_baseShaped
               extension policy member lookup application baseShape)
 termination_by sizeOf proof
 
 /-- Ordered premise proofs accepted by the target reflect pointwise to the
 base checker when every premise belongs to the base judgment signature. -/
-theorem ValidatedExtension.checkRawChildren_true_base_of_newJudgmentsOnly
-    {base : ValidatedPresentation} (extension : ValidatedExtension base)
+theorem ValidatedCalculusLanguageExtension.checkRawChildren_true_base_of_newJudgmentsOnly
+    {base : ValidatedCalculusLanguageDef} (extension : ValidatedCalculusLanguageExtension base)
     (policy : extension.policy = .newJudgmentsOnly)
     {premises : List Pattern}
     (baseShapes : ∀ premise ∈ premises,
@@ -207,9 +207,9 @@ theorem ValidatedExtension.checkRawChildren_true_base_of_newJudgmentsOnly
       | cons proof proofs =>
           simp only [checkRawChildren, Bool.and_eq_true] at accepted ⊢
           exact ⟨
-            InferenceNewJudgmentConservativity.ValidatedExtension.checkRaw_true_base_of_newJudgmentsOnly
+            InferenceNewJudgmentConservativity.ValidatedCalculusLanguageExtension.checkRaw_true_base_of_newJudgmentsOnly
               extension policy (baseShapes premise (by simp)) accepted.1,
-            InferenceNewJudgmentConservativity.ValidatedExtension.checkRawChildren_true_base_of_newJudgmentsOnly
+            InferenceNewJudgmentConservativity.ValidatedCalculusLanguageExtension.checkRawChildren_true_base_of_newJudgmentsOnly
               extension policy
               (fun candidate membership =>
                 baseShapes candidate (by simp [membership]))
@@ -224,23 +224,23 @@ end
 /-- A target derivation of an old judgment has a base derivation with exactly
 the same raw proof tree.  Existence is stated in `Prop`, so classifying a rule
 application cannot leak proof choices into computation. -/
-theorem ValidatedExtension.exists_reflectedBaseDerivation
-    {base : ValidatedPresentation} (extension : ValidatedExtension base)
+theorem ValidatedCalculusLanguageExtension.exists_reflectedBaseDerivation
+    {base : ValidatedCalculusLanguageDef} (extension : ValidatedCalculusLanguageExtension base)
     (policy : extension.policy = .newJudgmentsOnly)
     {goal : Pattern} (baseShape : base.1.hasJudgmentShape goal = true)
     (derivation : Derivation extension.target goal) :
     ∃ reflected : Derivation base goal, reflected.erase = derivation.erase := by
   have targetAccepted := checkRaw_erase derivation
   have baseAccepted :=
-    InferenceNewJudgmentConservativity.ValidatedExtension.checkRaw_true_base_of_newJudgmentsOnly
+    InferenceNewJudgmentConservativity.ValidatedCalculusLanguageExtension.checkRaw_true_base_of_newJudgmentsOnly
       extension policy baseShape targetAccepted
   exact G2_checkRaw_iff_exists_derivation_erases_to.mp baseAccepted
 
 /-- **Derivation-level conservativity.** On every base-shaped goal, target
 acceptance under `newJudgmentsOnly` is exactly base acceptance for the same
 raw proof artifact. -/
-theorem ValidatedExtension.checkRaw_iff_base_of_newJudgmentsOnly
-    {base : ValidatedPresentation} (extension : ValidatedExtension base)
+theorem ValidatedCalculusLanguageExtension.checkRaw_iff_base_of_newJudgmentsOnly
+    {base : ValidatedCalculusLanguageDef} (extension : ValidatedCalculusLanguageExtension base)
     (policy : extension.policy = .newJudgmentsOnly)
     {goal : Pattern} (baseShape : base.1.hasJudgmentShape goal = true)
     (proof : RawProof) :
@@ -248,7 +248,7 @@ theorem ValidatedExtension.checkRaw_iff_base_of_newJudgmentsOnly
       checkRaw base goal proof = true := by
   constructor
   · exact
-      InferenceNewJudgmentConservativity.ValidatedExtension.checkRaw_true_base_of_newJudgmentsOnly
+      InferenceNewJudgmentConservativity.ValidatedCalculusLanguageExtension.checkRaw_true_base_of_newJudgmentsOnly
         extension policy baseShape
   · exact checkRaw_true_of_ruleLookupRefines extension.refines
 
@@ -259,31 +259,35 @@ namespace ExtendsBaseCounterexample
 private def oldJudgment (payload : Pattern) : Pattern :=
   .apply "Old" [payload]
 
-private def basePresentation : Presentation :=
-  { language := LanguageDef.empty "old-judgment-base"
-    calculus :=
-      { judgments := [{ head := "Old", arity := 1 }]
-        rules := [] } }
+private def baseDefinition : CalculusLanguageDef :=
+  { name := "old-judgment-base"
+    types := []
+    terms := []
+    equations := []
+    rewrites := []
+    judgments := [{ head := "Old", arity := 1 }]
+    rules := [] }
 
 private theorem emptyLanguage_validate (name : String) :
     (LanguageDef.empty name).validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [LanguageDef.empty, LanguageDef.typeNames]
 
-private theorem basePresentation_valid :
-    basePresentation.isValidV2 = true := by
-  have validate : basePresentation.language.validate = [] := by
-    simpa [basePresentation] using emptyLanguage_validate "old-judgment-base"
-  unfold Presentation.isValidV2 Presentation.isValidV1
+private theorem baseDefinition_valid :
+    baseDefinition.isValid = true := by
+  have validate : baseDefinition.toLanguageDef.validate = [] := by
+    change (LanguageDef.empty "old-judgment-base").validate = []
+    exact emptyLanguage_validate "old-judgment-base"
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [validate]
-  simp [basePresentation, Presentation.ruleIds,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.conversionDeclarationValid, LanguageDef.empty,
+  simp [baseDefinition, CalculusLanguageDef.ruleIds,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.conversionDeclarationValid,
     Pattern.zipHead, Pattern.mapHead, Pattern.evalHead]
   decide
 
-private def base : ValidatedPresentation :=
-  ⟨basePresentation, basePresentation_valid⟩
+private def base : ValidatedCalculusLanguageDef :=
+  ⟨baseDefinition, baseDefinition_valid⟩
 
 private def addedOldRule : RuleSchema :=
   { id := ⟨"added-old-fact"⟩
@@ -291,7 +295,7 @@ private def addedOldRule : RuleSchema :=
     premises := []
     conclusion := oldJudgment (.fvar "payload") }
 
-private def delta : PresentationExtension :=
+private def delta : CalculusLanguageExtension :=
   { newTerms := []
     newJudgments := []
     newRules := [addedOldRule] }
@@ -303,29 +307,29 @@ private theorem delta_policy :
     delta.policyHolds base.1 (.extendsBaseJudgments ["Old"]) = true := by
   decide
 
-private theorem target_valid : (delta.apply base.1).isValidV2 = true := by
-  have validate : (delta.apply base.1).language.validate = [] := by
-    simpa [delta, PresentationExtension.apply, base, basePresentation] using
-      emptyLanguage_validate "old-judgment-base"
-  unfold Presentation.isValidV2 Presentation.isValidV1
+private theorem target_valid : (delta.apply base.1).isValid = true := by
+  have validate : (delta.apply base.1).toLanguageDef.validate = [] := by
+    change (LanguageDef.empty "old-judgment-base").validate = []
+    exact emptyLanguage_validate "old-judgment-base"
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [validate]
-  simp [delta, PresentationExtension.apply, base, basePresentation,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, addedOldRule, oldJudgment,
-    RuleSchema.isValidIn, Presentation.judgmentSchemaValid,
+  simp [delta, CalculusLanguageExtension.apply, base, baseDefinition,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, addedOldRule, oldJudgment,
+    RuleSchema.isValidIn, CalculusLanguageDef.judgmentSchemaValid,
     fixedConstructorsValid, fixedConstructorListsValid,
-    RuleSchema.isValidV1, RuleSchema.metavariableNames,
+    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
     RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
     Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
-    Pattern.hasCanonicalBinderMetadataList, LanguageDef.empty]
+    Pattern.hasCanonicalBinderMetadataList]
   decide
 
-private def extension : ValidatedExtension base where
+private def extension : ValidatedCalculusLanguageExtension base where
   extension := delta
   policy := .extendsBaseJudgments ["Old"]
   disjoint := delta_disjoint
@@ -343,10 +347,10 @@ same raw artifact. -/
 theorem target_accepts_old_proof_base_rejects :
     checkRaw extension.target (oldJudgment payload) addedProof = true ∧
       checkRaw base (oldJudgment payload) addedProof = false := by
-  simp [extension, ValidatedExtension.target, delta,
-    PresentationExtension.apply, base, basePresentation, addedOldRule,
+  simp [extension, ValidatedCalculusLanguageExtension.target, delta,
+    CalculusLanguageExtension.apply, base, baseDefinition, addedOldRule,
     addedProof, oldJudgment, payload, checkRaw, checkRawChildren,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchemas?,
     instantiateSchemasAt?, instantiateSchema?, instantiateSchemaAt?,
     lookupArgumentAt?, Pattern.isGroundAt, Pattern.isGroundListAt,
@@ -365,9 +369,9 @@ theorem old_judgment_checkers_disagree :
 end ExtendsBaseCounterexample
 
 #print axioms RuleApplication.premises_haveJudgmentShape
-#print axioms ValidatedExtension.addedRule_not_baseShaped
-#print axioms ValidatedExtension.exists_reflectedBaseDerivation
-#print axioms ValidatedExtension.checkRaw_iff_base_of_newJudgmentsOnly
+#print axioms ValidatedCalculusLanguageExtension.addedRule_not_baseShaped
+#print axioms ValidatedCalculusLanguageExtension.exists_reflectedBaseDerivation
+#print axioms ValidatedCalculusLanguageExtension.checkRaw_iff_base_of_newJudgmentsOnly
 #print axioms ExtendsBaseCounterexample.old_judgment_checkers_disagree
 
 end Mettapedia.GSLT.LanguageDef.InferenceNewJudgmentConservativity

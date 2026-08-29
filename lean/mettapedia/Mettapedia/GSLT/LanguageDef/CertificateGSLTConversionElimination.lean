@@ -1,7 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTStepAdequacyGeneral
 
 /-!
-# Conversion elimination as a presentation morphism
+# Conversion elimination as a definition morphism
 
 Lean4Less translates Lean into a smaller theory by *eliminating definitional
 equalities* — proof irrelevance and K-like reduction — replacing each silent
@@ -9,10 +9,10 @@ use of them with an explicit typecast carrying a propositional equality
 proof.  This module expresses that move in \GSLT{} terms, on the smallest
 fixture that exhibits it, and records what it costs the present framework.
 
-The pattern, stated presentation-theoretically:
+The pattern, stated definition-theoretically:
 
 ```
-  extensional presentation            intensional presentation
+  extensional definition            intensional definition
   conversion is silent                conversion is evidence
   ------------------------            ------------------------
   Typed(a, T p)                       Typed(a, T p)   EqT(T p, T q)
@@ -30,7 +30,7 @@ The consequence for this framework is sharp and is proved below.  A
 judgment-preserving interpretation may implement one source rule by a
 composite target derivation, but it must land on the *same* conclusion.
 Conversion elimination cannot: `conversionElimination_needs_term_translation`
-shows the intensional presentation proves the cast conclusion and provably
+shows the intensional definition proves the cast conclusion and provably
 does **not** prove the original one.  So this translation is not expressible
 as a strict arrow, and not as a judgment-preserving interpretation either.
 It is a concrete, industrially motivated demand for the syntax- and
@@ -75,7 +75,7 @@ private def sharedTerms : List GrammarRule :=
 private def sharedJudgments : List JudgmentDecl :=
   [{ head := "Typed", arity := 2 }, { head := "EqT", arity := 2 }]
 
-/-! ## The two presentations -/
+/-! ## The two definitions -/
 
 /-- The value inhabits the family at the first proof.  Shared. -/
 private def axValue : RuleSchema :=
@@ -132,36 +132,36 @@ private def intensionalCalculus :
   { judgments := sharedJudgments
     rules := [axValue, irrelevanceEvidence, castRule] }
 
-private def extensional : Presentation :=
-  { language := extensionalLanguage, calculus := extensionalCalculus }
-private def intensional : Presentation :=
-  { language := intensionalLanguage, calculus := intensionalCalculus }
+private def extensional : CalculusLanguageDef :=
+  CalculusLanguageDef.extend extensionalLanguage extensionalCalculus
+private def intensional : CalculusLanguageDef :=
+  CalculusLanguageDef.extend intensionalLanguage intensionalCalculus
 
 private theorem extensional_validate :
-    extensional.language.validate = [] := by
+    extensional.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [extensional, extensionalLanguage, tmType, sharedTerms,
       constructor0, constructor1, LanguageDef.typeNames, TermParam.typeExpr,
       TypeExpr.baseNames, TypeDecl.plain]
 
 private theorem intensional_validate :
-    intensional.language.validate = [] := by
+    intensional.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [intensional, intensionalLanguage, tmType, sharedTerms,
       constructor0, constructor1, LanguageDef.typeNames, TermParam.typeExpr,
       TypeExpr.baseNames, TypeDecl.plain]
 
-theorem extensional_valid : extensional.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem extensional_valid : extensional.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [extensional_validate]
   simp [extensional, extensionalCalculus, extensionalLanguage, tmType, sharedTerms, constructor0,
     constructor1, axValue, irrelevanceSilent, typed, theValue, family,
     proofOne, proofTwo, sharedJudgments,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -169,20 +169,20 @@ theorem extensional_valid : extensional.isValidV2 = true := by
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
-theorem intensional_valid : intensional.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem intensional_valid : intensional.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [intensional_validate]
   simp [intensional, intensionalCalculus, intensionalLanguage, tmType, sharedTerms, constructor0,
     constructor1, axValue, irrelevanceEvidence, castRule, typed, eqT,
     theValue, family, castTerm, proofOne, proofTwo, sharedJudgments,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -190,13 +190,13 @@ theorem intensional_valid : intensional.isValidV2 = true := by
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
-def extensionalValidated : ValidatedPresentation :=
+def extensionalValidated : ValidatedCalculusLanguageDef :=
   ⟨extensional, extensional_valid⟩
 
-def intensionalValidated : ValidatedPresentation :=
+def intensionalValidated : ValidatedCalculusLanguageDef :=
   ⟨intensional, intensional_valid⟩
 
 /-! ## What each side proves -/
@@ -209,7 +209,7 @@ private theorem axValue_instantiates :
       some ([], typed theValue (family proofOne)) := by
   simp [instantiateRule?, intensionalValidated, intensional, intensionalCalculus,
     intensionalLanguage, axValue, irrelevanceEvidence, castRule,
-    Presentation.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, typed, theValue, family, proofOne]
 
@@ -218,7 +218,7 @@ private theorem irrelevanceEvidence_instantiates :
       some ([], eqT (family proofOne) (family proofTwo)) := by
   simp [instantiateRule?, intensionalValidated, intensional, intensionalCalculus,
     intensionalLanguage, axValue, irrelevanceEvidence, castRule,
-    Presentation.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, eqT, family, proofOne, proofTwo]
 
@@ -229,7 +229,7 @@ private theorem cast_instantiates :
         typed (castTerm theValue) (family proofTwo)) := by
   simp [instantiateRule?, intensionalValidated, intensional, intensionalCalculus,
     intensionalLanguage, axValue, irrelevanceEvidence, castRule, castInstance,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     lookupArgumentAt?, RuleSchema.sideConditionsHold, instantiateSchemas?,
     instantiateSchema?, instantiateSchemasAt?, instantiateSchemaAt?,
     typed, eqT, theValue, family, castTerm, proofOne, proofTwo,
@@ -257,7 +257,7 @@ private theorem irrelevanceSilent_instantiates :
       some ([typed theValue (family proofOne)],
         typed theValue (family proofTwo)) := by
   simp [instantiateRule?, extensionalValidated, extensional, extensionalCalculus,
-    extensionalLanguage, axValue, irrelevanceSilent, Presentation.lookupRule?,
+    extensionalLanguage, axValue, irrelevanceSilent, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, RuleSchema.sideConditionsHold, instantiateSchemas?,
     instantiateSchema?, instantiateSchemasAt?, instantiateSchemaAt?,
     typed, theValue, family, proofOne, proofTwo]
@@ -266,7 +266,7 @@ private theorem extensional_axValue_instantiates :
     instantiateRule? extensionalValidated ⟨⟨"ce-ax-value"⟩, []⟩ =
       some ([], typed theValue (family proofOne)) := by
   simp [instantiateRule?, extensionalValidated, extensional, extensionalCalculus,
-    extensionalLanguage, axValue, irrelevanceSilent, Presentation.lookupRule?,
+    extensionalLanguage, axValue, irrelevanceSilent, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, RuleSchema.sideConditionsHold, instantiateSchemas?,
     instantiateSchema?, instantiateSchemasAt?, instantiateSchemaAt?,
     typed, theValue, family, proofOne]
@@ -336,7 +336,7 @@ theorem intensional_does_not_prove_uncast :
                 castTerm, family] at executable
             · rw [if_neg valid] at executable; simp at executable
 
-/-- **The finding.**  The two presentations prove the same typing *fact* and
+/-- **The finding.**  The two definitions prove the same typing *fact* and
 provably not the same typing *judgment*: the intensional side must change the
 term.  A judgment-preserving interpretation cannot express this translation,
 so conversion elimination is a demand for the syntax- and judgment-translating
@@ -355,7 +355,7 @@ theorem conversionElimination_needs_term_translation :
 theorem no_strict_arrow_from_extensional :
     intensional.lookupRule? ⟨"ce-irrel-silent"⟩ = none := by
   simp [intensional, intensionalCalculus, intensionalLanguage,
-    Presentation.lookupRule?, axValue,
+    CalculusLanguageDef.lookupRule?, axValue,
     irrelevanceEvidence, castRule]
 
 end Mettapedia.GSLT.LanguageDef.CertificateGSLT.ConversionElimination

@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.Prime.NativeGradualDependentTermFormers
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.SyntacticJudgmentalIdentityEliminator
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SyntacticJudgmentalIdentityEliminator
 
 /-!
 # Naturality of constructional gradual dependent typing
@@ -25,11 +25,11 @@ namespace Mettapedia.Languages.MeTTa.Prime.NativeGradualDependentNaturality
 open Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability
 open Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability.State
 open Mettapedia.Languages.MeTTa.Prime.NativeGradualDependentTermFormers
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticContextual
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalPi
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalSigmaId
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.ProofRelevantStructuralComputation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticContextual
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalPi
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalSigmaId
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.ProofRelevantStructuralComputation
 
 private theorem pliftProp_subsingleton (proposition : Prop) :
     Subsingleton (PLift proposition) where
@@ -798,7 +798,7 @@ def sigmaSecondBetaNaturalityBoundary {rules : Rules Head}
 namespace IdentityIota
 
 abbrev identityRules : Rules Tower.Head :=
-  Mettapedia.Languages.MeTTa.PureKernel.Universe.NativeIndexedFamilies.Intrinsic.rules
+  Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedFamilies.Intrinsic.rules
 
 /-- A raw candidate for one native indexed-family root computation. -/
 structure RawRootStep (context : FormedContext identityRules) where
@@ -809,15 +809,15 @@ structure RawRootStep (context : FormedContext identityRules) where
 structure RootStepEvidence (context : FormedContext identityRules)
     (candidate : RawRootStep context) where
   sourceTyping :
-    @Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.HasType
+    @Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.HasType
       Tower.Head identityRules context.arity
       context.context candidate.source candidate.type
   targetTyping :
-    @Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.HasType
+    @Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.HasType
       Tower.Head identityRules context.arity
       context.context candidate.target candidate.type
   receipt :
-    Mettapedia.Languages.MeTTa.PureKernel.Universe.NativeIndexedFamilies.Intrinsic.IotaEvidence
+    Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedFamilies.Intrinsic.IotaEvidence
       context.arity candidate.source candidate.target
 
 def rootStepFibre (context : FormedContext identityRules) : Fibre where
@@ -826,7 +826,7 @@ def rootStepFibre (context : FormedContext identityRules) : Fibre where
 
 def candidateOfCell {context : FormedContext identityRules}
     (cell :
-      Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalIdentityEliminator.NativeIotaCell
+      Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalIdentityEliminator.NativeIotaCell
         context) : RawRootStep context :=
   { type := cell.resultType.code
     source := cell.source.code
@@ -836,7 +836,7 @@ def candidateOfCell {context : FormedContext identityRules}
 gradual root capability without a checker replay. -/
 def exactOfCell {context : FormedContext identityRules}
     (cell :
-      Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalIdentityEliminator.NativeIotaCell
+      Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalIdentityEliminator.NativeIotaCell
         context) :
     (rootStepFibre context).Exact (candidateOfCell cell) :=
   { sourceTyping := cell.source.typed
@@ -844,23 +844,23 @@ def exactOfCell {context : FormedContext identityRules}
     receipt := cell.evidence }
 
 def wrongIdentityCandidate : RawRootStep
-    Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalIdentityEliminator.formedIdentityContext :=
+    Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalIdentityEliminator.formedIdentityContext :=
   { type :=
-      Mettapedia.Languages.MeTTa.PureKernel.Universe.NativeIndexedFamilies.Intrinsic.identityIotaResultType
+      Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedFamilies.Intrinsic.identityIotaResultType
     source :=
-      Mettapedia.Languages.MeTTa.PureKernel.Universe.NativeIndexedFamilies.Intrinsic.identityIotaLeft
+      Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedFamilies.Intrinsic.identityIotaLeft
     target := .var ⟨1, by decide⟩ }
 
 /-- Negative identity-elimination control: changing the authored iota target
 cannot manufacture an exact native-root capability. -/
 theorem wrongIdentityCandidate_has_no_exact :
     IsEmpty ((rootStepFibre
-      Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalIdentityEliminator.formedIdentityContext).Exact
+      Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalIdentityEliminator.formedIdentityContext).Exact
         wrongIdentityCandidate) := by
   constructor
   intro evidence
   exact
-    Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalIdentityEliminator.wrongIdentityTarget_has_noEvidence.false
+    Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalIdentityEliminator.wrongIdentityTarget_has_noEvidence.false
       evidence.receipt
 
 end IdentityIota
@@ -921,11 +921,11 @@ theorem dependentSigmaSecondBeta_sourceType_ne_targetType :
 /-- Positive identity-iota control at the authored native declaration. -/
 def identityIotaEvidence :
     (IdentityIota.rootStepFibre
-      Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalIdentityEliminator.formedIdentityContext).Exact
+      Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalIdentityEliminator.formedIdentityContext).Exact
       (IdentityIota.candidateOfCell
-        Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalIdentityEliminator.identityIotaCell) :=
+        Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalIdentityEliminator.identityIotaCell) :=
   IdentityIota.exactOfCell
-    Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalIdentityEliminator.identityIotaCell
+    Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalIdentityEliminator.identityIotaCell
 
 end Canary
 

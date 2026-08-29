@@ -55,14 +55,14 @@ private def replacementPresentationRejects (bytes : ByteArray) : Bool :=
   | none => false
   | some input =>
       let source := input.generatedSource
-      match source.presentation.rules with
+      match source.definition.rules with
       | [] => false
       | rule :: rules =>
           validationError
               ({ source with
-                presentation :=
-                  { source.presentation with rules := rule :: rule :: rules } }).validate ==
-            some .invalidPresentation
+                definition :=
+                  { source.definition with rules := rule :: rule :: rules } }).validate ==
+            some .invalidDefinition
 
 private def alteredAssumptionsReject (bytes : ByteArray) : Bool :=
   match preparedInput bytes with

@@ -1,5 +1,7 @@
 import Mettapedia.Languages.Metamath.InferenceAssertionResultFrame
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Stack-invariant preservation for generated Metamath assertion steps
 
@@ -97,8 +99,8 @@ theorem assertionApplicationSemantics_stackResult_respects_callerFrame
 assertion evidence, still without executing the runtime checker. -/
 theorem generatedAssertionNode_stackResult_respects_callerFrame
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView) (stack : Array RuntimeFormula)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)

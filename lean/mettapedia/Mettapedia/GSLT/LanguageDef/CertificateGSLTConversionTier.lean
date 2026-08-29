@@ -14,7 +14,7 @@ congruence side of that discipline is built (`Premise.congruence`,
 The proof calculus's `conversion` field carries the declaration — optional,
 versioned, naming a binary judgment whose ordinary inference proofs are the
 conversion edges.  What was missing is the classification it induces on
-presentations, and an honest account of what the present checker does with
+definitions, and an honest account of what the present checker does with
 it.
 
 ## The tiers
@@ -23,7 +23,7 @@ it.
   tier          judgment equality is        who lives here
   ----          --------------------        --------------
   syntactic     literal identity            Metamath, MM0, Hilbert systems,
-                                            generated trace presentations
+                                            generated trace definitions
   certified     a declared judgment whose   CIC/Lean-family theories after
                 proofs transport terms      conversion elimination
 ```
@@ -41,8 +41,8 @@ obligation — not a definition that can be slipped in here.
 `checkRaw_independent_of_conversion` proves the uncomfortable half: the
 current checker never consults the conversion declaration.  Acceptance
 depends on the rule table alone (`checkRaw_congr`).  So today *every*
-presentation is checked with syntactic-tier semantics, and a certified-tier
-presentation is checked correctly only because its transport is authored as
+definition is checked with syntactic-tier semantics, and a certified-tier
+definition is checked correctly only because its transport is authored as
 an ordinary rule.  The declaration is validated and inert.
 
 That is not a defect to hide; it is the precise statement of what the
@@ -59,10 +59,10 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 mutual
 
-/-- Two presentations with the same rule lookup accept the same proofs.
-Nothing else about a presentation — its syntax declarations, judgment
+/-- Two definitions with the same rule lookup accept the same proofs.
+Nothing else about a definition — its syntax declarations, judgment
 signature, or conversion interface — reaches the checker. -/
-theorem checkRaw_congr {source target : ValidatedPresentation}
+theorem checkRaw_congr {source target : ValidatedCalculusLanguageDef}
     (agree : ∀ id, source.1.lookupRule? id = target.1.lookupRule? id)
     (goal : Pattern) (proof : RawProof) :
     checkRaw source goal proof = checkRaw target goal proof := by
@@ -76,7 +76,7 @@ theorem checkRaw_congr {source target : ValidatedPresentation}
           simp only [checkRawChildren_congr agree premises children]
   termination_by sizeOf proof
 
-theorem checkRawChildren_congr {source target : ValidatedPresentation}
+theorem checkRawChildren_congr {source target : ValidatedCalculusLanguageDef}
     (agree : ∀ id, source.1.lookupRule? id = target.1.lookupRule? id)
     (goals : List Pattern) (proofs : List RawProof) :
     checkRawChildren source goals proofs =
@@ -99,7 +99,7 @@ end
 
 /-! ## Tiers -/
 
-/-- How a presentation treats judgment equality. -/
+/-- How a definition treats judgment equality. -/
 inductive ConversionTier where
   /-- No conversion interface: equal judgments are literally identical. -/
   | syntactic
@@ -108,44 +108,40 @@ inductive ConversionTier where
   | certified
 deriving DecidableEq, Repr
 
-/-- A presentation's tier is read off its conversion declaration. -/
-def conversionTierOf (presentation : Presentation) : ConversionTier :=
-  match presentation.conversion with
+/-- A definition's tier is read off its conversion declaration. -/
+def conversionTierOf (definition : CalculusLanguageDef) : ConversionTier :=
+  match definition.conversion with
   | none => ConversionTier.syntactic
   | some _ => ConversionTier.certified
 
-theorem conversionTierOf_none {presentation : Presentation}
-    (noConversion : presentation.conversion = none) :
-    conversionTierOf presentation = ConversionTier.syntactic := by
-  change presentation.calculus.conversion = none at noConversion
-  unfold conversionTierOf Presentation.conversion
-  rw [noConversion]
+theorem conversionTierOf_none {definition : CalculusLanguageDef}
+    (noConversion : definition.conversion = none) :
+    conversionTierOf definition = ConversionTier.syntactic := by
+  simp [conversionTierOf, noConversion]
 
-theorem conversionTierOf_some {presentation : Presentation}
+theorem conversionTierOf_some {definition : CalculusLanguageDef}
     {declaration : ConversionDecl}
-    (declared : presentation.conversion = some declaration) :
-    conversionTierOf presentation = ConversionTier.certified := by
-  change presentation.calculus.conversion = some declaration at declared
-  unfold conversionTierOf Presentation.conversion
-  rw [declared]
+    (declared : definition.conversion = some declaration) :
+    conversionTierOf definition = ConversionTier.certified := by
+  simp [conversionTierOf, declared]
 
 /-- **The conversion declaration is inert in the present checker.**  Two
-presentations differing only in their conversion interface accept exactly
+definitions differing only in their conversion interface accept exactly
 the same proofs, so acceptance is currently syntactic-tier for every
-presentation.  A certified-tier presentation is checked correctly only
+definition.  A certified-tier definition is checked correctly only
 because its transport is authored as an ordinary rule; the declaration
 itself contributes nothing yet. -/
 theorem checkRaw_independent_of_conversion
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (sameRules : source.1.rules = target.1.rules)
     (goal : Pattern) (proof : RawProof) :
     checkRaw source goal proof = checkRaw target goal proof := by
   refine checkRaw_congr (fun id => ?_) goal proof
-  unfold Presentation.lookupRule?
+  unfold CalculusLanguageDef.lookupRule?
   rw [sameRules]
 
 /-- **The tiers are not yet distinguished by the checker.**  A syntactic-tier
-presentation and a certified-tier presentation over the same rule table are
+definition and a certified-tier definition over the same rule table are
 indistinguishable to `checkRaw`.
 
 The tier hypotheses are stated and then *not used*: that is precisely the
@@ -154,11 +150,11 @@ consequences follow, and they pull in opposite directions.  For the
 syntactic tier nothing is lost, since there is no conversion to honour —
 which is why a syntactic-tier vertical needs no new trusted machinery.  For
 the certified tier the declaration currently earns nothing, so such a
-presentation is checked correctly only if its transport is authored as an
+definition is checked correctly only if its transport is authored as an
 ordinary rule; making the declaration load-bearing is an obligation this
 module opens and does not discharge. -/
 theorem tier_not_consulted_by_checker
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (_sourceSyntactic : conversionTierOf source.1 = ConversionTier.syntactic)
     (_targetCertified : conversionTierOf target.1 = ConversionTier.certified)
     (sameRules : source.1.rules = target.1.rules) :
@@ -166,13 +162,13 @@ theorem tier_not_consulted_by_checker
       checkRaw source goal proof = checkRaw target goal proof :=
   fun goal proof => checkRaw_independent_of_conversion sameRules goal proof
 
-/-- The syntactic tier is exactly the presentations that declare no
+/-- The syntactic tier is exactly the definitions that declare no
 conversion interface, so membership is decidable by inspection. -/
-theorem conversionTierOf_syntactic_iff {presentation : Presentation} :
-    conversionTierOf presentation = ConversionTier.syntactic ↔
-      presentation.conversion = none := by
+theorem conversionTierOf_syntactic_iff {definition : CalculusLanguageDef} :
+    conversionTierOf definition = ConversionTier.syntactic ↔
+      definition.conversion = none := by
   unfold conversionTierOf
-  cases presentation.conversion with
+  cases definition.conversion with
   | none => simp
   | some declaration => simp
 

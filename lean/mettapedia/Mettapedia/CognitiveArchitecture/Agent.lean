@@ -10,6 +10,10 @@ import Mettapedia.CognitiveArchitecture.Agent.OpenEndedContext
 import Mettapedia.CognitiveArchitecture.Agent.WorldOfViewsBridge
 import Mettapedia.CognitiveArchitecture.Agent.ReproducibleBuildView
 import Mettapedia.CognitiveArchitecture.Agent.ReproducibleBuildReplay
+import Mettapedia.CognitiveArchitecture.Agent.RevisionLineage
+import Mettapedia.CognitiveArchitecture.Agent.ProtectedSelfRevision
+import Mettapedia.CognitiveArchitecture.Agent.PatienthoodWellbeing
+import Mettapedia.CognitiveArchitecture.Agent.WellbeingObserverTransformationBoundary
 
 /-!
 # General agent-architecture interfaces

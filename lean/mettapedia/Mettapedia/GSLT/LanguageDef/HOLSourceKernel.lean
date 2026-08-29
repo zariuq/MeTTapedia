@@ -2,7 +2,7 @@ import Mettapedia.GSLT.LanguageDef.InferenceExtraction
 import Mettapedia.GSLT.LanguageDef.LogicExtension
 
 /-!
-# Source-scale HOL kernel presentations
+# Source-scale HOL kernel definitions
 
 Unlike the finite `HOLKernelProfiles` calibration, these language definitions
 use an open byte-string carrier for names and recursive HOL type, term,
@@ -331,18 +331,18 @@ def hol4SourceProfile : EvidenceProfile :=
     derivedHead := "$hol.thm"
     relationHeadPrefix := "$hol.rel." }
 
-def holLightSourcePresentation? : Option Presentation :=
-  rawPresentation? holLightSourceProfile holLightSourceKernel
+def holLightSourceDefinition? : Option CalculusLanguageDef :=
+  rawDefinition? holLightSourceProfile holLightSourceKernel
     holLightSourceLogic.1
 
-def hol4SourcePresentation? : Option Presentation :=
-  rawPresentation? hol4SourceProfile hol4SourceKernel hol4SourceLogic.1
+def hol4SourceDefinition? : Option CalculusLanguageDef :=
+  rawDefinition? hol4SourceProfile hol4SourceKernel hol4SourceLogic.1
 
 #guard LanguageDef.validate holLightSourceKernel == []
 #guard LanguageDef.validate hol4SourceKernel == []
-#guard holLightSourcePresentation?.isSome
-#guard hol4SourcePresentation?.isSome
-#guard holLightSourcePresentation?.map (·.rules.length) == some 13
-#guard hol4SourcePresentation?.map (·.rules.length) == some 8
+#guard holLightSourceDefinition?.isSome
+#guard hol4SourceDefinition?.isSome
+#guard holLightSourceDefinition?.map (·.rules.length) == some 13
+#guard hol4SourceDefinition?.map (·.rules.length) == some 8
 
 end Mettapedia.GSLT.LanguageDef.HOLSourceKernel

@@ -29,7 +29,7 @@ and does not claim the dynamic gradual guarantee for all native types.
 namespace Mettapedia.Languages.MeTTa.Prime.NativeGradualQuotation
 
 open Mettapedia.GSLT.Dynamics
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan
 open Mettapedia.Languages.MeTTa.Prime.NativeTypedQuotation
 open Mettapedia.OSLF.MeTTaIL.MeTTaSyntaxQuotation
@@ -40,7 +40,7 @@ open scoped Mettapedia.OSLF.MeTTaIL.MeTTaSyntaxQuotation
 /-- An authored pattern has a native type when proof-producing elaboration
 returns a package at exactly that type.  The package itself retains the native
 typing derivation. -/
-def AuthoredHasType (source : RuntimePattern) (type : NativeRawTm 0 0) : Prop :=
+def AuthoredHasType (source : RuntimePattern) (type : StagedReflectiveTm 0 0) : Prop :=
   ∃ result : ClosedTyping,
     elaborate source = .ok result ∧ result.type = type
 
@@ -82,7 +82,7 @@ namespace TypingEvidence
 /-- Exact evidence becomes an intrinsically certified plan over the unchanged
 authored source. -/
 def toTypedPlan (evidence : TypingEvidence) :
-    TypedPlan RuntimePattern (NativeRawTm 0 0) AuthoredHasType where
+    TypedPlan RuntimePattern (StagedReflectiveTm 0 0) AuthoredHasType where
   term := evidence.source
   type := evidence.result.type
   typing := ⟨evidence.result, evidence.elaborated, rfl⟩
@@ -121,7 +121,7 @@ theorem key_sharing_preserves_obligation {left right : TypingKey}
 /-! ## Raw, exact, and suspended plans -/
 
 abbrev QuotationPlan :=
-  Plan RuntimePattern (NativeRawTm 0 0) AuthoredHasType TypingKey
+  Plan RuntimePattern (StagedReflectiveTm 0 0) AuthoredHasType TypingKey
     TypingObligation
 
 /-- The raw plan carries the exact authored pattern and no typing evidence. -/
@@ -272,7 +272,7 @@ theorem rejected_blame_does_not_gate_raw_execution :
 
 /-- Negative control: the rejected source cannot inhabit the exact authored
 typing relation at any type. -/
-theorem rejected_source_has_no_authored_type (type : NativeRawTm 0 0) :
+theorem rejected_source_has_no_authored_type (type : StagedReflectiveTm 0 0) :
     ¬ AuthoredHasType rejectedSource type := by
   rintro ⟨result, accepted, resultType⟩
   rw [rejected_source_fails_structurally] at accepted

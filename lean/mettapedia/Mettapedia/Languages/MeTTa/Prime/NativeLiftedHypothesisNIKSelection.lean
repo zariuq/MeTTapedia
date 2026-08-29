@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.IntrinsicMILNativeLiftingSearch
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.IntrinsicMILNativeLiftingSearch
 import Mettapedia.Languages.MeTTa.Prime.NativeRelationalSearchNIKSelection
 
 /-!
@@ -22,11 +22,11 @@ namespace Mettapedia.Languages.MeTTa.Prime.NativeLiftedHypothesisNIKSelection
 
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.NIKMaximalNativeAdmission
-open Mettapedia.Languages.MeTTa.PureKernel.Universe
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.RelationalInternalLanguage.Semantic
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.IntrinsicMILNativeSearch
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.IntrinsicMILNativeLiftingSearch
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.IntrinsicMILNativeLiftingSearch.Canary
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RelationalInternalLanguage.Semantic
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.IntrinsicMILNativeSearch
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.IntrinsicMILNativeLiftingSearch
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.IntrinsicMILNativeLiftingSearch.Canary
 open Mettapedia.Languages.MeTTa.Prime.NativeRelationalSearchNIKSelection
 open Mettapedia.TypeTheory.IndexedPolynomial
 

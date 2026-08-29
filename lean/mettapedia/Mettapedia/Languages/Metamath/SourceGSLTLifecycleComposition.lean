@@ -2,6 +2,8 @@ import Mettapedia.Languages.Metamath.SourceGSLTRawSourceComposition
 import Mettapedia.Languages.Metamath.SourceGSLTNormalTheorem
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedTheorem
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Lifecycle composition: carried obligations against the theorem joints
 
@@ -105,8 +107,8 @@ Pre-state validity is the gate's own guarantee. -/
 def mkNormalTheoremStep {state next : SourceState}
     {ob : TheoremObligation}
     (hins : insertAssertion? state ob.label.name ob.formula = some next)
-    (target : ValidatedPresentation)
-    (hpres : presentationOfSourcePrefix? state.toSourcePrefix =
+    (target : ValidatedCalculusLanguageDef)
+    (hpres : calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
       some target.1)
     (tree : SourceGeneratedProvesTree state.toSourcePrefix target
       ob.formula)
@@ -129,8 +131,8 @@ transition. -/
 theorem obligation_normal_lifecycle_of_mmLean4 {state next : SourceState}
     {ob : TheoremObligation}
     (hins : insertAssertion? state ob.label.name ob.formula = some next)
-    (target : ValidatedPresentation)
-    (hpres : presentationOfSourcePrefix? state.toSourcePrefix =
+    (target : ValidatedCalculusLanguageDef)
+    (hpres : calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
       some target.1)
     (db : RuntimeDB)
     (hproject : projectPrefix? db =
@@ -181,8 +183,8 @@ theorem applyStatement_normal_lifecycle {state next : SourceState}
         (.provable site label typecode body (.normal steps) separator
           terminator) =
       .ok (next, obligations))
-    (target : ValidatedPresentation)
-    (hpres : presentationOfSourcePrefix? state.toSourcePrefix =
+    (target : ValidatedCalculusLanguageDef)
+    (hpres : calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
       some target.1)
     (db : RuntimeDB)
     (hproject : projectPrefix? db =
@@ -215,9 +217,9 @@ structure CompressedWitness (before : SourceState)
     (formula : ConstantHeadedFormula)
     (explicitHeaderLabels : List String)
     (bodyWords : List (List UInt8)) : Type where
-  target : ValidatedPresentation
+  target : ValidatedCalculusLanguageDef
   presentation_eq :
-    presentationOfSourcePrefix? before.toSourcePrefix = some target.1
+    calculusLanguageDefOfSourcePrefix? before.toSourcePrefix = some target.1
   actions : List CompressedAction
   decoded : decodeProgram bodyWords = some actions
   initialState : MachineState before.toSourcePrefix target
@@ -493,9 +495,9 @@ pre-insertion state — everything `NormalTheoremStep` needs except the
 transition and pre-state validity. -/
 structure NormalDischarge (before : SourceState)
     (formula : ConstantHeadedFormula) (labels : List String) : Type where
-  target : ValidatedPresentation
+  target : ValidatedCalculusLanguageDef
   presentation_eq :
-    presentationOfSourcePrefix? before.toSourcePrefix = some target.1
+    calculusLanguageDefOfSourcePrefix? before.toSourcePrefix = some target.1
   tree : SourceGeneratedProvesTree before.toSourcePrefix target formula
   labels_eq : tree.labels = labels
 

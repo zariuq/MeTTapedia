@@ -659,33 +659,33 @@ def wireArticleVersion : Nat := 1
 /-- Check one versioned closed article: the version gate, then the
 chronological DAG checker over the empty premise context with the stored
 root and the redundantly stored target. -/
-def checkWireArticle (presentation : ValidatedPresentation)
+def checkWireArticle (definition : ValidatedCalculusLanguageDef)
     (article : WireArticle) : Bool :=
   decide (article.version = wireArticleVersion) &&
-    checkOpenDAGBlocks presentation [] article.target article.rootId
+    checkOpenDAGBlocks definition [] article.target article.rootId
       [article.nodes]
 
 /-- Check a rendered wire term: decode, then check.  Terms outside the
 canonical grammar fail closed. -/
-def checkWireTerm (presentation : ValidatedPresentation)
+def checkWireTerm (definition : ValidatedCalculusLanguageDef)
     (term : WireTerm) : Bool :=
   match decodeArticle term with
-  | some article => checkWireArticle presentation article
+  | some article => checkWireArticle definition article
   | none => false
 
 @[simp] theorem checkWireTerm_encodeArticle
-    (presentation : ValidatedPresentation) (article : WireArticle) :
-    checkWireTerm presentation (encodeArticle article) =
-      checkWireArticle presentation article := by
+    (definition : ValidatedCalculusLanguageDef) (article : WireArticle) :
+    checkWireTerm definition (encodeArticle article) =
+      checkWireArticle definition article := by
   simp [checkWireTerm]
 
 /-- A conservative rule-table refinement preserves acceptance of the exact
 same versioned article.  The article, node identifiers, rule instances, child
-order, and sharing are unchanged; only the presentation against which the
+order, and sharing are unchanged; only the definition against which the
 artifact is replayed grows.  No converse is claimed for rule deletion or
 semantic revision. -/
 theorem checkWireArticle_true_of_ruleLookupRefines
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (refines : RuleLookupRefines source target) {article : WireArticle}
     (checked : checkWireArticle source article = true) :
     checkWireArticle target article = true := by
@@ -696,7 +696,7 @@ theorem checkWireArticle_true_of_ruleLookupRefines
 /-- Conservative refinement also preserves acceptance through the symbolic
 decode-then-check boundary. -/
 theorem checkWireTerm_true_of_ruleLookupRefines
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (refines : RuleLookupRefines source target) {term : WireTerm}
     (checked : checkWireTerm source term = true) :
     checkWireTerm target term = true := by
@@ -710,16 +710,16 @@ theorem checkWireTerm_true_of_ruleLookupRefines
 
 /-- Unknown versions are rejected before any node is examined. -/
 theorem checkWireArticle_version_gate
-    {presentation : ValidatedPresentation} {article : WireArticle}
+    {definition : ValidatedCalculusLanguageDef} {article : WireArticle}
     (wrongVersion : article.version ≠ wireArticleVersion) :
-    checkWireArticle presentation article = false := by
+    checkWireArticle definition article = false := by
   simp [checkWireArticle, wrongVersion]
 
 /-- Soundness: an accepted article's target has a closed derivation. -/
-theorem checkWireArticle_sound {presentation : ValidatedPresentation}
+theorem checkWireArticle_sound {definition : ValidatedCalculusLanguageDef}
     {article : WireArticle}
-    (accepted : checkWireArticle presentation article = true) :
-    Nonempty (Derivation presentation article.target) := by
+    (accepted : checkWireArticle definition article = true) :
+    Nonempty (Derivation definition article.target) := by
   simp only [checkWireArticle, Bool.and_eq_true, decide_eq_true_eq]
     at accepted
   obtain ⟨proof, derivation, -, -⟩ :=
@@ -733,8 +733,8 @@ mutual
 /-- Linearize a closed derivation into chronological nodes with sequential
 fresh identifiers: the nodes emitted, the root identifier, and the next
 unused identifier. -/
-def Derivation.linearize {presentation : ValidatedPresentation} :
-    {goal : Pattern} → Derivation presentation goal → Nat →
+def Derivation.linearize {definition : ValidatedCalculusLanguageDef} :
+    {goal : Pattern} → Derivation definition goal → Nat →
       List OpenDAGNode × Nat × Nat
   | _, .byRule ruleInstance _ children, nextId =>
       let result := DerivationList.linearize children nextId
@@ -745,8 +745,8 @@ def Derivation.linearize {presentation : ValidatedPresentation} :
 
 /-- Linearize ordered child derivations: the nodes emitted, the child root
 identifiers in order, and the next unused identifier. -/
-def DerivationList.linearize {presentation : ValidatedPresentation} :
-    {goals : List Pattern} → DerivationList presentation goals → Nat →
+def DerivationList.linearize {definition : ValidatedCalculusLanguageDef} :
+    {goals : List Pattern} → DerivationList definition goals → Nat →
       List OpenDAGNode × List Nat × Nat
   | _, .nil, nextId => ([], [], nextId)
   | _, .cons head tail, nextId =>
@@ -773,12 +773,12 @@ private theorem findOpenDAGEntry?_none_of_bound :
         (fun e member => entriesBound e (List.mem_cons_of_mem _ member)) le
 
 private theorem checkOpenDAGNodes?_append
-    (presentation : ValidatedPresentation) (context : List Pattern) :
+    (definition : ValidatedCalculusLanguageDef) (context : List Pattern) :
     ∀ (first second : List OpenDAGNode) (entries : List OpenDAGEntry),
-      checkOpenDAGNodes? presentation context entries (first ++ second) =
-        (checkOpenDAGNodes? presentation context entries first).bind
+      checkOpenDAGNodes? definition context entries (first ++ second) =
+        (checkOpenDAGNodes? definition context entries first).bind
           (fun middle =>
-            checkOpenDAGNodes? presentation context middle second) := by
+            checkOpenDAGNodes? definition context middle second) := by
   intro first
   induction first with
   | nil =>
@@ -787,7 +787,7 @@ private theorem checkOpenDAGNodes?_append
   | cons node rest inductionHypothesis =>
       intro second entries
       simp only [List.cons_append, checkOpenDAGNodes?]
-      cases headCheck : checkOpenDAGNode? presentation context entries node
+      cases headCheck : checkOpenDAGNode? definition context entries node
         with
       | none => rfl
       | some middle => exact inductionHypothesis second middle
@@ -818,12 +818,12 @@ mutual
 /-- Checking the linearized nodes of a derivation extends any bounded
 environment, preserves bounded lookups, and installs the root goal at the
 root identifier. -/
-private theorem linearize_checks {presentation : ValidatedPresentation}
-    {goal : Pattern} (derivation : Derivation presentation goal)
+private theorem linearize_checks {definition : ValidatedCalculusLanguageDef}
+    {goal : Pattern} (derivation : Derivation definition goal)
     (nextId : Nat) (entries : List OpenDAGEntry)
     (entriesBound : ∀ entry ∈ entries, entry.id < nextId) :
     ∃ entries',
-      checkOpenDAGNodes? presentation [] entries
+      checkOpenDAGNodes? definition [] entries
           (Derivation.linearize derivation nextId).1 = some entries' ∧
       nextId ≤ (Derivation.linearize derivation nextId).2.2 ∧
       (Derivation.linearize derivation nextId).2.1 <
@@ -851,7 +851,7 @@ private theorem linearize_checks {presentation : ValidatedPresentation}
         findOpenDAGEntry?_none_of_bound entriesBound₁ (Nat.le_refl _)
       obtain ⟨proofs, resolved⟩ :=
         resolveOpenDAGChildren?_of_forall₂ rootsFound
-      have nodeChecked : checkOpenDAGNode? presentation [] entries₁
+      have nodeChecked : checkOpenDAGNode? definition [] entries₁
           ⟨afterChildren, ruleInstance,
             childIds.map OpenDAGReference.node⟩ =
           some (⟨afterChildren, goal,
@@ -861,7 +861,7 @@ private theorem linearize_checks {presentation : ValidatedPresentation}
         .node ruleInstance proofs⟩ : OpenDAGEntry) :: entries₁,
         ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
       · simp only [Derivation.linearize, childLin]
-        rw [checkOpenDAGNodes?_append presentation [] childNodes _ entries,
+        rw [checkOpenDAGNodes?_append definition [] childNodes _ entries,
           childrenChecked]
         simp [checkOpenDAGNodes?, nodeChecked]
       · simp only [Derivation.linearize, childLin]
@@ -887,12 +887,12 @@ termination_by sizeOf derivation
 
 /-- Checking linearized child derivations installs every child root goal
 at its identifier. -/
-private theorem linearizeList_checks {presentation : ValidatedPresentation}
-    {goals : List Pattern} (derivations : DerivationList presentation goals)
+private theorem linearizeList_checks {definition : ValidatedCalculusLanguageDef}
+    {goals : List Pattern} (derivations : DerivationList definition goals)
     (nextId : Nat) (entries : List OpenDAGEntry)
     (entriesBound : ∀ entry ∈ entries, entry.id < nextId) :
     ∃ entries',
-      checkOpenDAGNodes? presentation [] entries
+      checkOpenDAGNodes? definition [] entries
           (DerivationList.linearize derivations nextId).1 = some entries' ∧
       nextId ≤ (DerivationList.linearize derivations nextId).2.2 ∧
       (∀ id ∈ (DerivationList.linearize derivations nextId).2.1,
@@ -935,7 +935,7 @@ private theorem linearizeList_checks {presentation : ValidatedPresentation}
       obtain ⟨headGhost, headEntryFound⟩ := headFound
       refine ⟨entries₂, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
       · simp only [DerivationList.linearize, headLin, tailLin]
-        rw [checkOpenDAGNodes?_append presentation [] headNodes tailNodes
+        rw [checkOpenDAGNodes?_append definition [] headNodes tailNodes
           entries, headChecked]
         simpa using tailChecked
       · simp only [DerivationList.linearize, headLin, tailLin]
@@ -965,8 +965,8 @@ termination_by sizeOf derivations
 end
 
 /-- The canonical accepted article of a closed derivation. -/
-def articleOfDerivation {presentation : ValidatedPresentation}
-    {goal : Pattern} (derivation : Derivation presentation goal) :
+def articleOfDerivation {definition : ValidatedCalculusLanguageDef}
+    {goal : Pattern} (derivation : Derivation definition goal) :
     WireArticle :=
   ⟨wireArticleVersion, (Derivation.linearize derivation 0).1,
     (Derivation.linearize derivation 0).2.1, goal⟩
@@ -974,13 +974,13 @@ def articleOfDerivation {presentation : ValidatedPresentation}
 /-- Completeness: the linearized article of a derivation is accepted, with
 the derivation's goal as its stored target. -/
 theorem checkWireArticle_articleOfDerivation
-    {presentation : ValidatedPresentation} {goal : Pattern}
-    (derivation : Derivation presentation goal) :
-    checkWireArticle presentation (articleOfDerivation derivation) =
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern}
+    (derivation : Derivation definition goal) :
+    checkWireArticle definition (articleOfDerivation derivation) =
       true := by
   obtain ⟨entries, checked, -, -, -, -, -, ghost, rootFound⟩ :=
     linearize_checks derivation 0 [] (by intro entry member; cases member)
-  have blocksOk : checkOpenDAGBlocks presentation [] goal
+  have blocksOk : checkOpenDAGBlocks definition [] goal
       (Derivation.linearize derivation 0).2.1
       [(Derivation.linearize derivation 0).1] = true := by
     simp [checkOpenDAGBlocks, expandOpenDAGBlocks?, checkOpenDAGBlocks?,
@@ -989,11 +989,11 @@ theorem checkWireArticle_articleOfDerivation
 
 /-- Exact correspondence: some accepted version-1 article carries a goal
 exactly when the goal has a closed derivation. -/
-theorem wireArticle_correspondence (presentation : ValidatedPresentation)
+theorem wireArticle_correspondence (definition : ValidatedCalculusLanguageDef)
     (goal : Pattern) :
     (∃ article : WireArticle, article.target = goal ∧
-        checkWireArticle presentation article = true) ↔
-      Nonempty (Derivation presentation goal) := by
+        checkWireArticle definition article = true) ↔
+      Nonempty (Derivation definition goal) := by
   constructor
   · rintro ⟨article, rfl, accepted⟩
     exact checkWireArticle_sound accepted

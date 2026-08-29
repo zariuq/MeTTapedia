@@ -372,9 +372,6 @@ abbrev sideCalculus :
     Mettapedia.GSLT.LanguageDef.InferenceExtension.ProofCalculus :=
   sideDefinition.toCalculus
 
-/-- Derived checker input; not a second authored definition. -/
-abbrev sidePresentation : Presentation := sideDefinition.toNested
-
 /-- Every fixed side-condition rule identifier occupies the namespace later
 excluded from generated source-rule identifiers. -/
 theorem sideRuleId_startsWith_reservedRulePrefix
@@ -393,7 +390,7 @@ theorem sideRuleId_startsWith_reservedRulePrefix
 
 /-- Reserved namespace for generated side-condition rules.  `$` is excluded
 from Metamath labels, so the later source projector must reject or prove absent
-this prefix before combining source rules with this presentation. -/
+this prefix before combining source rules with this language definition. -/
 def reservedRulePrefix : String := "$mm."
 
 /-- Explicit collision gate for a projected list of source rule identifiers. -/
@@ -407,21 +404,20 @@ theorem dataLanguage_validate : dataLanguage.validate = [] := by
       bindingHead, substitutionHead, LanguageDef.typeNames,
       TypeDecl.plain, TermParam.typeExpr, TypeExpr.baseNames]
 
-theorem sidePresentation_valid : sidePresentation.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
-  simp only [sidePresentation]
+theorem sideDefinition_valid : sideDefinition.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [dataLanguage_validate]
   simp [sideRules, judgmentDecls, dataConstructor, dataTypeName,
     stringHead, nilHead, consHead, constSymHead, varSymHead, formulaHead,
     dvPairHead, frameHead, bindingHead, substitutionHead,
     appendHead, lookupHead, substBodyHead, applySubstHead, varsHead,
     memberHead, dvRelHead, allWithHead, allPairsHead, dvListsHead, dvOKHead,
-    Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.ruleIds,
-    RuleSchema.isValidIn, Presentation.judgmentSchemaValid,
-    Presentation.lookupJudgment?, languageHasConstructorArity,
+    CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.ruleIds,
+    RuleSchema.isValidIn, CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, languageHasConstructorArity,
     fixedConstructorsValid,
-    RuleSchema.isValidV1, RuleSchema.metavariableNames,
+    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
     RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
@@ -441,13 +437,13 @@ theorem sidePresentation_valid : sidePresentation.isValidV2 = true := by
 
 /-- The side-condition language and its proof calculus as one GSLT. -/
 def totalTheory : Mettapedia.GSLT.GSLT :=
-  sideDefinition.toGSLTOfNoEquations sidePresentation_valid rfl
+  sideDefinition.toGSLTOfNoEquations sideDefinition_valid rfl
 
 theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) :=
   rfl
 
-def validatedSidePresentation : ValidatedPresentation :=
-  ⟨sidePresentation, sidePresentation_valid⟩
+def validatedSideDefinition : ValidatedCalculusLanguageDef :=
+  ⟨sideDefinition, sideDefinition_valid⟩
 
 /-! ## Concrete proof trees and mutation boundaries -/
 
@@ -457,14 +453,14 @@ private def proofNode (rule : String) (arguments : List Pattern)
 
 local macro "side_core" : tactic =>
   `(tactic|
-    simp [checkRaw, checkRawChildren, validatedSidePresentation,
-      sidePresentation, sideCalculus, sideRules, appendNilRule, appendConsRule,
+    simp [checkRaw, checkRawChildren, validatedSideDefinition,
+      sideDefinition, sideCalculus, sideRules, appendNilRule, appendConsRule,
       lookupHereRule, lookupThereRule, substBodyNilRule, substBodyConstRule,
       substBodyVarRule, applySubstFormulaRule, varsNilRule, varsConstRule,
       varsVarRule, memberHereRule, memberThereRule, dvRelForwardRule,
       dvRelReverseRule, allWithNilRule, allWithConsRule, allPairsNilRule,
       allPairsConsRule, dvListsNilRule, dvListsConsRule, dvOKRule,
-      instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+      instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
       argumentValidAt, instantiateSchemas?, instantiateSchemasAt?,
       instantiateSchema?, instantiateSchemaAt?, lookupArgumentAt?,
       append, lookup, substBody, applySubst, vars, member, dvRel, allWith,
@@ -513,11 +509,11 @@ def appendExtraChildProof : RawProof :=
     [proofNode "$mm.vars.nil" []]
 
 theorem append_example_accepts :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
       (append appendLeft appendRight appendResult) appendExampleProof = true := by
-  simp [checkRaw, checkRawChildren, validatedSidePresentation, sidePresentation,
+  simp [checkRaw, checkRawChildren, validatedSideDefinition, sideDefinition,
     sideRules, appendNilRule, appendConsRule, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     instantiateSchemas?, instantiateSchemasAt?, instantiateSchema?,
     instantiateSchemaAt?, lookupArgumentAt?, appendExampleProof, proofNode,
     appendLeft, appendRight, appendResult, singleton, aSym, bSym, xSym, name,
@@ -529,14 +525,14 @@ theorem append_example_accepts :
     Pattern.hasCanonicalBinderMetadataList]
 
 theorem append_omitted_child_rejects :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
       (append appendLeft appendRight appendResult) appendOmittedChildProof = false := by
   simp [appendOmittedChildProof, appendLeft, appendRight, appendResult,
     singleton, aSym, bSym, xSym, name]
   side_core
 
 theorem append_extra_child_rejects :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
       (append Builder.nil appendRight appendRight) appendExtraChildProof = false := by
   simp [appendExtraChildProof, appendRight, singleton, bSym, name]
   side_core
@@ -625,7 +621,7 @@ def substitutionWrongBodyProof : RawProof :=
       , tailSubstProof, imageAppendProof ]]
 
 theorem substitution_with_variable_splicing_accepts :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
       (applySubst exampleSubstitution (Builder.formula tc sourceBody)
         (Builder.formula tc substitutedBody))
       substitutionExampleProof = true := by
@@ -636,7 +632,7 @@ theorem substitution_with_variable_splicing_accepts :
   side_core
 
 theorem substitution_swapped_children_rejects :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
       (applySubst exampleSubstitution (Builder.formula tc sourceBody)
         (Builder.formula tc substitutedBody))
       substitutionSwappedChildrenProof = false := by
@@ -647,7 +643,7 @@ theorem substitution_swapped_children_rejects :
   side_core
 
 theorem substitution_missing_lookup_rejects :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
       (applySubst exampleSubstitution (Builder.formula tc sourceBody)
         (Builder.formula tc substitutedBody))
       substitutionMissingLookupProof = false := by
@@ -657,7 +653,7 @@ theorem substitution_missing_lookup_rejects :
   side_core
 
 theorem substitution_wrong_typecode_rejects :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
       (applySubst exampleSubstitution (Builder.formula tc sourceBody)
         (Builder.formula tc substitutedBody))
       substitutionWrongTypecodeProof = false := by
@@ -667,7 +663,7 @@ theorem substitution_wrong_typecode_rejects :
   side_core
 
 theorem substitution_wrong_body_rejects :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
       (applySubst exampleSubstitution (Builder.formula tc sourceBody)
         (Builder.formula tc substitutedBody))
       substitutionWrongBodyProof = false := by
@@ -703,10 +699,10 @@ private def duplicateSecondProof : RawProof :=
 runtime bridge may use neither result until its source-generated `NoDup` key
 invariant has been proved. -/
 theorem duplicate_lookup_exposes_both_results :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
         (lookup duplicateSubstitution vName tc firstDuplicateBody)
         duplicateFirstProof = true ∧
-      checkRaw validatedSidePresentation
+      checkRaw validatedSideDefinition
         (lookup duplicateSubstitution vName tc secondDuplicateBody)
         duplicateSecondProof = true := by
   constructor
@@ -789,7 +785,7 @@ def dvMissingPairProof : RawProof :=
     [dvListsProofFor Builder.nil]
 
 theorem nonempty_dv_example_accepts :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
       (dvOK dvSubstitution callerFrame calleeFrame) dvExampleProof = true := by
   simp [dvExampleProof, dvListsProofFor, allPairsProofFor, dvLookupVProof,
     dvLookupWProof, varsXProof, varsYProof, dvSubstitution, dvBindings,
@@ -799,7 +795,7 @@ theorem nonempty_dv_example_accepts :
   side_core
 
 theorem missing_caller_dv_pair_rejects :
-    checkRaw validatedSidePresentation
+    checkRaw validatedSideDefinition
       (dvOK dvSubstitution missingPairCallerFrame calleeFrame)
       dvMissingPairProof = false := by
   simp [dvMissingPairProof, dvListsProofFor, allPairsProofFor, dvLookupVProof,

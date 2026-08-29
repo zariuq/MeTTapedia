@@ -3301,7 +3301,7 @@ def operationalSoundClone
       (fun impossible => Fin.elim0 impossible)
 
 /-- CertificateGSLT's actual open-derivation clone is semantically sound whenever
-the admitted presentation rules are sound.  This is the concrete native
+the admitted language rules are sound.  This is the concrete native
 proof-object flow theorem: semantic validity follows by induction over the
 typed derivation, not by replaying a separate trace language. -/
 def CertificateGSLTCloneCanary.soundClone
@@ -3309,7 +3309,7 @@ def CertificateGSLTCloneCanary.soundClone
     (Meaning : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ruleSound : ∀ ruleInstance premises conclusion,
       Mettapedia.GSLT.LanguageDef.InferenceChecker.RuleApplication
-        object.presentation ruleInstance premises conclusion →
+        object.definition ruleInstance premises conclusion →
       (∀ premise ∈ premises, Meaning premise) → Meaning conclusion) :
     SoundClone (CertificateGSLT.derivationClone object) Meaning where
   closed_sound proof :=
@@ -3374,7 +3374,7 @@ theorem CertificateGSLTCloneCanary.native_derivation_flows
     (Meaning : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ruleSound : ∀ ruleInstance premises conclusion,
       Mettapedia.GSLT.LanguageDef.InferenceChecker.RuleApplication
-        object.presentation ruleInstance premises conclusion →
+        object.definition ruleInstance premises conclusion →
       (∀ premise ∈ premises, Meaning premise) → Meaning conclusion)
     {claim : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern}
     (proof : (CertificateGSLT.derivationClone object).Hom [] claim) :

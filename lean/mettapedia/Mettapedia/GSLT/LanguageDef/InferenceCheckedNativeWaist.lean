@@ -163,12 +163,12 @@ end NativeRealization
 
 /-! ## The checked-to-native waist -/
 
-/-- One validated inference presentation equipped independently with
+/-- One validated inference definition equipped independently with
 proof-relevant semantics and a displayed native realization for a named goal
 family. -/
-structure CheckedNativeWaist (presentation : ValidatedPresentation) where
+structure CheckedNativeWaist (definition : ValidatedCalculusLanguageDef) where
   Meaning : Pattern → Type uEvidence
-  semantics : PresentationSemantics presentation Meaning
+  semantics : CalculusLanguageSemantics definition Meaning
   Goal : Type uGoal
   surface : Goal → Pattern
   native : NativeRealization.{uGoal, uEvidence, uArtifact} Goal
@@ -176,12 +176,12 @@ structure CheckedNativeWaist (presentation : ValidatedPresentation) where
 
 namespace CheckedNativeWaist
 
-variable {presentation : ValidatedPresentation}
-    (waist : CheckedNativeWaist presentation)
+variable {definition : ValidatedCalculusLanguageDef}
+    (waist : CheckedNativeWaist definition)
 
 /-- A checked derivation in one supported goal fibre. -/
 structure CheckedProgram (goal : waist.Goal) : Type where
-  checked : Derivation presentation (waist.surface goal)
+  checked : Derivation definition (waist.surface goal)
 
 namespace CheckedProgram
 
@@ -234,7 +234,7 @@ end CheckedProgram
 
 /-- A checked externally supplied proof with its exact raw erasure. -/
 structure CheckedRawProgram (goal : waist.Goal) (raw : RawProof) : Type where
-  checked : Derivation presentation (waist.surface goal)
+  checked : Derivation definition (waist.surface goal)
   erases : checked.erase = raw
 
 namespace CheckedRawProgram
@@ -258,7 +258,7 @@ equivalent to an exact-erasing checked program.  The native layer adds no new
 proofs and rejects no checked proofs in its declared goal family. -/
 theorem checkRaw_iff_nonempty
     (goal : waist.Goal) (raw : RawProof) :
-    checkRaw presentation (waist.surface goal) raw = true ↔
+    checkRaw definition (waist.surface goal) raw = true ↔
       Nonempty (waist.CheckedRawProgram goal raw) := by
   constructor
   · intro accepted

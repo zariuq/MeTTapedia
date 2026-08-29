@@ -4,9 +4,9 @@ import Mettapedia.OSLF.Framework.GrammarDerives
 import Provenance.Util.ValueTypeString
 
 /-!
-# Grammar derivations as generic inference presentations
+# Grammar derivations as generic inference definitions
 
-This module generates a source-indexed inference presentation from the
+This module generates a source-indexed inference definition from the
 terminal/nonterminal fragment of a `LanguageDef` grammar.  Parsing algorithms
 remain untrusted proof producers.  Their successful branches must lower to
 ordinary `RawProof` values accepted by the generic inference checker.
@@ -56,7 +56,7 @@ private def derivesJudgmentHead : String := reservedPrefix ++ "GrammarDerives"
 
 /-- Length-tagged labels make source, token, sort, and boundary payloads
 distinct ground constructors.  Any collision with an authored constructor is
-rejected by ordinary `LanguageDef`/presentation validation. -/
+rejected by ordinary `LanguageDef`/definition validation. -/
 private def literalLabel (kind value : String) : String :=
   reservedPrefix ++ "literal." ++ kind ++ "." ++ value
 
@@ -306,34 +306,33 @@ private def productionRule? (rule : GrammarRule) : Option RuleSchema := do
 private def grammarRules (language : LanguageDef) : List RuleSchema :=
   language.terms.filterMap productionRule?
 
-private def rawPresentation (language : LanguageDef) (ledger : SourceLedger) : Presentation :=
-  { language := encodedLanguage language ledger
-    calculus :=
-      { judgments :=
-          [{ head := boundaryJudgmentHead, arity := 2 },
-           { head := tokenSpanJudgmentHead, arity := 4 },
-           { head := derivesJudgmentHead, arity := 5 }]
-        rules :=
-          boundaryFactRules ledger ++ tokenFactRules ledger ++ grammarRules language } }
+private def rawDefinition (language : LanguageDef) (ledger : SourceLedger) : CalculusLanguageDef :=
+  CalculusLanguageDef.extend (encodedLanguage language ledger)
+    { judgments :=
+        [{ head := boundaryJudgmentHead, arity := 2 },
+         { head := tokenSpanJudgmentHead, arity := 4 },
+         { head := derivesJudgmentHead, arity := 5 }]
+      rules :=
+        boundaryFactRules ledger ++ tokenFactRules ledger ++ grammarRules language }
 
-/-- Generate the raw source-indexed presentation only for the exact supported
+/-- Generate the raw source-indexed definition only for the exact supported
 grammar fragment and a syntactically valid source ledger. -/
-def generate? (language : LanguageDef) (ledger : SourceLedger) : Option Presentation :=
+def generate? (language : LanguageDef) (ledger : SourceLedger) : Option CalculusLanguageDef :=
   if grammarSupportedForInference language && ledger.isValid then
-    some (rawPresentation language ledger)
+    some (rawDefinition language ledger)
   else
     none
 
 /-- Generate and pass the result through the generic V2 admission boundary. -/
 def admit? (language : LanguageDef) (ledger : SourceLedger) :
-    Option ValidatedPresentation := do
-  let presentation ← generate? language ledger
-  presentation.validateV2?
+    Option ValidatedCalculusLanguageDef := do
+  let definition ← generate? language ledger
+  definition.validate?
 
 /-! ## Declarative source-span meaning -/
 
 /-- `DerivesSpan` relates the numeric boundaries used by the generated
-presentation to the token-list relation in `GrammarDerives`.  The parsed
+definition to the token-list relation in `GrammarDerives`.  The parsed
 segment is contiguous by construction. -/
 def DerivesSpan (language : LanguageDef) (ledger : SourceLedger)
     (sort : String) (left right : Nat) (tree : Pattern) : Prop :=
@@ -597,11 +596,11 @@ private theorem grammarRules_mem_iff
 
 /-! ## Ground source facts -/
 
-private def validatedRawPresentation
+private def validatedRawDefinition
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawPresentation language ledger).isValidV2 = true) :
-    ValidatedPresentation :=
-  ⟨rawPresentation language ledger, valid⟩
+    (valid : (rawDefinition language ledger).isValid = true) :
+    ValidatedCalculusLanguageDef :=
+  ⟨rawDefinition language ledger, valid⟩
 
 private theorem instantiate_boundaryPattern (depth index : Nat) :
     instantiateSchemaAt? [] [] depth (boundaryPattern index) =
@@ -1205,7 +1204,7 @@ private theorem productionRule?_some_components
 
 private theorem production_application_meaning
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawPresentation language ledger).isValidV2 = true)
+    (valid : (rawDefinition language ledger).isValid = true)
     (rule : GrammarRule) (ruleMember : rule ∈ language.terms)
     (built : SchemaBuild)
     (buildEquality :
@@ -1213,10 +1212,10 @@ private theorem production_application_meaning
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {conclusion : Pattern}
     (application : RuleApplication
-      (validatedRawPresentation language ledger valid)
+      (validatedRawDefinition language ledger valid)
       ruleInstance premises conclusion)
     (selected :
-      (validatedRawPresentation language ledger valid).1.lookupRule?
+      (validatedRawDefinition language ledger valid).1.lookupRule?
         ruleInstance.ruleId = some (productionSchema rule built))
     (meanings : ∀ premise ∈ premises,
       JudgmentMeaning language ledger premise) :
@@ -1338,12 +1337,12 @@ private theorem production_application_meaning
               itemsDerivation⟩
 
 private theorem groundConclusion_of_application
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {conclusion : Pattern} {schema : RuleSchema}
     (application :
-      RuleApplication presentation ruleInstance premises conclusion)
-    (selected : presentation.1.lookupRule? ruleInstance.ruleId = some schema)
+      RuleApplication definition ruleInstance premises conclusion)
+    (selected : definition.1.lookupRule? ruleInstance.ruleId = some schema)
     (noFormals : schema.metavariables = [])
     (groundConclusion :
       instantiateSchemaAt? [] [] 0 schema.conclusion = some schema.conclusion) :
@@ -1366,15 +1365,15 @@ private theorem groundConclusion_of_application
 
 private theorem boundaryFact_application_meaning
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawPresentation language ledger).isValidV2 = true)
+    (valid : (rawDefinition language ledger).isValid = true)
     (index : Nat) (within : index ≤ ledger.tokens.length)
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {conclusion : Pattern}
     (application : RuleApplication
-      (validatedRawPresentation language ledger valid)
+      (validatedRawDefinition language ledger valid)
       ruleInstance premises conclusion)
     (selected :
-      (validatedRawPresentation language ledger valid).1.lookupRule?
+      (validatedRawDefinition language ledger valid).1.lookupRule?
         ruleInstance.ruleId = some (boundaryFactRule ledger index)) :
     JudgmentMeaning language ledger conclusion := by
   have conclusionEquality := groundConclusion_of_application application selected
@@ -1384,16 +1383,16 @@ private theorem boundaryFact_application_meaning
 
 private theorem tokenFact_application_meaning
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawPresentation language ledger).isValidV2 = true)
+    (valid : (rawDefinition language ledger).isValid = true)
     (before after : List String) (token : String)
     (source : ledger.tokens = before ++ token :: after)
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {conclusion : Pattern}
     (application : RuleApplication
-      (validatedRawPresentation language ledger valid)
+      (validatedRawDefinition language ledger valid)
       ruleInstance premises conclusion)
     (selected :
-      (validatedRawPresentation language ledger valid).1.lookupRule?
+      (validatedRawDefinition language ledger valid).1.lookupRule?
         ruleInstance.ruleId =
           some (tokenFactRule ledger before.length token)) :
     JudgmentMeaning language ledger conclusion := by
@@ -1402,15 +1401,15 @@ private theorem tokenFact_application_meaning
   rw [conclusionEquality]
   exact .token before after token source
 
-/-- Every application admitted from the generated source presentation
+/-- Every application admitted from the generated source definition
 preserves the declarative grammar meaning. -/
 theorem generated_rule_application_meaning
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawPresentation language ledger).isValidV2 = true)
+    (valid : (rawDefinition language ledger).isValid = true)
     (ruleInstance : RuleInstance) (premises : List Pattern)
     (conclusion : Pattern)
     (application : RuleApplication
-      (validatedRawPresentation language ledger valid)
+      (validatedRawDefinition language ledger valid)
       ruleInstance premises conclusion)
     (premiseMeanings : ∀ premise ∈ premises,
       JudgmentMeaning language ledger premise) :
@@ -1421,7 +1420,7 @@ theorem generated_rule_application_meaning
           stored ∈ boundaryFactRules ledger ++ tokenFactRules ledger ++
             grammarRules language := by
         change stored ∈
-          (validatedRawPresentation language ledger valid).1.rules
+          (validatedRawDefinition language ledger valid).1.rules
         exact List.mem_of_find?_eq_some lookup
       rcases List.mem_append.mp storedMember with
         sourceFactMember | grammarMember
@@ -1454,13 +1453,13 @@ theorem generated_rule_application_meaning
           lookup premiseMeanings
 
 /-- The generic checker's Type-valued derivations over a generated grammar
-presentation are semantically sound for the source-indexed grammar relation. -/
+definition are semantically sound for the source-indexed grammar relation. -/
 theorem generated_derivation_sound
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawPresentation language ledger).isValidV2 = true)
+    (valid : (rawDefinition language ledger).isValid = true)
     {goal : Pattern}
     (derivation : Derivation
-      (validatedRawPresentation language ledger valid) goal) :
+      (validatedRawDefinition language ledger valid) goal) :
     JudgmentMeaning language ledger goal :=
   derivation.sound_of_ruleApplications (JudgmentMeaning language ledger)
     (generated_rule_application_meaning language ledger valid)
@@ -1469,21 +1468,21 @@ theorem generated_derivation_sound
 `GrammarDerives.Derives` witness for the exact admitted token list. -/
 theorem checkedProof_root_sound
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawPresentation language ledger).isValidV2 = true)
+    (valid : (rawDefinition language ledger).isValid = true)
     (sort : String) (tree : Pattern)
-    (proof : CheckedProof (validatedRawPresentation language ledger valid)
+    (proof : CheckedProof (validatedRawDefinition language ledger valid)
       (rootJudgment ledger sort tree)) :
     Derives language sort ledger.tokens tree := by
   rcases checkRaw_soundness proof.2 with ⟨derivation⟩
   exact (rootJudgment_has_meaning_iff language ledger sort tree).mp
     (generated_derivation_sound language ledger valid derivation)
 
-/-! ## Shared proof-DAG presentation
+/-! ## Shared proof-DAG definition
 
-The ordinary presentation above exposes the complete derivation tree in every
+The ordinary definition above exposes the complete derivation tree in every
 `GrammarDerives` judgment.  That is a useful direct specification, but a
 right-recursive grammar repeats increasingly large child trees in rule
-arguments.  The presentation below keeps the same source, spans, rule
+arguments.  The definition below keeps the same source, spans, rule
 identities, and ordered premises while storing the tree only in the proof
 structure.  Its semantic interpretation reconstructs an ordinary
 `GrammarDerives.Derives` witness.
@@ -1568,32 +1567,31 @@ private theorem dagGrammarRules_mem_iff
       ∃ rule, rule ∈ language.terms ∧ dagProductionRule rule = some schema := by
   simp [dagGrammarRules]
 
-private def rawDAGPresentation
-    (language : LanguageDef) (ledger : SourceLedger) : Presentation :=
-  { language := encodedLanguage language ledger
-    calculus :=
-      { judgments :=
-          [{ head := boundaryJudgmentHead, arity := 2 },
-           { head := tokenSpanJudgmentHead, arity := 4 },
-           { head := derivesNodeJudgmentHead, arity := 4 }]
-        rules := boundaryFactRules ledger ++ tokenFactRules ledger ++
-          dagGrammarRules language } }
+private def rawDAGDefinition
+    (language : LanguageDef) (ledger : SourceLedger) : CalculusLanguageDef :=
+  CalculusLanguageDef.extend (encodedLanguage language ledger)
+    { judgments :=
+        [{ head := boundaryJudgmentHead, arity := 2 },
+         { head := tokenSpanJudgmentHead, arity := 4 },
+         { head := derivesNodeJudgmentHead, arity := 4 }]
+      rules := boundaryFactRules ledger ++ tokenFactRules ledger ++
+        dagGrammarRules language }
 
-/-- Generate the shared proof-DAG presentation from the same grammar and
-source ledger as the direct tree presentation. -/
-def generateDAGPresentation
-    (language : LanguageDef) (ledger : SourceLedger) : Option Presentation :=
+/-- Generate the shared proof-DAG definition from the same grammar and
+source ledger as the direct tree definition. -/
+def generateDAGDefinition
+    (language : LanguageDef) (ledger : SourceLedger) : Option CalculusLanguageDef :=
   if grammarSupportedForInference language && ledger.isValid then
-    some (rawDAGPresentation language ledger)
+    some (rawDAGDefinition language ledger)
   else
     none
 
-/-- Generate and validate the shared proof-DAG presentation. -/
-def admitDAGPresentation
+/-- Generate and validate the shared proof-DAG definition. -/
+def admitDAGDefinition
     (language : LanguageDef) (ledger : SourceLedger) :
-    Option ValidatedPresentation := do
-  let presentation ← generateDAGPresentation language ledger
-  presentation.validateV2?
+    Option ValidatedCalculusLanguageDef := do
+  let definition ← generateDAGDefinition language ledger
+  definition.validate?
 
 private inductive DAGJudgmentMeaning
     (language : LanguageDef) (ledger : SourceLedger) : Pattern → Prop where
@@ -1648,11 +1646,11 @@ private theorem dagRootJudgment_has_meaning_iff
     exact .derives sort 0 ledger.tokens.length tree
       ((derivesSpan_whole_iff language ledger sort tree).mpr derivation)
 
-private def validatedRawDAGPresentation
+private def validatedRawDAGDefinition
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawDAGPresentation language ledger).isValidV2 = true) :
-    ValidatedPresentation :=
-  ⟨rawDAGPresentation language ledger, valid⟩
+    (valid : (rawDAGDefinition language ledger).isValid = true) :
+    ValidatedCalculusLanguageDef :=
+  ⟨rawDAGDefinition language ledger, valid⟩
 
 private theorem derivesNodeInstantiation_shape
     {formals : List (String × Nat)} {arguments : List Pattern}
@@ -2076,12 +2074,12 @@ private theorem dagProduction_application_meaning
     (built : DAGSchemaBuild)
     (buildEquality :
       buildDAGSyntaxItems rule rule.syntaxPattern 0 = some built)
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {conclusion : Pattern}
-    (application : RuleApplication presentation ruleInstance premises conclusion)
+    (application : RuleApplication definition ruleInstance premises conclusion)
     (selected :
-      presentation.1.lookupRule? ruleInstance.ruleId =
+      definition.1.lookupRule? ruleInstance.ruleId =
         some (dagProductionSchema rule built))
     (meanings : ∀ premise ∈ premises,
       DAGJudgmentMeaning language ledger premise) :
@@ -2197,12 +2195,12 @@ private theorem dagProduction_application_meaning
 private theorem dagBoundaryFact_application_meaning
     (language : LanguageDef) (ledger : SourceLedger)
     (index : Nat) (within : index ≤ ledger.tokens.length)
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {conclusion : Pattern}
-    (application : RuleApplication presentation ruleInstance premises conclusion)
+    (application : RuleApplication definition ruleInstance premises conclusion)
     (selected :
-      presentation.1.lookupRule? ruleInstance.ruleId =
+      definition.1.lookupRule? ruleInstance.ruleId =
         some (boundaryFactRule ledger index)) :
     DAGJudgmentMeaning language ledger conclusion := by
   have conclusionEquality := groundConclusion_of_application application selected
@@ -2214,12 +2212,12 @@ private theorem dagTokenFact_application_meaning
     (language : LanguageDef) (ledger : SourceLedger)
     (before after : List String) (token : String)
     (source : ledger.tokens = before ++ token :: after)
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {conclusion : Pattern}
-    (application : RuleApplication presentation ruleInstance premises conclusion)
+    (application : RuleApplication definition ruleInstance premises conclusion)
     (selected :
-      presentation.1.lookupRule? ruleInstance.ruleId =
+      definition.1.lookupRule? ruleInstance.ruleId =
         some (tokenFactRule ledger before.length token)) :
     DAGJudgmentMeaning language ledger conclusion := by
   have conclusionEquality := groundConclusion_of_application application selected
@@ -2228,14 +2226,14 @@ private theorem dagTokenFact_application_meaning
   exact .token before after token source
 
 /-- Every application admitted from the generated shared proof-DAG
-presentation preserves the declarative grammar meaning. -/
+definition preserves the declarative grammar meaning. -/
 theorem generated_dag_rule_application_meaning
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawDAGPresentation language ledger).isValidV2 = true)
+    (valid : (rawDAGDefinition language ledger).isValid = true)
     (ruleInstance : RuleInstance) (premises : List Pattern)
     (conclusion : Pattern)
     (application : RuleApplication
-      (validatedRawDAGPresentation language ledger valid)
+      (validatedRawDAGDefinition language ledger valid)
       ruleInstance premises conclusion)
     (premiseMeanings : ∀ premise ∈ premises,
       DAGJudgmentMeaning language ledger premise) :
@@ -2246,7 +2244,7 @@ theorem generated_dag_rule_application_meaning
           stored ∈ boundaryFactRules ledger ++ tokenFactRules ledger ++
             dagGrammarRules language := by
         change stored ∈
-          (validatedRawDAGPresentation language ledger valid).1.rules
+          (validatedRawDAGDefinition language ledger valid).1.rules
         exact List.mem_of_find?_eq_some lookup
       rcases List.mem_append.mp storedMember with
         sourceFactMember | grammarMember
@@ -2278,14 +2276,14 @@ theorem generated_dag_rule_application_meaning
             conclusionInstantiates)
           lookup premiseMeanings
 
-/-- Type-valued derivations over the generated shared proof-DAG presentation
+/-- Type-valued derivations over the generated shared proof-DAG definition
 are semantically sound for the source-indexed grammar relation. -/
 theorem generated_dag_derivation_sound
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawDAGPresentation language ledger).isValidV2 = true)
+    (valid : (rawDAGDefinition language ledger).isValid = true)
     {goal : Pattern}
     (derivation : Derivation
-      (validatedRawDAGPresentation language ledger valid) goal) :
+      (validatedRawDAGDefinition language ledger valid) goal) :
     DAGJudgmentMeaning language ledger goal :=
   derivation.sound_of_ruleApplications (DAGJudgmentMeaning language ledger)
     (generated_dag_rule_application_meaning language ledger valid)
@@ -2294,9 +2292,9 @@ theorem generated_dag_derivation_sound
 reconstructs an ordinary grammar derivation for the exact admitted tokens. -/
 theorem checkedDAGProof_root_sound
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawDAGPresentation language ledger).isValidV2 = true)
+    (valid : (rawDAGDefinition language ledger).isValid = true)
     (sort : String)
-    (proof : CheckedProof (validatedRawDAGPresentation language ledger valid)
+    (proof : CheckedProof (validatedRawDAGDefinition language ledger valid)
       (dagRootJudgment ledger sort)) :
     ∃ tree, Derives language sort ledger.tokens tree := by
   rcases checkRaw_soundness proof.2 with ⟨derivation⟩
@@ -2307,10 +2305,10 @@ theorem checkedDAGProof_root_sound
 for the exact admitted source.  Block boundaries are semantically inert. -/
 theorem checkedDAGBlocks_root_sound
     (language : LanguageDef) (ledger : SourceLedger)
-    (valid : (rawDAGPresentation language ledger).isValidV2 = true)
+    (valid : (rawDAGDefinition language ledger).isValid = true)
     (sort : String) (rootId : Nat) (blocks : List (List DAGNode))
     (checked : checkDAGBlocks
-      (validatedRawDAGPresentation language ledger valid)
+      (validatedRawDAGDefinition language ledger valid)
       (dagRootJudgment ledger sort) rootId blocks = true) :
     ∃ tree, Derives language sort ledger.tokens tree := by
   rcases checkDAGBlocks_sound checked with ⟨proof, proofAccepted⟩
@@ -2434,76 +2432,75 @@ private def lexicalFactRules
     List RuleSchema :=
   lexicalFactRulesFrom declarations source source.tokens 0
 
-private def rawLexicalDAGPresentation (language : LanguageDef)
+private def rawLexicalDAGDefinition (language : LanguageDef)
     (declarations : List LexicalDeclaration)
-    (source : ClassifiedSource) : Presentation :=
-  { language := encodedLanguage language source.ledger
-    calculus :=
-      { judgments :=
-          [{ head := boundaryJudgmentHead, arity := 2 },
-           { head := tokenSpanJudgmentHead, arity := 4 },
-           { head := derivesNodeJudgmentHead, arity := 4 }]
-        rules :=
-          boundaryFactRules source.ledger ++ tokenFactRules source.ledger ++
-            lexicalFactRules declarations source ++ dagGrammarRules language } }
+    (source : ClassifiedSource) : CalculusLanguageDef :=
+  CalculusLanguageDef.extend (encodedLanguage language source.ledger)
+    { judgments :=
+        [{ head := boundaryJudgmentHead, arity := 2 },
+         { head := tokenSpanJudgmentHead, arity := 4 },
+         { head := derivesNodeJudgmentHead, arity := 4 }]
+      rules :=
+        boundaryFactRules source.ledger ++ tokenFactRules source.ledger ++
+          lexicalFactRules declarations source ++ dagGrammarRules language }
 
-/-- Generate the compact presentation including deterministic `VarD`/`LexD`
+/-- Generate the compact definition including deterministic `VarD`/`LexD`
 leaf rules. -/
-def generateLexicalDAGPresentation (language : LanguageDef)
+def generateLexicalDAGDefinition (language : LanguageDef)
     (declarations : List LexicalDeclaration)
-    (source : ClassifiedSource) : Option Presentation :=
+    (source : ClassifiedSource) : Option CalculusLanguageDef :=
   if grammarSupportedForInference language && source.isValid then
-    some (rawLexicalDAGPresentation language declarations source)
+    some (rawLexicalDAGDefinition language declarations source)
   else
     none
 
-/-- Generate and validate the compact presentation whose leaf rules are
+/-- Generate and validate the compact definition whose leaf rules are
 determined by the ordered lexical declarations. -/
-def admitLexicalDAGPresentation (language : LanguageDef)
+def admitLexicalDAGDefinition (language : LanguageDef)
     (declarations : List LexicalDeclaration)
-    (source : ClassifiedSource) : Option ValidatedPresentation := do
-  let presentation ← generateLexicalDAGPresentation language declarations source
-  presentation.validateV2?
+    (source : ClassifiedSource) : Option ValidatedCalculusLanguageDef := do
+  let definition ← generateLexicalDAGDefinition language declarations source
+  definition.validate?
 
-private def validatedRawLexicalDAGPresentation
+private def validatedRawLexicalDAGDefinition
     (language : LanguageDef) (declarations : List LexicalDeclaration)
     (source : ClassifiedSource)
     (valid :
-      (rawLexicalDAGPresentation language declarations source).isValidV2 = true) :
-    ValidatedPresentation :=
-  ⟨rawLexicalDAGPresentation language declarations source, valid⟩
+      (rawLexicalDAGDefinition language declarations source).isValid = true) :
+    ValidatedCalculusLanguageDef :=
+  ⟨rawLexicalDAGDefinition language declarations source, valid⟩
 
-private theorem admittedLexicalDAGPresentation_is_generated
+private theorem admittedLexicalDAGDefinition_is_generated
     (language : LanguageDef) (declarations : List LexicalDeclaration)
-    (source : ClassifiedSource) (presentation : ValidatedPresentation)
+    (source : ClassifiedSource) (definition : ValidatedCalculusLanguageDef)
     (admitted :
-      admitLexicalDAGPresentation language declarations source =
-        some presentation) :
+      admitLexicalDAGDefinition language declarations source =
+        some definition) :
     ∃ valid :
-        (rawLexicalDAGPresentation language declarations source).isValidV2 =
+        (rawLexicalDAGDefinition language declarations source).isValid =
           true,
-      presentation =
-        validatedRawLexicalDAGPresentation language declarations source valid := by
-  cases generated : generateLexicalDAGPresentation language declarations source with
+      definition =
+        validatedRawLexicalDAGDefinition language declarations source valid := by
+  cases generated : generateLexicalDAGDefinition language declarations source with
   | none =>
-      simp [admitLexicalDAGPresentation, generated] at admitted
+      simp [admitLexicalDAGDefinition, generated] at admitted
   | some raw =>
-      by_cases valid : raw.isValidV2 = true
+      by_cases valid : raw.isValid = true
       · have admittedValue :
-            (⟨raw, valid⟩ : ValidatedPresentation) = presentation := by
+            (⟨raw, valid⟩ : ValidatedCalculusLanguageDef) = definition := by
           apply Option.some.inj
-          simpa [admitLexicalDAGPresentation, generated,
-            Presentation.validateV2?, valid] using admitted
+          simpa [admitLexicalDAGDefinition, generated,
+            CalculusLanguageDef.validate?, valid] using admitted
         have rawEquality :
-            raw = rawLexicalDAGPresentation language declarations source := by
-          unfold generateLexicalDAGPresentation at generated
+            raw = rawLexicalDAGDefinition language declarations source := by
+          unfold generateLexicalDAGDefinition at generated
           split at generated
           next supported => exact (Option.some.inj generated).symm
           next unsupported => simp at generated
         subst raw
         exact ⟨valid, admittedValue.symm⟩
-      · simp [admitLexicalDAGPresentation, generated,
-          Presentation.validateV2?, valid] at admitted
+      · simp [admitLexicalDAGDefinition, generated,
+          CalculusLanguageDef.validate?, valid] at admitted
 
 private theorem lexicalFactRulesFrom_mem
     (declarations : List LexicalDeclaration) (source : ClassifiedSource) :
@@ -2613,12 +2610,12 @@ private theorem lexicalFact_application_meaning
     (after : List ClassifiedToken) (sort : String)
     (decomposition : source.tokens = before ++ token :: after)
     (classified : lexicalSort? declarations token = some sort)
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {conclusion : Pattern}
-    (application : RuleApplication presentation ruleInstance premises conclusion)
+    (application : RuleApplication definition ruleInstance premises conclusion)
     (selected :
-      presentation.1.lookupRule? ruleInstance.ruleId =
+      definition.1.lookupRule? ruleInstance.ruleId =
         some (lexicalFactRule source before.length sort)) :
     DAGJudgmentMeaning (lexicalizedLanguage language declarations source)
       source.ledger conclusion := by
@@ -2648,17 +2645,17 @@ private theorem lexicalFact_application_meaning
     exact DerivesItems.terminal rule token.serialized [] [] []
       (DerivesItems.nil rule)
 
-/-- Every rule application in the classified lexical presentation preserves
+/-- Every rule application in the classified lexical definition preserves
 the ordinary grammar meaning of the lexicalized language. -/
 theorem generated_lexical_dag_rule_application_meaning
     (language : LanguageDef) (declarations : List LexicalDeclaration)
     (source : ClassifiedSource)
     (valid :
-      (rawLexicalDAGPresentation language declarations source).isValidV2 = true)
+      (rawLexicalDAGDefinition language declarations source).isValid = true)
     (ruleInstance : RuleInstance) (premises : List Pattern)
     (conclusion : Pattern)
     (application : RuleApplication
-      (validatedRawLexicalDAGPresentation language declarations source valid)
+      (validatedRawLexicalDAGDefinition language declarations source valid)
       ruleInstance premises conclusion)
     (premiseMeanings : ∀ premise ∈ premises,
       DAGJudgmentMeaning (lexicalizedLanguage language declarations source)
@@ -2673,7 +2670,7 @@ theorem generated_lexical_dag_rule_application_meaning
               lexicalFactRules declarations source) ++
                 dagGrammarRules language := by
         change stored ∈
-          (validatedRawLexicalDAGPresentation
+          (validatedRawLexicalDAGDefinition
             language declarations source valid).1.rules
         exact List.mem_of_find?_eq_some lookup
       rcases List.mem_append.mp storedMember with
@@ -2728,10 +2725,10 @@ theorem generated_lexical_dag_derivation_sound
     (language : LanguageDef) (declarations : List LexicalDeclaration)
     (source : ClassifiedSource)
     (valid :
-      (rawLexicalDAGPresentation language declarations source).isValidV2 = true)
+      (rawLexicalDAGDefinition language declarations source).isValid = true)
     {goal : Pattern}
     (derivation : Derivation
-      (validatedRawLexicalDAGPresentation language declarations source valid)
+      (validatedRawLexicalDAGDefinition language declarations source valid)
       goal) :
     DAGJudgmentMeaning (lexicalizedLanguage language declarations source)
       source.ledger goal :=
@@ -2747,10 +2744,10 @@ theorem checkedLexicalDAGBlocks_root_sound
     (language : LanguageDef) (declarations : List LexicalDeclaration)
     (source : ClassifiedSource)
     (valid :
-      (rawLexicalDAGPresentation language declarations source).isValidV2 = true)
+      (rawLexicalDAGDefinition language declarations source).isValid = true)
     (sort : String) (rootId : Nat) (blocks : List (List DAGNode))
     (checked : checkDAGBlocks
-      (validatedRawLexicalDAGPresentation language declarations source valid)
+      (validatedRawLexicalDAGDefinition language declarations source valid)
       (dagRootJudgment source.ledger sort) rootId blocks = true) :
     ∃ tree,
       Derives (lexicalizedLanguage language declarations source)
@@ -2769,18 +2766,18 @@ theorem checkedLexicalDAGBlocks_root_exact
     (language : LanguageDef) (declarations : List LexicalDeclaration)
     (source : ClassifiedSource)
     (valid :
-      (rawLexicalDAGPresentation language declarations source).isValidV2 = true)
+      (rawLexicalDAGDefinition language declarations source).isValid = true)
     (sort : String) (rootId : Nat) (blocks : List (List DAGNode))
     (checked : checkDAGBlocks
-      (validatedRawLexicalDAGPresentation language declarations source valid)
+      (validatedRawLexicalDAGDefinition language declarations source valid)
       (dagRootJudgment source.ledger sort) rootId blocks = true) :
     ∃ (proof : RawProof)
         (derivation : Derivation
-          (validatedRawLexicalDAGPresentation language declarations source valid)
+          (validatedRawLexicalDAGDefinition language declarations source valid)
           (dagRootJudgment source.ledger sort))
         (tree : Pattern),
       expandDAGBlocks?
-          (validatedRawLexicalDAGPresentation language declarations source valid)
+          (validatedRawLexicalDAGDefinition language declarations source valid)
           (dagRootJudgment source.ledger sort) rootId blocks = some proof ∧
         derivation.erase = proof ∧
         Derives (lexicalizedLanguage language declarations source)
@@ -2801,20 +2798,20 @@ ordinary grammar derivation for the exact admitted token sequence. -/
 theorem admittedLexicalDAGBlocks_root_sound
     (language : LanguageDef) (declarations : List LexicalDeclaration)
     (source : ClassifiedSource)
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (admitted :
-      admitLexicalDAGPresentation language declarations source =
-        some presentation)
+      admitLexicalDAGDefinition language declarations source =
+        some definition)
     (sort : String) (rootId : Nat) (blocks : List (List DAGNode))
-    (checked : checkDAGBlocks presentation
+    (checked : checkDAGBlocks definition
       (dagRootJudgment source.ledger sort) rootId blocks = true) :
     ∃ tree,
       Derives (lexicalizedLanguage language declarations source)
         sort source.ledger.tokens tree := by
-  rcases admittedLexicalDAGPresentation_is_generated
-      language declarations source presentation admitted with
-    ⟨valid, presentationEquality⟩
-  subst presentation
+  rcases admittedLexicalDAGDefinition_is_generated
+      language declarations source definition admitted with
+    ⟨valid, definitionEquality⟩
+  subst definition
   exact checkedLexicalDAGBlocks_root_sound
     language declarations source valid sort rootId blocks checked
 
@@ -2822,26 +2819,26 @@ theorem admittedLexicalDAGBlocks_root_sound
 theorem admittedLexicalDAGBlocks_root_exact
     (language : LanguageDef) (declarations : List LexicalDeclaration)
     (source : ClassifiedSource)
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (admitted :
-      admitLexicalDAGPresentation language declarations source =
-        some presentation)
+      admitLexicalDAGDefinition language declarations source =
+        some definition)
     (sort : String) (rootId : Nat) (blocks : List (List DAGNode))
-    (checked : checkDAGBlocks presentation
+    (checked : checkDAGBlocks definition
       (dagRootJudgment source.ledger sort) rootId blocks = true) :
     ∃ (proof : RawProof)
-        (derivation : Derivation presentation
+        (derivation : Derivation definition
           (dagRootJudgment source.ledger sort))
         (tree : Pattern),
-      expandDAGBlocks? presentation (dagRootJudgment source.ledger sort)
+      expandDAGBlocks? definition (dagRootJudgment source.ledger sort)
           rootId blocks = some proof ∧
         derivation.erase = proof ∧
         Derives (lexicalizedLanguage language declarations source)
           sort source.ledger.tokens tree := by
-  rcases admittedLexicalDAGPresentation_is_generated
-      language declarations source presentation admitted with
-    ⟨valid, presentationEquality⟩
-  subst presentation
+  rcases admittedLexicalDAGDefinition_is_generated
+      language declarations source definition admitted with
+    ⟨valid, definitionEquality⟩
+  subst definition
   exact checkedLexicalDAGBlocks_root_exact
     language declarations source valid sort rootId blocks checked
 
@@ -2916,9 +2913,9 @@ private def lexicalFixtureSource : ClassifiedSource :=
          className := "identifier" }] }
 
 theorem lexical_fixture_generates :
-    generateLexicalDAGPresentation lexicalFixtureLanguage
+    generateLexicalDAGDefinition lexicalFixtureLanguage
       lexicalFixtureDeclarations lexicalFixtureSource =
-        some (rawLexicalDAGPresentation lexicalFixtureLanguage
+        some (rawLexicalDAGDefinition lexicalFixtureLanguage
           lexicalFixtureDeclarations lexicalFixtureSource) := by
   rfl
 
@@ -2930,7 +2927,7 @@ private def invalidLexicalFixtureSource : ClassifiedSource :=
          className := "identifier" }] }
 
 theorem lexical_empty_serialization_rejects :
-    generateLexicalDAGPresentation lexicalFixtureLanguage
+    generateLexicalDAGDefinition lexicalFixtureLanguage
       lexicalFixtureDeclarations invalidLexicalFixtureSource = none := by
   decide
 
@@ -3007,9 +3004,9 @@ private theorem repr_zero : Nat.repr 0 = "0" := by decide
 private theorem repr_one : Nat.repr 1 = "1" := by decide
 
 private theorem zeroBoundaryRuleValidV1 (index : Nat) (hindex : index < 2) :
-    RuleSchema.isValidV1 (boundaryFactRule zeroLedger index) = true := by
+    RuleSchema.isLocallyValid (boundaryFactRule zeroLedger index) = true := by
   rcases index_lt_two index hindex with rfl | rfl <;>
-    simp [boundaryFactRule, RuleSchema.isValidV1,
+    simp [boundaryFactRule, RuleSchema.isLocallyValid,
       RuleSchema.metavariableNames, RuleSchema.occurrences,
       RuleSchema.patterns, patternMetavariableOccurrencesAt,
       patternsMetavariableOccurrencesAt, Pattern.isWellScoped,
@@ -3021,8 +3018,8 @@ private theorem zeroBoundaryRuleValidV1 (index : Nat) (hindex : index < 2) :
       literalLabel, namespacedId, reservedPrefix]
 
 private theorem zeroTokenRuleValidV1 :
-    RuleSchema.isValidV1 (tokenFactRule zeroLedger 0 "0") = true := by
-  simp [tokenFactRule, RuleSchema.isValidV1,
+    RuleSchema.isLocallyValid (tokenFactRule zeroLedger 0 "0") = true := by
+  simp [tokenFactRule, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, Pattern.isWellScoped,
@@ -3034,24 +3031,24 @@ private theorem zeroTokenRuleValidV1 :
     literalPattern, literalLabel, namespacedId, reservedPrefix]
 
 private theorem zeroRulesValidV1 :
-    (rawPresentation exprLanguage zeroLedger).rules.all
-      RuleSchema.isValidV1 = true := by
-  simp only [Presentation.rules, rawPresentation, List.all_append,
+    (rawDefinition exprLanguage zeroLedger).rules.all
+      RuleSchema.isLocallyValid = true := by
+  simp only [rawDefinition, CalculusLanguageDef.extend_rules, List.all_append,
     Bool.and_eq_true]
   constructor
   · constructor
     · change ([0, 1] : List Nat).all
-        (RuleSchema.isValidV1 ∘ boundaryFactRule zeroLedger) = true
+        (RuleSchema.isLocallyValid ∘ boundaryFactRule zeroLedger) = true
       simp [zeroBoundaryRuleValidV1]
     · change [tokenFactRule zeroLedger 0 "0"].all
-        RuleSchema.isValidV1 = true
+        RuleSchema.isLocallyValid = true
       simp [zeroTokenRuleValidV1]
   · simp [grammarRules,
       productionRule?, productionSchema, productionMetavariables,
       productionPremises, productionConclusion, buildSyntaxItems,
       ruleSupportedForInference, simpleParameter?, syntaxItemSupported,
       nonTerminalNames, paramSort?, TermParam.bodyName,
-      RuleSchema.isValidV1,
+      RuleSchema.isLocallyValid,
       RuleSchema.metavariableNames, RuleSchema.occurrences,
       RuleSchema.patterns, patternMetavariableOccurrencesAt,
       patternsMetavariableOccurrencesAt, Pattern.isWellScoped,
@@ -3091,22 +3088,22 @@ private theorem zeroRulesValidV1 :
           rfl | rfl | rfl | rfl <;> simp
 
 private theorem zeroRuleIdsUnique :
-    (rawPresentation exprLanguage zeroLedger).ruleIds.eraseDups.length =
-      (rawPresentation exprLanguage zeroLedger).ruleIds.length := by decide
+    (rawDefinition exprLanguage zeroLedger).ruleIds.eraseDups.length =
+      (rawDefinition exprLanguage zeroLedger).ruleIds.length := by decide
 
 private theorem zeroJudgmentSignatureValid :
-    (rawPresentation exprLanguage zeroLedger).judgmentSignatureValid = true := by
+    (rawDefinition exprLanguage zeroLedger).judgmentSignatureValid = true := by
   decide
 
 private theorem zeroRulesValidIn :
-    (rawPresentation exprLanguage zeroLedger).rules.all
-      (RuleSchema.isValidIn (rawPresentation exprLanguage zeroLedger)) = true := by
+    (rawDefinition exprLanguage zeroLedger).rules.all
+      (RuleSchema.isValidIn (rawDefinition exprLanguage zeroLedger)) = true := by
   apply List.all_eq_true.mpr
   intro rule hrule
-  have hv1 : RuleSchema.isValidV1 rule = true :=
+  have hv1 : RuleSchema.isLocallyValid rule = true :=
     (List.all_eq_true.mp zeroRulesValidV1) rule hrule
   simp [RuleSchema.isValidIn, hv1]
-  simp [rawPresentation, boundaryFactRules, tokenFactRules,
+  simp [rawDefinition, boundaryFactRules, tokenFactRules,
     tokenFactRulesFrom, grammarRules, productionRule?, productionSchema,
     productionMetavariables, productionPremises, productionConclusion,
     buildSyntaxItems, ruleSupportedForInference, simpleParameter?,
@@ -3114,8 +3111,8 @@ private theorem zeroRulesValidIn :
     exprLanguage, zeroRule, parenRule, zeroLedger] at hrule
   rcases hrule with ⟨index, hindex, rfl⟩ | rfl | rfl | ⟨hbody, rfl⟩
   · rcases index_lt_two index (by omega) with rfl | rfl <;>
-      simp [RuleSchema.patterns, boundaryFactRule, rawPresentation,
-        Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+      simp [RuleSchema.patterns, boundaryFactRule, rawDefinition,
+        CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
         fixedConstructorListsValid, fixedConstructorsValid,
         languageHasConstructorArity, encodedLanguage,
         zeroLiteralLabels_eq, dataTerm, literalLabel,
@@ -3124,8 +3121,8 @@ private theorem zeroRulesValidIn :
         repr_one] <;>
       simp [exprLanguage, exprType, zeroRule, parenRule,
         checkerConstructorDecl, TypeDecl.plain]
-  · simp [RuleSchema.patterns, tokenFactRule, rawPresentation,
-      Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+  · simp [RuleSchema.patterns, tokenFactRule, rawDefinition,
+      CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
       fixedConstructorListsValid, fixedConstructorsValid,
       languageHasConstructorArity, encodedLanguage,
       zeroLiteralLabels_eq, dataTerm, literalLabel,
@@ -3134,8 +3131,8 @@ private theorem zeroRulesValidIn :
       repr_zero, repr_one] ;
     simp [exprLanguage, exprType, zeroRule, parenRule,
       checkerConstructorDecl, TypeDecl.plain]
-  · simp [RuleSchema.patterns, rawPresentation,
-      Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+  · simp [RuleSchema.patterns, rawDefinition,
+      CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
       fixedConstructorListsValid, fixedConstructorsValid,
       languageHasConstructorArity, encodedLanguage,
       zeroLiteralLabels_eq, dataTerm, literalLabel,
@@ -3144,8 +3141,8 @@ private theorem zeroRulesValidIn :
       boundaryVariable, TypeDecl.plain, dataTypeName, reservedPrefix] ;
     simp [exprLanguage, exprType, zeroRule, parenRule,
       checkerConstructorDecl, TypeDecl.plain]
-  · simp [RuleSchema.patterns, rawPresentation,
-      Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+  · simp [RuleSchema.patterns, rawDefinition,
+      CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
       fixedConstructorListsValid, fixedConstructorsValid,
       languageHasConstructorArity, encodedLanguage,
       zeroLiteralLabels_eq, dataTerm, literalLabel,
@@ -3157,27 +3154,27 @@ private theorem zeroRulesValidIn :
       checkerConstructorDecl, TypeDecl.plain]
 
 private theorem zeroRawLanguageValidate :
-    (rawPresentation exprLanguage zeroLedger).language.validate = [] := by
+    (rawDefinition exprLanguage zeroLedger).toLanguageDef.validate = [] := by
   change (encodedLanguage exprLanguage zeroLedger).validate = []
   exact zeroEncodedLanguage_validate
 
-private theorem zeroPresentationValid :
-    (rawPresentation exprLanguage zeroLedger).isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+private theorem zeroDefinitionValid :
+    (rawDefinition exprLanguage zeroLedger).isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [zeroRawLanguageValidate, zeroRulesValidV1, zeroRuleIdsUnique,
     zeroJudgmentSignatureValid, zeroRulesValidIn]
-  simp [Presentation.conversionDeclarationValid, rawPresentation,
+  simp [CalculusLanguageDef.conversionDeclarationValid, rawDefinition,
     encodedLanguage, exprLanguage]
 
 example : (admit? exprLanguage zeroLedger).isSome = true := by
   have hgenerate : generate? exprLanguage zeroLedger =
-      some (rawPresentation exprLanguage zeroLedger) := by
+      some (rawDefinition exprLanguage zeroLedger) := by
     simp [generate?, grammarSupportedForInference,
       ruleSupportedForInference, simpleParameter?, syntaxItemSupported,
       nonTerminalNames, TermParam.bodyName, exprLanguage, zeroRule,
       parenRule, zeroLedger]
     constructor <;> decide
-  simp [admit?, hgenerate, Presentation.validateV2?, zeroPresentationValid]
+  simp [admit?, hgenerate, CalculusLanguageDef.validate?, zeroDefinitionValid]
 
 private def zeroProductionSchema : RuleSchema :=
   { id := namespacedId "production" "Zero"
@@ -3199,11 +3196,11 @@ private theorem zeroProductionRule_eq :
     nonTerminalNames, zeroRule, zeroProductionSchema, boundaryVariable]
   decide
 
-private def zeroPresentation : ValidatedPresentation :=
-  validatedRawPresentation exprLanguage zeroLedger zeroPresentationValid
+private def zeroCheckedDefinition : ValidatedCalculusLanguageDef :=
+  validatedRawDefinition exprLanguage zeroLedger zeroDefinitionValid
 
 private theorem zeroProductionLookup :
-    zeroPresentation.1.lookupRule? (namespacedId "production" "Zero") =
+    zeroCheckedDefinition.1.lookupRule? (namespacedId "production" "Zero") =
       some zeroProductionSchema := by
   have hrange : List.range (zeroLedger.tokens.length + 1) = [0, 1] := by
     decide
@@ -3221,14 +3218,14 @@ private theorem zeroProductionLookup :
       (tokenFactRule zeroLedger 0 "0").id ≠ namespacedId "production" "Zero" := by
     simp [tokenFactRule, namespacedId, zeroLedger, reservedPrefix]
     decide
-  simp [zeroPresentation, validatedRawPresentation, Presentation.lookupRule?,
-    rawPresentation, boundaryFactRules, tokenFactRules,
+  simp [zeroCheckedDefinition, validatedRawDefinition, CalculusLanguageDef.lookupRule?,
+    rawDefinition, boundaryFactRules, tokenFactRules,
     grammarRules, exprLanguage, zeroProductionRule_eq,
     hboundaryZero, hboundaryOne, htoken, hrange, htokenRules,
     zeroProductionSchema]
 
 private theorem zeroTokenLookup :
-    zeroPresentation.1.lookupRule?
+    zeroCheckedDefinition.1.lookupRule?
         (namespacedId "token" (zeroLedger.identity ++ ":0")) =
       some (tokenFactRule zeroLedger 0 "0") := by
   have hrange : List.range (zeroLedger.tokens.length + 1) = [0, 1] := by
@@ -3250,8 +3247,8 @@ private theorem zeroTokenLookup :
         namespacedId "token" (zeroLedger.identity ++ ":0") := by
     simp [tokenFactRule, namespacedId, zeroLedger, reservedPrefix]
     decide
-  simp [zeroPresentation, validatedRawPresentation, Presentation.lookupRule?,
-    rawPresentation, boundaryFactRules, tokenFactRules,
+  simp [zeroCheckedDefinition, validatedRawDefinition, CalculusLanguageDef.lookupRule?,
+    rawDefinition, boundaryFactRules, tokenFactRules,
     hboundaryZero, hboundaryOne, htokenSelf, hrange, htokenRules]
 
 private def zeroGoal : Pattern :=
@@ -3276,7 +3273,7 @@ private def zeroRawProof : RawProof :=
   .node zeroProductionInstance [zeroTokenRawProof]
 
 private theorem zeroTokenProofAccepts :
-    checkRaw zeroPresentation zeroTokenGoal zeroTokenRawProof = true := by
+    checkRaw zeroCheckedDefinition zeroTokenGoal zeroTokenRawProof = true := by
   simp only [zeroTokenRawProof, checkRaw, instantiateRule?, zeroTokenLookup]
   simp [zeroTokenGoal, tokenFactRule, checkRawChildren, argumentsValidAt,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
@@ -3284,7 +3281,7 @@ private theorem zeroTokenProofAccepts :
     tokenPattern, literalPattern, literalLabel, zeroLedger, reservedPrefix]
 
 private theorem zeroProductionInstantiates :
-    instantiateRule? zeroPresentation zeroProductionInstance =
+    instantiateRule? zeroCheckedDefinition zeroProductionInstance =
       some ([zeroTokenGoal], zeroGoal) := by
   have hsourceZero : "source" ≠ "boundary" ++ Nat.repr 0 := by decide
   have hsourceOne : "source" ≠ "boundary" ++ Nat.repr 1 := by decide
@@ -3301,31 +3298,31 @@ private theorem zeroProductionInstantiates :
     Pattern.hasCanonicalBinderMetadataList, hsourceZero, hsourceOne, hreps]
 
 private theorem zeroProofAccepts :
-    checkRaw zeroPresentation zeroGoal zeroRawProof = true := by
+    checkRaw zeroCheckedDefinition zeroGoal zeroRawProof = true := by
   simp [zeroRawProof, checkRaw, zeroProductionInstantiates,
     checkRawChildren, zeroTokenProofAccepts]
 
-example : checkRaw zeroPresentation zeroGoal zeroRawProof = true :=
+example : checkRaw zeroCheckedDefinition zeroGoal zeroRawProof = true :=
   zeroProofAccepts
 
-private def zeroCheckedProof : CheckedProof zeroPresentation zeroGoal :=
+private def zeroCheckedProof : CheckedProof zeroCheckedDefinition zeroGoal :=
   ⟨zeroRawProof, zeroProofAccepts⟩
 
 /-- The runnable fixture lands in the checker-defined Type-valued derivation,
 not merely in a parser-specific replay relation. -/
 theorem zero_has_typed_derivation :
-    Nonempty (Derivation zeroPresentation zeroGoal) :=
+    Nonempty (Derivation zeroCheckedDefinition zeroGoal) :=
   G3_checkedProof_nonempty_iff_derivation.mp ⟨zeroCheckedProof⟩
 
 /-- End-to-end semantic calibration: generic-checker acceptance of the fixture
 implies the independently defined grammar relation for the exact source. -/
 theorem zero_checked_proof_derives :
     Derives exprLanguage "Expr" zeroLedger.tokens (.apply "Zero" []) :=
-  checkedProof_root_sound exprLanguage zeroLedger zeroPresentationValid
+  checkedProof_root_sound exprLanguage zeroLedger zeroDefinitionValid
     "Expr" (.apply "Zero" []) zeroCheckedProof
 
 /-- Reusing the same raw tree for a different parse tree is rejected. -/
-example : checkRaw zeroPresentation
+example : checkRaw zeroCheckedDefinition
     (rootJudgment zeroLedger "Expr" (.apply "Paren" [.apply "Zero" []]))
     zeroRawProof = false := by
   apply Bool.eq_false_of_not_eq_true
@@ -3334,7 +3331,7 @@ example : checkRaw zeroPresentation
   simp [zeroGoal, rootJudgment, derivesJudgment] at hgoals
 
 /-- Omitting the terminal occurrence proof is rejected. -/
-example : checkRaw zeroPresentation zeroGoal
+example : checkRaw zeroCheckedDefinition zeroGoal
     (.node zeroProductionInstance []) = false := by
   simp [checkRaw, zeroProductionInstantiates, checkRawChildren]
 

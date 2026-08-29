@@ -1,5 +1,5 @@
 import Mettapedia.Enactive.Finite
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.RelationalEvidence
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RelationalEvidence
 import Mathlib.Data.Finset.Card
 
 /-!
@@ -21,7 +21,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Enactive.PrimeSupport
 
-open Mettapedia.Languages.MeTTa.PureKernel.Universe
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower
 open RelationalEvidence
 
 universe u

@@ -68,23 +68,23 @@ def resolveChildren? (entries : List DAGEntry) :
   | _, _ => none
 
 private def EnvironmentSound
-    (presentation : ValidatedPresentation) (entries : List DAGEntry) : Prop :=
+    (definition : ValidatedCalculusLanguageDef) (entries : List DAGEntry) : Prop :=
   ∀ entry ∈ entries,
-    checkRaw presentation entry.goal entry.proof = true
+    checkRaw definition entry.goal entry.proof = true
 
 private theorem empty_environment_sound
-    (presentation : ValidatedPresentation) :
-    EnvironmentSound presentation [] := by
+    (definition : ValidatedCalculusLanguageDef) :
+    EnvironmentSound definition [] := by
   intro entry membership
   simp at membership
 
 private theorem resolveChildren?_sound
-    {presentation : ValidatedPresentation} {entries : List DAGEntry}
-    (sound : EnvironmentSound presentation entries) :
+    {definition : ValidatedCalculusLanguageDef} {entries : List DAGEntry}
+    (sound : EnvironmentSound definition entries) :
     ∀ {premises : List Pattern} {childIds : List Nat}
       {proofs : List RawProof},
       resolveChildren? entries premises childIds = some proofs →
-        checkRawChildren presentation premises proofs = true := by
+        checkRawChildren definition premises proofs = true := by
   intro premises
   induction premises with
   | nil =>
@@ -123,12 +123,12 @@ private theorem resolveChildren?_sound
               · simp [found, same] at resolved
 
 /-- Check and extend the chronological environment by one node. -/
-def checkNode? (presentation : ValidatedPresentation)
+def checkNode? (definition : ValidatedCalculusLanguageDef)
     (entries : List DAGEntry) (node : DAGNode) : Option (List DAGEntry) :=
   match findEntry? entries node.id with
   | some _ => none
   | none =>
-      match instantiateRule? presentation node.ruleInstance with
+      match instantiateRule? definition node.ruleInstance with
       | none => none
       | some (premises, conclusion) =>
           match resolveChildren? entries premises node.children with
@@ -140,17 +140,17 @@ def checkNode? (presentation : ValidatedPresentation)
                    proof := .node node.ruleInstance childProofs } :: entries)
 
 private theorem checkNode?_sound
-    {presentation : ValidatedPresentation} {entries next : List DAGEntry}
+    {definition : ValidatedCalculusLanguageDef} {entries next : List DAGEntry}
     {node : DAGNode}
-    (sound : EnvironmentSound presentation entries)
-    (checked : checkNode? presentation entries node = some next) :
-    EnvironmentSound presentation next := by
+    (sound : EnvironmentSound definition entries)
+    (checked : checkNode? definition entries node = some next) :
+    EnvironmentSound definition next := by
   unfold checkNode? at checked
   cases duplicate : findEntry? entries node.id with
   | some entry => simp [duplicate] at checked
   | none =>
       simp only [duplicate] at checked
-      cases instantiated : instantiateRule? presentation node.ruleInstance with
+      cases instantiated : instantiateRule? definition node.ruleInstance with
       | none => simp [instantiated] at checked
       | some result =>
           rcases result with ⟨premises, conclusion⟩
@@ -170,20 +170,20 @@ private theorem checkNode?_sound
               · exact sound entry membership
 
 /-- Check a chronological node list, threading one shared environment. -/
-def checkNodes? (presentation : ValidatedPresentation) :
+def checkNodes? (definition : ValidatedCalculusLanguageDef) :
     List DAGEntry → List DAGNode → Option (List DAGEntry)
   | entries, [] => some entries
   | entries, node :: nodes => do
-      let next ← checkNode? presentation entries node
-      checkNodes? presentation next nodes
+      let next ← checkNode? definition entries node
+      checkNodes? definition next nodes
 
 private theorem checkNodes?_sound
-    {presentation : ValidatedPresentation} :
+    {definition : ValidatedCalculusLanguageDef} :
     ∀ {entries : List DAGEntry} {nodes : List DAGNode}
       {next : List DAGEntry},
-      EnvironmentSound presentation entries →
-      checkNodes? presentation entries nodes = some next →
-      EnvironmentSound presentation next := by
+      EnvironmentSound definition entries →
+      checkNodes? definition entries nodes = some next →
+      EnvironmentSound definition next := by
   intro entries nodes
   induction nodes generalizing entries with
   | nil =>
@@ -194,7 +194,7 @@ private theorem checkNodes?_sound
   | cons node nodes inductionHypothesis =>
       intro next sound checked
       simp only [checkNodes?] at checked
-      cases first : checkNode? presentation entries node with
+      cases first : checkNode? definition entries node with
       | none => simp [first] at checked
       | some middle =>
           simp only [first] at checked
@@ -202,20 +202,20 @@ private theorem checkNodes?_sound
 
 /-- Check a list of bounded transport blocks.  Block boundaries do not alter
 the environment or proof order. -/
-def checkBlocks? (presentation : ValidatedPresentation) :
+def checkBlocks? (definition : ValidatedCalculusLanguageDef) :
     List DAGEntry → List (List DAGNode) → Option (List DAGEntry)
   | entries, [] => some entries
   | entries, block :: blocks => do
-      let next ← checkNodes? presentation entries block
-      checkBlocks? presentation next blocks
+      let next ← checkNodes? definition entries block
+      checkBlocks? definition next blocks
 
 private theorem checkBlocks?_sound
-    {presentation : ValidatedPresentation} :
+    {definition : ValidatedCalculusLanguageDef} :
     ∀ {entries : List DAGEntry} {blocks : List (List DAGNode)}
       {next : List DAGEntry},
-      EnvironmentSound presentation entries →
-      checkBlocks? presentation entries blocks = some next →
-      EnvironmentSound presentation next := by
+      EnvironmentSound definition entries →
+      checkBlocks? definition entries blocks = some next →
+      EnvironmentSound definition next := by
   intro entries blocks
   induction blocks generalizing entries with
   | nil =>
@@ -226,7 +226,7 @@ private theorem checkBlocks?_sound
   | cons block blocks inductionHypothesis =>
       intro next sound checked
       simp only [checkBlocks?] at checked
-      cases first : checkNodes? presentation entries block with
+      cases first : checkNodes? definition entries block with
       | none => simp [first] at checked
       | some middle =>
           simp only [first] at checked
@@ -234,20 +234,20 @@ private theorem checkBlocks?_sound
 
 /-- Reconstruct the selected root proof after checking all chronological
 blocks and require its conclusion to equal the requested goal. -/
-def expandDAGBlocks? (presentation : ValidatedPresentation)
+def expandDAGBlocks? (definition : ValidatedCalculusLanguageDef)
     (goal : Pattern) (rootId : Nat) (blocks : List (List DAGNode)) :
     Option RawProof := do
-  let entries ← checkBlocks? presentation [] blocks
+  let entries ← checkBlocks? definition [] blocks
   let root ← findEntry? entries rootId
   if root.goal = goal then some root.proof else none
 
 theorem expandDAGBlocks?_sound
-    {presentation : ValidatedPresentation} {goal : Pattern} {rootId : Nat}
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} {rootId : Nat}
     {blocks : List (List DAGNode)} {proof : RawProof}
-    (expanded : expandDAGBlocks? presentation goal rootId blocks = some proof) :
-    checkRaw presentation goal proof = true := by
+    (expanded : expandDAGBlocks? definition goal rootId blocks = some proof) :
+    checkRaw definition goal proof = true := by
   unfold expandDAGBlocks? at expanded
-  cases checked : checkBlocks? presentation [] blocks with
+  cases checked : checkBlocks? definition [] blocks with
   | none => simp [checked] at expanded
   | some entries =>
       simp only [checked] at expanded
@@ -258,24 +258,24 @@ theorem expandDAGBlocks?_sound
           · simp [found, same] at expanded
             subst proof
             rw [← same]
-            exact checkBlocks?_sound (empty_environment_sound presentation)
+            exact checkBlocks?_sound (empty_environment_sound definition)
               checked root (findEntry?_eq_some_mem found)
           · simp [found, same] at expanded
 
 /-- Executable Boolean wrapper around compact proof-DAG expansion. -/
-def checkDAGBlocks (presentation : ValidatedPresentation)
+def checkDAGBlocks (definition : ValidatedCalculusLanguageDef)
     (goal : Pattern) (rootId : Nat) (blocks : List (List DAGNode)) : Bool :=
-  (expandDAGBlocks? presentation goal rootId blocks).isSome
+  (expandDAGBlocks? definition goal rootId blocks).isSome
 
 /-- Successful chronological block checking produces an ordinary raw proof
 accepted by the generic tree checker for the same goal. -/
 theorem checkDAGBlocks_sound
-    {presentation : ValidatedPresentation} {goal : Pattern} {rootId : Nat}
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} {rootId : Nat}
     {blocks : List (List DAGNode)}
-    (checked : checkDAGBlocks presentation goal rootId blocks = true) :
-    ∃ proof, checkRaw presentation goal proof = true := by
+    (checked : checkDAGBlocks definition goal rootId blocks = true) :
+    ∃ proof, checkRaw definition goal proof = true := by
   unfold checkDAGBlocks at checked
-  cases expanded : expandDAGBlocks? presentation goal rootId blocks with
+  cases expanded : expandDAGBlocks? definition goal rootId blocks with
   | none => simp [expanded] at checked
   | some proof => exact ⟨proof, expandDAGBlocks?_sound expanded⟩
 
@@ -283,17 +283,17 @@ theorem checkDAGBlocks_sound
 a typed derivation whose erasure is that same proof.  This is stronger than
 mere inhabitation of the requested goal. -/
 theorem checkDAGBlocks_exact_derivation
-    {presentation : ValidatedPresentation} {goal : Pattern} {rootId : Nat}
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} {rootId : Nat}
     {blocks : List (List DAGNode)}
-    (checked : checkDAGBlocks presentation goal rootId blocks = true) :
-    ∃ (proof : RawProof) (derivation : Derivation presentation goal),
-      expandDAGBlocks? presentation goal rootId blocks = some proof ∧
+    (checked : checkDAGBlocks definition goal rootId blocks = true) :
+    ∃ (proof : RawProof) (derivation : Derivation definition goal),
+      expandDAGBlocks? definition goal rootId blocks = some proof ∧
         derivation.erase = proof := by
   unfold checkDAGBlocks at checked
-  cases expanded : expandDAGBlocks? presentation goal rootId blocks with
+  cases expanded : expandDAGBlocks? definition goal rootId blocks with
   | none => simp [expanded] at checked
   | some proof =>
-      have accepted : checkRaw presentation goal proof = true :=
+      have accepted : checkRaw definition goal proof = true :=
         expandDAGBlocks?_sound expanded
       rcases checkRaw_exists_derivation_with_exact_erasure accepted with
         ⟨derivation, erased⟩
@@ -341,18 +341,18 @@ def releaseEntries? : List DAGEntry → List Nat → Option (List DAGEntry)
       | some _ => releaseEntries? (eraseEntry entries id) ids
 
 private theorem eraseEntry_sound
-    {presentation : ValidatedPresentation} {entries : List DAGEntry}
-    (sound : EnvironmentSound presentation entries) (id : Nat) :
-    EnvironmentSound presentation (eraseEntry entries id) := by
+    {definition : ValidatedCalculusLanguageDef} {entries : List DAGEntry}
+    (sound : EnvironmentSound definition entries) (id : Nat) :
+    EnvironmentSound definition (eraseEntry entries id) := by
   intro entry membership
   exact sound entry (List.mem_filter.mp membership).1
 
 private theorem releaseEntries?_sound
-    {presentation : ValidatedPresentation} :
+    {definition : ValidatedCalculusLanguageDef} :
     ∀ {entries next : List DAGEntry} {ids : List Nat},
-      EnvironmentSound presentation entries →
+      EnvironmentSound definition entries →
       releaseEntries? entries ids = some next →
-      EnvironmentSound presentation next := by
+      EnvironmentSound definition next := by
   intro entries next ids
   induction ids generalizing entries with
   | nil =>
@@ -371,27 +371,27 @@ private theorem releaseEntries?_sound
 
 /-- Check one node, enforce its consecutive identifier, then apply its checked
 release list. -/
-def checkStreamingNode? (presentation : ValidatedPresentation)
+def checkStreamingNode? (definition : ValidatedCalculusLanguageDef)
     (state : StreamingDAGState) (action : StreamingDAGNode) :
     Option StreamingDAGState :=
   if action.node.id = state.nextId then do
-    let admitted ← checkNode? presentation state.entries action.node
+    let admitted ← checkNode? definition state.entries action.node
     let live ← releaseEntries? admitted action.releases
     some { nextId := state.nextId + 1, entries := live }
   else
     none
 
 private theorem checkStreamingNode?_sound
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {state next : StreamingDAGState} {action : StreamingDAGNode}
-    (sound : EnvironmentSound presentation state.entries)
-    (checked : checkStreamingNode? presentation state action = some next) :
-    EnvironmentSound presentation next.entries := by
+    (sound : EnvironmentSound definition state.entries)
+    (checked : checkStreamingNode? definition state action = some next) :
+    EnvironmentSound definition next.entries := by
   unfold checkStreamingNode? at checked
   by_cases consecutive : action.node.id = state.nextId
   · simp only [consecutive, ↓reduceIte] at checked
     cases admitted :
-        checkNode? presentation state.entries action.node with
+        checkNode? definition state.entries action.node with
     | none => simp [admitted] at checked
     | some entries =>
         simp only [admitted] at checked
@@ -405,19 +405,19 @@ private theorem checkStreamingNode?_sound
   · simp [consecutive] at checked
 
 /-- Check a bounded sequence of streaming actions. -/
-def checkStreamingNodes? (presentation : ValidatedPresentation) :
+def checkStreamingNodes? (definition : ValidatedCalculusLanguageDef) :
     StreamingDAGState → List StreamingDAGNode → Option StreamingDAGState
   | state, [] => some state
   | state, action :: actions => do
-      let next ← checkStreamingNode? presentation state action
-      checkStreamingNodes? presentation next actions
+      let next ← checkStreamingNode? definition state action
+      checkStreamingNodes? definition next actions
 
 private theorem checkStreamingNodes?_sound
-    {presentation : ValidatedPresentation} :
+    {definition : ValidatedCalculusLanguageDef} :
     ∀ {state next : StreamingDAGState} {actions : List StreamingDAGNode},
-      EnvironmentSound presentation state.entries →
-      checkStreamingNodes? presentation state actions = some next →
-      EnvironmentSound presentation next.entries := by
+      EnvironmentSound definition state.entries →
+      checkStreamingNodes? definition state actions = some next →
+      EnvironmentSound definition next.entries := by
   intro state next actions
   induction actions generalizing state with
   | nil =>
@@ -428,7 +428,7 @@ private theorem checkStreamingNodes?_sound
   | cons action actions inductionHypothesis =>
       intro sound checked
       simp only [checkStreamingNodes?] at checked
-      cases first : checkStreamingNode? presentation state action with
+      cases first : checkStreamingNode? definition state action with
       | none => simp [first] at checked
       | some middle =>
           simp only [first] at checked
@@ -437,21 +437,21 @@ private theorem checkStreamingNodes?_sound
 
 /-- Check independently bounded streaming blocks while retaining only the live
 frontier between blocks. -/
-def checkStreamingBlocks? (presentation : ValidatedPresentation) :
+def checkStreamingBlocks? (definition : ValidatedCalculusLanguageDef) :
     StreamingDAGState → List (List StreamingDAGNode) →
       Option StreamingDAGState
   | state, [] => some state
   | state, block :: blocks => do
-      let next ← checkStreamingNodes? presentation state block
-      checkStreamingBlocks? presentation next blocks
+      let next ← checkStreamingNodes? definition state block
+      checkStreamingBlocks? definition next blocks
 
 private theorem checkStreamingBlocks?_sound
-    {presentation : ValidatedPresentation} :
+    {definition : ValidatedCalculusLanguageDef} :
     ∀ {state next : StreamingDAGState}
       {blocks : List (List StreamingDAGNode)},
-      EnvironmentSound presentation state.entries →
-      checkStreamingBlocks? presentation state blocks = some next →
-      EnvironmentSound presentation next.entries := by
+      EnvironmentSound definition state.entries →
+      checkStreamingBlocks? definition state blocks = some next →
+      EnvironmentSound definition next.entries := by
   intro state next blocks
   induction blocks generalizing state with
   | nil =>
@@ -462,7 +462,7 @@ private theorem checkStreamingBlocks?_sound
   | cons block blocks inductionHypothesis =>
       intro sound checked
       simp only [checkStreamingBlocks?] at checked
-      cases first : checkStreamingNodes? presentation state block with
+      cases first : checkStreamingNodes? definition state block with
       | none => simp [first] at checked
       | some middle =>
           simp only [first] at checked
@@ -470,25 +470,25 @@ private theorem checkStreamingBlocks?_sound
             (checkStreamingNodes?_sound sound first) checked
 
 /-- Check all streaming blocks and reconstruct the surviving root proof. -/
-def expandStreamingDAGBlocks? (presentation : ValidatedPresentation)
+def expandStreamingDAGBlocks? (definition : ValidatedCalculusLanguageDef)
     (goal : Pattern) (rootId : Nat)
     (blocks : List (List StreamingDAGNode)) : Option RawProof := do
   let final ←
-    checkStreamingBlocks? presentation
+    checkStreamingBlocks? definition
       { nextId := 0, entries := [] } blocks
   let root ← findEntry? final.entries rootId
   if root.goal = goal then some root.proof else none
 
 theorem expandStreamingDAGBlocks?_sound
-    {presentation : ValidatedPresentation} {goal : Pattern} {rootId : Nat}
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} {rootId : Nat}
     {blocks : List (List StreamingDAGNode)} {proof : RawProof}
     (expanded :
-      expandStreamingDAGBlocks? presentation goal rootId blocks =
+      expandStreamingDAGBlocks? definition goal rootId blocks =
         some proof) :
-    checkRaw presentation goal proof = true := by
+    checkRaw definition goal proof = true := by
   unfold expandStreamingDAGBlocks? at expanded
   cases checked :
-      checkStreamingBlocks? presentation
+      checkStreamingBlocks? definition
         { nextId := 0, entries := [] } blocks with
   | none => simp [checked] at expanded
   | some final =>
@@ -502,27 +502,27 @@ theorem expandStreamingDAGBlocks?_sound
             rw [← same]
             exact
               checkStreamingBlocks?_sound
-                (empty_environment_sound presentation) checked
+                (empty_environment_sound definition) checked
                 root (findEntry?_eq_some_mem found)
           · simp [found, same] at expanded
 
 /-- Executable Boolean streaming checker. -/
-def checkStreamingDAGBlocks (presentation : ValidatedPresentation)
+def checkStreamingDAGBlocks (definition : ValidatedCalculusLanguageDef)
     (goal : Pattern) (rootId : Nat)
     (blocks : List (List StreamingDAGNode)) : Bool :=
-  (expandStreamingDAGBlocks? presentation goal rootId blocks).isSome
+  (expandStreamingDAGBlocks? definition goal rootId blocks).isSome
 
 /-- Acceptance by the bounded-live-frontier checker yields an ordinary proof
 accepted by the generic tree checker. -/
 theorem checkStreamingDAGBlocks_sound
-    {presentation : ValidatedPresentation} {goal : Pattern} {rootId : Nat}
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} {rootId : Nat}
     {blocks : List (List StreamingDAGNode)}
     (checked :
-      checkStreamingDAGBlocks presentation goal rootId blocks = true) :
-    ∃ proof, checkRaw presentation goal proof = true := by
+      checkStreamingDAGBlocks definition goal rootId blocks = true) :
+    ∃ proof, checkRaw definition goal proof = true := by
   unfold checkStreamingDAGBlocks at checked
   cases expanded :
-      expandStreamingDAGBlocks? presentation goal rootId blocks with
+      expandStreamingDAGBlocks? definition goal rootId blocks with
   | none => simp [expanded] at checked
   | some proof =>
       exact ⟨proof, expandStreamingDAGBlocks?_sound expanded⟩
@@ -530,20 +530,20 @@ theorem checkStreamingDAGBlocks_sound
 /-- Streaming acceptance exposes a typed derivation whose erasure is the exact
 reconstructed root proof. -/
 theorem checkStreamingDAGBlocks_exact_derivation
-    {presentation : ValidatedPresentation} {goal : Pattern} {rootId : Nat}
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} {rootId : Nat}
     {blocks : List (List StreamingDAGNode)}
     (checked :
-      checkStreamingDAGBlocks presentation goal rootId blocks = true) :
-    ∃ (proof : RawProof) (derivation : Derivation presentation goal),
-      expandStreamingDAGBlocks? presentation goal rootId blocks =
+      checkStreamingDAGBlocks definition goal rootId blocks = true) :
+    ∃ (proof : RawProof) (derivation : Derivation definition goal),
+      expandStreamingDAGBlocks? definition goal rootId blocks =
           some proof ∧
         derivation.erase = proof := by
   unfold checkStreamingDAGBlocks at checked
   cases expanded :
-      expandStreamingDAGBlocks? presentation goal rootId blocks with
+      expandStreamingDAGBlocks? definition goal rootId blocks with
   | none => simp [expanded] at checked
   | some proof =>
-      have accepted : checkRaw presentation goal proof = true :=
+      have accepted : checkRaw definition goal proof = true :=
         expandStreamingDAGBlocks?_sound expanded
       rcases checkRaw_exists_derivation_with_exact_erasure accepted with
         ⟨derivation, erased⟩
@@ -573,14 +573,13 @@ private def fixtureCombine : RuleSchema :=
     premises := [fixtureA, fixtureB]
     conclusion := fixtureC }
 
-private def fixturePresentation : Presentation :=
-  { language := LanguageDef.empty "inference-dag-fixture"
-    calculus :=
-      { judgments :=
-          [{ head := "DAGA", arity := 0 },
-           { head := "DAGB", arity := 0 },
-           { head := "DAGC", arity := 0 }]
-        rules := [fixtureAxA, fixtureAxB, fixtureCombine] } }
+private def fixturePresentation : CalculusLanguageDef :=
+  { toLanguageDef := LanguageDef.empty "inference-dag-fixture"
+    judgments :=
+      [{ head := "DAGA", arity := 0 },
+       { head := "DAGB", arity := 0 },
+       { head := "DAGC", arity := 0 }]
+    rules := [fixtureAxA, fixtureAxB, fixtureCombine] }
 
 private theorem fixture_emptyLanguage_validate :
     (LanguageDef.empty "inference-dag-fixture").validate = [] := by
@@ -588,14 +587,14 @@ private theorem fixture_emptyLanguage_validate :
     simp [LanguageDef.empty, LanguageDef.typeNames]
 
 private theorem fixturePresentation_valid :
-    fixturePresentation.isValidV2 = true := by
-  simp [fixturePresentation, Presentation.isValidV2,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.isValidV1, Presentation.ruleIds,
+    fixturePresentation.isValid = true := by
+  simp [fixturePresentation, CalculusLanguageDef.isValid,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.hasValidLocalRules, CalculusLanguageDef.ruleIds,
     fixture_emptyLanguage_validate, fixtureAxA, fixtureAxB, fixtureCombine,
     fixtureA, fixtureB, fixtureC, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
-    fixedConstructorListsValid, RuleSchema.isValidV1,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
+    fixedConstructorListsValid, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
@@ -605,7 +604,7 @@ private theorem fixturePresentation_valid :
     Pattern.hasCanonicalBinderMetadataList]
   decide
 
-private def fixtureValidated : ValidatedPresentation :=
+private def fixtureValidated : ValidatedCalculusLanguageDef :=
   ⟨fixturePresentation, fixturePresentation_valid⟩
 
 private def fixtureNodeA : DAGNode :=
@@ -628,7 +627,7 @@ private theorem fixtureNodeA_instantiates :
       some ([], fixtureA) := by
   simp [instantiateRule?, fixtureValidated, fixturePresentation,
     fixtureAxA, fixtureAxB, fixtureCombine, fixtureA,
-    Presentation.lookupRule?, argumentsValidAt, instantiateSchemas?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchemas?,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemasAt?]
 
 private theorem fixtureNodeB_instantiates :
@@ -637,7 +636,7 @@ private theorem fixtureNodeB_instantiates :
       some ([], fixtureB) := by
   simp [instantiateRule?, fixtureValidated, fixturePresentation,
     fixtureAxA, fixtureAxB, fixtureCombine, fixtureB,
-    Presentation.lookupRule?, argumentsValidAt, instantiateSchemas?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchemas?,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemasAt?]
 
 private theorem fixtureNodeC_instantiates :
@@ -646,7 +645,7 @@ private theorem fixtureNodeC_instantiates :
       some ([fixtureA, fixtureB], fixtureC) := by
   simp [instantiateRule?, fixtureValidated, fixturePresentation,
     fixtureAxA, fixtureAxB, fixtureCombine, fixtureA, fixtureB, fixtureC,
-    Presentation.lookupRule?, argumentsValidAt, instantiateSchemas?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchemas?,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemasAt?]
 
 theorem fixture_blocks_accept :

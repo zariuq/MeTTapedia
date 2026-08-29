@@ -3,6 +3,8 @@ import Mettapedia.Languages.Metamath.InferenceAssertionStackInvariant
 import Mettapedia.Languages.Metamath.InferenceAssertionStepForward
 import Mettapedia.Languages.Metamath.InferencePreparedAssertionCompilation
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Proof-relevant receipts for prepared Metamath assertion steps
 
@@ -50,12 +52,12 @@ retained rather than collapsed to mere applicability, and the runtime receipt
 retains exact substitution correspondence. -/
 structure PreparedAssertionStepReceipt
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (assertion : AssertionView)
+    (target : ValidatedCalculusLanguageDef) (assertion : AssertionView)
     (pr : RuntimeProofState) (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)
     (substitution : FiniteSubstitution) : Type where
   projected : projectPrefix? db = some projection
-  presentation : presentationOfProjection? projection = some target.1
+  presentation : calculusLanguageDefOfProjection? projection = some target.1
   member : assertion ∈ projection.assertions
   selected :
     compiledAssertionRecord? projection assertion.label = some assertion
@@ -75,7 +77,7 @@ structure PreparedAssertionStepReceipt
 instantiation used by both the side evidence and the runtime substitution. -/
 def PreparedAssertionStepReceipt.instances
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (receipt : PreparedAssertionStepReceipt db projection target assertion pr
@@ -88,7 +90,7 @@ def PreparedAssertionStepReceipt.instances
 semantics for this exact authored substitution and conclusion. -/
 theorem PreparedAssertionStepReceipt.resultSemantics
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (receipt : PreparedAssertionStepReceipt db projection target assertion pr
@@ -104,7 +106,7 @@ theorem PreparedAssertionStepReceipt.resultSemantics
 unique-key premise needed by the slice-backed substitution provider. -/
 theorem PreparedAssertionStepReceipt.substitutionKeysUnique
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (receipt : PreparedAssertionStepReceipt db projection target assertion pr
@@ -116,7 +118,7 @@ theorem PreparedAssertionStepReceipt.substitutionKeysUnique
 /-- The compact slice provider accepts exactly the generated conclusion. -/
 theorem PreparedAssertionStepReceipt.sliceConclusionAccepted
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (receipt : PreparedAssertionStepReceipt db projection target assertion pr
@@ -129,7 +131,7 @@ theorem PreparedAssertionStepReceipt.sliceConclusionAccepted
 /-- The retained operational witness reassembles the actual verifier step. -/
 theorem PreparedAssertionStepReceipt.stepNormal_ok
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (receipt : PreparedAssertionStepReceipt db projection target assertion pr
@@ -143,13 +145,13 @@ the independently required stack-window invariant.  Record selection and all
 runtime checker successes are derived conclusions. -/
 def ofGeneratedNode
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
+    (target : ValidatedCalculusLanguageDef)
     (assertion : AssertionView) (pr : RuntimeProofState)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)
     (substitution : FiniteSubstitution)
     (projected : projectPrefix? db = some projection)
-    (presentation : presentationOfProjection? projection = some target.1)
+    (presentation : calculusLanguageDefOfProjection? projection = some target.1)
     (member : assertion ∈ projection.assertions)
     (node : GeneratedAssertionNode projection target assertion actuals result
       substitution)
@@ -195,7 +197,7 @@ conclusion matching, exact runtime substitution, and executable success all
 belong to the same retained occurrence. -/
 theorem PreparedAssertionStepReceipt.preservesAllLayers
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (receipt : PreparedAssertionStepReceipt db projection target assertion pr
@@ -214,7 +216,7 @@ theorem PreparedAssertionStepReceipt.preservesAllLayers
 semantics cannot inhabit the prepared end-to-end receipt. -/
 theorem no_receipt_of_resultSubstitution_failure
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (failure :

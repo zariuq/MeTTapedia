@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.NativeTypeTheoryDerivation
+import Mettapedia.Languages.MeTTa.TypeTheory.StagedReflective.Presentation
 import Mettapedia.Languages.MeTTa.Prime.DataFibration
 
 /-!
@@ -20,7 +20,7 @@ namespace Mettapedia.Languages.MeTTa.Prime.InternalAdmission
 
 open Mettapedia.GSLT.LanguageDef.KernelAuthority.Checker
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.DataFibration
 
 universe uRevision uKey uClaim
@@ -514,7 +514,7 @@ end RevisionedAuthority
 /-! ## Existing zero-recheck Need proof flow -/
 
 open Mettapedia.Languages.MeTTa.Prime.Language
-open Mettapedia.Languages.MeTTa.NativeTypeTheory.PrimeNeedProofFlow
+open Mettapedia.Languages.MeTTa.StagedReflective.PrimeNeedProofFlow
 
 /-- The retained Need operation really executes as one native derivation node;
 there is no hidden checker or receipt argument in the interior application. -/

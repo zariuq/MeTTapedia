@@ -33,7 +33,7 @@ import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 import Mettapedia.OSLF.Framework.ToposTOGLBridge
 import Mettapedia.OSLF.Framework.NTTClaimTracker
 import Mettapedia.OSLF.Framework.PaperSection12Examples
-import Mettapedia.OSLF.NativeType.Construction
+import Mettapedia.OSLF.PresheafNativeType.PresheafSemantics
 import Mettapedia.Languages.MeTTa.OSLFCore.Premises
 import Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef
 import Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageTests
@@ -350,124 +350,124 @@ theorem coreMain_ntt_strict_parity_closed :
 preservation across theory morphisms. -/
 theorem coreMain_nativeType_piOmega_translation_endpoint
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
-    (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
+    (F : Mettapedia.OSLF.PresheafNativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj)
     (predicateFamily : Set (L₁.fibration.Sub S)) :
-    F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily) =
-      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S)
+    F.mapPred (Mettapedia.OSLF.PresheafNativeType.piType L₁ S predicateFamily) =
+      Mettapedia.OSLF.PresheafNativeType.piType L₂ (F.mapSort S)
         (F.mapPred '' predicateFamily)
     ∧
-    (F.mapNatType (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
-      (Mettapedia.OSLF.NativeType.NatType.full (L := L₂) (F.mapSort S)).pred := by
+    (F.mapNativeType (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₁) S)).pred =
+      (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₂) (F.mapSort S)).pred := by
   exact F.piOmega_translation_endpoint S predicateFamily
 
 /-- CoreMain-facing Native Type translation endpoint for Π/Ω/Prop implication
 preservation across theory morphisms. -/
 theorem coreMain_nativeType_piOmegaProp_translation_endpoint
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
-    (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
+    (F : Mettapedia.OSLF.PresheafNativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj)
     (predicateFamily : Set (L₁.fibration.Sub S))
     (φ ψ : L₁.fibration.Sub S) :
-    F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily) =
-      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S)
+    F.mapPred (Mettapedia.OSLF.PresheafNativeType.piType L₁ S predicateFamily) =
+      Mettapedia.OSLF.PresheafNativeType.piType L₂ (F.mapSort S)
         (F.mapPred '' predicateFamily)
     ∧
-    (F.mapNatType (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
-      (Mettapedia.OSLF.NativeType.NatType.full (L := L₂) (F.mapSort S)).pred
+    (F.mapNativeType (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₁) S)).pred =
+      (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₂) (F.mapSort S)).pred
     ∧
-    F.mapPred (Mettapedia.OSLF.NativeType.implType L₁ S φ ψ) =
-      Mettapedia.OSLF.NativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ) := by
+    F.mapPred (Mettapedia.OSLF.PresheafNativeType.implType L₁ S φ ψ) =
+      Mettapedia.OSLF.PresheafNativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ) := by
   exact F.piOmegaProp_translation_endpoint S predicateFamily φ ψ
 
 /-- CoreMain-facing Native Type translation endpoint for Π/Σ/Ω/Prop implication
 preservation across theory morphisms. -/
 theorem coreMain_nativeType_piSigmaOmegaProp_translation_endpoint
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
-    (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
+    (F : Mettapedia.OSLF.PresheafNativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj)
     (predicateFamily : Set (L₁.fibration.Sub S))
     (φ ψ : L₁.fibration.Sub S) :
-    F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily) =
-      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S)
+    F.mapPred (Mettapedia.OSLF.PresheafNativeType.piType L₁ S predicateFamily) =
+      Mettapedia.OSLF.PresheafNativeType.piType L₂ (F.mapSort S)
         (F.mapPred '' predicateFamily)
     ∧
-    F.mapPred (Mettapedia.OSLF.NativeType.sigmaType L₁ S predicateFamily) =
-      Mettapedia.OSLF.NativeType.sigmaType L₂ (F.mapSort S)
+    F.mapPred (Mettapedia.OSLF.PresheafNativeType.sigmaType L₁ S predicateFamily) =
+      Mettapedia.OSLF.PresheafNativeType.sigmaType L₂ (F.mapSort S)
         (F.mapPred '' predicateFamily)
     ∧
-    (F.mapNatType (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
-      (Mettapedia.OSLF.NativeType.NatType.full (L := L₂) (F.mapSort S)).pred
+    (F.mapNativeType (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₁) S)).pred =
+      (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₂) (F.mapSort S)).pred
     ∧
-    F.mapPred (Mettapedia.OSLF.NativeType.implType L₁ S φ ψ) =
-      Mettapedia.OSLF.NativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ) := by
+    F.mapPred (Mettapedia.OSLF.PresheafNativeType.implType L₁ S φ ψ) =
+      Mettapedia.OSLF.PresheafNativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ) := by
   exact F.piSigmaOmegaProp_translation_endpoint S predicateFamily φ ψ
 
 /-- CoreMain-facing bundled endpoint: Π/Ω/Prop translation together with
 nontrivial constructor-category cross-sort transport composition. -/
 theorem coreMain_nativeType_piOmegaProp_constructor_transport_bundle
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
-    (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
+    (F : Mettapedia.OSLF.PresheafNativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj)
     (predicateFamily : Set (L₁.fibration.Sub S))
     (φ ψ : L₁.fibration.Sub S)
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
-    {A B C : Mettapedia.OSLF.NativeType.ConstructorNatType lang}
-    (f : Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang A B)
-    (g : Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang B C) :
-    (F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily) =
-      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S)
+    {A B C : Mettapedia.OSLF.PresheafNativeType.ConstructorNativeType lang}
+    (f : Mettapedia.OSLF.PresheafNativeType.ConstructorNativeTypeHom lang A B)
+    (g : Mettapedia.OSLF.PresheafNativeType.ConstructorNativeTypeHom lang B C) :
+    (F.mapPred (Mettapedia.OSLF.PresheafNativeType.piType L₁ S predicateFamily) =
+      Mettapedia.OSLF.PresheafNativeType.piType L₂ (F.mapSort S)
         (F.mapPred '' predicateFamily))
     ∧
-    ((F.mapNatType (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
-      (Mettapedia.OSLF.NativeType.NatType.full (L := L₂) (F.mapSort S)).pred)
+    ((F.mapNativeType (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₁) S)).pred =
+      (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₂) (F.mapSort S)).pred)
     ∧
-    (F.mapPred (Mettapedia.OSLF.NativeType.implType L₁ S φ ψ) =
-      Mettapedia.OSLF.NativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ))
+    (F.mapPred (Mettapedia.OSLF.PresheafNativeType.implType L₁ S φ ψ) =
+      Mettapedia.OSLF.PresheafNativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ))
     ∧
-    Nonempty (Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang A C) := by
+    Nonempty (Mettapedia.OSLF.PresheafNativeType.ConstructorNativeTypeHom lang A C) := by
   exact F.piOmegaProp_with_constructor_transport_bundle S predicateFamily φ ψ lang f g
 
 /-- CoreMain-facing composition-stability endpoint for the bundled
 Π/Ω/Prop + constructor transport contract. -/
 theorem coreMain_nativeType_comp_piOmegaProp_constructor_transport_bundle
     {L₁ L₂ L₃ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
-    (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
-    (G : Mettapedia.OSLF.NativeType.TheoryMorphism L₂ L₃)
+    (F : Mettapedia.OSLF.PresheafNativeType.TheoryMorphism L₁ L₂)
+    (G : Mettapedia.OSLF.PresheafNativeType.TheoryMorphism L₂ L₃)
     (S : L₁.Obj)
     (predicateFamily : Set (L₁.fibration.Sub S))
     (φ ψ : L₁.fibration.Sub S)
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
-    {A B C : Mettapedia.OSLF.NativeType.ConstructorNatType lang}
-    (f : Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang A B)
-    (g : Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang B C) :
-    (((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapPred
-      (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily)) =
-      Mettapedia.OSLF.NativeType.piType L₃
-        ((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapSort S)
-        (((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapPred ''
+    {A B C : Mettapedia.OSLF.PresheafNativeType.ConstructorNativeType lang}
+    (f : Mettapedia.OSLF.PresheafNativeType.ConstructorNativeTypeHom lang A B)
+    (g : Mettapedia.OSLF.PresheafNativeType.ConstructorNativeTypeHom lang B C) :
+    (((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp G F).mapPred
+      (Mettapedia.OSLF.PresheafNativeType.piType L₁ S predicateFamily)) =
+      Mettapedia.OSLF.PresheafNativeType.piType L₃
+        ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp G F).mapSort S)
+        (((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp G F).mapPred ''
           predicateFamily)))
     ∧
-    ((((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapNatType
-      (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
-      (Mettapedia.OSLF.NativeType.NatType.full (L := L₃)
-        ((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapSort S)).pred))
+    ((((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp G F).mapNativeType
+      (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₁) S)).pred =
+      (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₃)
+        ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp G F).mapSort S)).pred))
     ∧
-    (((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapPred
-      (Mettapedia.OSLF.NativeType.implType L₁ S φ ψ)) =
-      Mettapedia.OSLF.NativeType.implType L₃
-        ((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapSort S)
-        ((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapPred φ)
-        ((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapPred ψ))
+    (((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp G F).mapPred
+      (Mettapedia.OSLF.PresheafNativeType.implType L₁ S φ ψ)) =
+      Mettapedia.OSLF.PresheafNativeType.implType L₃
+        ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp G F).mapSort S)
+        ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp G F).mapPred φ)
+        ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp G F).mapPred ψ))
     ∧
-    Nonempty (Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang A C) := by
+    Nonempty (Mettapedia.OSLF.PresheafNativeType.ConstructorNativeTypeHom lang A C) := by
   exact F.comp_piOmegaProp_with_constructor_transport_bundle G S predicateFamily φ ψ lang f g
 
 /-- CoreMain-facing canonical colax/lax Π/Prop rule-set endpoint for theory
 translations. -/
 theorem coreMain_nativeType_piProp_colax_rules_endpoint
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
-    (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
+    (F : Mettapedia.OSLF.PresheafNativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj) :
     F.PiPropColaxRuleSet S := by
   exact F.piProp_colax_rules S
@@ -476,7 +476,7 @@ theorem coreMain_nativeType_piProp_colax_rules_endpoint
 translations. -/
 theorem coreMain_nativeType_piSigmaProp_colax_rules_endpoint
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
-    (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
+    (F : Mettapedia.OSLF.PresheafNativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj) :
     F.PiSigmaPropColaxRuleSet S := by
   exact F.piSigmaProp_colax_rules S
@@ -486,19 +486,19 @@ theorem coreMain_nativeType_id_piOmega_canary
     (L : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory)
     (S : L.Obj)
     (predicateFamily : Set (L.fibration.Sub S)) :
-    ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred
-      (Mettapedia.OSLF.NativeType.piType L S predicateFamily) =
-        Mettapedia.OSLF.NativeType.piType L
-          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)
-          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred ''
+    ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapPred
+      (Mettapedia.OSLF.PresheafNativeType.piType L S predicateFamily) =
+        Mettapedia.OSLF.PresheafNativeType.piType L
+          ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapSort S)
+          ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapPred ''
             predicateFamily))
     ∧
-    (((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapNatType
-      (Mettapedia.OSLF.NativeType.NatType.full (L := L) S)).pred =
-      (Mettapedia.OSLF.NativeType.NatType.full (L := L)
-        ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)).pred) := by
+    (((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapNativeType
+      (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L) S)).pred =
+      (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L)
+        ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapSort S)).pred) := by
   simpa using
-    Mettapedia.OSLF.NativeType.TheoryMorphism.id_piOmega_translation_endpoint
+    Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id_piOmega_translation_endpoint
       L S predicateFamily
 
 /-- CoreMain-facing identity-canary for the Native Type Π/Σ/Ω/Prop endpoint. -/
@@ -507,33 +507,33 @@ theorem coreMain_nativeType_id_piSigmaOmegaProp_canary
     (S : L.Obj)
     (predicateFamily : Set (L.fibration.Sub S))
     (φ ψ : L.fibration.Sub S) :
-    ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred
-      (Mettapedia.OSLF.NativeType.piType L S predicateFamily) =
-        Mettapedia.OSLF.NativeType.piType L
-          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)
-          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred ''
+    ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapPred
+      (Mettapedia.OSLF.PresheafNativeType.piType L S predicateFamily) =
+        Mettapedia.OSLF.PresheafNativeType.piType L
+          ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapSort S)
+          ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapPred ''
             predicateFamily))
     ∧
-    ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred
-      (Mettapedia.OSLF.NativeType.sigmaType L S predicateFamily) =
-        Mettapedia.OSLF.NativeType.sigmaType L
-          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)
-          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred ''
+    ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapPred
+      (Mettapedia.OSLF.PresheafNativeType.sigmaType L S predicateFamily) =
+        Mettapedia.OSLF.PresheafNativeType.sigmaType L
+          ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapSort S)
+          ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapPred ''
             predicateFamily))
     ∧
-    (((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapNatType
-      (Mettapedia.OSLF.NativeType.NatType.full (L := L) S)).pred =
-      (Mettapedia.OSLF.NativeType.NatType.full (L := L)
-        ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)).pred)
+    (((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapNativeType
+      (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L) S)).pred =
+      (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L)
+        ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapSort S)).pred)
     ∧
-    ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred
-      (Mettapedia.OSLF.NativeType.implType L S φ ψ)) =
-      Mettapedia.OSLF.NativeType.implType L
-        ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)
-        ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred φ)
-        ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred ψ) := by
+    ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapPred
+      (Mettapedia.OSLF.PresheafNativeType.implType L S φ ψ)) =
+      Mettapedia.OSLF.PresheafNativeType.implType L
+        ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapSort S)
+        ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapPred φ)
+        ((Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id L).mapPred ψ) := by
   simpa using
-    Mettapedia.OSLF.NativeType.TheoryMorphism.id_piSigmaOmegaProp_translation_endpoint
+    Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id_piSigmaOmegaProp_translation_endpoint
       L S predicateFamily φ ψ
 
 /-- CoreMain-facing canonical representable Π/Σ transport endpoint routed
@@ -547,7 +547,7 @@ theorem coreMain_representable_patternPred_piSigma_transport_via_rulePack
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         lang s seed φ)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
+      Mettapedia.OSLF.PresheafNativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang))
     {D : CategoryTheory.Functor
       (Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)) Type}
@@ -645,7 +645,7 @@ theorem coreMain_representable_patternPred_piSigma_transport_pack_via_rulePack
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         lang s seed φ)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
+      Mettapedia.OSLF.PresheafNativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang))
     {D : CategoryTheory.Functor
       (Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)) Type}
@@ -699,95 +699,95 @@ abbrev coreMain_canonicalConsequenceRuleOn_compact_fixpoint :=
 /-- CoreMain-facing constructor-category cross-sort native transport endpoint
 (identity morphism). -/
 abbrev coreMain_nativeType_constructor_transport_endpoint :=
-  @Mettapedia.OSLF.NativeType.constructorNatTypeTransport_endpoint
+  @Mettapedia.OSLF.PresheafNativeType.constructorNativeTypeTransport_endpoint
 
 /-- CoreMain-facing constructor-category cross-sort native transport endpoint
 (composition). -/
 abbrev coreMain_nativeType_constructor_transport_crossSort_comp :=
-  @Mettapedia.OSLF.NativeType.constructorNatTypeTransport_crossSort_comp
+  @Mettapedia.OSLF.PresheafNativeType.constructorNativeTypeTransport_crossSort_comp
 
 /-- CoreMain-facing rhoCalc roundtrip canary for constructor-category
 cross-sort native transport. -/
 abbrev coreMain_nativeType_constructor_roundtrip_canary :=
-  @Mettapedia.OSLF.NativeType.rho_roundtrip_constructorNatTypeHom
+  @Mettapedia.OSLF.PresheafNativeType.rho_roundtrip_constructorNativeTypeHom
 
 /-- CoreMain-facing concrete Mathlib Grothendieck endpoint over constructor sorts. -/
 abbrev coreMain_nativeType_constructor_grothendieck_endpoint :=
-  @Mettapedia.OSLF.NativeType.constructorPredFiberFunctorDual
+  @Mettapedia.OSLF.PresheafNativeType.constructorPredFiberFunctorDual
 
 /-- CoreMain-facing scoped roundtrip endpoint:
 constructor transport -> Grothendieck morphism -> constructor transport. -/
 theorem coreMain_nativeType_constructor_groth_roundtrip
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
-    {A B : Mettapedia.OSLF.NativeType.ConstructorNatType lang}
-    (h : Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang A B) :
-    Mettapedia.OSLF.NativeType.grothHom_to_constructorNatTypeHom
-      (Mettapedia.OSLF.NativeType.constructorNatTypeHom_to_grothHom h) = h := by
-  exact Mettapedia.OSLF.NativeType.constructorNatTypeHom_groth_roundtrip h
+    {A B : Mettapedia.OSLF.PresheafNativeType.ConstructorNativeType lang}
+    (h : Mettapedia.OSLF.PresheafNativeType.ConstructorNativeTypeHom lang A B) :
+    Mettapedia.OSLF.PresheafNativeType.grothHom_to_constructorNativeTypeHom
+      (Mettapedia.OSLF.PresheafNativeType.constructorNativeTypeHom_to_grothHom h) = h := by
+  exact Mettapedia.OSLF.PresheafNativeType.constructorNativeTypeHom_groth_roundtrip h
 
 /-- CoreMain-facing end-to-end package:
 Π/Ω/Prop translation plus constructor-transport/Grothendieck roundtrip. -/
 theorem coreMain_nativeType_piOmegaProp_grothendieck_package
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
-    (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
+    (F : Mettapedia.OSLF.PresheafNativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj)
     (predicateFamily : Set (L₁.fibration.Sub S))
     (φ ψ : L₁.fibration.Sub S)
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
-    {A B : Mettapedia.OSLF.NativeType.ConstructorNatType lang}
-    (h : Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang A B) :
-    (F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily) =
-      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S)
+    {A B : Mettapedia.OSLF.PresheafNativeType.ConstructorNativeType lang}
+    (h : Mettapedia.OSLF.PresheafNativeType.ConstructorNativeTypeHom lang A B) :
+    (F.mapPred (Mettapedia.OSLF.PresheafNativeType.piType L₁ S predicateFamily) =
+      Mettapedia.OSLF.PresheafNativeType.piType L₂ (F.mapSort S)
         (F.mapPred '' predicateFamily))
     ∧
-    (F.mapNatType (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
-      (Mettapedia.OSLF.NativeType.NatType.full (L := L₂) (F.mapSort S)).pred
+    (F.mapNativeType (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₁) S)).pred =
+      (Mettapedia.OSLF.PresheafNativeType.NativeType.full (L := L₂) (F.mapSort S)).pred
     ∧
-    (F.mapPred (Mettapedia.OSLF.NativeType.implType L₁ S φ ψ) =
-      Mettapedia.OSLF.NativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ))
+    (F.mapPred (Mettapedia.OSLF.PresheafNativeType.implType L₁ S φ ψ) =
+      Mettapedia.OSLF.PresheafNativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ))
     ∧
-    (Mettapedia.OSLF.NativeType.grothHom_to_constructorNatTypeHom
-      (Mettapedia.OSLF.NativeType.constructorNatTypeHom_to_grothHom h) = h) := by
+    (Mettapedia.OSLF.PresheafNativeType.grothHom_to_constructorNativeTypeHom
+      (Mettapedia.OSLF.PresheafNativeType.constructorNativeTypeHom_to_grothHom h) = h) := by
   refine ⟨?_, ?_, ?_, ?_⟩
   · exact F.preserves_piType S predicateFamily
-  · exact F.preserves_fullNatType_pred S
+  · exact F.preserves_fullNativeType_pred S
   · exact F.preserves_propImp S φ ψ
-  · exact Mettapedia.OSLF.NativeType.constructorNatTypeHom_groth_roundtrip h
+  · exact Mettapedia.OSLF.PresheafNativeType.constructorNativeTypeHom_groth_roundtrip h
 
 /-- CoreMain-facing scoped full-presheaf morphism endpoint. -/
 abbrev coreMain_nativeType_full_presheaf_morphism_endpoint :=
-  @Mettapedia.OSLF.NativeType.ScopedConstructorPredHom.toFullGrothHom
+  @Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom.toFullGrothHom
 
 /-- CoreMain-facing composition law for scoped full-presheaf morphisms. -/
 theorem coreMain_nativeType_full_presheaf_morphism_comp
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
-    {A B C : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang}
-    (f : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang A B)
-    (g : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang B C) :
-    (Mettapedia.OSLF.NativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
-      Mettapedia.OSLF.NativeType.FullPresheafGrothendieckHom.comp
+    {A B C : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang}
+    (f : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang A B)
+    (g : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang B C) :
+    (Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
+      Mettapedia.OSLF.PresheafNativeType.FullPresheafGrothendieckHom.comp
         f.toFullGrothHom g.toFullGrothHom := by
-  exact Mettapedia.OSLF.NativeType.ScopedConstructorPredHom.toFullGrothHom_comp f g
+  exact Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom.toFullGrothHom_comp f g
 
 /-- CoreMain-facing scoped comparison package between constructor and
 full-presheaf endpoints. -/
 theorem coreMain_nativeType_scoped_full_constructor_comparison_package
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
-    (A : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang)
-    {B C : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang}
-    (f : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang A B)
-    (g : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang B C) :
-    Mettapedia.OSLF.NativeType.grothObj_to_constructorNatType
-      (Mettapedia.OSLF.NativeType.constructorNatType_toGrothObj A.toConstructorNatType) =
-      A.toConstructorNatType
+    (A : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang)
+    {B C : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang}
+    (f : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang A B)
+    (g : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang B C) :
+    Mettapedia.OSLF.PresheafNativeType.grothObj_to_constructorNativeType
+      (Mettapedia.OSLF.PresheafNativeType.constructorNativeType_toGrothObj A.toConstructorNativeType) =
+      A.toConstructorNativeType
     ∧
     Opposite.unop (A.toFullGrothObj.base) =
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang A.sort
     ∧
-    (Mettapedia.OSLF.NativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
-      Mettapedia.OSLF.NativeType.FullPresheafGrothendieckHom.comp
+    (Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
+      Mettapedia.OSLF.PresheafNativeType.FullPresheafGrothendieckHom.comp
         f.toFullGrothHom g.toFullGrothHom := by
-  exact Mettapedia.OSLF.NativeType.scoped_full_constructor_comparison_package A f g
+  exact Mettapedia.OSLF.PresheafNativeType.scoped_full_constructor_comparison_package A f g
 
 /-- CoreMain-facing canonical category/topos package endpoint. -/
 theorem coreMain_category_topos_package
@@ -989,30 +989,30 @@ theorem coreMain_paper_parity_theorem_package
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     (R : Mettapedia.OSLF.Framework.Pat → Mettapedia.OSLF.Framework.Pat → Prop)
     (I : Mettapedia.OSLF.Formula.AtomSem)
-    (A : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang)
-    (Frag : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang → Prop)
-    (hClosed : ∀ {X Y : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang},
-      Frag X → Mettapedia.OSLF.NativeType.ScopedReachable X Y → Frag Y) :
+    (A : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang)
+    (Frag : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang → Prop)
+    (hClosed : ∀ {X Y : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang},
+      Frag X → Mettapedia.OSLF.PresheafNativeType.ScopedReachable X Y → Frag Y) :
     CoreMainTheorem1CanonicalContract R I
     ∧
-    (∀ {B C : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang},
+    (∀ {B C : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang},
       Frag A →
-      Mettapedia.OSLF.NativeType.ScopedReachable A B →
-      Mettapedia.OSLF.NativeType.ScopedReachable B C →
+      Mettapedia.OSLF.PresheafNativeType.ScopedReachable A B →
+      Mettapedia.OSLF.PresheafNativeType.ScopedReachable B C →
       Frag B
       ∧
       Frag C
       ∧
-      ∃ f : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang A B,
-        ∃ g : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang B C,
-          Mettapedia.OSLF.NativeType.FullRouteRestrictionEquivalence lang A
+      ∃ f : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang A B,
+        ∃ g : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang B C,
+          Mettapedia.OSLF.PresheafNativeType.FullRouteRestrictionEquivalence lang A
           ∧
           f.toFullGrothHom.base = CategoryTheory.yoneda.map f.base
           ∧
           g.toFullGrothHom.base = CategoryTheory.yoneda.map g.base
           ∧
-          (Mettapedia.OSLF.NativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
-            Mettapedia.OSLF.NativeType.FullPresheafGrothendieckHom.comp
+          (Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
+            Mettapedia.OSLF.PresheafNativeType.FullPresheafGrothendieckHom.comp
               f.toFullGrothHom g.toFullGrothHom)
     ∧
     (∀ {relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv}
@@ -1028,7 +1028,7 @@ theorem coreMain_paper_parity_theorem_package
         Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang q r) := by
   refine ⟨coreMain_theorem1_canonical_contract (R := R) (I := I), ?_, ?_⟩
   · intro B C hA hAB hBC
-    exact Mettapedia.OSLF.NativeType.full_presheaf_comparison_bundle_reachable_fragment
+    exact Mettapedia.OSLF.PresheafNativeType.full_presheaf_comparison_bundle_reachable_fragment
       (Frag := Frag) (hClosed := hClosed) (A := A) (B := B) (C := C) hA hAB hBC
   · intro relEnv C _ X p r
     simpa using
@@ -1042,10 +1042,10 @@ fragment and TOGL composition endpoint fields. -/
 theorem coreMain_paper_parity_theorem_package_langReduces_of_finite
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     (I : Mettapedia.OSLF.Formula.AtomSem)
-    (A : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang)
-    (Frag : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang → Prop)
-    (hClosed : ∀ {X Y : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang},
-      Frag X → Mettapedia.OSLF.NativeType.ScopedReachable X Y → Frag Y)
+    (A : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang)
+    (Frag : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang → Prop)
+    (hClosed : ∀ {X Y : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang},
+      Frag X → Mettapedia.OSLF.PresheafNativeType.ScopedReachable X Y → Frag Y)
     (hImageFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
       Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
         Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang p q})
@@ -1055,24 +1055,24 @@ theorem coreMain_paper_parity_theorem_package_langReduces_of_finite
     Mettapedia.OSLF.Framework.Theorem1SubstitutabilityEquiv
       (Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang) I
     ∧
-    (∀ {B C : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang},
+    (∀ {B C : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang},
       Frag A →
-      Mettapedia.OSLF.NativeType.ScopedReachable A B →
-      Mettapedia.OSLF.NativeType.ScopedReachable B C →
+      Mettapedia.OSLF.PresheafNativeType.ScopedReachable A B →
+      Mettapedia.OSLF.PresheafNativeType.ScopedReachable B C →
       Frag B
       ∧
       Frag C
       ∧
-      ∃ f : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang A B,
-        ∃ g : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang B C,
-          Mettapedia.OSLF.NativeType.FullRouteRestrictionEquivalence lang A
+      ∃ f : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang A B,
+        ∃ g : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang B C,
+          Mettapedia.OSLF.PresheafNativeType.FullRouteRestrictionEquivalence lang A
           ∧
           f.toFullGrothHom.base = CategoryTheory.yoneda.map f.base
           ∧
           g.toFullGrothHom.base = CategoryTheory.yoneda.map g.base
           ∧
-          (Mettapedia.OSLF.NativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
-            Mettapedia.OSLF.NativeType.FullPresheafGrothendieckHom.comp
+          (Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
+            Mettapedia.OSLF.PresheafNativeType.FullPresheafGrothendieckHom.comp
               f.toFullGrothHom g.toFullGrothHom)
     ∧
     (∀ {relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv}
@@ -1101,8 +1101,8 @@ comparison, and TOGL graph-composition law in one field-based API. -/
 structure CoreMainPaperParityCanonicalPackage
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     (I : Mettapedia.OSLF.Formula.AtomSem)
-    (A : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang)
-    (Frag : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang → Prop) : Prop where
+    (A : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang)
+    (Frag : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang → Prop) : Prop where
   theorem1_langReduces_of_finite :
     (∀ p : Mettapedia.OSLF.Framework.Pat,
       Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
@@ -1113,24 +1113,24 @@ structure CoreMainPaperParityCanonicalPackage
       Mettapedia.OSLF.Framework.Theorem1SubstitutabilityEquiv
         (Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang) I
   full_presheaf_fragment :
-    ∀ {B C : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang},
+    ∀ {B C : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang},
       Frag A →
-      Mettapedia.OSLF.NativeType.ScopedReachable A B →
-      Mettapedia.OSLF.NativeType.ScopedReachable B C →
+      Mettapedia.OSLF.PresheafNativeType.ScopedReachable A B →
+      Mettapedia.OSLF.PresheafNativeType.ScopedReachable B C →
       Frag B
       ∧
       Frag C
       ∧
-      ∃ f : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang A B,
-        ∃ g : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang B C,
-          Mettapedia.OSLF.NativeType.FullRouteRestrictionEquivalence lang A
+      ∃ f : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang A B,
+        ∃ g : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang B C,
+          Mettapedia.OSLF.PresheafNativeType.FullRouteRestrictionEquivalence lang A
           ∧
           f.toFullGrothHom.base = CategoryTheory.yoneda.map f.base
           ∧
           g.toFullGrothHom.base = CategoryTheory.yoneda.map g.base
           ∧
-          (Mettapedia.OSLF.NativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
-            Mettapedia.OSLF.NativeType.FullPresheafGrothendieckHom.comp
+          (Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
+            Mettapedia.OSLF.PresheafNativeType.FullPresheafGrothendieckHom.comp
               f.toFullGrothHom g.toFullGrothHom
   togl_graph_composition :
     ∀ {relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv}
@@ -1150,17 +1150,17 @@ builds the field-based contract from the existing specialized theorem package. -
 theorem coreMain_paper_parity_canonical_package
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     (I : Mettapedia.OSLF.Formula.AtomSem)
-    (A : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang)
-    (Frag : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang → Prop)
-    (hClosed : ∀ {X Y : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang},
-      Frag X → Mettapedia.OSLF.NativeType.ScopedReachable X Y → Frag Y) :
+    (A : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang)
+    (Frag : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang → Prop)
+    (hClosed : ∀ {X Y : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang},
+      Frag X → Mettapedia.OSLF.PresheafNativeType.ScopedReachable X Y → Frag Y) :
     CoreMainPaperParityCanonicalPackage lang I A Frag := by
   refine ⟨?_, ?_, ?_⟩
   · intro hImageFinite hPredFinite
     exact coreMain_theorem1_langReduces_of_finite
       (lang := lang) (I := I) hImageFinite hPredFinite
   · intro B C hA hAB hBC
-    exact Mettapedia.OSLF.NativeType.full_presheaf_comparison_bundle_reachable_fragment
+    exact Mettapedia.OSLF.PresheafNativeType.full_presheaf_comparison_bundle_reachable_fragment
       (Frag := Frag) (hClosed := hClosed) (A := A) (B := B) (C := C) hA hAB hBC
   · intro relEnv C _ X p r
     simpa using
@@ -1176,32 +1176,32 @@ This bundles:
 theorem coreMain_paper_parity_full_package
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     (I : Mettapedia.OSLF.Formula.AtomSem)
-    (A : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang)
-    (Frag : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang → Prop)
-    (hClosed : ∀ {X Y : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang},
-      Frag X → Mettapedia.OSLF.NativeType.ScopedReachable X Y → Frag Y)
-    {B C : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang}
-    (f : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang A B)
-    (g : Mettapedia.OSLF.NativeType.ScopedConstructorPredHom lang B C) :
+    (A : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang)
+    (Frag : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang → Prop)
+    (hClosed : ∀ {X Y : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang},
+      Frag X → Mettapedia.OSLF.PresheafNativeType.ScopedReachable X Y → Frag Y)
+    {B C : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang}
+    (f : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang A B)
+    (g : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang B C) :
     -- Base canonical package
     CoreMainPaperParityCanonicalPackage lang I A Frag
     ∧
     -- M1: Category instance witness
     (∃ _ : CategoryTheory.Category.{0, 1}
-      (Mettapedia.OSLF.NativeType.FullPresheafGrothendieckObj lang), True)
+      (Mettapedia.OSLF.PresheafNativeType.FullPresheafGrothendieckObj lang), True)
     ∧
     -- M2: Scoped ↔ full roundtrip at representable objects
-    (Mettapedia.OSLF.NativeType.fullGrothObj_to_scopedConstructorPred_at_representable
+    (Mettapedia.OSLF.PresheafNativeType.fullGrothObj_to_scopedConstructorPred_at_representable
       A.toFullGrothObj A.sort A.seed A.pred A.naturality
-      (Mettapedia.OSLF.NativeType.scoped_fullGroth_base_eq_representable A)
+      (Mettapedia.OSLF.PresheafNativeType.scoped_fullGroth_base_eq_representable A)
       rfl = A)
     ∧
     -- M2: Full route restriction equivalence
-    Mettapedia.OSLF.NativeType.FullRouteRestrictionEquivalence lang A
+    Mettapedia.OSLF.PresheafNativeType.FullRouteRestrictionEquivalence lang A
     ∧
     -- M2: Composition preservation
-    ((Mettapedia.OSLF.NativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
-      Mettapedia.OSLF.NativeType.FullPresheafGrothendieckHom.comp
+    ((Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
+      Mettapedia.OSLF.PresheafNativeType.FullPresheafGrothendieckHom.comp
         f.toFullGrothHom g.toFullGrothHom)
     ∧
     -- M4: N-step graph chain ↔ relational composition
@@ -1215,11 +1215,11 @@ theorem coreMain_paper_parity_full_package
       Mettapedia.OSLF.Framework.ToposTOGLBridge.relCompN lang relEnv n p r) := by
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
   · exact coreMain_paper_parity_canonical_package lang I A Frag hClosed
-  · exact ⟨Mettapedia.OSLF.NativeType.fullPresheafGrothendieckCategory lang, trivial⟩
-  · exact Mettapedia.OSLF.NativeType.scoped_full_scoped_obj_roundtrip A
-  · exact (Mettapedia.OSLF.NativeType.full_route_restriction_equivalence_package
+  · exact ⟨Mettapedia.OSLF.PresheafNativeType.fullPresheafGrothendieckCategory lang, trivial⟩
+  · exact Mettapedia.OSLF.PresheafNativeType.scoped_full_scoped_obj_roundtrip A
+  · exact (Mettapedia.OSLF.PresheafNativeType.full_route_restriction_equivalence_package
       (A := A) f g).1
-  · exact (Mettapedia.OSLF.NativeType.full_route_restriction_equivalence_package
+  · exact (Mettapedia.OSLF.PresheafNativeType.full_route_restriction_equivalence_package
       (A := A) f g).2
   · intro relEnv Ct _ X n p r
     exact Mettapedia.OSLF.Framework.ToposTOGLBridge.graphChainN_iff_relCompN
@@ -1303,16 +1303,16 @@ theorem coreMain_paper_parity_full_package
 #check @Mettapedia.OSLF.CoreMainPaperParityCanonicalPackage
 #check @Mettapedia.OSLF.coreMain_paper_parity_canonical_package
 -- Category LambdaTheory (Thm 23 upgrade)
-#check @Mettapedia.OSLF.NativeType.lambdaTheoryCategoryStruct
-#check @Mettapedia.OSLF.NativeType.lambdaTheoryCategory
-#check @Mettapedia.OSLF.NativeType.lambdaTheory_id_eq
-#check @Mettapedia.OSLF.NativeType.lambdaTheory_comp_eq
+#check @Mettapedia.OSLF.PresheafNativeType.lambdaTheoryCategoryStruct
+#check @Mettapedia.OSLF.PresheafNativeType.lambdaTheoryCategory
+#check @Mettapedia.OSLF.PresheafNativeType.lambdaTheory_id_eq
+#check @Mettapedia.OSLF.PresheafNativeType.lambdaTheory_comp_eq
 -- Layer 2: LambdaTheory ⥤ Cat functor
-#check @Mettapedia.OSLF.NativeType.natTypePreorder
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.mapPred_mono
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.mapNatType_monotone
-#check @Mettapedia.OSLF.NativeType.theoryMorphismNatTypeFunctor
-#check @Mettapedia.OSLF.NativeType.nativeTypeFunctor
+#check @Mettapedia.OSLF.PresheafNativeType.nativeTypePreorder
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.mapPred_mono
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.mapNativeType_monotone
+#check @Mettapedia.OSLF.PresheafNativeType.theoryMorphismNativeTypeFunctor
+#check @Mettapedia.OSLF.PresheafNativeType.nativeTypeFunctor
 -- Simulation maps preserve modal semantics
 #check @Mettapedia.OSLF.Framework.SimulationPreservation.forward_sim_preserves_positive
 #check @Mettapedia.OSLF.Framework.SimulationPreservation.bisimulation_map_preserves_sem

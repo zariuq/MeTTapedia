@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.SourceGSLTRuntimeProofTransport
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedReflection
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Compressed proof-DAG transport from the canonical runtime prefix
 
@@ -38,12 +40,12 @@ open Metamath.Verify
 and occurrence identity. -/
 noncomputable def runtimeProofNodeToSource
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     (node : ProofNode (runtimePrefix state) runtimeTarget) :
     ProofNode state.toSourcePrefix sourceTarget :=
@@ -62,12 +64,12 @@ def runtimeHeapEntryToSource
 
 @[simp] theorem runtimeProofNodeToSource_active
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     (hypothesis : HypothesisView)
     (member : hypothesis ∈ (runtimePrefix state).activeHypotheses)
@@ -83,12 +85,12 @@ def runtimeHeapEntryToSource
 
 @[simp] theorem runtimePrefixTreeToSource_active
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     (hypothesis : HypothesisView)
     (member : hypothesis ∈ (runtimePrefix state).activeHypotheses)
@@ -101,12 +103,12 @@ def runtimeHeapEntryToSource
 /-- Transport a compressed machine state without renumbering anything. -/
 noncomputable def runtimeMachineToSource
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     (machine : MachineState (runtimePrefix state) runtimeTarget) :
     MachineState state.toSourcePrefix sourceTarget :=
@@ -118,12 +120,12 @@ noncomputable def runtimeMachineToSource
 
 @[simp] theorem runtimeProofNodeToSource_formula
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     (node : ProofNode (runtimePrefix state) runtimeTarget) :
     (runtimeProofNodeToSource runtimePresentation sourcePresentation
@@ -131,12 +133,12 @@ noncomputable def runtimeMachineToSource
 
 @[simp] theorem runtimeProofNodeToSource_parents
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     (node : ProofNode (runtimePrefix state) runtimeTarget) :
     (runtimeProofNodeToSource runtimePresentation sourcePresentation
@@ -144,12 +146,12 @@ noncomputable def runtimeMachineToSource
 
 @[simp] theorem runtimeMachineToSource_stack
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     (machine : MachineState (runtimePrefix state) runtimeTarget) :
     (runtimeMachineToSource runtimePresentation sourcePresentation
@@ -157,12 +159,12 @@ noncomputable def runtimeMachineToSource
 
 @[simp] theorem runtimeMachineToSource_saves
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     (machine : MachineState (runtimePrefix state) runtimeTarget) :
     (runtimeMachineToSource runtimePresentation sourcePresentation
@@ -170,12 +172,12 @@ noncomputable def runtimeMachineToSource
 
 @[simp] theorem runtimeMachineToSource_empty
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1) :
     runtimeMachineToSource runtimePresentation sourcePresentation
         (emptyMachine (runtimePrefix state) runtimeTarget) =
@@ -184,12 +186,12 @@ noncomputable def runtimeMachineToSource
 
 @[simp] theorem runtimeMachineToSource_nodes
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     (machine : MachineState (runtimePrefix state) runtimeTarget) :
     (runtimeMachineToSource runtimePresentation sourcePresentation
@@ -200,12 +202,12 @@ noncomputable def runtimeMachineToSource
 
 @[simp] theorem runtimeMachineToSource_heap
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     (machine : MachineState (runtimePrefix state) runtimeTarget) :
     (runtimeMachineToSource runtimePresentation sourcePresentation
@@ -215,12 +217,12 @@ noncomputable def runtimeMachineToSource
 /-- Index lookup commutes with proof-node transport. -/
 theorem runtimeNodeLookupToSource
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     (nodes : List (ProofNode (runtimePrefix state) runtimeTarget))
     (nodeId : Nat) (node : ProofNode (runtimePrefix state) runtimeTarget)
@@ -250,12 +252,12 @@ formulas stay fixed while the proof trees at those identities are rebuilt
 over the authored prefix. -/
 noncomputable def runtimeResolvesForestToSource
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     {nodes : List (ProofNode (runtimePrefix state) runtimeTarget)}
     {parents : List Nat} {formulas : List ConstantHeadedFormula}
@@ -282,12 +284,12 @@ noncomputable def runtimeResolvesForestToSource
 /-- Header construction commutes with runtime-prefix canonicalization. -/
 noncomputable def runtimeHeaderStepToSource
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     {item : HeaderItem}
     {before after : MachineState (runtimePrefix state) runtimeTarget}
@@ -339,12 +341,12 @@ noncomputable def runtimeHeaderStepToSource
 /-- Ordered header builds transport without changing their item list. -/
 noncomputable def runtimeHeaderBuildToSource
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     {items : List HeaderItem}
     {before after : MachineState (runtimePrefix state) runtimeTarget}
@@ -366,12 +368,12 @@ assertion branch reuses the same semantic node reconstruction as proof-tree
 transport, so the appended DAG node is definitionally the transported tree. -/
 noncomputable def runtimeActionStepToSource
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     {before after : MachineState (runtimePrefix state) runtimeTarget}
     {action : CompressedAction}
@@ -450,12 +452,12 @@ noncomputable def runtimeActionStepToSource
 /-- A complete compressed program transports action-for-action. -/
 noncomputable def runtimeExecuteToSource
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     {before after : MachineState (runtimePrefix state) runtimeTarget}
     {actions : List CompressedAction}
@@ -548,13 +550,13 @@ noncomputable def compressedTheoremStep_of_runtimePrefix
     {formula : ConstantHeadedFormula}
     {explicitHeaderLabels : List String}
     {bodyWords : List (List UInt8)}
-    (runtimeTarget sourceTarget : ValidatedPresentation)
+    (runtimeTarget sourceTarget : ValidatedCalculusLanguageDef)
     (hvalid : sourceStateValid before = true)
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix before) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix before) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? before.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? before.toSourcePrefix =
         some sourceTarget.1)
     (hins : insertAssertion? before label formula = some next)
     {actions : List CompressedAction}

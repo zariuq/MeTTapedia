@@ -36,7 +36,7 @@ structure SourceRule where
   deriving DecidableEq, Repr
 
 /-- The normalized source fragment selected from one admitted presentation. -/
-structure SourcePresentation where
+structure SourceDefinition where
   start : Category
   rules : List SourceRule
   deriving DecidableEq, Repr
@@ -82,13 +82,13 @@ def compileRule (rule : SourceRule) : CompiledProduction :=
     sourceRule := rule.sourceRule }
 
 /-- Structural compilation of the normalized source fragment. -/
-def compile (presentation : SourcePresentation) : CompiledGrammar :=
+def compile (presentation : SourceDefinition) : CompiledGrammar :=
   { start := presentation.start
     productions := presentation.rules.map compileRule }
 
 mutual
   /-- Ordinary source-rule evaluation for the normalized Horn stream core. -/
-  inductive SourceDerives (presentation : SourcePresentation) :
+  inductive SourceDerives (presentation : SourceDefinition) :
       Category → List Codepoint → ParseTree → Prop where
     | apply (rule : SourceRule)
         (member : rule ∈ presentation.rules)
@@ -97,7 +97,7 @@ mutual
           (.node rule.sourceRule rule.category children)
 
   /-- Left-to-right evaluation of a source-rule stream path. -/
-  inductive SourceBodyDerives (presentation : SourcePresentation) :
+  inductive SourceBodyDerives (presentation : SourceDefinition) :
       List SourceSymbol → List Codepoint → List ParseTree → Prop where
     | nil : SourceBodyDerives presentation [] [] []
     | exact
@@ -151,7 +151,7 @@ end
 
 mutual
   private def preserveDerivation
-      {presentation : SourcePresentation} {category input tree}
+      {presentation : SourceDefinition} {category input tree}
       (derivation : SourceDerives presentation category input tree) :
       CompiledDerives (compile presentation) category input tree :=
     match derivation with
@@ -161,7 +161,7 @@ mutual
           (preserveBody body)
 
   private def preserveBody
-      {presentation : SourcePresentation} {symbols input children}
+      {presentation : SourceDefinition} {symbols input children}
       (derivation : SourceBodyDerives presentation symbols input children) :
       CompiledBodyDerives (compile presentation)
         (symbols.map compileSymbol) input children :=
@@ -176,14 +176,14 @@ end
 /-- Preservation: every normalized syntax-GSLT result is represented by the
 compiled grammar. -/
 theorem compile_preserves
-    {presentation : SourcePresentation} {category input tree}
+    {presentation : SourceDefinition} {category input tree}
     (derivation : SourceDerives presentation category input tree) :
     CompiledDerives (compile presentation) category input tree :=
   preserveDerivation derivation
 
 mutual
   private def reflectDerivation
-      {presentation : SourcePresentation} {category input tree}
+      {presentation : SourceDefinition} {category input tree}
       (derivation : CompiledDerives (compile presentation) category input tree) :
       SourceDerives presentation category input tree :=
     match derivation with
@@ -194,7 +194,7 @@ mutual
         exact .apply rule ruleMember (reflectBody body)
 
   private def reflectBody
-      {presentation : SourcePresentation} {symbols input children}
+      {presentation : SourceDefinition} {symbols input children}
       (derivation : CompiledBodyDerives (compile presentation)
         (symbols.map compileSymbol) input children) :
       SourceBodyDerives presentation symbols input children :=
@@ -209,7 +209,7 @@ end
 /-- Reflection: every compiled derivation comes from the normalized source
 presentation. -/
 theorem compile_reflects
-    {presentation : SourcePresentation} {category input tree}
+    {presentation : SourceDefinition} {category input tree}
     (derivation : CompiledDerives (compile presentation) category input tree) :
     SourceDerives presentation category input tree :=
   reflectDerivation derivation
@@ -530,12 +530,12 @@ theorem terminalCompaction_reflects
   reflectCompactedDerivation witness derivation
 
 /-- The complete source may-set at the declared start category. -/
-def sourceResults (presentation : SourcePresentation) (input : List Codepoint) :
+def sourceResults (presentation : SourceDefinition) (input : List Codepoint) :
     Set ParseTree :=
   { tree | SourceDerives presentation presentation.start input tree }
 
 /-- The complete compiled may-set at the declared start category. -/
-def compiledResults (presentation : SourcePresentation) (input : List Codepoint) :
+def compiledResults (presentation : SourceDefinition) (input : List Codepoint) :
     Set ParseTree :=
   { tree | CompiledDerives (compile presentation) presentation.start input tree }
 
@@ -562,7 +562,7 @@ theorem terminalCompaction_result_set_agreement
 
 /-- Complete bounded result-set agreement for the normalized compiler core. -/
 theorem complete_result_set_agreement
-    (presentation : SourcePresentation) (input : List Codepoint) :
+    (presentation : SourceDefinition) (input : List Codepoint) :
     compiledResults presentation input = sourceResults presentation input := by
   ext tree
   constructor
@@ -575,7 +575,7 @@ def Ambiguous (results : Set ParseTree) : Prop :=
 
 /-- Compilation preserves and reflects ambiguity, not merely acceptance. -/
 theorem ambiguity_agreement
-    (presentation : SourcePresentation) (input : List Codepoint) :
+    (presentation : SourceDefinition) (input : List Codepoint) :
     Ambiguous (compiledResults presentation input) ↔
       Ambiguous (sourceResults presentation input) := by
   rw [complete_result_set_agreement]
@@ -707,14 +707,14 @@ theorem grammar_certificate_replay_sound
   certificateReplayCompiledSound replay.1
 
 /-- Exact root-coverage replay against the direct structural compilation. -/
-def RootCertificateReplays (presentation : SourcePresentation)
+def RootCertificateReplays (presentation : SourceDefinition)
     (input : List Codepoint) (certificate : Certificate) (tree : ParseTree) : Prop :=
   GrammarRootCertificateReplays (compile presentation) input certificate tree
 
 /-- Certificate replay soundness: a root certificate accepted against the
 compiled plan reconstructs an ordinary source-presentation derivation. -/
 theorem certificate_replay_sound
-    {presentation : SourcePresentation} {input certificate tree}
+    {presentation : SourceDefinition} {input certificate tree}
     (replay : RootCertificateReplays presentation input certificate tree) :
     SourceDerives presentation presentation.start input tree := by
   exact compile_reflects (certificateReplayCompiledSound replay.1)
@@ -722,7 +722,7 @@ theorem certificate_replay_sound
 /-- Certificate replay remains source-sound after checked finite-terminal-set
 compaction. -/
 theorem compacted_certificate_replay_sound
-    {presentation : SourcePresentation} {compacted : CompiledGrammar}
+    {presentation : SourceDefinition} {compacted : CompiledGrammar}
     {input certificate tree}
     (witness : TerminalCompaction (compile presentation) compacted)
     (replay : GrammarRootCertificateReplays compacted input certificate tree) :
@@ -735,7 +735,7 @@ theorem compacted_certificate_replay_sound
 
 /-! ## Executable toy witnesses -/
 
-def toyPresentation : SourcePresentation :=
+def toyPresentation : SourceDefinition :=
   { start := "start"
     rules :=
       [{ sourceRule := "left", category := "start",
@@ -755,7 +755,7 @@ def toyLeftCertificate : Certificate :=
 def toyWrongSpanCertificate : Certificate :=
   .node "left" "start" 1 2 [.terminal 97 1 2]
 
-def wildcardPresentation : SourcePresentation :=
+def wildcardPresentation : SourceDefinition :=
   { start := "start"
     rules :=
       [{ sourceRule := "wild", category := "start", symbols := [.any] }] }
@@ -765,7 +765,7 @@ def wildcardCertificate (codepoint : Codepoint) : Certificate :=
 
 /-- Two exact source alternatives with one source-rule identity, matching the
 shape admitted by the production compiler's terminal-choice compactor. -/
-def terminalFamilyPresentation : SourcePresentation :=
+def terminalFamilyPresentation : SourceDefinition :=
   { start := "start"
     rules :=
       [{ sourceRule := "letter", category := "start",

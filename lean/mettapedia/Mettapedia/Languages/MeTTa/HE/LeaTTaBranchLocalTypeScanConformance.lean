@@ -773,7 +773,7 @@ theorem TwoHistoryScopedTypePresentationSimulationState.currentFamily_avoids_nod
   have avoidsSpecPresentation :=
     staticGenerated.currentFamily_avoids_supported currentGenerated
       currentAvoidsPublic staticSupported
-  have avoidsRuntimePresentation :=
+  have avoidsRuntimeInferenceLanguage :=
     runtimeGenerated.currentFamily_avoids_supported currentGenerated
       currentAvoidsPublic runtimeSupported
   intro name currentOccurrence scopeMember
@@ -782,7 +782,7 @@ theorem TwoHistoryScopedTypePresentationSimulationState.currentFamily_avoids_nod
   · rcases scopeMember with scopeMember | theoryMember
     · rcases scopeMember with specMember | runtimeMember
       · exact avoidsSpecPresentation name currentOccurrence specMember
-      · exact avoidsRuntimePresentation name currentOccurrence runtimeMember
+      · exact avoidsRuntimeInferenceLanguage name currentOccurrence runtimeMember
     · exact currentAvoidsTheory name currentOccurrence theoryMember
   · exact currentAvoidsFormal name currentOccurrence formalMember
 
@@ -1115,7 +1115,7 @@ theorem matchType_privateCandidate_none
     TypeConstraintTheoryEquivAt.of_scopedIncoming_privateCandidateAlpha
       incomingEquiv alpha presentationIncomingCovered branchIncomingCovered
       theoryCovered formalObserved (fun _ member => member)
-  have noRuntimePresentation :=
+  have noRuntimeInferenceLanguage :=
     (matchType_eq_none_iff_no_presentation state formal runtimeCandidate
       (PrivateCandidateAlphaRel.formal_runtime_disjoint alpha
         (fun name member => theoryCovered name
@@ -1136,7 +1136,7 @@ theorem matchType_privateCandidate_none
     CorePlusR2TypePresentationMatchRel.exists_of_satisfied
       state.normal branchIncomingSatisfied formal runtimeCandidate
         branchConsistent
-  exact noRuntimePresentation branchOutput branchDerivation
+  exact noRuntimeInferenceLanguage branchOutput branchDerivation
 
 /-- Runtime failure transports across the same two-history boundary. -/
 theorem matchType_privateCandidate_none_twoHistory

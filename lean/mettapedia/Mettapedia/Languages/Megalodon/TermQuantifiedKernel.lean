@@ -13,7 +13,7 @@ proofs, and beta/eta/delta conversion remain outside this fragment.
 
 Object-language de Bruijn indices are explicit first-order data.  This keeps
 arbitrary term-context depth representable in a finite inference
-presentation; the separate ABT refinement identifies these operations with
+definition; the separate ABT refinement identifies these operations with
 the support-indexed physical carrier.
 -/
 
@@ -572,8 +572,6 @@ def coGSLTSource : coGSLTDefinition.authoredGSLT.Term :=
       some definition.toCalculus :=
   definition.toExtended_elaborate_authoredSource
 
-def presentation : Presentation := definition.toNested
-
 theorem language_validate : definition.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [definition, constructors, expressionType, expressionConstructor,
@@ -581,19 +579,19 @@ theorem language_validate : definition.toLanguageDef.validate = [] := by
       TypeExpr.baseNames]
 
 set_option maxRecDepth 100000 in
-theorem presentation_valid : presentation.isValidV2 = true := by
-  have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation] using language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem definition_valid : definition.isValid = true := by
+  have hvalidate : definition.toLanguageDef.validate = [] := by
+    simpa [definition] using language_validate
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [presentation, definition, constructors, rules,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn, RuleSchema.isValidV1,
+  simp [definition, definition, constructors, rules,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
-    patternsHaveNoCollectionRest, Presentation.judgmentSchemaValid,
+    patternsHaveNoCollectionRest, CalculusLanguageDef.judgmentSchemaValid,
     fixedConstructorsValid, fixedConstructorListsValid,
     languageHasConstructorArity, Pattern.isWellScoped,
     Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
@@ -614,7 +612,7 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     List.eraseDups, List.eraseDupsBy]
   simp (config := { maxSteps := 1000000, decide := true })
 
-def validated : ValidatedPresentation := ⟨presentation, presentation_valid⟩
+def validated : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 private def ruleInstance (id : String) (arguments : List Pattern) :
     RuleInstance :=
@@ -742,7 +740,7 @@ def article : RawProof :=
 
 theorem forall_identity_accepted :
     checkRaw validated goal article = true := by
-  simp [checkRaw, validated, presentation, definition,
+  simp [checkRaw, validated, definition, definition,
     constructors, rules, rule, addZeroRule, shiftVarAtZeroRule,
     shiftVarBelowRule, shiftNamedRule, shiftAppRule, shiftAllRule,
     shiftProofNilRule, shiftProofConsRule, substVarEqualRule, substNamedRule,
@@ -755,14 +753,14 @@ theorem forall_identity_accepted :
     typeBodyArticle, typeNamedPArticle, typeVarZeroArticle,
     substBodyArticle, substNamedArticle, substVarArticle,
     shiftVarZeroByZeroArticle, addZeroZeroArticle, node, ruleInstance,
-    instantiateRule?, Presentation.lookupRule?,
+    instantiateRule?, CalculusLanguageDef.lookupRule?,
     RuleSchema.sideConditionsHold, instantiateSchema?, instantiateSchemas?,
     goal, signature, encodeSignature, pDeclaration,
     pType, forallDomain, forallBody, encodeTypeContext, encodeProofContext,
     encodeTm, encodeTp, encodeNat, proves, hasType, shiftProofContext,
     shiftTerm, substituteTerm, addNat, a, m, ruleId]
   simp (config := { maxSteps := 1000000, decide := true })
-    [checkRaw, checkRawChildren, instantiateRule?, Presentation.lookupRule?,
+    [checkRaw, checkRawChildren, instantiateRule?, CalculusLanguageDef.lookupRule?,
       instantiateSchema?,
       instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
       lookupArgumentAt?]

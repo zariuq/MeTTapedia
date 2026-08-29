@@ -4,10 +4,10 @@ import Mettapedia.GSLT.LanguageDef.InferenceChecker
 # Proof-carrying GSLT source admission
 
 This module keeps source identity, assumptions, profiles, and the inference
-presentation in one validated value.  The metadata is not an authenticity
+definition in one validated value.  The metadata is not an authenticity
 oracle: a source-specific adequacy theorem must still connect the recorded
 identity to an independently specified source relation.  Its purpose is to
-prevent a validated presentation from being detached from, or replaced inside,
+prevent a validated definition from being detached from, or replaced inside,
 the source package consumed by the generic checker.
 -/
 
@@ -82,14 +82,14 @@ structure GSLTSource where
   identity : SourceIdentity
   assumptions : AssumptionLedger
   profiles : ProfileLedger
-  presentation : Presentation
+  definition : CalculusLanguageDef
 deriving Repr
 
 def GSLTSource.isValid (source : GSLTSource) : Bool :=
   source.identity.isValid &&
     source.assumptions.isValid &&
     source.profiles.isValid &&
-    source.presentation.isValidV2
+    source.definition.isValid
 
 /-- A checked source retains proofs for every generic admission condition.
 Replacing any field of `source` therefore requires re-establishing the
@@ -99,14 +99,14 @@ structure CheckedGSLT where
   identityValid : source.identity.isValid = true
   assumptionsValid : source.assumptions.isValid = true
   profilesValid : source.profiles.isValid = true
-  presentationValid : source.presentation.isValidV2 = true
+  definitionValid : source.definition.isValid = true
 
 inductive ValidationError where
   | invalidIdentity
   | invalidAssumptionLedger
   | missingProfile
   | invalidProfileLedger
-  | invalidPresentation
+  | invalidDefinition
 deriving Repr, DecidableEq
 
 /-- Fail-closed admission with a proof-carrying successful result. -/
@@ -117,15 +117,15 @@ def GSLTSource.validate (source : GSLTSource) :
       if source.profiles.entries.isEmpty then
         .error .missingProfile
       else if hProfiles : source.profiles.isValid = true then
-        if hPresentation : source.presentation.isValidV2 = true then
+        if hDefinition : source.definition.isValid = true then
           .ok
             { source
               identityValid := hIdentity
               assumptionsValid := hAssumptions
               profilesValid := hProfiles
-              presentationValid := hPresentation }
+              definitionValid := hDefinition }
         else
-          .error .invalidPresentation
+          .error .invalidDefinition
       else
         .error .invalidProfileLedger
     else
@@ -154,10 +154,10 @@ theorem validationAccepted_validate_eq_isValid (source : GSLTSource) :
         simp [GSLTSource.validate, validationAccepted,
           GSLTSource.isValid, hIdentity, hAssumptions, hEmpty, hProfiles]
       · by_cases hProfiles : source.profiles.isValid = true
-        · by_cases hPresentation : source.presentation.isValidV2 = true <;>
+        · by_cases hDefinition : source.definition.isValid = true <;>
             simp [GSLTSource.validate, validationAccepted,
               GSLTSource.isValid, hIdentity, hAssumptions, hEmpty,
-              hProfiles, hPresentation]
+              hProfiles, hDefinition]
         · simp [GSLTSource.validate, validationAccepted,
             GSLTSource.isValid, hIdentity, hAssumptions, hEmpty, hProfiles]
     · simp [GSLTSource.validate, validationAccepted,
@@ -174,13 +174,13 @@ theorem GSLTSource.validate_source_eq {source : GSLTSource}
     · by_cases hEmpty : source.profiles.entries.isEmpty = true
       · simp [GSLTSource.validate, hIdentity, hAssumptions, hEmpty] at hvalidate
       · by_cases hProfiles : source.profiles.isValid = true
-        · by_cases hPresentation : source.presentation.isValidV2 = true
+        · by_cases hDefinition : source.definition.isValid = true
           · simp [GSLTSource.validate, hIdentity, hAssumptions, hEmpty,
-              hProfiles, hPresentation] at hvalidate
+              hProfiles, hDefinition] at hvalidate
             subst checked
             rfl
           · simp [GSLTSource.validate, hIdentity, hAssumptions, hEmpty,
-              hProfiles, hPresentation] at hvalidate
+              hProfiles, hDefinition] at hvalidate
         · simp [GSLTSource.validate, hIdentity, hAssumptions, hEmpty,
             hProfiles] at hvalidate
     · simp [GSLTSource.validate, hIdentity, hAssumptions] at hvalidate
@@ -192,15 +192,15 @@ theorem source_isValid (checked : CheckedGSLT) :
     checked.source.isValid = true := by
   simp [GSLTSource.isValid, checked.identityValid,
     checked.assumptionsValid, checked.profilesValid,
-    checked.presentationValid]
+    checked.definitionValid]
 
-/-- Recover the exact validated presentation stored in the checked source. -/
-def presentation (checked : CheckedGSLT) : ValidatedPresentation :=
-  ⟨checked.source.presentation, checked.presentationValid⟩
+/-- Recover the exact validated definition stored in the checked source. -/
+def definition (checked : CheckedGSLT) : ValidatedCalculusLanguageDef :=
+  ⟨checked.source.definition, checked.definitionValid⟩
 
 /-- The generic checker specialized only by a proof-carrying source package. -/
 def checkRaw (checked : CheckedGSLT) (goal : Pattern) (proof : RawProof) : Bool :=
-  InferenceChecker.checkRaw checked.presentation goal proof
+  InferenceChecker.checkRaw checked.definition goal proof
 
 def CheckedProof (checked : CheckedGSLT) (goal : Pattern) :=
   { proof : RawProof // checked.checkRaw goal proof = true }
@@ -208,18 +208,18 @@ def CheckedProof (checked : CheckedGSLT) (goal : Pattern) :=
 theorem checkRaw_soundness {checked : CheckedGSLT}
     {goal : Pattern} {proof : RawProof}
     (hcheck : checked.checkRaw goal proof = true) :
-    Nonempty (Derivation checked.presentation goal) :=
+    Nonempty (Derivation checked.definition goal) :=
   InferenceChecker.checkRaw_soundness hcheck
 
 theorem checkRaw_exists_derivation_with_exact_erasure
     {checked : CheckedGSLT} {goal : Pattern} {proof : RawProof}
     (hcheck : checked.checkRaw goal proof = true) :
-    ∃ derivation : Derivation checked.presentation goal,
+    ∃ derivation : Derivation checked.definition goal,
       derivation.erase = proof :=
   InferenceChecker.checkRaw_exists_derivation_with_exact_erasure hcheck
 
 theorem checkRaw_erase {checked : CheckedGSLT} {goal : Pattern}
-    (derivation : Derivation checked.presentation goal) :
+    (derivation : Derivation checked.definition goal) :
     checked.checkRaw goal derivation.erase = true :=
   InferenceChecker.checkRaw_erase derivation
 
@@ -233,11 +233,10 @@ private def fixtureRule : RuleSchema :=
     premises := []
     conclusion := .apply "Holds" [] }
 
-private def fixturePresentation : Presentation :=
-  { language := LanguageDef.empty "checked-source-fixture"
-    calculus :=
-      { judgments := [{ head := "Holds", arity := 0 }]
-        rules := [fixtureRule] } }
+private def fixtureDefinition : CalculusLanguageDef :=
+  CalculusLanguageDef.extend (LanguageDef.empty "checked-source-fixture")
+    { judgments := [{ head := "Holds", arity := 0 }]
+      rules := [fixtureRule] }
 
 private def fixtureIdentity : SourceIdentity :=
   { systemId := "fixture-source"
@@ -254,21 +253,21 @@ private def fixtureSource : GSLTSource :=
   { identity := fixtureIdentity
     assumptions := { entries := [] }
     profiles := fixtureProfiles
-    presentation := fixturePresentation }
+    definition := fixtureDefinition }
 
 private theorem fixtureEmptyLanguage_validate :
     (LanguageDef.empty "checked-source-fixture").validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [LanguageDef.empty, LanguageDef.typeNames]
 
-private theorem fixturePresentation_valid :
-    fixturePresentation.isValidV2 = true := by
-  simp [fixturePresentation, fixtureRule,
-    Presentation.isValidV2, Presentation.isValidV1,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
-    fixedConstructorListsValid, RuleSchema.isValidV1,
+private theorem fixtureDefinition_valid :
+    fixtureDefinition.isValid = true := by
+  simp [fixtureDefinition, CalculusLanguageDef.extend, fixtureRule,
+    CalculusLanguageDef.isValid, CalculusLanguageDef.hasValidLocalRules,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
+    fixedConstructorListsValid, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -285,12 +284,12 @@ private def fixtureChecked : CheckedGSLT :=
     identityValid := by rfl
     assumptionsValid := by rfl
     profilesValid := by rfl
-    presentationValid := fixturePresentation_valid }
+    definitionValid := fixtureDefinition_valid }
 
 private def fixtureProof : RawProof :=
   .node { ruleId := ⟨"fixture-rule"⟩, arguments := [] } []
 
-/- Positive: complete metadata and a valid presentation are admitted. -/
+/- Positive: complete metadata and a valid definition are admitted. -/
 #guard (validationError fixtureSource.validate).isNone
 
 /- Positive: source-indexed checking inherits exact generic acceptance. -/
@@ -315,15 +314,13 @@ example :
   rfl
 
 /- Negative: replacing the rooted inference rules with duplicate identifiers
-forces presentation revalidation and is rejected. -/
+forces definition revalidation and is rejected. -/
 #guard
   validationError
       ({ fixtureSource with
-        presentation :=
-          { fixturePresentation with
-            calculus :=
-              { fixturePresentation.calculus with
-                rules := [fixtureRule, fixtureRule] } } }).validate ==
-    some .invalidPresentation
+        definition :=
+          { fixtureDefinition with
+            rules := [fixtureRule, fixtureRule] } }).validate ==
+    some .invalidDefinition
 
 end Mettapedia.GSLT.LanguageDef.CheckedSource

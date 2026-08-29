@@ -1,9 +1,9 @@
 ; =============================================================================
 ; generic_inference_checker_v0.metta
 ;
-; Executable proof-relevant checker for finite inference presentations.
+; Executable proof-relevant checker for finite inference languages.
 ;
-; The serialized presentation carries ordinary term constructors, judgment
+; The serialized language carries ordinary term constructors, judgment
 ; heads, and ordered rule schemas.  Raw proof trees carry a rule identifier,
 ; ordered schema arguments, and ordered child proofs.  Admission and checking
 ; both fail closed.
@@ -15,7 +15,7 @@
 
 !(import! &self kernel_binding_decl_v1)
 
-; ---------- Serialized Pattern and presentation data ------------------------
+; ---------- Serialized Pattern and language data ------------------------
 ; Pattern:
 ;   (Var n)                         shared de Bruijn variable
 ;   (FVar name)                     schema metavariable
@@ -27,12 +27,13 @@
 ;
 ; Lists use LNil / (LCons head tail).
 ;
-; Presentation:
-;   (GPresentation constructors judgments rules)
+; Language:
+;   (GInferenceLanguageV1 1 constructors judgments rules conversion)
 ;   (CDecl head arity)
 ;   (JDecl head arity)
-;   (GRule id formals premises conclusion)
+;   (GRuleV1 id formals premises conclusion side-conditions)
 ;   (Formal name occurrence-depth)
+;   GNoConversion | (GConversion judgment-head version)
 ;
 ; Proof:
 ;   (GProof (GRuleInst rule-id arguments) children)
@@ -56,6 +57,14 @@
 
 (= (gic-list-length LNil) 0)
 (= (gic-list-length (LCons $x $xs)) (+ 1 (gic-list-length $xs)))
+
+(= (gic-list-get LNil $index) GICNoListValue)
+(= (gic-list-get (LCons $head $tail) $index)
+   (if (== $index 0)
+     (GICListValue $head)
+     (if (> $index 0)
+       (gic-list-get $tail (- $index 1))
+       GICNoListValue)))
 
 ; ---------- Pattern closure and canonical binding metadata ------------------
 (= (gic-ground-list-at $depth LNil) True)
@@ -249,7 +258,50 @@
        False
        (gic-judgment-signature-disjoint $rest $constructor-heads))))
 
-; ---------- Presentation admission ------------------------------------------
+; Generic rule obligations are part of the language rather than an external
+; validator.  Each positional reference must name a formal at the exact
+; ambient depth required by the operation.
+(= (gic-formal-depth-equals $formals $index $expected)
+   (case (gic-list-get $formals $index)
+     (((GICListValue (Formal $name $depth)) (== $depth $expected))
+      ($_ False))))
+
+(= (gic-side-condition-valid $formals $condition)
+   (case $condition
+     (((GExplicitSubstitution
+          $ambient $body-index $replacement-index $result-index)
+        (if (gic-formal-depth-equals
+              $formals $body-index (+ $ambient 1))
+          (if (gic-formal-depth-equals
+                $formals $replacement-index $ambient)
+            (gic-formal-depth-equals $formals $result-index $ambient)
+            False)
+          False))
+      ((GUnusedBinderElimination $ambient $body-index $result-index)
+        (if (gic-formal-depth-equals
+              $formals $body-index (+ $ambient 1))
+          (gic-formal-depth-equals $formals $result-index $ambient)
+          False))
+      ($_ False))))
+
+(= (gic-side-conditions-valid $formals LNil) True)
+(= (gic-side-conditions-valid $formals (LCons $condition $rest))
+   (if (gic-side-condition-valid $formals $condition)
+     (gic-side-conditions-valid $formals $rest)
+     False))
+
+(= (gic-conversion-valid $judgments $conversion)
+   (case $conversion
+     ((GNoConversion True)
+      ((GConversion $head $version)
+        (if (== $head "")
+          False
+          (if (== $version "")
+            False
+            (gic-has-judgment-arity $judgments $head 2))))
+      ($_ False))))
+
+; ---------- Language admission ------------------------------------------
 (= (gic-pattern-list-valid $patterns)
    (if (gic-scoped-list-at 0 $patterns)
      (if (gic-no-rest-list $patterns) (gic-canonical-list $patterns) False)
@@ -263,7 +315,7 @@
      False))
 
 (= (gic-rule-valid $constructors $judgments
-      (GRule $id $formals $premises $conclusion))
+      (GRuleV1 $id $formals $premises $conclusion $side-conditions))
    (let $patterns (gic-append $premises (LCons $conclusion LNil))
      (let $occurrences (gic-occurrences-list-at 0 $patterns)
        (if (== $id "") False
@@ -272,7 +324,10 @@
              (if (gic-all-members $occurrences $formals)
                (if (gic-all-members $formals $occurrences)
                  (if (gic-pattern-list-valid $patterns)
-                   (gic-judgment-list-valid $constructors $judgments $patterns)
+                   (if (gic-judgment-list-valid
+                         $constructors $judgments $patterns)
+                     (gic-side-conditions-valid $formals $side-conditions)
+                     False)
                    False)
                  False)
                False)
@@ -280,7 +335,10 @@
            False)))))
 
 (= (gic-rule-ids LNil) LNil)
-(= (gic-rule-ids (LCons (GRule $id $formals $premises $conclusion) $rest))
+(= (gic-rule-ids
+      (LCons
+        (GRuleV1 $id $formals $premises $conclusion $side-conditions)
+        $rest))
    (LCons $id (gic-rule-ids $rest)))
 
 (= (gic-rules-valid $constructors $judgments LNil) True)
@@ -289,24 +347,33 @@
      (gic-rules-valid $constructors $judgments $rest)
      False))
 
-(= (gic-presentation-valid $presentation)
-   (case $presentation
-     (((GPresentation $constructors $judgments $rules)
-        (let $constructor-heads (gic-constructor-heads $constructors)
-          (let $judgment-heads (gic-judgment-heads $judgments)
-            (if (gic-decls-nonempty $constructors)
-              (if (gic-no-duplicates $constructor-heads)
-                (if (gic-judgments-nonempty $judgments)
-                  (if (gic-no-duplicates $judgment-heads)
-                    (if (gic-judgment-signature-disjoint
-                          $judgment-heads $constructor-heads)
-                      (if (gic-no-duplicates (gic-rule-ids $rules))
-                        (gic-rules-valid $constructors $judgments $rules)
-                        False)
-                      False)
-                    False)
-                  False)
-                False)))))
+(= (gic-language-parts-valid
+      $constructors $judgments $rules $conversion)
+   (let $constructor-heads (gic-constructor-heads $constructors)
+     (let $judgment-heads (gic-judgment-heads $judgments)
+       (if (gic-decls-nonempty $constructors)
+         (if (gic-no-duplicates $constructor-heads)
+           (if (gic-judgments-nonempty $judgments)
+             (if (gic-no-duplicates $judgment-heads)
+               (if (gic-judgment-signature-disjoint
+                     $judgment-heads $constructor-heads)
+                 (if (gic-no-duplicates (gic-rule-ids $rules))
+                   (if (gic-rules-valid $constructors $judgments $rules)
+                     (gic-conversion-valid $judgments $conversion)
+                     False)
+                   False)
+                 False)
+               False)
+             False)
+           False)
+         False))))
+
+(= (gic-language-valid $language)
+   (case $language
+     (((GInferenceLanguageV1
+          1 $constructors $judgments $rules $conversion)
+        (gic-language-parts-valid
+          $constructors $judgments $rules $conversion))
       ($_ False))))
 
 ; ---------- Exact argument validation and schema instantiation --------------
@@ -452,26 +519,199 @@
       ((PCollection $kind $schemas (RSome $name)) PatternFail)
       ($_ PatternFail))))
 
+; ---------- Executable generic side conditions -----------------------------
+; These operations mirror the Pattern substitution authority.  They are
+; defined over the same serialized Pattern carrier, so guarded and unguarded
+; rule schemas cannot collapse merely by crossing the runtime wire.
+(= (gic-lift-bvars-list $cutoff $shift LNil) LNil)
+(= (gic-lift-bvars-list $cutoff $shift (LCons $pattern $rest))
+   (LCons
+     (gic-lift-bvars $cutoff $shift $pattern)
+     (gic-lift-bvars-list $cutoff $shift $rest)))
+
+(= (gic-lift-bvars $cutoff $shift $pattern)
+   (case $pattern
+     (((Var $index)
+        (if (< $index $cutoff)
+          (Var $index)
+          (Var (+ $index $shift))))
+      ((FVar $name) (FVar $name))
+      ((PApp $head $arguments)
+        (PApp $head (gic-lift-bvars-list $cutoff $shift $arguments)))
+      ((PLam $binder $body)
+        (PLam $binder (gic-lift-bvars (+ $cutoff 1) $shift $body)))
+      ((PMultiLam $arity $binders $body)
+        (PMultiLam $arity $binders
+          (gic-lift-bvars (+ $cutoff $arity) $shift $body)))
+      ((PSubst $body $replacement)
+        (PSubst
+          (gic-lift-bvars (+ $cutoff 1) $shift $body)
+          (gic-lift-bvars $cutoff $shift $replacement)))
+      ((PCollection $kind $elements $rest)
+        (PCollection $kind
+          (gic-lift-bvars-list $cutoff $shift $elements) $rest))
+      ($_ (GICBadPattern $pattern)))))
+
+(= (gic-instantiate-bvar-list $depth $replacement LNil) LNil)
+(= (gic-instantiate-bvar-list
+      $depth $replacement (LCons $pattern $rest))
+   (LCons
+     (gic-instantiate-bvar-at $depth $replacement $pattern)
+     (gic-instantiate-bvar-list $depth $replacement $rest)))
+
+(= (gic-instantiate-bvar-at $depth $replacement $pattern)
+   (case $pattern
+     (((Var $index)
+        (if (< $index $depth)
+          (Var $index)
+          (if (== $index $depth)
+            (gic-lift-bvars 0 $depth $replacement)
+            (Var (- $index 1)))))
+      ((FVar $name) (FVar $name))
+      ((PApp $head $arguments)
+        (PApp $head
+          (gic-instantiate-bvar-list $depth $replacement $arguments)))
+      ((PLam $binder $body)
+        (PLam $binder
+          (gic-instantiate-bvar-at (+ $depth 1) $replacement $body)))
+      ((PMultiLam $arity $binders $body)
+        (PMultiLam $arity $binders
+          (gic-instantiate-bvar-at
+            (+ $depth $arity) $replacement $body)))
+      ((PSubst $body $nested-replacement)
+        (PSubst
+          (gic-instantiate-bvar-at
+            (+ $depth 1) $replacement $body)
+          (gic-instantiate-bvar-at
+            $depth $replacement $nested-replacement)))
+      ((PCollection $kind $elements $rest)
+        (PCollection $kind
+          (gic-instantiate-bvar-list $depth $replacement $elements)
+          $rest))
+      ($_ (GICBadPattern $pattern)))))
+
+(= (gic-instantiate-bvar $replacement $body)
+   (gic-instantiate-bvar-at 0 $replacement $body))
+
+(= (gic-drop-bvar-list $cutoff LNil) (GICDropListOK LNil))
+(= (gic-drop-bvar-list $cutoff (LCons $pattern $rest))
+   (case (gic-drop-bvar-at $cutoff $pattern)
+     (((GICDropOK $head)
+        (case (gic-drop-bvar-list $cutoff $rest)
+          (((GICDropListOK $tail) (GICDropListOK (LCons $head $tail)))
+           ($_ GICDropFail))))
+      ($_ GICDropFail))))
+
+(= (gic-drop-bvar-at $cutoff $pattern)
+   (case $pattern
+     (((Var $index)
+        (if (< $index $cutoff)
+          (GICDropOK (Var $index))
+          (if (== $index $cutoff)
+            GICDropFail
+            (GICDropOK (Var (- $index 1))))))
+      ((FVar $name) (GICDropOK (FVar $name)))
+      ((PApp $head $arguments)
+        (case (gic-drop-bvar-list $cutoff $arguments)
+          (((GICDropListOK $results) (GICDropOK (PApp $head $results)))
+           ($_ GICDropFail))))
+      ((PLam $binder $body)
+        (case (gic-drop-bvar-at (+ $cutoff 1) $body)
+          (((GICDropOK $result) (GICDropOK (PLam $binder $result)))
+           ($_ GICDropFail))))
+      ((PMultiLam $arity $binders $body)
+        (case (gic-drop-bvar-at (+ $cutoff $arity) $body)
+          (((GICDropOK $result)
+            (GICDropOK (PMultiLam $arity $binders $result)))
+           ($_ GICDropFail))))
+      ((PSubst $body $replacement)
+        (case (gic-drop-bvar-at (+ $cutoff 1) $body)
+          (((GICDropOK $body-result)
+            (case (gic-drop-bvar-at $cutoff $replacement)
+              (((GICDropOK $replacement-result)
+                (GICDropOK
+                  (PSubst $body-result $replacement-result)))
+               ($_ GICDropFail))))
+           ($_ GICDropFail))))
+      ((PCollection $kind $elements $rest)
+        (case (gic-drop-bvar-list $cutoff $elements)
+          (((GICDropListOK $results)
+            (GICDropOK (PCollection $kind $results $rest)))
+           ($_ GICDropFail))))
+      ($_ GICDropFail))))
+
+(= (gic-drop-bvar $body) (gic-drop-bvar-at 0 $body))
+
+(= (gic-explicit-substitution-holds
+      $arguments $body-index $replacement-index $result-index)
+   (case (gic-list-get $arguments $body-index)
+     (((GICListValue $body)
+        (case (gic-list-get $arguments $replacement-index)
+          (((GICListValue $replacement)
+            (case (gic-list-get $arguments $result-index)
+              (((GICListValue $result)
+                (== (gic-instantiate-bvar $replacement $body) $result))
+               ($_ False))))
+           ($_ False))))
+      ($_ False))))
+
+(= (gic-unused-binder-elimination-holds
+      $arguments $body-index $result-index)
+   (case (gic-list-get $arguments $body-index)
+     (((GICListValue $body)
+        (case (gic-list-get $arguments $result-index)
+          (((GICListValue $result)
+            (case (gic-drop-bvar $body)
+              (((GICDropOK $dropped) (== $dropped $result))
+               ($_ False))))
+           ($_ False))))
+      ($_ False))))
+
+(= (gic-side-condition-holds $arguments $condition)
+   (case $condition
+     (((GExplicitSubstitution
+          $ambient $body-index $replacement-index $result-index)
+        (gic-explicit-substitution-holds
+          $arguments $body-index $replacement-index $result-index))
+      ((GUnusedBinderElimination $ambient $body-index $result-index)
+        (gic-unused-binder-elimination-holds
+          $arguments $body-index $result-index))
+      ($_ False))))
+
+(= (gic-side-conditions-hold $arguments LNil) True)
+(= (gic-side-conditions-hold $arguments (LCons $condition $rest))
+   (if (gic-side-condition-holds $arguments $condition)
+     (gic-side-conditions-hold $arguments $rest)
+     False))
+
 ; ---------- Rule lookup and proof checking ----------------------------------
 (= (gic-lookup-rule LNil $target) NoRule)
 (= (gic-lookup-rule
-      (LCons (GRule $id $formals $premises $conclusion) $rest) $target)
+      (LCons
+        (GRuleV1 $id $formals $premises $conclusion $side-conditions)
+        $rest)
+      $target)
    (if (== $id $target)
-     (FoundRule (GRule $id $formals $premises $conclusion))
+     (FoundRule
+       (GRuleV1 $id $formals $premises $conclusion $side-conditions))
      (gic-lookup-rule $rest $target)))
 
 (= (gic-instantiate-rule $rules (GRuleInst $id $arguments))
    (case (gic-lookup-rule $rules $id)
-     (((FoundRule (GRule $found-id $formals $premises $conclusion))
+     (((FoundRule
+          (GRuleV1
+            $found-id $formals $premises $conclusion $side-conditions))
         (if (gic-arguments-valid $formals $arguments)
-          (case (gic-instantiate-list $formals $arguments 0 $premises)
-            (((PatternsOK $premise-results)
-              (case (gic-instantiate
-                      $formals $arguments 0 $conclusion)
-                (((PatternOK $conclusion-result)
-                  (RuleOK $premise-results $conclusion-result))
-                 ($_ RuleFail))))
-             ($_ RuleFail)))
+          (if (gic-side-conditions-hold $arguments $side-conditions)
+            (case (gic-instantiate-list $formals $arguments 0 $premises)
+              (((PatternsOK $premise-results)
+                (case (gic-instantiate
+                        $formals $arguments 0 $conclusion)
+                  (((PatternOK $conclusion-result)
+                    (RuleOK $premise-results $conclusion-result))
+                   ($_ RuleFail))))
+               ($_ RuleFail)))
+            RuleFail)
           RuleFail))
       ($_ RuleFail))))
 
@@ -497,10 +737,11 @@
            ($_ False))))
       ($_ False))))
 
-(= (gic-check $presentation $goal $proof)
-   (if (gic-presentation-valid $presentation)
-     (case $presentation
-       (((GPresentation $constructors $judgments $rules)
+(= (gic-check $language $goal $proof)
+   (if (gic-language-valid $language)
+     (case $language
+       (((GInferenceLanguageV1
+            $version $constructors $judgments $rules $conversion)
           (gic-check-raw-valid $rules $goal $proof))
         ($_ False)))
      False))
@@ -522,10 +763,11 @@
           False))
       ($_ False))))
 
-(= (gic-check-batch $presentation $checks)
-   (if (gic-presentation-valid $presentation)
-     (case $presentation
-       (((GPresentation $constructors $judgments $rules)
+(= (gic-check-batch $language $checks)
+   (if (gic-language-valid $language)
+     (case $language
+       (((GInferenceLanguageV1
+            $version $constructors $judgments $rules $conversion)
           (gic-check-batch-valid $rules $checks))
         ($_ False)))
      False))
@@ -576,10 +818,11 @@
            ($_ False))))
       ($_ False))))
 
-(= (gic-check-dag $presentation $goal $root-id $nodes)
-   (if (gic-presentation-valid $presentation)
-     (case $presentation
-       (((GPresentation $constructors $judgments $rules)
+(= (gic-check-dag $language $goal $root-id $nodes)
+   (if (gic-language-valid $language)
+     (case $language
+       (((GInferenceLanguageV1
+            $version $constructors $judgments $rules $conversion)
           (gic-check-dag-valid $rules $goal $root-id $nodes))
         ($_ False)))
      False))
@@ -611,10 +854,11 @@
      (((DagOK $env) (gic-check-dag-roots $env $checks))
       ($_ False))))
 
-(= (gic-check-dag-batch $presentation $nodes $checks)
-   (if (gic-presentation-valid $presentation)
-     (case $presentation
-       (((GPresentation $constructors $judgments $rules)
+(= (gic-check-dag-batch $language $nodes $checks)
+   (if (gic-language-valid $language)
+     (case $language
+       (((GInferenceLanguageV1
+            $version $constructors $judgments $rules $conversion)
           (gic-check-dag-batch-valid $rules $nodes $checks))
         ($_ False)))
      False))
@@ -684,10 +928,11 @@
         (== $result $goal))
       ($_ False))))
 
-(= (gic-check-trace $presentation $goal $actions)
-   (if (gic-presentation-valid $presentation)
-     (case $presentation
-       (((GPresentation $constructors $judgments $rules)
+(= (gic-check-trace $language $goal $actions)
+   (if (gic-language-valid $language)
+     (case $language
+       (((GInferenceLanguageV1
+            $version $constructors $judgments $rules $conversion)
           (gic-check-trace-valid $rules $goal $actions))
         ($_ False)))
      False))
@@ -709,10 +954,11 @@
           False))
       ($_ False))))
 
-(= (gic-check-trace-batch $presentation $checks)
-   (if (gic-presentation-valid $presentation)
-     (case $presentation
-       (((GPresentation $constructors $judgments $rules)
+(= (gic-check-trace-batch $language $checks)
+   (if (gic-language-valid $language)
+     (case $language
+       (((GInferenceLanguageV1
+            $version $constructors $judgments $rules $conversion)
           (gic-check-trace-checks $rules $checks))
         ($_ False)))
      False))
@@ -775,7 +1021,7 @@
      False))
 
 (= (gic-index-rule-valid $space
-      (GRule $id $formals $premises $conclusion))
+      (GRuleV1 $id $formals $premises $conclusion $side-conditions))
    (let $patterns (gic-append $premises (LCons $conclusion LNil))
      (let $occurrences (gic-occurrences-list-at 0 $patterns)
        (if (== $id "") False
@@ -784,7 +1030,9 @@
              (if (gic-all-members $occurrences $formals)
                (if (gic-all-members $formals $occurrences)
                  (if (gic-pattern-list-valid $patterns)
-                   (gic-index-judgment-list-valid $space $patterns)
+                   (if (gic-index-judgment-list-valid $space $patterns)
+                     (gic-side-conditions-valid $formals $side-conditions)
+                     False)
                    False)
                  False)
                False)
@@ -853,7 +1101,8 @@
 (= (gic-index-load-rule-step $space $valid $rule)
    (if $valid
      (case $rule
-       (((GRule $id $formals $premises $conclusion)
+       (((GRuleV1
+            $id $formals $premises $conclusion $side-conditions)
          (if (_minimal-space-contains-exact
                $space (GICIndexedRuleKey $id))
            False
@@ -862,7 +1111,8 @@
                (add-atom $space (GICIndexedRuleKey $id))
                (let $rule-added
                  (add-atom $space
-                   (GICIndexedRule $id $formals $premises $conclusion))
+                   (GICIndexedRule
+                     $id $formals $premises $conclusion $side-conditions))
                  True))
              False)))
         ($_ False)))
@@ -878,67 +1128,72 @@
      (((return $result) $result)
       ($_ False))))
 
-(: gic-build-index-parts-in (-> Atom Atom Atom Atom %Undefined%))
-(: gic-build-index-parts (-> Atom Atom Atom %Undefined%))
-(: gic-build-pathmap-index-parts (-> Atom Atom Atom %Undefined%))
+; The language is destructured exactly once at the public boundary.  Passing a
+; large serialized language through a second helper duplicates a deeply nested
+; value in the evaluator before its stack-safe row folds can begin.  The field
+; helper retains the whole-language admission invariant while letting each row
+; family flow directly into its indexed fold.
+(: gic-build-index-fields-in
+   (-> Atom Atom Atom Atom Atom Atom %Undefined%))
 
-(= (gic-build-index-parts-in $space $constructors $judgments $rules)
-   (if (gic-index-load-constructors $space $constructors)
-     (if (gic-index-load-judgments $space $judgments)
-       (if (gic-index-load-rules $space $rules)
-         (GICIndexOK $space)
+(= (gic-build-index-fields-in
+      $space $version $constructors $judgments $rules $conversion)
+   (if (== $version 1)
+     (if (gic-conversion-valid $judgments $conversion)
+       (if (gic-index-load-constructors $space $constructors)
+         (if (gic-index-load-judgments $space $judgments)
+           (if (gic-index-load-rules $space $rules)
+             (GICIndexOK $space)
+             GICIndexFail)
+           GICIndexFail)
          GICIndexFail)
        GICIndexFail)
      GICIndexFail))
 
-(= (gic-build-index-in $space $presentation)
-   (case $presentation
-     (((GPresentation $constructors $judgments $rules)
-        (if (gic-index-load-constructors $space $constructors)
-          (if (gic-index-load-judgments $space $judgments)
-            (if (gic-index-load-rules $space $rules)
-              (GICIndexOK $space)
-              GICIndexFail)
-            GICIndexFail)
-          GICIndexFail))
+(= (gic-build-index $language)
+   (case $language
+     (((GInferenceLanguageV1
+          $version $constructors $judgments $rules $conversion)
+        (let $space (new-space)
+          (gic-build-index-fields-in
+            $space $version $constructors $judgments $rules $conversion)))
       ($_ GICIndexFail))))
 
-(= (gic-build-index-parts $constructors $judgments $rules)
-   (let $space (new-space)
-     (gic-build-index-parts-in $space $constructors $judgments $rules)))
-
-(= (gic-build-pathmap-index-parts $constructors $judgments $rules)
-   (let $space (new-space pathmap)
-     (gic-build-index-parts-in $space $constructors $judgments $rules)))
-
-(= (gic-build-index $presentation)
-   (let $space (new-space)
-     (gic-build-index-in $space $presentation)))
-
-(= (gic-build-pathmap-index $presentation)
-   (let $space (new-space pathmap)
-     (gic-build-index-in $space $presentation)))
+(= (gic-build-pathmap-index $language)
+   (case $language
+     (((GInferenceLanguageV1
+          $version $constructors $judgments $rules $conversion)
+        (let $space (new-space pathmap)
+          (gic-build-index-fields-in
+            $space $version $constructors $judgments $rules $conversion)))
+      ($_ GICIndexFail))))
 
 (= (gic-index-lookup-rule $space $id)
    (case (collapse
            (match $space
-             (GICIndexedRule $id $formals $premises $conclusion)
-             (GRule $id $formals $premises $conclusion)))
+             (GICIndexedRule
+               $id $formals $premises $conclusion $side-conditions)
+             (GRuleV1
+               $id $formals $premises $conclusion $side-conditions)))
      ((($rule) (FoundRule $rule))
       ($_ NoRule))))
 
 (= (gic-index-instantiate-rule $space (GRuleInst $id $arguments))
    (case (gic-index-lookup-rule $space $id)
-     (((FoundRule (GRule $found-id $formals $premises $conclusion))
+     (((FoundRule
+          (GRuleV1
+            $found-id $formals $premises $conclusion $side-conditions))
         (if (gic-index-arguments-valid $space $formals $arguments)
-          (case (gic-instantiate-list $formals $arguments 0 $premises)
-            (((PatternsOK $premise-results)
-              (case (gic-instantiate
-                      $formals $arguments 0 $conclusion)
-                (((PatternOK $conclusion-result)
-                  (RuleOK $premise-results $conclusion-result))
-                 ($_ RuleFail))))
-             ($_ RuleFail)))
+          (if (gic-side-conditions-hold $arguments $side-conditions)
+            (case (gic-instantiate-list $formals $arguments 0 $premises)
+              (((PatternsOK $premise-results)
+                (case (gic-instantiate
+                        $formals $arguments 0 $conclusion)
+                  (((PatternOK $conclusion-result)
+                    (RuleOK $premise-results $conclusion-result))
+                   ($_ RuleFail))))
+               ($_ RuleFail)))
+            RuleFail)
           RuleFail))
       ($_ RuleFail))))
 
@@ -1069,8 +1324,8 @@
         ($_ False)))
      False))
 
-(= (gic-check-dag-indexed $presentation $goal $root-id $nodes)
-   (case (gic-build-index $presentation)
+(= (gic-check-dag-indexed $language $goal $root-id $nodes)
+   (case (gic-build-index $language)
      (((GICIndexOK $space)
         (gic-index-check-dag-valid $space $goal $root-id $nodes))
       ($_ False))))
@@ -1091,8 +1346,8 @@
            ($_ False))))
       ($_ False))))
 
-(= (gic-check-dag-chunks-indexed $presentation $goal $root-id $chunks)
-   (case (gic-build-index $presentation)
+(= (gic-check-dag-chunks-indexed $language $goal $root-id $chunks)
+   (case (gic-build-index $language)
      (((GICIndexOK $space)
         (gic-index-check-dag-chunks-valid $space $goal $root-id $chunks))
       ($_ False))))
@@ -1165,8 +1420,8 @@
       ($_ False))))
 
 (= (gic-check-dag-streaming-indexed
-      $presentation $goal $root-id $chunks)
-   (case (gic-build-index $presentation)
+      $language $goal $root-id $chunks)
+   (case (gic-build-index $language)
      (((GICIndexOK $space)
        (gic-index-check-stream-chunks-valid
          $space $goal $root-id $chunks))
@@ -1247,10 +1502,11 @@
 
 ; Execute one externally bounded chunk and return its serializable state.
 (= (gic-check-dag-pure-stream-step
-      $presentation $state $nodes)
-   (if (gic-presentation-valid $presentation)
-     (case $presentation
-       (((GPresentation $constructors $judgments $rules)
+      $language $state $nodes)
+   (if (gic-language-valid $language)
+     (case $language
+       (((GInferenceLanguageV1
+            $version $constructors $judgments $rules $conversion)
          (case $state
            (((GICPureStreamState $expected $env)
              (gic-pure-check-stream-nodes
@@ -1268,10 +1524,11 @@
       ($_ False))))
 
 (= (gic-check-dag-pure-streaming
-      $presentation $goal $root-id $chunks)
-   (if (gic-presentation-valid $presentation)
-     (case $presentation
-       (((GPresentation $constructors $judgments $rules)
+      $language $goal $root-id $chunks)
+   (if (gic-language-valid $language)
+     (case $language
+       (((GInferenceLanguageV1
+            $version $constructors $judgments $rules $conversion)
          (case
            (gic-pure-check-stream-chunks
              $rules
@@ -1300,8 +1557,8 @@
       ($_ False))))
 
 (= (gic-check-dag-terminal-indexed
-      $presentation $goal $prefix-chunks $terminal)
-   (case (gic-build-index $presentation)
+      $language $goal $prefix-chunks $terminal)
+   (case (gic-build-index $language)
      (((GICIndexOK $space)
         (case (gic-index-check-dag-chunks $space $prefix-chunks)
           ((DagOK (gic-index-check-dag-terminal $space $goal $terminal))
@@ -1358,13 +1615,13 @@
           False))
       ($_ False))))
 
-(= (gic-check-trace-indexed $presentation $checks)
-   (case (gic-build-index $presentation)
+(= (gic-check-trace-indexed $language $checks)
+   (case (gic-build-index $language)
      (((GICIndexOK $space) (gic-index-checks $space $checks))
       ($_ False))))
 
-(= (gic-check-trace-pathmap $presentation $checks)
-   (case (gic-build-pathmap-index $presentation)
+(= (gic-check-trace-pathmap $language $checks)
+   (case (gic-build-pathmap-index $language)
      (((GICIndexOK $space) (gic-index-checks $space $checks))
       ($_ False))))
 
@@ -1374,39 +1631,80 @@
 (= (gic-imp $left $right)
    (PApp "Imp" (LCons $left (LCons $right LNil))))
 (= (gic-proves $term) (PApp "Proves" (LCons $term LNil)))
+(= (gic-substitutes $body $replacement $result)
+   (PApp "Substitutes"
+     (LCons (PLam BNone $body)
+       (LCons $replacement (LCons $result LNil)))))
+(= (gic-drops-unused $body $result)
+   (PApp "DropsUnused"
+     (LCons (PLam BNone $body) (LCons $result LNil))))
 
 (= (gic-constructors)
    (LCons (CDecl "A" 0)
      (LCons (CDecl "B" 0)
        (LCons (CDecl "Imp" 2) LNil))))
-(= (gic-judgments) (LCons (JDecl "Proves" 1) LNil))
+(= (gic-judgments)
+   (LCons (JDecl "Proves" 1)
+     (LCons (JDecl "Substitutes" 3)
+       (LCons (JDecl "DropsUnused" 2)
+         (LCons (JDecl "Converts" 2) LNil)))))
 
 (= (gic-ax-a)
-   (GRule "ax-a" LNil LNil (gic-proves (gic-A))))
+   (GRuleV1 "ax-a" LNil LNil (gic-proves (gic-A)) LNil))
 (= (gic-ax-imp-ab)
-   (GRule "ax-imp-ab" LNil LNil (gic-proves (gic-imp (gic-A) (gic-B)))))
+   (GRuleV1 "ax-imp-ab" LNil LNil
+     (gic-proves (gic-imp (gic-A) (gic-B))) LNil))
 (= (gic-mp)
-   (GRule "mp"
+   (GRuleV1 "mp"
      (LCons (Formal "p" 0) (LCons (Formal "q" 0) LNil))
      (LCons (gic-proves (FVar "p"))
        (LCons (gic-proves (gic-imp (FVar "p") (FVar "q"))) LNil))
-     (gic-proves (FVar "q"))))
+     (gic-proves (FVar "q"))
+     LNil))
 (= (gic-lam)
-   (GRule "lam"
+   (GRuleV1 "lam"
      (LCons (Formal "body" 1) LNil)
      LNil
-     (gic-proves (PLam BNone (FVar "body")))))
+     (gic-proves (PLam BNone (FVar "body")))
+     LNil))
 (= (gic-subst)
-   (GRule "subst"
+   (GRuleV1 "subst"
      (LCons (Formal "body" 1)
        (LCons (Formal "replacement" 0) LNil))
      LNil
-     (gic-proves (PSubst (FVar "body") (FVar "replacement")))))
+     (gic-proves (PSubst (FVar "body") (FVar "replacement")))
+     LNil))
 (= (gic-join-a)
-   (GRule "join-a" LNil
+   (GRuleV1 "join-a" LNil
      (LCons (gic-proves (gic-A))
        (LCons (gic-proves (gic-A)) LNil))
-     (gic-proves (gic-A))))
+     (gic-proves (gic-A))
+     LNil))
+(= (gic-explicit-substitution)
+   (GRuleV1 "explicit-substitution"
+     (LCons (Formal "body" 1)
+       (LCons (Formal "replacement" 0)
+         (LCons (Formal "result" 0) LNil)))
+     LNil
+     (gic-substitutes
+       (FVar "body") (FVar "replacement") (FVar "result"))
+     (LCons (GExplicitSubstitution 0 0 1 2) LNil)))
+(= (gic-unused-binder-elimination)
+   (GRuleV1 "unused-binder-elimination"
+     (LCons (Formal "body" 1)
+       (LCons (Formal "result" 0) LNil))
+     LNil
+     (gic-drops-unused (FVar "body") (FVar "result"))
+     (LCons (GUnusedBinderElimination 0 0 1) LNil)))
+(= (gic-invalid-side-condition-rule)
+   (GRuleV1 "invalid-side-condition"
+     (LCons (Formal "body" 1)
+       (LCons (Formal "replacement" 0)
+         (LCons (Formal "result" 0) LNil)))
+     LNil
+     (gic-substitutes
+       (FVar "body") (FVar "replacement") (FVar "result"))
+     (LCons (GExplicitSubstitution 0 1 0 2) LNil)))
 
 (= (gic-rules)
    (LCons (gic-ax-a)
@@ -1414,9 +1712,12 @@
        (LCons (gic-mp)
          (LCons (gic-lam)
            (LCons (gic-subst)
-             (LCons (gic-join-a) LNil)))))))
-(= (gic-presentation)
-   (GPresentation (gic-constructors) (gic-judgments) (gic-rules)))
+             (LCons (gic-join-a)
+               (LCons (gic-explicit-substitution)
+                 (LCons (gic-unused-binder-elimination) LNil)))))))))
+(= (gic-language)
+   (GInferenceLanguageV1
+     1 (gic-constructors) (gic-judgments) (gic-rules) GNoConversion))
 
 (= (gic-proof-a) (GProof (GRuleInst "ax-a" LNil) PrNil))
 (= (gic-proof-imp-ab) (GProof (GRuleInst "ax-imp-ab" LNil) PrNil))
@@ -1425,48 +1726,48 @@
      (GRuleInst "mp" (LCons (gic-A) (LCons (gic-B) LNil)))
      (PrCons (gic-proof-a) (PrCons (gic-proof-imp-ab) PrNil))))
 
-!(assertEqual (gic-presentation-valid (gic-presentation)) True)
-!(assertEqual (gic-check (gic-presentation) (gic-proves (gic-B)) (gic-proof-b)) True)
+!(assertEqual (gic-language-valid (gic-language)) True)
+!(assertEqual (gic-check (gic-language) (gic-proves (gic-B)) (gic-proof-b)) True)
 !(assertEqual
-  (gic-check (gic-presentation) (gic-proves (gic-A)) (gic-proof-b))
+  (gic-check (gic-language) (gic-proves (gic-A)) (gic-proof-b))
   False)
 !(assertEqual
-  (gic-check (gic-presentation) (gic-proves (gic-B))
+  (gic-check (gic-language) (gic-proves (gic-B))
     (GProof
       (GRuleInst "mp" (LCons (gic-A) (LCons (gic-B) LNil)))
       (PrCons (gic-proof-imp-ab) (PrCons (gic-proof-a) PrNil))))
   False)
 !(assertEqual
-  (gic-check (gic-presentation) (gic-proves (gic-B))
+  (gic-check (gic-language) (gic-proves (gic-B))
     (GProof
       (GRuleInst "mp" (LCons (gic-A) (LCons (gic-B) LNil)))
       (PrCons (gic-proof-a) PrNil)))
   False)
 !(assertEqual
-  (gic-check (gic-presentation) (gic-proves (gic-B))
+  (gic-check (gic-language) (gic-proves (gic-B))
     (GProof
       (GRuleInst "mp" (LCons (gic-A) (LCons (gic-B) LNil)))
       (PrCons (gic-proof-a)
         (PrCons (gic-proof-imp-ab) (PrCons (gic-proof-a) PrNil)))))
   False)
 !(assertEqual
-  (gic-check (gic-presentation) (gic-proves (gic-B))
+  (gic-check (gic-language) (gic-proves (gic-B))
     (GProof (GRuleInst "missing-rule" LNil) PrNil))
   False)
 
 ; Exact-depth binder argument: Var 0 is closed relative to depth one.
 !(assertEqual
-  (gic-check (gic-presentation)
+  (gic-check (gic-language)
     (gic-proves (PLam BNone (Var 0)))
     (GProof (GRuleInst "lam" (LCons (Var 0) LNil)) PrNil))
   True)
 !(assertEqual
-  (gic-check (gic-presentation)
+  (gic-check (gic-language)
     (gic-proves (PLam BNone (Var 1)))
     (GProof (GRuleInst "lam" (LCons (Var 1) LNil)) PrNil))
   False)
 !(assertEqual
-  (gic-check (gic-presentation)
+  (gic-check (gic-language)
     (gic-proves (PLam BNone (PLam (BSome "x") (Var 0))))
     (GProof
       (GRuleInst "lam" (LCons (PLam (BSome "x") (Var 0)) LNil)) PrNil))
@@ -1474,40 +1775,99 @@
 
 ; Explicit substitution is transported as syntax; it is not evaluated here.
 !(assertEqual
-  (gic-check (gic-presentation)
+  (gic-check (gic-language)
     (gic-proves (PSubst (Var 0) (gic-A)))
     (GProof
       (GRuleInst "subst" (LCons (Var 0) (LCons (gic-A) LNil))) PrNil))
   True)
 
-; Admission negatives ensure malformed serialized presentations cannot acquire
-; validity merely because one rule lookup happens to succeed.
+; Generic side conditions are executable parts of the same flat language.
 !(assertEqual
-  (gic-presentation-valid
-    (GPresentation (gic-constructors) (gic-judgments)
-      (LCons (gic-ax-a) (LCons (gic-ax-a) LNil))))
+  (gic-check (gic-language)
+    (gic-substitutes (Var 0) (gic-A) (gic-A))
+    (GProof
+      (GRuleInst "explicit-substitution"
+        (LCons (Var 0) (LCons (gic-A) (LCons (gic-A) LNil))))
+      PrNil))
+  True)
+!(assertEqual
+  (gic-check (gic-language)
+    (gic-substitutes (Var 0) (gic-A) (gic-B))
+    (GProof
+      (GRuleInst "explicit-substitution"
+        (LCons (Var 0) (LCons (gic-A) (LCons (gic-B) LNil))))
+      PrNil))
   False)
 !(assertEqual
-  (gic-presentation-valid
-    (GPresentation (gic-constructors) (gic-judgments)
-      (LCons
-        (GRule "bad-depth" (LCons (Formal "x" 0) LNil) LNil
-          (gic-proves (PLam BNone (FVar "x"))))
-        LNil)))
-  False)
+  (gic-check (gic-language)
+    (gic-drops-unused (gic-A) (gic-A))
+    (GProof
+      (GRuleInst "unused-binder-elimination"
+        (LCons (gic-A) (LCons (gic-A) LNil)))
+      PrNil))
+  True)
 !(assertEqual
-  (gic-presentation-valid
-    (GPresentation (gic-constructors) (gic-judgments)
-      (LCons
-        (GRule "bad-rest" (LCons (Formal "x" 0) LNil) LNil
-          (gic-proves (PCollection "Bag" LNil (RSome "x"))))
-        LNil)))
+  (gic-check (gic-language)
+    (gic-drops-unused (Var 0) (gic-A))
+    (GProof
+      (GRuleInst "unused-binder-elimination"
+        (LCons (Var 0) (LCons (gic-A) LNil)))
+      PrNil))
   False)
 
-; Batch admission validates the presentation once, then checks both the
+; Admission negatives ensure malformed serialized languages cannot acquire
+; validity merely because one rule lookup happens to succeed.
+!(assertEqual
+  (gic-language-valid
+    (GInferenceLanguageV1 1 (gic-constructors) (gic-judgments)
+      (LCons (gic-ax-a) (LCons (gic-ax-a) LNil)) GNoConversion))
+  False)
+!(assertEqual
+  (gic-language-valid
+    (GInferenceLanguageV1 1 (gic-constructors) (gic-judgments)
+      (LCons
+        (GRuleV1 "bad-depth" (LCons (Formal "x" 0) LNil) LNil
+          (gic-proves (PLam BNone (FVar "x"))) LNil)
+        LNil)
+      GNoConversion))
+  False)
+!(assertEqual
+  (gic-language-valid
+    (GInferenceLanguageV1 1 (gic-constructors) (gic-judgments)
+      (LCons
+        (GRuleV1 "bad-rest" (LCons (Formal "x" 0) LNil) LNil
+          (gic-proves (PCollection "Bag" LNil (RSome "x"))) LNil)
+        LNil)
+      GNoConversion))
+  False)
+!(assertEqual
+  (gic-language-valid
+    (GInferenceLanguageV1
+      2 (gic-constructors) (gic-judgments) (gic-rules) GNoConversion))
+  False)
+!(assertEqual
+  (gic-language-valid
+    (GInferenceLanguageV1 1
+      (gic-constructors) (gic-judgments) (gic-rules)
+      (GConversion "Proves" "conversion-v1")))
+  False)
+!(assertEqual
+  (gic-language-valid
+    (GInferenceLanguageV1 1
+      (gic-constructors) (gic-judgments) (gic-rules)
+      (GConversion "Converts" "conversion-v1")))
+  True)
+!(assertEqual
+  (gic-language-valid
+    (GInferenceLanguageV1 1 (gic-constructors) (gic-judgments)
+      (LCons (gic-invalid-side-condition-rule) LNil)
+      GNoConversion))
+  False)
+
+; Batch admission validates the language once, then checks both the
 ; positive witness and its exact wrong-goal negative against the same rules.
 !(assertEqual
-  (gic-check-batch (gic-presentation)
+  (gic-check-batch (gic-language)
     (CheckCons
       (GCheck (gic-proves (gic-B)) (gic-proof-b) True)
       (CheckCons
@@ -1525,11 +1885,11 @@
          DnNil))))
 
 !(assertEqual
-  (gic-check-dag (gic-presentation) (gic-proves (gic-B)) "b"
+  (gic-check-dag (gic-language) (gic-proves (gic-B)) "b"
     (gic-proof-dag))
   True)
 !(assertEqual
-  (gic-check-dag (gic-presentation) (gic-proves (gic-B)) "b"
+  (gic-check-dag (gic-language) (gic-proves (gic-B)) "b"
     (DnCons
       (GDNode "b"
         (GRuleInst "mp" (LCons (gic-A) (LCons (gic-B) LNil)))
@@ -1537,12 +1897,12 @@
       (gic-proof-dag)))
   False)
 !(assertEqual
-  (gic-check-dag (gic-presentation) (gic-proves (gic-B)) "b"
+  (gic-check-dag (gic-language) (gic-proves (gic-B)) "b"
     (DnCons (GDNode "a" (GRuleInst "ax-a" LNil) DrNil)
       (DnCons (GDNode "a" (GRuleInst "ax-imp-ab" LNil) DrNil) DnNil)))
   False)
 !(assertEqual
-  (gic-check-dag (gic-presentation) (gic-proves (gic-B)) "b"
+  (gic-check-dag (gic-language) (gic-proves (gic-B)) "b"
     (DnCons (GDNode "a" (GRuleInst "ax-a" LNil) DrNil)
       (DnCons (GDNode "imp" (GRuleInst "ax-imp-ab" LNil) DrNil)
         (DnCons
@@ -1552,7 +1912,7 @@
           DnNil))))
   False)
 !(assertEqual
-  (gic-check-dag (gic-presentation) (gic-proves (gic-B)) "b"
+  (gic-check-dag (gic-language) (gic-proves (gic-B)) "b"
     (DnCons (GDNode "a" (GRuleInst "ax-a" LNil) DrNil)
       (DnCons (GDNode "imp" (GRuleInst "ax-imp-ab" LNil) DrNil)
         (DnCons
@@ -1562,7 +1922,7 @@
           DnNil))))
   False)
 !(assertEqual
-  (gic-check-dag-batch (gic-presentation) (gic-proof-dag)
+  (gic-check-dag-batch (gic-language) (gic-proof-dag)
     (DagCheckCons
       (GDagRootCheck (gic-proves (gic-B)) "b" True)
       (DagCheckCons
@@ -1570,11 +1930,11 @@
         DagCheckNil)))
   True)
 !(assertEqual
-  (gic-check-dag-indexed (gic-presentation) (gic-proves (gic-B)) "b"
+  (gic-check-dag-indexed (gic-language) (gic-proves (gic-B)) "b"
     (gic-proof-dag))
   True)
 !(assertEqual
-  (gic-check-dag-indexed (gic-presentation) (gic-proves (gic-B)) "b"
+  (gic-check-dag-indexed (gic-language) (gic-proves (gic-B)) "b"
     (DnCons (GDNode "a" (GRuleInst "ax-a" LNil) DrNil)
       (DnCons (GDNode "imp" (GRuleInst "ax-imp-ab" LNil) DrNil)
         (DnCons
@@ -1596,12 +1956,12 @@
        DcNil)))
 !(assertEqual
   (gic-check-dag-chunks-indexed
-    (gic-presentation) (gic-proves (gic-B)) "b"
+    (gic-language) (gic-proves (gic-B)) "b"
     (gic-proof-dag-chunks))
   True)
 !(assertEqual
   (gic-check-dag-chunks-indexed
-    (gic-presentation) (gic-proves (gic-B)) "b"
+    (gic-language) (gic-proves (gic-B)) "b"
     (DcCons
       (DnCons (GDNode "a" (GRuleInst "ax-a" LNil) DrNil)
         (DnCons (GDNode "imp" (GRuleInst "ax-imp-ab" LNil) DrNil) DnNil))
@@ -1635,13 +1995,13 @@
        DscNil)))
 !(assertEqual
   (gic-check-dag-streaming-indexed
-    (gic-presentation) (gic-proves (gic-B)) 2
+    (gic-language) (gic-proves (gic-B)) 2
     (gic-proof-dag-streaming-chunks))
   True)
 ; A needed premise released after node zero is absent at node two.
 !(assertEqual
   (gic-check-dag-streaming-indexed
-    (gic-presentation) (gic-proves (gic-B)) 2
+    (gic-language) (gic-proves (gic-B)) 2
     (DscCons
       (DsnCons
         (GSLiveNode
@@ -1665,7 +2025,7 @@
 ; Consecutive IDs reject reuse even after the old entry was released.
 !(assertEqual
   (gic-check-dag-streaming-indexed
-    (gic-presentation) (gic-proves (gic-B)) 2
+    (gic-language) (gic-proves (gic-B)) 2
     (DscCons
       (DsnCons
         (GSLiveNode
@@ -1681,7 +2041,7 @@
 ; Unknown releases fail closed.
 !(assertEqual
   (gic-check-dag-streaming-indexed
-    (gic-presentation) (gic-proves (gic-A)) 0
+    (gic-language) (gic-proves (gic-A)) 0
     (DscCons
       (DsnCons
         (GSLiveNode
@@ -1692,12 +2052,12 @@
   False)
 !(assertEqual
   (gic-check-dag-pure-streaming
-    (gic-presentation) (gic-proves (gic-B)) 2
+    (gic-language) (gic-proves (gic-B)) 2
     (gic-proof-dag-streaming-chunks))
   True)
 !(assertEqual
   (gic-check-dag-pure-stream-step
-    (gic-presentation)
+    (gic-language)
     (GICPureStreamState 0 DEnvNil)
     (DsnCons
       (GSLiveNode
@@ -1715,7 +2075,7 @@
         (DEnvCons (DVal 0 (gic-proves (gic-A))) DEnvNil)))))
 !(assertEqual
   (gic-check-dag-pure-streaming
-    (gic-presentation) (gic-proves (gic-B)) 2
+    (gic-language) (gic-proves (gic-B)) 2
     (DscCons
       (DsnCons
         (GSLiveNode
@@ -1738,7 +2098,7 @@
   False)
 !(assertEqual
   (gic-check-dag-pure-streaming
-    (gic-presentation) (gic-proves (gic-B)) 2
+    (gic-language) (gic-proves (gic-B)) 2
     (DscCons
       (DsnCons
         (GSLiveNode
@@ -1753,7 +2113,7 @@
   False)
 !(assertEqual
   (gic-check-dag-pure-streaming
-    (gic-presentation) (gic-proves (gic-A)) 0
+    (gic-language) (gic-proves (gic-A)) 0
     (DscCons
       (DsnCons
         (GSLiveNode
@@ -1764,7 +2124,7 @@
   False)
 !(assertEqual
   (gic-check-dag-terminal-indexed
-    (gic-presentation) (gic-proves (gic-B))
+    (gic-language) (gic-proves (gic-B))
     (DcCons
       (DnCons (GDNode "a" (GRuleInst "ax-a" LNil) DrNil)
         (DnCons (GDNode "imp" (GRuleInst "ax-imp-ab" LNil) DrNil) DnNil))
@@ -1775,7 +2135,7 @@
   True)
 !(assertEqual
   (gic-check-dag-terminal-indexed
-    (gic-presentation) (gic-proves (gic-B))
+    (gic-language) (gic-proves (gic-B))
     (DcCons
       (DnCons (GDNode "a" (GRuleInst "ax-a" LNil) DrNil)
         (DnCons (GDNode "imp" (GRuleInst "ax-imp-ab" LNil) DrNil) DnNil))
@@ -1799,30 +2159,30 @@
          (GaCons (GApply (GRuleInst "join-a" LNil)) GaNil)))))
 
 !(assertEqual
-  (gic-check-trace (gic-presentation) (gic-proves (gic-B))
+  (gic-check-trace (gic-language) (gic-proves (gic-B))
     (gic-proof-b-trace))
   True)
 !(assertEqual
-  (gic-check-trace (gic-presentation) (gic-proves (gic-A))
+  (gic-check-trace (gic-language) (gic-proves (gic-A))
     (gic-saved-a-trace))
   True)
 !(assertEqual
-  (gic-check-trace (gic-presentation) (gic-proves (gic-A))
+  (gic-check-trace (gic-language) (gic-proves (gic-A))
     (GaCons (GRef 0) GaNil))
   False)
 !(assertEqual
-  (gic-check-trace (gic-presentation) (gic-proves (gic-B))
+  (gic-check-trace (gic-language) (gic-proves (gic-B))
     (GaCons
       (GApply (GRuleInst "mp" (LCons (gic-A) (LCons (gic-B) LNil))))
       GaNil))
   False)
 !(assertEqual
-  (gic-check-trace (gic-presentation) (gic-proves (gic-A))
+  (gic-check-trace (gic-language) (gic-proves (gic-A))
     (GaCons (GApply (GRuleInst "ax-a" LNil))
       (GaCons (GApply (GRuleInst "ax-a" LNil)) GaNil)))
   False)
 !(assertEqual
-  (gic-check-trace-batch (gic-presentation)
+  (gic-check-trace-batch (gic-language)
     (TraceCheckCons
       (GTraceCheck (gic-proves (gic-B)) (gic-proof-b-trace) True)
       (TraceCheckCons
@@ -1831,7 +2191,7 @@
         TraceCheckNil)))
   True)
 !(assertEqual
-  (gic-check-trace-indexed (gic-presentation)
+  (gic-check-trace-indexed (gic-language)
     (TraceCheckCons
       (GTraceCheck (gic-proves (gic-B)) (gic-proof-b-trace) True)
       (TraceCheckCons
@@ -1840,4 +2200,4 @@
         TraceCheckNil)))
   True)
 
-!(GICSummary 43 43 0)
+!(GICSummary 51 51 0)

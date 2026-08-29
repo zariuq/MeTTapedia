@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.SourceGSLTRuntimeCoEvolution
 import Mettapedia.Languages.Metamath.SourceInferenceExecution
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Proof-tree transport from the canonical runtime prefix
 
@@ -31,12 +33,12 @@ though their assertion lists use different orders.  Centralizing this choice
 keeps proof-tree and compressed-DAG transport definitionally coherent. -/
 noncomputable def runtimePrefixAssertionNodeToSource
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     {assertion : SourceAssertion}
     {actuals : List ConstantHeadedFormula}
@@ -49,14 +51,14 @@ noncomputable def runtimePrefixAssertionNodeToSource
       GeneratedAssertionNode state.toSourcePrefix.toProjection sourceTarget
         assertion.toProjectionView actuals result sourceSubstitution := by
   have runtimeProjection :
-      presentationOfProjection? (runtimePrefix state).toProjection =
+      calculusLanguageDefOfProjection? (runtimePrefix state).toProjection =
         some runtimeTarget.1 := by
-    rw [← presentationOfSourcePrefix?_eq_runtime]
+    rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
     exact runtimePresentation
   have sourceProjection :
-      presentationOfProjection? state.toSourcePrefix.toProjection =
+      calculusLanguageDefOfProjection? state.toSourcePrefix.toProjection =
         some sourceTarget.1 := by
-    rw [← presentationOfSourcePrefix?_eq_runtime]
+    rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
     exact sourcePresentation
   have sourceMember : assertion ∈ state.assertions :=
     (runtimePrefix_assertion_mem_iff state assertion).mp member
@@ -85,12 +87,12 @@ canonical, label-sorted runtime view.  Local assertion applications are
 transported through their independent semantics, not by equating rule lists. -/
 noncomputable def runtimePrefixTreeToSource
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     {formula : ConstantHeadedFormula} :
     SourceGeneratedProvesTree (runtimePrefix state) runtimeTarget formula →
@@ -111,12 +113,12 @@ noncomputable def runtimePrefixTreeToSource
 /-- Forest counterpart of `runtimePrefixTreeToSource`. -/
 noncomputable def runtimePrefixForestToSource
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     {formulas : List ConstantHeadedFormula} :
     SourceGeneratedProvesForest (runtimePrefix state) runtimeTarget formulas →
@@ -135,12 +137,12 @@ mutual
 /-- Canonicalization transport preserves the submitted postfix label list. -/
 theorem runtimePrefixTreeToSource_labels
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     {formula : ConstantHeadedFormula}
     (tree : SourceGeneratedProvesTree
@@ -160,12 +162,12 @@ theorem runtimePrefixTreeToSource_labels
 /-- Forest label concatenation is likewise preserved. -/
 theorem runtimePrefixForestToSource_labels
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     {formulas : List ConstantHeadedFormula}
     (forest : SourceGeneratedProvesForest
@@ -189,12 +191,12 @@ end
 sequence into the transported proof's labels. -/
 theorem runtimePrefixTreeToSource_labels_ne
     {state : SourceState}
-    {runtimeTarget sourceTarget : ValidatedPresentation}
+    {runtimeTarget sourceTarget : ValidatedCalculusLanguageDef}
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix state) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? state.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
         some sourceTarget.1)
     {formula : ConstantHeadedFormula}
     (tree : SourceGeneratedProvesTree

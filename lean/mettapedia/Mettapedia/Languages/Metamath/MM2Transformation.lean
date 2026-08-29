@@ -1,6 +1,7 @@
-import Mettapedia.GSLT.LanguageDef.PresentationSensitiveTransformation
+import Mettapedia.GSLT.LanguageDef.AuthoredTransformation
 import Mettapedia.Languages.Metamath.InferenceSideConditionsSemantics
 import Mettapedia.Languages.Metamath.MM2DataEncoding
+import Mettapedia.Languages.Metamath.MM2NormalDataRows
 import Mettapedia.Languages.Metamath.MM2OrderedEventVerifier
 import Mettapedia.Languages.Metamath.MM2Target
 import Mettapedia.Languages.Metamath.SourceStateNativeTypes
@@ -10,11 +11,11 @@ import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveExecution
 import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveGSLTNativeTypes
 
 /-!
-# Presentation-sensitive Metamath to MM2 transformation
+# Authored Metamath to MM2 transformation
 
 This module starts the executable compiler at its proper boundary.  Its source
-input is an admitted authored Metamath scope, including the generated inference
-presentation.  Its target input is the existing reflective MM2 GSLT together
+input is an admitted authored Metamath scope, including its generated inference
+language.  Its target input is the existing reflective MM2 GSLT together
 with the ordinary MM2 surface renderer.  Neither input is replaced by a file
 name, digest, or implementation callback.
 
@@ -28,7 +29,7 @@ the current slice with a complete Metamath verifier.
 
 namespace Mettapedia.Languages.Metamath.MM2Transformation
 
-open Mettapedia.GSLT.ProofRelevantPresentation
+open Mettapedia.GSLT.ProofRelevant
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.Metamath.InferenceProjection
 open Mettapedia.Languages.Metamath.InferenceSideConditionsSemantics
@@ -44,17 +45,17 @@ open Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveComputable
 open Mettapedia.Languages.ProcessCalculi.MORK.WQComputable
 open Mettapedia.Languages.ProcessCalculi.MORK.MM2Surface
 
-/-! ## Supplied Metamath verifier presentation -/
+/-! ## Supplied Metamath verifier GSLT -/
 
-/-- A compiler input that presents the authored Metamath state calculus
+/-- A compiler input that exposes the authored Metamath state calculus
 through an operational GSLT and an exact proof-relevant translation.  The
-translation prevents an endpoint-correct presentation from erasing distinct
+translation prevents an endpoint-correct encoding from erasing distinct
 source transition occurrences.  The finite operation spine is inspectable
 compiler input; it must cover every authored state action and cannot contain
 duplicate operation occurrences. -/
 structure MetamathVerifierGSLT where
-  operational : PresentedGSLT
-  exact : ExactTranslation SourceStateGSLT.presented operational
+  operational : ProofRelevantGSLT
+  exact : ExactTranslation SourceStateGSLT.system operational
   operations : List SourceOperation
   operations_nodup : operations.Nodup
   action_operation_mem : ∀ action : StateAction,
@@ -76,11 +77,11 @@ theorem step_iff (sourceGSLT : MetamathVerifierGSLT)
   constructor
   · intro targetStep
     obtain ⟨targetEvidence⟩ :=
-      sourceGSLT.operational.steps.present targetStep
-    exact SourceStateGSLT.presented.steps.erase
+      sourceGSLT.operational.steps.witness targetStep
+    exact SourceStateGSLT.system.steps.erase
       ((sourceGSLT.exact.evidenceEquiv source target).symm targetEvidence)
   · intro sourceStep
-    obtain ⟨sourceEvidence⟩ := SourceStateGSLT.presented.steps.present sourceStep
+    obtain ⟨sourceEvidence⟩ := SourceStateGSLT.system.steps.witness sourceStep
     exact sourceGSLT.operational.steps.erase
       (sourceGSLT.exact.toTranslation.mapEvidence sourceEvidence)
 
@@ -88,12 +89,12 @@ theorem step_iff (sourceGSLT : MetamathVerifierGSLT)
 source endpoints; endpoint agreement alone is not an admissible substitute. -/
 def evidenceFibreEquiv (sourceGSLT : MetamathVerifierGSLT)
     (source target : SourceState) :
-    SourceStateGSLT.StepEvidence source target ≃
+    SourceStateGSLT.TransitionEvidence source target ≃
       sourceGSLT.operational.steps.Evidence
         (sourceGSLT.embedState source) (sourceGSLT.embedState target) :=
   sourceGSLT.exact.evidenceEquiv source target
 
-/-- Every admissible verifier presentation covers the normal-proof operation.
+/-- Every admissible verifier GSLT covers the normal-proof operation.
 This is forced by the authored action family, rather than assumed by the
 normal-slice transformer. -/
 theorem normal_operation_mem (sourceGSLT : MetamathVerifierGSLT)
@@ -106,7 +107,7 @@ theorem normal_operation_mem (sourceGSLT : MetamathVerifierGSLT)
       (.theoremNormal label formula proofLabels)
 
 /-- A purported verifier input whose operation spine omits normal proofs is
-rejected by the source-presentation contract. -/
+rejected by the source-language contract. -/
 theorem no_input_without_normal_operation
     (sourceGSLT : MetamathVerifierGSLT)
     (missing : SourceOperation.checkTheoremNormal ∉ sourceGSLT.operations) :
@@ -116,11 +117,11 @@ theorem no_input_without_normal_operation
 
 end MetamathVerifierGSLT
 
-/-- The repository's authored source-state presentation as a verifier
+/-- The repository's authored source-state GSLT as a verifier
 compiler input. -/
 def authoredMetamathVerifierGSLT : MetamathVerifierGSLT where
-  operational := SourceStateGSLT.presented
-  exact := ExactTranslation.id SourceStateGSLT.presented
+  operational := SourceStateGSLT.system
+  exact := ExactTranslation.id SourceStateGSLT.system
   operations := SourceStateGSLT.stateOperations
   operations_nodup := by decide
   action_operation_mem := SourceStateGSLT.action_operation_mem_stateOperations
@@ -152,25 +153,6 @@ theorem MetamathVerifierGSLT.native_type_iff_source_step
   simp [hypothesisLookupRows]
 
 /-! ## Source-derived assertion execution indexes -/
-
-/-- Runtime lookup for the caller's symmetric DV relation.  The authored
-source stores each pair canonically once; MM2 needs no string-order primitive
-because the compiler emits both licensed query orientations as data. -/
-def callerDVRow (scopeOwner : Atom) (left right : String) : Atom :=
-  .expression
-    [.symbol "mm-caller-dv", scopeOwner, stringAtom left, stringAtom right]
-
-def callerDVRowsForPair (scopeOwner : Atom)
-    (pair : String × String) : List Atom :=
-  [callerDVRow scopeOwner pair.1 pair.2,
-   callerDVRow scopeOwner pair.2 pair.1]
-
-def callerDVRowsOfPairs (scopeOwner : Atom)
-    (pairs : List (String × String)) : List Atom :=
-  (pairs.map (callerDVRowsForPair scopeOwner)).flatten
-
-def callerDVRows (scopeOwner : Atom) (state : SourceState) : List Atom :=
-  callerDVRowsOfPairs scopeOwner state.proofDistinctVariables
 
 /-- Directly supplied MM2 caller-DV rows denote exactly the symmetric
 relation generated by the supplied ordered source pair list.  Later verifier
@@ -257,13 +239,6 @@ def AssertionExecutionRowFrom (scopeOwner : Atom) (state : SourceState)
     AssertionExecutionRowFor scopeOwner assertionPosition
       state.assertions[assertionPosition] row
 
-/-- Execution indexes are derived from every actual assertion in the admitted
-source state.  They do not inspect a filename, digest, or external database. -/
-def assertionExecutionRows (scopeOwner : Atom)
-    (state : SourceState) : List Atom :=
-  (state.assertions.mapIdx fun position assertion =>
-    assertionExecutionRowsFor scopeOwner position assertion).flatten
-
 /-- A source-licensed caller-DV lookup row, stated independently of the
 concrete list construction. -/
 def CallerDVRowFrom (scopeOwner : Atom) (state : SourceState)
@@ -278,11 +253,6 @@ def NormalExecutionRowFrom (scopeOwner : Atom) (state : SourceState)
     (row : Atom) : Prop :=
   CallerDVRowFrom scopeOwner state row ∨
     AssertionExecutionRowFrom scopeOwner state row
-
-/-- All indexed data read by the generic normal-proof machine. -/
-def normalExecutionRows (scopeOwner : Atom)
-    (state : SourceState) : List Atom :=
-  callerDVRows scopeOwner state ++ assertionExecutionRows scopeOwner state
 
 theorem mem_assertionExecutionRowsFor_iff (scopeOwner : Atom)
     (assertionPosition : Nat) (assertion : SourceAssertion) (row : Atom) :
@@ -2615,7 +2585,7 @@ def normalHypothesisStackAtom (proofOwner : Atom) (stackPosition : Nat)
     [.symbol "mm-stack-cell", proofOwner, natAtom stackPosition,
       formulaAtom hypothesis.formula, natAtom proofPosition]
 
-/-- The finite atom presentation of the canonical active-hypothesis phase.
+/-- The finite atom state of the canonical active-hypothesis phase.
 Keeping this list explicit lets the computable scheduler and finite-support
 semantics be related without choosing an enumeration of a `Finset`. -/
 def normalHypothesisPhaseAtoms (scopeOwner proofOwner : Atom)
@@ -3071,7 +3041,7 @@ def normalAssertionPopAtom (scopeOwner proofOwner : Atom)
   normalAssertionPopCursorAtom scopeOwner proofOwner proofPosition
     nextProofPosition assertion.label assertion.hypotheses.length stackTop
 
-/-- The finite atom presentation of the canonical assertion-entry phase. -/
+/-- The finite atom state of the canonical assertion-entry phase. -/
 def normalAssertionStartPhaseAtoms (scopeOwner proofOwner : Atom)
     (proofPosition nextProofPosition stackTop assertionPosition : Nat)
     (assertion : SourceAssertion) : List Atom :=
@@ -3312,7 +3282,7 @@ theorem normalAssertionStartPhase_inhabits_target_native_type
   · exact normalAssertionStartDirective_fires_pop scopeOwner proofOwner
       proofPosition nextProofPosition stackTop assertionPosition assertion
 
-/-- Finite atom presentation for one administrative backward cursor step. -/
+/-- Finite atom state for one administrative backward cursor step. -/
 def normalAssertionPopPhaseAtoms (scopeOwner proofOwner : Atom)
     (proofPosition nextProofPosition : Nat) (assertionLabel : String)
     (previousHypothesis hypothesisCursor previousStack stackCursor : Nat) :
@@ -3674,7 +3644,7 @@ def normalAssertionNextBindAtom (scopeOwner proofOwner : Atom)
       stringAtom assertionLabel, natAtom nextHypothesisPosition,
       natAtom hypothesisEnd, natAtom nextStackPosition, natAtom stackBase]
 
-/-- Finite atom presentation at the end of the administrative pop loop. -/
+/-- Finite atom state at the end of the administrative pop loop. -/
 def normalAssertionBeginPhaseAtoms (scopeOwner proofOwner : Atom)
     (proofPosition nextProofPosition stackBase assertionPosition : Nat)
     (assertion : SourceAssertion) : List Atom :=
@@ -3905,7 +3875,7 @@ theorem normalAssertionBeginPhase_inhabits_target_native_type
   · exact normalAssertionBeginDirective_fires_bind scopeOwner proofOwner
       proofPosition nextProofPosition stackBase assertionPosition assertion
 
-/-- Finite atom presentation for one floating hypothesis in an assertion
+/-- Finite atom state for one floating hypothesis in an assertion
 application.  It contains the exact source-indexed hypothesis row and the
 exact child stack occurrence consumed by the emitted generic rule. -/
 def normalAssertionFloatingPhaseAtoms (scopeOwner proofOwner : Atom)
@@ -4428,7 +4398,7 @@ def normalAssertionEssentialMatchAtom (scopeOwner proofOwner : Atom)
         nextHypothesisPosition hypothesisEnd nextStackPosition stackBase
         hypothesisPosition childOccurrence]
 
-/-- Finite atom presentation at one source essential hypothesis. -/
+/-- Finite atom state at one source essential hypothesis. -/
 def normalAssertionEssentialPhaseAtoms (scopeOwner proofOwner : Atom)
     (proofPosition nextProofPosition : Nat) (assertionLabel : String)
     (hypothesisPosition nextHypothesisPosition hypothesisEnd : Nat)
@@ -4848,7 +4818,7 @@ theorem normalAssertionEssentialPhase_inhabits_target_native_type
 def normalAssertionReloadAtom (proofOwner : Atom) : Atom :=
   .expression [.symbol "mm-reload-normal-dispatch", proofOwner]
 
-/-- Finite atom presentation reached after the body matcher has validated the
+/-- Finite atom state reached after the body matcher has validated the
 source and actual essential-hypothesis bodies. -/
 def normalAssertionEssentialCompletePhaseAtoms
     (scopeOwner proofOwner : Atom)
@@ -11987,7 +11957,7 @@ theorem verifierRulesForNormalSpine_no_internal_row_shape
       atom atomMember
 
 /-- A database- and proof-independent verifier artifact generated from the
-supplied Metamath operation presentation for the supplied MM2 target.  The
+supplied Metamath operation language for the supplied MM2 target.  The
 coverage split prevents the current normal slice from masquerading as the
 complete `mmverify.mm2` artifact. -/
 structure GenericVerifierSliceArtifact (target : MM2Target) where
@@ -12092,8 +12062,9 @@ def renderAdmittedNormalProgram? (source : MetamathVerifierGSLT)
     (input : AdmittedSourceEventInput owner) : Option String :=
   target.render (composeAdmittedNormalProgram source target input)
 
-/-- The authored operation spine really drives rule generation: its unique
-normal-proof operation contributes exactly the existing generic rule machine. -/
+/-- Fixed-profile bootstrap inventory.  The authored operation spine licenses
+the covered normal-proof operation, while the emitted rules are the existing
+generic normal-proof machine rather than a synthesis from `source.operational`. -/
 theorem authored_transformNormalVerifierSlice_rules
     (target : MM2Target) :
     (transformNormalVerifierSlice authoredMetamathVerifierGSLT target).rules =
@@ -12292,24 +12263,24 @@ def renderInvocation? (source : AdmittedSourceScope) (target : MM2Target)
   lowerProgram? target
     (invocationProgram source target scopeOwner proofOwner proof)
 
-/-! ## Presentation sensitivity and executable controls -/
+/-! ## Calculus-language sensitivity and executable controls -/
 
-/-- A changed authored checker-facing presentation changes the concrete
+/-- A changed authored checker-facing calculus language changes the concrete
 compiler artifact even when the scope identity and target are held fixed. -/
-theorem transformNormalScope_presentation_sensitive
+theorem transformNormalScope_language_sensitive
     (target : MM2Target) (scopeOwner : Atom)
     (left right : AdmittedSourceScope)
     (changed :
-      Mettapedia.GSLT.LanguageDef.InferencePresentationWire.RuntimePresentation.ofPresentation
-          left.presentation ≠
-        Mettapedia.GSLT.LanguageDef.InferencePresentationWire.RuntimePresentation.ofPresentation
-          right.presentation) :
+      Mettapedia.GSLT.LanguageDef.InferenceLanguageWire.RuntimeInferenceLanguage.ofDefinition
+          left.language ≠
+        Mettapedia.GSLT.LanguageDef.InferenceLanguageWire.RuntimeInferenceLanguage.ofDefinition
+          right.language) :
     transformNormalScope left target scopeOwner ≠
       transformNormalScope right target scopeOwner := by
   intro equal
   have sourceDataEqual := congrArg
-    (fun artifact => artifact.sourceData.presentation) equal
-  exact (transformScopeData_presentation_sensitive scopeOwner left right changed)
+    (fun artifact => artifact.sourceData.languageFact) equal
+  exact (transformScopeData_language_sensitive scopeOwner left right changed)
     sourceDataEqual
 
 theorem normalHypothesisStepRule_surface_safe :
@@ -12351,7 +12322,7 @@ theorem normal_step_rule_uses_reflective_capture :
             .var "self-input", .var "self-output"])) = false := by
   decide +kernel
 
-#print axioms transformNormalScope_presentation_sensitive
+#print axioms transformNormalScope_language_sensitive
 #print axioms MM2Target.native_type_iff_step
 #print axioms MM2Target.no_invented_native_step
 #print axioms callerDVRow_mem_callerDVRows_iff

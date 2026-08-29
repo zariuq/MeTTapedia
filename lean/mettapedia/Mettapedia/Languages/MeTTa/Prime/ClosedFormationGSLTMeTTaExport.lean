@@ -16,14 +16,14 @@ open Mettapedia.Languages.MeTTa.Prime.ClosedFormationGSLT
 open Mettapedia.GSLT.LanguageDef.InferenceFiniteHornGSLTRender
 open Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
 
-def finiteHornPresentation? : Option String :=
-  Mettapedia.GSLT.LanguageDef.InferenceFiniteHornGSLTRender.renderPresentation?
-    exportedPresentation
+def finiteHornDefinition? : Option String :=
+  Mettapedia.GSLT.LanguageDef.InferenceFiniteHornGSLTRender.renderDefinition?
+    exportedDefinition
 
-theorem finiteHornPresentation_renders :
-    finiteHornPresentation?.isSome = true := by
-  simp [finiteHornPresentation?, exportedPresentation, presentation,
-    definition, renderPresentation?, operatorSignature,
+theorem finiteHornDefinition_renders :
+    finiteHornDefinition?.isSome = true := by
+  simp [finiteHornDefinition?, exportedDefinition,
+    definition, renderDefinition?, operatorSignature,
     noDuplicateOperators, renderOperators?, renderOperator?, renderRules?,
     renderRule?, renderTerm?, renderTerms?, safeSymbol, safeVariable,
     safeToken, safeTokenCharacter, integerToken, isApplication,
@@ -51,19 +51,19 @@ def audit : String :=
   "; Generated from the admitted Prime closed-formation GSLT root.\n" ++
   "; Edit ClosedFormationGSLT.lean and regenerate this artifact.\n\n" ++
   "!(import! &self generic_inference_checker_v0)\n\n" ++
-  s!"(= (prime-closed-formation-presentation) " ++
-    s!"{renderPresentation exportedPresentation})\n" ++
+  s!"(= (prime-closed-formation-language) " ++
+    s!"{renderDefinition exportedDefinition})\n" ++
   s!"(= (prime-closed-formation-binding) " ++
     s!"{renderSyntaxBinding syntaxBinding})\n" ++
   s!"(= (prime-closed-formation-goal) {renderPattern sampleFormGoal})\n" ++
   s!"(= (prime-closed-formation-proof) {renderRawProof sampleFormProof})\n" ++
   s!"(= (prime-closed-refute-goal) {renderPattern sampleRefuteGoal})\n" ++
   s!"(= (prime-closed-refute-proof) {renderRawProof sampleRefuteProof})\n\n" ++
-  "!(assertEqual (gic-presentation-valid " ++
-    "(prime-closed-formation-presentation)) True)\n" ++
-  "!(assertEqual (gic-check (prime-closed-formation-presentation) " ++
+  "!(assertEqual (gic-language-valid " ++
+    "(prime-closed-formation-language)) True)\n" ++
+  "!(assertEqual (gic-check (prime-closed-formation-language) " ++
     "(prime-closed-formation-goal) (prime-closed-formation-proof)) True)\n" ++
-  "!(assertEqual (gic-check (prime-closed-formation-presentation) " ++
+  "!(assertEqual (gic-check (prime-closed-formation-language) " ++
     "(prime-closed-refute-goal) (prime-closed-refute-proof)) True)\n" ++
   "!(PrimeClosedFormationGICSummary 14 3 15 2)\n"
 
@@ -73,19 +73,19 @@ def main (arguments : List String) : IO UInt32 := do
       IO.FS.writeFile auditPath audit
       IO.println s!"wrote {audit.toUTF8.size} bytes to {auditPath}"
       pure 0
-  | [auditPath, presentationPath] =>
-      match finiteHornPresentation? with
+  | [auditPath, definitionPath] =>
+      match finiteHornDefinition? with
       | none =>
           IO.eprintln "Prime formation rule outside the finite-Horn source fragment"
           pure 1
-      | some presentation => do
+      | some renderedDefinition => do
           IO.FS.writeFile auditPath audit
-          IO.FS.writeFile presentationPath presentation
+          IO.FS.writeFile definitionPath renderedDefinition
           IO.println s!"wrote {audit.toUTF8.size} bytes to {auditPath}"
-          IO.println s!"wrote {presentation.toUTF8.size} bytes to {presentationPath}"
+          IO.println s!"wrote {renderedDefinition.toUTF8.size} bytes to {definitionPath}"
           pure 0
   | _ =>
-      IO.eprintln "usage: <audit-output.metta> [<presentation-output.metta>]"
+      IO.eprintln "usage: <audit-output.metta> [<language-definition-output.metta>]"
       pure 2
 
 end Mettapedia.Languages.MeTTa.Prime.ClosedFormationGSLTMeTTaExport

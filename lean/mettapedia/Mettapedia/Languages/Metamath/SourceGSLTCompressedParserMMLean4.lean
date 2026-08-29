@@ -2,6 +2,8 @@ import Mettapedia.Languages.Metamath.SourceGSLTCompressedExecutionMMLean4
 import Mettapedia.Languages.Metamath.InferenceNormalByteLedger
 import Metamath.PrefixTraceCompressed
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Parser-owned compressed Metamath lifecycle
 
@@ -365,7 +367,7 @@ def sourceProofStart
 The intermediate machine is constructed from the derivation rather than
 guessed from the two item lists. -/
 noncomputable def HeaderBuild.splitAppend
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {left right : List HeaderItem}
     {before after : MachineState source target}
     (build : HeaderBuild (left ++ right) before after) :
@@ -385,7 +387,7 @@ noncomputable def HeaderBuild.splitAppend
 header derivation.  This closes the gap between the special parser loop and
 the ordinary `DB.preload` transition used by the occurrence semantics. -/
 noncomputable def mandatoryHeader_runtimePreserved
-    {sourceState : SourceState} {target : ValidatedPresentation}
+    {sourceState : SourceState} {target : ValidatedCalculusLanguageDef}
     {after : MachineState sourceState.toSourcePrefix target}
     (db : RuntimeDB)
     (hproject :

@@ -174,7 +174,7 @@ theorem rootUnfolds_rootReachable
 
 theorem rootReachable_complete
     {forest : Forest}
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint}
     (complete : Complete forest presentation input) :
     Complete (rootReachableForest forest) presentation input := by
@@ -239,7 +239,7 @@ theorem rootUnfolds_of_covers
 theorem packedReplays_of_covers
     {reference backend : Forest}
     (covers : ForestCovers reference backend)
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint} {certificate : Certificate} {tree : ParseTree}
     (replay : PackedReplays reference presentation input certificate tree) :
     PackedReplays backend presentation input certificate tree :=
@@ -248,7 +248,7 @@ theorem packedReplays_of_covers
 theorem complete_of_covers
     {reference backend : Forest}
     (covers : ForestCovers reference backend)
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint}
     (complete : Complete reference presentation input) :
     Complete backend presentation input := by
@@ -302,7 +302,7 @@ theorem backend_grammar_ambiguity_agreement
     (backend_grammar_complete_of_chart_coverage covers)
 
 theorem backend_complete_of_chart_coverage
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint} {backend : Forest}
     (covers : ForestCovers
       (rootReachableForest
@@ -315,7 +315,7 @@ theorem backend_complete_of_chart_coverage
       (GroundedChart.chartForest_complete presentation input))
 
 theorem backend_result_set_agreement
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint} {backend : Forest}
     (covers : ForestCovers
       (rootReachableForest
@@ -328,7 +328,7 @@ theorem backend_result_set_agreement
     (backend_complete_of_chart_coverage covers)
 
 theorem backend_ambiguity_agreement
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint} {backend : Forest}
     (covers : ForestCovers
       (rootReachableForest
@@ -344,7 +344,7 @@ theorem backend_ambiguity_agreement
 /-- Any two packed engines covering the same complete chart agree on the
 entire parse-tree may-set, even if their internal forest layouts differ. -/
 theorem backends_result_set_agree
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint} {left right : Forest}
     (leftCovers : ForestCovers
       (rootReachableForest

@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Framework.PyashGF
-import Mettapedia.CategoryTheory.NativeTypeTheory
+import Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 import Mettapedia.CategoryTheory.PLNInstance
 import Mettapedia.PLN.Evidence.EvidenceQuantale
 
@@ -19,7 +19,7 @@ open Mettapedia.OSLF.Framework.PyashGF
 open Mettapedia.OSLF.Framework.PyashCoreInstance
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.CategoryTheory.PLNInstance
-open Mettapedia.CategoryTheory.NativeTypeTheory
+open Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 open Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-- Lightweight OSLF→NTT linkage record keyed by exported canary label. -/
@@ -28,11 +28,11 @@ structure PyashGFCanaryNTTLink where
   startState : Pattern
   endState : Pattern
   oslfClosure : PyashCoreReducesStar startState endState
-  ntObj : NativeTypeBundle
+  ntObj : EvidenceObject
   ntSelfHom : Hom ntObj ntObj
 
 /-- Canonical NTT anchor object for canary linkage witnesses. -/
-def pyashCanaryNTTAnchor : NativeTypeBundle :=
+def pyashCanaryNTTAnchor : EvidenceObject :=
   Sigma.mk (PLNObj.Concept "pyash_canary") (⊥ : BinaryEvidence)
 
 /-- Canonical reflexive NTT morphism at the canary anchor. -/

@@ -23,7 +23,7 @@ open Mettapedia.GSLT.Dynamics.InteractionEventValuation
 open Mettapedia.Languages.MeTTa.MeTTaInteraction
 open Mettapedia.Languages.MeTTa.MeTTaInteraction.Canary
 open Mettapedia.Languages.MeTTa.MeTTaInteractionBind.Canary
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation
 open Mettapedia.OSLF.MeTTaIL.Syntax
@@ -43,7 +43,7 @@ def siteEndpoint (revision : Bool) (pattern : Pattern) :
 
 /-- The revision-indexed Prime computation type for catalog interactions. -/
 def siteComputationTy (revision : Bool)
-    (source target : NativeRawTm 0 0) : familiesCwF.Ty PrimeContext :=
+    (source target : StagedReflectiveTm 0 0) : familiesCwF.Ty PrimeContext :=
   (siteInterpretation revision).computationTy
     (presentation model authorityWorld revision) source target
 

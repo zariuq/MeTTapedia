@@ -194,14 +194,14 @@ end CompleteJudgmentAuthority
 
 /-! ## CertificateGSLT instances and per-language admission -/
 
-/-- A CertificateGSLT presentation with a two-sided adequacy theorem for an
+/-- A CertificateGSLT definition with a two-sided adequacy theorem for an
 independently stated meaning.  This is the unambiguous complete CertificateGSLT
 class: completeness is semantic, not merely completeness for its own
 inductive derivation type. -/
 structure SemanticallyCompleteCertificateGSLT
     (Claim : Type uClaim) (Meaning : Claim -> Prop) where
-  presentation : ValidatedPresentation
-  adequacy : ExactJudgmentPresentation Claim Meaning presentation
+  definition : ValidatedCalculusLanguageDef
+  adequacy : ExactJudgmentEncoding Claim Meaning definition
 
 namespace SemanticallyCompleteCertificateGSLT
 
@@ -213,7 +213,7 @@ system's semantic adequacy theorem. -/
 def checker {AuthorityId : Type uKind} (authorityId : AuthorityId) :=
   semanticChecker
     (judgmentWireAuthority authorityId
-      system.adequacy.toJudgmentPresentationAdequacy)
+      system.adequacy.toJudgmentEncodingAdequacy)
 
 /-- A semantically complete CertificateGSLT has exact wire-certificate authority
 for the named model meaning. -/
@@ -222,7 +222,7 @@ theorem checker_authority {AuthorityId : Type uKind}
     (system.checker authorityId).Authority Meaning where
   sound := semanticChecker_sound
     (judgmentWireAuthority authorityId
-      system.adequacy.toJudgmentPresentationAdequacy)
+      system.adequacy.toJudgmentEncodingAdequacy)
   complete := by
     intro claim meaningful
     exact (judgmentWireAuthority_correspondence

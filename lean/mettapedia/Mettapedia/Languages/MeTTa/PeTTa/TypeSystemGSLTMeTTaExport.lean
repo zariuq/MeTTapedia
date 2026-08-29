@@ -5,21 +5,21 @@ import Mettapedia.GSLT.LanguageDef.InferenceRelationalMeTTaRender
 import Mettapedia.GSLT.LanguageDef.InferenceFiniteHornGSLTRender
 
 /-!
-# Exporter: PeTTa typecheck-v2 core presentation → generated artifacts
+# Exporter: PeTTa typecheck-v2 core language → generated artifacts
 
 Script (`lake env lean --run <this file> <executable.metta> <audit.metta>
-[<presentation.metta>]`) emitting projections of the admitted PeTTa
+[<language-definition.metta>]`) emitting projections of the admitted PeTTa
 typecheck-v2 GSLT root:
 
 - the EXECUTABLE artifact — the relational clause program the sealed
   checker space loads (`lib/petta/lib_typecheck_petta_generated_v0.metta`
   in the CeTTa tree); and
-- the AUDIT file — the presentation as data plus the receipt-checked
+- the AUDIT file — the inference language as data plus the receipt-checked
   sample derivations, replayed by the operational generic inference
   checker (`generic_inference_checker_v0`).  Replay agreement is the
   J2-soundness sample check; it does not by itself establish the full
   specialized↔LanguageDef correspondence; and
-- the optional FINITE-HORN GSLT source — a proper `gslt-presentation-v1`
+- the optional FINITE-HORN GSLT source — a validated language-definition wire
   consumed by CeTTa's build-time langdef tooling.  It contains the authored
   constructors, judgments, and rules, but no runtime harness or fixture rules.
 
@@ -168,23 +168,23 @@ private def verdictHarness : String :=
   "!(tabled (ValueHasType $v $t))\n"
 
 def executable? : Option String := do
-  let program ← renderProgram? guardPresentation
+  let program ← renderProgram? guardDefinition
   some (executableHeader ++ program ++ "\n" ++ envBindings ++ "\n" ++
         reifier ++ "\n" ++ verdictHarness)
 
 /-- Semantic-source projection for the build-time langdef pipeline.  The
-guard presentation deliberately excludes the receipt-only environment
+guard language deliberately excludes the receipt-only environment
 fixtures and the nonmonotone four-way runtime harness. -/
-def finiteHornPresentation? : Option String :=
-  Mettapedia.GSLT.LanguageDef.InferenceFiniteHornGSLTRender.renderPresentation?
-    guardPresentation
+def finiteHornDefinition? : Option String :=
+  Mettapedia.GSLT.LanguageDef.InferenceFiniteHornGSLTRender.renderDefinition?
+    guardDefinition
 
 /-- Fail-closed totality, structural side: every core rule satisfies
 exactly the conditions under which `renderClause?` renders.  A rule
 drifting outside the fragment fails the build here; the exporter's
 runtime Option handling remains the last-resort refusal. -/
 theorem guard_rules_all_projectable :
-    guardPresentation.rules.all
+    guardDefinition.rules.all
       Mettapedia.GSLT.LanguageDef.InferenceRelationalMeTTaRender.projectable
       = true := by decide
 
@@ -194,7 +194,7 @@ def audit : String :=
   "; derivations are the same objects the Lean checkRaw receipts accept\n" ++
   "; and reject.\n\n" ++
   "!(import! &self generic_inference_checker_v0)\n\n" ++
-  s!"(= (petta-core-presentation) {renderPresentation corePresentation})\n" ++
+  s!"(= (petta-core-language) {renderDefinition coreDefinition})\n" ++
   s!"(= (petta-core-accept-goal) {renderPattern sampleAcceptGoal})\n" ++
   s!"(= (petta-core-accept-proof) {renderRawProof sampleAcceptProof})\n" ++
   s!"(= (petta-core-union-goal) {renderPattern sampleUnionGoal})\n" ++
@@ -205,25 +205,25 @@ def audit : String :=
   s!"(= (petta-core-reject-proof) {renderRawProof sampleRejectProof})\n" ++
   s!"(= (petta-core-brand-goal) {renderPattern sampleBrandRejectGoal})\n" ++
   s!"(= (petta-core-brand-proof) {renderRawProof sampleBrandRejectProof})\n\n" ++
-  "!(assertEqual (gic-presentation-valid (petta-core-presentation)) True)\n" ++
-  "!(assertEqual (gic-check (petta-core-presentation) " ++
+  "!(assertEqual (gic-language-valid (petta-core-language)) True)\n" ++
+  "!(assertEqual (gic-check (petta-core-language) " ++
     "(petta-core-accept-goal) (petta-core-accept-proof)) True)\n" ++
-  "!(assertEqual (gic-check (petta-core-presentation) " ++
+  "!(assertEqual (gic-check (petta-core-language) " ++
     "(petta-core-union-goal) (petta-core-union-proof)) True)\n" ++
-  "!(assertEqual (gic-check (petta-core-presentation) " ++
+  "!(assertEqual (gic-check (petta-core-language) " ++
     "(petta-core-value-goal) (petta-core-value-proof)) True)\n" ++
-  "!(assertEqual (gic-check (petta-core-presentation) " ++
+  "!(assertEqual (gic-check (petta-core-language) " ++
     "(petta-core-reject-goal) (petta-core-reject-proof)) False)\n" ++
-  "!(assertEqual (gic-check (petta-core-presentation) " ++
+  "!(assertEqual (gic-check (petta-core-language) " ++
     "(petta-core-brand-goal) (petta-core-brand-proof)) False)\n\n" ++
   "!(PettaTypecheckCoreGICSummary 25 5 21 3 2)\n\n" ++
-  "; Guard-level projection: the RECEIPT presentation (export rules plus\n" ++
+  "; Guard-level projection: the RECEIPT language (export rules plus\n" ++
   "; the three environment fixtures; the delta is theorem-pinned by\n" ++
   "; export_rules_are_receipt_prefix).  Samples are the guard module's own\n" ++
   "; checkRaw receipts: three accepted derivations (base-sort mismatch,\n" ++
   "; boundness proviso, newtype resolution through the environment) and\n" ++
   "; two rejected candidates (unplaceable-declaration veto, same-base).\n" ++
-  s!"(= (petta-guard-presentation) {renderPresentation auditPresentation})\n" ++
+  s!"(= (petta-guard-language) {renderDefinition auditDefinition})\n" ++
   s!"(= (petta-guard-mismatch-goal) {renderPattern auditSampleMismatchGoal})\n" ++
   s!"(= (petta-guard-mismatch-proof) {renderRawProof auditSampleMismatchProof})\n" ++
   s!"(= (petta-guard-boundness-goal) {renderPattern auditSampleBoundnessGoal})\n" ++
@@ -234,16 +234,16 @@ def audit : String :=
   s!"(= (petta-guard-veto-proof) {renderRawProof auditSampleVetoProof})\n" ++
   s!"(= (petta-guard-samebase-goal) {renderPattern auditSampleSameBaseGoal})\n" ++
   s!"(= (petta-guard-samebase-proof) {renderRawProof auditSampleSameBaseProof})\n\n" ++
-  "!(assertEqual (gic-presentation-valid (petta-guard-presentation)) True)\n" ++
-  "!(assertEqual (gic-check (petta-guard-presentation) " ++
+  "!(assertEqual (gic-language-valid (petta-guard-language)) True)\n" ++
+  "!(assertEqual (gic-check (petta-guard-language) " ++
     "(petta-guard-mismatch-goal) (petta-guard-mismatch-proof)) True)\n" ++
-  "!(assertEqual (gic-check (petta-guard-presentation) " ++
+  "!(assertEqual (gic-check (petta-guard-language) " ++
     "(petta-guard-boundness-goal) (petta-guard-boundness-proof)) True)\n" ++
-  "!(assertEqual (gic-check (petta-guard-presentation) " ++
+  "!(assertEqual (gic-check (petta-guard-language) " ++
     "(petta-guard-newtype-goal) (petta-guard-newtype-proof)) True)\n" ++
-  "!(assertEqual (gic-check (petta-guard-presentation) " ++
+  "!(assertEqual (gic-check (petta-guard-language) " ++
     "(petta-guard-veto-goal) (petta-guard-veto-proof)) False)\n" ++
-  "!(assertEqual (gic-check (petta-guard-presentation) " ++
+  "!(assertEqual (gic-check (petta-guard-language) " ++
     "(petta-guard-samebase-goal) (petta-guard-samebase-proof)) False)\n\n" ++
   "!(PettaTypecheckGuardGICSummary 43 20 75 3 2)\n"
 
@@ -260,25 +260,25 @@ def main (arguments : List String) : IO UInt32 := do
           IO.println s!"wrote {rendered.toUTF8.size} bytes to {executablePath}"
           IO.println s!"wrote {audit.toUTF8.size} bytes to {auditPath}"
           pure 0
-  | [executablePath, auditPath, presentationPath] =>
-      match executable?, finiteHornPresentation? with
+  | [executablePath, auditPath, definitionPath] =>
+      match executable?, finiteHornDefinition? with
       | none, _ =>
           IO.eprintln "PeTTa typecheck core rule outside the relational fragment"
           pure 1
       | _, none =>
           IO.eprintln "PeTTa typecheck rule outside the finite-Horn GSLT fragment"
           pure 1
-      | some rendered, some presentation => do
+      | some rendered, some definition => do
           IO.FS.writeFile executablePath rendered
           IO.FS.writeFile auditPath audit
-          IO.FS.writeFile presentationPath presentation
+          IO.FS.writeFile definitionPath definition
           IO.println s!"wrote {rendered.toUTF8.size} bytes to {executablePath}"
           IO.println s!"wrote {audit.toUTF8.size} bytes to {auditPath}"
-          IO.println s!"wrote {presentation.toUTF8.size} bytes to {presentationPath}"
+          IO.println s!"wrote {definition.toUTF8.size} bytes to {definitionPath}"
           pure 0
   | _ => do
       IO.eprintln
-        "usage: <executable-output.metta> <audit-output.metta> [<presentation-output.metta>]"
+        "usage: <executable-output.metta> <audit-output.metta> [<language-definition-output.metta>]"
       pure 2
 
 end Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTMeTTaExport

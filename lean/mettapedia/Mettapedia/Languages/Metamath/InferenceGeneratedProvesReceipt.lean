@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.InferenceGeneratedProvesExecution
 import Mettapedia.Languages.Metamath.InferencePreparedAssertionStepReceipt
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Proof-relevant operational receipts for complete generated proofs
 
@@ -71,8 +73,8 @@ def forestResultState (pr : RuntimeProofState)
 premise suffix is exactly the ordinary one-result push. -/
 theorem assertionStepResult_forestResultState
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
-    (presentation : presentationOfProjection? projection = some target.1)
+    (target : ValidatedCalculusLanguageDef)
+    (presentation : calculusLanguageDefOfProjection? projection = some target.1)
     (projected : projectPrefix? db = some projection)
     (assertion : AssertionView)
     (actuals : List ConstantHeadedFormula)
@@ -108,7 +110,7 @@ mutual
 /-- Exactly one operational receipt at every occurrence of a generated proof
 tree, with assertion receipts placed after their ordered premise receipts. -/
 def GeneratedProvesTree.receiptShape
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     (db : RuntimeDB) (pr : RuntimeProofState) : Type :=
@@ -124,7 +126,7 @@ def GeneratedProvesTree.receiptShape
 /-- Premise-order receipt shape.  The tail begins at the exact state produced
 by the head, so an occurrence cannot be silently reordered or omitted. -/
 def GeneratedProvesForest.receiptShape
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas)
     (db : RuntimeDB) (pr : RuntimeProofState) : Type :=
@@ -144,11 +146,11 @@ mutual
 recursive executor supplies only the next frame invariant; no second evaluator
 or post-hoc checker is introduced. -/
 def GeneratedProvesTree.buildReceipt
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     (db : RuntimeDB)
-    (presentation : presentationOfProjection? projection = some target.1)
+    (presentation : calculusLanguageDefOfProjection? projection = some target.1)
     (projected : projectPrefix? db = some projection)
     (pr : RuntimeProofState)
     (inputStackRespects :
@@ -193,11 +195,11 @@ def GeneratedProvesTree.buildReceipt
 /-- Assemble ordered premise receipts, threading the exact intermediate state
 and frame invariant from each head occurrence to its tail. -/
 def GeneratedProvesForest.buildReceipt
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas)
     (db : RuntimeDB)
-    (presentation : presentationOfProjection? projection = some target.1)
+    (presentation : calculusLanguageDefOfProjection? projection = some target.1)
     (projected : projectPrefix? db = some projection)
     (pr : RuntimeProofState)
     (inputStackRespects :
@@ -222,7 +224,7 @@ mutual
 
 /-- Read authored labels from the retained receipt occurrences themselves. -/
 def GeneratedProvesTree.receiptLabels
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     {db : RuntimeDB} {pr : RuntimeProofState} :
@@ -234,7 +236,7 @@ def GeneratedProvesTree.receiptLabels
 
 /-- Read premise labels from the receipt forest in exact occurrence order. -/
 def GeneratedProvesForest.receiptLabels
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas)
     {db : RuntimeDB} {pr : RuntimeProofState} :
@@ -249,7 +251,7 @@ end
 mutual
 
 theorem GeneratedProvesTree.receiptLabels_eq_labels
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     {db : RuntimeDB} {pr : RuntimeProofState}
@@ -263,7 +265,7 @@ theorem GeneratedProvesTree.receiptLabels_eq_labels
       rw [children.receiptLabels_eq_labels receipts.1]
 
 theorem GeneratedProvesForest.receiptLabels_eq_labels
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas)
     {db : RuntimeDB} {pr : RuntimeProofState}
@@ -282,7 +284,7 @@ end
 /-- Complete proof execution together with the receipt at every exact tree
 occurrence.  `finalState_eq` prevents endpoint-only or wrong-state receipts. -/
 structure GeneratedProvesExecutionReceipt
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     (db : RuntimeDB) (pr finalState : RuntimeProofState) : Type where
@@ -298,11 +300,11 @@ structure GeneratedProvesExecutionReceipt
 
 /-- Construct the complete receipt at the only possible final state. -/
 def GeneratedProvesTree.executionReceipt
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     (db : RuntimeDB)
-    (presentation : presentationOfProjection? projection = some target.1)
+    (presentation : calculusLanguageDefOfProjection? projection = some target.1)
     (projected : projectPrefix? db = some projection)
     (pr : RuntimeProofState)
     (inputStackRespects :
@@ -323,7 +325,7 @@ def GeneratedProvesTree.executionReceipt
 /-- A repeated active-hypothesis occurrence remains two receipt positions even
 when both source labels and formulas are definitionally equal. -/
 def duplicateActiveForest
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (hypothesis : HypothesisView)
     (member : hypothesis ∈ projection.activeHypotheses) :
     GeneratedProvesForest projection target
@@ -332,7 +334,7 @@ def duplicateActiveForest
     (.cons (.active hypothesis member) .nil)
 
 theorem duplicateActiveForest_receiptLabels
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     (hypothesis : HypothesisView)
     (member : hypothesis ∈ projection.activeHypotheses)
     {db : RuntimeDB} {pr : RuntimeProofState}
@@ -346,7 +348,7 @@ theorem duplicateActiveForest_receiptLabels
 /-- A complete receipt cannot name a final proof state different from the
 tree-indexed result. -/
 theorem no_executionReceipt_at_wrong_finalState
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     (db : RuntimeDB) (pr wrong : RuntimeProofState)

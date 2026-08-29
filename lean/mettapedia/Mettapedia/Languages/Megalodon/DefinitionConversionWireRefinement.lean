@@ -16,7 +16,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.Megalodon.DefinitionConversionWireRefinement
 
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.InferencePresentationWire
+open Mettapedia.GSLT.LanguageDef.InferenceLanguageWire
 open Mettapedia.GSLT.LanguageDef.InferenceCettaWire
 open Mettapedia.GSLT.LanguageDef.InferenceSupportIndexedABTLowering
 open Mettapedia.GSLT.LanguageDef.InferenceCettaExecutionRefinement
@@ -37,11 +37,11 @@ theorem definition_identity_article_roundtrip :
 /-- The checker-facing definition presentation round-trips with its rooted
 conversion declaration and generic side conditions intact. -/
 theorem definition_presentation_roundtrip :
-    Mettapedia.GSLT.LanguageDef.InferenceCettaWire.decodeRuntimePresentation
-        (Mettapedia.GSLT.LanguageDef.InferenceCettaWire.encodePresentation
+    Mettapedia.GSLT.LanguageDef.InferenceCettaWire.decodeRuntimeInferenceLanguage
+        (Mettapedia.GSLT.LanguageDef.InferenceCettaWire.encodeDefinition
           presentation) =
-      some (RuntimePresentation.ofPresentation presentation) :=
-  Mettapedia.GSLT.LanguageDef.InferenceCettaWire.decodeRuntimePresentation_encodePresentation
+      some (RuntimeInferenceLanguage.ofDefinition presentation) :=
+  Mettapedia.GSLT.LanguageDef.InferenceCettaWire.decodeRuntimeInferenceLanguage_encodeDefinition
     presentation
 
 set_option maxRecDepth 100000 in
@@ -49,7 +49,7 @@ set_option maxHeartbeats 5000000 in
 /-- Every fixed application carried by the concrete article belongs to the
 declared definition-conversion constructor vocabulary. -/
 theorem definition_identity_payloads_valid :
-    (RuntimePresentation.ofPresentation presentation).proofPayloadsValid
+    (RuntimeInferenceLanguage.ofDefinition presentation).proofPayloadsValid
         definitionIdentityArticle = true := by
   exact definition_identity_closed_payload
 
@@ -57,13 +57,13 @@ theorem definition_identity_payloads_valid :
 for the closed-payload runtime model consumed by CeTTa. -/
 theorem definition_identity_packet_accepted :
     checkPacket
-        (encodeRuntimePresentation
-          (RuntimePresentation.ofPresentation presentation))
+        (encodeRuntimeInferenceLanguage
+          (RuntimeInferenceLanguage.ofDefinition presentation))
         (encodePattern definitionIdentityGoal)
         (encodeRawProof definitionIdentityArticle) = some true := by
   rw [checkPacket_encode]
   apply congrArg some
-  exact RuntimePresentation.checkRaw_complete
+  exact RuntimeInferenceLanguage.checkRaw_complete
     validated definitionIdentityGoal definitionIdentityArticle
     definition_identity_article_accepted
     definition_identity_payloads_valid
@@ -94,18 +94,18 @@ theorem definition_identity_packet_has_physical_abt_derivation :
 endpoint after crossing the physical carrier. -/
 theorem definition_identity_wrong_packet_rejected :
     checkPacket
-        (encodeRuntimePresentation
-          (RuntimePresentation.ofPresentation presentation))
+        (encodeRuntimeInferenceLanguage
+          (RuntimeInferenceLanguage.ofDefinition presentation))
         (encodePattern definitionIdentityWrongGoal)
         (encodeRawProof definitionIdentityArticle) = some false := by
   rw [checkPacket_encode]
   cases runtimeResult :
-      (RuntimePresentation.ofPresentation presentation).checkRaw
+      (RuntimeInferenceLanguage.ofDefinition presentation).checkRaw
         definitionIdentityWrongGoal definitionIdentityArticle with
   | false => rfl
   | true =>
       have genericResult :=
-        (RuntimePresentation.checkRaw_iff_generic_of_payloadsValid validated
+        (RuntimeInferenceLanguage.checkRaw_iff_generic_of_payloadsValid validated
           definitionIdentityWrongGoal definitionIdentityArticle
           definition_identity_payloads_valid).mp runtimeResult
       rw [definition_identity_wrong_goal_rejected] at genericResult

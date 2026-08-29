@@ -13,7 +13,7 @@ open Mettapedia.GSLT.LanguageDef.InferenceCompiledPlanLowering
 open Mettapedia.Languages.Metamath.NativeSourceCalculus
 
 def main : IO Unit := do
-  match compileValidatedBytes? validatedPresentation with
+  match compileValidatedBytes? validatedDefinition with
   | none =>
       throw (IO.userError "compiled packet failed structural admission")
   | some bytes =>

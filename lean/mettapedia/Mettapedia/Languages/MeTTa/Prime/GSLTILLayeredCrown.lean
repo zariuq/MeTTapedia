@@ -1,7 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.GSLTILRouteEquipment
 import Mettapedia.GSLT.LanguageDef.GSLTILWireCells
 import Mettapedia.Languages.MeTTa.Prime.LanguageOperationNIKAdmission
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.GSLTILExactImage
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.GSLTILExactImage
 
 /-!
 # The layered GSLT-IL crown for the selected Prime operation fragment
@@ -39,15 +39,15 @@ open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.LooseRelationEquipment
 open Mettapedia.GSLT.LanguageDef.GSLTIL.RouteEquipment
 open Mettapedia.GSLT.LanguageDef.NIKObservedRefinement
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.DataFibration
 open Mettapedia.Languages.MeTTa.Prime.DataFibration.ValidatedLanguageData
 open Mettapedia.Languages.MeTTa.Prime.IndexedLanguageChange
 open Mettapedia.Languages.MeTTa.Prime.LanguageOperationSyntax
 open Mettapedia.Languages.MeTTa.Prime.LanguageOperationFactorization
 open Mettapedia.Languages.MeTTa.Prime.LanguageOperationNIKAdmission
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
@@ -235,18 +235,18 @@ theorem represented_fragment_does_not_functionalize_raw_commands :
 though selected route programs already enjoy the complete represented layer. -/
 theorem returned_fibre_remains_strict
     (model :
-      Mettapedia.Languages.MeTTa.PureKernel.Universe.GSLTILExactImage.PrimeModel)
+      Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.GSLTILExactImage.PrimeModel)
     (claim :
-      Mettapedia.Languages.MeTTa.NativeTypeTheory.PrimeNeedProofFlow.Claim model) :
+      Mettapedia.Languages.MeTTa.StagedReflective.PrimeNeedProofFlow.Claim model) :
     ¬ ∃ decode :
         Mettapedia.GSLT.IndexedOperational.Command
-            (Mettapedia.Languages.MeTTa.NativeTypeTheory.PrimeGSLTILReturnedFibre.diagram
+            (Mettapedia.Languages.MeTTa.StagedReflective.PrimeGSLTILReturnedFibre.diagram
               model) →
-          Mettapedia.Languages.MeTTa.NativeTypeTheory.PrimeNeedProofFlow.Claim model,
+          Mettapedia.Languages.MeTTa.StagedReflective.PrimeNeedProofFlow.Claim model,
       ∀ command,
-        Mettapedia.Languages.MeTTa.NativeTypeTheory.PrimeGSLTILReturnedFibre.encodeClaim
+        Mettapedia.Languages.MeTTa.StagedReflective.PrimeGSLTILReturnedFibre.encodeClaim
             model (decode command) = command :=
-  Mettapedia.Languages.MeTTa.PureKernel.Universe.GSLTILExactImage.current_fragment_has_no_full_command_decode
+  Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.GSLTILExactImage.current_fragment_has_no_full_command_decode
     model claim
 
 #print axioms dataExecutionCompEquiv

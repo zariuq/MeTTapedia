@@ -28,17 +28,17 @@ variable {Key : Type uKey}
 checking the nodes already emitted against its append-only premise context.
 The invariant is established once per node, not by replaying the full list at
 finalization. -/
-structure Builder (presentation : ValidatedPresentation) where
+structure Builder (definition : ValidatedCalculusLanguageDef) where
   context : List Pattern
   nodes : List OpenDAGNode
   entries : List OpenDAGEntry
   checked :
-    checkOpenDAGNodes? presentation context [] nodes = some entries
+    checkOpenDAGNodes? definition context [] nodes = some entries
 
 /-- The empty chronological environment. -/
-def Builder.empty (presentation : ValidatedPresentation)
+def Builder.empty (definition : ValidatedCalculusLanguageDef)
     (context : List Pattern := []) :
-    Builder presentation where
+    Builder definition where
   context := context
   nodes := []
   entries := []
@@ -46,12 +46,12 @@ def Builder.empty (presentation : ValidatedPresentation)
 
 /-- Sequential checking composes over list append. -/
 theorem checkOpenDAGNodes?_append
-    (presentation : ValidatedPresentation) (context : List Pattern) :
+    (definition : ValidatedCalculusLanguageDef) (context : List Pattern) :
     ∀ (first second : List OpenDAGNode) (entries : List OpenDAGEntry),
-      checkOpenDAGNodes? presentation context entries (first ++ second) =
-        (checkOpenDAGNodes? presentation context entries first).bind
+      checkOpenDAGNodes? definition context entries (first ++ second) =
+        (checkOpenDAGNodes? definition context entries first).bind
           (fun middle =>
-            checkOpenDAGNodes? presentation context middle second) := by
+            checkOpenDAGNodes? definition context middle second) := by
   intro first
   induction first with
   | nil =>
@@ -60,7 +60,7 @@ theorem checkOpenDAGNodes?_append
   | cons node nodes inductionHypothesis =>
       intro second entries
       simp only [List.cons_append, checkOpenDAGNodes?]
-      cases checked : checkOpenDAGNode? presentation context entries node with
+      cases checked : checkOpenDAGNode? definition context entries node with
       | none => simp
       | some middle =>
           exact inductionHypothesis second middle
@@ -128,12 +128,12 @@ theorem resolveOpenDAGChildren?_context_append_of_some
 /-- One accepted chronological node remains accepted after appending premises.
 The returned entry environment is byte-for-byte the same logical value. -/
 theorem checkOpenDAGNode?_context_append_of_some
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (context suffix : List Pattern) (entries next : List OpenDAGEntry)
     (node : OpenDAGNode)
-    (checked : checkOpenDAGNode? presentation context entries node =
+    (checked : checkOpenDAGNode? definition context entries node =
       some next) :
-    checkOpenDAGNode? presentation (context ++ suffix) entries node =
+    checkOpenDAGNode? definition (context ++ suffix) entries node =
       some next := by
   unfold checkOpenDAGNode? at checked ⊢
   cases duplicate : findOpenDAGEntry? entries node.id with
@@ -141,7 +141,7 @@ theorem checkOpenDAGNode?_context_append_of_some
   | none =>
       simp only [duplicate] at checked ⊢
       cases instantiated :
-          instantiateRule? presentation node.ruleInstance with
+          instantiateRule? definition node.ruleInstance with
       | none => simp [instantiated] at checked
       | some result =>
           rcases result with ⟨premises, conclusion⟩
@@ -159,11 +159,11 @@ theorem checkOpenDAGNode?_context_append_of_some
 /-- A completely checked chronological prefix remains checked after an
 append-only premise extension. -/
 theorem checkOpenDAGNodes?_context_append_of_some
-    (presentation : ValidatedPresentation) (context suffix : List Pattern) :
+    (definition : ValidatedCalculusLanguageDef) (context suffix : List Pattern) :
     ∀ (entries : List OpenDAGEntry) (nodes : List OpenDAGNode)
       (next : List OpenDAGEntry),
-      checkOpenDAGNodes? presentation context entries nodes = some next →
-        checkOpenDAGNodes? presentation (context ++ suffix) entries nodes =
+      checkOpenDAGNodes? definition context entries nodes = some next →
+        checkOpenDAGNodes? definition (context ++ suffix) entries nodes =
           some next := by
   intro entries nodes
   induction nodes generalizing entries with
@@ -174,33 +174,33 @@ theorem checkOpenDAGNodes?_context_append_of_some
       intro next checked
       simp only [checkOpenDAGNodes?] at checked ⊢
       cases headChecked :
-          checkOpenDAGNode? presentation context entries node with
+          checkOpenDAGNode? definition context entries node with
       | none => simp [headChecked] at checked
       | some middle =>
           simp only [headChecked] at checked
           rw [checkOpenDAGNode?_context_append_of_some
-            presentation context suffix entries middle node headChecked]
+            definition context suffix entries middle node headChecked]
           exact inductionHypothesis middle next checked
 
 /-- Append one new premise while retaining every previously checked node.
 No node is replayed; the proof is the append-only context-stability theorem. -/
-def Builder.appendPremise {presentation : ValidatedPresentation}
-    (builder : Builder presentation) (premise : Pattern) :
-    Builder presentation where
+def Builder.appendPremise {definition : ValidatedCalculusLanguageDef}
+    (builder : Builder definition) (premise : Pattern) :
+    Builder definition where
   context := builder.context ++ [premise]
   nodes := builder.nodes
   entries := builder.entries
   checked := checkOpenDAGNodes?_context_append_of_some
-    presentation builder.context [premise] [] builder.nodes builder.entries
+    definition builder.context [premise] [] builder.nodes builder.entries
     builder.checked
 
 /-- Append one locally accepted node.  Failure is transactional: no builder is
 returned unless the extended chronological invariant can be constructed. -/
-def Builder.append? {presentation : ValidatedPresentation}
-    (builder : Builder presentation) (node : OpenDAGNode) :
-    Option (Builder presentation) :=
+def Builder.append? {definition : ValidatedCalculusLanguageDef}
+    (builder : Builder definition) (node : OpenDAGNode) :
+    Option (Builder definition) :=
   match checkedNode :
-      checkOpenDAGNode? presentation builder.context builder.entries node with
+      checkOpenDAGNode? definition builder.context builder.entries node with
   | none => none
   | some next =>
       some
@@ -248,19 +248,19 @@ theorem sourceSelectedNodes_eq_selectedNode?_toList_of_compile?
 /-- Select and append one rule action through the same transactional builder.
 The selector and chronological-node admission are independent fail-closed
 stages. -/
-def Builder.appendSelected? {presentation : ValidatedPresentation}
-    [DecidableEq Key] (builder : Builder presentation)
+def Builder.appendSelected? {definition : ValidatedCalculusLanguageDef}
+    [DecidableEq Key] (builder : Builder definition)
     (index : ExactRuleSelectorCompilation.ExactIndex Key RuleInstance)
     (query : Key)
     (id : Nat) (children : List OpenDAGReference) :
-    Option (Builder presentation) := do
+    Option (Builder definition) := do
   let node ← selectedNode? index query id children
   builder.append? node
 
 /-- Finalize a builder only when the requested root exists and has the claimed
 target.  No accumulated node is replayed here. -/
-def Builder.finish? {presentation : ValidatedPresentation}
-    (builder : Builder presentation) (rootId : Nat) (target : Pattern) :
+def Builder.finish? {definition : ValidatedCalculusLanguageDef}
+    (builder : Builder definition) (rootId : Nat) (target : Pattern) :
     Option WireArticle :=
   match findOpenDAGEntry? builder.entries rootId with
   | none => none
@@ -275,12 +275,12 @@ def Builder.finish? {presentation : ValidatedPresentation}
 
 /-- Finalization of an incrementally admitted builder produces an open article
 accepted against the builder's append-only premise context. -/
-theorem Builder.finish?_open_sound {presentation : ValidatedPresentation}
-    (builder : Builder presentation) (rootId : Nat) (target : Pattern)
+theorem Builder.finish?_open_sound {definition : ValidatedCalculusLanguageDef}
+    (builder : Builder definition) (rootId : Nat) (target : Pattern)
     (article : WireArticle)
     (finished : builder.finish? rootId target = some article) :
     article.version = wireArticleVersion ∧
-      checkOpenDAGBlocks presentation builder.context article.target
+      checkOpenDAGBlocks definition builder.context article.target
         article.rootId [article.nodes] = true := by
   simp only [Builder.finish?] at finished
   split at finished
@@ -295,11 +295,11 @@ theorem Builder.finish?_open_sound {presentation : ValidatedPresentation}
 
 /-- The closed specialization recovers ordinary wire-article acceptance. -/
 theorem Builder.finish?_closed_sound
-    {presentation : ValidatedPresentation}
-    (builder : Builder presentation) (closed : builder.context = [])
+    {definition : ValidatedCalculusLanguageDef}
+    (builder : Builder definition) (closed : builder.context = [])
     (rootId : Nat) (target : Pattern) (article : WireArticle)
     (finished : builder.finish? rootId target = some article) :
-    checkWireArticle presentation article = true := by
+    checkWireArticle definition article = true := by
   unfold checkWireArticle
   have openAccepted :=
     Builder.finish?_open_sound builder rootId target article finished
@@ -318,13 +318,13 @@ example :
   rfl
 
 /-- An empty builder cannot be finalized with a nonexistent root. -/
-example (presentation : ValidatedPresentation) :
-    (Builder.empty presentation).finish? 0 (.apply "missing" []) = none :=
+example (definition : ValidatedCalculusLanguageDef) :
+    (Builder.empty definition).finish? 0 (.apply "missing" []) = none :=
   rfl
 
 /-- A missing exact selector never mutates the chronological builder. -/
-example (presentation : ValidatedPresentation) :
-    (Builder.empty presentation).appendSelected?
+example (definition : ValidatedCalculusLanguageDef) :
+    (Builder.empty definition).appendSelected?
       (Key := Nat) [] 7 0 [] = none :=
   rfl
 

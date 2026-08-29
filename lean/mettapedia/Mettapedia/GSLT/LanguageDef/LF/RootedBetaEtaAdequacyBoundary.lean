@@ -43,8 +43,8 @@ private theorem rule_mem_of_lookup {ruleInstance : RuleInstance}
     rule ∈
       [betaRule, etaRule, appCongruenceRule, piCongruenceRule,
         lamCongruenceRule] := by
-  unfold Presentation.lookupRule? at lookup
-  simpa [CheckedGSLT.presentation, checked, source, presentation, language] using
+  unfold CalculusLanguageDef.lookupRule? at lookup
+  simpa [CheckedGSLT.definition, checked, source, presentation, language] using
     (List.mem_of_find?_eq_some lookup)
 
 private theorem instantiates_apply_head_eq

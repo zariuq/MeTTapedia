@@ -32,7 +32,7 @@ open Mettapedia.GSLT.Dynamics
 open Mettapedia.GSLT.Dynamics.InteractionEventValuation
 open Mettapedia.GSLT.LanguageDef.NIKIndexedExecutionAdmission
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionObservation
 
@@ -44,14 +44,14 @@ variable {theory : GSLT}
 families.  This is nontrivial because a partial interpretation may leave a
 native term without any endpoint. -/
 def EndpointMeaning (interpretation : EndpointInterpretation theory)
-    (term : NativeRawTm 0 0) : Prop :=
+    (term : StagedReflectiveTm 0 0) : Prop :=
   Nonempty (interpretation.Endpoint term)
 
 /-- Endpoint-path realization of an intrinsic interaction.  Both endpoint
 admissions survive; only event sites and occurrence evidence are forgotten. -/
 def ErasedComputation
     (interpretation : EndpointInterpretation theory)
-    (source target : NativeRawTm 0 0) : Type _ :=
+    (source target : StagedReflectiveTm 0 0) : Type _ :=
   Σ sourceEndpoint : interpretation.Endpoint source,
     Σ targetEndpoint : interpretation.Endpoint target,
       theory.RewritePath sourceEndpoint.1 targetEndpoint.1
@@ -60,7 +60,7 @@ def ErasedComputation
 def eraseComputation
     {interpretation : EndpointInterpretation theory}
     {presentation : InteractionPresentation theory}
-    {source target : NativeRawTm 0 0}
+    {source target : StagedReflectiveTm 0 0}
     (execution : Computation interpretation presentation source target) :
     ErasedComputation interpretation source target :=
   ⟨execution.1, execution.2.1, erase execution⟩
@@ -69,14 +69,14 @@ def intrinsicOperational
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory) :
     IndexedOperationalObject where
-  State := NativeRawTm 0 0
+  State := StagedReflectiveTm 0 0
   Execution := Computation interpretation presentation
   Meaning := EndpointMeaning interpretation
 
 def erasedOperational
     (interpretation : EndpointInterpretation theory) :
     IndexedOperationalObject where
-  State := NativeRawTm 0 0
+  State := StagedReflectiveTm 0 0
   Execution := ErasedComputation interpretation
   Meaning := EndpointMeaning interpretation
 
@@ -99,7 +99,7 @@ unchanged. -/
 def eventCountArchitecture
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory) :
-    CapabilityIndexedObservationArchitecture (NativeRawTm 0 0)
+    CapabilityIndexedObservationArchitecture (StagedReflectiveTm 0 0)
       (Computation interpretation presentation) :=
   (provenanceArchitecture interpretation presentation).mapValue List.length
 
@@ -303,21 +303,21 @@ def activeAfterIrrelevantChange :
   eventCountAdmission.activate (by intro dependency; rfl)
 
 @[simp] theorem active_run_is_endpoint_identity
-    (term : NativeRawTm 0 0) :
+    (term : StagedReflectiveTm 0 0) :
     activeAfterIrrelevantChange.run term = term :=
   rfl
 
 /-- Active proof-relevant execution mapping is the already-retained erasure;
 activation performs no new checking or reconstruction. -/
 @[simp] theorem active_mapExecution_is_erasure
-    {source target : NativeRawTm 0 0}
+    {source target : StagedReflectiveTm 0 0}
     (execution : Computation loopInterpretation loopPresentation source target) :
     activeAfterIrrelevantChange.mapExecution execution =
       eraseComputation execution :=
   rfl
 
 theorem active_eventCount_agrees
-    {source target : NativeRawTm 0 0}
+    {source target : StagedReflectiveTm 0 0}
     (execution : Computation loopInterpretation loopPresentation source target) :
     (erasedEventCount loopInterpretation).observe
         (activeAfterIrrelevantChange.mapExecution execution) =

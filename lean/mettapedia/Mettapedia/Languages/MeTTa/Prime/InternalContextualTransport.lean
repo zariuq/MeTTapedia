@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.NativeTypeTheoryDerivation
+import Mettapedia.Languages.MeTTa.TypeTheory.StagedReflective.Presentation
 import Mettapedia.Languages.MeTTa.Prime.ContextualDataFibration
 import Mettapedia.Languages.MeTTa.Prime.InternalDataTransport
 
@@ -23,7 +23,7 @@ namespace Mettapedia.Languages.MeTTa.Prime.InternalContextualTransport
 open CategoryTheory
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.WellSorted
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.ContextualDataFibration
 open Mettapedia.Languages.MeTTa.Prime.DataFibration
 open Mettapedia.OSLF.MeTTaIL.Substitution

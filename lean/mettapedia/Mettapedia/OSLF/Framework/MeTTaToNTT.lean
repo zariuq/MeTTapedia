@@ -2,7 +2,7 @@ import Mettapedia.OSLF.Framework.MeTTaFullInstance
 import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.OSLF.Framework.EvidenceSemantics
 import Mettapedia.PLN.WorldModel.PLNWorldModel
-import Mettapedia.CategoryTheory.NativeTypeTheory
+import Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 import Mettapedia.CategoryTheory.PLNInstance
 
 /-!
@@ -23,16 +23,16 @@ open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.OSLF.Framework.EvidenceSemantics
 open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.CategoryTheory.PLNInstance
-open Mettapedia.CategoryTheory.NativeTypeTheory
+open Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 
 abbrev mettaFullLegacy : LanguageDef := Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFullLegacy
 /-- Compatibility alias retained for downstream imports during migration. -/
 abbrev mettaFull : LanguageDef := mettaFullLegacy
 
-/-! ## 1. BinaryEvidence -> NativeTypeTheory -/
+/-! ## 1. BinaryEvidence -> StagedReflectivePresentation -/
 
 /-- Build a native type from a PLN object and evidence value. -/
-def mettaEvidenceToNT (X : PLNObj) (e : BinaryEvidence) : NativeTypeBundle :=
+def mettaEvidenceToNT (X : PLNObj) (e : BinaryEvidence) : EvidenceObject :=
   Sigma.mk X e
 
 @[simp] theorem mettaEvidenceToNT_fst (X : PLNObj) (e : BinaryEvidence) :
@@ -85,14 +85,14 @@ theorem mettaSemE_atom_revision
       (W₁ := W₁) (W₂ := W₂) (queryOfAtom := queryOfAtom)
       (R := langReducesUsing relEnv mettaFull) (a := a) (p := p)
 
-/-! ## 3. Formula -> NativeTypeTheory -/
+/-! ## 3. Formula -> StagedReflectivePresentation -/
 
-/-- Lift MeTTa formula evidence evaluation into NativeTypeTheory. -/
+/-- Lift MeTTa formula evidence evaluation into StagedReflectivePresentation. -/
 noncomputable def mettaFormulaToNT
     (relEnv : RelationEnv)
     (W : State)
     (queryOfAtom : String → Pattern → Pattern)
-    (φ : OSLFFormula) (p : Pattern) (X : PLNObj) : NativeTypeBundle :=
+    (φ : OSLFFormula) (p : Pattern) (X : PLNObj) : EvidenceObject :=
   mettaEvidenceToNT X (mettaSemE relEnv W queryOfAtom φ p)
 
 @[simp] theorem mettaFormulaToNT_snd

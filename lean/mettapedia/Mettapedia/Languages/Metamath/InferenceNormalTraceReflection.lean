@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.InferenceNormalFoldReflection
 import Mettapedia.Languages.Metamath.InferenceNormalParserTrace
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Exact source reflection for accepted normal Metamath traces
 
@@ -40,9 +42,9 @@ structure ExactNormalSourceTreeEvidence
     (s : ParserState) (targetLabel : String) (targetFrame : RuntimeFrame)
     (firstToken : ByteSlice) (remainingTokens : List ByteSlice)
     (initial final : RuntimeProofState)
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (formula : ConstantHeadedFormula)
-    (hprojection : presentationOfProjection? projection = some target.1) : Type where
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1) : Type where
   tree : GeneratedProvesTree projection target formula
   labels_eq :
     tree.labels = submittedNormalLabels firstToken remainingTokens
@@ -72,9 +74,9 @@ def ExactNormalSourceTreeEvidence.nativeEvidence
     {s : ParserState} {targetLabel : String} {targetFrame : RuntimeFrame}
     {firstToken : ByteSlice} {remainingTokens : List ByteSlice}
     {initial final : RuntimeProofState}
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
-    {hprojection : presentationOfProjection? projection = some target.1}
+    {hprojection : calculusLanguageDefOfProjection? projection = some target.1}
     (evidence : ExactNormalSourceTreeEvidence s targetLabel targetFrame
       firstToken remainingTokens initial final projection target formula
       hprojection) :
@@ -91,10 +93,10 @@ noncomputable def exactNormalTrace_sourceTreeEvidence
     (trace : ExactNormalParserTrace s pos targetLabel targetFormula targetFrame
       firstToken remainingTokens initial afterFirst final)
     (hfinish : (s.finishProof final).db.error? = none)
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (formula : ConstantHeadedFormula)
     (hproject : projectPrefix? s.db = some projection)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (htargetFormula : targetFormula = formula.toRuntime) :
     ExactNormalSourceTreeEvidence s targetLabel targetFrame firstToken
       remainingTokens initial final projection target formula hprojection := by
@@ -169,10 +171,10 @@ theorem exactNormalTrace_reflects_sourceTree
     (trace : ExactNormalParserTrace s pos targetLabel targetFormula targetFrame
       firstToken remainingTokens initial afterFirst final)
     (hfinish : (s.finishProof final).db.error? = none)
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (formula : ConstantHeadedFormula)
     (hproject : projectPrefix? s.db = some projection)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (htargetFormula : targetFormula = formula.toRuntime) :
     ∃ tree : GeneratedProvesTree projection target formula,
       tree.labels = submittedNormalLabels firstToken remainingTokens ∧
@@ -211,10 +213,10 @@ example
     (trace : ExactNormalParserTrace s pos targetLabel targetFormula targetFrame
       firstToken remainingTokens initial afterFirst final)
     (hfinish : (s.finishProof final).db.error? = none)
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (formula : ConstantHeadedFormula)
     (hproject : projectPrefix? s.db = some projection)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (htargetFormula : targetFormula = formula.toRuntime) :
     ∃ tree : GeneratedProvesTree projection target formula,
       tree.labels = submittedNormalLabels firstToken remainingTokens ∧
@@ -236,10 +238,10 @@ example
     (trace : ExactNormalParserTrace s pos targetLabel targetFormula targetFrame
       firstToken remainingTokens initial afterFirst final)
     (hfinish : (s.finishProof final).db.error? = none)
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (formula : ConstantHeadedFormula)
     (hproject : projectPrefix? s.db = some projection)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (htargetFormula : targetFormula = formula.toRuntime) :
     ∃ tree : GeneratedProvesTree projection target formula,
       tree.labels = submittedNormalLabels firstToken remainingTokens ∧

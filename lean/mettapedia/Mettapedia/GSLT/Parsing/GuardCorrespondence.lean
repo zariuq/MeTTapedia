@@ -27,7 +27,7 @@ structure SourceRule where
   guards : List SourceGuard
   deriving DecidableEq, Repr
 
-structure SourcePresentation where
+structure SourceDefinition where
   start : Category
   rules : List SourceRule
   deriving DecidableEq, Repr
@@ -63,7 +63,7 @@ def compileRule (rule : SourceRule) : CompiledProduction :=
     guards := rule.guards.map compileGuard
     sourceRule := rule.sourceRule }
 
-def compile (presentation : SourcePresentation) : CompiledGrammar :=
+def compile (presentation : SourceDefinition) : CompiledGrammar :=
   { start := presentation.start
     productions := presentation.rules.map compileRule }
 
@@ -102,7 +102,7 @@ def decodeGuard : CompiledGuard → SourceGuard
 
 mutual
   /-- Source evaluation at an exact span of the physical input. -/
-  inductive SourceDerivesAt (presentation : SourcePresentation)
+  inductive SourceDerivesAt (presentation : SourceDefinition)
       (fullInput : List Codepoint) :
       Category → Nat → Nat → ParseTree → Prop where
     | apply (rule : SourceRule)
@@ -114,7 +114,7 @@ mutual
           (.node rule.sourceRule rule.category children)
 
   /-- Left-to-right source evaluation with exact cursor composition. -/
-  inductive SourceBodyDerivesAt (presentation : SourcePresentation)
+  inductive SourceBodyDerivesAt (presentation : SourceDefinition)
       (fullInput : List Codepoint) :
       List SourceSymbol → Nat → Nat → List ParseTree → Prop where
     | nil : SourceBodyDerivesAt presentation fullInput [] cursor cursor []
@@ -140,7 +140,7 @@ mutual
 
   /-- Guards are zero-width constraints checked at the production's final
   cursor.  Lookahead establishes existence but does not consume its witness. -/
-  inductive SourceGuardsHold (presentation : SourcePresentation)
+  inductive SourceGuardsHold (presentation : SourceDefinition)
       (fullInput : List Codepoint) :
       List SourceGuard → Nat → Prop where
     | nil : SourceGuardsHold presentation fullInput [] cursor
@@ -243,7 +243,7 @@ end
 
 mutual
   private def preserveDerivation
-      {presentation : SourcePresentation} {fullInput category start stop tree}
+      {presentation : SourceDefinition} {fullInput category start stop tree}
       (derivation : SourceDerivesAt presentation fullInput category start stop tree) :
       CompiledDerivesAt (compile presentation) fullInput category start stop tree :=
     match derivation with
@@ -253,7 +253,7 @@ mutual
           (preserveBody body) (preserveGuards guards)
 
   private def preserveBody
-      {presentation : SourcePresentation} {fullInput symbols start stop children}
+      {presentation : SourceDefinition} {fullInput symbols start stop children}
       (derivation : SourceBodyDerivesAt presentation fullInput symbols
         start stop children) :
       CompiledBodyDerivesAt (compile presentation) fullInput
@@ -266,7 +266,7 @@ mutual
         .nonterminal (preserveDerivation head) (preserveBody rest)
 
   private def preserveGuards
-      {presentation : SourcePresentation} {fullInput guards cursor}
+      {presentation : SourceDefinition} {fullInput guards cursor}
       (derivation : SourceGuardsHold presentation fullInput guards cursor) :
       CompiledGuardsHold (compile presentation) fullInput
         (guards.map compileGuard) cursor :=
@@ -282,13 +282,13 @@ mutual
 end
 
 theorem compile_preserves
-    {presentation : SourcePresentation} {fullInput category start stop tree}
+    {presentation : SourceDefinition} {fullInput category start stop tree}
     (derivation : SourceDerivesAt presentation fullInput category start stop tree) :
     CompiledDerivesAt (compile presentation) fullInput category start stop tree :=
   preserveDerivation derivation
 
 theorem compile_reflects
-    {presentation : SourcePresentation} {fullInput category start stop tree}
+    {presentation : SourceDefinition} {fullInput category start stop tree}
     (derivation : CompiledDerivesAt (compile presentation) fullInput
       category start stop tree) :
     SourceDerivesAt presentation fullInput category start stop tree := by
@@ -362,18 +362,18 @@ theorem compile_reflects
         SourceGuardsHold.lookahead witnessIH restIH)
     derivation
 
-def sourceResults (presentation : SourcePresentation)
+def sourceResults (presentation : SourceDefinition)
     (input : List Codepoint) : Set ParseTree :=
   { tree | SourceDerivesAt presentation input presentation.start
       0 input.length tree }
 
-def compiledResults (presentation : SourcePresentation)
+def compiledResults (presentation : SourceDefinition)
     (input : List Codepoint) : Set ParseTree :=
   { tree | CompiledDerivesAt (compile presentation) input presentation.start
       0 input.length tree }
 
 theorem complete_result_set_agreement
-    (presentation : SourcePresentation) (input : List Codepoint) :
+    (presentation : SourceDefinition) (input : List Codepoint) :
     compiledResults presentation input = sourceResults presentation input := by
   ext tree
   constructor
@@ -384,7 +384,7 @@ def Ambiguous (results : Set ParseTree) : Prop :=
   ∃ first ∈ results, ∃ second ∈ results, first ≠ second
 
 theorem ambiguity_agreement
-    (presentation : SourcePresentation) (input : List Codepoint) :
+    (presentation : SourceDefinition) (input : List Codepoint) :
     Ambiguous (compiledResults presentation input) ↔
       Ambiguous (sourceResults presentation input) := by
   rw [complete_result_set_agreement]
@@ -984,7 +984,7 @@ theorem certificate_body_replay_compiled_sound
     CompiledBodyDerivesAt grammar fullInput symbols start stop trees :=
   certificateBodyCompiledSound replay
 
-def RootCertificateReplays (presentation : SourcePresentation)
+def RootCertificateReplays (presentation : SourceDefinition)
     (input : List Codepoint) (certificate : Certificate) (tree : ParseTree) : Prop :=
   CertificateReplays (compile presentation) input certificate
       presentation.start 0 input.length tree ∧
@@ -993,7 +993,7 @@ def RootCertificateReplays (presentation : SourcePresentation)
 /-- Exact-span guarded certificate replay reconstructs an ordinary source
 derivation. -/
 theorem certificate_replay_sound
-    {presentation : SourcePresentation} {input certificate tree}
+    {presentation : SourceDefinition} {input certificate tree}
     (replay : RootCertificateReplays presentation input certificate tree) :
     SourceDerivesAt presentation input presentation.start
       0 input.length tree :=
@@ -1001,7 +1001,7 @@ theorem certificate_replay_sound
 
 /-! ## Guard witnesses -/
 
-def eofPresentation : SourcePresentation :=
+def eofPresentation : SourceDefinition :=
   { start := "start"
     rules :=
       [{ sourceRule := "terminal-at-eof", category := "start",
@@ -1071,7 +1071,7 @@ theorem eof_rejects_trailing_codepoint :
   have span := eof_source_span derivation
   simp at span
 
-def lookaheadPresentation : SourcePresentation :=
+def lookaheadPresentation : SourceDefinition :=
   { start := "start"
     rules :=
       [{ sourceRule := "start", category := "start",
@@ -1119,13 +1119,13 @@ theorem lookahead_compiled_accepts :
       lookaheadTree :=
   compile_preserves lookahead_source_accepts
 
-def nextInPresentation : SourcePresentation :=
+def nextInPresentation : SourceDefinition :=
   { start := "peek"
     rules :=
       [{ sourceRule := "peek-a", category := "peek", symbols := [],
          guards := [.nextIn [97] false] }] }
 
-def nextInEofPresentation : SourcePresentation :=
+def nextInEofPresentation : SourceDefinition :=
   { start := "peek"
     rules :=
       [{ sourceRule := "peek-a-or-eof", category := "peek", symbols := [],

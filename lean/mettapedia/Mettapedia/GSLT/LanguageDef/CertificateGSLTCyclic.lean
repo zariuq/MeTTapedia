@@ -23,7 +23,7 @@ What is absent is the **discharge principle**: the licence to pass from an
 open pre-proof of `J` from `J` to a closed proof of `J`.  The central result
 below is that this licence cannot be indexed by provability, because the
 one-node pre-proof `premise 0` witnesses `J` from `J` for *every* pattern
-whatsoever — including patterns that are not judgments of the presentation
+whatsoever — including patterns that are not judgments of the definition
 at all.  A discharge rule triggered by the mere existence of a circular
 pre-proof therefore proves everything.
 
@@ -51,27 +51,27 @@ open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 `RawOpenProof.premise i` cites the `i`th open assumption.  Cutting a cyclic
 pre-proof at its back edges turns each companion into exactly such a
 citation, so the existing open-proof format carries cyclic pre-proofs with no
-extension.  The following holds of every presentation and every pattern — it
+extension.  The following holds of every definition and every pattern — it
 is the trivial companion, and its unrestricted generality is the whole
 problem. -/
-theorem identity_open_proof_checks (presentation : ValidatedPresentation)
+theorem identity_open_proof_checks (definition : ValidatedCalculusLanguageDef)
     (goal : Pattern) :
-    checkOpenRaw presentation [goal] goal (.premise 0) = true := by
+    checkOpenRaw definition [goal] goal (.premise 0) = true := by
   rw [checkOpenRaw]
   simp
 
-/-- Circular checkability is therefore *universal*: for any presentation and
+/-- Circular checkability is therefore *universal*: for any definition and
 any pattern at all, some pre-proof takes that pattern from itself. -/
 theorem circular_checkability_is_universal
-    (presentation : ValidatedPresentation) (goal : Pattern) :
-    ∃ proof, checkOpenRaw presentation [goal] goal proof = true :=
-  ⟨.premise 0, identity_open_proof_checks presentation goal⟩
+    (definition : ValidatedCalculusLanguageDef) (goal : Pattern) :
+    ∃ proof, checkOpenRaw definition [goal] goal proof = true :=
+  ⟨.premise 0, identity_open_proof_checks definition goal⟩
 
 /-! ## A two-polarity fixture
 
 One body, two fixed points over it, and the fold/unfold pair for each.  Every
 rule is sound read as a rule: a least and a greatest fixed point both satisfy
-their unfolding equation.  The presentation deliberately has **no axioms**,
+their unfolding equation.  The definition deliberately has **no axioms**,
 so it derives nothing outright; all the interest is in what cycles are
 allowed to conclude. -/
 
@@ -96,7 +96,7 @@ def body (argument : Pattern) : Pattern := .apply "cy-body" [argument]
 /-- The single judgment form. -/
 def holds (formula : Pattern) : Pattern := .apply "Holds" [formula]
 
-/-- A pattern that is not a judgment of the presentation.  Used to show that
+/-- A pattern that is not a judgment of the definition.  Used to show that
 unrestricted discharge proves genuine nonsense, not merely unprovable
 judgments. -/
 def bogus : Pattern := .apply "cy-bogus" []
@@ -153,26 +153,26 @@ private def cyclicCalculus :
   { judgments := cyclicJudgments
     rules := [nuUnfold, nuFold, muUnfold, muFold] }
 
-private def cyclic : Presentation :=
-  { language := cyclicLanguage, calculus := cyclicCalculus }
+private def cyclic : CalculusLanguageDef :=
+  CalculusLanguageDef.extend cyclicLanguage cyclicCalculus
 
-private theorem cyclic_validate : cyclic.language.validate = [] := by
+private theorem cyclic_validate : cyclic.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [cyclic, cyclicLanguage, tmType, cyclicTerms, constructor0,
       constructor1, LanguageDef.typeNames, TermParam.typeExpr,
       TypeExpr.baseNames, TypeDecl.plain]
 
-theorem cyclic_valid : cyclic.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem cyclic_valid : cyclic.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [cyclic_validate]
   simp [cyclic, cyclicCalculus, cyclicLanguage, tmType, cyclicTerms, constructor0,
     constructor1, nuUnfold, nuFold, muUnfold, muFold, holds, body,
     nuFormula, muFormula, cyclicJudgments,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -180,11 +180,11 @@ theorem cyclic_valid : cyclic.isValidV2 = true := by
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
-/-- The fixture presentation, admitted. -/
-def cyclicValidated : ValidatedPresentation := ⟨cyclic, cyclic_valid⟩
+/-- The fixture definition, admitted. -/
+def cyclicValidated : ValidatedCalculusLanguageDef := ⟨cyclic, cyclic_valid⟩
 
 /-! ## The discharge principle cannot be indexed by provability
 
@@ -259,7 +259,7 @@ private theorem nuUnfold_instantiates :
       some ([holds nuFormula], holds (body nuFormula)) := by
   simp [instantiateRule?, cyclicValidated, cyclic, cyclicLanguage,
     cyclicCalculus, nuUnfoldInstance, nuUnfold, nuFold, muUnfold, muFold,
-    Presentation.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, holds, body, nuFormula]
 
@@ -268,7 +268,7 @@ private theorem nuFold_instantiates :
       some ([holds (body nuFormula)], holds nuFormula) := by
   simp [instantiateRule?, cyclicValidated, cyclic, cyclicLanguage,
     cyclicCalculus, nuFoldInstance, nuUnfold, nuFold, muUnfold, muFold,
-    Presentation.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, holds, body, nuFormula]
 
@@ -277,7 +277,7 @@ private theorem muUnfold_instantiates :
       some ([holds muFormula], holds (body muFormula)) := by
   simp [instantiateRule?, cyclicValidated, cyclic, cyclicLanguage,
     cyclicCalculus, muUnfoldInstance, nuUnfold, nuFold, muUnfold, muFold,
-    Presentation.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, holds, body, muFormula]
 
@@ -286,7 +286,7 @@ private theorem muFold_instantiates :
       some ([holds (body muFormula)], holds muFormula) := by
   simp [instantiateRule?, cyclicValidated, cyclic, cyclicLanguage,
     cyclicCalculus, muFoldInstance, nuUnfold, nuFold, muUnfold, muFold,
-    Presentation.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, holds, body, muFormula]
 
@@ -333,13 +333,13 @@ accepted.  A fixed finite description therefore certifies an infinite family
 of finite open proofs — and nothing in this statement mentions which fixed
 point is involved, which is exactly why acceptance cannot separate the two
 polarities. -/
-theorem unwindCycle_checks {presentation : ValidatedPresentation}
+theorem unwindCycle_checks {definition : ValidatedCalculusLanguageDef}
     {goal : Pattern} {step : RawOpenProof → RawOpenProof}
-    (stepPreserves : ∀ proof, checkOpenRaw presentation [goal] goal proof = true →
-      checkOpenRaw presentation [goal] goal (step proof) = true) (n : Nat) :
-    checkOpenRaw presentation [goal] goal (unwindCycle step n) = true := by
+    (stepPreserves : ∀ proof, checkOpenRaw definition [goal] goal proof = true →
+      checkOpenRaw definition [goal] goal (step proof) = true) (n : Nat) :
+    checkOpenRaw definition [goal] goal (unwindCycle step n) = true := by
   induction n with
-  | zero => exact identity_open_proof_checks presentation goal
+  | zero => exact identity_open_proof_checks definition goal
   | succ n inductionHypothesis => exact stepPreserves _ inductionHypothesis
 
 /-- The coinductive cycle body. -/
@@ -371,7 +371,7 @@ def openLeafCountList : List RawOpenProof → Nat
 end
 
 /-- **Every finite unwinding of the coinductive cycle is accepted.**  The
-finite graph is a finite presentation of an infinite family of finite open
+finite graph is a finite definition of an infinite family of finite open
 proofs — this is the sense in which one may compute with the infinite object
 by holding only a finite one. -/
 theorem nuUnwind_checks (n : Nat) :
@@ -393,7 +393,7 @@ theorem muUnwind_checks (n : Nat) :
   simp [checks]
 
 /-- Unwinding costs rule nodes linearly, so the cyclic pre-proof is a strictly
-more compact presentation of the same family the deeper one goes. -/
+more compact definition of the same family the deeper one goes. -/
 theorem nuUnwind_ruleCount (n : Nat) : (nuUnwind n).ruleCount = 2 * n := by
   induction n with
   | zero => simp [nuUnwind, unwindCycle, RawOpenProof.ruleCount]

@@ -325,10 +325,10 @@ theorem demand_refines_once
 /-! ## Domain-level controls and the higher boundary -/
 
 open Mettapedia.Languages.MeTTa.Prime.NativeGradualDependentNaturality
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticContextual
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalPi
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalSigmaId
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticContextual
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalPi
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalSigmaId
 
 /-- Formed-context substitution receives its gradual laws from the generic
 constructional interface. -/

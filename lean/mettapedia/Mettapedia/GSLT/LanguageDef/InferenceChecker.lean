@@ -1,14 +1,13 @@
-import Mettapedia.GSLT.LanguageDef.InferenceExtension
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.Basic
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.Util.LinearHash
 
 /-!
 # Generic inference-rule checker
 
-This file defines a source-neutral proof checker over `Pattern` judgments.  An
-inference presentation is layered over a validated `LanguageDef`; contexts,
-theories, and any auxiliary side conditions remain ordinary `Pattern` data and
-ordered judgment premises.
+This file defines a source-neutral proof checker over `Pattern` judgments in a
+flat `CalculusLanguageDef`; contexts, theories, and any auxiliary side
+conditions remain ordinary `Pattern` data and ordered judgment premises.
 
 V1 assigns every metavariable one exact occurrence depth.  Schema
 instantiation replaces only declared free metavariables at that depth and
@@ -27,69 +26,6 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.GSLT.LanguageDef.InferenceExtension
 
-/-- A language definition conservatively extended with an authored proof
-calculus.  `language` remains the exact five-field object-language definition;
-`calculus` supplies a meta-level judgment and inference system.  Erasing the
-calculus therefore recovers the base definition definitionally.  Admission is
-`isValidV2` below. -/
-structure Presentation where
-  language : LanguageDef
-  calculus : ProofCalculus := .empty
-deriving Repr
-
-namespace Presentation
-
-/-- Forget the proof calculus and recover the exact five-field base. -/
-def erase (definition : Presentation) : LanguageDef :=
-  definition.language
-
-@[simp] theorem erase_mk (language : LanguageDef) (calculus : ProofCalculus) :
-    erase { language, calculus } = language :=
-  rfl
-
-/-- The extended definition is exactly the total space of the inference
-extension layer. -/
-def toAttached (definition : Presentation) :
-    InferenceExtension.layer.Total :=
-  InferenceExtension.layer.attach definition.language definition.calculus
-
-/-- Recover the named extended definition from the inference-layer total
-space. -/
-def ofAttached (attached : InferenceExtension.layer.Total) :
-    Presentation :=
-  { language := attached.1, calculus := attached.2 }
-
-@[simp] theorem ofAttached_toAttached (definition : Presentation) :
-    ofAttached definition.toAttached = definition := by
-  cases definition
-  rfl
-
-@[simp] theorem toAttached_ofAttached
-    (attached : InferenceExtension.layer.Total) :
-    (ofAttached attached).toAttached = attached := by
-  cases attached
-  rfl
-
-/-- The named extended definition and the Grothendieck total space of the
-coGSLT-authored inference layer are equivalent descriptions of one object. -/
-def attachedEquiv : Presentation ≃ InferenceExtension.layer.Total where
-  toFun := toAttached
-  invFun := ofAttached
-  left_inv := ofAttached_toAttached
-  right_inv := toAttached_ofAttached
-
-end Presentation
-
-@[simp] def Presentation.judgments (presentation : Presentation) : List JudgmentDecl :=
-  presentation.calculus.judgments
-
-@[simp] def Presentation.rules (presentation : Presentation) : List RuleSchema :=
-  presentation.calculus.rules
-
-@[simp] def Presentation.conversion (presentation : Presentation) :
-    Option ConversionDecl :=
-  presentation.calculus.conversion
-
 /-- Rule identifier plus arguments in the schema's declared order. -/
 structure RuleInstance where
   ruleId : RuleId
@@ -101,7 +37,7 @@ inductive RawProof where
   | node : RuleInstance → List RawProof → RawProof
 deriving Repr
 
-/-! ## V1 local validation and V2 presentation validation -/
+/-! ## V1 local validation and V2 definition validation -/
 
 -- V1 rejects collection-rest metavariables anywhere in a rule schema.
 mutual
@@ -164,7 +100,7 @@ def RuleSchema.occurrences (rule : RuleSchema) : List (String × Nat) :=
 names are nonempty, names are unique, every declared formal occurs and every
 occurrence has exactly its declared depth, patterns are locally scoped,
 collection rests are absent, and binder metadata is canonical. -/
-def RuleSchema.isValidV1 (rule : RuleSchema) : Bool :=
+def RuleSchema.isLocallyValid (rule : RuleSchema) : Bool :=
   let occurrences := RuleSchema.occurrences rule
   (rule.id.value != "") &&
     (RuleSchema.metavariableNames rule).all (fun name => name != "") &&
@@ -176,25 +112,24 @@ def RuleSchema.isValidV1 (rule : RuleSchema) : Bool :=
     (RuleSchema.patterns rule).all patternHasNoCollectionRest &&
     (RuleSchema.patterns rule).all Pattern.hasCanonicalBinderMetadata
 
-def Presentation.ruleIds (presentation : Presentation) : List RuleId :=
-  presentation.rules.map (fun rule => rule.id)
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.ruleIds
+    (definition : CalculusLanguageDef) : List RuleId :=
+  definition.rules.map (fun rule => rule.id)
 
-def Presentation.lookupRule? (presentation : Presentation) (id : RuleId) :
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.lookupRule?
+    (definition : CalculusLanguageDef) (id : RuleId) :
     Option RuleSchema :=
-  presentation.rules.find? fun rule => decide (rule.id = id)
+  definition.rules.find? fun rule => decide (rule.id = id)
 
 /-- Appending new rules after an existing rule table preserves every
 successful lookup in the original table.  No converse holds in general. -/
-theorem Presentation.lookupRule?_append_of_eq_some
-    (presentation : Presentation) (extraRules : List RuleSchema)
+theorem _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.lookupRule?_append_of_eq_some
+    (definition : CalculusLanguageDef) (extraRules : List RuleSchema)
     {id : RuleId} {rule : RuleSchema}
-    (hlookup : presentation.lookupRule? id = some rule) :
-    ({ language := presentation.language
-       calculus :=
-        { presentation.calculus with
-          rules := presentation.rules ++ extraRules } } :
-        Presentation).lookupRule? id = some rule := by
-  unfold Presentation.lookupRule? at hlookup ⊢
+    (hlookup : definition.lookupRule? id = some rule) :
+    ({ definition with rules := definition.rules ++ extraRules } :
+        CalculusLanguageDef).lookupRule? id = some rule := by
+  unfold CalculusLanguageDef.lookupRule? at hlookup ⊢
   have preserve : ∀ rules : List RuleSchema,
       List.find? (fun candidate => decide (candidate.id = id)) rules =
           some rule →
@@ -217,32 +152,35 @@ theorem Presentation.lookupRule?_append_of_eq_some
                 (head :: (tail ++ extraRules)) = some rule
             rw [List.find?_cons, hhead]
             exact hfind
-  exact preserve presentation.rules hlookup
+  exact preserve definition.rules hlookup
 
-def Presentation.judgmentHeads (presentation : Presentation) : List String :=
-  presentation.judgments.map (fun judgment => judgment.head)
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.judgmentHeads
+    (definition : CalculusLanguageDef) : List String :=
+  definition.judgments.map (fun judgment => judgment.head)
 
-/-- A raw presentation is admitted only when its base language validates and
+/-- A raw definition is admitted only when its base language validates and
 all inference-rule identifiers and schemas satisfy the V1 binding boundary.
 This does not validate inference-judgment constructor names against a separate
 judgment signature; V1 intentionally has no such signature yet. -/
-def Presentation.isValidV1Fast (presentation : Presentation) : Bool :=
-  presentation.language.validate.isEmpty &&
-    presentation.rules.all RuleSchema.isValidV1 &&
-    Mettapedia.Util.LinearHash.allDistinct presentation.ruleIds
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.hasValidLocalRulesFast
+    (definition : CalculusLanguageDef) : Bool :=
+  definition.toLanguageDef.validate.isEmpty &&
+    definition.rules.all RuleSchema.isLocallyValid &&
+    Mettapedia.Util.LinearHash.allDistinct definition.ruleIds
 
-@[implemented_by Presentation.isValidV1Fast]
-def Presentation.isValidV1 (presentation : Presentation) : Bool :=
-  presentation.language.validate.isEmpty &&
-    presentation.rules.all RuleSchema.isValidV1 &&
-    (presentation.ruleIds.eraseDups.length == presentation.ruleIds.length)
+@[implemented_by CalculusLanguageDef.hasValidLocalRulesFast]
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.hasValidLocalRules
+    (definition : CalculusLanguageDef) : Bool :=
+  definition.toLanguageDef.validate.isEmpty &&
+    definition.rules.all RuleSchema.isLocallyValid &&
+    (definition.ruleIds.eraseDups.length == definition.ruleIds.length)
 
 /-- Hash-indexed V1 validation is extensionally identical to the structural
 specification. -/
-theorem Presentation.isValidV1Fast_eq_isValidV1
-    (presentation : Presentation) :
-    presentation.isValidV1Fast = presentation.isValidV1 := by
-  simp only [Presentation.isValidV1Fast, Presentation.isValidV1]
+theorem _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.hasValidLocalRulesFast_eq_hasValidLocalRules
+    (definition : CalculusLanguageDef) :
+    definition.hasValidLocalRulesFast = definition.hasValidLocalRules := by
+  simp only [CalculusLanguageDef.hasValidLocalRulesFast, CalculusLanguageDef.hasValidLocalRules]
   rw [Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength]
 
 /-- Fail-closed lookup of a data constructor at an exact arity.  Although a
@@ -281,26 +219,29 @@ termination_by patterns => sizeOf patterns
 end
 
 /-- Fail-closed lookup of one declared outer judgment shape. -/
-def Presentation.lookupJudgment? (presentation : Presentation)
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.lookupJudgment?
+    (definition : CalculusLanguageDef)
     (head : String) (arity : Nat) : Option JudgmentDecl :=
-  match presentation.judgments.filter fun declaration =>
+  match definition.judgments.filter fun declaration =>
       declaration.head == head && declaration.arity == arity with
   | [declaration] => some declaration
   | _ => none
 
 /-- The outer head and arity form one declared judgment. -/
-def Presentation.hasJudgmentShape (presentation : Presentation) : Pattern → Bool
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.hasJudgmentShape
+    (definition : CalculusLanguageDef) : Pattern → Bool
   | .apply head arguments =>
-      (presentation.lookupJudgment? head arguments.length).isSome
+      (definition.lookupJudgment? head arguments.length).isSome
   | _ => false
 
 /-- A rule-schema judgment has a declared outer shape and only declared fixed
 nested constructor occurrences.  Binder forms are structural Pattern forms;
 scope and canonical metadata remain the responsibility of V1. -/
-def Presentation.judgmentSchemaValid (presentation : Presentation) : Pattern → Bool
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.judgmentSchemaValid
+    (definition : CalculusLanguageDef) : Pattern → Bool
   | .apply head arguments =>
-      (presentation.lookupJudgment? head arguments.length).isSome &&
-        fixedConstructorListsValid presentation.language arguments
+      (definition.lookupJudgment? head arguments.length).isSome &&
+        fixedConstructorListsValid definition.toLanguageDef arguments
   | _ => false
 
 /-- A generic side-condition declaration may only reference existing formal
@@ -321,50 +262,53 @@ def RuleSideCondition.isValidFor
           bodyDepth == ambientDepth + 1 && resultDepth == ambientDepth
       | _, _ => false
 
-def RuleSchema.isValidIn (presentation : Presentation) (rule : RuleSchema) : Bool :=
-  RuleSchema.isValidV1 rule &&
-    ((RuleSchema.patterns rule).all presentation.judgmentSchemaValid &&
+def RuleSchema.isValidIn (definition : CalculusLanguageDef) (rule : RuleSchema) : Bool :=
+  RuleSchema.isLocallyValid rule &&
+    ((RuleSchema.patterns rule).all definition.judgmentSchemaValid &&
       rule.sideConditions.all
         (RuleSideCondition.isValidFor rule.metavariables))
 
 /-- The V2 signature itself is finite, unambiguous, and disjoint from the
 ordinary term-constructor namespace.  The three metasyntax heads are also
 reserved rather than silently reclassified as judgments. -/
-def Presentation.judgmentSignatureValid (presentation : Presentation) : Bool :=
-  presentation.judgments.all (fun judgment => judgment.head != "") &&
-    (presentation.judgmentHeads.eraseDups.length ==
-      presentation.judgmentHeads.length) &&
-    presentation.judgmentHeads.all (fun head =>
-      !(presentation.language.terms.any fun declaration => declaration.label == head) &&
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.judgmentSignatureValid
+    (definition : CalculusLanguageDef) : Bool :=
+  definition.judgments.all (fun judgment => judgment.head != "") &&
+    (definition.judgmentHeads.eraseDups.length ==
+      definition.judgmentHeads.length) &&
+    definition.judgmentHeads.all (fun head =>
+      !(definition.toLanguageDef.terms.any fun declaration => declaration.label == head) &&
         !([Pattern.zipHead, Pattern.mapHead, Pattern.evalHead].contains head))
 
 /-- A rooted conversion interface names a nonempty, versioned binary judgment
 in the same `LanguageDef`; absence means that the language declares no
 conversion-certificate interface. -/
-def Presentation.conversionDeclarationValid
-    (presentation : Presentation) : Bool :=
-  match presentation.conversion with
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.conversionDeclarationValid
+    (definition : CalculusLanguageDef) : Bool :=
+  match definition.conversion with
   | none => true
   | some declaration =>
       declaration.judgmentHead != "" && declaration.version != "" &&
-        (presentation.lookupJudgment? declaration.judgmentHead 2).isSome
+        (definition.lookupJudgment? declaration.judgmentHead 2).isSome
 
 /-- Contextual V2 admission.  V1 remains a useful local schema boundary; V2
-adds the presentation-dependent judgment, fixed-constructor, generic
+adds the definition-dependent judgment, fixed-constructor, generic
 side-condition, and rooted-conversion checks. -/
-def Presentation.isValidV2 (presentation : Presentation) : Bool :=
-  presentation.isValidV1 &&
-    presentation.judgmentSignatureValid &&
-    presentation.rules.all (RuleSchema.isValidIn presentation) &&
-    presentation.conversionDeclarationValid
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.isValid
+    (definition : CalculusLanguageDef) : Bool :=
+  definition.hasValidLocalRules &&
+    definition.judgmentSignatureValid &&
+    definition.rules.all (RuleSchema.isValidIn definition) &&
+    definition.conversionDeclarationValid
 
-/-- Proof-carrying validated presentation used by the checker. -/
-abbrev ValidatedPresentation :=
-  { presentation : Presentation // presentation.isValidV2 = true }
+/-- Proof-carrying validated definition used by the checker. -/
+abbrev _root_.Mettapedia.GSLT.LanguageDef.ValidatedCalculusLanguageDef :=
+  { definition : CalculusLanguageDef // definition.isValid = true }
 
-def Presentation.validateV2? (presentation : Presentation) :
-    Option ValidatedPresentation :=
-  if h : presentation.isValidV2 = true then some ⟨presentation, h⟩ else none
+def _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.validate?
+    (definition : CalculusLanguageDef) :
+    Option ValidatedCalculusLanguageDef :=
+  if h : definition.isValid = true then some ⟨definition, h⟩ else none
 
 private theorem eraseDups_length_le {α : Type} [BEq α]
     (values : List α) :
@@ -437,97 +381,97 @@ private theorem find?_eq_some_of_mem_of_unique_keys
         rw [List.find?_cons]
         simp [hheadNe, ih htailUnique hmem]
 
-/-- Membership selects the exact stored rule in a validated presentation.
+/-- Membership selects the exact stored rule in a validated definition.
 This is the reusable lookup boundary supplied by V2's unique rule identifiers. -/
 theorem lookupRule?_eq_some_of_mem
-    (presentation : ValidatedPresentation) {rule : RuleSchema}
-    (hmem : rule ∈ presentation.1.rules) :
-    presentation.1.lookupRule? rule.id = some rule := by
-  have hvalid := presentation.2
-  simp only [Presentation.isValidV2, Presentation.isValidV1,
+    (definition : ValidatedCalculusLanguageDef) {rule : RuleSchema}
+    (hmem : rule ∈ definition.1.rules) :
+    definition.1.lookupRule? rule.id = some rule := by
+  have hvalid := definition.2
+  simp only [CalculusLanguageDef.isValid, CalculusLanguageDef.hasValidLocalRules,
     Bool.and_eq_true, beq_iff_eq] at hvalid
   have hunique :
-      (presentation.1.rules.map RuleSchema.id).eraseDups.length =
-        presentation.1.rules.length := by
-    simpa [Presentation.ruleIds] using hvalid.1.1.1.2
-  simpa [Presentation.lookupRule?] using
+      (definition.1.rules.map RuleSchema.id).eraseDups.length =
+        definition.1.rules.length := by
+    simpa [CalculusLanguageDef.ruleIds] using hvalid.1.1.1.2
+  simpa [CalculusLanguageDef.lookupRule?] using
     find?_eq_some_of_mem_of_unique_keys
-      RuleSchema.id presentation.1.rules rule hunique hmem
+      RuleSchema.id definition.1.rules rule hunique hmem
 
 /-- V2 schema validity always contains the independently useful outer
 judgment-shape fact. -/
-theorem Presentation.hasJudgmentShape_of_judgmentSchemaValid
-    {presentation : Presentation} {judgment : Pattern}
-    (hvalid : presentation.judgmentSchemaValid judgment = true) :
-    presentation.hasJudgmentShape judgment = true := by
+theorem _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.hasJudgmentShape_of_judgmentSchemaValid
+    {definition : CalculusLanguageDef} {judgment : Pattern}
+    (hvalid : definition.judgmentSchemaValid judgment = true) :
+    definition.hasJudgmentShape judgment = true := by
   cases judgment <;>
-    simp_all [Presentation.judgmentSchemaValid,
-      Presentation.hasJudgmentShape]
+    simp_all [CalculusLanguageDef.judgmentSchemaValid,
+      CalculusLanguageDef.hasJudgmentShape]
 
 /-- Exact decomposition of contextual schema validation into the declared
 outer shape and the fixed nested-constructor check. -/
-theorem Presentation.judgmentSchemaValid_iff
-    {presentation : Presentation} {judgment : Pattern} :
-    presentation.judgmentSchemaValid judgment = true ↔
-      presentation.hasJudgmentShape judgment = true ∧
+theorem _root_.Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.judgmentSchemaValid_iff
+    {definition : CalculusLanguageDef} {judgment : Pattern} :
+    definition.judgmentSchemaValid judgment = true ↔
+      definition.hasJudgmentShape judgment = true ∧
         match judgment with
         | .apply _ arguments =>
-            fixedConstructorListsValid presentation.language arguments = true
+            fixedConstructorListsValid definition.toLanguageDef arguments = true
         | _ => False := by
   cases judgment <;>
-    simp [Presentation.judgmentSchemaValid,
-      Presentation.hasJudgmentShape]
+    simp [CalculusLanguageDef.judgmentSchemaValid,
+      CalculusLanguageDef.hasJudgmentShape]
 
-/-- Every rule stored in a validated presentation satisfies its contextual V2
+/-- Every rule stored in a validated definition satisfies its contextual V2
 schema checks. -/
-theorem rule_isValidIn_of_mem (presentation : ValidatedPresentation)
-    {rule : RuleSchema} (hmem : rule ∈ presentation.1.rules) :
-    RuleSchema.isValidIn presentation.1 rule = true := by
-  have hvalid := presentation.2
-  simp only [Presentation.isValidV2, Bool.and_eq_true] at hvalid
+theorem rule_isValidIn_of_mem (definition : ValidatedCalculusLanguageDef)
+    {rule : RuleSchema} (hmem : rule ∈ definition.1.rules) :
+    RuleSchema.isValidIn definition.1 rule = true := by
+  have hvalid := definition.2
+  simp only [CalculusLanguageDef.isValid, Bool.and_eq_true] at hvalid
   exact (List.all_eq_true.mp hvalid.1.2) rule hmem
 
-/-- Successful rule lookup in a validated presentation recovers contextual
+/-- Successful rule lookup in a validated definition recovers contextual
 V2 validity for that exact stored rule. -/
-theorem rule_isValidIn_of_lookup (presentation : ValidatedPresentation)
+theorem rule_isValidIn_of_lookup (definition : ValidatedCalculusLanguageDef)
     {id : RuleId} {rule : RuleSchema}
-    (hlookup : presentation.1.lookupRule? id = some rule) :
-    RuleSchema.isValidIn presentation.1 rule = true := by
-  exact rule_isValidIn_of_mem presentation
+    (hlookup : definition.1.lookupRule? id = some rule) :
+    RuleSchema.isValidIn definition.1 rule = true := by
+  exact rule_isValidIn_of_mem definition
     (List.mem_of_find?_eq_some hlookup)
 
 /-- Local V1 validity exposes well-scopedness of the conclusion. -/
 theorem RuleSchema.conclusion_isWellScoped_of_validV1 {rule : RuleSchema}
-    (hvalid : RuleSchema.isValidV1 rule = true) :
+    (hvalid : RuleSchema.isLocallyValid rule = true) :
     rule.conclusion.isWellScoped = true := by
   have hall : (RuleSchema.patterns rule).all Pattern.isWellScoped = true := by
-    simp only [RuleSchema.isValidV1, Bool.and_eq_true] at hvalid
+    simp only [RuleSchema.isLocallyValid, Bool.and_eq_true] at hvalid
     exact hvalid.1.1.2
   exact (List.all_eq_true.mp hall) rule.conclusion (by
     simp [RuleSchema.patterns])
 
 /-- Local V1 validity exposes canonical binder metadata of the conclusion. -/
 theorem RuleSchema.conclusion_hasCanonicalBinderMetadata_of_validV1
-    {rule : RuleSchema} (hvalid : RuleSchema.isValidV1 rule = true) :
+    {rule : RuleSchema} (hvalid : RuleSchema.isLocallyValid rule = true) :
     rule.conclusion.hasCanonicalBinderMetadata = true := by
   have hall :
       (RuleSchema.patterns rule).all Pattern.hasCanonicalBinderMetadata = true := by
-    simp only [RuleSchema.isValidV1, Bool.and_eq_true] at hvalid
+    simp only [RuleSchema.isLocallyValid, Bool.and_eq_true] at hvalid
     exact hvalid.2
   exact (List.all_eq_true.mp hall) rule.conclusion (by
     simp [RuleSchema.patterns])
 
 /-- Contextual V2 validity exposes the conclusion's authored judgment shape. -/
 theorem RuleSchema.conclusion_hasJudgmentShape_of_validIn
-    {presentation : Presentation} {rule : RuleSchema}
-    (hvalid : RuleSchema.isValidIn presentation rule = true) :
-    presentation.hasJudgmentShape rule.conclusion = true := by
+    {definition : CalculusLanguageDef} {rule : RuleSchema}
+    (hvalid : RuleSchema.isValidIn definition rule = true) :
+    definition.hasJudgmentShape rule.conclusion = true := by
   have hall :
-      (RuleSchema.patterns rule).all presentation.judgmentSchemaValid = true :=
+      (RuleSchema.patterns rule).all definition.judgmentSchemaValid = true :=
     by
       simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalid
       exact hvalid.2.1
-  exact presentation.hasJudgmentShape_of_judgmentSchemaValid
+  exact definition.hasJudgmentShape_of_judgmentSchemaValid
     ((List.all_eq_true.mp hall) rule.conclusion (by
       simp [RuleSchema.patterns]))
 
@@ -926,17 +870,17 @@ theorem InstantiatesListAt.length_eq
 intentionally only an outer-shape theorem: metavariable payloads are not
 silently classified as language data. -/
 theorem InstantiatesAt.preservesJudgmentShape
-    {presentation : Presentation} {formals : List (String × Nat)}
+    {definition : CalculusLanguageDef} {formals : List (String × Nat)}
     {arguments : List Pattern} {depth : Nat} {schema result : Pattern}
     (hinst : InstantiatesAt formals arguments depth schema result)
-    (hshape : presentation.hasJudgmentShape schema = true) :
-    presentation.hasJudgmentShape result = true := by
+    (hshape : definition.hasJudgmentShape schema = true) :
+    definition.hasJudgmentShape result = true := by
   cases hinst with
   | apply items =>
-      simp only [Presentation.hasJudgmentShape] at hshape ⊢
+      simp only [CalculusLanguageDef.hasJudgmentShape] at hshape ⊢
       simpa [items.length_eq] using hshape
   | bvar | fvar | lambda | multiLambda | subst | collection =>
-      simp [Presentation.hasJudgmentShape] at hshape
+      simp [CalculusLanguageDef.hasJudgmentShape] at hshape
 
 
 /-- Exact executable/declarative correspondence at any ambient depth. -/
@@ -1199,11 +1143,11 @@ theorem instantiation_safety_contract
 /-! ## Rule application and derivations -/
 
 /-- Independent declarative application of one explicit rule instance. -/
-inductive RuleApplication (presentation : ValidatedPresentation)
+inductive RuleApplication (definition : ValidatedCalculusLanguageDef)
     (ruleInstance : RuleInstance) (premises : List Pattern)
     (conclusion : Pattern) : Prop where
   | intro (rule : RuleSchema)
-      (lookup : presentation.1.lookupRule? ruleInstance.ruleId = some rule)
+      (lookup : definition.1.lookupRule? ruleInstance.ruleId = some rule)
       (argumentsValid :
         argumentsValidAt rule.metavariables ruleInstance.arguments = true)
       (sideConditionsValid :
@@ -1212,12 +1156,12 @@ inductive RuleApplication (presentation : ValidatedPresentation)
         InstantiatesList rule.metavariables ruleInstance.arguments rule.premises premises)
       (conclusionInstantiates :
         Instantiates rule.metavariables ruleInstance.arguments rule.conclusion conclusion) :
-      RuleApplication presentation ruleInstance premises conclusion
+      RuleApplication definition ruleInstance premises conclusion
 
 /-- Executable local rule instantiation.  It does not inspect child proofs. -/
-def instantiateRule? (presentation : ValidatedPresentation)
+def instantiateRule? (definition : ValidatedCalculusLanguageDef)
     (ruleInstance : RuleInstance) : Option (List Pattern × Pattern) :=
-  match presentation.1.lookupRule? ruleInstance.ruleId with
+  match definition.1.lookupRule? ruleInstance.ruleId with
   | none => none
   | some rule =>
       if argumentsValidAt rule.metavariables ruleInstance.arguments then do
@@ -1235,14 +1179,14 @@ def instantiateRule? (presentation : ValidatedPresentation)
 /-- Exact correspondence between executable local instantiation and the
 declarative rule-application relation. -/
 theorem instantiateRule?_eq_some_iff_application
-    {presentation : ValidatedPresentation} {ruleInstance : RuleInstance}
+    {definition : ValidatedCalculusLanguageDef} {ruleInstance : RuleInstance}
     {premises : List Pattern} {conclusion : Pattern} :
-    instantiateRule? presentation ruleInstance = some (premises, conclusion) ↔
-      RuleApplication presentation ruleInstance premises conclusion := by
+    instantiateRule? definition ruleInstance = some (premises, conclusion) ↔
+      RuleApplication definition ruleInstance premises conclusion := by
   constructor
   · intro h
     simp only [instantiateRule?] at h
-    cases hlookup : presentation.1.lookupRule? ruleInstance.ruleId with
+    cases hlookup : definition.1.lookupRule? ruleInstance.ruleId with
     | none => simp [hlookup] at h
     | some rule =>
         by_cases harguments :
@@ -1285,21 +1229,21 @@ theorem instantiateRule?_eq_some_iff_application
 /-- Executable rule instantiation is equivalent to declarative rule
 application. -/
 theorem instantiateRule_eq_some_iff_application
-    {presentation : ValidatedPresentation} {ruleInstance : RuleInstance}
+    {definition : ValidatedCalculusLanguageDef} {ruleInstance : RuleInstance}
     {premises : List Pattern} {conclusion : Pattern} :
-    instantiateRule? presentation ruleInstance = some (premises, conclusion) ↔
-      RuleApplication presentation ruleInstance premises conclusion :=
+    instantiateRule? definition ruleInstance = some (premises, conclusion) ↔
+      RuleApplication definition ruleInstance premises conclusion :=
   instantiateRule?_eq_some_iff_application
 
 /-- One explicit rule instance has at most one ordered premise vector and one
 conclusion. -/
 theorem RuleApplication.outputs_unique
-    {presentation : ValidatedPresentation} {ruleInstance : RuleInstance}
+    {definition : ValidatedCalculusLanguageDef} {ruleInstance : RuleInstance}
     {firstPremises secondPremises : List Pattern}
     {firstConclusion secondConclusion : Pattern}
-    (hfirst : RuleApplication presentation ruleInstance
+    (hfirst : RuleApplication definition ruleInstance
       firstPremises firstConclusion)
-    (hsecond : RuleApplication presentation ruleInstance
+    (hsecond : RuleApplication definition ruleInstance
       secondPremises secondConclusion) :
     firstPremises = secondPremises ∧
       firstConclusion = secondConclusion := by
@@ -1310,31 +1254,31 @@ theorem RuleApplication.outputs_unique
       (instantiateRule?_eq_some_iff_application.mpr hsecond)
   exact ⟨congrArg Prod.fst hpairs, congrArg Prod.snd hpairs⟩
 
-/-- A declarative application in a V2 presentation produces a declared outer
+/-- A declarative application in a V2 definition produces a declared outer
 judgment shape. -/
 theorem RuleApplication.conclusion_hasJudgmentShape
-    {presentation : ValidatedPresentation} {ruleInstance : RuleInstance}
+    {definition : ValidatedCalculusLanguageDef} {ruleInstance : RuleInstance}
     {premises : List Pattern} {conclusion : Pattern}
-    (happlication : RuleApplication presentation ruleInstance premises conclusion) :
-    presentation.1.hasJudgmentShape conclusion = true := by
+    (happlication : RuleApplication definition ruleInstance premises conclusion) :
+    definition.1.hasJudgmentShape conclusion = true := by
   cases happlication with
   | intro rule hlookup _ _ _ hconclusion =>
-      have hvalid := rule_isValidIn_of_lookup presentation hlookup
+      have hvalid := rule_isValidIn_of_lookup definition hlookup
       exact hconclusion.preservesJudgmentShape
         (RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid)
 
 /-- Ground rule arguments plus V1 scope/canonical admission make every
 declaratively produced conclusion ground and canonical. -/
 theorem RuleApplication.conclusion_safety
-    {presentation : ValidatedPresentation} {ruleInstance : RuleInstance}
+    {definition : ValidatedCalculusLanguageDef} {ruleInstance : RuleInstance}
     {premises : List Pattern} {conclusion : Pattern}
-    (happlication : RuleApplication presentation ruleInstance premises conclusion) :
+    (happlication : RuleApplication definition ruleInstance premises conclusion) :
     conclusion.isGround = true ∧
       conclusion.hasCanonicalBinderMetadata = true := by
   cases happlication with
   | intro rule hlookup harguments _ _ hconclusion =>
-      have hvalidIn := rule_isValidIn_of_lookup presentation hlookup
-      have hvalidV1 : RuleSchema.isValidV1 rule = true := by
+      have hvalidIn := rule_isValidIn_of_lookup definition hlookup
+      have hvalidV1 : RuleSchema.isLocallyValid rule = true := by
         simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalidIn
         exact hvalidIn.1
       have hsafety := instantiation_safety_contract harguments hconclusion
@@ -1344,10 +1288,10 @@ theorem RuleApplication.conclusion_safety
 
 /-- Local Boolean node boundary over an explicit instance and claimed ordered
 premise judgments/conclusion. -/
-def checkNode (presentation : ValidatedPresentation)
+def checkNode (definition : ValidatedCalculusLanguageDef)
     (ruleInstance : RuleInstance) (claimedPremises : List Pattern)
     (claimedConclusion : Pattern) : Bool :=
-  match instantiateRule? presentation ruleInstance with
+  match instantiateRule? definition ruleInstance with
   | none => false
   | some (premises, conclusion) =>
       decide (premises = claimedPremises) &&
@@ -1356,14 +1300,14 @@ def checkNode (presentation : ValidatedPresentation)
 /-- G1: the local Boolean boundary is exact for declarative rule
 application. -/
 theorem G1_checkNode_iff_application
-    {presentation : ValidatedPresentation} {ruleInstance : RuleInstance}
+    {definition : ValidatedCalculusLanguageDef} {ruleInstance : RuleInstance}
     {premises : List Pattern} {conclusion : Pattern} :
-    checkNode presentation ruleInstance premises conclusion = true ↔
-      RuleApplication presentation ruleInstance premises conclusion := by
+    checkNode definition ruleInstance premises conclusion = true ↔
+      RuleApplication definition ruleInstance premises conclusion := by
   constructor
   · intro hcheck
     simp only [checkNode] at hcheck
-    cases hlocal : instantiateRule? presentation ruleInstance with
+    cases hlocal : instantiateRule? definition ruleInstance with
     | none => simp [hlocal] at hcheck
     | some localResult =>
         rcases localResult with ⟨actualPremises, actualConclusion⟩
@@ -1381,20 +1325,20 @@ mutual
 
 /-- Type-valued derivations.  The companion list index forces children to
 match the ordered premise slots exactly. -/
-inductive Derivation (presentation : ValidatedPresentation) : Pattern → Type where
+inductive Derivation (definition : ValidatedCalculusLanguageDef) : Pattern → Type where
   | byRule (ruleInstance : RuleInstance) {premises : List Pattern}
       {conclusion : Pattern}
-      (application : RuleApplication presentation ruleInstance premises conclusion)
-      (children : DerivationList presentation premises) :
-      Derivation presentation conclusion
+      (application : RuleApplication definition ruleInstance premises conclusion)
+      (children : DerivationList definition premises) :
+      Derivation definition conclusion
 
-inductive DerivationList (presentation : ValidatedPresentation) :
+inductive DerivationList (definition : ValidatedCalculusLanguageDef) :
     List Pattern → Type where
-  | nil : DerivationList presentation []
+  | nil : DerivationList definition []
   | cons {premise : Pattern} {premises : List Pattern}
-      (head : Derivation presentation premise)
-      (tail : DerivationList presentation premises) :
-      DerivationList presentation (premise :: premises)
+      (head : Derivation definition premise)
+      (tail : DerivationList definition premises) :
+      DerivationList definition (premise :: premises)
 
 end
 
@@ -1406,11 +1350,11 @@ mutual
 all Type-valued derivations.  This is the generic induction boundary used by
 source-specific adequacy theorems. -/
 theorem Derivation.sound_of_ruleApplications
-    {presentation : ValidatedPresentation} (meaning : Pattern → Prop)
+    {definition : ValidatedCalculusLanguageDef} (meaning : Pattern → Prop)
     (ruleSound : ∀ ruleInstance premises conclusion,
-      RuleApplication presentation ruleInstance premises conclusion →
+      RuleApplication definition ruleInstance premises conclusion →
         (∀ premise ∈ premises, meaning premise) → meaning conclusion)
-    {goal : Pattern} (derivation : Derivation presentation goal) :
+    {goal : Pattern} (derivation : Derivation definition goal) :
     meaning goal := by
   cases derivation with
   | byRule ruleInstance application children =>
@@ -1420,11 +1364,11 @@ termination_by sizeOf derivation
 
 /-- Ordered derivation lists satisfy an interpretation pointwise. -/
 theorem DerivationList.all_meaning
-    {presentation : ValidatedPresentation} (meaning : Pattern → Prop)
+    {definition : ValidatedCalculusLanguageDef} (meaning : Pattern → Prop)
     (ruleSound : ∀ ruleInstance premises conclusion,
-      RuleApplication presentation ruleInstance premises conclusion →
+      RuleApplication definition ruleInstance premises conclusion →
         (∀ premise ∈ premises, meaning premise) → meaning conclusion)
-    {premises : List Pattern} (derivations : DerivationList presentation premises) :
+    {premises : List Pattern} (derivations : DerivationList definition premises) :
     ∀ premise ∈ premises, meaning premise := by
   cases derivations with
   | nil => simp
@@ -1442,39 +1386,39 @@ decreasing_by
 
 end
 
-/-! ## Proof-preserving presentation extension -/
+/-! ## Proof-preserving definition extension -/
 
 /-- `target` retains every rule lookup exposed by `source`, with the same
 schema.  This is the exact boundary needed to reuse derivations after adding
 new rules or extending the underlying term vocabulary: it does not claim that
 the target is conservative for new judgments. -/
-def RuleLookupRefines (source target : ValidatedPresentation) : Prop :=
+def RuleLookupRefines (source target : ValidatedCalculusLanguageDef) : Prop :=
   ∀ ruleId rule,
     source.1.lookupRule? ruleId = some rule →
       target.1.lookupRule? ruleId = some rule
 
-/-- A validated presentation whose rule table appends to the source table is
+/-- A validated definition whose rule table appends to the source table is
 automatically a proof-preserving extension, regardless of changes to its
 language or judgment signature.  Those changes are already covered by the
 target's own V2 validation proof. -/
 theorem RuleLookupRefines.of_rules_eq_append
-    {source target : ValidatedPresentation} (extraRules : List RuleSchema)
+    {source target : ValidatedCalculusLanguageDef} (extraRules : List RuleSchema)
     (hrules : target.1.rules = source.1.rules ++ extraRules) :
     RuleLookupRefines source target := by
   intro ruleId rule hlookup
   have happended :=
-    Presentation.lookupRule?_append_of_eq_some source.1 extraRules hlookup
-  unfold Presentation.lookupRule? at happended ⊢
+    CalculusLanguageDef.lookupRule?_append_of_eq_some source.1 extraRules hlookup
+  unfold CalculusLanguageDef.lookupRule? at happended ⊢
   rw [hrules]
   exact happended
 
-theorem RuleLookupRefines.refl (presentation : ValidatedPresentation) :
-    RuleLookupRefines presentation presentation := by
+theorem RuleLookupRefines.refl (definition : ValidatedCalculusLanguageDef) :
+    RuleLookupRefines definition definition := by
   intro ruleId rule hlookup
   exact hlookup
 
 theorem RuleLookupRefines.trans
-    {first second third : ValidatedPresentation}
+    {first second third : ValidatedCalculusLanguageDef}
     (hfirst : RuleLookupRefines first second)
     (hsecond : RuleLookupRefines second third) :
     RuleLookupRefines first third := by
@@ -1484,7 +1428,7 @@ theorem RuleLookupRefines.trans
 /-- Missing a source rule is an executable obstruction to lookup refinement;
 the extension relation cannot silently weaken or replace a rule. -/
 theorem not_ruleLookupRefines_of_missing
-    {source target : ValidatedPresentation} {ruleId : RuleId}
+    {source target : ValidatedCalculusLanguageDef} {ruleId : RuleId}
     {rule : RuleSchema}
     (hsource : source.1.lookupRule? ruleId = some rule)
     (htarget : target.1.lookupRule? ruleId = none) :
@@ -1497,7 +1441,7 @@ theorem not_ruleLookupRefines_of_missing
 /-- Replacing a source rule by a different schema at the same identifier also
 violates lookup refinement. -/
 theorem not_ruleLookupRefines_of_replaced
-    {source target : ValidatedPresentation} {ruleId : RuleId}
+    {source target : ValidatedCalculusLanguageDef} {ruleId : RuleId}
     {sourceRule targetRule : RuleSchema}
     (hsource : source.1.lookupRule? ruleId = some sourceRule)
     (htarget : target.1.lookupRule? ruleId = some targetRule)
@@ -1510,7 +1454,7 @@ theorem not_ruleLookupRefines_of_replaced
 
 /-- A rule application transports whenever its exact rule schema is retained. -/
 theorem RuleApplication.transport
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {conclusion : Pattern}
     (hrefines : RuleLookupRefines source target)
@@ -1527,7 +1471,7 @@ mutual
 /-- Transport a derivation through a proof-preserving rule extension without
 changing its goal, rule instances, or ordered child structure. -/
 def Derivation.transport
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (hrefines : RuleLookupRefines source target) {goal : Pattern} :
     Derivation source goal → Derivation target goal
   | .byRule ruleInstance application children =>
@@ -1537,7 +1481,7 @@ def Derivation.transport
 /-- Ordered premise derivations transport pointwise through the same rule
 extension. -/
 def DerivationList.transport
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (hrefines : RuleLookupRefines source target) {premises : List Pattern} :
     DerivationList source premises → DerivationList target premises
   | .nil => .nil
@@ -1552,42 +1496,42 @@ end
 mutual
 
 /-- Fuel-free checker by structural recursion over the raw proof tree. -/
-def checkRaw (presentation : ValidatedPresentation) :
+def checkRaw (definition : ValidatedCalculusLanguageDef) :
     Pattern → RawProof → Bool
   | goal, .node ruleInstance children =>
-      match instantiateRule? presentation ruleInstance with
+      match instantiateRule? definition ruleInstance with
       | none => false
       | some (premises, conclusion) =>
           decide (conclusion = goal) &&
-            checkRawChildren presentation premises children
+            checkRawChildren definition premises children
 termination_by _ proof => sizeOf proof
 
-def checkRawChildren (presentation : ValidatedPresentation) :
+def checkRawChildren (definition : ValidatedCalculusLanguageDef) :
     List Pattern → List RawProof → Bool
   | [], [] => true
   | premise :: premises, child :: children =>
-      checkRaw presentation premise child &&
-        checkRawChildren presentation premises children
+      checkRaw definition premise child &&
+        checkRawChildren definition premises children
   | _, _ => false
 termination_by _ children => sizeOf children
 
 end
 
 /-- Native accepted-proof subtype. -/
-def CheckedProof (presentation : ValidatedPresentation) (goal : Pattern) :=
-  { proof : RawProof // checkRaw presentation goal proof = true }
+def CheckedProof (definition : ValidatedCalculusLanguageDef) (goal : Pattern) :=
+  { proof : RawProof // checkRaw definition goal proof = true }
 
 /-- A fixed raw proof artifact can be accepted for at most one goal. -/
 theorem checkRaw_goal_unique
-    {presentation : ValidatedPresentation} {proof : RawProof}
+    {definition : ValidatedCalculusLanguageDef} {proof : RawProof}
     {firstGoal secondGoal : Pattern}
-    (hfirst : checkRaw presentation firstGoal proof = true)
-    (hsecond : checkRaw presentation secondGoal proof = true) :
+    (hfirst : checkRaw definition firstGoal proof = true)
+    (hsecond : checkRaw definition secondGoal proof = true) :
     firstGoal = secondGoal := by
   cases proof with
   | node ruleInstance children =>
       simp only [checkRaw] at hfirst hsecond
-      cases hlocal : instantiateRule? presentation ruleInstance with
+      cases hlocal : instantiateRule? definition ruleInstance with
       | none => simp [hlocal] at hfirst
       | some localResult =>
           rcases localResult with ⟨premises, conclusion⟩
@@ -1596,19 +1540,19 @@ theorem checkRaw_goal_unique
 
 /-- Every accepted goal has a declared V2 outer judgment head and arity. -/
 theorem checkRaw_true_goal_hasJudgmentShape
-    {presentation : ValidatedPresentation} {goal : Pattern} {proof : RawProof}
-    (hcheck : checkRaw presentation goal proof = true) :
-    presentation.1.hasJudgmentShape goal = true := by
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} {proof : RawProof}
+    (hcheck : checkRaw definition goal proof = true) :
+    definition.1.hasJudgmentShape goal = true := by
   cases proof with
   | node ruleInstance children =>
       simp only [checkRaw] at hcheck
-      cases hlocal : instantiateRule? presentation ruleInstance with
+      cases hlocal : instantiateRule? definition ruleInstance with
       | none => simp [hlocal] at hcheck
       | some localResult =>
           rcases localResult with ⟨premises, conclusion⟩
           simp only [hlocal, Bool.and_eq_true, decide_eq_true_eq] at hcheck
           have happlication :
-              RuleApplication presentation ruleInstance premises conclusion :=
+              RuleApplication definition ruleInstance premises conclusion :=
             instantiateRule?_eq_some_iff_application.mp hlocal
           rw [← hcheck.1]
           exact happlication.conclusion_hasJudgmentShape
@@ -1617,19 +1561,19 @@ theorem checkRaw_true_goal_hasJudgmentShape
 metadata-noncanonical goal.  This theorem does not claim that constructors
 inside runtime metavariable payloads are declared or carrier-typed. -/
 theorem checkRaw_true_goal_safety
-    {presentation : ValidatedPresentation} {goal : Pattern} {proof : RawProof}
-    (hcheck : checkRaw presentation goal proof = true) :
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} {proof : RawProof}
+    (hcheck : checkRaw definition goal proof = true) :
     goal.isGround = true ∧ goal.hasCanonicalBinderMetadata = true := by
   cases proof with
   | node ruleInstance children =>
       simp only [checkRaw] at hcheck
-      cases hlocal : instantiateRule? presentation ruleInstance with
+      cases hlocal : instantiateRule? definition ruleInstance with
       | none => simp [hlocal] at hcheck
       | some localResult =>
           rcases localResult with ⟨premises, conclusion⟩
           simp only [hlocal, Bool.and_eq_true, decide_eq_true_eq] at hcheck
           have happlication :
-              RuleApplication presentation ruleInstance premises conclusion :=
+              RuleApplication definition ruleInstance premises conclusion :=
             instantiateRule?_eq_some_iff_application.mp hlocal
           rw [← hcheck.1]
           exact happlication.conclusion_safety
@@ -1640,30 +1584,30 @@ mutual
 
 /-- Every accepted raw tree denotes a Type-valued derivation.  The stronger
 G2 theorem below additionally preserves exact raw-tree identity. -/
-theorem checkRaw_soundness {presentation : ValidatedPresentation}
+theorem checkRaw_soundness {definition : ValidatedCalculusLanguageDef}
     {goal : Pattern} {proof : RawProof}
-    (hcheck : checkRaw presentation goal proof = true) :
-    Nonempty (Derivation presentation goal) := by
+    (hcheck : checkRaw definition goal proof = true) :
+    Nonempty (Derivation definition goal) := by
   cases proof with
   | node ruleInstance children =>
       simp only [checkRaw] at hcheck
-      cases happlication : instantiateRule? presentation ruleInstance with
+      cases happlication : instantiateRule? definition ruleInstance with
       | none => simp [happlication] at hcheck
       | some applicationResult =>
           rcases applicationResult with ⟨premises, conclusion⟩
           simp only [happlication, Bool.and_eq_true, decide_eq_true_eq] at hcheck
           rcases hcheck with ⟨hconclusion, hchildren⟩
           subst goal
-          have happ : RuleApplication presentation ruleInstance premises conclusion :=
+          have happ : RuleApplication definition ruleInstance premises conclusion :=
             instantiateRule?_eq_some_iff_application.mp happlication
           rcases checkRawChildren_sound hchildren with ⟨childrenDerivation⟩
           exact ⟨Derivation.byRule ruleInstance happ childrenDerivation⟩
 termination_by sizeOf proof
 
-theorem checkRawChildren_sound {presentation : ValidatedPresentation}
+theorem checkRawChildren_sound {definition : ValidatedCalculusLanguageDef}
     {premises : List Pattern} {proofs : List RawProof}
-    (hcheck : checkRawChildren presentation premises proofs = true) :
-    Nonempty (DerivationList presentation premises) := by
+    (hcheck : checkRawChildren definition premises proofs = true) :
+    Nonempty (DerivationList definition premises) := by
   cases premises with
   | nil =>
       cases proofs with
@@ -1684,13 +1628,13 @@ end
 mutual
 
 /-- Erase a typed derivation to the native raw proof format. -/
-def Derivation.erase {presentation : ValidatedPresentation} {goal : Pattern} :
-    Derivation presentation goal → RawProof
+def Derivation.erase {definition : ValidatedCalculusLanguageDef} {goal : Pattern} :
+    Derivation definition goal → RawProof
   | .byRule ruleInstance _ children =>
       .node ruleInstance (DerivationList.erase children)
 
-def DerivationList.erase {presentation : ValidatedPresentation}
-    {premises : List Pattern} : DerivationList presentation premises → List RawProof
+def DerivationList.erase {definition : ValidatedCalculusLanguageDef}
+    {premises : List Pattern} : DerivationList definition premises → List RawProof
   | .nil => []
   | .cons head tail => Derivation.erase head :: DerivationList.erase tail
 
@@ -1698,10 +1642,10 @@ end
 
 mutual
 
-/-- Presentation extension preserves the exact raw proof artifact, not merely
+/-- CalculusLanguageDef extension preserves the exact raw proof artifact, not merely
 the existence of some derivation of the same goal. -/
 @[simp] theorem Derivation.erase_transport
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (hrefines : RuleLookupRefines source target) {goal : Pattern}
     (derivation : Derivation source goal) :
     (derivation.transport hrefines).erase = derivation.erase := by
@@ -1712,7 +1656,7 @@ the existence of some derivation of the same goal. -/
 
 /-- Exact erasure preservation for ordered premise lists. -/
 @[simp] theorem DerivationList.erase_transport
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (hrefines : RuleLookupRefines source target) {premises : List Pattern}
     (derivations : DerivationList source premises) :
     (derivations.transport hrefines).erase = derivations.erase := by
@@ -1728,13 +1672,13 @@ end
 mutual
 
 /-- Erasing any typed derivation produces an accepted raw tree. -/
-theorem checkRaw_erase {presentation : ValidatedPresentation}
-    {goal : Pattern} (derivation : Derivation presentation goal) :
-    checkRaw presentation goal derivation.erase = true := by
+theorem checkRaw_erase {definition : ValidatedCalculusLanguageDef}
+    {goal : Pattern} (derivation : Derivation definition goal) :
+    checkRaw definition goal derivation.erase = true := by
   cases derivation with
   | byRule ruleInstance application children =>
       have happlication :
-          instantiateRule? presentation ruleInstance =
+          instantiateRule? definition ruleInstance =
             some (_, goal) :=
         instantiateRule?_eq_some_iff_application.mpr application
       simp only [Derivation.erase, checkRaw, happlication,
@@ -1742,9 +1686,9 @@ theorem checkRaw_erase {presentation : ValidatedPresentation}
       exact DerivationList.checkRawChildren_erase children
 
 theorem DerivationList.checkRawChildren_erase
-    {presentation : ValidatedPresentation} {premises : List Pattern}
-    (derivations : DerivationList presentation premises) :
-    checkRawChildren presentation premises derivations.erase = true := by
+    {definition : ValidatedCalculusLanguageDef} {premises : List Pattern}
+    (derivations : DerivationList definition premises) :
+    checkRawChildren definition premises derivations.erase = true := by
   cases derivations with
   | nil => simp [DerivationList.erase, checkRawChildren]
   | cons head tail =>
@@ -1758,13 +1702,13 @@ mutual
 
 /-- Exact reconstruction of an accepted raw tree. -/
 theorem checkRaw_exists_derivation_with_exact_erasure
-    {presentation : ValidatedPresentation} {goal : Pattern} {proof : RawProof}
-    (hcheck : checkRaw presentation goal proof = true) :
-    ∃ derivation : Derivation presentation goal, derivation.erase = proof := by
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} {proof : RawProof}
+    (hcheck : checkRaw definition goal proof = true) :
+    ∃ derivation : Derivation definition goal, derivation.erase = proof := by
   cases proof with
   | node ruleInstance children =>
       simp only [checkRaw] at hcheck
-      cases hlocal : instantiateRule? presentation ruleInstance with
+      cases hlocal : instantiateRule? definition ruleInstance with
       | none => simp [hlocal] at hcheck
       | some localResult =>
           rcases localResult with ⟨premises, conclusion⟩
@@ -1772,7 +1716,7 @@ theorem checkRaw_exists_derivation_with_exact_erasure
           rcases hcheck with ⟨hconclusion, hchildren⟩
           subst goal
           have happlication :
-              RuleApplication presentation ruleInstance premises conclusion :=
+              RuleApplication definition ruleInstance premises conclusion :=
             instantiateRule?_eq_some_iff_application.mp hlocal
           rcases checkRawChildren_exists_derivations_with_exact_erasure hchildren with
             ⟨childDerivations, herasure⟩
@@ -1781,10 +1725,10 @@ theorem checkRaw_exists_derivation_with_exact_erasure
 termination_by sizeOf proof
 
 theorem checkRawChildren_exists_derivations_with_exact_erasure
-    {presentation : ValidatedPresentation} {premises : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {premises : List Pattern}
     {proofs : List RawProof}
-    (hcheck : checkRawChildren presentation premises proofs = true) :
-    ∃ derivations : DerivationList presentation premises,
+    (hcheck : checkRawChildren definition premises proofs = true) :
+    ∃ derivations : DerivationList definition premises,
       derivations.erase = proofs := by
   cases premises with
   | nil =>
@@ -1809,9 +1753,9 @@ end
 /-- G2: raw checking is exactly equivalent to the existence of a typed
 derivation whose erasure is that same raw artifact. -/
 theorem G2_checkRaw_iff_exists_derivation_erases_to
-    {presentation : ValidatedPresentation} {goal : Pattern} {proof : RawProof} :
-    checkRaw presentation goal proof = true ↔
-      ∃ derivation : Derivation presentation goal, derivation.erase = proof := by
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} {proof : RawProof} :
+    checkRaw definition goal proof = true ↔
+      ∃ derivation : Derivation definition goal, derivation.erase = proof := by
   constructor
   · exact checkRaw_exists_derivation_with_exact_erasure
   · rintro ⟨derivation, rfl⟩
@@ -1820,7 +1764,7 @@ theorem G2_checkRaw_iff_exists_derivation_erases_to
 /-- Retaining every used rule preserves acceptance of the identical raw proof
 tree.  New target rules may add proofs, so no converse is asserted. -/
 theorem checkRaw_true_of_ruleLookupRefines
-    {source target : ValidatedPresentation} {goal : Pattern}
+    {source target : ValidatedCalculusLanguageDef} {goal : Pattern}
     {proof : RawProof} (hrefines : RuleLookupRefines source target)
     (hsource : checkRaw source goal proof = true) :
     checkRaw target goal proof = true := by
@@ -1832,7 +1776,7 @@ theorem checkRaw_true_of_ruleLookupRefines
 
 /-- A checked proof transports with exactly the same raw proof payload. -/
 def CheckedProof.transport
-    {source target : ValidatedPresentation} {goal : Pattern}
+    {source target : ValidatedCalculusLanguageDef} {goal : Pattern}
     (hrefines : RuleLookupRefines source target)
     (proof : CheckedProof source goal) : CheckedProof target goal :=
   ⟨proof.1, checkRaw_true_of_ruleLookupRefines hrefines proof.2⟩
@@ -1840,9 +1784,9 @@ def CheckedProof.transport
 /-- G3: native checked proof objects exist exactly when a typed derivation
 exists. -/
 theorem G3_checkedProof_nonempty_iff_derivation
-    {presentation : ValidatedPresentation} {goal : Pattern} :
-    Nonempty (CheckedProof presentation goal) ↔
-      Nonempty (Derivation presentation goal) := by
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} :
+    Nonempty (CheckedProof definition goal) ↔
+      Nonempty (Derivation definition goal) := by
   constructor
   · rintro ⟨⟨proof, hcheck⟩⟩
     rcases checkRaw_exists_derivation_with_exact_erasure hcheck with
@@ -1890,27 +1834,26 @@ private def stepRule : RuleSchema :=
     conclusion :=
       judgmentPath (.fvar "theory") (.fvar "source") (.fvar "target") }
 
-private def corpusPresentation : Presentation :=
-  { language := LanguageDef.empty "generic-inference-corpus"
-    calculus :=
-      { judgments :=
-          [judgmentDecl "Fact" 2, judgmentDecl "Edge" 3, judgmentDecl "Path" 3]
-        rules := [factRule, edgeRule, stepRule] } }
+private def corpusDefinition : CalculusLanguageDef :=
+  { toLanguageDef := LanguageDef.empty "generic-inference-corpus"
+    judgments :=
+      [judgmentDecl "Fact" 2, judgmentDecl "Edge" 3, judgmentDecl "Path" 3]
+    rules := [factRule, edgeRule, stepRule] }
 
 private theorem emptyLanguage_validate (name : String) :
     (LanguageDef.empty name).validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [LanguageDef.empty, LanguageDef.typeNames]
 
-theorem corpusPresentation_valid : corpusPresentation.isValidV2 = true := by
-  simp [corpusPresentation, Presentation.isValidV2,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.isValidV1, Presentation.ruleIds,
+theorem corpusDefinition_valid : corpusDefinition.isValid = true := by
+  simp [corpusDefinition, CalculusLanguageDef.isValid,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.hasValidLocalRules, CalculusLanguageDef.ruleIds,
     emptyLanguage_validate, factRule, edgeRule, stepRule, ruleId,
     judgmentDecl, judgmentFact, judgmentEdge, judgmentPath,
-    RuleSchema.isValidIn, Presentation.judgmentSchemaValid,
-    Presentation.lookupJudgment?, fixedConstructorsValid,
-    RuleSchema.isValidV1,
+    RuleSchema.isValidIn, CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, fixedConstructorsValid,
+    RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
@@ -1920,28 +1863,25 @@ theorem corpusPresentation_valid : corpusPresentation.isValidV2 = true := by
     Pattern.hasCanonicalBinderMetadata, Pattern.hasCanonicalBinderMetadataList]
   decide
 
-private def corpus : ValidatedPresentation :=
-  ⟨corpusPresentation, corpusPresentation_valid⟩
+private def corpus : ValidatedCalculusLanguageDef :=
+  ⟨corpusDefinition, corpusDefinition_valid⟩
 
 private def extraFactRule : RuleSchema :=
   { factRule with id := ruleId "fact-extra" }
 
-private def extendedCorpusPresentation : Presentation :=
-  { language := corpusPresentation.language
-    calculus :=
-      { corpusPresentation.calculus with
-        rules := corpusPresentation.rules ++ [extraFactRule] } }
+private def extendedCorpusDefinition : CalculusLanguageDef :=
+  { corpusDefinition with rules := corpusDefinition.rules ++ [extraFactRule] }
 
-private theorem extendedCorpusPresentation_valid :
-    extendedCorpusPresentation.isValidV2 = true := by
-  simp [extendedCorpusPresentation, corpusPresentation,
-    Presentation.isValidV2, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.isValidV1,
-    Presentation.ruleIds, emptyLanguage_validate, extraFactRule,
+private theorem extendedCorpusDefinition_valid :
+    extendedCorpusDefinition.isValid = true := by
+  simp [extendedCorpusDefinition, corpusDefinition,
+    CalculusLanguageDef.isValid, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.hasValidLocalRules,
+    CalculusLanguageDef.ruleIds, emptyLanguage_validate, extraFactRule,
     factRule, edgeRule, stepRule, ruleId, judgmentDecl, judgmentFact,
     judgmentEdge, judgmentPath, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
-    fixedConstructorsValid, RuleSchema.isValidV1,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
+    fixedConstructorsValid, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -1952,8 +1892,8 @@ private theorem extendedCorpusPresentation_valid :
     Pattern.hasCanonicalBinderMetadataList]
   decide
 
-private def extendedCorpus : ValidatedPresentation :=
-  ⟨extendedCorpusPresentation, extendedCorpusPresentation_valid⟩
+private def extendedCorpus : ValidatedCalculusLanguageDef :=
+  ⟨extendedCorpusDefinition, extendedCorpusDefinition_valid⟩
 
 /-- Positive extension fixture: adding a genuinely new rule preserves every
 lookup and hence every proof in the original corpus. -/
@@ -1962,21 +1902,20 @@ theorem corpus_refines_extendedCorpus :
   apply RuleLookupRefines.of_rules_eq_append [extraFactRule]
   rfl
 
-private def emptyRuleCorpusPresentation : Presentation :=
-  { language := corpusPresentation.language
-    calculus := { corpusPresentation.calculus with rules := [] } }
+private def emptyRuleCorpusDefinition : CalculusLanguageDef :=
+  { corpusDefinition with rules := [] }
 
-private theorem emptyRuleCorpusPresentation_valid :
-    emptyRuleCorpusPresentation.isValidV2 = true := by
-  simp [emptyRuleCorpusPresentation, corpusPresentation,
-    Presentation.isValidV2, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.isValidV1,
-    Presentation.ruleIds, emptyLanguage_validate, judgmentDecl,
+private theorem emptyRuleCorpusDefinition_valid :
+    emptyRuleCorpusDefinition.isValid = true := by
+  simp [emptyRuleCorpusDefinition, corpusDefinition,
+    CalculusLanguageDef.isValid, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.hasValidLocalRules,
+    CalculusLanguageDef.ruleIds, emptyLanguage_validate, judgmentDecl,
     Pattern.zipHead, Pattern.mapHead, Pattern.evalHead]
   decide
 
-private def emptyRuleCorpus : ValidatedPresentation :=
-  ⟨emptyRuleCorpusPresentation, emptyRuleCorpusPresentation_valid⟩
+private def emptyRuleCorpus : ValidatedCalculusLanguageDef :=
+  ⟨emptyRuleCorpusDefinition, emptyRuleCorpusDefinition_valid⟩
 
 /-- Negative extension fixture: removing the `fact` rule destroys lookup
 refinement. -/
@@ -2011,8 +1950,8 @@ private def stepProof : RawProof :=
 
 theorem corpus_fact_accepts :
     checkRaw corpus (judgmentFact theoryData aData) factProof = true := by
-  simp [checkRaw, checkRawChildren, factProof, corpus, corpusPresentation,
-    factRule, edgeRule, stepRule, instantiateRule?, Presentation.lookupRule?,
+  simp [checkRaw, checkRawChildren, factProof, corpus, corpusDefinition,
+    factRule, edgeRule, stepRule, instantiateRule?, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?, judgmentFact,
     judgmentEdge, judgmentPath, theoryData, aData, ruleId, Pattern.isGroundAt,
@@ -2035,8 +1974,8 @@ theorem corpusFactChecked_transport_payload :
 
 theorem corpus_edge_accepts :
     checkRaw corpus (judgmentEdge theoryData aData bData) edgeABProof = true := by
-  simp [checkRaw, checkRawChildren, edgeABProof, corpus, corpusPresentation,
-    factRule, edgeRule, stepRule, instantiateRule?, Presentation.lookupRule?,
+  simp [checkRaw, checkRawChildren, edgeABProof, corpus, corpusDefinition,
+    factRule, edgeRule, stepRule, instantiateRule?, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?, judgmentFact,
     judgmentEdge, judgmentPath, theoryData, aData, bData, ruleId,
@@ -2046,8 +1985,8 @@ theorem corpus_edge_accepts :
 theorem corpus_step_accepts :
     checkRaw corpus (judgmentPath theoryData aData cData) stepProof = true := by
   simp [checkRaw, checkRawChildren, edgeABProof, edgeBCProof, stepProof, corpus,
-    corpusPresentation, factRule, edgeRule, stepRule, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    corpusDefinition, factRule, edgeRule, stepRule, instantiateRule?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, judgmentFact, judgmentEdge,
     judgmentPath, theoryData, aData, bData, cData, ruleId, Pattern.isGroundAt,
@@ -2094,8 +2033,8 @@ private def extraArgumentFactProof : RawProof :=
 theorem corpus_swapped_children_reject :
     checkRaw corpus (judgmentPath theoryData aData cData) swappedStepProof = false := by
   simp [checkRaw, checkRawChildren, edgeABProof, edgeBCProof, swappedStepProof,
-    corpus, corpusPresentation, factRule, edgeRule, stepRule, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    corpus, corpusDefinition, factRule, edgeRule, stepRule, instantiateRule?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, judgmentFact, judgmentEdge,
     judgmentPath, theoryData, aData, bData, cData, ruleId, Pattern.isGroundAt,
@@ -2105,8 +2044,8 @@ theorem corpus_swapped_children_reject :
 theorem corpus_omitted_child_reject :
     checkRaw corpus (judgmentPath theoryData aData cData) omittedStepProof = false := by
   simp [checkRaw, checkRawChildren, edgeABProof, omittedStepProof, corpus,
-    corpusPresentation, factRule, edgeRule, stepRule, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    corpusDefinition, factRule, edgeRule, stepRule, instantiateRule?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, judgmentFact, judgmentEdge,
     judgmentPath, theoryData, aData, bData, cData, ruleId, Pattern.isGroundAt,
@@ -2116,8 +2055,8 @@ theorem corpus_omitted_child_reject :
 theorem corpus_extra_child_reject :
     checkRaw corpus (judgmentPath theoryData aData cData) extraStepProof = false := by
   simp [checkRaw, checkRawChildren, edgeABProof, edgeBCProof, extraStepProof,
-    corpus, corpusPresentation, factRule, edgeRule, stepRule, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    corpus, corpusDefinition, factRule, edgeRule, stepRule, instantiateRule?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, judgmentFact, judgmentEdge,
     judgmentPath, theoryData, aData, bData, cData, ruleId, Pattern.isGroundAt,
@@ -2126,29 +2065,29 @@ theorem corpus_extra_child_reject :
 
 theorem corpus_unknown_rule_reject :
     checkRaw corpus (judgmentFact theoryData aData) unknownRuleProof = false := by
-  simp [checkRaw, unknownRuleProof, corpus, corpusPresentation, factRule,
-    edgeRule, stepRule, instantiateRule?, Presentation.lookupRule?, judgmentFact,
+  simp [checkRaw, unknownRuleProof, corpus, corpusDefinition, factRule,
+    edgeRule, stepRule, instantiateRule?, CalculusLanguageDef.lookupRule?, judgmentFact,
     judgmentEdge, judgmentPath, theoryData, aData, ruleId]
 
 theorem corpus_wrong_arity_reject :
     checkRaw corpus (judgmentEdge theoryData aData bData) wrongArityProof = false := by
-  simp [checkRaw, wrongArityProof, corpus, corpusPresentation, factRule,
-    edgeRule, stepRule, instantiateRule?, Presentation.lookupRule?,
+  simp [checkRaw, wrongArityProof, corpus, corpusDefinition, factRule,
+    edgeRule, stepRule, instantiateRule?, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, judgmentFact, judgmentEdge, judgmentPath, theoryData,
     aData, bData, ruleId]
 
 theorem corpus_nonground_argument_reject :
     checkRaw corpus (judgmentFact theoryData aData) nongroundArgumentProof = false := by
-  simp [checkRaw, nongroundArgumentProof, corpus, corpusPresentation, factRule,
-    edgeRule, stepRule, instantiateRule?, Presentation.lookupRule?,
+  simp [checkRaw, nongroundArgumentProof, corpus, corpusDefinition, factRule,
+    edgeRule, stepRule, instantiateRule?, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, judgmentFact, judgmentEdge, judgmentPath,
     theoryData, aData, ruleId, Pattern.isGroundAt, Pattern.isGroundListAt,
     Pattern.hasCanonicalBinderMetadata, Pattern.hasCanonicalBinderMetadataList]
 
 theorem corpus_swapped_arguments_reject :
     checkRaw corpus (judgmentFact theoryData aData) swappedArgumentFactProof = false := by
-  simp [checkRaw, swappedArgumentFactProof, corpus, corpusPresentation,
-    factRule, edgeRule, stepRule, instantiateRule?, Presentation.lookupRule?,
+  simp [checkRaw, swappedArgumentFactProof, corpus, corpusDefinition,
+    factRule, edgeRule, stepRule, instantiateRule?, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?, judgmentFact,
     judgmentEdge, judgmentPath, theoryData, aData, ruleId, Pattern.isGroundAt,
@@ -2157,8 +2096,8 @@ theorem corpus_swapped_arguments_reject :
 
 theorem corpus_extra_argument_reject :
     checkRaw corpus (judgmentFact theoryData aData) extraArgumentFactProof = false := by
-  simp [checkRaw, extraArgumentFactProof, corpus, corpusPresentation,
-    factRule, edgeRule, stepRule, instantiateRule?, Presentation.lookupRule?,
+  simp [checkRaw, extraArgumentFactProof, corpus, corpusDefinition,
+    factRule, edgeRule, stepRule, instantiateRule?, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, judgmentFact, judgmentEdge, judgmentPath, theoryData,
     aData, bData, ruleId]
 
@@ -2194,14 +2133,14 @@ private def wrongDepthTwoRule : RuleSchema :=
     conclusion := .lambda none (.lambda none (.fvar "x")) }
 
 theorem wrongDepthZero_schema_reject :
-    RuleSchema.isValidV1 wrongDepthZeroRule = false := by
-  simp [wrongDepthZeroRule, RuleSchema.isValidV1, RuleSchema.occurrences,
+    RuleSchema.isLocallyValid wrongDepthZeroRule = false := by
+  simp [wrongDepthZeroRule, RuleSchema.isLocallyValid, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt]
 
 theorem wrongDepthTwo_schema_reject :
-    RuleSchema.isValidV1 wrongDepthTwoRule = false := by
-  simp [wrongDepthTwoRule, RuleSchema.isValidV1, RuleSchema.occurrences,
+    RuleSchema.isLocallyValid wrongDepthTwoRule = false := by
+  simp [wrongDepthTwoRule, RuleSchema.isLocallyValid, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt]
 
@@ -2216,8 +2155,8 @@ private def literalMixedDepthRule : RuleSchema :=
       .apply "MixedDepth" [.fvar "x", .lambda none (.fvar "x")] }
 
 theorem literalMixedDepth_schema_reject :
-    RuleSchema.isValidV1 literalMixedDepthRule = false := by
-  simp [literalMixedDepthRule, RuleSchema.isValidV1,
+    RuleSchema.isLocallyValid literalMixedDepthRule = false := by
+  simp [literalMixedDepthRule, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt]
 
@@ -2247,8 +2186,8 @@ private def namedBinderRule : RuleSchema :=
     conclusion := .lambda (some "x") (.fvar "body") }
 
 theorem namedBinder_schema_reject :
-    RuleSchema.isValidV1 namedBinderRule = false := by
-  simp [namedBinderRule, RuleSchema.isValidV1,
+    RuleSchema.isLocallyValid namedBinderRule = false := by
+  simp [namedBinderRule, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest,
@@ -2267,8 +2206,8 @@ private def collectionRestRule : RuleSchema :=
     conclusion := .collection .vec [] (some "rest") }
 
 theorem collectionRest_schema_reject :
-    RuleSchema.isValidV1 collectionRestRule = false := by
-  simp [collectionRestRule, RuleSchema.isValidV1, RuleSchema.occurrences,
+    RuleSchema.isLocallyValid collectionRestRule = false := by
+  simp [collectionRestRule, RuleSchema.isLocallyValid, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt]
 
@@ -2279,7 +2218,7 @@ private def duplicateMetavariableRule : RuleSchema :=
     conclusion := .fvar "x" }
 
 theorem duplicateMetavariable_schema_reject :
-    RuleSchema.isValidV1 duplicateMetavariableRule = false := by
+    RuleSchema.isLocallyValid duplicateMetavariableRule = false := by
   decide
 
 /-! ### V2 judgment-signature gates -/
@@ -2309,17 +2248,16 @@ private def nestedConstructorRule : RuleSchema :=
     conclusion :=
       judgmentHolds (.apply "Pair" [.fvar "left", .fvar "right"]) }
 
-private def nestedConstructorPresentation : Presentation :=
-  { language := signatureFixtureLanguage
-    calculus :=
-      { judgments := [judgmentDecl "Holds" 1]
-        rules := [nestedConstructorRule] } }
+private def nestedConstructorDefinition : CalculusLanguageDef :=
+  { toLanguageDef := signatureFixtureLanguage
+    judgments := [judgmentDecl "Holds" 1]
+    rules := [nestedConstructorRule] }
 
 theorem nestedConstructor_schema_accepts :
-    (nestedConstructorPresentation.judgmentSchemaValid
+    (nestedConstructorDefinition.judgmentSchemaValid
       nestedConstructorRule.conclusion) = true := by
-  simp [nestedConstructorPresentation, nestedConstructorRule, judgmentHolds,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+  simp [nestedConstructorDefinition, nestedConstructorRule, judgmentHolds,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     judgmentDecl, fixedConstructorListsValid, fixedConstructorsValid,
     languageHasConstructorArity, signatureFixtureLanguage, pairConstructor]
 
@@ -2336,34 +2274,34 @@ private def wrongNestedArityRule : RuleSchema :=
     conclusion := judgmentHolds (.apply "Pair" [.fvar "datum"]) }
 
 theorem unknownNestedConstructor_schema_reject :
-    (nestedConstructorPresentation.judgmentSchemaValid
+    (nestedConstructorDefinition.judgmentSchemaValid
       unknownNestedConstructorRule.conclusion) = false := by
-  simp [nestedConstructorPresentation, unknownNestedConstructorRule,
-    judgmentHolds, Presentation.judgmentSchemaValid,
-    Presentation.lookupJudgment?, judgmentDecl, fixedConstructorListsValid,
+  simp [nestedConstructorDefinition, unknownNestedConstructorRule,
+    judgmentHolds, CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, judgmentDecl, fixedConstructorListsValid,
     fixedConstructorsValid, languageHasConstructorArity,
     signatureFixtureLanguage, pairConstructor]
 
 theorem wrongNestedArity_schema_reject :
-    (nestedConstructorPresentation.judgmentSchemaValid
+    (nestedConstructorDefinition.judgmentSchemaValid
       wrongNestedArityRule.conclusion) = false := by
-  simp [nestedConstructorPresentation, wrongNestedArityRule,
-    judgmentHolds, Presentation.judgmentSchemaValid,
-    Presentation.lookupJudgment?, judgmentDecl, fixedConstructorListsValid,
+  simp [nestedConstructorDefinition, wrongNestedArityRule,
+    judgmentHolds, CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, judgmentDecl, fixedConstructorListsValid,
     fixedConstructorsValid, languageHasConstructorArity,
     signatureFixtureLanguage, pairConstructor]
 
 theorem unknownJudgmentHead_schema_reject :
-    (nestedConstructorPresentation.judgmentSchemaValid
+    (nestedConstructorDefinition.judgmentSchemaValid
       (.apply "UnknownJudgment" [.fvar "datum"])) = false := by
-  simp [nestedConstructorPresentation, Presentation.judgmentSchemaValid,
-    Presentation.lookupJudgment?, judgmentDecl]
+  simp [nestedConstructorDefinition, CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, judgmentDecl]
 
 theorem wrongJudgmentArity_schema_reject :
-    (nestedConstructorPresentation.judgmentSchemaValid
+    (nestedConstructorDefinition.judgmentSchemaValid
       (.apply "Holds" [.fvar "left", .fvar "right"])) = false := by
-  simp [nestedConstructorPresentation, Presentation.judgmentSchemaValid,
-    Presentation.lookupJudgment?, judgmentDecl]
+  simp [nestedConstructorDefinition, CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, judgmentDecl]
 
 private def binderJudgmentRule : RuleSchema :=
   { id := ruleId "binder-judgment"
@@ -2371,23 +2309,22 @@ private def binderJudgmentRule : RuleSchema :=
     premises := []
     conclusion := .apply "Scoped" [.lambda none (.fvar "body")] }
 
-private def binderJudgmentPresentation : Presentation :=
-  { language := LanguageDef.empty "binder-judgment-fixture"
-    calculus :=
-      { judgments := [judgmentDecl "Scoped" 1]
-        rules := [binderJudgmentRule] } }
+private def binderJudgmentDefinition : CalculusLanguageDef :=
+  { toLanguageDef := LanguageDef.empty "binder-judgment-fixture"
+    judgments := [judgmentDecl "Scoped" 1]
+    rules := [binderJudgmentRule] }
 
 /-- V2 imposes no ad hoc ban on a binder-bearing judgment argument; V1's
 exact-depth, scope, and canonical-metadata gates remain authoritative. -/
-theorem binderJudgment_presentation_accepts :
-    binderJudgmentPresentation.isValidV2 = true := by
-  simp [binderJudgmentPresentation, Presentation.isValidV2,
-    Presentation.isValidV1, Presentation.ruleIds,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
+theorem binderJudgment_definition_accepts :
+    binderJudgmentDefinition.isValid = true := by
+  simp [binderJudgmentDefinition, CalculusLanguageDef.isValid,
+    CalculusLanguageDef.hasValidLocalRules, CalculusLanguageDef.ruleIds,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
     binderJudgmentRule, judgmentDecl, ruleId,
-    RuleSchema.isValidIn, Presentation.judgmentSchemaValid,
-    Presentation.lookupJudgment?, fixedConstructorListsValid,
-    fixedConstructorsValid, RuleSchema.isValidV1,
+    RuleSchema.isValidIn, CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, fixedConstructorListsValid,
+    fixedConstructorsValid, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
@@ -2398,30 +2335,29 @@ theorem binderJudgment_presentation_accepts :
     emptyLanguage_validate]
   decide
 
-private def constructorCollisionPresentation : Presentation :=
-  { language := signatureFixtureLanguage
-    calculus := { judgments := [judgmentDecl "Pair" 2] } }
+private def constructorCollisionDefinition : CalculusLanguageDef :=
+  { toLanguageDef := signatureFixtureLanguage
+    judgments := [judgmentDecl "Pair" 2] }
 
 theorem constructorJudgmentCollision_reject :
-    constructorCollisionPresentation.judgmentSignatureValid = false := by
-  simp [constructorCollisionPresentation,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
+    constructorCollisionDefinition.judgmentSignatureValid = false := by
+  simp [constructorCollisionDefinition,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
     judgmentDecl, signatureFixtureLanguage, pairConstructor]
 
-private def duplicateIdPresentation : Presentation :=
-  { language := LanguageDef.empty "duplicate-id"
-    calculus :=
-      { judgments :=
-          [judgmentDecl "Fact" 2, judgmentDecl "Edge" 3, judgmentDecl "Path" 3]
-        rules := [factRule, factRule] } }
+private def duplicateIdDefinition : CalculusLanguageDef :=
+  { toLanguageDef := LanguageDef.empty "duplicate-id"
+    judgments :=
+      [judgmentDecl "Fact" 2, judgmentDecl "Edge" 3, judgmentDecl "Path" 3]
+    rules := [factRule, factRule] }
 
-theorem duplicateId_presentation_reject :
-    duplicateIdPresentation.isValidV2 = false := by
-  have hV1 : duplicateIdPresentation.isValidV1 = false := by
-    unfold duplicateIdPresentation Presentation.isValidV1 Presentation.ruleIds
+theorem duplicateId_definition_reject :
+    duplicateIdDefinition.isValid = false := by
+  have hV1 : duplicateIdDefinition.hasValidLocalRules = false := by
+    unfold duplicateIdDefinition CalculusLanguageDef.hasValidLocalRules CalculusLanguageDef.ruleIds
     simp only [Bool.and_eq_false_iff]
     right
     decide
-  simp [Presentation.isValidV2, hV1]
+  simp [CalculusLanguageDef.isValid, hV1]
 
 end Mettapedia.GSLT.LanguageDef.InferenceChecker

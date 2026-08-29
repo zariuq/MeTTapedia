@@ -18,7 +18,7 @@ schedule; ordinary nondeterministic rho execution remains available.
 
 namespace Mettapedia.Languages.MeTTa.Prime.NativeInteractionParallelWorlds
 
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeFibredCost
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFibration

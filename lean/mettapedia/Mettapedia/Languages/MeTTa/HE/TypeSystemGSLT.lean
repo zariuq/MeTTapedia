@@ -8,7 +8,7 @@ import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 This module presents the certificate-free consistency core used by HE typing as
 an independently meaningful inference calculus.  Its semantic reference is the
 published, executable-independent `Spec.Type.TypeMatchRel`; neither the
-presentation nor its semantic theorem depends on an executable HE interpreter.
+language definition nor its semantic theorem depends on an executable HE interpreter.
 
 The present coverage is deliberately exact and finite:
 
@@ -19,8 +19,8 @@ The present coverage is deliberately exact and finite:
 
 Structural congruence between distinct compound types, meta-type staging,
 normalization, refinement checking, and whole-term synthesis remain outside
-this first presentation.  Consequently, generated runtime metadata must label
-this source as an authored fragment, never as a complete presentation of the
+this first language fragment.  Consequently, generated runtime metadata must label
+this source as an authored fragment, never as a complete definition of the
 native HE checker.
 -/
 
@@ -37,7 +37,7 @@ open Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge
 
 /-! ## Independent semantic core -/
 
-/-- Closed type shapes covered by this presentation.  Arrow arguments retain
+/-- Closed type shapes covered by this language fragment.  Arrow arguments retain
 their authored order and the result is stored separately. -/
 inductive CoreType where
   | number
@@ -201,7 +201,7 @@ theorem semantic_number_string_refuted (edge : CoreEdge) :
   intro derivation
   cases derivation
 
-/-! ## Authored finite-Horn presentation -/
+/-! ## Authored finite-Horn language fragment -/
 
 def termType : TypeDecl := TypeDecl.plain "HeTypeTerm"
 
@@ -339,26 +339,25 @@ abbrev definition : CalculusLanguageDef :=
 
 abbrev language : LanguageDef := definition.toLanguageDef
 abbrev calculus : InferenceExtension.ProofCalculus := definition.toCalculus
-abbrev presentation : Presentation := definition.toNested
 
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly language <;>
     simp [termType, termConstructor, LanguageDef.typeNames, TypeDecl.plain,
       TermParam.typeExpr, TypeExpr.baseNames]
 
-theorem presentation_valid : presentation.isValidV2 = true := by
-  have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation] using language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem definition_valid : definition.isValid = true := by
+  have hvalidate : definition.toLanguageDef.validate = [] := by
+    simpa [definition] using language_validate
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [presentation, Presentation.ruleIds,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.conversionDeclarationValid, Presentation.lookupJudgment?,
-    RuleSchema.isValidIn, RuleSchema.isValidV1,
+  simp [definition, CalculusLanguageDef.ruleIds,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.conversionDeclarationValid, CalculusLanguageDef.lookupJudgment?,
+    RuleSchema.isValidIn, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, fixedConstructorsValid,
+    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
     fixedConstructorListsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
@@ -375,7 +374,7 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     edgeExact, edgeDynamic, edgeTop, ruleId]
   decide
 
-abbrev checked : ValidatedPresentation := definition.checked presentation_valid
+abbrev checked : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 theorem constructor_count : language.terms.length = 10 := by decide
 theorem rule_count : calculus.rules.length = 22 := by decide
@@ -400,7 +399,7 @@ theorem check_number_dynamic :
     ordinaryString, ordinaryBool, ordinaryList, ordinaryArrow,
     consistentExact, consistentDynamicLeft, consistentDynamicRight,
     consistentTopRight, factRule, unaryRule, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?, isType,
     isNonDynamic, isOrdinaryRoot, consistent, tNumber, tDynamic,
@@ -426,7 +425,7 @@ theorem check_number_exact :
     ordinaryNumber, ordinaryString, ordinaryBool, ordinaryList,
     ordinaryArrow, consistentExact, consistentDynamicLeft,
     consistentDynamicRight, consistentTopRight, factRule, unaryRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, isType, isNonDynamic, isOrdinaryRoot, consistent,
@@ -452,7 +451,7 @@ theorem check_number_top :
     ordinaryNumber, ordinaryString, ordinaryBool, ordinaryList,
     ordinaryArrow, consistentExact, consistentDynamicLeft,
     consistentDynamicRight, consistentTopRight, factRule, unaryRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, isType, isNonDynamic, isOrdinaryRoot, consistent,
@@ -472,7 +471,7 @@ theorem check_number_string_rejects_exact_proof :
     ordinaryNumber, ordinaryString, ordinaryBool, ordinaryList,
     ordinaryArrow, consistentExact, consistentDynamicLeft,
     consistentDynamicRight, consistentTopRight, factRule, unaryRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, isType, isNonDynamic, isOrdinaryRoot, consistent,
@@ -481,6 +480,6 @@ theorem check_number_string_rejects_exact_proof :
     Pattern.hasCanonicalBinderMetadataList]
 
 /-- Export root for the finite-Horn renderer. -/
-def corePresentation : Presentation := presentation
+def coreDefinition : CalculusLanguageDef := definition
 
 end Mettapedia.Languages.MeTTa.HE.TypeSystemGSLT

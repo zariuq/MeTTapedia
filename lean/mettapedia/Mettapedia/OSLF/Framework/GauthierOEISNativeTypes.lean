@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.NativeType.Construction
+import Mettapedia.OSLF.PresheafNativeType.PresheafSemantics
 import Mettapedia.GSLT.LanguageDef.Gauthier.Properties
 
 /-!
@@ -14,7 +14,7 @@ namespace Mettapedia.OSLF.Framework.GauthierOEISNativeTypes
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.ConstructorCategory
-open Mettapedia.OSLF.NativeType
+open Mettapedia.OSLF.PresheafNativeType
 open Mettapedia.GSLT.LanguageDef.GauthierE1
 open Mettapedia.GSLT.LanguageDef.GauthierProperties
 
@@ -122,19 +122,19 @@ private def evalObsSortObj : ConstructorObj gauthierOEIS where
     simp [gauthierOEIS]⟩
 
 /-- Native type of certified sign observations. -/
-def signNatType : ConstructorNatType gauthierOEIS where
+def signNativeType : ConstructorNativeType gauthierOEIS where
   sort := evalObsSortObj
   pred := fun pat =>
     ∃ p v, pat = evalObsPattern p v ∧ (certifiedSignAnalysis p).denote v
 
 /-- Native type of certified parity observations. -/
-def parityNatType : ConstructorNatType gauthierOEIS where
+def parityNativeType : ConstructorNativeType gauthierOEIS where
   sort := evalObsSortObj
   pred := fun pat =>
     ∃ p v, pat = evalObsPattern p v ∧ (certifiedParityAnalysis p).denote v
 
 /-- Native type of certified total programs. -/
-def totalNatType : ConstructorNatType gauthierOEIS where
+def totalNativeType : ConstructorNativeType gauthierOEIS where
   sort := progSortObj
   pred := fun pat =>
     ∃ p, pat = progToPattern p ∧ certifiedTotalAnalysis p = true
@@ -142,22 +142,22 @@ def totalNatType : ConstructorNatType gauthierOEIS where
 /-! ## Certified Bridges to the Evaluator -/
 
 /-- Successful E1 evaluation produces a member of the certified sign native type. -/
-theorem signNatType_sound {p : Prog} {fuel : Nat} {n v : Int} {st' : Store}
+theorem signNativeType_sound {p : Prog} {fuel : Nat} {n v : Int} {st' : Store}
     (hn : 0 <= n)
     (heval : eval fuel orgE1Signature p (seed n) Store.zero = some (v, st')) :
-    signNatType.pred (evalObsPattern p v) := by
+    signNativeType.pred (evalObsPattern p v) := by
   exact ⟨p, v, rfl, Seal.certified_sign_sound hn heval⟩
 
 /-- Successful E1 evaluation produces a member of the certified parity native type. -/
-theorem parityNatType_sound {p : Prog} {fuel : Nat} {n v : Int} {st' : Store}
+theorem parityNativeType_sound {p : Prog} {fuel : Nat} {n v : Int} {st' : Store}
     (heval : eval fuel orgE1Signature p (seed n) Store.zero = some (v, st')) :
-    parityNatType.pred (evalObsPattern p v) := by
+    parityNativeType.pred (evalObsPattern p v) := by
   exact ⟨p, v, rfl, Seal.certified_parity_sound heval⟩
 
 /-- A certified-total program is a native-type member and evaluates at fixed fuel. -/
-theorem totalNatType_sound {p : Prog}
+theorem totalNativeType_sound {p : Prog}
     (htotal : certifiedTotalAnalysis p = true) {n : Int} (st : Store) (hn : 0 <= n) :
-    totalNatType.pred (progToPattern p) ∧
+    totalNativeType.pred (progToPattern p) ∧
       totalAnalysis p = true ∧
         ∃ v st', eval (progHeight p + 1) orgE1Signature p (seed n) st = some (v, st') := by
   exact ⟨⟨p, rfl, htotal⟩, Seal.certified_total_sound htotal st hn⟩

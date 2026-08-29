@@ -267,7 +267,7 @@ theorem certified_iff_generatedFiniteTraceMeaning
 
 /-! ## CertificateGSLT-presented compiler steps -/
 
-/-- When compiler edges have a two-sided CertificateGSLT presentation, its ordinary
+/-- When compiler edges have a two-sided CertificateGSLT definition, its ordinary
 versioned articles become the local evidence inside the generated finite-trace
 checker. -/
 def certificateGSLTFiniteTraceChecker
@@ -275,9 +275,9 @@ def certificateGSLTFiniteTraceChecker
     (authorityId : AuthorityId)
     {State : Type uState} {Observation : Type uObservation}
     (compilerChecker : CompilationTraceChecker State Observation)
-    {presentation : InferenceChecker.ValidatedPresentation}
-    (adequacy : CertificateGSLT.ExactStepPresentation
-      compilerChecker.toGSLT presentation)
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : CertificateGSLT.ExactStepEncoding
+      compilerChecker.toGSLT definition)
     [DecidableEq State] :=
   CertificateGSLT.CheckerCapabilities.finiteTraceChecker
     (CertificateGSLT.exactWireStepAuthority authorityId adequacy)
@@ -289,9 +289,9 @@ theorem certificateGSLTFiniteTraceChecker_authority
     (authorityId : AuthorityId)
     {State : Type uState} {Observation : Type uObservation}
     (compilerChecker : CompilationTraceChecker State Observation)
-    {presentation : InferenceChecker.ValidatedPresentation}
-    (adequacy : CertificateGSLT.ExactStepPresentation
-      compilerChecker.toGSLT presentation)
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : CertificateGSLT.ExactStepEncoding
+      compilerChecker.toGSLT definition)
     [DecidableEq State] :
     (certificateGSLTFiniteTraceChecker authorityId compilerChecker adequacy).Authority
       CertificateGSLT.TraceClaim.Meaning :=
@@ -306,9 +306,9 @@ theorem certified_iff_exists_certificateGSLTTraceCertificate
     (authorityId : AuthorityId)
     {State : Type uState} {Observation : Type uObservation}
     (compilerChecker : CompilationTraceChecker State Observation)
-    {presentation : InferenceChecker.ValidatedPresentation}
-    (adequacy : CertificateGSLT.ExactStepPresentation
-      compilerChecker.toGSLT presentation)
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : CertificateGSLT.ExactStepEncoding
+      compilerChecker.toGSLT definition)
     [DecidableEq State] (claim : Claim State) :
     Certified compilerChecker claim ↔
       ∃ certificate,

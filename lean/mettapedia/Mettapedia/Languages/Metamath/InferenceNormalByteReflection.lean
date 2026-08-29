@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.InferenceNormalByteLedger
 import Mettapedia.Languages.Metamath.InferenceNormalTraceReflection
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Native reflection from a normal token ledger
 
@@ -32,7 +34,7 @@ ledger. The generated tree is usable data; the named proof fields authenticate
 its exact source and runtime boundary. -/
 structure NormalLedgerNativeReflection
     (ledger : NormalTokenLedger) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
+    (target : ValidatedCalculusLanguageDef)
     (formula : ConstantHeadedFormula) : Type where
   pre_projection : projectPrefix? ledger.anchor.db = some projection
   target_formula : ledger.targetFormula = formula.toRuntime
@@ -62,9 +64,9 @@ structure NormalLedgerNativeReflection
 reflection. -/
 def NormalLedgerNativeReflection.nativeEvidence
     {ledger : NormalTokenLedger} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {formula : ConstantHeadedFormula}
+    {target : ValidatedCalculusLanguageDef} {formula : ConstantHeadedFormula}
     (reflection : NormalLedgerNativeReflection ledger projection target formula)
-    (hprojection : presentationOfProjection? projection = some target.1) :
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1) :
     Derivation target (proves (encodeFormula formula)) :=
   reflection.tree.toDerivation hprojection
 
@@ -73,10 +75,10 @@ is accepted as an input; it is derived structurally from the ledger. -/
 noncomputable def NormalTokenLedger.reflectNative
     (ledger : NormalTokenLedger)
     (hfinish : (ledger.anchor.finishProof ledger.final).db.error? = none)
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (formula : ConstantHeadedFormula)
     (hproject : projectPrefix? ledger.anchor.db = some projection)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (htargetFormula : ledger.targetFormula = formula.toRuntime) :
     NormalLedgerNativeReflection ledger projection target formula := by
   let source := exactNormalTrace_sourceTreeEvidence
@@ -103,10 +105,10 @@ proof evidence over the exact pre-insertion projection. -/
 theorem NormalTokenLedger.reflects_sourceTree
     (ledger : NormalTokenLedger)
     (hfinish : (ledger.anchor.finishProof ledger.final).db.error? = none)
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (formula : ConstantHeadedFormula)
     (hproject : projectPrefix? ledger.anchor.db = some projection)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (htargetFormula : ledger.targetFormula = formula.toRuntime) :
     ledger.anchor.db.trimFrame' ledger.targetFormula = .ok ledger.targetFrame ∧
       ∃ tree : GeneratedProvesTree projection target formula,
@@ -158,7 +160,7 @@ theorem NormalTokenLedger.reflected_labels_exclude_target
 /-- The named self-reference boundary of retained native evidence. -/
 theorem NormalLedgerNativeReflection.labels_exclude_target
     {ledger : NormalTokenLedger} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {formula : ConstantHeadedFormula}
+    {target : ValidatedCalculusLanguageDef} {formula : ConstantHeadedFormula}
     (reflection : NormalLedgerNativeReflection ledger projection target formula) :
     ledger.targetLabel ∉
       submittedNormalLabels ledger.firstToken ledger.remainingTokens :=

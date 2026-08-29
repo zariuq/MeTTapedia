@@ -1,5 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.GrammarInferenceExtraction
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Metamath source grammar as one GSLT root
 
@@ -416,42 +418,42 @@ the exact serialized source under this module's one grammar root and ordered
 lexical declarations. -/
 theorem checkedMetamathSourceBlocks_sound
     (source : ClassifiedSource)
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (admitted :
-      admitLexicalDAGPresentation sourceGrammar lexicalDeclarations source =
-        some presentation)
+      admitLexicalDAGDefinition sourceGrammar lexicalDeclarations source =
+        some definition)
     (rootId : Nat) (blocks : List (List DAGNode))
-    (checked : checkDAGBlocks presentation
+    (checked : checkDAGBlocks definition
       (dagRootJudgment source.ledger outerDatabaseSort) rootId blocks = true) :
     ∃ tree,
       Derives (lexicalizedLanguage sourceGrammar lexicalDeclarations source)
         outerDatabaseSort source.ledger.tokens tree :=
   admittedLexicalDAGBlocks_root_sound sourceGrammar lexicalDeclarations source
-    presentation admitted outerDatabaseSort rootId blocks checked
+    definition admitted outerDatabaseSort rootId blocks checked
 
 /-- Exact-erasure strengthening for the concrete Metamath source grammar.
 The compact accepted object determines one raw proof, one typed derivation
 whose erasure is that proof, and a grammar derivation of the exact source. -/
 theorem checkedMetamathSourceBlocks_exact
     (source : ClassifiedSource)
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (admitted :
-      admitLexicalDAGPresentation sourceGrammar lexicalDeclarations source =
-        some presentation)
+      admitLexicalDAGDefinition sourceGrammar lexicalDeclarations source =
+        some definition)
     (rootId : Nat) (blocks : List (List DAGNode))
-    (checked : checkDAGBlocks presentation
+    (checked : checkDAGBlocks definition
       (dagRootJudgment source.ledger outerDatabaseSort) rootId blocks = true) :
     ∃ (proof : RawProof)
-        (derivation : Derivation presentation
+        (derivation : Derivation definition
           (dagRootJudgment source.ledger outerDatabaseSort))
         (tree : Pattern),
-      expandDAGBlocks? presentation
+      expandDAGBlocks? definition
           (dagRootJudgment source.ledger outerDatabaseSort) rootId blocks =
             some proof ∧
         derivation.erase = proof ∧
         Derives (lexicalizedLanguage sourceGrammar lexicalDeclarations source)
           outerDatabaseSort source.ledger.tokens tree :=
   admittedLexicalDAGBlocks_root_exact sourceGrammar lexicalDeclarations source
-    presentation admitted outerDatabaseSort rootId blocks checked
+    definition admitted outerDatabaseSort rootId blocks checked
 
 end Mettapedia.Languages.Metamath.SourceGSLT

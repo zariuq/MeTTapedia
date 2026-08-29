@@ -1,0 +1,29 @@
+import Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissInertPlanData
+
+set_option autoImplicit false
+
+namespace Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissInertAssertionPlanCanary
+
+open Mettapedia.Languages.Metamath.MM2CompressedProofExecution
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupCanary
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissDirectAssertionCanary
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissInertPlanData
+open Mettapedia.Languages.ProcessCalculi.MORK
+open Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveComputable
+open Mettapedia.Languages.ProcessCalculi.MORK.WQComputable
+
+theorem speculative_miss_after_direct_assertion_supported_exact :
+    cSupportedSourceExecFacts
+        (cFireReflectiveSourceExecFact speculativeMissAfterDirectProof
+          speculativeDirectAssertionDirective) =
+      missAfterDirectAssertionCandidates := by
+  exact cSupportedSourceExecFacts_after_inert
+    speculativeMissAfterDirectProof speculativeDirectAssertionDirective
+    missFallbackCandidates
+    extract_speculativeDirectAssertionDirective_exact
+    speculative_miss_direct_assertion_no_matches
+    speculative_miss_after_direct_proof_supported_exact
+
+#print axioms speculative_miss_after_direct_assertion_supported_exact
+
+end Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissInertAssertionPlanCanary

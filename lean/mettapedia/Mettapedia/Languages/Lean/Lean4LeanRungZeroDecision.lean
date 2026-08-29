@@ -19,7 +19,7 @@ namespace Mettapedia.Languages.Lean.Lean4LeanRungZeroDecision
 open Lean4Lean
 open Mettapedia.GSLT
 open Mettapedia.GSLT.IndexedOperational
-open Mettapedia.GSLT.ProofRelevantPresentation
+open Mettapedia.GSLT.ProofRelevant
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
 open Mettapedia.Languages.Lean.Lean4LeanDirectedReduction

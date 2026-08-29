@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.Core.ProofRelevantPresentation
+import Mettapedia.GSLT.Core.ProofRelevantGSLT
 import Mettapedia.Languages.ProcessCalculi.MORK.GSLTSemantics
 
 /-!
@@ -16,7 +16,7 @@ runtime language.
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK.ProofRelevantGSLT
 
-open Mettapedia.GSLT.ProofRelevantPresentation
+open Mettapedia.GSLT.ProofRelevant
 open Mettapedia.Languages.ProcessCalculi.MORK
 
 /-- One selected, supported MM2 directive and its exact computed successor. -/
@@ -46,16 +46,16 @@ theorem scheduledEvent_nonempty_iff_step (source target : Space) :
         simp [selected] at step
         exact ⟨⟨directive, selected, step⟩⟩
 
-/-- The proof-relevant presentation of the existing ordinary MM2 language
-profile used by source-to-MM2 compilers. -/
-noncomputable def stepPresentation :
-    StepPresentation (sourceExecGSLT .leaveInert) where
+/-- Exact step evidence for the existing ordinary MM2 language profile used
+by source-to-MM2 compilers. -/
+noncomputable def stepEvidence :
+    StepEvidence (sourceExecGSLT .leaveInert) where
   Evidence := ScheduledEvent
   erases_iff := scheduledEvent_nonempty_iff_step
 
-noncomputable def presented : PresentedGSLT :=
+noncomputable def system : ProofRelevantGSLT :=
   { theory := sourceExecGSLT .leaveInert
-    steps := stepPresentation }
+    steps := stepEvidence }
 
 /-! ## Boundary controls -/
 

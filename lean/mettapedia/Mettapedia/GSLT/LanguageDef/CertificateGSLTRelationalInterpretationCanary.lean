@@ -4,7 +4,7 @@ import Mettapedia.GSLT.LanguageDef.CertificateGSLTConversionElimination
 /-!
 # Canary: judgment-changing interpretation is a proper generalization
 
-The source presentation below proves `A`; the target presentation proves `B`
+The source definition below proves `A`; the target definition proves `B`
 and has no rule concluding `A`.  A retained relation witnesses that `A`
 translates to `B`.  Consequently a proof-relevant relational interpretation
 exists and maps the source proof, while the old judgment-preserving
@@ -36,13 +36,13 @@ private def targetRule : RuleSchema :=
     premises := []
     conclusion := judgmentB }
 
-private def sourcePresentation : Presentation :=
+private def sourcePresentation : CalculusLanguageDef :=
   { language := LanguageDef.empty "relational-interpretation-source"
     calculus :=
       { judgments := [{ head := "rel-canary-A", arity := 0 }]
         rules := [sourceRule] } }
 
-private def targetPresentation : Presentation :=
+private def targetPresentation : CalculusLanguageDef :=
   { language := LanguageDef.empty "relational-interpretation-target"
     calculus :=
       { judgments := [{ head := "rel-canary-B", arity := 0 }]
@@ -54,13 +54,13 @@ private theorem emptyLanguage_validate (name : String) :
     simp [LanguageDef.empty, LanguageDef.typeNames]
 
 private theorem sourcePresentation_valid :
-    sourcePresentation.isValidV2 = true := by
-  simp [sourcePresentation, Presentation.isValidV2,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.isValidV1, Presentation.ruleIds, emptyLanguage_validate,
+    sourceCalculusLanguageDef.isValid = true := by
+  simp [sourcePresentation, CalculusLanguageDef.isValid,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.hasValidLocalRules, CalculusLanguageDef.ruleIds, emptyLanguage_validate,
     sourceRule, judgmentA, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
-    fixedConstructorListsValid, RuleSchema.isValidV1,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
+    fixedConstructorListsValid, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
@@ -71,13 +71,13 @@ private theorem sourcePresentation_valid :
   decide
 
 private theorem targetPresentation_valid :
-    targetPresentation.isValidV2 = true := by
-  simp [targetPresentation, Presentation.isValidV2,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.isValidV1, Presentation.ruleIds, emptyLanguage_validate,
+    targetCalculusLanguageDef.isValid = true := by
+  simp [targetPresentation, CalculusLanguageDef.isValid,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.hasValidLocalRules, CalculusLanguageDef.ruleIds, emptyLanguage_validate,
     targetRule, judgmentB, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
-    fixedConstructorListsValid, RuleSchema.isValidV1,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
+    fixedConstructorListsValid, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
@@ -87,10 +87,10 @@ private theorem targetPresentation_valid :
     Pattern.hasCanonicalBinderMetadataList]
   decide
 
-private def sourceValidated : ValidatedPresentation :=
+private def sourceValidated : ValidatedCalculusLanguageDef :=
   ⟨sourcePresentation, sourcePresentation_valid⟩
 
-private def targetValidated : ValidatedPresentation :=
+private def targetValidated : ValidatedCalculusLanguageDef :=
   ⟨targetPresentation, targetPresentation_valid⟩
 
 private def sourceObject : Object := ⟨sourceValidated⟩
@@ -106,7 +106,7 @@ private theorem source_instantiates :
     instantiateRule? sourceValidated sourceInstance =
       some ([], judgmentA) := by
   simp [instantiateRule?, sourceValidated, sourcePresentation, sourceRule,
-    sourceInstance, judgmentA, Presentation.lookupRule?, argumentsValidAt,
+    sourceInstance, judgmentA, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     instantiateSchemas?, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemasAt?]
 
@@ -114,7 +114,7 @@ private theorem target_instantiates :
     instantiateRule? targetValidated targetInstance =
       some ([], judgmentB) := by
   simp [instantiateRule?, targetValidated, targetPresentation, targetRule,
-    targetInstance, judgmentB, Presentation.lookupRule?, argumentsValidAt,
+    targetInstance, judgmentB, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     instantiateSchemas?, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemasAt?]
 
@@ -140,7 +140,7 @@ private theorem source_application_shape
     | intro rule lookup argumentsValid sideConditions premisesInstantiate
         conclusionInstantiates =>
       simp [sourceValidated, sourcePresentation, sourceRule,
-        Presentation.lookupRule?] at lookup
+        CalculusLanguageDef.lookupRule?] at lookup
       rcases lookup with ⟨ruleIdShape, ruleShape⟩
       subst ruleId
       subst rule
@@ -164,7 +164,7 @@ private theorem target_application_shape
     | intro rule lookup argumentsValid sideConditions premisesInstantiate
         conclusionInstantiates =>
       simp [targetValidated, targetPresentation, targetRule,
-        Presentation.lookupRule?] at lookup
+        CalculusLanguageDef.lookupRule?] at lookup
       rcases lookup with ⟨ruleIdShape, ruleShape⟩
       subst ruleId
       subst rule

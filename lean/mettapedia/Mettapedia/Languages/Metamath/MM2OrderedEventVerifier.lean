@@ -329,20 +329,12 @@ private def sourceTheoremPreparedAssertionHeaderTemplate : Atom :=
         [.symbol "mm-source-proof-owner", .var "source", .var "position"],
       .var "assertion-header"]
 
-private def sourceTheoremAdmittedTemplate : Atom :=
+private def sourceTheoremActionReleaseTemplate : Atom :=
   .expression
-    [.symbol "mm-source-theorem-admitted", .var "source",
-      .var "position", sourceTheoremStatementTemplate,
+    [.symbol "mm-source-theorem-action-release", .var "source",
+      .var "position", .var "next-position", sourceTheoremStatementTemplate,
+      .var "theorem-dispatch-input", .var "theorem-dispatch-output",
       .var "proof-occurrence"]
-
-private def sourceTheoremNextControlTemplate : Atom :=
-  .expression
-    [.symbol "mm-source-control", .var "source", .var "next-position"]
-
-private def sourceTheoremRestoredDispatchTemplate : Atom :=
-  .expression
-    [.symbol "exec", sourceDispatchLocation,
-      .var "theorem-dispatch-input", .var "theorem-dispatch-output"]
 
 private def sourceTheoremReloadTriggerTemplate : Atom :=
   .expression [.symbol "mm-reload-source-verifier", .var "source"]
@@ -360,10 +352,7 @@ private def sourceTheoremCommitSinks : List Sink :=
    .remove sourceTheoremPendingTemplate,
    .remove sourceTheoremSucceededTemplate,
    .remove sourceTheoremPreparedAssertionHeaderTemplate,
-   .add (.var "assertion-header"),
-   .add sourceTheoremAdmittedTemplate,
-   .add sourceTheoremRestoredDispatchTemplate,
-   .add sourceTheoremNextControlTemplate,
+   .add sourceTheoremActionReleaseTemplate,
    .add sourceTheoremReloadTriggerTemplate]
 
 private def sourceTheoremCommitOutput : Atom :=
@@ -374,14 +363,12 @@ private def sourceTheoremCommitOutput : Atom :=
       .expression [.symbol "-", sourceTheoremSucceededTemplate],
       .expression
         [.symbol "-", sourceTheoremPreparedAssertionHeaderTemplate],
-      .expression [.symbol "+", .var "assertion-header"],
-      .expression [.symbol "+", sourceTheoremAdmittedTemplate],
-      .expression [.symbol "+", sourceTheoremRestoredDispatchTemplate],
-      .expression [.symbol "+", sourceTheoremNextControlTemplate],
+      .expression [.symbol "+", sourceTheoremActionReleaseTemplate],
       .expression [.symbol "+", sourceTheoremReloadTriggerTemplate]]
 
-/-- Admission is a separate continuation whose required proof-success fact
-can only be produced by the proof machine in an admitted initial space. -/
+/-- Proof completion releases the exact source-state action occurrence.  It
+publishes neither theorem admission nor the next source cursor; both remain
+withheld until the proof-gated state delta finishes. -/
 def sourceTheoremCommitRule : Atom :=
   .expression
     [.symbol "exec", sourceTheoremCommitLocation,
@@ -461,6 +448,14 @@ def sourceTheoremAdmittedAtom (owner : Atom) (position : Nat)
   .expression
     [.symbol "mm-source-theorem-admitted", owner, natAtom position,
       rawStatementAtom statement, proofOccurrence]
+
+def sourceTheoremActionReleaseAtom (owner : Atom)
+    (position nextPosition : Nat) (statement : RawStatement)
+    (proofOccurrence : Atom) : Atom :=
+  .expression
+    [.symbol "mm-source-theorem-action-release", owner, natAtom position,
+      natAtom nextPosition, rawStatementAtom statement,
+      sourceDispatchInput, sourceDispatchOutput, proofOccurrence]
 
 def sourceVerifierReloadTriggerAtom (owner : Atom) : Atom :=
   .expression [.symbol "mm-reload-source-verifier", owner]
@@ -1527,9 +1522,10 @@ theorem sourceTheoremSuccessDirective_fires_success (owner : Atom)
     reflectiveSupportSinkProvider]
   exact Finset.mem_union_right _ (List.mem_toFinset.mpr staged)
 
-/-- A theorem is admitted, the dispatcher restored, and source order advanced
-only by the continuation that consumes explicit proof-success evidence. -/
-theorem sourceTheoremCommitDirective_fires_admission (owner : Atom)
+/-- The exact proof-gated action occurrence is released only by the
+continuation that consumes explicit proof-success evidence.  Admission and
+the next source cursor are intentionally absent from this continuation. -/
+theorem sourceTheoremCommitDirective_fires_release (owner : Atom)
     (position nextPosition : Nat) (site separator terminator : LocatedByteSpan)
     (label typecode : LocatedName) (body : List LocatedName)
     (proof : ProofPayload) (proofOccurrence : Atom) (assertionPosition : Nat)
@@ -1541,11 +1537,8 @@ theorem sourceTheoremCommitDirective_fires_admission (owner : Atom)
         terminator label typecode body proof proofOccurrence assertionPosition
         assertion)
       sourceTheoremCommitDirective
-    assertionHeaderRow owner assertionPosition assertion ∈ result ∧
-      sourceTheoremAdmittedAtom owner position statement proofOccurrence ∈
-        result ∧
-      sourceEventDispatchRule ∈ result ∧
-      sourceControlAtom owner nextPosition ∈ result := by
+    sourceTheoremActionReleaseAtom owner position nextPosition statement
+      proofOccurrence ∈ result := by
   dsimp only
   let statement := sourceProvableStatement site separator terminator label
     typecode body proof
@@ -1564,67 +1557,21 @@ theorem sourceTheoremCommitDirective_fires_admission (owner : Atom)
       sourceTheoremCommitMatchRow_mem owner position nextPosition site separator
         terminator label typecode body proof proofOccurrence assertionPosition
         assertion
-  have headerInstantiates :
-      instantiateTemplateAtom? substitution (.var "assertion-header") =
-        some (assertionHeaderRow owner assertionPosition assertion) := by
-    rfl
-  have admittedInstantiates :
-      instantiateTemplateAtom? substitution sourceTheoremAdmittedTemplate =
-        some
-          (sourceTheoremAdmittedAtom owner position statement proofOccurrence) :=
-    by rfl
-  have dispatchInstantiates :
+  have releaseInstantiates :
       instantiateTemplateAtom? substitution
-          sourceTheoremRestoredDispatchTemplate =
-        some sourceEventDispatchRule := by
+          sourceTheoremActionReleaseTemplate =
+        some (sourceTheoremActionReleaseAtom owner position nextPosition
+          statement proofOccurrence) := by
     rfl
-  have controlInstantiates :
-      instantiateTemplateAtom? substitution sourceTheoremNextControlTemplate =
-        some (sourceControlAtom owner nextPosition) := by
-    rfl
-  have admittedStaged := stageAdd_contains_of_row rows substitution
-    sourceTheoremAdmittedTemplate
-    (sourceTheoremAdmittedAtom owner position statement proofOccurrence)
-    rowMember admittedInstantiates
-  have headerStaged := stageAdd_contains_of_row rows substitution
-    (.var "assertion-header")
-    (assertionHeaderRow owner assertionPosition assertion)
-    rowMember headerInstantiates
-  have dispatchStaged := stageAdd_contains_of_row rows substitution
-    sourceTheoremRestoredDispatchTemplate sourceEventDispatchRule rowMember
-    dispatchInstantiates
-  have controlStaged := stageAdd_contains_of_row rows substitution
-    sourceTheoremNextControlTemplate (sourceControlAtom owner nextPosition)
-    rowMember controlInstantiates
-  constructor
-  · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      sourceTheoremCommitDirective, sourceTheoremCommitSinks,
-      reflectiveSupportSinkProvider]
-    exact Finset.mem_union_left _
-      (Finset.mem_union_left _
-        (Finset.mem_union_left _
-          (Finset.mem_union_left _
-            (Finset.mem_union_right _ (List.mem_toFinset.mpr headerStaged)))))
-  · constructor
-    · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-      sourceTheoremCommitDirective, sourceTheoremCommitSinks,
-      reflectiveSupportSinkProvider]
-      exact Finset.mem_union_left _
-        (Finset.mem_union_left _
-          (Finset.mem_union_left _
-            (Finset.mem_union_right _ (List.mem_toFinset.mpr admittedStaged))))
-    · constructor
-      · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-          sourceTheoremCommitDirective, sourceTheoremCommitSinks,
-          reflectiveSupportSinkProvider]
-        exact Finset.mem_union_left _
-          (Finset.mem_union_left _
-            (Finset.mem_union_right _ (List.mem_toFinset.mpr dispatchStaged)))
-      · simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
-          sourceTheoremCommitDirective, sourceTheoremCommitSinks,
-          reflectiveSupportSinkProvider]
-        exact Finset.mem_union_left _
-          (Finset.mem_union_right _ (List.mem_toFinset.mpr controlStaged))
+  have releaseStaged := stageAdd_contains_of_row rows substitution
+    sourceTheoremActionReleaseTemplate
+    (sourceTheoremActionReleaseAtom owner position nextPosition statement
+      proofOccurrence) rowMember releaseInstantiates
+  simp only [fireReflectiveSourceExecFact, applyReflectiveSinkBatch,
+    sourceTheoremCommitDirective, sourceTheoremCommitSinks,
+    reflectiveSupportSinkProvider]
+  exact Finset.mem_union_left _
+    (Finset.mem_union_right _ (List.mem_toFinset.mpr releaseStaged))
 
 /-- The bootstrap is an ordinary scheduled MM2 step in the supplied target's
 OSLF-generated NTT, and it derives both the initial program counter and the
@@ -1738,7 +1685,7 @@ theorem sourceTheoremSuccessPhase_inhabits_target_native_type
   · exact sourceTheoremSuccessDirective_fires_success owner position
       theoremLabel expected proofOccurrence
 
-/-- Conditional admission is likewise an exact target step.  Its source
+/-- The proof-success release is likewise an exact target step.  Its source
 contains explicit proof-success evidence; without that evidence this theorem
 does not apply. -/
 theorem sourceTheoremCommitPhase_inhabits_target_native_type
@@ -1758,12 +1705,9 @@ theorem sourceTheoremCommitPhase_inhabits_target_native_type
           (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.exactTargetNativeType
             targetPresentation.operational.theory
             (targetPresentation.embedSpace result)).pred ∧
-      sourceTheoremAdmittedAtom owner position
+      sourceTheoremActionReleaseAtom owner position nextPosition
           (sourceProvableStatement site separator terminator label typecode body
-            proof) proofOccurrence ∈ result ∧
-      assertionHeaderRow owner assertionPosition assertion ∈ result ∧
-      sourceEventDispatchRule ∈ result ∧
-      sourceControlAtom owner nextPosition ∈ result := by
+            proof) proofOccurrence ∈ result := by
   dsimp only
   refine ⟨?_, ?_⟩
   · exact (targetPresentation.native_type_iff_step _ _).2 <|
@@ -1772,11 +1716,9 @@ theorem sourceTheoremCommitPhase_inhabits_target_native_type
           (sourceTheoremCommitPhase_selects_directive owner position nextPosition
             site separator terminator label typecode body proof proofOccurrence
             assertionPosition assertion)⟩
-  · have fired :=
-      sourceTheoremCommitDirective_fires_admission owner position nextPosition
-        site separator terminator label typecode body proof proofOccurrence
-        assertionPosition assertion
-    exact ⟨fired.2.1, fired.1, fired.2.2.1, fired.2.2.2⟩
+  · exact sourceTheoremCommitDirective_fires_release owner position nextPosition
+      site separator terminator label typecode body proof proofOccurrence
+      assertionPosition assertion
 
 /-! ## Negative controls -/
 
@@ -1934,7 +1876,7 @@ example (owner : Atom) (position nextPosition : Nat)
 #print axioms sourceTheoremCommitPhase_selects_directive
 #print axioms sourceTheoremStartDirective_fires_pending_and_request
 #print axioms sourceTheoremSuccessDirective_fires_success
-#print axioms sourceTheoremCommitDirective_fires_admission
+#print axioms sourceTheoremCommitDirective_fires_release
 #print axioms sourceTheoremStartPhase_inhabits_target_native_type
 #print axioms sourceTheoremSuccessPhase_inhabits_target_native_type
 #print axioms sourceTheoremCommitPhase_inhabits_target_native_type

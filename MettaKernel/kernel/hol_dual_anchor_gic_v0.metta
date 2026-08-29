@@ -48,16 +48,17 @@
 ; ---------- HOL4: ASSUME and DISCH are primitive ----------------------------
 (= (h4-rules)
    (LCons
-     (GRule "H4_BOOL_A" LNil LNil (hol-bool (hol-a)))
+     (GRuleV1 "H4_BOOL_A" LNil LNil (hol-bool (hol-a)) LNil)
      (LCons
-       (GRule "H4_BOOL_B" LNil LNil (hol-bool (hol-b)))
+       (GRuleV1 "H4_BOOL_B" LNil LNil (hol-bool (hol-b)) LNil)
        (LCons
-         (GRule "H4_ASSUME"
+         (GRuleV1 "H4_ASSUME"
            (LCons (Formal "P" 0) LNil)
            (LCons (hol-bool (FVar "P")) LNil)
-           (hol-thm (hol-seq (hol-hyp (FVar "P")) (FVar "P"))))
+           (hol-thm (hol-seq (hol-hyp (FVar "P")) (FVar "P")))
+           LNil)
          (LCons
-           (GRule "H4_DISCH"
+           (GRuleV1 "H4_DISCH"
              (LCons (Formal "P" 0)
                (LCons (Formal "H" 0)
                  (LCons (Formal "Q" 0) LNil)))
@@ -68,11 +69,13 @@
              (hol-thm
                (hol-seq
                  (hol-remove (FVar "P") (FVar "H"))
-                 (hol-imp (FVar "P") (FVar "Q")))))
+                 (hol-imp (FVar "P") (FVar "Q"))))
+             LNil)
            LNil)))))
 
-(= (h4-presentation)
-   (GPresentation (hol-constructors) (hol-judgments) (h4-rules)))
+(= (h4-language)
+   (GInferenceLanguageV1 1
+     (hol-constructors) (hol-judgments) (h4-rules) GNoConversion))
 
 (= (h4-bool-a-proof)
    (GProof (GRuleInst "H4_BOOL_A" LNil) PrNil))
@@ -102,31 +105,34 @@
 ; ---------- HOL Light: implication introduction is derived -----------------
 (= (hl-rules)
    (LCons
-     (GRule "HL_BOOL_A" LNil LNil (hol-bool (hol-a)))
+     (GRuleV1 "HL_BOOL_A" LNil LNil (hol-bool (hol-a)) LNil)
      (LCons
-       (GRule "HL_BOOL_ANDAA" LNil LNil (hol-bool (hol-and-aa)))
+       (GRuleV1 "HL_BOOL_ANDAA" LNil LNil (hol-bool (hol-and-aa)) LNil)
        (LCons
-         (GRule "HL_ASSUME"
+         (GRuleV1 "HL_ASSUME"
            (LCons (Formal "P" 0) LNil)
            (LCons (hol-bool (FVar "P")) LNil)
-           (hol-thm (hol-seq (hol-hyp (FVar "P")) (FVar "P"))))
+           (hol-thm (hol-seq (hol-hyp (FVar "P")) (FVar "P")))
+           LNil)
          (LCons
-           (GRule "HL_CONJ_AA_REPLAY" LNil
+           (GRuleV1 "HL_CONJ_AA_REPLAY" LNil
              (LCons
                (hol-thm (hol-seq (hol-hyp (hol-a)) (hol-a)))
                (LCons
                  (hol-thm (hol-seq (hol-hyp (hol-a)) (hol-a)))
                  LNil))
-             (hol-thm (hol-seq (hol-hyp (hol-a)) (hol-and-aa))))
+             (hol-thm (hol-seq (hol-hyp (hol-a)) (hol-and-aa)))
+             LNil)
            (LCons
-             (GRule "HL_CONJUNCT1_AA_REPLAY" LNil
+             (GRuleV1 "HL_CONJUNCT1_AA_REPLAY" LNil
                (LCons
                  (hol-thm
                    (hol-seq (hol-hyp (hol-and-aa)) (hol-and-aa)))
                  LNil)
-               (hol-thm (hol-seq (hol-hyp (hol-and-aa)) (hol-a))))
+               (hol-thm (hol-seq (hol-hyp (hol-and-aa)) (hol-a)))
+               LNil)
              (LCons
-               (GRule "HL_DEDUCT_ANTISYM_SINGLETON" LNil
+               (GRuleV1 "HL_DEDUCT_ANTISYM_SINGLETON" LNil
                  (LCons
                    (hol-thm (hol-seq (hol-hyp (hol-a)) (hol-and-aa)))
                    (LCons
@@ -134,16 +140,18 @@
                        (hol-seq (hol-hyp (hol-and-aa)) (hol-a)))
                      LNil))
                  (hol-thm
-                   (hol-seq (hol-empty) (hol-eq (hol-and-aa) (hol-a)))))
+                   (hol-seq (hol-empty) (hol-eq (hol-and-aa) (hol-a))))
+                 LNil)
                (LCons
-                 (GRule "HL_IMP_DEF_AA" LNil LNil
+                 (GRuleV1 "HL_IMP_DEF_AA" LNil LNil
                    (hol-thm
                      (hol-seq (hol-empty)
                        (hol-eq
                          (hol-eq (hol-and-aa) (hol-a))
-                         (hol-imp (hol-a) (hol-a))))))
+                         (hol-imp (hol-a) (hol-a)))))
+                   LNil)
                  (LCons
-                   (GRule "HL_EQ_MP_EMPTY"
+                   (GRuleV1 "HL_EQ_MP_EMPTY"
                      (LCons (Formal "P" 0)
                        (LCons (Formal "Q" 0) LNil))
                      (LCons
@@ -153,11 +161,13 @@
                        (LCons
                          (hol-thm (hol-seq (hol-empty) (FVar "P")))
                          LNil))
-                     (hol-thm (hol-seq (hol-empty) (FVar "Q"))))
+                     (hol-thm (hol-seq (hol-empty) (FVar "Q")))
+                     LNil)
                    LNil)))))))))
 
-(= (hl-presentation)
-   (GPresentation (hol-constructors) (hol-judgments) (hl-rules)))
+(= (hl-language)
+   (GInferenceLanguageV1 1
+     (hol-constructors) (hol-judgments) (hl-rules) GNoConversion))
 
 (= (hl-bool-a-proof)
    (GProof (GRuleInst "HL_BOOL_A" LNil) PrNil))
@@ -198,12 +208,12 @@
        (PrCons (hl-deduct-proof) PrNil))))
 
 ; ---------- Exact acceptance and mutation teeth -----------------------------
-!(assertEqual (gic-presentation-valid (h4-presentation)) True)
+!(assertEqual (gic-language-valid (h4-language)) True)
 !(assertEqual
-  (gic-check (h4-presentation) (h4-imp-id-goal) (h4-imp-id-proof))
+  (gic-check (h4-language) (h4-imp-id-goal) (h4-imp-id-proof))
   True)
 !(assertEqual
-  (gic-check (h4-presentation) (h4-imp-id-goal)
+  (gic-check (h4-language) (h4-imp-id-goal)
     (GProof
       (GRuleInst "H4_DISCH"
         (LCons (hol-a)
@@ -211,7 +221,7 @@
       (PrCons (h4-bool-a-proof) PrNil)))
   False)
 !(assertEqual
-  (gic-check (h4-presentation) (h4-imp-id-goal)
+  (gic-check (h4-language) (h4-imp-id-goal)
     (GProof
       (GRuleInst "H4_DISCH"
         (LCons (hol-a)
@@ -220,7 +230,7 @@
         (PrCons (h4-bool-a-proof) PrNil))))
   False)
 !(assertEqual
-  (gic-check (h4-presentation) (h4-imp-id-goal)
+  (gic-check (h4-language) (h4-imp-id-goal)
     (GProof
       (GRuleInst "H4_DISCH"
         (LCons (hol-a)
@@ -229,12 +239,12 @@
         (PrCons (h4-assume-b-proof) PrNil))))
   False)
 
-!(assertEqual (gic-presentation-valid (hl-presentation)) True)
+!(assertEqual (gic-language-valid (hl-language)) True)
 !(assertEqual
-  (gic-check (hl-presentation) (hl-self-imp-goal) (hl-self-imp-proof))
+  (gic-check (hl-language) (hl-self-imp-goal) (hl-self-imp-proof))
   True)
 !(assertEqual
-  (gic-check (hl-presentation) (hl-self-imp-goal)
+  (gic-check (hl-language) (hl-self-imp-goal)
     (GProof
       (GRuleInst "H4_DISCH"
         (LCons (hol-a)
@@ -242,7 +252,7 @@
       (PrCons (hl-assume-a-proof) PrNil)))
   False)
 !(assertEqual
-  (gic-check (hl-presentation) (hl-self-imp-goal)
+  (gic-check (hl-language) (hl-self-imp-goal)
     (GProof
       (GRuleInst "HL_EQ_MP_EMPTY"
         (LCons (hol-eq (hol-and-aa) (hol-a))
@@ -251,7 +261,7 @@
         (PrCons (hl-imp-def-proof) PrNil))))
   False)
 !(assertEqual
-  (gic-check (hl-presentation) (hl-self-imp-goal)
+  (gic-check (hl-language) (hl-self-imp-goal)
     (GProof
       (GRuleInst "HL_EQ_MP_EMPTY"
         (LCons (hol-eq (hol-and-aa) (hol-a))
@@ -261,10 +271,10 @@
 
 ; Each profile rejects the other profile's proof object at the rule boundary.
 !(assertEqual
-  (gic-check (hl-presentation) (hl-self-imp-goal) (h4-imp-id-proof))
+  (gic-check (hl-language) (hl-self-imp-goal) (h4-imp-id-proof))
   False)
 !(assertEqual
-  (gic-check (h4-presentation) (hl-self-imp-goal) (hl-self-imp-proof))
+  (gic-check (h4-language) (hl-self-imp-goal) (hl-self-imp-proof))
   False)
 
 !(HOLGICSummary 2 12 12 0)

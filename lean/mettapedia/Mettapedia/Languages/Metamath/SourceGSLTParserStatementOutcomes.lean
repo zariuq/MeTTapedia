@@ -1,5 +1,7 @@
 import Mettapedia.Languages.Metamath.SourceGSLTParserPrefixBisimulation
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Statement outcomes for the Metamath source GSLT reader refinement
 
@@ -552,12 +554,12 @@ noncomputable def SpelledCallTrace.normalStatementOutcome
       .ok (.const typecode.name :: bodySymbols))
     (inserted : insertAssertion? before label.name
       ⟨typecode.name, bodySymbols⟩ = some after)
-    (runtimeTarget sourceTarget : ValidatedPresentation)
+    (runtimeTarget sourceTarget : ValidatedCalculusLanguageDef)
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix before) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix before) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? before.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? before.toSourcePrefix =
         some sourceTarget.1) :
     ReaderNormalStatementOutcome before after label.name
       ⟨typecode.name, bodySymbols⟩
@@ -632,12 +634,12 @@ noncomputable def SpelledCallTrace.compressedStatementOutcome
       .ok (.const typecode.name :: bodySymbols))
     (inserted : insertAssertion? before label.name
       ⟨typecode.name, bodySymbols⟩ = some after)
-    (runtimeTarget sourceTarget : ValidatedPresentation)
+    (runtimeTarget sourceTarget : ValidatedCalculusLanguageDef)
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix before) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix before) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? before.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? before.toSourcePrefix =
         some sourceTarget.1)
     (headerAdmitted : ∀ explicitLabel ∈ header.map LocatedName.name,
       explicitLabel ∉

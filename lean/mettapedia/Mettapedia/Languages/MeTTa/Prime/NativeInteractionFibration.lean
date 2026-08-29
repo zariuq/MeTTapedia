@@ -38,7 +38,7 @@ open Mettapedia.Algebra
 open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.InteractionComposition
 open Mettapedia.GSLT.Core.InteractionEvent
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionCost
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation
@@ -107,7 +107,7 @@ def productInterpretation {left right : GSLT}
 @[simp] theorem productInterpretation_superpose {left right : GSLT}
     (leftInterpretation : EndpointInterpretation left)
     (rightInterpretation : EndpointInterpretation right)
-    (leftTerm rightTerm : NativeRawTm 0 0) :
+    (leftTerm rightTerm : StagedReflectiveTm 0 0) :
     (productInterpretation leftInterpretation rightInterpretation).lower?
         (.superpose leftTerm rightTerm) =
       Option.map₂ Prod.mk (leftInterpretation.lower? leftTerm)
@@ -119,7 +119,7 @@ def productInterpretation {left right : GSLT}
 @[simp] theorem productInterpretation_non_superpose {left right : GSLT}
     (leftInterpretation : EndpointInterpretation left)
     (rightInterpretation : EndpointInterpretation right)
-    (term : NativeRawTm 0 0)
+    (term : StagedReflectiveTm 0 0)
     (notSuperpose : ∀ leftTerm rightTerm, term ≠ .superpose leftTerm rightTerm) :
     (productInterpretation leftInterpretation rightInterpretation).lower? term =
       none := by

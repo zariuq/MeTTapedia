@@ -1,6 +1,6 @@
 import Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.SyntacticJudgmentalSigmaId
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.TypingGeneration
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SyntacticJudgmentalSigmaId
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.TypingGeneration
 
 /-!
 # Constructional gradual lifting of native dependent term formers
@@ -22,10 +22,10 @@ namespace Mettapedia.Languages.MeTTa.Prime.NativeGradualDependentTermFormers
 
 open Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability
 open Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability.State
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticContextual
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalPi
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalSigmaId
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticContextual
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalPi
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalSigmaId
 
 /-! ## Raw judgments and fixed expected types -/
 

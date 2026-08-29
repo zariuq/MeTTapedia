@@ -15,6 +15,12 @@ Both families are proved prefix-free and injective, decoders round-trip even
 in context (`e1decode (e1encode x ++ rest) = some (x, rest)`), which yields the
 prefix-freeness proofs by a single decode comparison.
 
+The `E1`/`E2` terminology follows Franz, Antonenko, and Soletskyi, *A Theory
+of Incremental Compression* (2021), and is shared with the `ic-theory` Lean
+formalization lineage.  This module supplies Mettapedia's proof-relevant
+decoder, primitive-recursive, and contextual-suffix interfaces for those
+codes.
+
 The negative control `unary_overhead_exceeds_e2` shows that the project-wide
 unary code `machinePrefix` (overhead `n + 1`) has linear rather than
 logarithmic overhead: its excess over the `e2` header exceeds every fixed
@@ -419,12 +425,103 @@ def e2decode (w : BinString) : Option (BinString × BinString) :=
       let n := ofBinaryBits headerBits
       if n ≤ rest.length then some (rest.take n, rest.drop n) else none
 
+/-- Decoding a binary-length self-delimiting field is primitive recursive. -/
+theorem e2decode_primrec : Primrec e2decode := by
+  have hBranch : Primrec₂ fun (_w : BinString)
+      (fields : BinString × BinString) =>
+      let n := ofBinaryBits fields.1
+      if n ≤ fields.2.length then
+        some (fields.2.take n, fields.2.drop n)
+      else none := by
+    apply Primrec₂.mk
+    have hLength : Primrec fun input : BinString × (BinString × BinString) =>
+        ofBinaryBits input.2.1 :=
+      ofBinaryBits_primrec.comp (Primrec.fst.comp Primrec.snd)
+    have hBody : Primrec fun input : BinString × (BinString × BinString) =>
+        input.2.2 :=
+      Primrec.snd.comp Primrec.snd
+    have hCondition : PrimrecPred fun input : BinString × (BinString × BinString) =>
+        ofBinaryBits input.2.1 ≤ input.2.2.length :=
+      Primrec.nat_le.comp hLength (Primrec.list_length.comp hBody)
+    have hTake : Primrec fun input : BinString × (BinString × BinString) =>
+        input.2.2.take (ofBinaryBits input.2.1) :=
+      Primrec.list_take.comp hLength hBody
+    have hDrop : Primrec fun input : BinString × (BinString × BinString) =>
+        input.2.2.drop (ofBinaryBits input.2.1) :=
+      Primrec.list_drop.comp hLength hBody
+    exact Primrec.ite hCondition
+      (Primrec.option_some.comp (hTake.pair hDrop))
+      (Primrec.const none)
+  exact (Primrec.option_bind e1decode_primrec hBranch).of_eq fun w => by
+    unfold e2decode
+    cases e1decode w <;> rfl
+
 theorem e2decode_e2encode_append (x : BinString) (rest : BinString) :
     e2decode (e2encode x ++ rest) = some (x, rest) := by
   simp only [e2decode, e2encode, List.append_assoc, e1decode_e1encode_append,
     ofBinaryBits_binaryBits]
   rw [if_pos (by simp)]
   rw [List.take_left, List.drop_left]
+
+/-- Appending a suffix after a successfully decoded `e2` field leaves its
+payload unchanged and appends to the returned tail. -/
+theorem e2decode_append_of_success {input head rest : BinString}
+    (h : e2decode input = some (head, rest)) (suffix : BinString) :
+    e2decode (input ++ suffix) = some (head, rest ++ suffix) := by
+  unfold e2decode at h ⊢
+  cases hHeader : e1decode input with
+  | none => simp [hHeader] at h
+  | some fields =>
+      obtain ⟨headerBits, body⟩ := fields
+      simp only [hHeader] at h
+      let n := ofBinaryBits headerBits
+      change (if n ≤ body.length then
+        some (body.take n, body.drop n) else none) = some (head, rest) at h
+      by_cases hn : n ≤ body.length
+      · rw [if_pos hn] at h
+        have decoded : (body.take n, body.drop n) = (head, rest) :=
+          Option.some.inj h
+        have hHead : body.take n = head := congrArg Prod.fst decoded
+        have hRest : body.drop n = rest := congrArg Prod.snd decoded
+        rw [e1decode_append_of_success hHeader suffix]
+        change (if n ≤ (body ++ suffix).length then
+          some ((body ++ suffix).take n, (body ++ suffix).drop n) else none) =
+            some (head, rest ++ suffix)
+        have hn' : n ≤ (body ++ suffix).length := by
+          simpa using le_trans hn (Nat.le_add_right body.length suffix.length)
+        rw [if_pos hn', List.take_append_of_le_length hn,
+          List.drop_append_of_le_length hn, hHead, hRest]
+      · rw [if_neg hn] at h
+        simp at h
+
+/-- The payload returned by a successful `e2` decode cannot be longer than
+the complete encoded input. -/
+theorem e2decode_head_length_le {input head rest : BinString}
+    (h : e2decode input = some (head, rest)) :
+    head.length ≤ input.length := by
+  unfold e2decode at h
+  cases hHeader : e1decode input with
+  | none => simp [hHeader] at h
+  | some fields =>
+      obtain ⟨headerBits, body⟩ := fields
+      simp only [hHeader] at h
+      let n := ofBinaryBits headerBits
+      change (if n ≤ body.length then
+        some (body.take n, body.drop n) else none) = some (head, rest) at h
+      by_cases hn : n ≤ body.length
+      · rw [if_pos hn] at h
+        have decoded : (body.take n, body.drop n) = (head, rest) :=
+          Option.some.inj h
+        have hHead : body.take n = head := congrArg Prod.fst decoded
+        have hHeadLength : head.length = n := by
+          rw [← hHead, List.length_take, min_eq_left hn]
+        have hDecompose := e1decode_decompose hHeader
+        have hBodyLength : body.length ≤ input.length := by
+          rw [hDecompose]
+          simp
+        omega
+      · rw [if_neg hn] at h
+        simp at h
 
 theorem e2encode_prefix {x y : BinString} (h : e2encode x <+: e2encode y) :
     x = y := by
@@ -576,6 +673,9 @@ theorem unary_overhead_exceeds_e2 (k : Nat) :
 #print axioms binaryBits_primrec
 #print axioms ofBinaryBits_binaryBits
 #print axioms e1_prefixFree
+#print axioms e2decode_primrec
+#print axioms e2decode_append_of_success
+#print axioms e2decode_head_length_le
 #print axioms e2_prefixFree
 #print axioms e2encode_length_le_log
 #print axioms e2pair_injective

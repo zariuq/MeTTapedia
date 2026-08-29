@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.CoreMain
-import Mettapedia.OSLF.NativeType.Construction
+import Mettapedia.OSLF.PresheafNativeType.PresheafSemantics
 
 /-!
 # Paper-Parity Canaries
@@ -12,7 +12,7 @@ assumption does real work.
 namespace Mettapedia.OSLF.Framework.PaperParityCanaries
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.NativeType
+open Mettapedia.OSLF.PresheafNativeType
 open Mettapedia.OSLF.Framework.ConstructorCategory
 
 /-! ## Helper definitions -/

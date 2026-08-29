@@ -21,6 +21,7 @@ import Mettapedia.Languages.ProcessCalculi.MORK.ProofRelevantGSLT
 import Mettapedia.Languages.ProcessCalculi.MORK.MM2Surface
 import Mettapedia.Languages.ProcessCalculi.MORK.ProviderExtension
 import Mettapedia.Languages.ProcessCalculi.MORK.MeTTaZeroBoundary
+import Mettapedia.Languages.ProcessCalculi.MORK.OccurrenceSeam
 
 /-!
 # MORK: Minimal Model 2 (MM2) Formalization

@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.NativeType.CodomainFibration
+import Mettapedia.OSLF.PresheafNativeType.InternalLanguage
 import Mettapedia.OSLF.Framework.ToposTOGLBridge
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.AssumptionNecessity
@@ -40,7 +40,7 @@ def nttClaimList : List NTTClaim :=
   [ ⟨"Def 11", "Predicate fibration piOmega over the base category",
       "CategoryBridge.predFibration / CategoryBridge.oslf_fibration", .proven⟩
   , ⟨"Sec 3", "Native type as (sort, predicate) pair",
-      "NativeType.NatType / NativeType.NatTypeFiber", .proven⟩
+      "NativeType.NativeType / NativeType.NativeTypeFiber", .proven⟩
   , ⟨"Prop 12", "Indexed adjoints (exists_f dashv Omega^f dashv forall_f) with Beck-Chevalley",
       "NativeType.prop12_package / NativeType.prop12_beckChevalley", .proven⟩
   , ⟨"Prop 14", "Fibered internal logic structure (cosmic-style package) for predicate fibers",
@@ -182,17 +182,17 @@ theorem fullNTTParity_closed : nttRemainingCount = 0 :=
 
 /-! ## Anchor checks -/
 
-#check @Mettapedia.OSLF.NativeType.NatType
+#check @Mettapedia.OSLF.PresheafNativeType.NativeType
 #check @Mettapedia.OSLF.Framework.CategoryBridge.predFibration
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_full_internal_logic_bridge_package
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_rulePack
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_rulePack
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_prop12
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_prop12_pack
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piOmega_translation_endpoint
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piSigmaOmegaProp_translation_endpoint
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piProp_colax_rules
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piSigmaProp_colax_rules
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piOmega_translation_endpoint
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piSigmaOmegaProp_translation_endpoint
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piProp_colax_rules
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piSigmaProp_colax_rules
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.types_nonempty_necessary_for_piSigma
 #check Mettapedia.OSLF.MeTTaIL.LogicSemantics.mem_datalogClosureStep_iff_supported
 #check Mettapedia.OSLF.MeTTaIL.LogicSemantics.mem_datalogClosureWithFuel_iff_trace
@@ -238,25 +238,25 @@ theorem fullNTTParity_closed : nttRemainingCount = 0 :=
 #print axioms Mettapedia.OSLF.MeTTaIL.Engine.checkProofArticleWithEnv_eq_true_iff_accepted
 
 -- NTT endpoints (CodomainFibration.lean)
-#check @Mettapedia.OSLF.NativeType.prop12_package
-#check @Mettapedia.OSLF.NativeType.prop12_beckChevalley
-#check @Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
-#check @Mettapedia.OSLF.NativeType.prop12_piEta_presheaf
-#check @Mettapedia.OSLF.NativeType.prop12_sigmaEta_presheaf
+#check @Mettapedia.OSLF.PresheafNativeType.prop12_package
+#check @Mettapedia.OSLF.PresheafNativeType.prop12_beckChevalley
+#check @Mettapedia.OSLF.PresheafNativeType.prop12_piSigmaPredicateRulePack
+#check @Mettapedia.OSLF.PresheafNativeType.prop12_piEta_presheaf
+#check @Mettapedia.OSLF.PresheafNativeType.prop12_sigmaEta_presheaf
 #check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.RepresentablePiSigmaTransportPack
 #check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_patternPred_piSigma_transport_pack_via_rulePack
 #check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_patternPred_piSigma_transport_pack_via_prop12
 #check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_patternPred_piSigma_transport_via_rulePack
-#check @Mettapedia.OSLF.NativeType.prop14_cosmicFibration
-#check @Mettapedia.OSLF.NativeType.prop17_reification
-#check @Mettapedia.OSLF.NativeType.def21_codomainFibration
-#check @Mettapedia.OSLF.NativeType.imageComprehensionAdjunction
-#check @Mettapedia.OSLF.NativeType.thm23_internalLanguagePackage
+#check @Mettapedia.OSLF.PresheafNativeType.prop14_cosmicFibration
+#check @Mettapedia.OSLF.PresheafNativeType.prop17_reification
+#check @Mettapedia.OSLF.PresheafNativeType.def21_codomainFibration
+#check @Mettapedia.OSLF.PresheafNativeType.imageComprehensionAdjunction
+#check @Mettapedia.OSLF.PresheafNativeType.thm23_internalLanguagePackage
 
 -- Strengthened endpoints (Phase 1-3)
-#check @Mettapedia.OSLF.NativeType.def21_cartesianLift_proj
-#check @Mettapedia.OSLF.NativeType.def21_cartesianLift_universal_comp
-#check @Mettapedia.OSLF.NativeType.imageComprehension_iff
-#check @Mettapedia.OSLF.NativeType.thm23_functorialLaws
+#check @Mettapedia.OSLF.PresheafNativeType.def21_cartesianLift_proj
+#check @Mettapedia.OSLF.PresheafNativeType.def21_cartesianLift_universal_comp
+#check @Mettapedia.OSLF.PresheafNativeType.imageComprehension_iff
+#check @Mettapedia.OSLF.PresheafNativeType.thm23_functorialLaws
 
 end Mettapedia.OSLF.Framework.NTTClaimTracker

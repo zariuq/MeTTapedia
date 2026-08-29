@@ -27,7 +27,7 @@ substantive.
 
 namespace Mettapedia.Languages.MeTTa.Prime.NativeFibredCost
 
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionCost
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionEffectAnalysis

@@ -336,10 +336,10 @@ theorem wireDAGBlocks_mem {holeRoots : List Nat} {offset : Nat}
 /-- Every entry produced by checking either was present initially or carries
 the identifier of a submitted node. -/
 theorem checkOpenDAGNodes?_entry_provenance
-    {presentation : ValidatedPresentation} {context : List Pattern} :
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern} :
     ∀ {entries : List OpenDAGEntry} {nodes : List OpenDAGNode}
       {next : List OpenDAGEntry},
-      checkOpenDAGNodes? presentation context entries nodes = some next →
+      checkOpenDAGNodes? definition context entries nodes = some next →
       ∀ entry ∈ next,
         entry ∈ entries ∨ ∃ node ∈ nodes, entry.id = node.id := by
   intro entries nodes
@@ -352,7 +352,7 @@ theorem checkOpenDAGNodes?_entry_provenance
   | cons node nodes inductionHypothesis =>
       intro next checked entry mem
       simp only [checkOpenDAGNodes?] at checked
-      cases first : checkOpenDAGNode? presentation context entries node with
+      cases first : checkOpenDAGNode? definition context entries node with
       | none => simp [first] at checked
       | some middle =>
           simp only [first] at checked
@@ -363,7 +363,7 @@ theorem checkOpenDAGNodes?_entry_provenance
             | none =>
                 simp only [duplicate] at first
                 cases instantiated :
-                    instantiateRule? presentation node.ruleInstance with
+                    instantiateRule? definition node.ruleInstance with
                 | none => simp [instantiated] at first
                 | some result =>
                     rcases result with ⟨premises, conclusion⟩
@@ -382,10 +382,10 @@ theorem checkOpenDAGNodes?_entry_provenance
             exact Or.inr ⟨witness, List.mem_cons_of_mem node witnessMem, idEq⟩
 
 theorem checkOpenDAGBlocks?_entry_provenance
-    {presentation : ValidatedPresentation} {context : List Pattern} :
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern} :
     ∀ {entries : List OpenDAGEntry} {blocks : List (List OpenDAGNode)}
       {next : List OpenDAGEntry},
-      checkOpenDAGBlocks? presentation context entries blocks = some next →
+      checkOpenDAGBlocks? definition context entries blocks = some next →
       ∀ entry ∈ next,
         entry ∈ entries ∨ ∃ node ∈ blocks.flatten, entry.id = node.id := by
   intro entries blocks
@@ -398,7 +398,7 @@ theorem checkOpenDAGBlocks?_entry_provenance
   | cons block blocks inductionHypothesis =>
       intro next checked entry mem
       simp only [checkOpenDAGBlocks?] at checked
-      cases first : checkOpenDAGNodes? presentation context entries block with
+      cases first : checkOpenDAGNodes? definition context entries block with
       | none => simp [first] at checked
       | some middle =>
           simp only [first] at checked
@@ -474,13 +474,13 @@ theorem resolveOpenDAGChildren?_extend
                   exact resolved
 
 theorem checkOpenDAGNode?_extend_base
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {entries base : List OpenDAGEntry} {node : OpenDAGNode}
     {next : List OpenDAGEntry}
     (checked :
-      checkOpenDAGNode? presentation context entries node = some next)
+      checkOpenDAGNode? definition context entries node = some next)
     (fresh : findOpenDAGEntry? base node.id = none) :
-    checkOpenDAGNode? presentation context (entries ++ base) node =
+    checkOpenDAGNode? definition context (entries ++ base) node =
       some (next ++ base) := by
   unfold checkOpenDAGNode? at checked ⊢
   cases duplicate : findOpenDAGEntry? entries node.id with
@@ -488,7 +488,7 @@ theorem checkOpenDAGNode?_extend_base
   | none =>
       simp only [duplicate] at checked
       rw [findOpenDAGEntry?_append_none duplicate, fresh]
-      cases instantiated : instantiateRule? presentation node.ruleInstance with
+      cases instantiated : instantiateRule? definition node.ruleInstance with
       | none => simp [instantiated] at checked
       | some result =>
           rcases result with ⟨premises, conclusion⟩
@@ -503,13 +503,13 @@ theorem checkOpenDAGNode?_extend_base
               rfl
 
 theorem checkOpenDAGNodes?_extend_base
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {base : List OpenDAGEntry} :
     ∀ {entries : List OpenDAGEntry} {nodes : List OpenDAGNode}
       {next : List OpenDAGEntry},
-      checkOpenDAGNodes? presentation context entries nodes = some next →
+      checkOpenDAGNodes? definition context entries nodes = some next →
       (∀ node ∈ nodes, findOpenDAGEntry? base node.id = none) →
-      checkOpenDAGNodes? presentation context (entries ++ base) nodes =
+      checkOpenDAGNodes? definition context (entries ++ base) nodes =
         some (next ++ base) := by
   intro entries nodes
   induction nodes generalizing entries with
@@ -521,7 +521,7 @@ theorem checkOpenDAGNodes?_extend_base
   | cons node nodes inductionHypothesis =>
       intro next checked fresh
       simp only [checkOpenDAGNodes?] at checked ⊢
-      cases first : checkOpenDAGNode? presentation context entries node with
+      cases first : checkOpenDAGNode? definition context entries node with
       | none => simp [first] at checked
       | some middle =>
           simp only [first] at checked
@@ -531,13 +531,13 @@ theorem checkOpenDAGNodes?_extend_base
             (fun witness mem => fresh witness (List.mem_cons_of_mem node mem))
 
 theorem checkOpenDAGBlocks?_extend_base
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {base : List OpenDAGEntry} :
     ∀ {entries : List OpenDAGEntry} {blocks : List (List OpenDAGNode)}
       {next : List OpenDAGEntry},
-      checkOpenDAGBlocks? presentation context entries blocks = some next →
+      checkOpenDAGBlocks? definition context entries blocks = some next →
       (∀ node ∈ blocks.flatten, findOpenDAGEntry? base node.id = none) →
-      checkOpenDAGBlocks? presentation context (entries ++ base) blocks =
+      checkOpenDAGBlocks? definition context (entries ++ base) blocks =
         some (next ++ base) := by
   intro entries blocks
   induction blocks generalizing entries with
@@ -549,7 +549,7 @@ theorem checkOpenDAGBlocks?_extend_base
   | cons block blocks inductionHypothesis =>
       intro next checked fresh
       simp only [checkOpenDAGBlocks?] at checked ⊢
-      cases first : checkOpenDAGNodes? presentation context entries block with
+      cases first : checkOpenDAGNodes? definition context entries block with
       | none => simp [first] at checked
       | some middle =>
           simp only [first] at checked
@@ -574,7 +574,7 @@ environment covers exactly the wired positions. -/
 
 section WireReplay
 
-variable {presentation : ValidatedPresentation}
+variable {definition : ValidatedCalculusLanguageDef}
 variable {originalContext ambientContext : List Pattern}
 variable {holeRoots : List Nat} {expansions : List RawOpenProof}
 variable {offset : Nat} {base : List OpenDAGEntry}
@@ -710,9 +710,9 @@ theorem resolveOpenDAGChildren?_wire
 theorem checkOpenDAGNode?_wire
     {entries next : List OpenDAGEntry} {node : OpenDAGNode}
     (checked :
-      checkOpenDAGNode? presentation originalContext entries node =
+      checkOpenDAGNode? definition originalContext entries node =
         some next) :
-    checkOpenDAGNode? presentation ambientContext
+    checkOpenDAGNode? definition ambientContext
         (entries.map (OpenDAGEntry.transform expansions offset) ++ base)
         (node.wire holeRoots offset) =
       some (next.map (OpenDAGEntry.transform expansions offset) ++ base) := by
@@ -730,7 +730,7 @@ theorem checkOpenDAGNode?_wire
       have wiredInstance :
           (node.wire holeRoots offset).ruleInstance = node.ruleInstance := rfl
       rw [wiredInstance]
-      cases instantiated : instantiateRule? presentation node.ruleInstance with
+      cases instantiated : instantiateRule? definition node.ruleInstance with
       | none => simp [instantiated] at checked
       | some result =>
           rcases result with ⟨premises, conclusion⟩
@@ -751,9 +751,9 @@ theorem checkOpenDAGNode?_wire
 theorem checkOpenDAGNodes?_wire :
     ∀ {entries : List OpenDAGEntry} {nodes : List OpenDAGNode}
       {next : List OpenDAGEntry},
-      checkOpenDAGNodes? presentation originalContext entries nodes =
+      checkOpenDAGNodes? definition originalContext entries nodes =
           some next →
-        checkOpenDAGNodes? presentation ambientContext
+        checkOpenDAGNodes? definition ambientContext
             (entries.map (OpenDAGEntry.transform expansions offset) ++ base)
             (nodes.map (OpenDAGNode.wire holeRoots offset)) =
           some (next.map (OpenDAGEntry.transform expansions offset) ++
@@ -768,7 +768,7 @@ theorem checkOpenDAGNodes?_wire :
   | cons node nodes inductionHypothesis =>
       intro next checked
       simp only [checkOpenDAGNodes?] at checked
-      cases first : checkOpenDAGNode? presentation originalContext entries
+      cases first : checkOpenDAGNode? definition originalContext entries
           node with
       | none => simp [first] at checked
       | some middle =>
@@ -781,9 +781,9 @@ theorem checkOpenDAGNodes?_wire :
 theorem checkOpenDAGBlocks?_wire :
     ∀ {entries : List OpenDAGEntry} {blocks : List (List OpenDAGNode)}
       {next : List OpenDAGEntry},
-      checkOpenDAGBlocks? presentation originalContext entries blocks =
+      checkOpenDAGBlocks? definition originalContext entries blocks =
           some next →
-        checkOpenDAGBlocks? presentation ambientContext
+        checkOpenDAGBlocks? definition ambientContext
             (entries.map (OpenDAGEntry.transform expansions offset) ++ base)
             (wireDAGBlocks holeRoots offset blocks) =
           some (next.map (OpenDAGEntry.transform expansions offset) ++
@@ -798,7 +798,7 @@ theorem checkOpenDAGBlocks?_wire :
   | cons block blocks inductionHypothesis =>
       intro next checked
       simp only [checkOpenDAGBlocks?] at checked
-      cases first : checkOpenDAGNodes? presentation originalContext entries
+      cases first : checkOpenDAGNodes? definition originalContext entries
           block with
       | none => simp [first] at checked
       | some middle =>
@@ -820,20 +820,20 @@ end WireReplay
 /-- Chronological checking threads its entry state through appended block
 lists. -/
 theorem checkOpenDAGBlocks?_append
-    {presentation : ValidatedPresentation} {context : List Pattern} :
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern} :
     ∀ {first second : List (List OpenDAGNode)}
       {entries : List OpenDAGEntry},
-      checkOpenDAGBlocks? presentation context entries (first ++ second) =
-        (checkOpenDAGBlocks? presentation context entries first).bind
+      checkOpenDAGBlocks? definition context entries (first ++ second) =
+        (checkOpenDAGBlocks? definition context entries first).bind
           (fun middle =>
-            checkOpenDAGBlocks? presentation context middle second) := by
+            checkOpenDAGBlocks? definition context middle second) := by
   intro first
   induction first with
   | nil => intro second entries; rfl
   | cons block blocks inductionHypothesis =>
       intro second entries
       simp only [List.cons_append, checkOpenDAGBlocks?]
-      cases head : checkOpenDAGNodes? presentation context entries block with
+      cases head : checkOpenDAGNodes? definition context entries block with
       | none => rfl
       | some middle =>
           exact inductionHypothesis
@@ -845,12 +845,12 @@ namespace CheckedOpenDAG
 /-- The unique raw open proof an accepted DAG expands to. -/
 def expansion {object : Object} {context : List Pattern} {goal : Pattern}
     (dag : CheckedOpenDAG object context goal) : RawOpenProof :=
-  (expandOpenDAGBlocks? object.presentation context goal dag.rootId
+  (expandOpenDAGBlocks? object.definition context goal dag.rootId
     dag.blocks).get (by simpa [checkOpenDAGBlocks] using dag.accepted)
 
 theorem expand_eq {object : Object} {context : List Pattern} {goal : Pattern}
     (dag : CheckedOpenDAG object context goal) :
-    expandOpenDAGBlocks? object.presentation context goal dag.rootId
+    expandOpenDAGBlocks? object.definition context goal dag.rootId
         dag.blocks = some dag.expansion :=
   (Option.some_get _).symm
 
@@ -860,14 +860,14 @@ expansion. -/
 theorem exists_check_root {object : Object} {context : List Pattern}
     {goal : Pattern} (dag : CheckedOpenDAG object context goal) :
     ∃ (entries : List OpenDAGEntry) (rootEntry : OpenDAGEntry),
-      checkOpenDAGBlocks? object.presentation context [] dag.blocks =
+      checkOpenDAGBlocks? object.definition context [] dag.blocks =
         some entries ∧
       findOpenDAGEntry? entries dag.rootId = some rootEntry ∧
       rootEntry.id = dag.rootId ∧ rootEntry ∈ entries ∧
       rootEntry.goal = goal ∧ rootEntry.proof = dag.expansion := by
   have expandEq := dag.expand_eq
   unfold expandOpenDAGBlocks? at expandEq
-  cases checked : checkOpenDAGBlocks? object.presentation context []
+  cases checked : checkOpenDAGBlocks? object.definition context []
       dag.blocks with
   | none => simp [checked] at expandEq
   | some entries =>
@@ -910,7 +910,7 @@ theorem layout_checks {object : Object} {ambient : List Pattern} :
     ∀ {goals : List Pattern}
       (environment : CheckedOpenDAGList object ambient goals) (offset : Nat),
       ∃ B : List OpenDAGEntry,
-        checkOpenDAGBlocks? object.presentation ambient []
+        checkOpenDAGBlocks? object.definition ambient []
             (environment.layout offset).1 = some B ∧
         (∀ entry ∈ B,
           offset ≤ entry.id ∧ entry.id < (environment.layout offset).2.2) ∧
@@ -1043,7 +1043,7 @@ theorem substituteDAGBlocks_expands {object : Object}
     {outerContext : List Pattern} {goal : Pattern} {context : List Pattern}
     (dag : CheckedOpenDAG object outerContext goal)
     (environment : CheckedOpenDAGList object context outerContext) :
-    expandOpenDAGBlocks? object.presentation context goal
+    expandOpenDAGBlocks? object.definition context goal
         (substituteDAGBlocks dag environment).2
         (substituteDAGBlocks dag environment).1 =
       some (RawOpenProof.substitute environment.expansions dag.expansion) := by
@@ -1096,7 +1096,7 @@ theorem substituteDAGBlocks_accepts {object : Object}
     {outerContext : List Pattern} {goal : Pattern} {context : List Pattern}
     (dag : CheckedOpenDAG object outerContext goal)
     (environment : CheckedOpenDAGList object context outerContext) :
-    checkOpenDAGBlocks object.presentation context goal
+    checkOpenDAGBlocks object.definition context goal
         (substituteDAGBlocks dag environment).2
         (substituteDAGBlocks dag environment).1 = true := by
   unfold checkOpenDAGBlocks
@@ -1136,10 +1136,10 @@ theorem CheckedOpenDAG.substitute_erases_bind {object : Object}
     {outerContext : List Pattern} {goal : Pattern} {context : List Pattern}
     (dag : CheckedOpenDAG object outerContext goal)
     (environment : CheckedOpenDAGList object context outerContext)
-    {derivation : OpenDerivation object.presentation outerContext goal}
+    {derivation : OpenDerivation object.definition outerContext goal}
     (dagErases : derivation.eraseOpen = dag.expansion)
     {typedEnvironment :
-      OpenDerivationList object.presentation context outerContext}
+      OpenDerivationList object.definition context outerContext}
     (environmentErases :
       typedEnvironment.eraseOpen = environment.expansions) :
     (dag.substitute environment).expansion =

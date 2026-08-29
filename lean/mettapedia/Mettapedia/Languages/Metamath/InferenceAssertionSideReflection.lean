@@ -2,6 +2,8 @@ import Mettapedia.Languages.Metamath.InferenceAssertionLeadingProvesReflection
 import Mettapedia.Languages.Metamath.InferenceProjectionSideConservativity
 import Mettapedia.Languages.Metamath.InferenceSideConditionsSemantics
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Reflection of projected assertion side evidence
 
@@ -32,7 +34,7 @@ open Mettapedia.Languages.Metamath.InferenceGeneratedProvesExecution
 
 /-- Reindex one derivation along an equality of its goal.  This changes only
 the dependent type index. -/
-def castDerivation {target : ValidatedPresentation}
+def castDerivation {target : ValidatedCalculusLanguageDef}
     {sourceGoal targetGoal : Pattern}
     (goal_eq : sourceGoal = targetGoal)
     (derivation : Derivation target sourceGoal) :
@@ -42,7 +44,7 @@ def castDerivation {target : ValidatedPresentation}
 
 /-- Reindexing one derivation preserves its complete raw proof artifact. -/
 @[simp] theorem erase_castDerivation
-    {target : ValidatedPresentation} {sourceGoal targetGoal : Pattern}
+    {target : ValidatedCalculusLanguageDef} {sourceGoal targetGoal : Pattern}
     (goal_eq : sourceGoal = targetGoal)
     (derivation : Derivation target sourceGoal) :
     (castDerivation goal_eq derivation).erase = derivation.erase := by
@@ -51,7 +53,7 @@ def castDerivation {target : ValidatedPresentation}
 
 /-- Reindex an ordered derivation vector along an equality of its exact
 premise list.  This changes only the dependent type index. -/
-def castDerivationList {target : ValidatedPresentation}
+def castDerivationList {target : ValidatedCalculusLanguageDef}
     {sourcePremises targetPremises : List Pattern}
     (premises_eq : sourcePremises = targetPremises)
     (derivations : DerivationList target sourcePremises) :
@@ -62,7 +64,7 @@ def castDerivationList {target : ValidatedPresentation}
 /-- Reindexing a derivation vector preserves every raw proof artifact in
 order. -/
 @[simp] theorem erase_castDerivationList
-    {target : ValidatedPresentation}
+    {target : ValidatedCalculusLanguageDef}
     {sourcePremises targetPremises : List Pattern}
     (premises_eq : sourcePremises = targetPremises)
     (derivations : DerivationList target sourcePremises) :
@@ -90,8 +92,8 @@ the original raw proof artifacts.  The standalone restriction is used only
 to invoke the verified side-calculus decoder; its exact erasure-preservation
 theorem ensures that it does not alter the inspected proof. -/
 theorem RawHypothesisBodiesDecode.reflectSideEvidence
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView} {bodies : List Pattern}
     {actuals : List ConstantHeadedFormula}
     {substitution : FiniteSubstitution} {resultBody : Pattern}
@@ -166,7 +168,7 @@ theorem RawHypothesisBodiesDecode.reflectSideEvidence
               have hresultSide : IsSideJudgment resultPremise := by
                 exact applySubst_isSideJudgment _ _ _
               let standaloneResultChild :
-                  Derivation validatedSidePresentation resultPremise :=
+                  Derivation validatedSideDefinition resultPremise :=
                 restrictSideDerivationFromProjection projection target
                   hprojection hresultSide resultChild
               rcases applySubst_derivation_decodes substitution
@@ -223,8 +225,8 @@ theorem RawHypothesisBodiesDecode.reflectSideEvidence
 /-- Positive: any existing canonical side-evidence vector can be reindexed
 to its raw-body presentation and reflected without replacing its proof
 artifacts. -/
-example {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView} {bodies : List Pattern}
     {actuals : List ConstantHeadedFormula}
     {substitution : FiniteSubstitution} {result : ConstantHeadedFormula}
@@ -259,8 +261,8 @@ private def boundaryAssertion : AssertionView :=
 
 /-- Negative: a free variable is not an encoded formula body, so no projected
 raw side vector with that result body can be fully derived. -/
-example {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1) :
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1) :
     ¬ Nonempty (DerivationList target
       (rawAssertionSidePremises projection.callerFrame boundaryAssertion []
         (.fvar "not-an-encoded-body"))) := by

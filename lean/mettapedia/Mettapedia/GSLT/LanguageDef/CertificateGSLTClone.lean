@@ -4,7 +4,7 @@ import Mettapedia.GSLT.LanguageDef.CertificateGSLTDAGTransport
 /-!
 # The internal proof calculus of a CertificateGSLT
 
-For each validated semantic presentation, open derivations form a multisorted
+For each validated semantic definition, open derivations form a multisorted
 clone.  The sorts are ground judgment patterns; operations are derivations
 from an ordered premise context; variables are premise occurrences; and clone
 substitution is proof plugging.
@@ -20,10 +20,10 @@ namespace Mettapedia.GSLT.LanguageDef.CertificateGSLT
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
-/-- Open derivations of one presentation satisfy the multisorted clone laws. -/
+/-- Open derivations of one definition satisfy the multisorted clone laws. -/
 def derivationClone (object : Object) :
     Mettapedia.GSLT.LanguageDef.MultiSortedClone Pattern where
-  Hom context goal := OpenDerivation object.presentation context goal
+  Hom context goal := OpenDerivation object.definition context goal
   project index := .assumption index
   substitute operation environment :=
     operation.bind (OpenDerivationList.ofFn _ environment)

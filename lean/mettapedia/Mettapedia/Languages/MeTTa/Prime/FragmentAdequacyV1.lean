@@ -20,6 +20,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.MeTTa.Prime.FragmentAdequacyV1
 
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
@@ -267,33 +268,33 @@ private def cacheCalculus :
     rules := canonicalRules }
 
 /-- Independently specified companion cache. -/
-def cache : Presentation :=
-  { language := cacheLanguage, calculus := cacheCalculus }
+def cache : CalculusLanguageDef :=
+  CalculusLanguageDef.extend cacheLanguage cacheCalculus
 
 def projectedCache : Except
     Mettapedia.Languages.MeTTa.Prime.MinimalCheckingPackage.ProjectionError
-    Presentation :=
+    CalculusLanguageDef :=
   Mettapedia.Languages.MeTTa.Prime.MinimalCheckingPackage.project
     canonicalRules
 
-private theorem cache_language_valid : cache.language.validate = [] := by
+private theorem cache_language_valid : cache.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [cache, cacheLanguage, dataConstructor, LanguageDef.typeNames,
       TypeDecl.plain, TermParam.typeExpr, TypeExpr.baseNames]
 
-theorem cache_is_valid : cache.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem cache_is_valid : cache.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [cache_language_valid]
   simp [cache, cacheCalculus, canonicalRules, canonicalSource, compileSource,
     compileDecl, compileEquation, compileClosure, cacheLanguage,
-    dataConstructor, app, pvar, schema, Presentation.ruleIds,
-    RuleSchema.isValidV1, RuleSchema.metavariableNames,
+    dataConstructor, app, pvar, schema, CalculusLanguageDef.ruleIds,
+    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
     RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    RuleSchema.isValidIn, Presentation.judgmentSchemaValid,
-    Presentation.lookupJudgment?, fixedConstructorListsValid,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    RuleSchema.isValidIn, CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, fixedConstructorListsValid,
     fixedConstructorsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
@@ -303,7 +304,7 @@ theorem cache_is_valid : cache.isValidV2 = true := by
   norm_num [List.eraseDupsBy.loop]
   decide
 
-def validated : ValidatedPresentation := ⟨cache, cache_is_valid⟩
+def validated : ValidatedCalculusLanguageDef := ⟨cache, cache_is_valid⟩
 
 def package :
     Mettapedia.Languages.MeTTa.Prime.PackageAuthority.PrimeRulePackageV1 :=
@@ -408,7 +409,7 @@ private theorem rule_mem_of_lookup {ruleInstance : RuleInstance}
     {rule : RuleSchema}
     (lookup : validated.1.lookupRule? ruleInstance.ruleId = some rule) :
     rule ∈ canonicalRules := by
-  unfold Presentation.lookupRule? at lookup
+  unfold CalculusLanguageDef.lookupRule? at lookup
   simpa [validated, cache, cacheCalculus] using
     List.mem_of_find?_eq_some lookup
 
@@ -676,7 +677,7 @@ private theorem instantiate_add_zero (right : NatValue) :
     instantiateRule? validated
       (ruleInstance "wex1.add-z" [encodeNat right]) =
       some ([], encodeJudgment (.add .zero right) (.nat right)) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+  simp [instantiateRule?, CalculusLanguageDef.lookupRule?, validated, cache, cacheCalculus,
     cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
@@ -691,7 +692,7 @@ private theorem instantiate_add_successor
         [encodeNat left, encodeNat right, encodeNat result]) =
       some ([encodeJudgment (.add left right) (.nat result)],
         encodeJudgment (.add (.succ left) right) (.nat (.succ result))) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+  simp [instantiateRule?, CalculusLanguageDef.lookupRule?, validated, cache, cacheCalculus,
     cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
@@ -702,7 +703,7 @@ private theorem instantiate_add_successor
 private theorem instantiate_length_nil :
     instantiateRule? validated (ruleInstance "wex2.len-nil") =
       some ([], encodeJudgment (.length .nil) (.nat .zero)) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+  simp [instantiateRule?, CalculusLanguageDef.lookupRule?, validated, cache, cacheCalculus,
     cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
@@ -717,7 +718,7 @@ private theorem instantiate_length_cons
         [encodeItem head, encodeList tail, encodeNat result]) =
       some ([encodeJudgment (.length tail) (.nat result)],
         encodeJudgment (.length (.cons head tail)) (.nat (.succ result))) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+  simp [instantiateRule?, CalculusLanguageDef.lookupRule?, validated, cache, cacheCalculus,
     cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
@@ -729,7 +730,7 @@ private theorem instantiate_length_cons
 private theorem instantiate_pick_a :
     instantiateRule? validated (ruleInstance "wex3.pick-a") =
       some ([], encodeJudgment .pick (.pick .a)) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+  simp [instantiateRule?, CalculusLanguageDef.lookupRule?, validated, cache, cacheCalculus,
     cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
@@ -740,7 +741,7 @@ private theorem instantiate_pick_a :
 private theorem instantiate_pick_b :
     instantiateRule? validated (ruleInstance "wex3.pick-b") =
       some ([], encodeJudgment .pick (.pick .b)) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+  simp [instantiateRule?, CalculusLanguageDef.lookupRule?, validated, cache, cacheCalculus,
     cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
@@ -1024,12 +1025,12 @@ private def projectionMatchesCache : Bool :=
   match projectedCache with
   | .error _ => false
   | .ok projected =>
-      renderPresentation projected == renderPresentation cache
+      renderDefinition projected == renderDefinition cache
 
 private def runChecks : IO Unit := do
   unless projectionMatchesCache do
     throw <| IO.userError
-      "derived presentation differs from the independent companion cache"
+      "derived definition differs from the independent companion cache"
   unless Mettapedia.Languages.MeTTa.Prime.PackageAuthority.validatePackage
       package cache do
     throw <| IO.userError "canonical compiled package was rejected"

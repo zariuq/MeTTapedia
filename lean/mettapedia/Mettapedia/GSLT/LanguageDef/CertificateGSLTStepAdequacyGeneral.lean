@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.CertificateGSLTStepPresentation
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTStepTraceLanguage
 import Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-!
@@ -23,10 +23,10 @@ The adequate fragment, per rewrite rule:
   bound by the rule's left side and earlier congruence targets, and the
   right side is bound by the end of the chain.  Without modedness the
   generated schema proves ground instances the language cannot reach;
-* the language declares no reflective presentations, so declarative
+* the language declares no reflective definitions, so declarative
   matching is the syntactic matcher.
 
-Within the fragment, for the generated presentation of the language:
+Within the fragment, for the generated definition of the language:
 checked `Step`/`Steps` derivations from checker-well-formed sources
 correspond exactly to declarative `langReduces` steps and their
 reflexive-transitive closure.
@@ -210,7 +210,7 @@ def rewriteDirectTraceAdequate (rule : RewriteRule) : Bool :=
 adequate and rewrite names are unique.  Matching and substitution in the
 five-field core are syntactic by construction; reflective interpretations are
 separate extensions and therefore require no exclusion clause here.  A
-duplicated rewrite name would already be rejected by generated-presentation
+duplicated rewrite name would already be rejected by generated-definition
 admission (duplicate rule identifiers); the gate makes it locally checkable. -/
 def languageDirectTraceAdequate (language : LanguageDef) : Bool :=
   language.rewrites.all rewriteDirectTraceAdequate &&
@@ -256,9 +256,9 @@ theorem tracePremisesModed_congruence_shape :
 
 /-- Adequate premise chains are congruence-only, so the adequate fragment
 refines the direct-trace premise gate. -/
-theorem directTracePresentable_of_adequate {language : LanguageDef}
+theorem directTraceSupported_of_adequate {language : LanguageDef}
     (adequate : languageDirectTraceAdequate language = true) :
-    LanguageDef.directTracePresentable language = true := by
+    LanguageDef.directTraceSupported language = true := by
   apply List.all_eq_true.mpr
   intro rule member
   have ruleAdequate := languageDirectTraceAdequate_rules adequate rule member
@@ -271,7 +271,7 @@ theorem directTracePresentable_of_adequate {language : LanguageDef}
     · simp only [modedResult] at ruleAdequate
       cases ruleAdequate.2
     · exact ⟨final, rfl⟩
-  simp only [RewriteRule.directTracePresentable]
+  simp only [RewriteRule.directTraceSupported]
   apply List.all_eq_true.mpr
   intro premise premiseMember
   obtain ⟨source, target, rfl⟩ :=
@@ -1678,7 +1678,7 @@ theorem premisesAt_mono {base : BasePremiseEvaluator} {lang : LanguageDef}
 
 end FuelMonotonicity
 
-/-! ## The generated presentation: shapes, lookups, and coverage -/
+/-! ## The generated definition: shapes, lookups, and coverage -/
 
 section GeneralAdequacy
 
@@ -1825,14 +1825,14 @@ private theorem mem_patternsOccurrences_of_mem {patterns : List Pattern}
 /-- Every occurrence name of a schema pattern of a V1-valid rule is a
 declared formal name. -/
 theorem isValidV1_occurrence_names_subset {rule : RuleSchema}
-    (ruleValid : RuleSchema.isValidV1 rule = true) {pattern : Pattern}
+    (ruleValid : RuleSchema.isLocallyValid rule = true) {pattern : Pattern}
     (patternMember : pattern ∈ RuleSchema.patterns rule)
     {name : String} (nameMember : name ∈ patternOccurrenceNames pattern) :
     name ∈ rule.metavariables.map Prod.fst := by
   obtain ⟨occurrence, occMember, nameEq⟩ := List.mem_map.mp nameMember
   have inRule : occurrence ∈ RuleSchema.occurrences rule :=
     mem_patternsOccurrences_of_mem patternMember occMember
-  unfold RuleSchema.isValidV1 at ruleValid
+  unfold RuleSchema.isLocallyValid at ruleValid
   simp only [Bool.and_eq_true] at ruleValid
   have contained := List.all_eq_true.mp ruleValid.1.1.1.1.2 occurrence inRule
   have memberMeta : occurrence ∈ rule.metavariables := by
@@ -1842,12 +1842,12 @@ theorem isValidV1_occurrence_names_subset {rule : RuleSchema}
 /-- Every declared formal name of a V1-valid rule occurs in some schema
 pattern. -/
 theorem isValidV1_formal_names_occur {rule : RuleSchema}
-    (ruleValid : RuleSchema.isValidV1 rule = true) {name : String}
+    (ruleValid : RuleSchema.isLocallyValid rule = true) {name : String}
     (nameMember : name ∈ rule.metavariables.map Prod.fst) :
     ∃ pattern ∈ RuleSchema.patterns rule,
       name ∈ patternOccurrenceNames pattern := by
   obtain ⟨formal, formalMember, nameEq⟩ := List.mem_map.mp nameMember
-  unfold RuleSchema.isValidV1 at ruleValid
+  unfold RuleSchema.isLocallyValid at ruleValid
   simp only [Bool.and_eq_true] at ruleValid
   have contained := List.all_eq_true.mp ruleValid.1.1.1.2 formal formalMember
   have occMember : formal ∈ RuleSchema.occurrences rule := by
@@ -1986,11 +1986,11 @@ private theorem find?_mapped_rewrite {rewrites : List RewriteRule}
 /-- Looking up an adequate rewrite's generated identifier yields exactly its
 generated schema. -/
 theorem generated_lookup_rewrite (source : DirectTraceLanguage)
-    (nodupNames : (source.language.rewrites.map RewriteRule.name).Nodup)
-    {rewrite : RewriteRule} (member : rewrite ∈ source.language.rewrites) :
-    (stepPresentation source).lookupRule? (rewriteStepRule rewrite).id =
+    (nodupNames : (source.toLanguageDef.rewrites.map RewriteRule.name).Nodup)
+    {rewrite : RewriteRule} (member : rewrite ∈ source.toLanguageDef.rewrites) :
+    (stepTraceDefinition source).lookupRule? (rewriteStepRule rewrite).id =
       some (rewriteStepRule rewrite) := by
-  show (source.language.rewrites.map rewriteStepRule ++
+  show (source.toLanguageDef.rewrites.map rewriteStepRule ++
       [stepReflRule, stepTransRule]).find? _ = _
   rw [List.find?_append, find?_mapped_rewrite nodupNames member]
   rfl
@@ -2002,7 +2002,7 @@ private theorem length_step_rewrite_id (name : String) :
 
 private theorem mapped_find?_fixed_none (source : DirectTraceLanguage)
     {fixedId : RuleId} (shortLength : fixedId.value.length < 13) :
-    (source.language.rewrites.map rewriteStepRule).find?
+    (source.toLanguageDef.rewrites.map rewriteStepRule).find?
         (fun candidate => decide (candidate.id = fixedId)) = none := by
   apply List.find?_eq_none.mpr
   intro candidate candidateMember
@@ -2018,9 +2018,9 @@ private theorem mapped_find?_fixed_none (source : DirectTraceLanguage)
 
 /-- Looking up the reflexivity identifier yields the reflexivity schema. -/
 theorem generated_lookup_refl (source : DirectTraceLanguage) :
-    (stepPresentation source).lookupRule? ⟨"steps-refl"⟩ =
+    (stepTraceDefinition source).lookupRule? ⟨"steps-refl"⟩ =
       some stepReflRule := by
-  show (source.language.rewrites.map rewriteStepRule ++
+  show (source.toLanguageDef.rewrites.map rewriteStepRule ++
       [stepReflRule, stepTransRule]).find? _ = _
   rw [List.find?_append,
     mapped_find?_fixed_none source (fixedId := ⟨"steps-refl"⟩)
@@ -2029,9 +2029,9 @@ theorem generated_lookup_refl (source : DirectTraceLanguage) :
 
 /-- Looking up the transitivity identifier yields the transitivity schema. -/
 theorem generated_lookup_trans (source : DirectTraceLanguage) :
-    (stepPresentation source).lookupRule? ⟨"steps-trans"⟩ =
+    (stepTraceDefinition source).lookupRule? ⟨"steps-trans"⟩ =
       some stepTransRule := by
-  show (source.language.rewrites.map rewriteStepRule ++
+  show (source.toLanguageDef.rewrites.map rewriteStepRule ++
       [stepReflRule, stepTransRule]).find? _ = _
   rw [List.find?_append,
     mapped_find?_fixed_none source (fixedId := ⟨"steps-trans"⟩)
@@ -2043,12 +2043,12 @@ theorem generated_lookup_trans (source : DirectTraceLanguage) :
 or one of the two trace schemas. -/
 theorem generated_lookup_inversion (source : DirectTraceLanguage)
     {ruleId : RuleId} {rule : RuleSchema}
-    (lookup : (stepPresentation source).lookupRule? ruleId = some rule) :
-    (∃ rewrite ∈ source.language.rewrites, rule = rewriteStepRule rewrite) ∨
+    (lookup : (stepTraceDefinition source).lookupRule? ruleId = some rule) :
+    (∃ rewrite ∈ source.toLanguageDef.rewrites, rule = rewriteStepRule rewrite) ∨
       rule = stepReflRule ∨ rule = stepTransRule := by
-  have member : rule ∈ (stepPresentation source).rules :=
+  have member : rule ∈ (stepTraceDefinition source).rules :=
     List.mem_of_find?_eq_some lookup
-  have memberSplit : rule ∈ source.language.rewrites.map rewriteStepRule ∨
+  have memberSplit : rule ∈ source.toLanguageDef.rewrites.map rewriteStepRule ∨
       rule ∈ [stepReflRule, stepTransRule] := List.mem_append.mp member
   rcases memberSplit with mapped | fixed
   · obtain ⟨rewrite, rewriteMember, ruleEq⟩ := List.mem_map.mp mapped
@@ -2178,18 +2178,18 @@ theorem mem_patternsOccurrenceNames {patterns : List Pattern}
 /-! ### Per-pattern facts from schema validity -/
 
 theorem isValidV1_pattern_wellScoped {rule : RuleSchema}
-    (ruleValid : RuleSchema.isValidV1 rule = true) {pattern : Pattern}
+    (ruleValid : RuleSchema.isLocallyValid rule = true) {pattern : Pattern}
     (patternMember : pattern ∈ RuleSchema.patterns rule) :
     Pattern.isWellScoped pattern = true := by
-  unfold RuleSchema.isValidV1 at ruleValid
+  unfold RuleSchema.isLocallyValid at ruleValid
   simp only [Bool.and_eq_true] at ruleValid
   exact List.all_eq_true.mp ruleValid.1.1.2 pattern patternMember
 
 theorem isValidV1_pattern_canonical {rule : RuleSchema}
-    (ruleValid : RuleSchema.isValidV1 rule = true) {pattern : Pattern}
+    (ruleValid : RuleSchema.isLocallyValid rule = true) {pattern : Pattern}
     (patternMember : pattern ∈ RuleSchema.patterns rule) :
     Pattern.hasCanonicalBinderMetadata pattern = true := by
-  unfold RuleSchema.isValidV1 at ruleValid
+  unfold RuleSchema.isLocallyValid at ruleValid
   simp only [Bool.and_eq_true] at ruleValid
   exact List.all_eq_true.mp ruleValid.2 pattern patternMember
 
@@ -2245,26 +2245,26 @@ theorem argumentsValidAt_three_inversion
                     valid.2.2.1.1, valid.2.2.1.2⟩
               | cons fourth rest => simp [argumentsValidAt] at valid
 
-/-! ### The validated generated presentation -/
+/-! ### The validated generated definition -/
 
-/-- The generated presentation together with its admission evidence. -/
+/-- The generated definition together with its admission evidence. -/
 def generatedValidated (source : DirectTraceLanguage)
-    (valid : (stepPresentation source).isValidV2 = true) :
-    ValidatedPresentation :=
-  ⟨stepPresentation source, valid⟩
+    (valid : (stepTraceDefinition source).isValid = true) :
+    ValidatedCalculusLanguageDef :=
+  ⟨stepTraceDefinition source, valid⟩
 
 @[simp] theorem generatedValidated_fst (source : DirectTraceLanguage)
-    (valid : (stepPresentation source).isValidV2 = true) :
-    (generatedValidated source valid).1 = stepPresentation source := rfl
+    (valid : (stepTraceDefinition source).isValid = true) :
+    (generatedValidated source valid).1 = stepTraceDefinition source := rfl
 
 /-- V1 validity of a generated rewrite schema, extracted from generated
-presentation admission. -/
+definition admission. -/
 theorem generated_rule_isValidV1 (source : DirectTraceLanguage)
-    (valid : (stepPresentation source).isValidV2 = true)
+    (valid : (stepTraceDefinition source).isValid = true)
     {rewrite : RewriteRule}
-    (rewriteMember : rewrite ∈ source.language.rewrites) :
-    RuleSchema.isValidV1 (rewriteStepRule rewrite) = true :=
-  rule_isValidV1_of_isValidV2 valid
+    (rewriteMember : rewrite ∈ source.toLanguageDef.rewrites) :
+    RuleSchema.isLocallyValid (rewriteStepRule rewrite) = true :=
+  rule_isValidV1_of_isValid valid
     (List.mem_append_left _ (List.mem_map_of_mem rewriteMember))
 
 theorem rewritePremiseJudgments_mem_of_congruence :
@@ -2297,9 +2297,9 @@ theorem rewritePremiseJudgments_mem_of_congruence :
 /-- The zipped positional assignment covers every occurrence name of every
 schema pattern of the generated rule. -/
 theorem generated_zip_cover (source : DirectTraceLanguage)
-    (valid : (stepPresentation source).isValidV2 = true)
+    (valid : (stepTraceDefinition source).isValid = true)
     {rewrite : RewriteRule}
-    (rewriteMember : rewrite ∈ source.language.rewrites)
+    (rewriteMember : rewrite ∈ source.toLanguageDef.rewrites)
     {arguments : List Pattern}
     (argumentsValid : argumentsValidAt
       (rewriteStepRule rewrite).metavariables arguments = true)
@@ -2319,10 +2319,10 @@ theorem generated_zip_cover (source : DirectTraceLanguage)
 binding application with the positional assignment, on premises and
 conclusion alike. -/
 theorem generated_rewrite_instantiation (source : DirectTraceLanguage)
-    (valid : (stepPresentation source).isValidV2 = true)
-    (nodupNames : (source.language.rewrites.map RewriteRule.name).Nodup)
+    (valid : (stepTraceDefinition source).isValid = true)
+    (nodupNames : (source.toLanguageDef.rewrites.map RewriteRule.name).Nodup)
     {rewrite : RewriteRule}
-    (rewriteMember : rewrite ∈ source.language.rewrites)
+    (rewriteMember : rewrite ∈ source.toLanguageDef.rewrites)
     (ruleAdequate : rewriteDirectTraceAdequate rewrite = true)
     {arguments : List Pattern}
     (argumentsValid : argumentsValidAt
@@ -2370,13 +2370,13 @@ theorem generated_rewrite_instantiation (source : DirectTraceLanguage)
 mutual
 
 /-- Height of a checked derivation. -/
-def derivationHeight {presentation : ValidatedPresentation} :
-    {goal : Pattern} → Derivation presentation goal → Nat
+def derivationHeight {definition : ValidatedCalculusLanguageDef} :
+    {goal : Pattern} → Derivation definition goal → Nat
   | _, .byRule _ _ children => derivationListHeight children + 1
 
 /-- Combined height of ordered child derivations. -/
-def derivationListHeight {presentation : ValidatedPresentation} :
-    {goals : List Pattern} → DerivationList presentation goals → Nat
+def derivationListHeight {definition : ValidatedCalculusLanguageDef} :
+    {goals : List Pattern} → DerivationList definition goals → Nat
   | _, .nil => 0
   | _, .cons head tail => derivationHeight head + derivationListHeight tail
 
@@ -2385,24 +2385,24 @@ end
 /-! ### Soundness: checked trace derivations are declarative reductions -/
 
 /-- The two claims proved of every checked goal of the generated
-presentation. -/
+definition. -/
 private def generalSoundClaim (source : DirectTraceLanguage)
     (goal : Pattern) : Prop :=
   (∀ stepSource stepTarget, goal = stepJudgment stepSource stepTarget →
-    langReduces source.language stepSource stepTarget) ∧
+    langReduces source.toLanguageDef stepSource stepTarget) ∧
   (∀ stepSource stepTarget, goal = stepsJudgment stepSource stepTarget →
-    Relation.ReflTransGen (langReduces source.language) stepSource stepTarget)
+    Relation.ReflTransGen (langReduces source.toLanguageDef) stepSource stepTarget)
 
 /-- Declarative premise evidence built from checked child certificates,
 walking the moded congruence chain. -/
 private theorem sound_premise_chain (source : DirectTraceLanguage)
-    (valid : (stepPresentation source).isValidV2 = true)
+    (valid : (stepTraceDefinition source).isValid = true)
     {σ : Bindings} {heightBound : Nat}
     (childSound : ∀ {goal : Pattern}
       (child : Derivation (generatedValidated source valid) goal),
       derivationHeight child < heightBound →
       ∀ stepSource stepTarget, goal = stepJudgment stepSource stepTarget →
-        langReduces source.language stepSource stepTarget) :
+        langReduces source.toLanguageDef stepSource stepTarget) :
     ∀ (premises : List Premise)
       (children : DerivationList (generatedValidated source valid)
         ((rewritePremiseJudgments premises).map (applyBindings σ)))
@@ -2417,7 +2417,7 @@ private theorem sound_premise_chain (source : DirectTraceLanguage)
           (Bindings.lookup σ name).isSome)
       (_ : derivationListHeight children < heightBound),
       ∃ finalBindings fuel,
-        PremisesAt (engineBasePremises RelationEnv.empty) source.language
+        PremisesAt (engineBasePremises RelationEnv.empty) source.toLanguageDef
           fuel current premises finalBindings ∧
         bindingsAgreeWith σ finalBindings ∧
         (∀ name ∈ finalNames, (Bindings.lookup finalBindings name).isSome)
@@ -2496,8 +2496,8 @@ private theorem sound_premise_chain (source : DirectTraceLanguage)
 is a declarative step, and of a `Steps` judgment a declarative reduction
 sequence. -/
 private theorem general_sound_bounded (source : DirectTraceLanguage)
-    (adequate : languageDirectTraceAdequate source.language = true)
-    (valid : (stepPresentation source).isValidV2 = true) :
+    (adequate : languageDirectTraceAdequate source.toLanguageDef = true)
+    (valid : (stepTraceDefinition source).isValid = true) :
     ∀ (bound : Nat) {goal : Pattern}
       (derivation : Derivation (generatedValidated source valid) goal),
       derivationHeight derivation ≤ bound → generalSoundClaim source goal := by
@@ -2511,7 +2511,7 @@ private theorem general_sound_bounded (source : DirectTraceLanguage)
         instantiateRule?_eq_some_iff_application.mpr application
       simp only [instantiateRule?, generatedValidated_fst] at executable
       cases lookup :
-          (stepPresentation source).lookupRule? ruleInstance.ruleId with
+          (stepTraceDefinition source).lookupRule? ruleInstance.ruleId with
       | none => simp [lookup] at executable
       | some rule =>
           simp only [lookup] at executable
@@ -2611,7 +2611,7 @@ private theorem general_sound_bounded (source : DirectTraceLanguage)
                       (childSound child heightLt).1 s t gEq)
                     rewrite.premises children chain initialAgrees
                     initialCover σTargetCover heightsOK
-                have applyFinal : applyBindingsForRule source.language
+                have applyFinal : applyBindingsForRule source.toLanguageDef
                     rewrite finalBindings =
                       applyBindings (zipBindings (rewriteStepRule rewrite).metavariables
                       ruleInstance.arguments) rewrite.right := by
@@ -2625,7 +2625,7 @@ private theorem general_sound_bounded (source : DirectTraceLanguage)
                     (finalCover name nameFinal)
                   rw [valueEq, bindingsAgreeWith_lookup finalAgrees valueEq]
                 have initialMember' : initialBindings ∈
-                    matchPatternForRule source.language rewrite
+                    matchPatternForRule source.toLanguageDef rewrite
                       (applyBindings (zipBindings (rewriteStepRule rewrite).metavariables
                       ruleInstance.arguments) rewrite.left) := by
                   rw [matchPatternForRule_eq_syntactic]
@@ -2710,8 +2710,8 @@ private theorem general_sound_bounded (source : DirectTraceLanguage)
 
 /-- Soundness of a single checked derivation. -/
 private theorem general_sound_derivation (source : DirectTraceLanguage)
-    (adequate : languageDirectTraceAdequate source.language = true)
-    (valid : (stepPresentation source).isValidV2 = true) {goal : Pattern}
+    (adequate : languageDirectTraceAdequate source.toLanguageDef = true)
+    (valid : (stepTraceDefinition source).isValid = true) {goal : Pattern}
     (derivation : Derivation (generatedValidated source valid) goal) :
     generalSoundClaim source goal :=
   general_sound_bounded source adequate valid
@@ -2886,7 +2886,7 @@ theorem zipBindings_bindingsArguments_lookup :
 /-! ### General instantiation of the fixed trace schemas -/
 
 theorem generated_refl_instantiates (source : DirectTraceLanguage)
-    (valid : (stepPresentation source).isValidV2 = true) {point : Pattern}
+    (valid : (stepTraceDefinition source).isValid = true) {point : Pattern}
     (wfPoint : wellFormedTerm point) :
     instantiateRule? (generatedValidated source valid)
         ⟨⟨"steps-refl"⟩, [point]⟩ =
@@ -2902,10 +2902,10 @@ theorem generated_refl_instantiates (source : DirectTraceLanguage)
 /-- Checked child certificates and final-binding facts, built by walking a
 moded congruence chain alongside its declarative premise evidence. -/
 private theorem complete_premise_chain (source : DirectTraceLanguage)
-    (valid : (stepPresentation source).isValidV2 = true)
+    (valid : (stepTraceDefinition source).isValid = true)
     {innerFuel : Nat}
     (stepComplete : ∀ {stepSource stepTarget : Pattern},
-      StepAt (engineBasePremises RelationEnv.empty) source.language
+      StepAt (engineBasePremises RelationEnv.empty) source.toLanguageDef
         innerFuel stepSource stepTarget →
       wellFormedTerm stepSource →
       Nonempty (Derivation (generatedValidated source valid)
@@ -2914,7 +2914,7 @@ private theorem complete_premise_chain (source : DirectTraceLanguage)
       (_ : tracePremisesModed boundNames premises = some finalNames)
       {current finalBindings : Bindings}
       (_ : PremisesAt (engineBasePremises RelationEnv.empty)
-        source.language innerFuel current premises finalBindings)
+        source.toLanguageDef innerFuel current premises finalBindings)
       (_ : ∀ sourcePattern targetPattern,
         Premise.congruence sourcePattern targetPattern ∈ premises →
         Pattern.isWellScoped sourcePattern = true ∧
@@ -3038,10 +3038,10 @@ private theorem complete_premise_chain (source : DirectTraceLanguage)
 checker-well-formed source has a checked `Step` certificate, and steps
 preserve checker well-formedness. -/
 private theorem general_complete_stepAt (source : DirectTraceLanguage)
-    (adequate : languageDirectTraceAdequate source.language = true)
-    (valid : (stepPresentation source).isValidV2 = true) :
+    (adequate : languageDirectTraceAdequate source.toLanguageDef = true)
+    (valid : (stepTraceDefinition source).isValid = true) :
     ∀ (fuel : Nat) {stepSource stepTarget : Pattern},
-      StepAt (engineBasePremises RelationEnv.empty) source.language fuel
+      StepAt (engineBasePremises RelationEnv.empty) source.toLanguageDef fuel
         stepSource stepTarget →
       wellFormedTerm stepSource →
       Nonempty (Derivation (generatedValidated source valid)
@@ -3195,7 +3195,7 @@ private theorem general_complete_stepAt (source : DirectTraceLanguage)
             childList⟩, wfTarget⟩
 
 theorem generated_trans_instantiates (source : DirectTraceLanguage)
-    (valid : (stepPresentation source).isValidV2 = true)
+    (valid : (stepTraceDefinition source).isValid = true)
     {stepSource middle stepTarget : Pattern}
     (wfSource : wellFormedTerm stepSource) (wfMiddle : wellFormedTerm middle)
     (wfTarget : wellFormedTerm stepTarget) :
@@ -3220,13 +3220,13 @@ theorem generated_trans_instantiates (source : DirectTraceLanguage)
 direct-trace language, a checked `Step` certificate from a checker-well-formed
 source exists exactly when the language takes the declarative step. -/
 theorem directTrace_step_adequacy (source : DirectTraceLanguage)
-    (adequate : languageDirectTraceAdequate source.language = true)
-    (valid : (stepPresentation source).isValidV2 = true)
+    (adequate : languageDirectTraceAdequate source.toLanguageDef = true)
+    (valid : (stepTraceDefinition source).isValid = true)
     {stepSource stepTarget : Pattern}
     (wfSource : wellFormedTerm stepSource) :
     Nonempty (Derivation (generatedValidated source valid)
         (stepJudgment stepSource stepTarget)) ↔
-      langReduces source.language stepSource stepTarget := by
+      langReduces source.toLanguageDef stepSource stepTarget := by
   constructor
   · rintro ⟨derivation⟩
     exact (general_sound_derivation source adequate valid derivation).1
@@ -3237,20 +3237,20 @@ theorem directTrace_step_adequacy (source : DirectTraceLanguage)
 
 /-- Declarative steps preserve the checker's argument discipline. -/
 theorem directTrace_step_preserves_wellFormed (source : DirectTraceLanguage)
-    (adequate : languageDirectTraceAdequate source.language = true)
-    (valid : (stepPresentation source).isValidV2 = true)
+    (adequate : languageDirectTraceAdequate source.toLanguageDef = true)
+    (valid : (stepTraceDefinition source).isValid = true)
     {stepSource stepTarget : Pattern}
-    (step : langReduces source.language stepSource stepTarget)
+    (step : langReduces source.toLanguageDef stepSource stepTarget)
     (wfSource : wellFormedTerm stepSource) : wellFormedTerm stepTarget := by
   obtain ⟨fuel, evidence⟩ := step
   exact (general_complete_stepAt source adequate valid fuel evidence
     wfSource).2
 
 private theorem general_star_complete (source : DirectTraceLanguage)
-    (adequate : languageDirectTraceAdequate source.language = true)
-    (valid : (stepPresentation source).isValidV2 = true)
+    (adequate : languageDirectTraceAdequate source.toLanguageDef = true)
+    (valid : (stepTraceDefinition source).isValid = true)
     {stepSource stepTarget : Pattern}
-    (star : Relation.ReflTransGen (langReduces source.language)
+    (star : Relation.ReflTransGen (langReduces source.toLanguageDef)
       stepSource stepTarget)
     (wfSource : wellFormedTerm stepSource) :
     Nonempty (Derivation (generatedValidated source valid)
@@ -3284,13 +3284,13 @@ private theorem general_star_complete (source : DirectTraceLanguage)
 checker-well-formed source exists exactly when the language takes a
 reflexive-transitive reduction sequence. -/
 theorem directTrace_steps_adequacy (source : DirectTraceLanguage)
-    (adequate : languageDirectTraceAdequate source.language = true)
-    (valid : (stepPresentation source).isValidV2 = true)
+    (adequate : languageDirectTraceAdequate source.toLanguageDef = true)
+    (valid : (stepTraceDefinition source).isValid = true)
     {stepSource stepTarget : Pattern}
     (wfSource : wellFormedTerm stepSource) :
     Nonempty (Derivation (generatedValidated source valid)
         (stepsJudgment stepSource stepTarget)) ↔
-      Relation.ReflTransGen (langReduces source.language)
+      Relation.ReflTransGen (langReduces source.toLanguageDef)
         stepSource stepTarget := by
   constructor
   · rintro ⟨derivation⟩
@@ -3300,13 +3300,13 @@ theorem directTrace_steps_adequacy (source : DirectTraceLanguage)
     exact (general_star_complete source adequate valid star wfSource).1
 
 /-- One-step reduction is exactly existence of an accepted finite
-certificate over the generated presentation. -/
+certificate over the generated definition. -/
 theorem directTrace_step_iff_certificate (source : DirectTraceLanguage)
-    (adequate : languageDirectTraceAdequate source.language = true)
-    (valid : (stepPresentation source).isValidV2 = true)
+    (adequate : languageDirectTraceAdequate source.toLanguageDef = true)
+    (valid : (stepTraceDefinition source).isValid = true)
     {stepSource stepTarget : Pattern}
     (wfSource : wellFormedTerm stepSource) :
-    langReduces source.language stepSource stepTarget ↔
+    langReduces source.toLanguageDef stepSource stepTarget ↔
       ∃ proof : RawProof,
         checkRaw (generatedValidated source valid)
           (stepJudgment stepSource stepTarget) proof = true := by
@@ -3318,13 +3318,13 @@ theorem directTrace_step_iff_certificate (source : DirectTraceLanguage)
     exact checkRaw_soundness accepted
 
 /-- Reachability is exactly existence of an accepted finite trace
-certificate over the generated presentation. -/
+certificate over the generated definition. -/
 theorem directTrace_reachability_iff_certificate (source : DirectTraceLanguage)
-    (adequate : languageDirectTraceAdequate source.language = true)
-    (valid : (stepPresentation source).isValidV2 = true)
+    (adequate : languageDirectTraceAdequate source.toLanguageDef = true)
+    (valid : (stepTraceDefinition source).isValid = true)
     {stepSource stepTarget : Pattern}
     (wfSource : wellFormedTerm stepSource) :
-    Relation.ReflTransGen (langReduces source.language)
+    Relation.ReflTransGen (langReduces source.toLanguageDef)
         stepSource stepTarget ↔
       ∃ proof : RawProof,
         checkRaw (generatedValidated source valid)

@@ -3,7 +3,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
 /-!
 # PeTTa typecheck-v2 guard judgments (stage: dynamic checker root, phase 3)
 
-Extends the core typecheck-v2 presentation with the DEFINITE-CONFLICT
+Extends the core typecheck-v2 language definition with the DEFINITE-CONFLICT
 half the runtime guards enforce: sort conflicts with declaration
 resolution, the definite-mismatch judgment over reified values, the
 placeable-quantifier over reified declaration lists (an unplaceable
@@ -17,10 +17,10 @@ formals have no rule at all — base PeTTa's `get-type` is user-extensible,
 so nominal-vs-nominal is never definite.
 
 ENVIRONMENT judgments (`EnvDeclared`, `EnvDeclaredList`) have NO rules in
-the export presentation: at runtime the generated artifact binds them to
+the export language definition: at runtime the generated artifact binds them to
 logic-free primitives over the environment snapshot (a `match` on the
 user space's `(: subject type)` atoms), the same binding discipline as
-the Metamath grammar's lexical classes.  The RECEIPT presentation adds
+the Metamath grammar's lexical classes.  The RECEIPT language definition adds
 fixture facts as rules so the checkRaw receipts can exercise the
 resolution paths; the delta between the two rule lists is pinned by
 `export_rules_are_receipt_prefix` below.
@@ -540,9 +540,6 @@ private abbrev receiptCalculus :
     Mettapedia.GSLT.LanguageDef.InferenceExtension.ProofCalculus :=
   receiptDefinition.toCalculus
 
-abbrev guardPresentation : Presentation := guardDefinition.toNested
-private abbrev receiptPresentation : Presentation := receiptDefinition.toNested
-
 /-! ## Receipts -/
 
 theorem guard_language_validate : guardLanguage.validate = [] := by
@@ -570,20 +567,20 @@ set_option maxRecDepth 32768 in
 set_option synthInstance.maxSize 4096 in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-theorem guard_presentation_valid : guardPresentation.isValidV2 = true := by
-  have hvalidate : guardPresentation.language.validate = [] := by
+theorem guard_definition_valid : guardDefinition.isValid = true := by
+  have hvalidate : guardDefinition.toLanguageDef.validate = [] := by
     exact guard_language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [guardPresentation,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSchema.isValidV1,
+  simp [guardDefinition,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
+    RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, fixedConstructorsValid,
+    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
     fixedConstructorListsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
@@ -622,7 +619,7 @@ theorem guard_presentation_valid : guardPresentation.isValidV2 = true := by
 /-- Admission stated on the one flat definition rather than its derived
 checker view. -/
 theorem guard_definition_admitted : guardDefinition.isAdmitted = true :=
-  guard_presentation_valid
+  guard_definition_valid
 
 /-- The complete guard language as one GSLT. -/
 def guardTotalTheory : Mettapedia.GSLT.GSLT :=
@@ -638,20 +635,20 @@ set_option maxRecDepth 32768 in
 set_option synthInstance.maxSize 4096 in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-theorem receipt_presentation_valid : receiptPresentation.isValidV2 = true := by
-  have hvalidate : receiptPresentation.language.validate = [] := by
+theorem receipt_definition_valid : receiptDefinition.isValid = true := by
+  have hvalidate : receiptDefinition.toLanguageDef.validate = [] := by
     exact receipt_language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [receiptPresentation,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSchema.isValidV1,
+  simp [receiptDefinition,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
+    RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, fixedConstructorsValid,
+    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
     fixedConstructorListsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
@@ -687,10 +684,10 @@ theorem receipt_presentation_valid : receiptPresentation.isValidV2 = true := by
     ruleId]
   decide
 
-def guardChecked : ValidatedPresentation :=
-  ⟨guardPresentation, guard_presentation_valid⟩
-private def receiptChecked : ValidatedPresentation :=
-  ⟨receiptPresentation, receipt_presentation_valid⟩
+def guardChecked : ValidatedCalculusLanguageDef :=
+  ⟨guardDefinition, guard_definition_valid⟩
+private def receiptChecked : ValidatedCalculusLanguageDef :=
+  ⟨receiptDefinition, receipt_definition_valid⟩
 
 private def sortNumStrProof : RawProof :=
   .node { ruleId := ruleId "sc-num-str", arguments := [fz] } []
@@ -708,7 +705,7 @@ private def strNotNumProof : RawProof :=
 theorem string_literal_mismatches_number :
     checkRaw receiptChecked (definiteMismatch (fs fz) vStr tNum)
       strNotNumProof = true := by
-  simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
+  simp [checkRaw, checkRawChildren, receiptChecked, receiptDefinition,
     exportRules, fixtureRules,
     strNotNumProof, baseStrProof, consistentRefl,
     consistentDynLeft, consistentDynRight, consistentUnionRight,
@@ -726,7 +723,7 @@ theorem string_literal_mismatches_number :
     hcsSkip, hcrNil, hcrCons, hcrSkip, allNil, allCons, aldNilSucc,
     aldConsZero, aldConsRec, brDetNum, brDetStr, brDetBool, brSemidetNum,
     brSemidetStr, brSemidetBool, fixtureNomNewtype, fixtureNomAlias,
-    fixtureSymDecls, instantiateRule?, Presentation.lookupRule?,
+    fixtureSymDecls, instantiateRule?, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, consistent, consistentList,
@@ -756,7 +753,7 @@ private def literalCtorProof : RawProof :=
 theorem literal_never_constructor_shaped :
     checkRaw receiptChecked (definiteMismatch (fs fz) vNum (tCtor nomA (fs fz)))
       literalCtorProof = true := by
-  simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
+  simp [checkRaw, checkRawChildren, receiptChecked, receiptDefinition,
     exportRules, fixtureRules,
     literalCtorProof, baseNumProof, consistentRefl, consistentDynLeft,
     consistentDynRight, consistentUnionRight, consistentUnionLeft,
@@ -774,7 +771,7 @@ theorem literal_never_constructor_shaped :
     allNil, allCons, aldNilSucc, aldConsZero, aldConsRec, brDetNum,
     brDetStr, brDetBool, brSemidetNum, brSemidetStr, brSemidetBool,
     fixtureNomNewtype, fixtureNomAlias, fixtureSymDecls, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, consistent, consistentList, unionMember,
@@ -824,7 +821,7 @@ private def unionAllProof : RawProof :=
 theorem union_all_members_mismatch :
     checkRaw receiptChecked (definiteMismatch (fs (fs fz)) vNum (tUnion unionMembers))
       unionAllProof = true := by
-  simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
+  simp [checkRaw, checkRawChildren, receiptChecked, receiptDefinition,
     exportRules, fixtureRules, unionAllProof,
     unionMembers, numStrMismatchProof, numBoolMismatchProof, maTailProof,
     baseNumProof, consistentRefl, consistentDynLeft, consistentDynRight,
@@ -843,7 +840,7 @@ theorem union_all_members_mismatch :
     allNil, allCons, aldNilSucc, aldConsZero, aldConsRec, brDetNum,
     brDetStr, brDetBool, brSemidetNum, brSemidetStr, brSemidetBool,
     fixtureNomNewtype, fixtureNomAlias, fixtureSymDecls, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, consistent, consistentList, unionMember,
@@ -873,7 +870,7 @@ private def newtypeResolvedProof : RawProof :=
 theorem newtype_resolves_before_judging :
     checkRaw receiptChecked (definiteMismatch (fs (fs fz)) vStr (tNominal nomA))
       newtypeResolvedProof = true := by
-  simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
+  simp [checkRaw, checkRawChildren, receiptChecked, receiptDefinition,
     exportRules, fixtureRules,
     newtypeResolvedProof, fixtureNewtypeProof, strNotNumProof,
     baseStrProof, consistentRefl, consistentDynLeft, consistentDynRight,
@@ -892,7 +889,7 @@ theorem newtype_resolves_before_judging :
     allNil, allCons, aldNilSucc, aldConsZero, aldConsRec, brDetNum,
     brDetStr, brDetBool, brSemidetNum, brSemidetStr, brSemidetBool,
     fixtureNomNewtype, fixtureNomAlias, fixtureSymDecls, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, consistent, consistentList, unionMember,
@@ -929,7 +926,7 @@ private def declaredSymbolProof : RawProof :=
 theorem declared_symbol_conflict :
     checkRaw receiptChecked (definiteMismatch (fs fz) (vSym symA) tNum)
       declaredSymbolProof = true := by
-  simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
+  simp [checkRaw, checkRawChildren, receiptChecked, receiptDefinition,
     exportRules, fixtureRules,
     declaredSymbolProof, fixtureSymProof, symDeclConflictProof,
     consistentRefl, consistentDynLeft, consistentDynRight,
@@ -948,7 +945,7 @@ theorem declared_symbol_conflict :
     allNil, allCons, aldNilSucc, aldConsZero, aldConsRec, brDetNum,
     brDetStr, brDetBool, brSemidetNum, brSemidetStr, brSemidetBool,
     fixtureNomNewtype, fixtureNomAlias, fixtureSymDecls, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, consistent, consistentList, unionMember,
@@ -972,7 +969,7 @@ private def boundnessProof : RawProof :=
 theorem committed_bool_requires_bound :
     checkRaw receiptChecked (boundnessRefuted mDet tBool)
       boundnessProof = true := by
-  simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
+  simp [checkRaw, checkRawChildren, receiptChecked, receiptDefinition,
     exportRules, fixtureRules,
     boundnessProof, consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
@@ -990,7 +987,7 @@ theorem committed_bool_requires_bound :
     allNil, allCons, aldNilSucc, aldConsZero, aldConsRec, brDetNum,
     brDetStr, brDetBool, brSemidetNum, brSemidetStr, brSemidetBool,
     fixtureNomNewtype, fixtureNomAlias, fixtureSymDecls, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     consistent, consistentList, unionMember,
@@ -1019,7 +1016,7 @@ private def undeclaredNominalCandidate : RawProof :=
 theorem undeclared_nominal_stays_open :
     checkRaw receiptChecked (definiteMismatch (fs fz) vNum (tNominal nomB))
       undeclaredNominalCandidate = false := by
-  simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
+  simp [checkRaw, checkRawChildren, receiptChecked, receiptDefinition,
     exportRules, fixtureRules,
     undeclaredNominalCandidate, consistentRefl, consistentDynLeft,
     consistentDynRight, consistentUnionRight, consistentUnionLeft,
@@ -1037,7 +1034,7 @@ theorem undeclared_nominal_stays_open :
     allNil, allCons, aldNilSucc, aldConsZero, aldConsRec, brDetNum,
     brDetStr, brDetBool, brSemidetNum, brSemidetStr, brSemidetBool,
     fixtureNomNewtype, fixtureNomAlias, fixtureSymDecls, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, consistent, consistentList, unionMember,
@@ -1064,7 +1061,7 @@ private def sameBaseCandidate : RawProof :=
 theorem same_base_sort_never_mismatches :
     checkRaw receiptChecked (definiteMismatch (fs fz) vNum tNum)
       sameBaseCandidate = false := by
-  simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
+  simp [checkRaw, checkRawChildren, receiptChecked, receiptDefinition,
     exportRules, fixtureRules,
     sameBaseCandidate, consistentRefl, consistentDynLeft,
     consistentDynRight, consistentUnionRight, consistentUnionLeft,
@@ -1082,7 +1079,7 @@ theorem same_base_sort_never_mismatches :
     allNil, allCons, aldNilSucc, aldConsZero, aldConsRec, brDetNum,
     brDetStr, brDetBool, brSemidetNum, brSemidetStr, brSemidetBool,
     fixtureNomNewtype, fixtureNomAlias, fixtureSymDecls, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, consistent, consistentList, unionMember,
@@ -1110,7 +1107,7 @@ private def vetoCandidate : RawProof :=
 theorem unplaceable_declaration_vetoes :
     checkRaw receiptChecked (declaredConflictSome fz (dCons (declOf symA tUndefined) dNil) tNum)
       vetoCandidate = false := by
-  simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
+  simp [checkRaw, checkRawChildren, receiptChecked, receiptDefinition,
     exportRules, fixtureRules, vetoCandidate,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
@@ -1128,7 +1125,7 @@ theorem unplaceable_declaration_vetoes :
     allNil, allCons, aldNilSucc, aldConsZero, aldConsRec, brDetNum,
     brDetStr, brDetBool, brSemidetNum, brSemidetStr, brSemidetBool,
     fixtureNomNewtype, fixtureNomAlias, fixtureSymDecls, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, consistent, consistentList, unionMember,
@@ -1147,7 +1144,7 @@ theorem unplaceable_declaration_vetoes :
 
 /-! ## Syntax-mapping tables (root-carried; the exporter GENERATES the
 runtime reifier from these, so syntax-to-algebra bridging is data of the
-presentation, never hand-written runtime semantics) -/
+language definition, never hand-written runtime semantics) -/
 
 /-- Base syntax type names and their root constructors. -/
 def syntaxBaseTypeTable : List (String × String) :=
@@ -1165,7 +1162,7 @@ theorem syntax_base_table_length : syntaxBaseTypeTable.length = 4 := by
 theorem syntax_mode_table_length : syntaxModeTable.length = 4 := by decide
 
 /-- Every base-table target is a declared 0-ary constructor of the guard
-language: the lexical table is CONNECTED to the presentation, not adjacent
+language: the lexical table is CONNECTED to the language definition, not adjacent
 to it. -/
 theorem syntax_base_targets_are_constructors :
     syntaxBaseTypeTable.all (fun entry =>
@@ -1181,10 +1178,10 @@ theorem syntax_mode_targets_are_constructors :
         term.label == entry.2 && term.params.length == 0)) = true := by
   decide
 
-/-! ## Audit interface: receipt presentation + sample derivations for the
+/-! ## Audit interface: receipt language definition + sample derivations for the
 operational generic checker (the guard-level GIC projection) -/
 
-def auditPresentation : Presentation := receiptPresentation
+def auditDefinition : CalculusLanguageDef := receiptDefinition
 def auditSampleMismatchGoal : Pattern := definiteMismatch (fs fz) vStr tNum
 def auditSampleMismatchProof : RawProof := strNotNumProof
 def auditSampleBoundnessGoal : Pattern := boundnessRefuted mDet tBool

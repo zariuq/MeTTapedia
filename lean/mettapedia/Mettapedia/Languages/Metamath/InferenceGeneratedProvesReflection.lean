@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.InferenceActiveHypothesisReflection
 import Mettapedia.Languages.Metamath.InferenceAssertionRootReflection
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Reflection of arbitrary projected `Proves` derivations
 
@@ -31,7 +33,7 @@ open Mettapedia.Languages.Metamath.InferenceHypothesisStepAgreement
 open Mettapedia.Languages.Metamath.InferenceProjection.AssertionApplication
 
 private theorem sizeOf_children_lt_byRule
-    {target : ValidatedPresentation} {premises : List Pattern}
+    {target : ValidatedCalculusLanguageDef} {premises : List Pattern}
     {conclusion : Pattern} (ruleInstance : RuleInstance)
     (application : RuleApplication target ruleInstance premises conclusion)
     (children : DerivationList target premises) :
@@ -43,7 +45,7 @@ private theorem sizeOf_children_lt_byRule
   omega
 
 private theorem sizeOf_head_lt_cons
-    {target : ValidatedPresentation} {premise : Pattern}
+    {target : ValidatedCalculusLanguageDef} {premise : Pattern}
     {premises : List Pattern} (head : Derivation target premise)
     (tail : DerivationList target premises) :
     sizeOf head < sizeOf (DerivationList.cons head tail) := by
@@ -52,7 +54,7 @@ private theorem sizeOf_head_lt_cons
   omega
 
 private theorem sizeOf_tail_lt_cons
-    {target : ValidatedPresentation} {premise : Pattern}
+    {target : ValidatedCalculusLanguageDef} {premise : Pattern}
     {premises : List Pattern} (head : Derivation target premise)
     (tail : DerivationList target premises) :
     sizeOf tail < sizeOf (DerivationList.cons head tail) := by
@@ -68,8 +70,8 @@ mutual
 decoded Metamath formula and a source-pinned generated tree with exactly the
 same raw proof erasure. -/
 theorem provesDerivation_reflectsGeneratedTree
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {formulaPattern : Pattern}
     (derivation : Derivation target (proves formulaPattern)) :
     ∃ formula : ConstantHeadedFormula,
@@ -123,8 +125,8 @@ original child vector.  The returned leading vector consists of those same
 derivation objects, while the returned suffix is the untouched remainder of
 the original vector. -/
 theorem rawAssertionProvesPrefix_reflectsGeneratedTrees
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1) :
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1) :
     (hypotheses : List HypothesisView) →
     (bodies : List Pattern) →
     bodies.length = hypotheses.length →
@@ -192,8 +194,8 @@ end
 /-- The preserved erasure is the independently defined canonical raw proof
 represented by the reflected generated tree. -/
 theorem provesDerivation_reflectsCanonicalRawProof
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {formulaPattern : Pattern}
     (derivation : Derivation target (proves formulaPattern)) :
     ∃ formula : ConstantHeadedFormula,
@@ -209,8 +211,8 @@ theorem provesDerivation_reflectsCanonicalRawProof
 forces its apparent formula argument to decode as a canonical Metamath
 formula encoding. -/
 theorem provesDerivation_decodesFormula
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {formulaPattern : Pattern}
     (derivation : Derivation target (proves formulaPattern)) :
     ∃ formula : ConstantHeadedFormula,
@@ -223,8 +225,8 @@ theorem provesDerivation_decodesFormula
 
 /-- Positive boundary: an actual generated active-hypothesis leaf is covered
 by the global reflection theorem and retains its raw artifact. -/
-example {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {hypothesis : HypothesisView}
     (hmember : hypothesis ∈ projection.activeHypotheses) :
     ∃ formula : ConstantHeadedFormula,
@@ -241,8 +243,8 @@ private def malformedFormulaPattern : Pattern :=
 /-- Negative boundary: a syntactically malformed formula payload cannot have
 any projected generic `Proves` derivation. -/
 theorem not_nonempty_provesDerivation_malformedFormula
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1) :
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1) :
     ¬ Nonempty (Derivation target (proves malformedFormulaPattern)) := by
   rintro ⟨derivation⟩
   rcases provesDerivation_decodesFormula hprojection derivation with

@@ -22,11 +22,11 @@ rho data.
 
 namespace Mettapedia.Languages.MeTTa.Prime.NativeInteractionConservativity
 
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
-open Mettapedia.Languages.MeTTa.NativeTypeTheory.NativeModalTyping
+open Mettapedia.Languages.MeTTa.StagedReflective
+open Mettapedia.Languages.MeTTa.StagedReflective.NativeModalTyping
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.MeTTa.Prime.RhoNonCollapse
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-! ## Exact endpoint inversion -/
@@ -34,9 +34,9 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 /-- A closed native term is a rho endpoint exactly when it is a first-class
 runtime pattern.  Endpoint admission therefore has no hidden coercion from
 the dependent core. -/
-theorem rhoEndpoint_nonempty_iff (term : NativeRawTm 0 0) :
+theorem rhoEndpoint_nonempty_iff (term : StagedReflectiveTm 0 0) :
     Nonempty (RhoEndpoint term) ↔
-      ∃ pattern : Pattern, term = (.pattern pattern : NativeRawTm 0 0) := by
+      ∃ pattern : Pattern, term = (.pattern pattern : StagedReflectiveTm 0 0) := by
   constructor
   · rintro ⟨endpoint⟩
     exact ⟨endpoint.pattern, endpoint.term_eq⟩
@@ -45,7 +45,7 @@ theorem rhoEndpoint_nonempty_iff (term : NativeRawTm 0 0) :
     exact ⟨patternEndpoint pattern⟩
 
 /-- Endpoint admission implies membership in the direct rho-bearing fragment. -/
-theorem directRho_of_rhoEndpoint {term : NativeRawTm 0 0}
+theorem directRho_of_rhoEndpoint {term : StagedReflectiveTm 0 0}
     (endpoint : RhoEndpoint term) :
     DirectRhoFragment term := by
   rw [endpoint.term_eq]
@@ -60,7 +60,7 @@ theorem pureImage_has_no_rhoEndpoint (term : PureTm 0) :
 /-- A rho computation cannot use an embedded dependent-core term as its
 source endpoint. -/
 theorem pureImage_has_no_outgoing_rhoComputation (term : PureTm 0)
-    (target : NativeRawTm 0 0) :
+    (target : StagedReflectiveTm 0 0) :
     ¬ Nonempty
       ((nativeRhoComputationTy (embedPure 0 term) target) PUnit.unit) := by
   rintro ⟨sourceEndpoint, _targetEndpoint, _path⟩
@@ -68,7 +68,7 @@ theorem pureImage_has_no_outgoing_rhoComputation (term : PureTm 0)
 
 /-- A rho computation cannot use an embedded dependent-core term as its
 target endpoint. -/
-theorem pureImage_has_no_incoming_rhoComputation (source : NativeRawTm 0 0)
+theorem pureImage_has_no_incoming_rhoComputation (source : StagedReflectiveTm 0 0)
     (term : PureTm 0) :
     ¬ Nonempty
       ((nativeRhoComputationTy source (embedPure 0 term)) PUnit.unit) := by
@@ -82,10 +82,10 @@ static typing keep their original indices; interaction is indexed by exact
 closed native endpoints. -/
 inductive PrimeJudgmentIndex where
   | conversion (stage binders : Nat)
-      (left right : NativeRawTm stage binders)
+      (left right : StagedReflectiveTm stage binders)
   | typing (stage binders : Nat) (context : Context binders)
-      (term type : NativeRawTm stage binders)
-  | interaction (source target : NativeRawTm 0 0)
+      (term type : StagedReflectiveTm stage binders)
+  | interaction (source target : StagedReflectiveTm 0 0)
 
 /-- Evidence for the integrated judgment space.  Interaction adds one new
 proof-relevant fibre and no constructor whose conclusion is a conversion or
@@ -93,21 +93,21 @@ static typing index. -/
 inductive PrimeJudgment (conversion : ConversionPolicy) :
     PrimeJudgmentIndex → Type 1 where
   | converted {stage binders : Nat}
-      {left right : NativeRawTm stage binders}
+      {left right : StagedReflectiveTm stage binders}
       (related : conversion.Rel left right) :
       PrimeJudgment conversion (.conversion stage binders left right)
   | typed {stage binders : Nat} {context : Context binders}
-      {term type : NativeRawTm stage binders}
+      {term type : StagedReflectiveTm stage binders}
       (derivation : HasType conversion context term type) :
       PrimeJudgment conversion (.typing stage binders context term type)
-  | interacted {source target : NativeRawTm 0 0}
+  | interacted {source target : StagedReflectiveTm 0 0}
       (path : (nativeRhoComputationTy source target) PUnit.unit) :
       PrimeJudgment conversion (.interaction source target)
 
 /-- Adding the interaction fibre preserves and reflects native conversion
 exactly. -/
 theorem conversion_conservative (conversion : ConversionPolicy)
-    {stage binders : Nat} (left right : NativeRawTm stage binders) :
+    {stage binders : Nat} (left right : StagedReflectiveTm stage binders) :
     Nonempty
         (PrimeJudgment conversion
           (.conversion stage binders left right)) ↔
@@ -123,7 +123,7 @@ theorem conversion_conservative (conversion : ConversionPolicy)
 exactly. -/
 theorem typing_conservative (conversion : ConversionPolicy)
     {stage binders : Nat} (context : Context binders)
-    (term type : NativeRawTm stage binders) :
+    (term type : StagedReflectiveTm stage binders) :
     Nonempty
         (PrimeJudgment conversion
           (.typing stage binders context term type)) ↔
@@ -138,7 +138,7 @@ theorem typing_conservative (conversion : ConversionPolicy)
 /-- The new interaction judgment is neither weakened nor quotient-erased by
 the totalization: it retains the exact endpoint admissions and event path. -/
 theorem interaction_exact (conversion : ConversionPolicy)
-    (source target : NativeRawTm 0 0) :
+    (source target : StagedReflectiveTm 0 0) :
     Nonempty
         (PrimeJudgment conversion (.interaction source target)) ↔
       Nonempty
@@ -153,7 +153,7 @@ theorem interaction_exact (conversion : ConversionPolicy)
 /-- Any integrated interaction judgment exposes direct rho endpoints on both
 sides. -/
 theorem interaction_has_direct_endpoints
-    {conversion : ConversionPolicy} {source target : NativeRawTm 0 0}
+    {conversion : ConversionPolicy} {source target : StagedReflectiveTm 0 0}
     (evidence : PrimeJudgment conversion (.interaction source target)) :
     DirectRhoFragment source ∧ DirectRhoFragment target := by
   cases evidence with
@@ -172,7 +172,7 @@ def internalCommJudgment :
 
 /-- Direct interaction does not span the closed native core. -/
 def DirectInteractionSpansClosedNative : Prop :=
-  ∀ term : NativeRawTm 0 0, Nonempty (RhoEndpoint term)
+  ∀ term : StagedReflectiveTm 0 0, Nonempty (RhoEndpoint term)
 
 theorem directInteraction_does_not_span_closed_native_core :
     ¬ DirectInteractionSpansClosedNative := by
@@ -183,7 +183,7 @@ theorem directInteraction_does_not_span_closed_native_core :
 /-- Even after totalization, an interaction judgment cannot be constructed
 with an embedded dependent function as its source. -/
 theorem dependentFunction_has_no_interaction_judgment
-    (conversion : ConversionPolicy) (target : NativeRawTm 0 0) :
+    (conversion : ConversionPolicy) (target : StagedReflectiveTm 0 0) :
     ¬ Nonempty
       (PrimeJudgment conversion
         (.interaction nativeDependentFunctionType target)) := by

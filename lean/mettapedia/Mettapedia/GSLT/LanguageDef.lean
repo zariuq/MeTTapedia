@@ -60,7 +60,7 @@ import Mettapedia.GSLT.LanguageDef.LogicExtension
 import Mettapedia.GSLT.LanguageDef.OracleExtension
 import Mettapedia.GSLT.LanguageDef.ReflectionExtension
 import Mettapedia.GSLT.LanguageDef.RuntimeProfileExtension
-import Mettapedia.GSLT.LanguageDef.PresentationSensitiveTransformation
+import Mettapedia.GSLT.LanguageDef.AuthoredTransformation
 
 /-!
 # Compositional language definitions
@@ -78,9 +78,9 @@ flat specialization with judgments and rules in the same record as the five
 object-language fields.  `ExtendedLanguageDef layer`, together with
 `extendedLanguageDef!`, handles any finite product of independently authored
 layers without adding a universal optional field for every future extension.
-The older nested `Presentation` remains a derived checker and transport type;
-validators, generated projections, and focused checker fixtures may use it,
-but it is not the primary authoring authority.
+There is no parallel nested checker object: `CalculusLanguageDef` is the
+canonical flat checker input, while the generic layer factorization and its
+total executable GSLT are derived internally by proved maps.
 
 The reusable hierarchy is law-based:
 
@@ -122,11 +122,11 @@ compares the reconstruction with the typed source meaning before emitting
 bytes.  Nullary and binary canaries are byte-identical across Lean, the
 stage-zero generator, and the generic C loader.
 
-`InferenceCompiledPlanLowering` connects that physical seam to admitted
-inference presentations.  It recognizes the local depth-zero, application-only
+`InferenceCompiledPlanLowering` connects that physical seam to validated
+calculus language definitions.  It recognizes the local depth-zero, application-only
 finite-Horn fragment, rejects binders and side conditions without assigning
 them a fallback meaning, and proves that every emitted packet reconstructs the
-recognized source presentation's typed meaning.
+recognized source definition's typed meaning.
 
 `FiniteVariableFrameCompilation` supplies a second composable realization.  A
 decidable finite-support check resolves authored variable keys to bounded slots,

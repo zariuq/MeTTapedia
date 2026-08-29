@@ -2,6 +2,8 @@ import Mettapedia.GSLT.LanguageDef.CompletenessSpectrum
 import Mettapedia.GSLT.LanguageDef.NIKIndexedOperational
 import Mettapedia.Languages.Metamath.SourceInferenceDeclarativeAdequacy
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Exact Metamath authority at the NIK boundary
 
@@ -9,7 +11,7 @@ An admitted source prefix determines three independently useful views of one
 Metamath judgment:
 
 * execution of an authored label list by the verified `mm-lean4` normal fold;
-* inhabitation of the generated CertificateGSLT presentation; and
+* inhabitation of the generated CertificateGSLT definition; and
 * supported declarative provability in the source-derived operational model.
 
 The existing reflection and declarative-adequacy theorems identify all three.
@@ -126,10 +128,10 @@ Metamath checking scope. -/
 structure SourceScope where
   database : RuntimeDB
   source : SourcePrefix
-  presentation : ValidatedPresentation
+  definition : ValidatedCalculusLanguageDef
   base : RuntimeProofState
   sourceAdmitted :
-    presentationOfSourcePrefix? source = some presentation.1
+    calculusLanguageDefOfSourcePrefix? source = some definition.1
   runtimeProjects :
     projectPrefix? database = some source.toProjection
   baseStackEmpty : base.stack = #[]
@@ -138,12 +140,12 @@ namespace SourceScope
 
 variable (scope : SourceScope)
 
-/-- Admission of the source presentation also supplies the runtime-projection
-presentation equation required by the normal-fold reflection theorem. -/
+/-- Admission of the source definition also supplies the runtime-projection
+definition equation required by the normal-fold reflection theorem. -/
 theorem projectionAdmitted :
-    presentationOfProjection? scope.source.toProjection =
-      some scope.presentation.1 := by
-  rw [← presentationOfSourcePrefix?_eq_runtime]
+    calculusLanguageDefOfProjection? scope.source.toProjection =
+      some scope.definition.1 := by
+  rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
   exact scope.sourceAdmitted
 
 end SourceScope
@@ -183,7 +185,7 @@ def normalLabelChecker (scope : SourceScope) :
 
 /-- The generated CertificateGSLT derivability predicate. -/
 def Derivable (scope : SourceScope) (claim : Claim scope) : Prop :=
-  Nonempty (Derivation scope.presentation
+  Nonempty (Derivation scope.definition
     (proves (encodeFormula claim.formula)))
 
 /-- Independent supported declarative Metamath meaning. -/
@@ -204,7 +206,7 @@ theorem derivable_iff_exists_acceptedLabels
       ∃ labels : List String, FoldAccepted scope claim labels := by
   simpa [Derivable, FoldAccepted] using
     nonempty_provesDerivation_iff_exists_acceptedNormalLabels
-      scope.database scope.source.toProjection scope.presentation scope.base
+      scope.database scope.source.toProjection scope.definition scope.base
       claim.formula scope.projectionAdmitted scope.runtimeProjects
       scope.baseStackEmpty
 
@@ -216,7 +218,7 @@ theorem exists_acceptedLabels_iff_meaning
       Meaning scope claim := by
   simpa [FoldAccepted, Meaning] using
     mmLean4_normalFold_exists_iff_supportedDeclarative
-      scope.database scope.source scope.presentation scope.base claim.formula
+      scope.database scope.source scope.definition scope.base claim.formula
       scope.sourceAdmitted scope.runtimeProjects scope.baseStackEmpty
       claim.frameRespect
 
@@ -268,11 +270,11 @@ def completeJudgmentAuthority (scope : SourceScope) :
   replay := normalLabelChecker_derivationalAuthority scope
   calculus := calculusExact scope
 
-/-- The already generated presentation, now equipped with its two-sided
+/-- The already generated definition, now equipped with its two-sided
 declarative adequacy theorem. -/
 def completeCertificateGSLT (scope : SourceScope) :
     SemanticallyCompleteCertificateGSLT (Claim scope) (Meaning scope) where
-  presentation := scope.presentation
+  definition := scope.definition
   adequacy :=
     { encode := fun claim => proves (encodeFormula claim.formula)
       derivation_sound := by
@@ -287,7 +289,7 @@ at the module boundary. -/
 def proofArticleChecker (scope : SourceScope) :
     Checker (Claim scope) WireArticle where
   check claim article :=
-    (wireArticleAuthority () scope.presentation).check
+    (wireArticleAuthority () scope.definition).check
       (proves (encodeFormula claim.formula)) article
 
 /-- CertificateGSLT wire articles give a second exact authority for the same
@@ -298,7 +300,7 @@ theorem proofArticleChecker_semanticAuthority
   constructor
   · intro claim article accepted
     apply (derivable_iff_meaning scope claim).mp
-    exact (wireArticleAuthority () scope.presentation).sound accepted
+    exact (wireArticleAuthority () scope.definition).sound accepted
   · intro claim meaningful
     obtain ⟨derivation⟩ :=
       (derivable_iff_meaning scope claim).mpr meaningful

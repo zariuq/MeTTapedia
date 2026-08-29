@@ -29,13 +29,13 @@ open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability
 open Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability.State
 open Mettapedia.Languages.MeTTa.Prime.NativeIndexedFamilyConstructionNIKSelection
-open Mettapedia.Languages.MeTTa.PureKernel.Universe
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyNativeKernel
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyPresentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyTypedConversion
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration.ComputationAuthority
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyConstruction
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyPresentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyTypedConversion
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration.ComputationAuthority
 
 noncomputable section
 
@@ -275,8 +275,8 @@ theorem active_suspended_is_fallback {presented : PresentedCandidate}
 
 namespace Canary
 
-open AuthoredIndexedFamilyNativeKernel.NativeList
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.NativeIndexedFamilySource
+open AuthoredIndexedFamilyConstruction.NativeList
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedFamilySource
 
 def dependencies : DependencySystem where
   Revision := Bool

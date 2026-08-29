@@ -243,10 +243,11 @@
    (mm-native:identity-bindings $rest))
 
 (= (mm-native:leaf-rule $identity $hypothesis)
-   (GRule (mm-native:hypothesis-label $hypothesis)
+   (GRuleV1 (mm-native:hypothesis-label $hypothesis)
      LNil LNil
      (mm-native:proves $identity
-       (mm-native:hypothesis-formula $hypothesis))))
+       (mm-native:hypothesis-formula $hypothesis))
+     LNil))
 
 (= (mm-native:leaf-rules Nil $identity) Nil)
 (= (mm-native:leaf-rules (Cons $hypothesis $rest) $identity)
@@ -268,16 +269,18 @@
          (mm-native:context
            (mm-native:hypothesis-labels $mandatory) Nil)
          (Cons
-           (GRule (mm-native:substitution-rule-id $label)
+           (GRuleV1 (mm-native:substitution-rule-id $label)
              LNil LNil
              (mm-native:substitution-valid
-               $identity $label $substitution))
+               $identity $label $substitution)
+             LNil)
            (Cons
-             (GRule (mm-native:context-rule-id $label)
+             (GRuleV1 (mm-native:context-rule-id $label)
                LNil LNil
-               (mm-native:context-valid $identity $label $context))
+               (mm-native:context-valid $identity $label $context)
+               LNil)
              (Cons
-               (GRule $label LNil
+               (GRuleV1 $label LNil
                  (mm-native:append-lcons
                    (mm-native:hypothesis-premises $identity $mandatory)
                    (LCons
@@ -287,7 +290,8 @@
                        (mm-native:context-valid
                          $identity $label $context)
                        LNil)))
-                 (mm-native:proves $identity $formula))
+                 (mm-native:proves $identity $formula)
+                 LNil)
                Nil)))))))
 
 (= (mm-native:append-lcons LNil $right) $right)
@@ -460,11 +464,12 @@
                  (mm-native:append
                    (mm-native:leaf-rules $active $identity)
                    (mm-native:append-rule-groups $rule-groups))
-                 (let $presentation
-                   (GPresentation
+                 (let $language
+                   (GInferenceLanguageV1 1
                      (mm-native:constructors $vocabulary)
                      (mm-native:judgments)
-                     (mm-native:cons-to-lcons $all-rules))
+                     (mm-native:cons-to-lcons $all-rules)
+                     GNoConversion)
                    (let $source
                      (GSLTSourceV1
                        (case $identity
@@ -479,7 +484,7 @@
                              (PApp
                                "__metamath.NativeSourceSliceV0" LNil))
                            LNil))
-                       $presentation)
+                       $language)
                      (MMNativeSourceSlice
                        $source
                        (mm-native:proves $identity $formula)

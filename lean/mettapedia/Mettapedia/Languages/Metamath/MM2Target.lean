@@ -14,7 +14,7 @@ supplied target GSLT before its native transition types are used.
 
 namespace Mettapedia.Languages.Metamath.MM2Transformation
 
-open Mettapedia.GSLT.ProofRelevantPresentation
+open Mettapedia.GSLT.ProofRelevant
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
 open Mettapedia.Languages.ProcessCalculi.MORK.MM2Surface
@@ -22,7 +22,7 @@ open Mettapedia.Languages.ProcessCalculi.MORK.MM2Surface
 /-- An operational MM2 target supplied to a transformation.  The embedding
 and two-sided step law are the target capability boundary. -/
 structure MM2Target where
-  operational : PresentedGSLT
+  operational : ProofRelevantGSLT
   embedSpace : Space → operational.theory.Term
   embedSpace_injective : Function.Injective embedSpace
   step_iff : ∀ source target,

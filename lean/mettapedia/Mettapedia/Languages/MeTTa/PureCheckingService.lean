@@ -1,7 +1,7 @@
 import Mettapedia.Languages.MeTTa.PureCertificateFragment
-import Mettapedia.Languages.MeTTa.PureKernel.Confluence
-import Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
-import Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.Confluence
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics
 
 /-!
 # Pure Checking Service
@@ -10,7 +10,7 @@ An explicit theoremic checking/conversion layer above the restricted Pure
 certificate fragment.
 
 This does not introduce a second kernel or a new normalization engine. It
-packages the existing PureKernel conversion facts into a small service API for:
+packages the existing IntrinsicPure conversion facts into a small service API for:
 
 - common-reduct conversion witnesses
 - checked certificate conversion along definitional equality
@@ -19,13 +19,13 @@ packages the existing PureKernel conversion facts into a small service API for:
 
 namespace Mettapedia.Languages.MeTTa.ElaboratedCore
 
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.Typing
-open Mettapedia.Languages.MeTTa.PureKernel.Reduction
-open Mettapedia.Languages.MeTTa.PureKernel.Confluence
-open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Typing
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Reduction
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Confluence
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationEnv
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics
 
 /-- A theoremic conversion witness between two closed Pure types, packaged by
 exhibiting a common reduct. -/

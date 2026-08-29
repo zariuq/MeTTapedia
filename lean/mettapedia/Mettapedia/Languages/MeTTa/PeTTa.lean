@@ -46,6 +46,14 @@ import Mettapedia.Languages.MeTTa.PeTTa.OSLFPackage
 import Mettapedia.Languages.MeTTa.PeTTa.StageFiber
 import Mettapedia.Languages.MeTTa.PeTTa.BoundaryContract
 import Mettapedia.Languages.MeTTa.PeTTa.SemanticBundle
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardProjection
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardPlan
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardWire
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardControl
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardResumableControl
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardControlNTT
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardToStructuredC
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardToStructuredCSemantics
 
 /-!
 # PeTTa MeTTa Semantics

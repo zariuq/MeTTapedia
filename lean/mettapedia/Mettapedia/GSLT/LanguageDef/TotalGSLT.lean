@@ -237,34 +237,34 @@ private theorem right_multiStep_of {languageTheory calculusTheory : GSLT}
 /-! ## A validated language/calculus definition as one GSLT -/
 
 /-- A validated language and calculus, conservatively combined as one GSLT. -/
-def combinedGSLT (checked : ValidatedPresentation)
-    (laws : ReductionRespectsEquations checked.1.language) : GSLT :=
-  GSLT.disjointSum (languageGSLT checked.1.language laws)
+def combinedGSLT (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquations checked.1.toLanguageDef) : GSLT :=
+  GSLT.disjointSum (languageGSLT checked.1.toLanguageDef laws)
     (proofSearchGSLT checked)
 
-@[simp] theorem combinedGSLT_language_step (checked : ValidatedPresentation)
-    (laws : ReductionRespectsEquations checked.1.language)
+@[simp] theorem combinedGSLT_language_step (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquations checked.1.toLanguageDef)
     (source target : Pattern) :
     (combinedGSLT checked laws).Step
         (inLanguage source) (inLanguage target) ↔
-      langReducesUsing RelationEnv.empty checked.1.language source target := by
+      langReducesUsing RelationEnv.empty checked.1.toLanguageDef source target := by
   exact (disjointSum_left_step
-    (languageGSLT checked.1.language laws) (proofSearchGSLT checked)
+    (languageGSLT checked.1.toLanguageDef laws) (proofSearchGSLT checked)
     source target).trans (languageGSLT_step _ _ _ _)
 
-@[simp] theorem combinedGSLT_calculus_step (checked : ValidatedPresentation)
-    (laws : ReductionRespectsEquations checked.1.language)
+@[simp] theorem combinedGSLT_calculus_step (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquations checked.1.toLanguageDef)
     (source target : GoalState) :
     (combinedGSLT checked laws).Step
         (inCalculus source) (inCalculus target) ↔
       (proofSearchGSLT checked).Step source target := by
   unfold combinedGSLT
   exact disjointSum_right_step
-    (languageGSLT checked.1.language laws) (proofSearchGSLT checked)
+    (languageGSLT checked.1.toLanguageDef laws) (proofSearchGSLT checked)
     source target
 
-theorem combinedGSLT_no_crossing (checked : ValidatedPresentation)
-    (laws : ReductionRespectsEquations checked.1.language)
+theorem combinedGSLT_no_crossing (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquations checked.1.toLanguageDef)
     (pattern : Pattern) (state : GoalState) :
     ¬ (combinedGSLT checked laws).Step
         (inLanguage pattern) (inCalculus state) ∧
@@ -272,16 +272,16 @@ theorem combinedGSLT_no_crossing (checked : ValidatedPresentation)
         (inCalculus state) (inLanguage pattern) := by
   unfold combinedGSLT
   exact ⟨no_left_to_right
-      (languageGSLT checked.1.language laws) (proofSearchGSLT checked)
+      (languageGSLT checked.1.toLanguageDef laws) (proofSearchGSLT checked)
       pattern state,
     no_right_to_left
-      (languageGSLT checked.1.language laws) (proofSearchGSLT checked)
+      (languageGSLT checked.1.toLanguageDef laws) (proofSearchGSLT checked)
       state pattern⟩
 
 /-- Derivability is reduction to the empty obligation state inside the
 combined GSLT. -/
-theorem derivability_iff_combinedGSLT (checked : ValidatedPresentation)
-    (laws : ReductionRespectsEquations checked.1.language)
+theorem derivability_iff_combinedGSLT (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquations checked.1.toLanguageDef)
     (goals : GoalState) :
     Nonempty (DerivationList checked goals) ↔
       (combinedGSLT checked laws).MultiStep

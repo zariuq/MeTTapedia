@@ -21,7 +21,7 @@ The intended reading is:
 
 - `R_exec` may be implemented by an MM2/MORK-like substrate
 - `R_spec` remains recognizably MeTTa
-- PureKernel `A/B/C1` stays separate and untouched
+- IntrinsicPure `A/B/C1` stays separate and untouched
 - future maps `HE -> R_spec`, `PeTTa -> R_spec`, and then `R_spec -> C*`
   should target this profile rather than redefining the kernel
 -/

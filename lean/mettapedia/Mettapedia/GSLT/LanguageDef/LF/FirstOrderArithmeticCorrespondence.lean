@@ -3,13 +3,13 @@ import Mettapedia.GSLT.LanguageDef.LF.FirstOrderContextualCorrespondence
 /-!
 # Proof-producing arithmetic correspondence for first-order LF
 
-The first-order LF presentation represents de Bruijn comparisons and index
+The first-order LF calculus language represents de Bruijn comparisons and index
 shifts with explicit Peano proof trees.  This module compiles executable
 natural-number order and addition into those raw trees and proves that the
 actual source-neutral checker accepts them.
 
 The compiler is source-independent data production: its output is checked
-against the validated presentation rather than trusted by construction.
+against the validated calculus definition rather than trusted by construction.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.LFFirstOrderArithmeticCorrespondence
@@ -53,10 +53,10 @@ theorem ltRawProof_accepts {left right : Nat} (hlt : left < right) :
       | succ right =>
           simp (config := { maxSteps := 1000000, decide := true })
             [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-             InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-             checked, source, presentation, language, allRules, ltRawProof,
+             InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+             checked, source, allRules, ltRawProof,
              rawProof, ltZeroSuccRule, rule, formal, m, instantiateRule?,
-             Presentation.lookupRule?, instantiateSchema?,
+             CalculusLanguageDef.lookupRule?, instantiateSchema?,
              instantiateSchemaAt?, instantiateSchemas?,
              instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
              encodeNat_argumentValid, lt, encodeNat, zero, succ, ruleId]
@@ -68,15 +68,15 @@ theorem ltRawProof_accepts {left right : Nat} (hlt : left < right) :
           have hchild := leftIH hprevious
           simp (config := { maxSteps := 1000000, decide := true })
             [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-             InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-             checked, source, presentation, language, allRules, ltRawProof,
+             InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+             checked, source, allRules, ltRawProof,
              rawProof, ltSuccSuccRule, rule, formal, m, instantiateRule?,
-             Presentation.lookupRule?, instantiateSchema?,
+             CalculusLanguageDef.lookupRule?, instantiateSchema?,
              instantiateSchemaAt?, instantiateSchemas?,
              instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
              encodeNat_argumentValid, lt, encodeNat, succ, ruleId]
-          simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked,
-            source, presentation, language, allRules, ltSuccSuccRule, rule,
+          simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked,
+            source, allRules, ltSuccSuccRule, rule,
             formal, m, lt, succ, ruleId] using hchild
 
 /-- Every runtime sum compiles to an accepted generic-checker certificate for
@@ -89,10 +89,10 @@ theorem addRawProof_accepts (left right : Nat) :
   | zero =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, allRules, addRawProof, rawProof,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, allRules, addRawProof, rawProof,
          addZeroRule, rule, formal, m, instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeNat_argumentValid, add, encodeNat, zero,
          ruleId]
@@ -105,10 +105,10 @@ theorem addRawProof_accepts (left right : Nat) :
         rfl
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, allRules, addRawProof, rawProof,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, allRules, addRawProof, rawProof,
          addSuccRule, rule, formal, m, instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeNat_argumentValid, add, encodeNat,
          succ, ruleId]
@@ -128,10 +128,10 @@ theorem one_lt_one_rejects :
       (ltRawProof 1 1) = false := by
   simp (config := { maxSteps := 1000000, decide := true })
     [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-     InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-     source, presentation, language, allRules, ltRawProof, rawProof,
+     InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+     source, allRules, ltRawProof, rawProof,
      ltSuccSuccRule, rule, formal, m, instantiateRule?,
-     Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+     CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
      instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
      lt, encodeNat, zero, succ, ruleId]
 

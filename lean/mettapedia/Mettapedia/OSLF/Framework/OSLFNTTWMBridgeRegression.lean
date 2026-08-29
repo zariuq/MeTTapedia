@@ -782,7 +782,7 @@ theorem canonical_context_rulePack_fixpoint_endpoint_fixture
     canonicalConsequenceRuleOn_compact] using
     canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal
       (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
-      (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
+      (hPiSigmaPack := Mettapedia.OSLF.PresheafNativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj ctx.lang))
       (transportGoal := transportGoal)
 
@@ -795,7 +795,7 @@ theorem canonical_context_transportGoal_rulePack_fixpoint_endpoint_fixture_via_r
     (cat : CanonicalHyperSquare ctx)
     (fa : CanonicalFormulaArgs ctx)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
+      Mettapedia.OSLF.PresheafNativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj ctx.lang))
     (transportGoal : CanonicalTransportGoalArgs ctx modal cat fa) :
     ((((Mettapedia.GSLT.Topos.presheafChangeOfBase
@@ -878,7 +878,7 @@ theorem canonical_context_transportGoal_rulePack_fixpoint_endpoint_fixture
         ∧ transportGoal.goal.q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({transportGoal.goal.p} : Set SemEQuery)) := by
   simpa using canonical_context_transportGoal_rulePack_fixpoint_endpoint_fixture_via_rulePack
     (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
-    (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack
+    (hPiSigmaPack := Mettapedia.OSLF.PresheafNativeType.prop12_piSigmaPredicateRulePack
       (C := ConstructorObj ctx.lang))
     (transportGoal := transportGoal)
 

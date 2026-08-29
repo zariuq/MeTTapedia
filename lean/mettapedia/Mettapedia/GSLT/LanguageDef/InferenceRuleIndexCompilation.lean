@@ -2,11 +2,11 @@ import Mettapedia.GSLT.LanguageDef.FiniteRuleIndexCompilation
 import Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 /-!
-# Deriving rule-index admission from inference-presentation validity
+# Deriving rule-index admission from inference-definition validity
 
 `FiniteRuleIndexCompilation` deliberately knows nothing about inference
 syntax.  This module supplies the small, checked bridge from a validated
-inference presentation: contextual V2 validity already proves that every
+inference definition: contextual V2 validity already proves that every
 rule conclusion has a declared outer judgment head and arity, so every stored
 rule is admitted by the generic index compiler.
 
@@ -34,54 +34,54 @@ def conclusionKey? (rule : RuleSchema) : Option JudgmentKey :=
 /-- A declared judgment shape exposes exactly the key required by the generic
 index compiler. -/
 theorem conclusionKey?_isSome_of_hasJudgmentShape
-    (presentation : Presentation) (rule : RuleSchema)
-    (valid : presentation.hasJudgmentShape rule.conclusion = true) :
+    (definition : CalculusLanguageDef) (rule : RuleSchema)
+    (valid : definition.hasJudgmentShape rule.conclusion = true) :
     (conclusionKey? rule).isSome = true := by
   cases conclusionEq : rule.conclusion <;>
-    simp_all [conclusionKey?, Presentation.hasJudgmentShape]
+    simp_all [conclusionKey?, CalculusLanguageDef.hasJudgmentShape]
 
-/-- Every rule of a validated presentation passes the local indexability
+/-- Every rule of a validated definition passes the local indexability
 recognizer. -/
-theorem supported_of_validated (presentation : ValidatedPresentation) :
-    supported? conclusionKey? presentation.1.rules = true := by
+theorem supported_of_validated (definition : ValidatedCalculusLanguageDef) :
+    supported? conclusionKey? definition.1.rules = true := by
   apply List.all_eq_true.mpr
   intro rule member
-  have validIn := rule_isValidIn_of_mem presentation member
+  have validIn := rule_isValidIn_of_mem definition member
   have validShape :=
     RuleSchema.conclusion_hasJudgmentShape_of_validIn validIn
   exact conclusionKey?_isSome_of_hasJudgmentShape
-    presentation.1 rule validShape
+    definition.1 rule validShape
 
-/-- The generic partial compiler is total on any V2-validated presentation. -/
-theorem compile_isSome_of_validated (presentation : ValidatedPresentation) :
+/-- The generic partial compiler is total on any V2-validated definition. -/
+theorem compile_isSome_of_validated (definition : ValidatedCalculusLanguageDef) :
     (FiniteRuleIndexCompilation.compile?
-      conclusionKey? presentation.1.rules).isSome = true := by
+      conclusionKey? definition.1.rules).isSome = true := by
   rw [compile?_isSome_eq_supported?]
-  exact supported_of_validated presentation
+  exact supported_of_validated definition
 
 /-- Run the generic admission boundary on a validated inference
-presentation. -/
-def admitValidated (presentation : ValidatedPresentation) :
+definition. -/
+def admitValidated (definition : ValidatedCalculusLanguageDef) :
     Option (AdmittedProgram JudgmentKey RuleSchema conclusionKey?) :=
-  admitProgram conclusionKey? presentation.1.rules
+  admitProgram conclusionKey? definition.1.rules
 
 /-- Validated inference presentations cannot fail the generic admission
 boundary. -/
-theorem admitValidated_isSome (presentation : ValidatedPresentation) :
-    (admitValidated presentation).isSome = true := by
+theorem admitValidated_isSome (definition : ValidatedCalculusLanguageDef) :
+    (admitValidated definition).isSome = true := by
   unfold admitValidated
   rw [admitProgram_isSome_eq_compile?]
-  exact compile_isSome_of_validated presentation
+  exact compile_isSome_of_validated definition
 
-/-- Candidate lookup in an admitted validated presentation is exactly the
+/-- Candidate lookup in an admitted validated definition is exactly the
 ordered full-scan semantics. -/
 theorem admitted_lookup_eq_full_scan
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (admitted : AdmittedProgram JudgmentKey RuleSchema conclusionKey?)
-    (sameSource : admitted.source = presentation.1.rules)
+    (sameSource : admitted.source = definition.1.rules)
     (query : JudgmentKey) :
     lookup query admitted.compiled =
-      sourceCandidates conclusionKey? presentation.1.rules query := by
+      sourceCandidates conclusionKey? definition.1.rules query := by
   rw [← sameSource]
   exact lookup_compile?_eq_sourceCandidates
     conclusionKey? admitted.source admitted.compiled

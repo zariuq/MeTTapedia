@@ -4,7 +4,7 @@ import Mettapedia.GSLT.LanguageDef.LF.FirstOrderContextualConversion
 /-!
 # Runtime LF correspondence for the first-order contextual source
 
-The contextual conversion presentation uses ordinary first-order data rather
+The contextual conversion language uses ordinary first-order data rather
 than locally nameless `Pattern.lambda` binders.  This module supplies a total,
 injective encoding of runtime LF terms and one-hole contexts into that carrier.
 Names are represented by finite lists of Unicode scalar codepoints, each
@@ -14,7 +14,7 @@ The central executable result in this tranche is context adequacy:
 for every runtime one-hole context and every runtime term, a recursively
 generated raw proof of the corresponding `Plugs` judgment is accepted by the
 source-neutral inference checker.  This binds the semantic context operation
-to the actual validated presentation without defining either side in terms of
+to the actual validated calculus definition without defining either side in terms of
 the other.
 -/
 
@@ -455,13 +455,13 @@ theorem plugRawProof_accepts
   | hole =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, plugRawProof, rawProof, allRules,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, plugRawProof, rawProof, allRules,
          plugHoleRule, rule,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
          instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeTerm_argumentValid,
          plugs, encodeContext,
@@ -469,20 +469,20 @@ theorem plugRawProof_accepts
   | piDomain rest body restIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, plugRawProof, rawProof, allRules,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, plugRawProof, rawProof, allRules,
          plugPiDomainRule, rule,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
          instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeTerm_argumentValid,
          encodeContext_argumentValid,
          plugs, encodeContext, encodeTerm,
          LFContextualBetaEta.Context.plug, piDomainContext, pi, ruleId]
-      simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-        presentation, language, allRules, plugPiDomainRule, rule,
+      simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+        allRules, plugPiDomainRule, rule,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
         plugs, piDomainContext, pi, ruleId]
@@ -490,20 +490,20 @@ theorem plugRawProof_accepts
   | piBody domain rest restIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, plugRawProof, rawProof, allRules,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, plugRawProof, rawProof, allRules,
          plugPiBodyRule, rule,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
          instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeTerm_argumentValid,
          encodeContext_argumentValid,
          plugs, encodeContext, encodeTerm,
          LFContextualBetaEta.Context.plug, piBodyContext, pi, ruleId]
-      simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-        presentation, language, allRules, plugPiBodyRule, rule,
+      simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+        allRules, plugPiBodyRule, rule,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
         plugs, piBodyContext, pi, ruleId]
@@ -511,20 +511,20 @@ theorem plugRawProof_accepts
   | lamDomain rest body restIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, plugRawProof, rawProof, allRules,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, plugRawProof, rawProof, allRules,
          plugLamDomainRule, rule,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
          instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeTerm_argumentValid,
          encodeContext_argumentValid,
          plugs, encodeContext, encodeTerm,
          LFContextualBetaEta.Context.plug, lamDomainContext, lam, ruleId]
-      simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-        presentation, language, allRules, plugLamDomainRule, rule,
+      simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+        allRules, plugLamDomainRule, rule,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
         plugs, lamDomainContext, lam, ruleId]
@@ -532,20 +532,20 @@ theorem plugRawProof_accepts
   | lamBody domain rest restIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, plugRawProof, rawProof, allRules,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, plugRawProof, rawProof, allRules,
          plugLamBodyRule, rule,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
          instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeTerm_argumentValid,
          encodeContext_argumentValid,
          plugs, encodeContext, encodeTerm,
          LFContextualBetaEta.Context.plug, lamBodyContext, lam, ruleId]
-      simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-        presentation, language, allRules, plugLamBodyRule, rule,
+      simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+        allRules, plugLamBodyRule, rule,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
         plugs, lamBodyContext, lam, ruleId]
@@ -553,20 +553,20 @@ theorem plugRawProof_accepts
   | appFunction rest argument restIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, plugRawProof, rawProof, allRules,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, plugRawProof, rawProof, allRules,
          plugAppFunctionRule, rule,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
          instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeTerm_argumentValid,
          encodeContext_argumentValid,
          plugs, encodeContext, encodeTerm,
          LFContextualBetaEta.Context.plug, appFunctionContext, app, ruleId]
-      simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-        presentation, language, allRules, plugAppFunctionRule, rule,
+      simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+        allRules, plugAppFunctionRule, rule,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
         plugs, appFunctionContext, app, ruleId]
@@ -574,20 +574,20 @@ theorem plugRawProof_accepts
   | appArgument function rest restIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, plugRawProof, rawProof, allRules,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, plugRawProof, rawProof, allRules,
          plugAppArgumentRule, rule,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
          Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
          instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeTerm_argumentValid,
          encodeContext_argumentValid,
          plugs, encodeContext, encodeTerm,
          LFContextualBetaEta.Context.plug, appArgumentContext, app, ruleId]
-      simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-        presentation, language, allRules, plugAppArgumentRule, rule,
+      simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+        allRules, plugAppArgumentRule, rule,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
         Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
         plugs, appArgumentContext, app, ruleId]
@@ -615,13 +615,13 @@ theorem changed_inner_rejects :
       (plugRawProof nestedContext runtimeIdentity) = false := by
   simp (config := { maxSteps := 1000000, decide := true })
     [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-     CheckedGSLT.presentation, checked, source, presentation, language,
+     CheckedGSLT.definition, checked, source,
      nestedContext, runtimeType, runtimeIdentity, plugRawProof, rawProof,
      allRules, plugPiBodyRule, plugLamBodyRule, plugHoleRule, rule,
      Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.formal,
      Mettapedia.GSLT.LanguageDef.LFFirstOrderContextualConversion.m,
      instantiateRule?,
-     Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+     CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
      instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
      InferenceChecker.checkRawChildren, plugs,
      encodeContext, encodeTerm, LFContextualBetaEta.Context.plug,

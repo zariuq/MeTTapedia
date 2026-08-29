@@ -31,7 +31,7 @@ open Mettapedia.GSLT.Dynamics.InteractionEventValuation
 open Mettapedia.Languages.MeTTa.MeTTaInteraction
 open Mettapedia.Languages.MeTTa.MeTTaInteraction.Canary
 open Mettapedia.Languages.MeTTa.MeTTaInteractionBind.Canary
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeAgentInteractionExample
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionCost
@@ -48,7 +48,7 @@ def pairedInterpretation :
   productInterpretation (siteInterpretation false) (siteInterpretation false)
 
 def pairedNativeTerm
-    (left right : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern) : NativeRawTm 0 0 :=
+    (left right : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern) : StagedReflectiveTm 0 0 :=
   .superpose (.pattern left) (.pattern right)
 
 def pairedEndpoint
@@ -60,7 +60,7 @@ abbrev pairedPresentation :
     InteractionPresentation (GSLT.interleavingProduct siteTheory siteTheory) :=
   fibredPresentation sitePresentation sitePresentation
 
-def pairedComputationTy (source target : NativeRawTm 0 0) :
+def pairedComputationTy (source target : StagedReflectiveTm 0 0) :
     familiesCwF.Ty PrimeContext :=
   pairedInterpretation.computationTy pairedPresentation source target
 

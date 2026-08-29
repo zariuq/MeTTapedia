@@ -21,7 +21,7 @@ namespace Mettapedia.GSLT.LanguageDef.InferenceCettaExecutionRefinement
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferenceCettaWire
-open Mettapedia.GSLT.LanguageDef.InferencePresentationWire
+open Mettapedia.GSLT.LanguageDef.InferenceLanguageWire
 open Mettapedia.GSLT.LanguageDef.InferenceSupportIndexedABTLowering
 
 /-- Physical ordered lookup used by native schema instantiation after a rule
@@ -212,7 +212,7 @@ therefore has the same support-indexed ABT meaning. -/
 theorem physical_rule_schema_refines_abt
     {rule : RuleSchema} {arguments : List Pattern}
     {schema result : Pattern}
-    (ruleValid : RuleSchema.isValidV1 rule = true)
+    (ruleValid : RuleSchema.isLocallyValid rule = true)
     (argumentsValid :
       InferenceChecker.argumentsValidAt
         rule.metavariables arguments = true)
@@ -289,13 +289,13 @@ def encodeRuleResult (result : List Pattern × Pattern) :
 physical conclusion walker.  Catalog lookup, argument admission, and generic
 side conditions are deliberately repeated rather than delegated to the
 logical local checker. -/
-def physicalInstantiateRule? (presentation : RuntimePresentation)
+def physicalInstantiateRule? (definition : RuntimeInferenceLanguage)
     (ruleInstance : RuleInstance) :
     Option (List CettaTerm × CettaTerm) :=
-  match presentation.lookupRule? ruleInstance.ruleId with
+  match definition.lookupRule? ruleInstance.ruleId with
   | none => none
   | some rule =>
-      if presentation.argumentsValidAt
+      if definition.argumentsValidAt
           rule.metavariables ruleInstance.arguments then do
         if RuleSchema.sideConditionsHold
             rule ruleInstance.arguments then do
@@ -314,14 +314,14 @@ def physicalInstantiateRule? (presentation : RuntimePresentation)
 /-- The independently stated physical local application computes exactly the
 canonical encoding of the closed-payload runtime application. -/
 theorem physicalInstantiateRule?_encode
-    (presentation : RuntimePresentation) (ruleInstance : RuleInstance) :
-    physicalInstantiateRule? presentation ruleInstance =
-      (presentation.instantiateRule? ruleInstance).map encodeRuleResult := by
-  simp only [physicalInstantiateRule?, RuntimePresentation.instantiateRule?]
-  cases lookup : presentation.lookupRule? ruleInstance.ruleId with
+    (definition : RuntimeInferenceLanguage) (ruleInstance : RuleInstance) :
+    physicalInstantiateRule? definition ruleInstance =
+      (definition.instantiateRule? ruleInstance).map encodeRuleResult := by
+  simp only [physicalInstantiateRule?, RuntimeInferenceLanguage.instantiateRule?]
+  cases lookup : definition.lookupRule? ruleInstance.ruleId with
   | none => simp
   | some rule =>
-      cases arguments : presentation.argumentsValidAt
+      cases arguments : definition.argumentsValidAt
           rule.metavariables ruleInstance.arguments with
       | false => simp [arguments]
       | true =>
@@ -384,23 +384,23 @@ mutual
 
 /-- Independent bottom-up logical replay.  Children are evaluated before the
 parent rule, matching CeTTa's explicit-frame traversal. -/
-def bottomUpReplay? (presentation : RuntimePresentation) :
+def bottomUpReplay? (definition : RuntimeInferenceLanguage) :
     RawProof → Option Pattern
   | .node ruleInstance children => do
-      let childConclusions ← bottomUpReplayList? presentation children
-      let localResult ← presentation.instantiateRule? ruleInstance
+      let childConclusions ← bottomUpReplayList? definition children
+      let localResult ← definition.instantiateRule? ruleInstance
       if childConclusions = localResult.1 then
         some localResult.2
       else
         none
 termination_by proof => sizeOf proof
 
-def bottomUpReplayList? (presentation : RuntimePresentation) :
+def bottomUpReplayList? (definition : RuntimeInferenceLanguage) :
     List RawProof → Option (List Pattern)
   | [] => some []
   | proof :: proofs => do
-      let conclusion ← bottomUpReplay? presentation proof
-      let conclusions ← bottomUpReplayList? presentation proofs
+      let conclusion ← bottomUpReplay? definition proof
+      let conclusions ← bottomUpReplayList? definition proofs
       some (conclusion :: conclusions)
 termination_by proofs => sizeOf proofs
 
@@ -409,23 +409,23 @@ end
 mutual
 
 /-- Physical bottom-up replay over canonical CeTTa terms. -/
-def physicalBottomUpReplay? (presentation : RuntimePresentation) :
+def physicalBottomUpReplay? (definition : RuntimeInferenceLanguage) :
     RawProof → Option CettaTerm
   | .node ruleInstance children => do
-      let childConclusions ← physicalBottomUpReplayList? presentation children
-      let localResult ← physicalInstantiateRule? presentation ruleInstance
+      let childConclusions ← physicalBottomUpReplayList? definition children
+      let localResult ← physicalInstantiateRule? definition ruleInstance
       if physicalPatternArraysEqual childConclusions localResult.1 then
         some localResult.2
       else
         none
 termination_by proof => sizeOf proof
 
-def physicalBottomUpReplayList? (presentation : RuntimePresentation) :
+def physicalBottomUpReplayList? (definition : RuntimeInferenceLanguage) :
     List RawProof → Option (List CettaTerm)
   | [] => some []
   | proof :: proofs => do
-      let conclusion ← physicalBottomUpReplay? presentation proof
-      let conclusions ← physicalBottomUpReplayList? presentation proofs
+      let conclusion ← physicalBottomUpReplay? definition proof
+      let conclusions ← physicalBottomUpReplayList? definition proofs
       some (conclusion :: conclusions)
 termination_by proofs => sizeOf proofs
 
@@ -439,13 +439,13 @@ mutual
 logical proof tree: it parses one node, evaluates its physical child list,
 then applies the parent rule.  This is the control shape of CeTTa's explicit
 raw-proof frame machine. -/
-def physicalBottomUpReplayTerm? (presentation : RuntimePresentation) :
+def physicalBottomUpReplayTerm? (definition : RuntimeInferenceLanguage) :
     CettaTerm → Option CettaTerm
   | .application "GProof" [ruleInstanceTerm, childrenTerm] => do
       let ruleInstance ← decodeRuleInstance ruleInstanceTerm
       let childConclusions ←
-        physicalBottomUpReplayTerms? presentation childrenTerm
-      let localResult ← physicalInstantiateRule? presentation ruleInstance
+        physicalBottomUpReplayTerms? definition childrenTerm
+      let localResult ← physicalInstantiateRule? definition ruleInstance
       if physicalPatternArraysEqual childConclusions localResult.1 then
         some localResult.2
       else
@@ -454,12 +454,12 @@ def physicalBottomUpReplayTerm? (presentation : RuntimePresentation) :
 termination_by term => sizeOf term
 
 /-- Direct traversal of CeTTa's canonical `PrNil`/`PrCons` proof list. -/
-def physicalBottomUpReplayTerms? (presentation : RuntimePresentation) :
+def physicalBottomUpReplayTerms? (definition : RuntimeInferenceLanguage) :
     CettaTerm → Option (List CettaTerm)
   | .symbol "PrNil" => some []
   | .application "PrCons" [proofTerm, proofTerms] => do
-      let conclusion ← physicalBottomUpReplayTerm? presentation proofTerm
-      let conclusions ← physicalBottomUpReplayTerms? presentation proofTerms
+      let conclusion ← physicalBottomUpReplayTerm? definition proofTerm
+      let conclusions ← physicalBottomUpReplayTerms? definition proofTerms
       some (conclusion :: conclusions)
   | _ => none
 termination_by term => sizeOf term
@@ -472,9 +472,9 @@ mutual
 /-- Canonical proof encoding followed by the direct physical traversal is
 exactly the isolated physical bottom-up machine. -/
 @[simp] theorem physicalBottomUpReplayTerm?_encode
-    (presentation : RuntimePresentation) (proof : RawProof) :
-    physicalBottomUpReplayTerm? presentation (encodeRawProof proof) =
-      physicalBottomUpReplay? presentation proof := by
+    (definition : RuntimeInferenceLanguage) (proof : RawProof) :
+    physicalBottomUpReplayTerm? definition (encodeRawProof proof) =
+      physicalBottomUpReplay? definition proof := by
   cases proof with
   | node ruleInstance children =>
       simp only [encodeRawProof, physicalBottomUpReplayTerm?,
@@ -485,9 +485,9 @@ exactly the isolated physical bottom-up machine. -/
 
 /-- Canonical proof-list encoding commutes with direct physical traversal. -/
 @[simp] theorem physicalBottomUpReplayTerms?_encode
-    (presentation : RuntimePresentation) (proofs : List RawProof) :
-    physicalBottomUpReplayTerms? presentation (encodeProofs proofs) =
-      physicalBottomUpReplayList? presentation proofs := by
+    (definition : RuntimeInferenceLanguage) (proofs : List RawProof) :
+    physicalBottomUpReplayTerms? definition (encodeProofs proofs) =
+      physicalBottomUpReplayList? definition proofs := by
   cases proofs with
   | nil =>
       simp [encodeProofs, physicalBottomUpReplayTerms?,
@@ -511,18 +511,18 @@ mutual
 /-- The physical bottom-up machine is pointwise the canonical encoding of the
 independent logical bottom-up machine. -/
 @[simp] theorem physicalBottomUpReplay?_commutes
-    (presentation : RuntimePresentation) (proof : RawProof) :
-    physicalBottomUpReplay? presentation proof =
-      (bottomUpReplay? presentation proof).map encodePattern := by
+    (definition : RuntimeInferenceLanguage) (proof : RawProof) :
+    physicalBottomUpReplay? definition proof =
+      (bottomUpReplay? definition proof).map encodePattern := by
   cases proof with
   | node ruleInstance children =>
       simp only [physicalBottomUpReplay?, bottomUpReplay?]
       rw [physicalBottomUpReplayList?_commutes,
         physicalInstantiateRule?_encode]
-      cases childResult : bottomUpReplayList? presentation children with
+      cases childResult : bottomUpReplayList? definition children with
       | none => simp
       | some childConclusions =>
-          cases localResult : presentation.instantiateRule? ruleInstance with
+          cases localResult : definition.instantiateRule? ruleInstance with
           | none => simp
           | some result =>
               rcases result with ⟨premises, conclusion⟩
@@ -532,9 +532,9 @@ independent logical bottom-up machine. -/
 termination_by sizeOf proof
 
 @[simp] theorem physicalBottomUpReplayList?_commutes
-    (presentation : RuntimePresentation) (proofs : List RawProof) :
-    physicalBottomUpReplayList? presentation proofs =
-      (bottomUpReplayList? presentation proofs).map
+    (definition : RuntimeInferenceLanguage) (proofs : List RawProof) :
+    physicalBottomUpReplayList? definition proofs =
+      (bottomUpReplayList? definition proofs).map
         (List.map encodePattern) := by
   cases proofs with
   | nil =>
@@ -543,8 +543,8 @@ termination_by sizeOf proof
       simp only [physicalBottomUpReplayList?, bottomUpReplayList?]
       rw [physicalBottomUpReplay?_commutes,
         physicalBottomUpReplayList?_commutes]
-      cases headResult : bottomUpReplay? presentation proof <;>
-        cases tailResult : bottomUpReplayList? presentation proofs <;>
+      cases headResult : bottomUpReplay? definition proof <;>
+        cases tailResult : bottomUpReplayList? definition proofs <;>
         simp
 termination_by sizeOf proofs
 
@@ -556,97 +556,97 @@ mutual
 /-- Bottom-up replay accepts exactly the same goal as the structurally
 recursive closed-payload checker. -/
 theorem bottomUpReplay?_eq_some_iff_checkRaw
-    (presentation : RuntimePresentation) (proof : RawProof) (goal : Pattern) :
-    bottomUpReplay? presentation proof = some goal ↔
-      presentation.checkRaw goal proof = true := by
+    (definition : RuntimeInferenceLanguage) (proof : RawProof) (goal : Pattern) :
+    bottomUpReplay? definition proof = some goal ↔
+      definition.checkRaw goal proof = true := by
   cases proof with
   | node ruleInstance children =>
-      simp only [bottomUpReplay?, RuntimePresentation.checkRaw]
-      cases localResult : presentation.instantiateRule? ruleInstance with
+      simp only [bottomUpReplay?, RuntimeInferenceLanguage.checkRaw]
+      cases localResult : definition.instantiateRule? ruleInstance with
       | none =>
-          cases childResult : bottomUpReplayList? presentation children <;>
+          cases childResult : bottomUpReplayList? definition children <;>
             simp
       | some result =>
           rcases result with ⟨premises, conclusion⟩
-          cases childResult : bottomUpReplayList? presentation children with
+          cases childResult : bottomUpReplayList? definition children with
           | none =>
               have childrenReject :
-                  presentation.checkRawChildren premises children ≠ true := by
+                  definition.checkRawChildren premises children ≠ true := by
                 intro accepted
                 have replayed :=
                   (bottomUpReplayList?_eq_some_iff_checkRaw
-                    presentation children premises).2 accepted
+                    definition children premises).2 accepted
                 rw [childResult] at replayed
                 contradiction
               have childrenFalse :
-                  presentation.checkRawChildren premises children = false :=
+                  definition.checkRawChildren premises children = false :=
                 Bool.eq_false_of_not_eq_true childrenReject
               simp [childrenFalse]
           | some childConclusions =>
               have childrenIff :=
                 bottomUpReplayList?_eq_some_iff_checkRaw
-                  presentation children premises
+                  definition children premises
               rw [childResult] at childrenIff
               simp only [Option.some.injEq] at childrenIff
               by_cases hMatches : childConclusions = premises
               · have childrenAccepted := childrenIff.mp hMatches
                 simp [hMatches, childrenAccepted]
               · have childrenReject :
-                    presentation.checkRawChildren premises children ≠ true := by
+                    definition.checkRawChildren premises children ≠ true := by
                   intro accepted
                   exact hMatches (childrenIff.mpr accepted)
                 have childrenFalse :
-                    presentation.checkRawChildren premises children = false :=
+                    definition.checkRawChildren premises children = false :=
                   Bool.eq_false_of_not_eq_true childrenReject
                 simp [hMatches, childrenFalse]
 termination_by sizeOf proof
 
 theorem bottomUpReplayList?_eq_some_iff_checkRaw
-    (presentation : RuntimePresentation) (proofs : List RawProof)
+    (definition : RuntimeInferenceLanguage) (proofs : List RawProof)
     (goals : List Pattern) :
-    bottomUpReplayList? presentation proofs = some goals ↔
-      presentation.checkRawChildren goals proofs = true := by
+    bottomUpReplayList? definition proofs = some goals ↔
+      definition.checkRawChildren goals proofs = true := by
   cases proofs with
   | nil =>
       cases goals <;>
-        simp [bottomUpReplayList?, RuntimePresentation.checkRawChildren]
+        simp [bottomUpReplayList?, RuntimeInferenceLanguage.checkRawChildren]
   | cons proof proofs =>
       cases goals with
       | nil =>
-          cases headResult : bottomUpReplay? presentation proof <;>
-            cases tailResult : bottomUpReplayList? presentation proofs <;>
+          cases headResult : bottomUpReplay? definition proof <;>
+            cases tailResult : bottomUpReplayList? definition proofs <;>
             simp [bottomUpReplayList?, headResult, tailResult,
-              RuntimePresentation.checkRawChildren]
+              RuntimeInferenceLanguage.checkRawChildren]
       | cons goal goals =>
           simp only [bottomUpReplayList?,
-            RuntimePresentation.checkRawChildren, Bool.and_eq_true]
-          cases headResult : bottomUpReplay? presentation proof with
+            RuntimeInferenceLanguage.checkRawChildren, Bool.and_eq_true]
+          cases headResult : bottomUpReplay? definition proof with
           | none =>
-              have headReject : presentation.checkRaw goal proof ≠ true := by
+              have headReject : definition.checkRaw goal proof ≠ true := by
                 intro accepted
                 have replayed :=
                   (bottomUpReplay?_eq_some_iff_checkRaw
-                    presentation proof goal).2 accepted
+                    definition proof goal).2 accepted
                 rw [headResult] at replayed
                 contradiction
               simp [headReject]
           | some conclusion =>
-              cases tailResult : bottomUpReplayList? presentation proofs with
+              cases tailResult : bottomUpReplayList? definition proofs with
               | none =>
                   have tailReject :
-                      presentation.checkRawChildren goals proofs ≠ true := by
+                      definition.checkRawChildren goals proofs ≠ true := by
                     intro accepted
                     have replayed :=
                       (bottomUpReplayList?_eq_some_iff_checkRaw
-                        presentation proofs goals).2 accepted
+                        definition proofs goals).2 accepted
                     rw [tailResult] at replayed
                     contradiction
                   simp [tailReject]
               | some conclusions =>
                   have headIff := bottomUpReplay?_eq_some_iff_checkRaw
-                    presentation proof goal
+                    definition proof goal
                   have tailIff := bottomUpReplayList?_eq_some_iff_checkRaw
-                    presentation proofs goals
+                    definition proofs goals
                   rw [headResult] at headIff
                   rw [tailResult] at tailIff
                   simp only [Option.some.injEq] at headIff tailIff
@@ -665,23 +665,23 @@ end
 /-- End-to-end physical bottom-up acceptance is exactly closed-payload runtime
 acceptance. -/
 theorem physicalBottomUpReplay?_eq_some_iff_checkRaw
-    (presentation : RuntimePresentation) (proof : RawProof) (goal : Pattern) :
-    physicalBottomUpReplay? presentation proof =
+    (definition : RuntimeInferenceLanguage) (proof : RawProof) (goal : Pattern) :
+    physicalBottomUpReplay? definition proof =
         some (encodePattern goal) ↔
-      presentation.checkRaw goal proof = true := by
+      definition.checkRaw goal proof = true := by
   rw [physicalBottomUpReplay?_commutes]
-  cases replay : bottomUpReplay? presentation proof with
+  cases replay : bottomUpReplay? definition proof with
   | none =>
-      have reject : presentation.checkRaw goal proof ≠ true := by
+      have reject : definition.checkRaw goal proof ≠ true := by
         intro accepted
         have result := (bottomUpReplay?_eq_some_iff_checkRaw
-          presentation proof goal).2 accepted
+          definition proof goal).2 accepted
         rw [replay] at result
         contradiction
       simp [reject]
   | some conclusion =>
       have logicalIff := bottomUpReplay?_eq_some_iff_checkRaw
-        presentation proof goal
+        definition proof goal
       rw [replay] at logicalIff
       simp only [Option.some.injEq] at logicalIff
       simp only [Option.map, Option.some.injEq]
@@ -690,20 +690,20 @@ theorem physicalBottomUpReplay?_eq_some_iff_checkRaw
 /-- Direct execution of the canonical physical proof carrier accepts exactly
 when the closed-payload runtime checker accepts the corresponding article. -/
 theorem physicalBottomUpReplayTerm?_eq_some_iff_checkRaw
-    (presentation : RuntimePresentation) (proof : RawProof) (goal : Pattern) :
-    physicalBottomUpReplayTerm? presentation (encodeRawProof proof) =
+    (definition : RuntimeInferenceLanguage) (proof : RawProof) (goal : Pattern) :
+    physicalBottomUpReplayTerm? definition (encodeRawProof proof) =
         some (encodePattern goal) ↔
-      presentation.checkRaw goal proof = true := by
+      definition.checkRaw goal proof = true := by
   rw [physicalBottomUpReplayTerm?_encode,
     physicalBottomUpReplay?_eq_some_iff_checkRaw]
 
 /-- The direct physical traversal and the packet decoder agree on acceptance
-of every canonical CeTTa presentation, goal, and article packet. -/
+of every canonical CeTTa definition, goal, and article packet. -/
 theorem physicalBottomUpReplayTerm?_iff_checkPacket
-    (presentation : RuntimePresentation) (proof : RawProof) (goal : Pattern) :
-    physicalBottomUpReplayTerm? presentation (encodeRawProof proof) =
+    (definition : RuntimeInferenceLanguage) (proof : RawProof) (goal : Pattern) :
+    physicalBottomUpReplayTerm? definition (encodeRawProof proof) =
         some (encodePattern goal) ↔
-      checkPacket (encodeRuntimePresentation presentation)
+      checkPacket (encodeRuntimeInferenceLanguage definition)
           (encodePattern goal) (encodeRawProof proof) = some true := by
   rw [physicalBottomUpReplayTerm?_eq_some_iff_checkRaw, checkPacket_encode]
   simp
@@ -714,11 +714,11 @@ theorem physicalBottomUpReplayTerm?_iff_checkPacket
 have both been replayed by the direct physical carrier walk.  The companion
 `ABTRuleApplication` retains the exact support-indexed meaning of those
 physical computations. -/
-inductive PhysicalABTRuleApplication (presentation : ValidatedPresentation)
+inductive PhysicalABTRuleApplication (definition : ValidatedCalculusLanguageDef)
     (ruleInstance : RuleInstance) (premises : List Pattern)
     (conclusion : Pattern) : Prop where
   | intro (rule : RuleSchema)
-      (lookup : presentation.1.lookupRule? ruleInstance.ruleId = some rule)
+      (lookup : definition.1.lookupRule? ruleInstance.ruleId = some rule)
       (premisesPhysical :
         instantiatePatternsAt? rule.metavariables
             (ruleInstance.arguments.map encodePattern) 0
@@ -730,19 +730,19 @@ inductive PhysicalABTRuleApplication (presentation : ValidatedPresentation)
             (encodePattern rule.conclusion) =
           some (encodePattern conclusion))
       (abt : ABTRuleApplication
-        presentation ruleInstance premises conclusion) :
+        definition ruleInstance premises conclusion) :
       PhysicalABTRuleApplication
-        presentation ruleInstance premises conclusion
+        definition ruleInstance premises conclusion
 
 /-- Every admitted logical application has a direct physical replay and a
 support-indexed ABT certificate with the same endpoints. -/
 theorem ruleApplication_toPhysicalABTRuleApplication
-    {presentation : ValidatedPresentation} {ruleInstance : RuleInstance}
+    {definition : ValidatedCalculusLanguageDef} {ruleInstance : RuleInstance}
     {premises : List Pattern} {conclusion : Pattern}
     (application :
-      RuleApplication presentation ruleInstance premises conclusion) :
+      RuleApplication definition ruleInstance premises conclusion) :
     PhysicalABTRuleApplication
-      presentation ruleInstance premises conclusion := by
+      definition ruleInstance premises conclusion := by
   cases application with
   | intro rule lookup argumentsValid sideConditionsValid
       premisesInstantiate conclusionInstantiates =>
@@ -769,21 +769,21 @@ mutual
 /-- A proof-relevant article whose every node has been replayed by the direct
 physical carrier walk and lowered to support-indexed ABT. -/
 inductive PhysicalABTDerivation
-    (presentation : ValidatedPresentation) : Pattern → Type where
+    (definition : ValidatedCalculusLanguageDef) : Pattern → Type where
   | byRule (ruleInstance : RuleInstance) {premises : List Pattern}
       {conclusion : Pattern}
       (application : PhysicalABTRuleApplication
-        presentation ruleInstance premises conclusion)
-      (children : PhysicalABTDerivationList presentation premises) :
-      PhysicalABTDerivation presentation conclusion
+        definition ruleInstance premises conclusion)
+      (children : PhysicalABTDerivationList definition premises) :
+      PhysicalABTDerivation definition conclusion
 
 inductive PhysicalABTDerivationList
-    (presentation : ValidatedPresentation) : List Pattern → Type where
-  | nil : PhysicalABTDerivationList presentation []
+    (definition : ValidatedCalculusLanguageDef) : List Pattern → Type where
+  | nil : PhysicalABTDerivationList definition []
   | cons {premise : Pattern} {premises : List Pattern}
-      (head : PhysicalABTDerivation presentation premise)
-      (tail : PhysicalABTDerivationList presentation premises) :
-      PhysicalABTDerivationList presentation (premise :: premises)
+      (head : PhysicalABTDerivation definition premise)
+      (tail : PhysicalABTDerivationList definition premises) :
+      PhysicalABTDerivationList definition (premise :: premises)
 
 end
 
@@ -792,17 +792,17 @@ mutual
 /-- Replay an authenticated logical derivation through the direct physical
 carrier at every node. -/
 def derivationToPhysicalABT
-    {presentation : ValidatedPresentation} {goal : Pattern} :
-    Derivation presentation goal → PhysicalABTDerivation presentation goal
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} :
+    Derivation definition goal → PhysicalABTDerivation definition goal
   | .byRule ruleInstance application children =>
       .byRule ruleInstance
         (ruleApplication_toPhysicalABTRuleApplication application)
         (derivationListToPhysicalABT children)
 
 def derivationListToPhysicalABT
-    {presentation : ValidatedPresentation} {premises : List Pattern} :
-    DerivationList presentation premises →
-      PhysicalABTDerivationList presentation premises
+    {definition : ValidatedCalculusLanguageDef} {premises : List Pattern} :
+    DerivationList definition premises →
+      PhysicalABTDerivationList definition premises
   | .nil => .nil
   | .cons head tail =>
       .cons (derivationToPhysicalABT head)
@@ -815,14 +815,14 @@ mutual
 
 /-- Erase a direct-physical derivation to its chronological proof article. -/
 def PhysicalABTDerivation.erase
-    {presentation : ValidatedPresentation} {goal : Pattern} :
-    PhysicalABTDerivation presentation goal → RawProof
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} :
+    PhysicalABTDerivation definition goal → RawProof
   | .byRule ruleInstance _ children =>
       .node ruleInstance (PhysicalABTDerivationList.erase children)
 
 def PhysicalABTDerivationList.erase
-    {presentation : ValidatedPresentation} {premises : List Pattern} :
-    PhysicalABTDerivationList presentation premises → List RawProof
+    {definition : ValidatedCalculusLanguageDef} {premises : List Pattern} :
+    PhysicalABTDerivationList definition premises → List RawProof
   | .nil => []
   | .cons head tail => head.erase :: tail.erase
 
@@ -833,8 +833,8 @@ mutual
 
 /-- Direct physical replay preserves the exact chronological article. -/
 @[simp] theorem derivationToPhysicalABT_erase
-    {presentation : ValidatedPresentation} {goal : Pattern}
-    (derivation : Derivation presentation goal) :
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern}
+    (derivation : Derivation definition goal) :
     PhysicalABTDerivation.erase (derivationToPhysicalABT derivation) =
       Derivation.erase derivation := by
   cases derivation with
@@ -843,8 +843,8 @@ mutual
         derivationListToPhysicalABT_erase children, Derivation.erase]
 
 @[simp] theorem derivationListToPhysicalABT_erase
-    {presentation : ValidatedPresentation} {premises : List Pattern}
-    (derivations : DerivationList presentation premises) :
+    {definition : ValidatedCalculusLanguageDef} {premises : List Pattern}
+    (derivations : DerivationList definition premises) :
     PhysicalABTDerivationList.erase
         (derivationListToPhysicalABT derivations) =
       DerivationList.erase derivations := by
@@ -862,24 +862,24 @@ end
 /-! ## End-to-end physical acceptance -/
 
 /-- A physical bottom-up acceptance under the exact projection of a validated
-presentation yields a proof-relevant derivation whose every rule node carries
+definition yields a proof-relevant derivation whose every rule node carries
 the direct physical instantiation and support-indexed ABT witness. -/
 theorem physicalBottomUpReplay_acceptance_refines_abt
-    (presentation : ValidatedPresentation) (proof : RawProof) (goal : Pattern)
+    (definition : ValidatedCalculusLanguageDef) (proof : RawProof) (goal : Pattern)
     (accepted :
       physicalBottomUpReplay?
-          (RuntimePresentation.ofPresentation presentation.1) proof =
+          (RuntimeInferenceLanguage.ofDefinition definition.1) proof =
         some (encodePattern goal)) :
-    ∃ derivation : PhysicalABTDerivation presentation goal,
+    ∃ derivation : PhysicalABTDerivation definition goal,
       derivation.erase = proof := by
   have runtimeAccepted :
-      (RuntimePresentation.ofPresentation presentation.1).checkRaw
+      (RuntimeInferenceLanguage.ofDefinition definition.1).checkRaw
           goal proof = true :=
     (physicalBottomUpReplay?_eq_some_iff_checkRaw
-      (RuntimePresentation.ofPresentation presentation.1) proof goal).mp
+      (RuntimeInferenceLanguage.ofDefinition definition.1) proof goal).mp
         accepted
-  have logicalAccepted := RuntimePresentation.checkRaw_sound
-    presentation goal proof runtimeAccepted
+  have logicalAccepted := RuntimeInferenceLanguage.checkRaw_sound
+    definition goal proof runtimeAccepted
   rcases G2_checkRaw_iff_exists_derivation_erases_to.mp logicalAccepted with
     ⟨derivation, erases⟩
   exact ⟨derivationToPhysicalABT derivation,
@@ -897,7 +897,7 @@ private def bottomUpCanaryRule : RuleSchema :=
     conclusion := bottomUpCanaryGoal
     sideConditions := [] }
 
-private def bottomUpCanaryPresentation : RuntimePresentation :=
+private def bottomUpCanaryPresentation : RuntimeInferenceLanguage :=
   { constructors := [⟨"Unit", 0⟩]
     judgments := [⟨"J", 1⟩]
     rules := [bottomUpCanaryRule]
@@ -914,8 +914,8 @@ theorem physical_bottom_up_canary_accepts :
   rw [physicalBottomUpReplay?_commutes]
   simp [bottomUpReplay?, bottomUpReplayList?, bottomUpCanaryPresentation,
     bottomUpCanaryProof, bottomUpCanaryRule, bottomUpCanaryGoal,
-    RuntimePresentation.lookupRule?, RuntimePresentation.instantiateRule?,
-    RuntimePresentation.argumentsValidAt, RuleSchema.sideConditionsHold,
+    RuntimeInferenceLanguage.lookupRule?, RuntimeInferenceLanguage.instantiateRule?,
+    RuntimeInferenceLanguage.argumentsValidAt, RuleSchema.sideConditionsHold,
     InferenceChecker.instantiateSchemas?,
     InferenceChecker.instantiateSchemasAt?,
     InferenceChecker.instantiateSchema?,
@@ -931,8 +931,8 @@ theorem physical_bottom_up_extra_child_rejects :
   rw [physicalBottomUpReplay?_commutes]
   simp [bottomUpReplay?, bottomUpReplayList?, bottomUpCanaryPresentation,
     bottomUpCanaryProof, bottomUpCanaryRule, bottomUpCanaryGoal,
-    RuntimePresentation.lookupRule?, RuntimePresentation.instantiateRule?,
-    RuntimePresentation.argumentsValidAt, RuleSchema.sideConditionsHold,
+    RuntimeInferenceLanguage.lookupRule?, RuntimeInferenceLanguage.instantiateRule?,
+    RuntimeInferenceLanguage.argumentsValidAt, RuleSchema.sideConditionsHold,
     InferenceChecker.instantiateSchemas?,
     InferenceChecker.instantiateSchemasAt?,
     InferenceChecker.instantiateSchema?,
@@ -948,7 +948,7 @@ theorem physical_wire_bottom_up_canary_accepts :
   exact physical_bottom_up_canary_accepts
 
 /-- Negative wire-level canary: proof children use `PrNil`, not the
-presentation-list terminator `LNil`; a cross-sorted list forgery fails
+definition-list terminator `LNil`; a cross-sorted list forgery fails
 closed. -/
 theorem physical_wire_wrong_list_sort_rejects :
     physicalBottomUpReplayTerm? bottomUpCanaryPresentation

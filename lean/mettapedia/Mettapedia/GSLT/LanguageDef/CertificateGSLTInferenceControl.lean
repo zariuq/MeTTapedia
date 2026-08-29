@@ -41,20 +41,20 @@ structure OccurrenceLink (theory : GSLT)
   target : theory.Term
   evidence : StepCertificate
 
-/-- A locally audited occurrence system.  The presentation validates the
+/-- A locally audited occurrence system.  The definition validates the
 selected occurrence, and the step authority independently validates its
 semantic edge. -/
 def auditedOccurrenceSystem
     {AuthorityId : Type uAuthority} {theory : GSLT}
     [DecidableEq theory.Term]
-    (presentation : GSLTBranchingPresentation theory Unit)
+    (definition : GSLTBranchingPresentation theory Unit)
     (stepAuthority : StepAuthority.{uAuthority, uCertificate}
       AuthorityId theory)
     (accepting : theory.Term → Bool) :
     LabeledSystem theory.Term
       (OccurrenceLink theory stepAuthority.Certificate) where
   step := fun source action target =>
-    decide ((presentation.successors source)[action.index]? =
+    decide ((definition.successors source)[action.index]? =
       some action.target) &&
     decide (action.target = target) &&
     stepAuthority.check ⟨source, action.target⟩ action.evidence
@@ -63,15 +63,15 @@ def auditedOccurrenceSystem
 theorem auditedOccurrenceSystem_step_eq_true_iff
     {AuthorityId : Type uAuthority} {theory : GSLT}
     [DecidableEq theory.Term]
-    (presentation : GSLTBranchingPresentation theory Unit)
+    (definition : GSLTBranchingPresentation theory Unit)
     (stepAuthority : StepAuthority.{uAuthority, uCertificate}
       AuthorityId theory)
     (accepting : theory.Term → Bool)
     (source target : theory.Term)
     (action : OccurrenceLink theory stepAuthority.Certificate) :
-    (auditedOccurrenceSystem presentation stepAuthority accepting).step
+    (auditedOccurrenceSystem definition stepAuthority accepting).step
         source action target = true ↔
-      (presentation.successors source)[action.index]? = some action.target ∧
+      (definition.successors source)[action.index]? = some action.target ∧
         action.target = target ∧
         stepAuthority.check ⟨source, action.target⟩ action.evidence = true := by
   simp only [auditedOccurrenceSystem, Bool.and_eq_true,
@@ -87,44 +87,44 @@ GSLT, not merely a well-indexed physical successor. -/
 theorem auditedOccurrenceSystem_step_sound
     {AuthorityId : Type uAuthority} {theory : GSLT}
     [DecidableEq theory.Term]
-    (presentation : GSLTBranchingPresentation theory Unit)
+    (definition : GSLTBranchingPresentation theory Unit)
     (stepAuthority : StepAuthority.{uAuthority, uCertificate}
       AuthorityId theory)
     (accepting : theory.Term → Bool)
     {source target : theory.Term}
     {action : OccurrenceLink theory stepAuthority.Certificate}
     (accepted :
-      (auditedOccurrenceSystem presentation stepAuthority accepting).step
+      (auditedOccurrenceSystem definition stepAuthority accepting).step
         source action target = true) :
     theory.Step source target := by
   obtain ⟨_, targetEquality, evidenceAccepted⟩ :=
-    (auditedOccurrenceSystem_step_eq_true_iff presentation stepAuthority
+    (auditedOccurrenceSystem_step_eq_true_iff definition stepAuthority
       accepting source target action).mp accepted
   rw [← targetEquality]
   exact stepAuthority.sound evidenceAccepted
 
 /-! ## Executing the selected occurrence indices -/
 
-/-- Replay a list of successor positions in an exact branching presentation. -/
+/-- Replay a list of successor positions in an exact branching definition. -/
 def follow {theory : GSLT}
-    (presentation : GSLTBranchingPresentation theory Unit) :
+    (definition : GSLTBranchingPresentation theory Unit) :
     theory.Term → List Nat → Option theory.Term
   | state, [] => some state
   | state, index :: rest =>
-      (presentation.successors state)[index]? >>= fun target =>
-        follow presentation target rest
+      (definition.successors state)[index]? >>= fun target =>
+        follow definition target rest
 
 theorem follow_append {theory : GSLT}
-    (presentation : GSLTBranchingPresentation theory Unit)
+    (definition : GSLTBranchingPresentation theory Unit)
     (state : theory.Term) (first second : List Nat) :
-    follow presentation state (first ++ second) =
-      (follow presentation state first).bind fun middle =>
-        follow presentation middle second := by
+    follow definition state (first ++ second) =
+      (follow definition state first).bind fun middle =>
+        follow definition middle second := by
   induction first generalizing state with
   | nil => simp [follow]
   | cons index rest inductionHypothesis =>
       simp only [List.cons_append, follow]
-      cases lookup : (presentation.successors state)[index]? with
+      cases lookup : (definition.successors state)[index]? with
       | none => simp
       | some target => simpa using inductionHypothesis target
 
@@ -145,7 +145,7 @@ def occurrenceTrace {theory : GSLT} {StepCertificate : Type uCertificate}
 theorem active_of_locallyValid
     {AuthorityId : Type uAuthority} {theory : GSLT}
     [DecidableEq theory.Term]
-    {presentation : GSLTBranchingPresentation theory Unit}
+    {definition : GSLTBranchingPresentation theory Unit}
     {stepAuthority : StepAuthority.{uAuthority, uCertificate}
       AuthorityId theory}
     {accepting : theory.Term → Bool}
@@ -153,7 +153,7 @@ theorem active_of_locallyValid
       (OccurrenceLink theory stepAuthority.Certificate)}
     {root : theory.Term}
     (localValidity : controller.LocallyValid
-      (auditedOccurrenceSystem presentation stepAuthority accepting) root)
+      (auditedOccurrenceSystem definition stepAuthority accepting) root)
     (execution : ControlledExecution controller root) :
     ∀ index, controller.active (execution.state index) = true := by
   intro index
@@ -168,7 +168,7 @@ replay to exactly the states in every controlled execution. -/
 theorem follow_occurrenceTrace
     {AuthorityId : Type uAuthority} {theory : GSLT}
     [DecidableEq theory.Term]
-    {presentation : GSLTBranchingPresentation theory Unit}
+    {definition : GSLTBranchingPresentation theory Unit}
     {stepAuthority : StepAuthority.{uAuthority, uCertificate}
       AuthorityId theory}
     {accepting : theory.Term → Bool}
@@ -176,10 +176,10 @@ theorem follow_occurrenceTrace
       (OccurrenceLink theory stepAuthority.Certificate)}
     {root : theory.Term}
     (localValidity : controller.LocallyValid
-      (auditedOccurrenceSystem presentation stepAuthority accepting) root)
+      (auditedOccurrenceSystem definition stepAuthority accepting) root)
     (execution : ControlledExecution controller root) :
     ∀ length,
-      follow presentation root (occurrenceTrace execution length) =
+      follow definition root (occurrenceTrace execution length) =
         some (execution.state length) := by
   intro length
   induction length with
@@ -189,10 +189,10 @@ theorem follow_occurrenceTrace
       have selected :=
         (localValidity.2 (execution.state length) active).1
       have audited :=
-        (auditedOccurrenceSystem_step_eq_true_iff presentation stepAuthority
+        (auditedOccurrenceSystem_step_eq_true_iff definition stepAuthority
           accepting _ _ _).mp selected
       have lookupNext :
-          (presentation.successors (execution.state length))[(controller.action
+          (definition.successors (execution.state length))[(controller.action
             (execution.state length)).index]? =
             some (controller.next (execution.state length)) := by
         simpa [audited.2.1] using audited.1
@@ -218,7 +218,7 @@ genuine finite GSLT derivation. -/
 theorem controlledExecution_multistep
     {AuthorityId : Type uAuthority} {theory : GSLT}
     [DecidableEq theory.Term]
-    {presentation : GSLTBranchingPresentation theory Unit}
+    {definition : GSLTBranchingPresentation theory Unit}
     {stepAuthority : StepAuthority.{uAuthority, uCertificate}
       AuthorityId theory}
     {accepting : theory.Term → Bool}
@@ -226,7 +226,7 @@ theorem controlledExecution_multistep
       (OccurrenceLink theory stepAuthority.Certificate)}
     {root : theory.Term}
     (localValidity : controller.LocallyValid
-      (auditedOccurrenceSystem presentation stepAuthority accepting) root)
+      (auditedOccurrenceSystem definition stepAuthority accepting) root)
     (execution : ControlledExecution controller root) :
     ∀ length, theory.MultiStep root (execution.state length) := by
   intro length
@@ -238,7 +238,7 @@ theorem controlledExecution_multistep
         ControlledExecution.active_of_locallyValid localValidity execution length
       have selected :=
         (localValidity.2 (execution.state length) active).1
-      have genuine := auditedOccurrenceSystem_step_sound presentation
+      have genuine := auditedOccurrenceSystem_step_sound definition
         stepAuthority accepting selected
       rw [execution.follows length]
       exact genuine
@@ -251,7 +251,7 @@ infinite executions satisfy the stated recurrence objective. -/
 def IsExecutableBuchiPlan
     {AuthorityId : Type uAuthority} {theory : GSLT}
     [DecidableEq theory.Term]
-    (presentation : GSLTBranchingPresentation theory Unit)
+    (definition : GSLTBranchingPresentation theory Unit)
     (stepAuthority : StepAuthority.{uAuthority, uCertificate}
       AuthorityId theory)
     (accepting : theory.Term → Bool)
@@ -260,19 +260,19 @@ def IsExecutableBuchiPlan
     (root : theory.Term) : Prop :=
   (∀ execution : ControlledExecution controller root,
       ∀ length,
-        follow presentation root
+        follow definition root
             (ControlledExecution.occurrenceTrace execution length) =
               some (execution.state length) ∧
           theory.MultiStep root (execution.state length)) ∧
     controller.BuchiWinning
-      (auditedOccurrenceSystem presentation stepAuthority accepting) root
+      (auditedOccurrenceSystem definition stepAuthority accepting) root
 
 /-- A valid finite progress measure is simultaneously a proof of the global
 objective and an executable occurrence-level plan. -/
 theorem valid_progress_is_executable_plan
     {AuthorityId : Type uAuthority} {theory : GSLT}
     [DecidableEq theory.Term]
-    (presentation : GSLTBranchingPresentation theory Unit)
+    (definition : GSLTBranchingPresentation theory Unit)
     (stepAuthority : StepAuthority.{uAuthority, uCertificate}
       AuthorityId theory)
     (accepting : theory.Term → Bool)
@@ -280,9 +280,9 @@ theorem valid_progress_is_executable_plan
       (OccurrenceLink theory stepAuthority.Certificate))
     (measure : ProgressMeasure theory.Term) (root : theory.Term)
     (valid : measure.Valid
-      (auditedOccurrenceSystem presentation stepAuthority accepting)
+      (auditedOccurrenceSystem definition stepAuthority accepting)
       controller root) :
-    IsExecutableBuchiPlan presentation stepAuthority accepting controller root := by
+    IsExecutableBuchiPlan definition stepAuthority accepting controller root := by
   constructor
   · intro execution length
     exact ⟨ControlledExecution.follow_occurrenceTrace valid.1 execution length,
@@ -294,7 +294,7 @@ the proof-as-plan result. -/
 theorem checked_progress_is_executable_plan
     {AuthorityId : Type uAuthority} {theory : GSLT}
     [Fintype theory.Term] [DecidableEq theory.Term]
-    (presentation : GSLTBranchingPresentation theory Unit)
+    (definition : GSLTBranchingPresentation theory Unit)
     (stepAuthority : StepAuthority.{uAuthority, uCertificate}
       AuthorityId theory)
     (accepting : theory.Term → Bool)
@@ -302,13 +302,13 @@ theorem checked_progress_is_executable_plan
       (OccurrenceLink theory stepAuthority.Certificate))
     (measure : ProgressMeasure theory.Term) (root : theory.Term)
     (accepted : measure.check
-      (auditedOccurrenceSystem presentation stepAuthority accepting)
+      (auditedOccurrenceSystem definition stepAuthority accepting)
       controller root = true) :
-    IsExecutableBuchiPlan presentation stepAuthority accepting controller root := by
-  apply valid_progress_is_executable_plan presentation stepAuthority accepting
+    IsExecutableBuchiPlan definition stepAuthority accepting controller root := by
+  apply valid_progress_is_executable_plan definition stepAuthority accepting
     controller measure root
   exact (ProgressMeasure.check_eq_true_iff
-    (auditedOccurrenceSystem presentation stepAuthority accepting)
+    (auditedOccurrenceSystem definition stepAuthority accepting)
     controller measure root).mp accepted
 
 /-- Certificate-existence completeness is exact for uniform Büchi recurrence
@@ -317,7 +317,7 @@ substituted for this stronger objective. -/
 theorem progress_certificate_exists_iff_uniformBuchi
     {AuthorityId : Type uAuthority} {theory : GSLT}
     [Fintype theory.Term] [DecidableEq theory.Term]
-    (presentation : GSLTBranchingPresentation theory Unit)
+    (definition : GSLTBranchingPresentation theory Unit)
     (stepAuthority : StepAuthority.{uAuthority, uCertificate}
       AuthorityId theory)
     (accepting : theory.Term → Bool)
@@ -326,10 +326,10 @@ theorem progress_certificate_exists_iff_uniformBuchi
     (root : theory.Term) :
     (∃ measure : ProgressMeasure theory.Term,
         measure.check
-          (auditedOccurrenceSystem presentation stepAuthority accepting)
+          (auditedOccurrenceSystem definition stepAuthority accepting)
           controller root = true) ↔
       controller.UniformBuchiWinning
-        (auditedOccurrenceSystem presentation stepAuthority accepting) root := by
+        (auditedOccurrenceSystem definition stepAuthority accepting) root := by
   rw [← ProgressMeasure.exists_valid_iff_uniformBuchi]
   constructor
   · rintro ⟨measure, accepted⟩

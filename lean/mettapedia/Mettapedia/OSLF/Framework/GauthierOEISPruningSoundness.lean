@@ -59,20 +59,20 @@ def AnalysisIncompatible (p : Prog) (target : List ObservedTerm) : Prop :=
 must inhabit both certified observation native types. -/
 def NativeIncompatible (p : Prog) (target : List ObservedTerm) : Prop :=
   ∃ obs, obs ∈ target ∧
-    (¬ signNatType.pred (evalObsPattern p obs.value) ∨
-      ¬ parityNatType.pred (evalObsPattern p obs.value))
+    (¬ signNativeType.pred (evalObsPattern p obs.value) ∨
+      ¬ parityNativeType.pred (evalObsPattern p obs.value))
 
 theorem reproducesAt_sign_native {p : Prog} {obs : ObservedTerm}
     (h : ReproducesAt p obs) :
-    signNatType.pred (evalObsPattern p obs.value) := by
+    signNativeType.pred (evalObsPattern p obs.value) := by
   rcases h with ⟨fuel, st', heval⟩
-  exact signNatType_sound obs.seed_nonneg heval
+  exact signNativeType_sound obs.seed_nonneg heval
 
 theorem reproducesAt_parity_native {p : Prog} {obs : ObservedTerm}
     (h : ReproducesAt p obs) :
-    parityNatType.pred (evalObsPattern p obs.value) := by
+    parityNativeType.pred (evalObsPattern p obs.value) := by
   rcases h with ⟨fuel, st', heval⟩
-  exact parityNatType_sound heval
+  exact parityNativeType_sound heval
 
 /-- Native-type pruning is admissible: if a target observation cannot inhabit
 the certified sign/parity native type, the candidate cannot reproduce the

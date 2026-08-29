@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.InferenceGeneratedProvesForestAlgebra
 import Mettapedia.Languages.Metamath.InferenceProjectionLookupCompleteness
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Proof-relevant reflection of one normal Metamath step
 
@@ -41,7 +43,7 @@ index fixes every non-stack field for the entire fold; `state_eq` is therefore
 an equality of complete proof states rather than a stack-only relation. -/
 structure NativeStackCertificate
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (processedLabels : List String) (state : RuntimeProofState) : Type where
   formulas : List ConstantHeadedFormula
   forest : GeneratedProvesForest projection target formulas
@@ -55,7 +57,7 @@ structure NativeStackCertificate
 unchanged fixed base state. -/
 def NativeStackCertificate.empty
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState) :
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState) :
     NativeStackCertificate db projection target base []
       {base with stack := #[]} :=
   { formulas := []
@@ -68,7 +70,7 @@ def NativeStackCertificate.empty
 
 theorem NativeStackCertificate.stack_eq
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {base : RuntimeProofState}
+    {target : ValidatedCalculusLanguageDef} {base : RuntimeProofState}
     {processedLabels : List String} {state : RuntimeProofState}
     (certificate : NativeStackCertificate db projection target base
       processedLabels state) :
@@ -101,7 +103,7 @@ theorem exists_append_suffix_of_le_length
 
 /-- Transport only the dependent formula-list index of a retained forest. -/
 def castGeneratedProvesForestIndex
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {left right : List ConstantHeadedFormula} (hindex : left = right)
     (forest : GeneratedProvesForest projection target left) :
     GeneratedProvesForest projection target right := by
@@ -109,7 +111,7 @@ def castGeneratedProvesForestIndex
   exact forest
 
 @[simp] theorem labels_castGeneratedProvesForestIndex
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {left right : List ConstantHeadedFormula} (hindex : left = right)
     (forest : GeneratedProvesForest projection target left) :
     (castGeneratedProvesForestIndex hindex forest).labels = forest.labels := by
@@ -155,9 +157,9 @@ through Prop-valued `Exists`/`Nonempty`.  Choice never selects any prior tree,
 and no executable proof extractor is claimed here. -/
 def NativeStackCertificate.stepNormal
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {base state next : RuntimeProofState}
+    {target : ValidatedCalculusLanguageDef} {base state next : RuntimeProofState}
     {processedLabels : List String} (label : String)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (certificate : NativeStackCertificate db projection target base
       processedLabels state)
@@ -442,7 +444,7 @@ end
 /-- Positive boundary: the empty prefix certificate fixes every non-stack
 field of the supplied base state and carries the unique empty forest. -/
 example (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState) :
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState) :
     NativeStackCertificate db projection target base []
       {base with stack := #[]} :=
   NativeStackCertificate.empty db projection target base
@@ -451,7 +453,7 @@ example (db : RuntimeDB) (projection : PrefixProjection)
 has a nonempty formula index. -/
 theorem NativeStackCertificate.processedLabels_ne_nil_of_formulas_ne_nil
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {base state : RuntimeProofState}
+    {target : ValidatedCalculusLanguageDef} {base state : RuntimeProofState}
     {processedLabels : List String}
     (certificate : NativeStackCertificate db projection target base
       processedLabels state)
@@ -466,7 +468,7 @@ theorem NativeStackCertificate.processedLabels_ne_nil_of_formulas_ne_nil
 state, not only states with a different stack. -/
 theorem NativeStackCertificate.state_ne
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {base state : RuntimeProofState}
+    {target : ValidatedCalculusLanguageDef} {base state : RuntimeProofState}
     {processedLabels : List String}
     (certificate : NativeStackCertificate db projection target base
       processedLabels state)

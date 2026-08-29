@@ -11,7 +11,7 @@ strength-consequence boundary already used by other bridges.
 
 Design constraints:
 
-- keep PureKernel `A/B/C1` untouched
+- keep IntrinsicPure `A/B/C1` untouched
 - keep `RuntimeSpec` audit-oriented and minimal
 - let concrete runtime relations (`HE`, `PeTTa`, later MM2-near layers) prove
   their soundness against this interface

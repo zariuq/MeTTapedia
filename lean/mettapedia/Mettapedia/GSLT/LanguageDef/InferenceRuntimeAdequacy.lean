@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.InferencePresentationWireFormat
+import Mettapedia.GSLT.LanguageDef.InferenceLanguageWireFormat
 
 /-!
 # Adequacy of the closed-payload inference runtime
@@ -11,45 +11,45 @@ only acceptance gap.
 
 Consequently, a proof whose complete argument payload is closed under the
 catalog vocabulary is accepted by runtime replay exactly when it is accepted
-by the validated generic presentation.
+by the validated generic definition.
 -/
 
-namespace Mettapedia.GSLT.LanguageDef.InferencePresentationWire
+namespace Mettapedia.GSLT.LanguageDef.InferenceLanguageWire
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.InferencePresentationWire
+open Mettapedia.GSLT.LanguageDef.InferenceLanguageWire
 
-namespace RuntimePresentation
+namespace RuntimeInferenceLanguage
 
 mutual
 
 /-- Every rule argument in a raw article uses only constructors admitted by
 the runtime catalog. -/
-def proofPayloadsValid (presentation : RuntimePresentation) :
+def proofPayloadsValid (definition : RuntimeInferenceLanguage) :
     RawProof → Bool
   | .node ruleInstance children =>
-      presentation.fixedConstructorListsValid ruleInstance.arguments &&
-        presentation.proofPayloadListsValid children
+      definition.fixedConstructorListsValid ruleInstance.arguments &&
+        definition.proofPayloadListsValid children
 termination_by proof => sizeOf proof
 
-def proofPayloadListsValid (presentation : RuntimePresentation) :
+def proofPayloadListsValid (definition : RuntimeInferenceLanguage) :
     List RawProof → Bool
   | [] => true
   | proof :: proofs =>
-      presentation.proofPayloadsValid proof &&
-        presentation.proofPayloadListsValid proofs
+      definition.proofPayloadsValid proof &&
+        definition.proofPayloadListsValid proofs
 termination_by proofs => sizeOf proofs
 
 end
 
 /-- Generic binder validity plus closed constructor vocabulary is exactly the
 runtime argument profile. -/
-theorem argumentsValidAt_complete (presentation : RuntimePresentation) :
+theorem argumentsValidAt_complete (definition : RuntimeInferenceLanguage) :
     ∀ (formals : List (String × Nat)) (arguments : List Pattern),
       InferenceChecker.argumentsValidAt formals arguments = true →
-      presentation.fixedConstructorListsValid arguments = true →
-      presentation.argumentsValidAt formals arguments = true := by
+      definition.fixedConstructorListsValid arguments = true →
+      definition.argumentsValidAt formals arguments = true := by
   intro formals
   induction formals with
   | nil =>
@@ -66,10 +66,10 @@ theorem argumentsValidAt_complete (presentation : RuntimePresentation) :
       | cons argument arguments =>
           simp only [InferenceChecker.argumentsValidAt, Bool.and_eq_true]
             at genericValid
-          simp only [RuntimePresentation.fixedConstructorListsValid,
+          simp only [RuntimeInferenceLanguage.fixedConstructorListsValid,
             Bool.and_eq_true] at constructorsValid
-          simp only [RuntimePresentation.argumentsValidAt,
-            RuntimePresentation.argumentValidAt, Bool.and_eq_true]
+          simp only [RuntimeInferenceLanguage.argumentsValidAt,
+            RuntimeInferenceLanguage.argumentValidAt, Bool.and_eq_true]
           exact
             ⟨⟨genericValid.1, constructorsValid.1⟩,
               inductionHypothesis arguments genericValid.2
@@ -78,18 +78,18 @@ theorem argumentsValidAt_complete (presentation : RuntimePresentation) :
 /-- A generic local rule application whose payload is vocabulary-closed is
 replayed identically by the stricter runtime projection. -/
 theorem instantiateRule?_complete
-    (presentation : ValidatedPresentation) (ruleInstance : RuleInstance)
+    (definition : ValidatedCalculusLanguageDef) (ruleInstance : RuleInstance)
     (premises : List Pattern) (conclusion : Pattern)
     (genericResult :
-      InferenceChecker.instantiateRule? presentation ruleInstance =
+      InferenceChecker.instantiateRule? definition ruleInstance =
         some (premises, conclusion))
     (payloadValid :
-      (RuntimePresentation.ofPresentation presentation.1).fixedConstructorListsValid
+      (RuntimeInferenceLanguage.ofDefinition definition.1).fixedConstructorListsValid
         ruleInstance.arguments = true) :
-    (RuntimePresentation.ofPresentation presentation.1).instantiateRule?
+    (RuntimeInferenceLanguage.ofDefinition definition.1).instantiateRule?
         ruleInstance = some (premises, conclusion) := by
   simp only [InferenceChecker.instantiateRule?] at genericResult
-  cases lookup : presentation.1.lookupRule? ruleInstance.ruleId with
+  cases lookup : definition.1.lookupRule? ruleInstance.ruleId with
   | none => simp [lookup] at genericResult
   | some rule =>
       rw [lookup] at genericResult
@@ -99,14 +99,14 @@ theorem instantiateRule?_complete
       | false => simp [genericArguments] at genericResult
       | true =>
           have runtimeArguments :
-              (RuntimePresentation.ofPresentation presentation.1).argumentsValidAt
+              (RuntimeInferenceLanguage.ofDefinition definition.1).argumentsValidAt
                   rule.metavariables ruleInstance.arguments = true :=
-            RuntimePresentation.argumentsValidAt_complete
-              (RuntimePresentation.ofPresentation presentation.1)
+            RuntimeInferenceLanguage.argumentsValidAt_complete
+              (RuntimeInferenceLanguage.ofDefinition definition.1)
               rule.metavariables ruleInstance.arguments genericArguments
               payloadValid
-          simpa [RuntimePresentation.instantiateRule?,
-            RuntimePresentation.ofPresentation_lookupRule?, lookup,
+          simpa [RuntimeInferenceLanguage.instantiateRule?,
+            RuntimeInferenceLanguage.ofDefinition_lookupRule?, lookup,
             genericArguments, runtimeArguments] using genericResult
 
 mutual
@@ -114,51 +114,51 @@ mutual
 /-- On a vocabulary-closed article, generic acceptance is complete for the
 closed-payload runtime checker. -/
 theorem checkRaw_complete
-    (presentation : ValidatedPresentation) (goal : Pattern) (proof : RawProof)
+    (definition : ValidatedCalculusLanguageDef) (goal : Pattern) (proof : RawProof)
     (genericAccepted :
-      InferenceChecker.checkRaw presentation goal proof = true)
+      InferenceChecker.checkRaw definition goal proof = true)
     (payloadValid :
-      (RuntimePresentation.ofPresentation presentation.1).proofPayloadsValid
+      (RuntimeInferenceLanguage.ofDefinition definition.1).proofPayloadsValid
         proof = true) :
-    (RuntimePresentation.ofPresentation presentation.1).checkRaw
+    (RuntimeInferenceLanguage.ofDefinition definition.1).checkRaw
         goal proof = true := by
   cases proof with
   | node ruleInstance children =>
       simp only [InferenceChecker.checkRaw] at genericAccepted
-      simp only [RuntimePresentation.proofPayloadsValid, Bool.and_eq_true]
+      simp only [RuntimeInferenceLanguage.proofPayloadsValid, Bool.and_eq_true]
         at payloadValid
       cases genericResult :
-          InferenceChecker.instantiateRule? presentation ruleInstance with
+          InferenceChecker.instantiateRule? definition ruleInstance with
       | none => simp [genericResult] at genericAccepted
       | some result =>
           rcases result with ⟨premises, conclusion⟩
           simp only [genericResult, Bool.and_eq_true, decide_eq_true_eq]
             at genericAccepted
-          have runtimeResult := RuntimePresentation.instantiateRule?_complete
-            presentation ruleInstance premises conclusion genericResult
+          have runtimeResult := RuntimeInferenceLanguage.instantiateRule?_complete
+            definition ruleInstance premises conclusion genericResult
               payloadValid.1
-          simp only [RuntimePresentation.checkRaw, runtimeResult,
+          simp only [RuntimeInferenceLanguage.checkRaw, runtimeResult,
             Bool.and_eq_true, decide_eq_true_eq]
           exact
             ⟨genericAccepted.1,
-              RuntimePresentation.checkRawChildren_complete presentation
+              RuntimeInferenceLanguage.checkRawChildren_complete definition
                 premises children genericAccepted.2 payloadValid.2⟩
 termination_by sizeOf proof
 
 theorem checkRawChildren_complete
-    (presentation : ValidatedPresentation) (premises : List Pattern)
+    (definition : ValidatedCalculusLanguageDef) (premises : List Pattern)
     (proofs : List RawProof)
     (genericAccepted :
-      InferenceChecker.checkRawChildren presentation premises proofs = true)
+      InferenceChecker.checkRawChildren definition premises proofs = true)
     (payloadValid :
-      (RuntimePresentation.ofPresentation presentation.1).proofPayloadListsValid
+      (RuntimeInferenceLanguage.ofDefinition definition.1).proofPayloadListsValid
         proofs = true) :
-    (RuntimePresentation.ofPresentation presentation.1).checkRawChildren
+    (RuntimeInferenceLanguage.ofDefinition definition.1).checkRawChildren
         premises proofs = true := by
   cases premises with
   | nil =>
       cases proofs with
-      | nil => simp [RuntimePresentation.checkRawChildren]
+      | nil => simp [RuntimeInferenceLanguage.checkRawChildren]
       | cons proof proofs =>
           simp [InferenceChecker.checkRawChildren] at genericAccepted
   | cons premise premises =>
@@ -168,13 +168,13 @@ theorem checkRawChildren_complete
       | cons proof proofs =>
           simp only [InferenceChecker.checkRawChildren, Bool.and_eq_true]
             at genericAccepted
-          simp only [RuntimePresentation.proofPayloadListsValid,
+          simp only [RuntimeInferenceLanguage.proofPayloadListsValid,
             Bool.and_eq_true] at payloadValid
-          simp only [RuntimePresentation.checkRawChildren, Bool.and_eq_true]
+          simp only [RuntimeInferenceLanguage.checkRawChildren, Bool.and_eq_true]
           exact
-            ⟨RuntimePresentation.checkRaw_complete presentation premise proof
+            ⟨RuntimeInferenceLanguage.checkRaw_complete definition premise proof
                 genericAccepted.1 payloadValid.1,
-              RuntimePresentation.checkRawChildren_complete presentation
+              RuntimeInferenceLanguage.checkRawChildren_complete definition
                 premises proofs genericAccepted.2 payloadValid.2⟩
 termination_by sizeOf proofs
 
@@ -184,20 +184,20 @@ end
 /-- The closed-payload runtime and generic NIK replay agree exactly whenever
 the article carries only declared fixed constructors. -/
 theorem checkRaw_iff_generic_of_payloadsValid
-    (presentation : ValidatedPresentation) (goal : Pattern) (proof : RawProof)
+    (definition : ValidatedCalculusLanguageDef) (goal : Pattern) (proof : RawProof)
     (payloadValid :
-      (RuntimePresentation.ofPresentation presentation.1).proofPayloadsValid
+      (RuntimeInferenceLanguage.ofDefinition definition.1).proofPayloadsValid
         proof = true) :
-    (RuntimePresentation.ofPresentation presentation.1).checkRaw
+    (RuntimeInferenceLanguage.ofDefinition definition.1).checkRaw
           goal proof = true ↔
-      InferenceChecker.checkRaw presentation goal proof = true := by
+      InferenceChecker.checkRaw definition goal proof = true := by
   constructor
-  · exact RuntimePresentation.checkRaw_sound presentation goal proof
+  · exact RuntimeInferenceLanguage.checkRaw_sound definition goal proof
   · intro genericAccepted
-    exact RuntimePresentation.checkRaw_complete presentation goal proof
+    exact RuntimeInferenceLanguage.checkRaw_complete definition goal proof
       genericAccepted payloadValid
 
-private def payloadCanaryPresentation : RuntimePresentation :=
+private def payloadCanaryPresentation : RuntimeInferenceLanguage :=
   { constructors :=
       [{ head := "Declared", arity := 0 }, { head := "Unary", arity := 1 }]
     judgments := []
@@ -212,33 +212,33 @@ theorem declared_payload_is_valid :
     payloadCanaryPresentation.proofPayloadsValid
       (payloadCanaryProof "Declared") = true := by
   simp [payloadCanaryPresentation, payloadCanaryProof,
-    RuntimePresentation.proofPayloadsValid,
-    RuntimePresentation.proofPayloadListsValid,
-    RuntimePresentation.fixedConstructorListsValid,
-    RuntimePresentation.fixedConstructorsValid,
-    RuntimePresentation.constructorApplicationValid]
+    RuntimeInferenceLanguage.proofPayloadsValid,
+    RuntimeInferenceLanguage.proofPayloadListsValid,
+    RuntimeInferenceLanguage.fixedConstructorListsValid,
+    RuntimeInferenceLanguage.fixedConstructorsValid,
+    RuntimeInferenceLanguage.constructorApplicationValid]
 
 /-- Open atom data does not enlarge the authority's structural vocabulary. -/
 theorem opaque_nullary_payload_is_valid :
     payloadCanaryPresentation.proofPayloadsValid
       (payloadCanaryProof "OpaqueAtom") = true := by
   simp [payloadCanaryPresentation, payloadCanaryProof,
-    RuntimePresentation.proofPayloadsValid,
-    RuntimePresentation.proofPayloadListsValid,
-    RuntimePresentation.fixedConstructorListsValid,
-    RuntimePresentation.fixedConstructorsValid,
-    RuntimePresentation.constructorApplicationValid]
+    RuntimeInferenceLanguage.proofPayloadsValid,
+    RuntimeInferenceLanguage.proofPayloadListsValid,
+    RuntimeInferenceLanguage.fixedConstructorListsValid,
+    RuntimeInferenceLanguage.fixedConstructorsValid,
+    RuntimeInferenceLanguage.constructorApplicationValid]
 
 /-- A declared structural head cannot be reinterpreted as nullary atom data. -/
 theorem declared_wrong_arity_payload_is_invalid :
     payloadCanaryPresentation.proofPayloadsValid
       (payloadCanaryProof "Unary") = false := by
   simp [payloadCanaryPresentation, payloadCanaryProof,
-    RuntimePresentation.proofPayloadsValid,
-    RuntimePresentation.proofPayloadListsValid,
-    RuntimePresentation.fixedConstructorListsValid,
-    RuntimePresentation.fixedConstructorsValid,
-    RuntimePresentation.constructorApplicationValid]
+    RuntimeInferenceLanguage.proofPayloadsValid,
+    RuntimeInferenceLanguage.proofPayloadListsValid,
+    RuntimeInferenceLanguage.fixedConstructorListsValid,
+    RuntimeInferenceLanguage.fixedConstructorsValid,
+    RuntimeInferenceLanguage.constructorApplicationValid]
 
 private def payloadCanaryStructuralProof : RawProof :=
   .node ⟨⟨"canary"⟩,
@@ -250,12 +250,12 @@ theorem undeclared_structural_payload_is_invalid :
     payloadCanaryPresentation.proofPayloadsValid
       payloadCanaryStructuralProof = false := by
   simp [payloadCanaryPresentation, payloadCanaryStructuralProof,
-    RuntimePresentation.proofPayloadsValid,
-    RuntimePresentation.proofPayloadListsValid,
-    RuntimePresentation.fixedConstructorListsValid,
-    RuntimePresentation.fixedConstructorsValid,
-    RuntimePresentation.constructorApplicationValid]
+    RuntimeInferenceLanguage.proofPayloadsValid,
+    RuntimeInferenceLanguage.proofPayloadListsValid,
+    RuntimeInferenceLanguage.fixedConstructorListsValid,
+    RuntimeInferenceLanguage.fixedConstructorsValid,
+    RuntimeInferenceLanguage.constructorApplicationValid]
 
-end RuntimePresentation
+end RuntimeInferenceLanguage
 
-end Mettapedia.GSLT.LanguageDef.InferencePresentationWire
+end Mettapedia.GSLT.LanguageDef.InferenceLanguageWire

@@ -1,7 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.NIKMaximalNativeAdmission
 import Mettapedia.Languages.MeTTa.Prime.DataFibration
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyReceiptEquipment
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyConversionPath
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyReceiptEquipment
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyConversionPath
 
 /-!
 # NIK admitted flow for authored native indexed-family computation
@@ -32,17 +32,17 @@ open Mettapedia.GSLT.LanguageDef.MaximalNativeCalculus
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.LanguageDef.NIKMaximalNativeAdmission
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
-open Mettapedia.Languages.MeTTa.PureKernel.Universe
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredDeclarationSignature
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyPresentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyReceiptEquipment
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyReceiptNaturality
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyTypedConversion
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyConversionPath
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyConversionPath.Canary
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration.ComputationAuthority
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredDeclarationSignature
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyPresentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyReceiptEquipment
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyReceiptNaturality
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyTypedConversion
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyConversionPath
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyConversionPath.Canary
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration.ComputationAuthority
 open Mettapedia.Languages.MeTTa.Prime.DataFibration
 
 noncomputable section

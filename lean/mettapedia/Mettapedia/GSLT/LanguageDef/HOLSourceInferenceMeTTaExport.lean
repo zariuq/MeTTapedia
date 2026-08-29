@@ -11,38 +11,40 @@ private def requireSome (message : String) : Option α → Except String α
   | some value => pure value
   | none => throw message
 
-private def renderExtendablePresentation (name : String)
-    (presentation : Presentation) : String :=
-  let constructors := renderList renderConstructor presentation.language.terms
-  let judgments := renderList renderJudgment presentation.judgments
-  let rules := renderList renderRule presentation.rules
+private def renderExtendableDefinition (name : String)
+    (definition : CalculusLanguageDef) : String :=
+  let constructors := renderList renderConstructor definition.toLanguageDef.terms
+  let judgments := renderList renderJudgment definition.judgments
+  let rules := renderList renderRule definition.rules
+  let conversion := renderConversion definition.conversion
   s!"(= ({name} $extra-constructors $extra-rules)\n" ++
-    s!"   (GPresentation (gic-append {constructors} $extra-constructors) {judgments}\n" ++
-    s!"     (gic-append {rules} $extra-rules)))\n"
+    s!"   (GInferenceLanguageV1 1\n" ++
+    s!"     (gic-append {constructors} $extra-constructors) {judgments}\n" ++
+    s!"     (gic-append {rules} $extra-rules) {conversion}))\n"
 
 private def renderFormalManifest (system : String)
-    (presentation : Presentation) : String :=
-  presentation.rules.map (fun rule =>
+    (definition : CalculusLanguageDef) : String :=
+  definition.rules.map (fun rule =>
     s!"; MIK-HOL-FORMALS {system} {rule.id.value} " ++
       String.intercalate "," (rule.metavariables.map (·.1))) |>
     String.intercalate "\n"
 
 private def render : Except String String := do
-  let holLight ← requireSome "HOL Light source presentation rejected"
-    holLightSourcePresentation?
-  let hol4 ← requireSome "HOL4 source presentation rejected"
-    hol4SourcePresentation?
+  let holLight ← requireSome "HOL Light source definition rejected"
+    holLightSourceDefinition?
+  let hol4 ← requireSome "HOL4 source definition rejected"
+    hol4SourceDefinition?
   pure <|
     "!(import! &self generic_inference_checker_v0)\n\n" ++
     renderFormalManifest "HL" holLight ++ "\n" ++
     renderFormalManifest "H4" hol4 ++ "\n\n" ++
-    renderExtendablePresentation "hl-source-presentation-with" holLight ++ "\n" ++
-    renderExtendablePresentation "h4-source-presentation-with" hol4 ++ "\n" ++
-    "(= (hl-source-base-presentation) (hl-source-presentation-with LNil LNil))\n" ++
-    "(= (h4-source-base-presentation) (h4-source-presentation-with LNil LNil))\n\n" ++
-    "!(assertEqual (gic-presentation-valid (hl-source-base-presentation)) True)\n" ++
-    "!(assertEqual (gic-presentation-valid (h4-source-base-presentation)) True)\n" ++
-    s!"!(HOLSourcePresentationSummary 2 {holLight.rules.length} " ++
+    renderExtendableDefinition "hl-source-language-with" holLight ++ "\n" ++
+    renderExtendableDefinition "h4-source-language-with" hol4 ++ "\n" ++
+    "(= (hl-source-base-language) (hl-source-language-with LNil LNil))\n" ++
+    "(= (h4-source-base-language) (h4-source-language-with LNil LNil))\n\n" ++
+    "!(assertEqual (gic-language-valid (hl-source-base-language)) True)\n" ++
+    "!(assertEqual (gic-language-valid (h4-source-base-language)) True)\n" ++
+    s!"!(HOLSourceLanguageSummary 2 {holLight.rules.length} " ++
       s!"{hol4.rules.length} 0)\n"
 
 def main (arguments : List String) : IO UInt32 := do

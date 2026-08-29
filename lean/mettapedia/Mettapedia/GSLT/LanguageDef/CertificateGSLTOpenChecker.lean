@@ -20,7 +20,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 /-- Untrusted open proof tree.  `premise i` cites the `i`th premise occurrence;
-`node` applies one ordinary presentation rule. -/
+`node` applies one ordinary definition rule. -/
 inductive RawOpenProof where
   | premise (index : Nat)
   | node (ruleInstance : RuleInstance) (children : List RawOpenProof)
@@ -35,28 +35,28 @@ def RawOpenProof.ruleCount : RawOpenProof → Nat
 mutual
 
 /-- Fuel-free checker for one open proof tree. -/
-def checkOpenRaw (presentation : ValidatedPresentation)
+def checkOpenRaw (definition : ValidatedCalculusLanguageDef)
     (context : List Pattern) : Pattern → RawOpenProof → Bool
   | goal, .premise index =>
       match context[index]? with
       | none => false
       | some premise => decide (premise = goal)
   | goal, .node ruleInstance children =>
-      match instantiateRule? presentation ruleInstance with
+      match instantiateRule? definition ruleInstance with
       | none => false
       | some (premises, conclusion) =>
           decide (conclusion = goal) &&
-            checkOpenRawChildren presentation context premises children
+            checkOpenRawChildren definition context premises children
 termination_by _ proof => sizeOf proof
 
 /-- Ordered-child checker for open proof trees. -/
-def checkOpenRawChildren (presentation : ValidatedPresentation)
+def checkOpenRawChildren (definition : ValidatedCalculusLanguageDef)
     (context : List Pattern) :
     List Pattern → List RawOpenProof → Bool
   | [], [] => true
   | premise :: premises, child :: children =>
-      checkOpenRaw presentation context premise child &&
-        checkOpenRawChildren presentation context premises children
+      checkOpenRaw definition context premise child &&
+        checkOpenRawChildren definition context premises children
   | _, _ => false
 termination_by _ children => sizeOf children
 
@@ -66,17 +66,17 @@ mutual
 
 /-- Erase a typed open derivation to the executable wire tree. -/
 def OpenDerivation.eraseOpen
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {goal : Pattern} :
-    OpenDerivation presentation context goal → RawOpenProof
+    OpenDerivation definition context goal → RawOpenProof
   | .assumption index => .premise index.val
   | .byRule ruleInstance _ children =>
       .node ruleInstance children.eraseOpen
 
 /-- Pointwise open-proof erasure. -/
 def OpenDerivationList.eraseOpen
-    {presentation : ValidatedPresentation} {context goals : List Pattern} :
-    OpenDerivationList presentation context goals → List RawOpenProof
+    {definition : ValidatedCalculusLanguageDef} {context goals : List Pattern} :
+    OpenDerivationList definition context goals → List RawOpenProof
   | .nil => []
   | .cons head tail => head.eraseOpen :: tail.eraseOpen
 
@@ -86,10 +86,10 @@ mutual
 
 /-- Erasure of every typed open derivation is accepted. -/
 theorem checkOpenRaw_erase
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {goal : Pattern}
-    (derivation : OpenDerivation presentation context goal) :
-    checkOpenRaw presentation context goal derivation.eraseOpen = true := by
+    (derivation : OpenDerivation definition context goal) :
+    checkOpenRaw definition context goal derivation.eraseOpen = true := by
   cases derivation with
   | assumption index =>
       simp [OpenDerivation.eraseOpen, checkOpenRaw]
@@ -101,9 +101,9 @@ theorem checkOpenRaw_erase
 
 /-- Ordered erasures are accepted against their ordered judgment vector. -/
 theorem checkOpenRawChildren_erase
-    {presentation : ValidatedPresentation} {context goals : List Pattern}
-    (derivations : OpenDerivationList presentation context goals) :
-    checkOpenRawChildren presentation context goals derivations.eraseOpen =
+    {definition : ValidatedCalculusLanguageDef} {context goals : List Pattern}
+    (derivations : OpenDerivationList definition context goals) :
+    checkOpenRawChildren definition context goals derivations.eraseOpen =
       true := by
   cases derivations with
   | nil => simp [OpenDerivationList.eraseOpen, checkOpenRawChildren]
@@ -118,10 +118,10 @@ mutual
 /-- Successful raw-template checking reconstructs a typed open derivation
 with exactly the submitted erasure. -/
 theorem checkOpenRaw_exact_derivation
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {goal : Pattern} {proof : RawOpenProof}
-    (checked : checkOpenRaw presentation context goal proof = true) :
-    ∃ derivation : OpenDerivation presentation context goal,
+    (checked : checkOpenRaw definition context goal proof = true) :
+    ∃ derivation : OpenDerivation definition context goal,
       derivation.eraseOpen = proof := by
   cases proof with
   | premise index =>
@@ -138,7 +138,7 @@ theorem checkOpenRaw_exact_derivation
           exact ⟨.assumption ⟨index, bound⟩, rfl⟩
   | node ruleInstance children =>
       simp only [checkOpenRaw] at checked
-      cases instantiated : instantiateRule? presentation ruleInstance with
+      cases instantiated : instantiateRule? definition ruleInstance with
       | none => simp [instantiated] at checked
       | some result =>
           rcases result with ⟨premises, conclusion⟩
@@ -146,7 +146,7 @@ theorem checkOpenRaw_exact_derivation
           rcases checked with ⟨conclusionShape, childrenChecked⟩
           subst goal
           have application :
-              RuleApplication presentation ruleInstance premises conclusion :=
+              RuleApplication definition ruleInstance premises conclusion :=
             instantiateRule?_eq_some_iff_application.mp instantiated
           rcases checkOpenRawChildren_exact_derivations childrenChecked with
             ⟨derivations, erased⟩
@@ -156,11 +156,11 @@ termination_by sizeOf proof
 
 /-- Successful ordered-child checking reconstructs exact typed children. -/
 theorem checkOpenRawChildren_exact_derivations
-    {presentation : ValidatedPresentation} {context : List Pattern}
+    {definition : ValidatedCalculusLanguageDef} {context : List Pattern}
     {goals : List Pattern} {proofs : List RawOpenProof}
     (checked :
-      checkOpenRawChildren presentation context goals proofs = true) :
-    ∃ derivations : OpenDerivationList presentation context goals,
+      checkOpenRawChildren definition context goals proofs = true) :
+    ∃ derivations : OpenDerivationList definition context goals,
       derivations.eraseOpen = proofs := by
   cases goals with
   | nil =>
@@ -186,14 +186,14 @@ end
 def CheckedOpenProof (object : Object) (context : List Pattern)
     (goal : Pattern) :=
   { proof : RawOpenProof //
-    checkOpenRaw object.presentation context goal proof = true }
+    checkOpenRaw object.definition context goal proof = true }
 
 /-- Checked open evidence and typed open derivations are extensionally
 equivalent at the existence boundary. -/
 theorem checkedOpenProof_nonempty_iff_openDerivation
     {object : Object} {context : List Pattern} {goal : Pattern} :
     Nonempty (CheckedOpenProof object context goal) ↔
-      Nonempty (OpenDerivation object.presentation context goal) := by
+      Nonempty (OpenDerivation object.definition context goal) := by
   constructor
   · rintro ⟨⟨proof, checked⟩⟩
     rcases checkOpenRaw_exact_derivation checked with ⟨derivation, _⟩

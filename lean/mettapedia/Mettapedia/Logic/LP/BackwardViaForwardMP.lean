@@ -1,6 +1,6 @@
 import Mathlib.Tactic
 import Mathlib.Logic.Relation
-import Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSpec
 
 /-!
 Nil Geisweiller's backward-via-forward propositional MP fragment, following
@@ -10,13 +10,13 @@ Nil Geisweiller's backward-via-forward propositional MP fragment, following
 
 namespace Mettapedia.Logic.LP.BackwardViaForwardMP
 
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.Renaming
-open Mettapedia.Languages.MeTTa.PureKernel.Substitution
-open Mettapedia.Languages.MeTTa.PureKernel.Context
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Renaming
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Substitution
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Context
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationEnv
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSpec
 
 universe u
 
@@ -972,7 +972,7 @@ theorem idBwd_forwardSeed_roundtrip (p : Formula Atom) :
 
 end Examples
 
-namespace PureKernelCanary
+namespace IntrinsicPureCanary
 
 def formulaName : DeclName := `Mettapedia.Logic.LP.BackwardViaForwardMP.Formula
 def impName : DeclName := `Mettapedia.Logic.LP.BackwardViaForwardMP.Formula.imp
@@ -1111,6 +1111,6 @@ theorem hasType_mp :
     (E := declEnv) (c := mpName) (A0 := mpType) (by
       simp)
 
-end PureKernelCanary
+end IntrinsicPureCanary
 
 end Mettapedia.Logic.LP.BackwardViaForwardMP

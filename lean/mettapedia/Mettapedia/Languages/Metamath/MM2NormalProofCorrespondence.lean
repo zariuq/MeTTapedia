@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.MM2NormalStackCorrespondence
 import Mettapedia.Languages.Metamath.SourceInferenceExecution
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Whole normal-proof traces for the Metamath-to-MM2 transformation
 
@@ -106,7 +108,7 @@ mutual
 the supplied stack and proof offsets. -/
 def PhaseLocalNormalMM2TreeTrace
     (source : AdmittedSourceScope) (mm2Target : MM2Target)
-    (target : ValidatedPresentation) (scopeOwner proofOwner : Atom)
+    (target : ValidatedCalculusLanguageDef) (scopeOwner proofOwner : Atom)
     {formula : ConstantHeadedFormula}
     (tree : SourceGeneratedProvesTree source.state.toSourcePrefix target
       formula)
@@ -148,7 +150,7 @@ stack advances by one root per tree while the proof offset advances by the
 exact length of each tree's postfix label interval. -/
 def PhaseLocalNormalMM2ForestTrace
     (source : AdmittedSourceScope) (mm2Target : MM2Target)
-    (target : ValidatedPresentation) (scopeOwner proofOwner : Atom)
+    (target : ValidatedCalculusLanguageDef) (scopeOwner proofOwner : Atom)
     {formulas : List ConstantHeadedFormula}
     (forest : SourceGeneratedProvesForest source.state.toSourcePrefix target
       formulas)
@@ -172,9 +174,9 @@ mutual
 scheduled MM2 macro-trace at arbitrary stack and proof offsets. -/
 theorem sourceGeneratedProvesTree_has_phaseLocalNormalMM2Trace
     (source : AdmittedSourceScope) (mm2Target : MM2Target)
-    (target : ValidatedPresentation)
+    (target : ValidatedCalculusLanguageDef)
     (hsource :
-      presentationOfSourcePrefix? source.state.toSourcePrefix = some target.1)
+      calculusLanguageDefOfSourcePrefix? source.state.toSourcePrefix = some target.1)
     (scopeOwner proofOwner : Atom)
     {formula : ConstantHeadedFormula}
     (tree : SourceGeneratedProvesTree source.state.toSourcePrefix target
@@ -183,9 +185,9 @@ theorem sourceGeneratedProvesTree_has_phaseLocalNormalMM2Trace
     PhaseLocalNormalMM2TreeTrace source mm2Target target scopeOwner proofOwner
       tree stackBase proofOffset := by
   have hprojection :
-      presentationOfProjection?
+      calculusLanguageDefOfProjection?
           source.state.toSourcePrefix.toProjection = some target.1 := by
-    rw [← presentationOfSourcePrefix?_eq_runtime]
+    rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
     exact hsource
   cases tree with
   | active hypothesis hmember =>
@@ -234,9 +236,9 @@ theorem sourceGeneratedProvesTree_has_phaseLocalNormalMM2Trace
 scheduled MM2 macro-traces. -/
 theorem sourceGeneratedProvesForest_has_phaseLocalNormalMM2Trace
     (source : AdmittedSourceScope) (mm2Target : MM2Target)
-    (target : ValidatedPresentation)
+    (target : ValidatedCalculusLanguageDef)
     (hsource :
-      presentationOfSourcePrefix? source.state.toSourcePrefix = some target.1)
+      calculusLanguageDefOfSourcePrefix? source.state.toSourcePrefix = some target.1)
     (scopeOwner proofOwner : Atom)
     {formulas : List ConstantHeadedFormula}
     (forest : SourceGeneratedProvesForest source.state.toSourcePrefix target
@@ -262,7 +264,7 @@ end
 phase-local obligations and a separately fireable terminal phase. -/
 structure PhaseLocalNormalProofMM2Trace
     (source : AdmittedSourceScope) (mm2Target : MM2Target)
-    (target : ValidatedPresentation) (scopeOwner proofOwner theoremLabel : Atom)
+    (target : ValidatedCalculusLanguageDef) (scopeOwner proofOwner theoremLabel : Atom)
     {formula : ConstantHeadedFormula}
     (tree : SourceGeneratedProvesTree source.state.toSourcePrefix target
       formula) : Prop where
@@ -286,9 +288,9 @@ the exact occurrence-sensitive terminal phase.  This theorem does not connect
 those phases into one reachable target run. -/
 theorem sourceGeneratedProvesTree_has_complete_phaseLocalNormalMM2Trace
     (source : AdmittedSourceScope) (mm2Target : MM2Target)
-    (target : ValidatedPresentation)
+    (target : ValidatedCalculusLanguageDef)
     (hsource :
-      presentationOfSourcePrefix? source.state.toSourcePrefix = some target.1)
+      calculusLanguageDefOfSourcePrefix? source.state.toSourcePrefix = some target.1)
     (scopeOwner proofOwner theoremLabel : Atom)
     {formula : ConstantHeadedFormula}
     (tree : SourceGeneratedProvesTree source.state.toSourcePrefix target
@@ -310,7 +312,7 @@ phase-local MM2 obligations derived from that tree.  The verified runtime fold
 is deliberately not stored in this witness. -/
 structure PhaseLocalNormalProofMM2FoldWitness
     (source : AdmittedSourceScope) (mm2Target : MM2Target)
-    (target : ValidatedPresentation) (scopeOwner proofOwner theoremLabel : Atom)
+    (target : ValidatedCalculusLanguageDef) (scopeOwner proofOwner theoremLabel : Atom)
     (formula : ConstantHeadedFormula) (proofLabels : List String) : Type where
   tree : SourceGeneratedProvesTree source.state.toSourcePrefix target formula
   labels_eq : tree.labels = proofLabels
@@ -324,11 +326,11 @@ source tree, not an MM2 verdict; this is a comparison edge and is not the
 assembled target-to-source reflection theorem. -/
 theorem normalFold_accepts_iff_sourceTree_with_phaseLocalMM2Trace
     (db : RuntimeDB) (source : AdmittedSourceScope)
-    (mm2Target : MM2Target) (target : ValidatedPresentation)
+    (mm2Target : MM2Target) (target : ValidatedCalculusLanguageDef)
     (base : RuntimeProofState) (scopeOwner proofOwner theoremLabel : Atom)
     (formula : ConstantHeadedFormula) (proofLabels : List String)
     (hsource :
-      presentationOfSourcePrefix? source.state.toSourcePrefix = some target.1)
+      calculusLanguageDefOfSourcePrefix? source.state.toSourcePrefix = some target.1)
     (hproject :
       projectPrefix? db = some source.state.toSourcePrefix.toProjection)
     (hbaseStack : base.stack = #[]) :

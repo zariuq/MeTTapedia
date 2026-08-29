@@ -1,9 +1,9 @@
-import Mettapedia.Languages.MeTTa.NativeTypeTheoryDerivation
+import Mettapedia.Languages.MeTTa.TypeTheory.StagedReflective.Presentation
 
 /-!
 # Prime language change as an indexed, admitted operation
 
-The returned-fibre comparison in `NativeTypeTheoryDerivation` proves an exact
+The returned-fibre comparison in `NativeTypingPresentation` proves an exact
 open-clone equivalence for Prime Need steps, but deliberately excludes pending
 `via` commands.  This module supplies the missing indexed layer without
 weakening that boundary:
@@ -32,7 +32,7 @@ open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.Ultrainfinite
 open Mettapedia.GSLT.Dynamics.OccurrenceSemantics
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.Language
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
@@ -330,8 +330,8 @@ def zeroRequestToPrimeNeedRoute (model : QueryFirstModel)
 
 /-! ## Correct-by-construction proof flow after language change -/
 
-open Mettapedia.Languages.MeTTa.NativeTypeTheory.PrimeNeedProofFlow
-open Mettapedia.Languages.MeTTa.NativeTypeTheory.PrimeGSLTILReturnedFibre
+open Mettapedia.Languages.MeTTa.StagedReflective.PrimeNeedProofFlow
+open Mettapedia.Languages.MeTTa.StagedReflective.PrimeGSLTILReturnedFibre
 
 /-- Once the request has entered Need, a real occurrence flows through the
 admitted operation algebra with no interior checker invocation.  The theorem

@@ -1,16 +1,16 @@
-import Mettapedia.GSLT.LanguageDef.InferencePresentationExtension
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageExtension
 
 /-!
-# Semantic validation of inference-presentation extensions
+# Semantic validation of inference-definition extensions
 
 Structural validation says that a learned rule is a well-formed rule schema.
 It does not say that the rule is true in an independently chosen semantics.
 This module supplies the missing compositional boundary.
 
-A `SemanticExtension` contains soundness for the base presentation and a
+A `SemanticExtension` contains soundness for the base definition and a
 separate proof for every genuinely added rule.  The generic derivation checker
-then inherits soundness for the composite presentation.  Old derivations still
-transport through the ordinary presentation-extension theorem; no learned
+then inherits soundness for the composite definition.  Old derivations still
+transport through the ordinary definition-extension theorem; no learned
 rule can create semantic truth merely by being syntactically admissible.
 -/
 
@@ -18,15 +18,15 @@ namespace Mettapedia.GSLT.LanguageDef.InferenceSemanticExtension
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.InferencePresentationExtension
+open Mettapedia.GSLT.LanguageDef.CalculusLanguageExtension
 
 /-- Independent semantic validation of a structurally validated extension.
 
 The new-rule field exposes the exact stored schema and every premise needed
 to establish its instantiated conclusion.  Consequently its proof cannot be
 obtained merely from the target checker's acceptance result. -/
-structure SemanticExtension (base : ValidatedPresentation)
-    (extension : ValidatedExtension base) (meaning : Pattern → Prop) where
+structure SemanticExtension (base : ValidatedCalculusLanguageDef)
+    (extension : ValidatedCalculusLanguageExtension base) (meaning : Pattern → Prop) where
   baseRuleSound : ∀ ruleInstance premises conclusion,
     RuleApplication base ruleInstance premises conclusion →
       (∀ premise ∈ premises, meaning premise) → meaning conclusion
@@ -45,11 +45,11 @@ structure SemanticExtension (base : ValidatedPresentation)
 
 namespace SemanticExtension
 
-variable {base : ValidatedPresentation}
-variable {extension : ValidatedExtension base}
+variable {base : ValidatedCalculusLanguageDef}
+variable {extension : ValidatedCalculusLanguageExtension base}
 variable {meaning : Pattern → Prop}
 
-/-- Every rule used by the target presentation is either an exact base rule
+/-- Every rule used by the target definition is either an exact base rule
 or an exact member of the extension delta. -/
 theorem target_application_classifies
     {ruleInstance : RuleInstance} {premises : List Pattern}
@@ -67,7 +67,7 @@ theorem target_application_classifies
         List.mem_of_find?_eq_some lookup
       have memberComposite :
           rule ∈ base.1.rules ++ extension.extension.newRules := by
-        simpa [ValidatedExtension.target, PresentationExtension.apply] using
+        simpa [ValidatedCalculusLanguageExtension.target, CalculusLanguageExtension.apply] using
           memberTarget
       rcases List.mem_append.mp memberComposite with memberBase | memberAdded
       · left
@@ -77,7 +77,7 @@ theorem target_application_classifies
             (p := fun candidate : RuleSchema =>
               decide (candidate.id = ruleInstance.ruleId))
             (a := rule) (l := extension.target.1.rules) (by
-              simpa only [Presentation.lookupRule?] using lookup)
+              simpa only [CalculusLanguageDef.lookupRule?] using lookup)
         exact .intro rule (by
           simpa only [← ruleIdEq] using
             lookupRule?_eq_some_of_mem base memberBase)
@@ -87,7 +87,7 @@ theorem target_application_classifies
         exact ⟨rule, memberAdded, lookup⟩
 
 /-- The independent base and learned-rule proofs combine into one local
-soundness theorem for the composite presentation. -/
+soundness theorem for the composite definition. -/
 theorem targetRuleSound (self : SemanticExtension base extension meaning) :
     ∀ ruleInstance premises conclusion,
       RuleApplication extension.target ruleInstance premises conclusion →
@@ -108,7 +108,7 @@ theorem targetRuleSound (self : SemanticExtension base extension meaning) :
           premises conclusion actualLookup argumentsValid sideConditionsValid
           premisesInstantiate conclusionInstantiates premisesMeaning
 
-/-- A checked proof in the learned presentation has the independently stated
+/-- A checked proof in the learned definition has the independently stated
 meaning.  This is the theorem that turns structural replay plus per-rule
 semantics into a sound learned theory. -/
 theorem derivation_sound (self : SemanticExtension base extension meaning)

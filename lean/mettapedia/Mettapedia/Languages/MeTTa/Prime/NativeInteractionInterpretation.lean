@@ -24,7 +24,7 @@ namespace Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation
 open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.InteractionComposition
 open Mettapedia.GSLT.Core.InteractionEvent
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
@@ -33,7 +33,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 /-- A deterministic partial interpretation of closed MeTTa Native terms as
 terms of an interaction theory. -/
 structure EndpointInterpretation (theory : GSLT) where
-  lower? : NativeRawTm 0 0 → Option theory.Term
+  lower? : StagedReflectiveTm 0 0 → Option theory.Term
 
 namespace EndpointInterpretation
 
@@ -42,14 +42,14 @@ variable {theory : GSLT}
 /-- A successful endpoint admission retains both the lowered theory term and
 the exact successful result of the partial interpretation. -/
 def Endpoint (interpretation : EndpointInterpretation theory)
-    (term : NativeRawTm 0 0) : Type :=
+    (term : StagedReflectiveTm 0 0) : Type :=
   { endpoint : theory.Term // interpretation.lower? term = some endpoint }
 
 /-- Determinism of `Option` lowering makes endpoint admission proof-relevant
 but endpoint identity unique. -/
 instance endpointSubsingleton
     (interpretation : EndpointInterpretation theory)
-    (term : NativeRawTm 0 0) : Subsingleton (interpretation.Endpoint term) :=
+    (term : StagedReflectiveTm 0 0) : Subsingleton (interpretation.Endpoint term) :=
   ⟨by
     rintro ⟨left, leftEq⟩ ⟨right, rightEq⟩
     have endpointEq : left = right :=
@@ -62,7 +62,7 @@ one interpretation.  Both endpoint admissions and the exact event path are
 retained in the inhabitant. -/
 def computationTy (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory)
-    (source target : NativeRawTm 0 0) :
+    (source target : StagedReflectiveTm 0 0) :
     familiesCwF.Ty PrimeContext :=
   fun _ =>
     Σ sourceEndpoint : interpretation.Endpoint source,
@@ -72,7 +72,7 @@ def computationTy (interpretation : EndpointInterpretation theory)
 /-- An admitted native endpoint has the empty interaction computation. -/
 def returnPath (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory)
-    {term : NativeRawTm 0 0} (endpoint : interpretation.Endpoint term) :
+    {term : StagedReflectiveTm 0 0} (endpoint : interpretation.Endpoint term) :
     familiesCwF.Tm PrimeContext
       (interpretation.computationTy presentation term term) :=
   fun _ => ⟨endpoint, endpoint, .nil endpoint.1⟩
@@ -81,7 +81,7 @@ def returnPath (interpretation : EndpointInterpretation theory)
 forces its independently retained lowered endpoints to agree. -/
 def composePath (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory)
-    {source middle target : NativeRawTm 0 0}
+    {source middle target : StagedReflectiveTm 0 0}
     (first : familiesCwF.Tm PrimeContext
       (interpretation.computationTy presentation source middle))
     (second : familiesCwF.Tm PrimeContext
@@ -99,7 +99,7 @@ def composePath (interpretation : EndpointInterpretation theory)
 @[simp] theorem return_compose
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory)
-    {source target : NativeRawTm 0 0}
+    {source target : StagedReflectiveTm 0 0}
     (sourceEndpoint : interpretation.Endpoint source)
     (path : familiesCwF.Tm PrimeContext
       (interpretation.computationTy presentation source target)) :
@@ -115,7 +115,7 @@ def composePath (interpretation : EndpointInterpretation theory)
 @[simp] theorem compose_return
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory)
-    {source target : NativeRawTm 0 0}
+    {source target : StagedReflectiveTm 0 0}
     (targetEndpoint : interpretation.Endpoint target)
     (path : familiesCwF.Tm PrimeContext
       (interpretation.computationTy presentation source target)) :
@@ -144,7 +144,7 @@ def rhoInterpretation : EndpointInterpretation rhoOccurrenceTheory where
   rfl
 
 @[simp] theorem rhoInterpretation_pi
-    (domain : NativeRawTm 0 0) (body : NativeRawTm 0 1) :
+    (domain : StagedReflectiveTm 0 0) (body : StagedReflectiveTm 0 1) :
     rhoInterpretation.lower? (.pi domain body) = none :=
   rfl
 
@@ -154,7 +154,7 @@ def rhoPatternEndpoint (pattern : Pattern) :
 
 /-- The fully generic native interaction type specializes to exact rho paths
 at pattern endpoints. -/
-abbrev interpretedRhoComputationTy (source target : NativeRawTm 0 0) :=
+abbrev interpretedRhoComputationTy (source target : StagedReflectiveTm 0 0) :=
   rhoInterpretation.computationTy rhoOccurrencePresentation source target
 
 /-- Positive: every exact rho step inhabits the generic interpretation at its
@@ -170,8 +170,8 @@ def interpretedRhoStep {source target : Pattern}
 /-- Negative: an uninterpreted dependent-function constructor cannot acquire
 an outgoing rho computation through the generic interface. -/
 theorem pi_has_no_interpreted_rho_computation
-    (domain : NativeRawTm 0 0) (body : NativeRawTm 0 1)
-    (target : NativeRawTm 0 0) :
+    (domain : StagedReflectiveTm 0 0) (body : StagedReflectiveTm 0 1)
+    (target : StagedReflectiveTm 0 0) :
     ¬ Nonempty
       ((interpretedRhoComputationTy (.pi domain body) target) PUnit.unit) := by
   rintro ⟨sourceEndpoint, _targetEndpoint, _path⟩

@@ -3,6 +3,8 @@ import Mettapedia.Languages.Metamath.SourceGSLTParserStatementOutcomes
 import Mettapedia.Languages.Metamath.SourceGSLTLifecycleComposition
 import Mettapedia.Languages.Metamath.SourceGSLTDerivationCorrespondence
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Statement-level source/reader simulation
 
@@ -39,13 +41,13 @@ open Mettapedia.Languages.Metamath.SourceGSLTLifecycleComposition
 source-indexed proof presentation.  The two presentations correspond to the
 reader's canonical label ordering and the source statement ordering. -/
 structure ProofProjectionAdmission (state : SourceState) : Type where
-  runtimeTarget : ValidatedPresentation
-  sourceTarget : ValidatedPresentation
+  runtimeTarget : ValidatedCalculusLanguageDef
+  sourceTarget : ValidatedCalculusLanguageDef
   runtimePresentation :
-    presentationOfSourcePrefix? (runtimePrefix state) =
+    calculusLanguageDefOfSourcePrefix? (runtimePrefix state) =
       some runtimeTarget.1
   sourcePresentation :
-    presentationOfSourcePrefix? state.toSourcePrefix =
+    calculusLanguageDefOfSourcePrefix? state.toSourcePrefix =
       some sourceTarget.1
 
 /-- A compressed theorem additionally carries Appendix-B admissibility for

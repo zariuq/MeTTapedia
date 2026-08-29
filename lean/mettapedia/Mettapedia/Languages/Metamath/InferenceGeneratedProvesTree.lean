@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.InferenceActiveHypothesisLeaf
 import Mettapedia.Languages.Metamath.InferenceAssertionApplication
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Static source-pinned views of generated Metamath derivations
 
@@ -37,7 +39,7 @@ mutual
 /-- A source-pinned recursive view of a generated derivation of one encoded
 Metamath formula. -/
 inductive GeneratedProvesTree (projection : PrefixProjection)
-    (target : ValidatedPresentation) : ConstantHeadedFormula → Type where
+    (target : ValidatedCalculusLanguageDef) : ConstantHeadedFormula → Type where
   | active (hypothesis : HypothesisView)
       (hmember : hypothesis ∈ projection.activeHypotheses) :
       GeneratedProvesTree projection target hypothesis.formula
@@ -53,7 +55,7 @@ inductive GeneratedProvesTree (projection : PrefixProjection)
 
 /-- Ordered source-pinned views for an exact list of assertion premises. -/
 inductive GeneratedProvesForest (projection : PrefixProjection)
-    (target : ValidatedPresentation) :
+    (target : ValidatedCalculusLanguageDef) :
     List ConstantHeadedFormula → Type where
   | nil : GeneratedProvesForest projection target []
   | cons {formula : ConstantHeadedFormula}
@@ -71,8 +73,8 @@ mutual
 /-- Assemble the existing generic native derivation represented by a
 source-pinned tree. -/
 def GeneratedProvesTree.toDerivation {projection : PrefixProjection}
-    {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula) :
     Derivation target (proves (encodeFormula formula)) :=
@@ -84,8 +86,8 @@ def GeneratedProvesTree.toDerivation {projection : PrefixProjection}
 
 /-- Assemble the exact ordered list of generic `Proves` derivations. -/
 def GeneratedProvesForest.toDerivationList {projection : PrefixProjection}
-    {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas) :
     DerivationList target (assertionProvesPremises formulas) :=
@@ -104,7 +106,7 @@ mutual
 /-- Authored normal-proof labels in postfix order.  Natively checked side
 derivations are not emitted as source labels. -/
 def GeneratedProvesTree.labels {projection : PrefixProjection}
-    {target : ValidatedPresentation} {formula : ConstantHeadedFormula} :
+    {target : ValidatedCalculusLanguageDef} {formula : ConstantHeadedFormula} :
     GeneratedProvesTree projection target formula → List String
   | .active hypothesis _ => [hypothesis.label]
   | .assertion (assertion := assertion) _ _ children =>
@@ -112,7 +114,7 @@ def GeneratedProvesTree.labels {projection : PrefixProjection}
 
 /-- Concatenate each tree's postfix labels in premise order. -/
 def GeneratedProvesForest.labels {projection : PrefixProjection}
-    {target : ValidatedPresentation} {formulas : List ConstantHeadedFormula} :
+    {target : ValidatedCalculusLanguageDef} {formulas : List ConstantHeadedFormula} :
     GeneratedProvesForest projection target formulas → List String
   | .nil => []
   | .cons head tail => head.labels ++ tail.labels
@@ -127,7 +129,7 @@ mutual
 For an assertion, the recursive `Proves` children precede the exact stored
 native side-evidence children. -/
 def GeneratedProvesTree.canonicalRawProof
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula} :
     GeneratedProvesTree projection target formula → RawProof
   | .active hypothesis _ =>
@@ -140,7 +142,7 @@ def GeneratedProvesTree.canonicalRawProof
 
 /-- Canonical raw proofs for an ordered source-pinned forest. -/
 def GeneratedProvesForest.canonicalRawProofs
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula} :
     GeneratedProvesForest projection target formulas → List RawProof
   | .nil => []
@@ -151,7 +153,7 @@ end
 
 
 @[simp] theorem GeneratedProvesForest.canonicalRawProofs_length
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas) :
     forest.canonicalRawProofs.length = formulas.length :=
@@ -165,7 +167,7 @@ termination_by sizeOf forest
 /-- Erasure commutes with the exact ordered append used to assemble assertion
 children. -/
 theorem erase_appendDerivationLists
-    {presentation : ValidatedPresentation}
+    {presentation : ValidatedCalculusLanguageDef}
     {left right : List Pattern}
     (leftDerivations : DerivationList presentation left)
     (rightDerivations : DerivationList presentation right) :
@@ -181,7 +183,7 @@ termination_by sizeOf leftDerivations
 /-- Assembling one local assertion node has the exact raw root and ordered
 child split advertised by `GeneratedAssertionNode`. -/
 theorem generatedAssertionNode_erase_assemble
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {assertion : AssertionView}
     {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula}
@@ -202,8 +204,8 @@ mutual
 /-- The assembled generic derivation erases to the independently defined
 canonical raw structure, not merely to some proof with the same conclusion. -/
 theorem GeneratedProvesTree.erase_toDerivation
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula) :
     (tree.toDerivation hprojection).erase = tree.canonicalRawProof := by
@@ -221,8 +223,8 @@ theorem GeneratedProvesTree.erase_toDerivation
 /-- The assembled generic derivation list erases to the exact canonical raw
 forest in the same premise order. -/
 theorem GeneratedProvesForest.erase_toDerivationList
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas) :
     (forest.toDerivationList hprojection).erase =
@@ -281,7 +283,7 @@ mutual
 /-- The canonical raw proof recovers every authored source label in exact
 postfix order, while omitting all native assertion side evidence. -/
 theorem GeneratedProvesTree.canonicalRawProof_postfixLabels
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula) :
     rawProofLeadingPremisePostfixLabels tree.canonicalRawProof =
@@ -308,7 +310,7 @@ theorem GeneratedProvesTree.canonicalRawProof_postfixLabels
 /-- Postfix recovery distributes over a canonical raw forest exactly as the
 authored forest-label concatenation does. -/
 theorem GeneratedProvesForest.canonicalRawProofs_postfixLabels
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas) :
     forest.canonicalRawProofs.flatMap
@@ -330,8 +332,8 @@ end
 then reading its generated leading-premise convention returns precisely the
 authored postfix labels. -/
 theorem GeneratedProvesTree.erase_toDerivation_postfixLabels
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula) :
     rawProofLeadingPremisePostfixLabels
@@ -343,8 +345,8 @@ theorem GeneratedProvesTree.erase_toDerivation_postfixLabels
 
 /-- Positive: every source-pinned view assembles the corresponding generic
 native derivation. -/
-example {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula) :
     Derivation target (proves (encodeFormula formula)) :=
@@ -353,7 +355,7 @@ example {projection : PrefixProjection} {target : ValidatedPresentation}
 /-- Negative: a source-pinned proof tree never emits an empty authored proof.
 This does not assert the converse for arbitrary generic derivations. -/
 theorem GeneratedProvesTree.labels_ne_nil
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula) :
     tree.labels ≠ [] := by

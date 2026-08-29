@@ -7,7 +7,7 @@ CertificateGSLT checks judgments, not only operational steps.  This module isola
 the one semantic interface shared by theorem proofs, operational traces,
 native-type evidence, compilation certificates, and capability-backed steps.
 
-A validated presentation becomes an authority only through an adequacy map
+A validated definition becomes an authority only through an adequacy map
 from its checked judgment to an independently stated meaning.  Open judgments
 retain ordered premise occurrences.  They may either remain conditional or be
 closed by a separately sound premise discharger.  Thus a query row, collection
@@ -24,69 +24,69 @@ universe uAuthority uClaim uPremiseCertificate
 
 /-! ## Closed judgments -/
 
-/-- Sound semantic interpretation of one validated CertificateGSLT presentation.
+/-- Sound semantic interpretation of one validated CertificateGSLT definition.
 The same checker supports many meanings; authority comes from this theorem,
 not from the spelling of the encoded judgment. -/
-structure JudgmentPresentationAdequacy (Claim : Type uClaim)
-    (Meaning : Claim → Prop) (presentation : ValidatedPresentation) where
+structure JudgmentEncodingAdequacy (Claim : Type uClaim)
+    (Meaning : Claim → Prop) (definition : ValidatedCalculusLanguageDef) where
   encode : Claim → Pattern
   derivation_sound : ∀ claim,
-    Nonempty (Derivation presentation (encode claim)) → Meaning claim
+    Nonempty (Derivation definition (encode claim)) → Meaning claim
 
 /-- Two-sided adequacy additionally states that every meaningful claim has a
-derivation in the presentation.  Soundness is sufficient for trusted replay;
+derivation in the definition.  Soundness is sufficient for trusted replay;
 this stronger structure is needed for certificate-existence equivalences. -/
-structure ExactJudgmentPresentation (Claim : Type uClaim)
-    (Meaning : Claim → Prop) (presentation : ValidatedPresentation)
-    extends JudgmentPresentationAdequacy Claim Meaning presentation where
+structure ExactJudgmentEncoding (Claim : Type uClaim)
+    (Meaning : Claim → Prop) (definition : ValidatedCalculusLanguageDef)
+    extends JudgmentEncodingAdequacy Claim Meaning definition where
   derivation_complete : ∀ claim, Meaning claim →
-    Nonempty (Derivation presentation (toJudgmentPresentationAdequacy.encode claim))
+    Nonempty (Derivation definition (toJudgmentEncodingAdequacy.encode claim))
 
 /-- Package a proved judgment interpretation as the ordinary versioned
 CertificateGSLT article authority. -/
 def judgmentWireAuthority {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {Claim : Type uClaim}
-    {Meaning : Claim → Prop} {presentation : ValidatedPresentation}
-    (adequacy : JudgmentPresentationAdequacy Claim Meaning presentation) :
+    {Meaning : Claim → Prop} {definition : ValidatedCalculusLanguageDef}
+    (adequacy : JudgmentEncodingAdequacy Claim Meaning definition) :
     SemanticAuthority AuthorityId Claim where
   id := authorityId
   Certificate := WireArticle
   check := fun claim article =>
-    (wireArticleAuthority authorityId presentation).check
+    (wireArticleAuthority authorityId definition).check
       (adequacy.encode claim) article
   Meaning := Meaning
   sound := by
     intro claim article accepted
     apply adequacy.derivation_sound claim
-    exact (wireArticleAuthority authorityId presentation).sound accepted
+    exact (wireArticleAuthority authorityId definition).sound accepted
 
 @[simp] theorem judgmentWireAuthority_check
     {AuthorityId : Type uAuthority} (authorityId : AuthorityId)
     {Claim : Type uClaim} {Meaning : Claim → Prop}
-    {presentation : ValidatedPresentation}
-    (adequacy : JudgmentPresentationAdequacy Claim Meaning presentation)
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : JudgmentEncodingAdequacy Claim Meaning definition)
     (claim : Claim) (article : WireArticle) :
     (judgmentWireAuthority authorityId adequacy).check claim article =
-      (wireArticleAuthority authorityId presentation).check
+      (wireArticleAuthority authorityId definition).check
         (adequacy.encode claim) article :=
   rfl
 
-/-- Exact presentations identify semantic truth with existence of an accepted
+/-- Exact definitions identify semantic truth with existence of an accepted
 versioned article. -/
 theorem judgmentWireAuthority_correspondence
     {AuthorityId : Type uAuthority} (authorityId : AuthorityId)
     {Claim : Type uClaim} {Meaning : Claim → Prop}
-    {presentation : ValidatedPresentation}
-    (adequacy : ExactJudgmentPresentation Claim Meaning presentation)
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : ExactJudgmentEncoding Claim Meaning definition)
     (claim : Claim) :
     (∃ article : WireArticle,
         (judgmentWireAuthority authorityId
-          adequacy.toJudgmentPresentationAdequacy).check claim article = true) ↔
+          adequacy.toJudgmentEncodingAdequacy).check claim article = true) ↔
       Meaning claim := by
   constructor
   · rintro ⟨article, accepted⟩
     exact (judgmentWireAuthority authorityId
-      adequacy.toJudgmentPresentationAdequacy).sound accepted
+      adequacy.toJudgmentEncodingAdequacy).sound accepted
   · intro meaningful
     obtain ⟨derivation⟩ := adequacy.derivation_complete claim meaningful
     exact ⟨articleOfDerivation derivation, by
@@ -97,13 +97,13 @@ theorem judgmentWireAuthority_correspondence
 
 /-- Sound semantic interpretation of open CertificateGSLT derivations.  Each
 ordered premise occurrence has an explicit meaning. -/
-structure OpenJudgmentPresentationAdequacy (Claim : Type uClaim)
-    (Meaning : Claim → Prop) (presentation : ValidatedPresentation) where
+structure OpenJudgmentEncodingAdequacy (Claim : Type uClaim)
+    (Meaning : Claim → Prop) (definition : ValidatedCalculusLanguageDef) where
   encode : Claim → Pattern
   premiseMeaning : Pattern → Prop
   derivation_sound : ∀ (context : List Pattern) (claim : Claim),
     (∀ premise ∈ context, premiseMeaning premise) →
-      Nonempty (OpenDerivation presentation context (encode claim)) →
+      Nonempty (OpenDerivation definition context (encode claim)) →
         Meaning claim
 
 /-- A conditional claim records the exact ordered premise occurrences cited
@@ -114,31 +114,31 @@ structure OpenJudgmentClaim (Claim : Type uClaim) where
 
 /-- Meaning of an open judgment: valid premises entail its semantic claim. -/
 def OpenJudgmentClaim.Meaning {Claim : Type uClaim} {Meaning : Claim → Prop}
-    {presentation : ValidatedPresentation}
-    (adequacy : OpenJudgmentPresentationAdequacy Claim Meaning presentation)
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : OpenJudgmentEncodingAdequacy Claim Meaning definition)
     (claim : OpenJudgmentClaim Claim) : Prop :=
   (∀ premise ∈ claim.context, adequacy.premiseMeaning premise) →
     Meaning claim.claim
 
 /-- Generic executable check of a versioned open article. -/
-def checkOpenWireArticle (presentation : ValidatedPresentation)
+def checkOpenWireArticle (definition : ValidatedCalculusLanguageDef)
     (context : List Pattern) (goal : Pattern) (article : WireArticle) : Bool :=
   decide (article.version = wireArticleVersion) &&
     decide (article.target = goal) &&
-      checkOpenDAGBlocks presentation context article.target article.rootId
+      checkOpenDAGBlocks definition context article.target article.rootId
         [article.nodes]
 
 /-- Open CertificateGSLT articles become a conditional semantic authority through
 their open adequacy theorem. -/
 def openJudgmentWireAuthority {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {Claim : Type uClaim}
-    {Meaning : Claim → Prop} {presentation : ValidatedPresentation}
-    (adequacy : OpenJudgmentPresentationAdequacy Claim Meaning presentation) :
+    {Meaning : Claim → Prop} {definition : ValidatedCalculusLanguageDef}
+    (adequacy : OpenJudgmentEncodingAdequacy Claim Meaning definition) :
     SemanticAuthority AuthorityId (OpenJudgmentClaim Claim) where
   id := authorityId
   Certificate := WireArticle
   check := fun claim article =>
-    checkOpenWireArticle presentation claim.context
+    checkOpenWireArticle definition claim.context
       (adequacy.encode claim.claim) article
   Meaning := OpenJudgmentClaim.Meaning adequacy
   sound := by
@@ -146,7 +146,7 @@ def openJudgmentWireAuthority {AuthorityId : Type uAuthority}
     have acceptedParts :
         (decide (article.version = wireArticleVersion) = true ∧
           decide (article.target = adequacy.encode claim.claim) = true) ∧
-            checkOpenDAGBlocks presentation claim.context article.target
+            checkOpenDAGBlocks definition claim.context article.target
               article.rootId [article.nodes] = true := by
       simpa only [checkOpenWireArticle, Bool.and_eq_true] using accepted
     have targetEq : article.target = adequacy.encode claim.claim :=
@@ -159,11 +159,11 @@ def openJudgmentWireAuthority {AuthorityId : Type uAuthority}
 @[simp] theorem openJudgmentWireAuthority_check
     {AuthorityId : Type uAuthority} (authorityId : AuthorityId)
     {Claim : Type uClaim} {Meaning : Claim → Prop}
-    {presentation : ValidatedPresentation}
-    (adequacy : OpenJudgmentPresentationAdequacy Claim Meaning presentation)
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : OpenJudgmentEncodingAdequacy Claim Meaning definition)
     (claim : OpenJudgmentClaim Claim) (article : WireArticle) :
     (openJudgmentWireAuthority authorityId adequacy).check claim article =
-      checkOpenWireArticle presentation claim.context
+      checkOpenWireArticle definition claim.context
         (adequacy.encode claim.claim) article :=
   rfl
 
@@ -191,8 +191,8 @@ result is an ordinary unconditional semantic authority and can therefore be
 used as the local edge authority of a finite OSLF trace. -/
 def dischargedOpenWireAuthority {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {Claim : Type uClaim}
-    {Meaning : Claim → Prop} {presentation : ValidatedPresentation}
-    (adequacy : OpenJudgmentPresentationAdequacy Claim Meaning presentation)
+    {Meaning : Claim → Prop} {definition : ValidatedCalculusLanguageDef}
+    (adequacy : OpenJudgmentEncodingAdequacy Claim Meaning definition)
     (discharger : PremiseDischarger.{uPremiseCertificate}
       adequacy.premiseMeaning) :
     SemanticAuthority AuthorityId Claim where
@@ -200,14 +200,14 @@ def dischargedOpenWireAuthority {AuthorityId : Type uAuthority}
   Certificate := DischargedOpenEvidence discharger.Certificate
   check := fun claim evidence =>
     discharger.check evidence.context evidence.premiseEvidence &&
-      checkOpenWireArticle presentation evidence.context
+      checkOpenWireArticle definition evidence.context
         (adequacy.encode claim) evidence.article
   Meaning := Meaning
   sound := by
     intro claim evidence accepted
     have acceptedParts :
         discharger.check evidence.context evidence.premiseEvidence = true ∧
-          checkOpenWireArticle presentation evidence.context
+          checkOpenWireArticle definition evidence.context
             (adequacy.encode claim) evidence.article = true := by
       simpa only [Bool.and_eq_true] using accepted
     have openAccepted :
@@ -221,8 +221,8 @@ def dischargedOpenWireAuthority {AuthorityId : Type uAuthority}
 @[simp] theorem dischargedOpenWireAuthority_check
     {AuthorityId : Type uAuthority} (authorityId : AuthorityId)
     {Claim : Type uClaim} {Meaning : Claim → Prop}
-    {presentation : ValidatedPresentation}
-    (adequacy : OpenJudgmentPresentationAdequacy Claim Meaning presentation)
+    {definition : ValidatedCalculusLanguageDef}
+    (adequacy : OpenJudgmentEncodingAdequacy Claim Meaning definition)
     (discharger : PremiseDischarger.{uPremiseCertificate}
       adequacy.premiseMeaning)
     (claim : Claim)
@@ -230,7 +230,7 @@ def dischargedOpenWireAuthority {AuthorityId : Type uAuthority}
     (dischargedOpenWireAuthority authorityId adequacy discharger).check
         claim evidence =
       (discharger.check evidence.context evidence.premiseEvidence &&
-        checkOpenWireArticle presentation evidence.context
+        checkOpenWireArticle definition evidence.context
           (adequacy.encode claim) evidence.article) :=
   rfl
 

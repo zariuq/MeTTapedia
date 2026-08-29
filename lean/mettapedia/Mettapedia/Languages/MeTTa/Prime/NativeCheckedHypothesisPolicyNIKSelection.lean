@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.MILCheckedNativeSearch
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILCheckedNativeSearch
 import Mettapedia.Languages.MeTTa.Prime.DataFibration
 import Mettapedia.Languages.MeTTa.Prime.NIKPolicyFamilyCurrentSelection
 import Mettapedia.Languages.MeTTa.Prime.NativeRelationalSearchNIKSelection
@@ -30,9 +30,9 @@ namespace Mettapedia.Languages.MeTTa.Prime.NativeCheckedHypothesisPolicyNIKSelec
 open Mettapedia.GSLT.Core
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.NIKPolicyFamilyAdmission
-open Mettapedia.Languages.MeTTa.PureKernel.Universe
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.IntrinsicMILNativeSearch
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.MILCheckedNativeSearch
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.IntrinsicMILNativeSearch
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILCheckedNativeSearch
 open Mettapedia.Languages.MeTTa.Prime.NativeRelationalSearchNIKSelection
 open Mettapedia.Languages.MeTTa.Prime.NIKPolicyFamilyCapabilitySelection
 open Mettapedia.Languages.MeTTa.Prime.NIKPolicyFamilyCurrentSelection
@@ -257,8 +257,8 @@ theorem resultOnlyReadout_refuses_fullFamily {Source Target : Type}
 
 namespace GrandparentCanary
 
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.MILCheckedChain
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.MILCheckedNativePresentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILCheckedChain
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILCheckedNativePrograms
 
 def dependencies : DependencySystem where
   Revision := Bool
@@ -364,8 +364,8 @@ end GrandparentCanary
 
 namespace MapRelCanary
 
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.MILCheckedNativeListPresentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.MILCheckedNativeListSearch
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILCheckedNativeListPrograms
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILCheckedNativeListSearch
 
 def dependencies : DependencySystem where
   Revision := Bool

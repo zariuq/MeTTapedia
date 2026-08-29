@@ -14,7 +14,7 @@ PeTTa minimal-instruction step relation:
 
 The goal is modest and explicit: land concrete PeTTa runtime steps on the same
 WM strength/consequence interface already used by other bridges, without touching
-PureKernel `A/B/C1` and without smuggling MM2 execution metadata into the
+IntrinsicPure `A/B/C1` and without smuggling MM2 execution metadata into the
 logical statement.
 -/
 

@@ -19,6 +19,7 @@ native-lowered checking then reuse the single CertificateGSLT authority.
 namespace Mettapedia.OSLF.Framework.OSLFCertificateGSLTAuthority
 
 open Mettapedia.GSLT
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
@@ -43,15 +44,15 @@ def NativeClaim.Meaning {rewriteSystem : RewriteSystem}
 /-- A sound finite CertificateGSLT encoding of rich native inhabitation. -/
 abbrev NativeJudgmentAdequacy {rewriteSystem : RewriteSystem}
     (types : OSLFTypeSystem rewriteSystem)
-    (presentation : ValidatedPresentation) :=
-  JudgmentPresentationAdequacy
+    (presentation : ValidatedCalculusLanguageDef) :=
+  JudgmentEncodingAdequacy
     (NativeClaim types) NativeClaim.Meaning presentation
 
 /-- A two-sided finite CertificateGSLT encoding of rich native inhabitation. -/
 abbrev ExactNativeJudgment {rewriteSystem : RewriteSystem}
     (types : OSLFTypeSystem rewriteSystem)
-    (presentation : ValidatedPresentation) :=
-  ExactJudgmentPresentation
+    (presentation : ValidatedCalculusLanguageDef) :=
+  ExactJudgmentEncoding
     (NativeClaim types) NativeClaim.Meaning presentation
 
 /-- A rich native-judgment encoding becomes the ordinary versioned
@@ -59,7 +60,7 @@ CertificateGSLT wire authority. -/
 def nativeWireAuthority {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {rewriteSystem : RewriteSystem}
     {types : OSLFTypeSystem rewriteSystem}
-    {presentation : ValidatedPresentation}
+    {presentation : ValidatedCalculusLanguageDef}
     (adequacy : NativeJudgmentAdequacy types presentation) :
     SemanticAuthority AuthorityId (NativeClaim types) :=
   judgmentWireAuthority authorityId adequacy
@@ -70,12 +71,12 @@ theorem nativeWireAuthority_correspondence
     {AuthorityId : Type uAuthority} (authorityId : AuthorityId)
     {rewriteSystem : RewriteSystem}
     {types : OSLFTypeSystem rewriteSystem}
-    {presentation : ValidatedPresentation}
+    {presentation : ValidatedCalculusLanguageDef}
     (adequacy : ExactNativeJudgment types presentation)
     (claim : NativeClaim types) :
     (∃ article : WireArticle,
         (nativeWireAuthority authorityId
-          adequacy.toJudgmentPresentationAdequacy).check claim article = true) ↔
+          adequacy.toJudgmentEncodingAdequacy).check claim article = true) ↔
       claim.Meaning :=
   judgmentWireAuthority_correspondence authorityId adequacy claim
 
@@ -85,8 +86,8 @@ theorem nativeWireAuthority_correspondence
 substitution facts, and capability receipts remain ordered premises. -/
 abbrev OpenNativeJudgmentAdequacy {rewriteSystem : RewriteSystem}
     (types : OSLFTypeSystem rewriteSystem)
-    (presentation : ValidatedPresentation) :=
-  OpenJudgmentPresentationAdequacy
+    (presentation : ValidatedCalculusLanguageDef) :=
+  OpenJudgmentEncodingAdequacy
     (NativeClaim types) NativeClaim.Meaning presentation
 
 /-- Open native articles are conditional authorities until their cited
@@ -94,7 +95,7 @@ premises are discharged. -/
 def openNativeWireAuthority {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {rewriteSystem : RewriteSystem}
     {types : OSLFTypeSystem rewriteSystem}
-    {presentation : ValidatedPresentation}
+    {presentation : ValidatedCalculusLanguageDef}
     (adequacy : OpenNativeJudgmentAdequacy types presentation) :
     SemanticAuthority AuthorityId (OpenJudgmentClaim (NativeClaim types)) :=
   openJudgmentWireAuthority authorityId adequacy
@@ -104,7 +105,7 @@ unconditional authority for rich native inhabitation. -/
 def dischargedOpenNativeWireAuthority {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {rewriteSystem : RewriteSystem}
     {types : OSLFTypeSystem rewriteSystem}
-    {presentation : ValidatedPresentation}
+    {presentation : ValidatedCalculusLanguageDef}
     (adequacy : OpenNativeJudgmentAdequacy types presentation)
     (discharger : PremiseDischarger.{uPremiseCertificate}
       adequacy.premiseMeaning) :
@@ -118,7 +119,7 @@ lowering to the corresponding CertificateGSLT authority. -/
 abbrev NativeCheckedLowering {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {rewriteSystem : RewriteSystem}
     {types : OSLFTypeSystem rewriteSystem}
-    {presentation : ValidatedPresentation}
+    {presentation : ValidatedCalculusLanguageDef}
     (adequacy : NativeJudgmentAdequacy types presentation)
     (NativeEvidence : Type uNative) :=
   CheckedLowering (nativeWireAuthority authorityId adequacy) NativeEvidence
@@ -129,7 +130,7 @@ theorem NativeCheckedLowering.satisfies
     {AuthorityId : Type uAuthority} {authorityId : AuthorityId}
     {rewriteSystem : RewriteSystem}
     {types : OSLFTypeSystem rewriteSystem}
-    {presentation : ValidatedPresentation}
+    {presentation : ValidatedCalculusLanguageDef}
     {adequacy : NativeJudgmentAdequacy types presentation}
     {NativeEvidence : Type uNative}
     (lowering : NativeCheckedLowering authorityId adequacy NativeEvidence)

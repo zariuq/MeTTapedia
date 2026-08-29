@@ -563,7 +563,7 @@ theorem applySubst_derivation_iff_runtime_subst
     (hunique : SubstitutionKeysUnique substitution)
     (source result : ConstantHeadedFormula) :
     Nonempty
-        (Derivation validatedSidePresentation
+        (Derivation validatedSideDefinition
           (applySubst (encodeSubstitution substitution) (encodeFormula source)
             (encodeFormula result))) ↔
       source.toRuntime.subst (RuntimeSubstitutionMap substitution) =

@@ -4,7 +4,7 @@ import Mettapedia.GSLT.LanguageDef.CertificateGSLTOpen
 # Derivation-valued interpretations of CertificateGSLTs
 
 Exact rule retention is useful but too restrictive: a primitive rule in one
-presentation may be implemented by a composite derivation in another.  This
+definition may be implemented by a composite derivation in another.  This
 module defines the first non-thin category of CertificateGSLTs.  Its arrows preserve
 the common judgment representation and map every admitted source rule
 application to a target open derivation with the same ordered premises and
@@ -30,8 +30,8 @@ structure Interpretation (source target : Object) where
   onRule :
     ∀ (ruleInstance : RuleInstance) {premises : List Pattern}
       {conclusion : Pattern},
-      RuleApplication source.presentation ruleInstance premises conclusion →
-        OpenDerivation target.presentation premises conclusion
+      RuleApplication source.definition ruleInstance premises conclusion →
+        OpenDerivation target.definition premises conclusion
 
 namespace Interpretation
 
@@ -42,8 +42,8 @@ occurrence positions are retained exactly. -/
 def mapOpen {source target : Object}
     (interpretation : Interpretation source target)
     {context : List Pattern} {goal : Pattern} :
-    OpenDerivation source.presentation context goal →
-      OpenDerivation target.presentation context goal
+    OpenDerivation source.definition context goal →
+      OpenDerivation target.definition context goal
   | .assumption index => .assumption index
   | .byRule ruleInstance application children =>
       (interpretation.onRule ruleInstance application).bind
@@ -53,8 +53,8 @@ def mapOpen {source target : Object}
 def mapOpenList {source target : Object}
     (interpretation : Interpretation source target)
     {context goals : List Pattern} :
-    OpenDerivationList source.presentation context goals →
-      OpenDerivationList target.presentation context goals
+    OpenDerivationList source.definition context goals →
+      OpenDerivationList target.definition context goals
   | .nil => .nil
   | .cons head tail =>
       .cons (mapOpen interpretation head) (mapOpenList interpretation tail)
@@ -67,7 +67,7 @@ theorem mapOpenList_ofFn {source target : Object}
     (interpretation : Interpretation source target)
     {context goals : List Pattern}
     (entries : (index : Fin goals.length) →
-      OpenDerivation source.presentation context (goals.get index)) :
+      OpenDerivation source.definition context (goals.get index)) :
     interpretation.mapOpenList (OpenDerivationList.ofFn goals entries) =
       OpenDerivationList.ofFn goals
         (fun index => interpretation.mapOpen (entries index)) := by
@@ -84,8 +84,8 @@ theorem mapOpenList_ofFn {source target : Object}
     (interpretation : Interpretation source target)
     (context : List Pattern) :
     interpretation.mapOpenList
-        (assumptionEnvironment source.presentation context) =
-      assumptionEnvironment target.presentation context := by
+        (assumptionEnvironment source.definition context) =
+      assumptionEnvironment target.definition context := by
   rw [assumptionEnvironment, mapOpenList_ofFn]
   rfl
 
@@ -94,9 +94,9 @@ distinct hole for each ordered premise occurrence. -/
 def id (object : Object) : Interpretation object object where
   onRule := fun ruleInstance _ _ application =>
     .byRule ruleInstance application
-      (assumptionEnvironment object.presentation _)
+      (assumptionEnvironment object.definition _)
 
-/-- Interpret first into the middle presentation and then recursively
+/-- Interpret first into the middle definition and then recursively
 interpret the resulting open proof into the target. -/
 def comp {first middle last : Object}
     (earlier : Interpretation first middle)
@@ -108,11 +108,11 @@ def comp {first middle last : Object}
 /-- Exact rule retention embeds into derivation-valued interpretation by
 using the transported primitive rule as a one-node template. -/
 def ofRuleLookupRefines {source target : Object}
-    (refines : RuleLookupRefines source.presentation target.presentation) :
+    (refines : RuleLookupRefines source.definition target.definition) :
     Interpretation source target where
   onRule := fun ruleInstance _ _ application =>
     .byRule ruleInstance (application.transport refines)
-      (assumptionEnvironment target.presentation _)
+      (assumptionEnvironment target.definition _)
 
 mutual
 
@@ -121,9 +121,9 @@ theorem mapOpen_bind {source target : Object}
     (interpretation : Interpretation source target)
     {sourceContext targetContext : List Pattern} {goal : Pattern}
     (derivation :
-      OpenDerivation source.presentation sourceContext goal)
+      OpenDerivation source.definition sourceContext goal)
     (environment :
-      OpenDerivationList source.presentation targetContext sourceContext) :
+      OpenDerivationList source.definition targetContext sourceContext) :
     interpretation.mapOpen (derivation.bind environment) =
       (interpretation.mapOpen derivation).bind
         (interpretation.mapOpenList environment) := by
@@ -142,9 +142,9 @@ theorem mapOpenList_bind {source target : Object}
     (interpretation : Interpretation source target)
     {sourceContext targetContext goals : List Pattern}
     (derivations :
-      OpenDerivationList source.presentation sourceContext goals)
+      OpenDerivationList source.definition sourceContext goals)
     (environment :
-      OpenDerivationList source.presentation targetContext sourceContext) :
+      OpenDerivationList source.definition targetContext sourceContext) :
     interpretation.mapOpenList (derivations.bind environment) =
       (interpretation.mapOpenList derivations).bind
         (interpretation.mapOpenList environment) := by
@@ -160,7 +160,7 @@ theorem mapOpenList_get {source target : Object}
     (interpretation : Interpretation source target)
     {context goals : List Pattern}
     (derivations :
-      OpenDerivationList source.presentation context goals)
+      OpenDerivationList source.definition context goals)
     (index : Fin goals.length) :
     (interpretation.mapOpenList derivations).get index =
       interpretation.mapOpen (derivations.get index) := by
@@ -179,14 +179,14 @@ mutual
 derivations. -/
 @[simp] theorem id_mapOpen {object : Object} {context : List Pattern}
     {goal : Pattern}
-    (derivation : OpenDerivation object.presentation context goal) :
+    (derivation : OpenDerivation object.definition context goal) :
     (id object).mapOpen derivation = derivation := by
   cases derivation with
   | assumption index => rfl
   | byRule ruleInstance application children =>
       simp only [mapOpen, id]
       change OpenDerivation.byRule ruleInstance application
-          ((assumptionEnvironment object.presentation _).bind
+          ((assumptionEnvironment object.definition _).bind
             ((id object).mapOpenList children)) =
         OpenDerivation.byRule ruleInstance application children
       rw [id_mapOpenList children,
@@ -196,7 +196,7 @@ derivations. -/
 @[simp] theorem id_mapOpenList {object : Object}
     {context goals : List Pattern}
     (derivations :
-      OpenDerivationList object.presentation context goals) :
+      OpenDerivationList object.definition context goals) :
     (id object).mapOpenList derivations = derivations := by
   cases derivations with
   | nil => rfl
@@ -214,7 +214,7 @@ theorem comp_mapOpen {first middle last : Object}
     (later : Interpretation middle last)
     {context : List Pattern} {goal : Pattern}
     (derivation :
-      OpenDerivation first.presentation context goal) :
+      OpenDerivation first.definition context goal) :
     (comp earlier later).mapOpen derivation =
       later.mapOpen (earlier.mapOpen derivation) := by
   cases derivation with
@@ -234,7 +234,7 @@ theorem comp_mapOpenList {first middle last : Object}
     (later : Interpretation middle last)
     {context goals : List Pattern}
     (derivations :
-      OpenDerivationList first.presentation context goals) :
+      OpenDerivationList first.definition context goals) :
     (comp earlier later).mapOpenList derivations =
       later.mapOpenList (earlier.mapOpenList derivations) := by
   cases derivations with
@@ -250,20 +250,20 @@ end
 empty premise context and closing the translated result. -/
 def mapDerivation {source target : Object}
     (interpretation : Interpretation source target) {goal : Pattern}
-    (derivation : Derivation source.presentation goal) :
-    Derivation target.presentation goal :=
+    (derivation : Derivation source.definition goal) :
+    Derivation target.definition goal :=
   (interpretation.mapOpen
     (OpenDerivation.ofClosed (context := []) derivation)).close
 
 @[simp] theorem id_mapDerivation {object : Object} {goal : Pattern}
-    (derivation : Derivation object.presentation goal) :
+    (derivation : Derivation object.definition goal) :
     (id object).mapDerivation derivation = derivation := by
   simp [mapDerivation]
 
 theorem comp_mapDerivation {first middle last : Object}
     (earlier : Interpretation first middle)
     (later : Interpretation middle last)
-    {goal : Pattern} (derivation : Derivation first.presentation goal) :
+    {goal : Pattern} (derivation : Derivation first.definition goal) :
     (comp earlier later).mapDerivation derivation =
       later.mapDerivation (earlier.mapDerivation derivation) := by
   simp only [mapDerivation, comp_mapOpen]
@@ -273,7 +273,7 @@ theorem comp_mapDerivation {first middle last : Object}
     (first second : Interpretation source target)
     (equal : ∀ (ruleInstance : RuleInstance) {premises : List Pattern}
       {conclusion : Pattern}
-      (application : RuleApplication source.presentation ruleInstance
+      (application : RuleApplication source.definition ruleInstance
         premises conclusion),
       first.onRule ruleInstance application =
         second.onRule ruleInstance application) :
@@ -288,7 +288,7 @@ theorem comp_mapDerivation {first middle last : Object}
 
 end Interpretation
 
-/-! ## The non-thin category of proof presentations -/
+/-! ## The non-thin category of proof definitions -/
 
 instance : Category Object where
   Hom := Interpretation

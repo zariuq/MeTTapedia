@@ -10,11 +10,11 @@ MODULE="Mettapedia.GSLT.LanguageDef.HOLSourceInferenceMeTTaExport"
 CETTA="${CETTA:-$AIHUB/hyperon/CeTTa/cetta}"
 ADAPTER="$MK_ROOT/tools/hol_light_prooftrace_to_gic.py"
 TRACE="$MK_ROOT/parity_logs/hol_light_source/self_imp_924faf0c"
-BASE="$ROOT/hol_source_presentations_generated_v0.metta"
+BASE="$ROOT/hol_source_languages_generated_v0.metta"
 ARTIFACT="$ROOT/hol_light_self_imp_source_gic_v0.metta"
 LOGDIR="$ROOT/parity_logs/hol_light_source_gic"
 FRESHDIR="$LOGDIR/fresh"
-FRESH_BASE="$FRESHDIR/hol_source_presentations_generated_v0.metta"
+FRESH_BASE="$FRESHDIR/hol_source_languages_generated_v0.metta"
 FRESH_ARTIFACT="$FRESHDIR/hol_light_self_imp_source_gic_v0.metta"
 EXPORT_LOG="$LOGDIR/export.log"
 ADAPTER_LOG="$LOGDIR/adapter.log"
@@ -27,12 +27,12 @@ if ! (
   LEAN_NUM_THREADS=1 LAKE_JOBS=1 lake build "$MODULE"
   LEAN_NUM_THREADS=1 LAKE_JOBS=1 lake env lean --run "$EXPORTER" "$FRESH_BASE"
 ) >"$EXPORT_LOG" 2>&1; then
-  echo "HOL LIGHT SOURCE GIC GATE: FAIL (presentation export; log: $EXPORT_LOG)"
+  echo "HOL LIGHT SOURCE GIC GATE: FAIL (language export; log: $EXPORT_LOG)"
   exit 1
 fi
 
 if ! cmp -s "$BASE" "$FRESH_BASE"; then
-  echo "HOL LIGHT SOURCE GIC GATE: FAIL (generated presentation stale)"
+  echo "HOL LIGHT SOURCE GIC GATE: FAIL (generated language stale)"
   exit 1
 fi
 
@@ -40,7 +40,7 @@ if ! python3 "$ADAPTER" \
   --proofs "$TRACE.proofs" \
   --theorems "$TRACE.theorems" \
   --names "$TRACE.names" \
-  --presentation "$FRESH_BASE" \
+  --language "$FRESH_BASE" \
   --output "$FRESH_ARTIFACT" >"$ADAPTER_LOG" 2>&1; then
   echo "HOL LIGHT SOURCE GIC GATE: FAIL (ProofTrace lowering; log: $ADAPTER_LOG)"
   exit 1

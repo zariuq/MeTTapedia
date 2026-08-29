@@ -3,7 +3,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation
 import Mettapedia.PLN.Core.CompletePLN
 import Mettapedia.PLN.WorldModel.PLNWorldModel
 import Mettapedia.PLN.WorldModel.PLNWorldModelCalculus
-import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelIntrinsicPureBridge
 import Mettapedia.PLN.WorldModel.PLNWorldModelInstitution
 import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine
 import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge

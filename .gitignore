@@ -87,12 +87,16 @@ lean/mettapedia/scripts/*
 !lean/mettapedia/scripts/oeis_program_discovery_fixture.py
 !lean/mettapedia/scripts/test_oeis_program_discovery_fixture.py
 !lean/mettapedia/scripts/test_metamath_mm2_raw_unit.sh
+!lean/mettapedia/scripts/test_metamath_mm2_compressed_unit.sh
+!lean/mettapedia/scripts/test_metamath_mm2_heap_walkers.sh
 !lean/mettapedia/scripts/conformance/
 lean/mettapedia/scripts/conformance/*
 !lean/mettapedia/scripts/conformance/check_pc_authenticated_affine_replay.py
 !lean/mettapedia/scripts/conformance/check_pc_authenticated_hidden_stage_replay.py
 !lean/mettapedia/scripts/conformance/check_pc_authenticated_full_residual_replay.py
 !lean/mettapedia/scripts/conformance/check_tgad_unified_carrier_source_conformance.py
+!lean/mettapedia/scripts/conformance/check_petta_mainline_call_guard_reference.py
+!lean/mettapedia/scripts/conformance/petta_mainline_call_guard_reference.metta
 lean/algorithms/lean-toolchain
 lean/mettapedia/Mettapedia/CategoricalLogic/lakefile.lean
 lean/mettapedia/Mettapedia/CategoricalLogic/lean-toolchain

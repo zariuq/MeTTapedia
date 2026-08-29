@@ -6,7 +6,7 @@ import Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 This module isolates the `Imp`, `Hyp`, `PPfAp`, and `PLam` fragment of
 Megalodon's checked `Mathdata` proof terms.  It gives the fragment an authored
-CertificateGSLT presentation and compiles its intrinsic proof terms to generic NIK
+CertificateGSLT definition and compiles its intrinsic proof terms to generic NIK
 articles.  The result is an exact fragment authority, not a claim of adequacy
 for the full Megalodon parser, dynamic-operator environment, polymorphism,
 definitions, or HOTG theory.
@@ -211,27 +211,25 @@ by the generic NIK checker. -/
       some definition.toCalculus :=
   definition.toExtended_elaborate_authoredSource
 
-def presentation : Presentation := definition.toNested
-
 private theorem language_validate : definition.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [definition, expressionType, expressionConstructor,
       LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
       TypeExpr.baseNames]
 
-theorem presentation_valid : presentation.isValidV2 = true := by
-  have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation] using language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem definition_valid : definition.isValid = true := by
+  have hvalidate : definition.toLanguageDef.validate = [] := by
+    simpa [definition] using language_validate
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [presentation, definition, Presentation.ruleIds,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.conversionDeclarationValid, Presentation.lookupJudgment?,
-    RuleSchema.isValidIn, RuleSchema.isValidV1, RuleSchema.metavariableNames,
+  simp [definition, definition, CalculusLanguageDef.ruleIds,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.conversionDeclarationValid, CalculusLanguageDef.lookupJudgment?,
+    RuleSchema.isValidIn, RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
     RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, fixedConstructorsValid,
+    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
     fixedConstructorListsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
@@ -241,12 +239,12 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     proves, ruleId]
   decide
 
-def validated : ValidatedPresentation := ⟨presentation, presentation_valid⟩
+def validated : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 /-- The admitted fragment denotes one semantic GSLT.  Since the fragment has
 no object-language equations, its equation-compatibility law is immediate. -/
 def semanticGSLT : Mettapedia.GSLT.GSLT :=
-  definition.toGSLTOfNoEquations presentation_valid rfl
+  definition.toGSLTOfNoEquations definition_valid rfl
 
 private def ruleInstance (id : String) (arguments : List Pattern) :
     RuleInstance :=
@@ -279,9 +277,9 @@ private theorem hypZero_instantiates
         [encodeContext context, encodeFormula formula]) =
       some ([],
         proves (encodeContext (formula :: context)) (encodeFormula formula)) := by
-  simp [validated, presentation, definition, hypZeroRule, weakenRule,
+  simp [validated, definition, definition, hypZeroRule, weakenRule,
     implicationIntroductionRule, implicationEliminationRule, ruleInstance,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, proves, encodeContext, encodeFormula_ground,
@@ -296,9 +294,9 @@ private theorem weaken_instantiates
       some
         ([proves (encodeContext context) (encodeFormula formula)],
           proves (encodeContext (head :: context)) (encodeFormula formula)) := by
-  simp [validated, presentation, definition, hypZeroRule, weakenRule,
+  simp [validated, definition, definition, hypZeroRule, weakenRule,
     implicationIntroductionRule, implicationEliminationRule, ruleInstance,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, proves, encodeContext, encodeFormula_ground,
@@ -313,9 +311,9 @@ private theorem implicationIntroduction_instantiates
       some
         ([proves (encodeContext (domain :: context)) (encodeFormula codomain)],
           proves (encodeContext context) (encodeFormula (.imp domain codomain))) := by
-  simp [validated, presentation, definition, hypZeroRule, weakenRule,
+  simp [validated, definition, definition, hypZeroRule, weakenRule,
     implicationIntroductionRule, implicationEliminationRule, ruleInstance,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, proves, encodeFormula, encodeContext,
@@ -331,9 +329,9 @@ private theorem implicationElimination_instantiates
         ([ proves (encodeContext context) (encodeFormula (.imp domain codomain)),
            proves (encodeContext context) (encodeFormula domain) ],
           proves (encodeContext context) (encodeFormula codomain)) := by
-  simp [validated, presentation, definition, hypZeroRule, weakenRule,
+  simp [validated, definition, definition, hypZeroRule, weakenRule,
     implicationIntroductionRule, implicationEliminationRule, ruleInstance,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, proves, encodeFormula, encodeFormula_ground,
@@ -446,7 +444,7 @@ private theorem compile_hyp_checked
                 (tailIH hrecursive)
 
 /-- Every article emitted by the fragment compiler is accepted by the exact
-authored CertificateGSLT presentation at the same inferred endpoint. -/
+authored CertificateGSLT definition at the same inferred endpoint. -/
 theorem compile_checked
     {context : List Formula} {proof : Proof} {formula : Formula}
     {article : RawProof}
@@ -553,7 +551,7 @@ theorem modus_ponens_semantic_reachability :
   have derivations :
       DerivationList validated [modusPonensGoal] :=
     .cons derivation .nil
-  exact (definition.toGSLT_derivability presentation_valid
+  exact (definition.toGSLT_derivability definition_valid
     (TotalGSLT.ReductionRespectsEquations.of_no_equations rfl)
     [modusPonensGoal]).mp ⟨derivations⟩
 

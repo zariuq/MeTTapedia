@@ -29,7 +29,7 @@ open Mettapedia.GSLT.Core.InteractionComposition
 open Mettapedia.GSLT.Core.InteractionEvent
 open Mettapedia.GSLT.Dynamics.InteractionEventValuation
 open Mettapedia.GSLT.IndexedOperational
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability
 open Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability.State
 open Mettapedia.Languages.MeTTa.Prime.GSLTILInteractionTransport
@@ -304,7 +304,7 @@ gradual evidence for its own endpoint-only erasure. -/
 def exactStateOfComputation
     (nativePresentation : InteractionPresentation theory)
     {interpretation : EndpointInterpretation theory}
-    {source target : NativeRawTm 0 0}
+    {source target : StagedReflectiveTm 0 0}
     (execution : Computation interpretation nativePresentation source target) :
     State
       (pathFibre nativePresentation execution.1.1 execution.2.1.1)
@@ -314,7 +314,7 @@ def exactStateOfComputation
 @[simp] theorem observe_exactStateOfComputation
     (nativePresentation : InteractionPresentation theory)
     {interpretation : EndpointInterpretation theory}
-    {source target : NativeRawTm 0 0}
+    {source target : StagedReflectiveTm 0 0}
     (execution : Computation interpretation nativePresentation source target) :
     observe nativePresentation
         (exactStateOfComputation nativePresentation execution) =
@@ -326,7 +326,7 @@ and exposes chronological provenance without an interior check. -/
 theorem observe_composed_computation
     (nativePresentation : InteractionPresentation theory)
     (interpretation : EndpointInterpretation theory)
-    {source middle target : NativeRawTm 0 0}
+    {source middle target : StagedReflectiveTm 0 0}
     (first : Computation interpretation nativePresentation source middle)
     (second : Computation interpretation nativePresentation middle target) :
     observe nativePresentation

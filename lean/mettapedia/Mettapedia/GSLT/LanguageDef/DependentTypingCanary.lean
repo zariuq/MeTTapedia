@@ -143,7 +143,6 @@ private abbrev definition : CalculusLanguageDef :=
 
 private def language : LanguageDef := definition.toLanguageDef
 private def calculus := definition.toCalculus
-private def presentation : Presentation := definition.toNested
 
 private theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly language <;>
@@ -151,20 +150,20 @@ private theorem language_validate : language.validate = [] := by
       LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
       TypeExpr.baseNames]
 
-private theorem presentation_valid : presentation.isValidV2 = true := by
-  have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation, language] using language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+private theorem definition_valid : definition.isValid = true := by
+  have hvalidate : definition.toLanguageDef.validate = [] := by
+    simpa [language] using language_validate
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [presentation,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSideCondition.isValidFor, RuleSchema.isValidV1,
+  simp [definition,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
+    RuleSideCondition.isValidFor, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, fixedConstructorsValid,
+    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
     fixedConstructorListsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
@@ -179,14 +178,14 @@ private theorem presentation_valid : presentation.isValidV2 = true := by
 
 /-- The complete canary as one GSLT, not merely as checker input. -/
 private def totalTheory : Mettapedia.GSLT.GSLT :=
-  definition.toGSLTOfNoEquations presentation_valid rfl
+  definition.toGSLTOfNoEquations definition_valid rfl
 
 private theorem totalTheory_Term :
     totalTheory.Term = (Pattern ⊕ List Pattern) := by
   unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
   rfl
 
-private def checked : ValidatedPresentation := ⟨presentation, presentation_valid⟩
+private def checked : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 private def reflTypingProof : RawProof :=
   .node { ruleId := ruleId "ty-Refl", arguments := [] } []
@@ -227,13 +226,13 @@ theorem dependent_application_accepts :
     checkRaw checked
       (typing context applicationTerm computedResult)
       convertedApplicationProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     convertedApplicationProof, applicationProof, conversionProof,
     reflTypingProof, zeroTypingProof, applicationTerm, structuralResult,
     computedResult, applicationRule, conversionTypingRule,
     explicitSubstitutionRule, reflRule, zeroRule, closedTypingRule,
     universeZeroRule, naturalRule, booleanRule, falseRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, RuleSideCondition.holds,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, typing, converts, app, pi,
@@ -254,11 +253,11 @@ theorem argument_type_mismatch_rejects :
     checkRaw checked
       (typing context (app refl falseTerm) (.subst equalityBody falseTerm))
       mismatchedApplicationProof = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     mismatchedApplicationProof, reflTypingProof, falseTypingProof,
     applicationRule, reflRule, falseRule, closedTypingRule,
     universeZeroRule, naturalRule, booleanRule, zeroRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, typing, app, pi,
@@ -278,13 +277,13 @@ theorem omitted_conversion_rejects :
     checkRaw checked
       (typing context applicationTerm computedResult)
       omittedConversionProof = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     omittedConversionProof, applicationProof, reflTypingProof, zeroTypingProof,
     applicationTerm, structuralResult, computedResult, applicationRule,
     conversionTypingRule, explicitSubstitutionRule, reflRule, zeroRule,
     closedTypingRule,
     universeZeroRule, naturalRule, booleanRule, falseRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, typing, converts, app, pi,
@@ -304,11 +303,11 @@ theorem swapped_application_children_reject :
     checkRaw checked
       (typing context applicationTerm structuralResult)
       swappedApplicationChildren = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     swappedApplicationChildren, reflTypingProof, zeroTypingProof,
     applicationTerm, structuralResult, applicationRule, reflRule, zeroRule,
     closedTypingRule, universeZeroRule, naturalRule, booleanRule, falseRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?,
@@ -330,11 +329,11 @@ theorem fabricated_conversion_result_rejects :
     checkRaw checked
       (converts structuralResult (equality natural zero falseTerm))
       invalidConversionProof = false := by
-  simp [checkRaw, checked, presentation,
+  simp [checkRaw, checked, definition,
     invalidConversionProof, structuralResult, explicitSubstitutionRule,
     conversionTypingRule, applicationRule, reflRule, zeroRule,
     closedTypingRule, universeZeroRule, naturalRule, booleanRule, falseRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     typing, converts, app, pi,
     equalityBody, equality, context, refl, falseTerm, zero, natural, ruleId,
@@ -351,11 +350,11 @@ rule for `U1 : U1`. -/
 theorem universe_ceiling_rejects :
     checkRaw checked (typing context universeOne universeOne)
       falseUniverseCeilingProof = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     falseUniverseCeilingProof, universeZeroRule, applicationRule,
     conversionTypingRule, explicitSubstitutionRule, reflRule, zeroRule,
     closedTypingRule, naturalRule, booleanRule, falseRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, typing, converts, app, pi,

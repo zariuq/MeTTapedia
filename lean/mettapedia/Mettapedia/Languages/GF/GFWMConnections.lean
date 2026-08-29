@@ -33,7 +33,7 @@ open Mettapedia.Languages.GF.OSLFToNTT
 open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.PLN.Evidence.EvidenceQuantale
-open Mettapedia.CategoryTheory.NativeTypeTheory
+open Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 open Mettapedia.CategoryTheory.PLNInstance
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.QuantifiedFormula2

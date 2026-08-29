@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.InferenceNormalStepReflection
 import Mettapedia.Languages.Metamath.InferenceGeneratedProvesReflection
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Proof-relevant reflection of normal Metamath proof folds
 
@@ -30,7 +32,7 @@ open Mettapedia.Languages.Metamath.InferenceNormalStepReflection
 an exact empty native stack certificate. -/
 def NativeStackCertificate.of_stack_eq_empty
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (state : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (state : RuntimeProofState)
     (hstack : state.stack = #[]) :
     NativeStackCertificate db projection target state [] state :=
   { formulas := []
@@ -55,9 +57,9 @@ Noncomputability is inherited from the one-step selection of each new local
 witness; the retained forest from every preceding step is threaded directly. -/
 def NativeStackCertificate.foldlM
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {base state result : RuntimeProofState}
+    {target : ValidatedCalculusLanguageDef} {base state result : RuntimeProofState}
     {processedLabels : List String}
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (certificate : NativeStackCertificate db projection target base
       processedLabels state) :
@@ -123,7 +125,7 @@ one retained source-pinned tree for that formula, with the exact processed
 label list. -/
 def NativeStackCertificate.extractSingletonTree
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {base state : RuntimeProofState}
+    {target : ValidatedCalculusLanguageDef} {base state : RuntimeProofState}
     {processedLabels : List String}
     (certificate : NativeStackCertificate db projection target base
       processedLabels state)
@@ -157,9 +159,9 @@ are accepted with singleton result exactly when they are the authored postfix
 labels of a generated proof tree for that formula. -/
 theorem normalFold_accepts_iff_exactGeneratedTree
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (formula : ConstantHeadedFormula) (labels : List String)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (hbaseStack : base.stack = #[]) :
     labels.foldlM (fun state label => db.stepNormal state label) base =
@@ -194,9 +196,9 @@ the same raw proof erasure, and acceptance of precisely that tree's authored
 normal labels from an empty base stack. -/
 theorem provesDerivation_reflectsAcceptedNormalLabels
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (formula : ConstantHeadedFormula)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (hbaseStack : base.stack = #[])
     (derivation : Derivation target (proves (encodeFormula formula))) :
@@ -220,9 +222,9 @@ some accepted normal label list.  The preceding exact theorem separately
 retains which generated tree owns each accepted list. -/
 theorem nonempty_provesDerivation_iff_exists_acceptedNormalLabels
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (formula : ConstantHeadedFormula)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (hbaseStack : base.stack = #[]) :
     Nonempty (Derivation target (proves (encodeFormula formula))) ↔
@@ -244,10 +246,10 @@ theorem nonempty_provesDerivation_iff_exists_acceptedNormalLabels
 /-! ## Positive and negative boundaries -/
 
 example (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (formula : ConstantHeadedFormula)
     (tree : GeneratedProvesTree projection target formula)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (hbaseStack : base.stack = #[]) :
     tree.labels.foldlM (fun state label => db.stepNormal state label) base =
@@ -260,10 +262,10 @@ example (db : RuntimeDB) (projection : PrefixProjection)
 runtime state. -/
 theorem normalFold_ne_wrong_final_state
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base wrong : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base wrong : RuntimeProofState)
     (formula : ConstantHeadedFormula)
     (tree : GeneratedProvesTree projection target formula)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (hbaseStack : base.stack = #[])
     (hne : wrong ≠ base.push formula.toRuntime) :
@@ -281,9 +283,9 @@ theorem normalFold_ne_wrong_final_state
 normal label list. -/
 theorem normalFold_empty_labels_ne_formula
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (formula : ConstantHeadedFormula)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (hbaseStack : base.stack = #[]) :
     ([] : List String).foldlM

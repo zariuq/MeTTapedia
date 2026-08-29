@@ -18,14 +18,14 @@
      (gslt-fixture-identity-v1)
      (gslt-fixture-assumptions-v1)
      (gslt-fixture-profiles-v1)
-     (gic-presentation)))
+     (gic-language)))
 
-(= (gslt-fixture-source-with-presentation-v1 $presentation)
+(= (gslt-fixture-source-with-language-v1 $language)
    (GSLTSourceV1
      (gslt-fixture-identity-v1)
      (gslt-fixture-assumptions-v1)
      (gslt-fixture-profiles-v1)
-     $presentation))
+     $language))
 
 (= (gslt-fixture-batch-v1)
    (CheckCons
@@ -83,7 +83,7 @@
       (SourceIdentityV1 "generic-inference-fixture" "v1" "")
       (gslt-fixture-assumptions-v1)
       (gslt-fixture-profiles-v1)
-      (gic-presentation)))
+      (gic-language)))
   (SourceRejectedV1 InvalidIdentityV1))
 
 !(assertEqual
@@ -92,15 +92,15 @@
       (gslt-fixture-identity-v1)
       (gslt-fixture-assumptions-v1)
       (ProfileLedgerV1 LNil)
-      (gic-presentation)))
+      (gic-language)))
   (SourceRejectedV1 MissingProfileV1))
 
 !(assertEqual
   (gslt-source-validation-v1
-    (gslt-fixture-source-with-presentation-v1
-      (GPresentation (gic-constructors) (gic-judgments)
-        (LCons (gic-ax-a) (LCons (gic-ax-a) LNil)))))
-  (SourceRejectedV1 InvalidPresentationV1))
+    (gslt-fixture-source-with-language-v1
+      (GInferenceLanguageV1 1 (gic-constructors) (gic-judgments)
+        (LCons (gic-ax-a) (LCons (gic-ax-a) LNil)) GNoConversion)))
+  (SourceRejectedV1 InvalidLanguageV1))
 
 !(assertEqual
   (gslt-source-check-v1

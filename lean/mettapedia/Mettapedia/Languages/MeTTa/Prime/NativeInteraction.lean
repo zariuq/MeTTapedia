@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.Core.InteractionComposition
-import Mettapedia.Languages.MeTTa.NativeTypeTheoryDerivation
+import Mettapedia.Languages.MeTTa.TypeTheory.StagedReflective.Presentation
 import Mettapedia.Languages.MeTTa.Prime.RhoNonCollapse
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 
@@ -27,7 +27,7 @@ namespace Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.InteractionComposition
 open Mettapedia.GSLT.Core.InteractionEvent
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.RhoNonCollapse
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
@@ -200,20 +200,20 @@ def internalRhoStep {source target : Pattern}
 
 /-- Evidence that one exact closed MeTTa Native term is a rho-executable
 runtime pattern.  This is an indexed admission witness, not a partial cast. -/
-structure RhoEndpoint (term : NativeRawTm 0 0) where
+structure RhoEndpoint (term : StagedReflectiveTm 0 0) where
   pattern : Pattern
-  term_eq : term = (.pattern pattern : NativeRawTm 0 0)
+  term_eq : term = (.pattern pattern : StagedReflectiveTm 0 0)
 
 /-- Every first-class runtime pattern has its canonical rho endpoint. -/
 def patternEndpoint (pattern : Pattern) :
-    RhoEndpoint (.pattern pattern : NativeRawTm 0 0) where
+    RhoEndpoint (.pattern pattern : StagedReflectiveTm 0 0) where
   pattern := pattern
   term_eq := rfl
 
 /-- A rho interaction computation indexed by its actual MeTTa Native endpoint
 terms.  An inhabitant must retain both endpoint admissions and the exact
 occurrence-preserving rho path between their patterns. -/
-def nativeRhoComputationTy (source target : NativeRawTm 0 0) :
+def nativeRhoComputationTy (source target : StagedReflectiveTm 0 0) :
     familiesCwF.Ty PrimeContext :=
   fun _ =>
     Σ sourceEndpoint : RhoEndpoint source,
@@ -242,7 +242,7 @@ theorem nativeDependentFunctionType_has_no_rhoEndpoint :
 /-- Consequently no rho interaction computation can use the dependent
 function type as its native source endpoint. -/
 theorem nativeDependentFunctionType_has_no_outgoing_rhoComputation
-    (target : NativeRawTm 0 0) :
+    (target : StagedReflectiveTm 0 0) :
     ¬ Nonempty
       ((nativeRhoComputationTy nativeDependentFunctionType target) PUnit.unit) := by
   rintro ⟨sourceEndpoint, _targetEndpoint, _path⟩

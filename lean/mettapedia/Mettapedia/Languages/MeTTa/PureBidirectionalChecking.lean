@@ -1,13 +1,13 @@
 import Mettapedia.Languages.MeTTa.PureCheckingService
-import Mettapedia.Languages.MeTTa.PureKernel.AlgorithmicTyping
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.AlgorithmicTyping
 
 namespace Mettapedia.Languages.MeTTa.ElaboratedCore
 
-open Mettapedia.Languages.MeTTa.PureKernel
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.Context
-open Mettapedia.Languages.MeTTa.PureKernel.Typing
-open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Context
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Typing
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
 
 structure PureCheckSuccess where
   term : PureSyntaxTerm 0

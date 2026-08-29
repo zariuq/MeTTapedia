@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.InferencePresentationWireFormat
+import Mettapedia.GSLT.LanguageDef.InferenceLanguageWireFormat
 import Mettapedia.GSLT.LanguageDef.InferenceCettaWireFormat
 import Mettapedia.GSLT.LanguageDef.InferenceSupportIndexedABTLowering
 import Mettapedia.GSLT.LanguageDef.InferenceCettaExecutionRefinement
@@ -19,7 +19,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
-open Mettapedia.GSLT.LanguageDef.InferencePresentationWire
+open Mettapedia.GSLT.LanguageDef.InferenceLanguageWire
 open Mettapedia.GSLT.LanguageDef.InferenceSupportIndexedABTLowering
 open Mettapedia.GSLT.LanguageDef.InferenceCettaExecutionRefinement
 
@@ -28,7 +28,7 @@ namespace Cetta
 open Mettapedia.GSLT.LanguageDef.InferenceCettaWire
 
 /-- The concrete CeTTa side-condition packet decodes to the same generic ABT
-obligation as the logical presentation wire. -/
+obligation as the logical definition wire. -/
 theorem explicitSubstitution_packet_refines
     (ambientDepth bodyArgument replacementArgument resultArgument : Nat)
     (arguments : List Pattern) (body replacement result : Pattern)
@@ -76,33 +76,33 @@ theorem unusedBinder_packet_refines
 lowers the complete ordered rule application through one support-indexed ABT
 environment. -/
 theorem runtime_rule_application_refines_abt
-    (presentation : ValidatedPresentation) (ruleInstance : RuleInstance)
+    (definition : ValidatedCalculusLanguageDef) (ruleInstance : RuleInstance)
     (premises : List Pattern) (conclusion : Pattern)
     (checked :
-      (RuntimePresentation.ofPresentation presentation.1).instantiateRule?
+      (RuntimeInferenceLanguage.ofDefinition definition.1).instantiateRule?
           ruleInstance = some (premises, conclusion)) :
-    ABTRuleApplication presentation ruleInstance premises conclusion := by
+    ABTRuleApplication definition ruleInstance premises conclusion := by
   exact instantiateRule?_eq_some_implies_abt
-    (RuntimePresentation.instantiateRule?_sound
-      presentation ruleInstance premises conclusion checked)
+    (RuntimeInferenceLanguage.instantiateRule?_sound
+      definition ruleInstance premises conclusion checked)
 
 /-- Acceptance of an exact CeTTa carrier packet yields a proof-relevant ABT
 derivation at every node, and erasing that derivation recovers the identical
 chronological article. -/
 theorem checkPacket_acceptance_has_abt_derivation
-    (presentation : ValidatedPresentation) (goal : Pattern)
+    (definition : ValidatedCalculusLanguageDef) (goal : Pattern)
     (proof : RawProof)
     (accepted :
       InferenceCettaWire.checkPacket
-          (InferenceCettaWire.encodeRuntimePresentation
-            (RuntimePresentation.ofPresentation presentation.1))
+          (InferenceCettaWire.encodeRuntimeInferenceLanguage
+            (RuntimeInferenceLanguage.ofDefinition definition.1))
           (InferenceCettaWire.encodePattern goal)
           (InferenceCettaWire.encodeRawProof proof) = some true) :
-    ∃ derivation : ABTDerivation presentation goal,
+    ∃ derivation : ABTDerivation definition goal,
       ABTDerivation.erase derivation = proof := by
   obtain ⟨derivation, erases⟩ :=
     InferenceCettaWire.checkPacket_encode_acceptance_sound
-      presentation goal proof accepted
+      definition goal proof accepted
   refine ⟨derivationToABT derivation, ?_⟩
   rw [derivationToABT_erase, erases]
 
@@ -110,19 +110,19 @@ theorem checkPacket_acceptance_has_abt_derivation
 through the direct physical schema walk at every node.  The resulting article
 retains the identical chronological erasure and support-indexed ABT meaning. -/
 theorem checkPacket_acceptance_has_physical_abt_derivation
-    (presentation : ValidatedPresentation) (goal : Pattern)
+    (definition : ValidatedCalculusLanguageDef) (goal : Pattern)
     (proof : RawProof)
     (accepted :
       InferenceCettaWire.checkPacket
-          (InferenceCettaWire.encodeRuntimePresentation
-            (RuntimePresentation.ofPresentation presentation.1))
+          (InferenceCettaWire.encodeRuntimeInferenceLanguage
+            (RuntimeInferenceLanguage.ofDefinition definition.1))
           (InferenceCettaWire.encodePattern goal)
           (InferenceCettaWire.encodeRawProof proof) = some true) :
-    ∃ derivation : PhysicalABTDerivation presentation goal,
+    ∃ derivation : PhysicalABTDerivation definition goal,
       PhysicalABTDerivation.erase derivation = proof := by
   obtain ⟨derivation, erases⟩ :=
     InferenceCettaWire.checkPacket_encode_acceptance_sound
-      presentation goal proof accepted
+      definition goal proof accepted
   refine ⟨derivationToPhysicalABT derivation, ?_⟩
   rw [derivationToPhysicalABT_erase, erases]
 

@@ -3,6 +3,8 @@ import Mettapedia.Languages.Metamath.InferenceGeneratedProvesReceipt
 import Mettapedia.Languages.Metamath.InferencePreparedAssertionCompilation
 import Mettapedia.Languages.Metamath.InferencePreparedAssertionStepReceipt
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Prime/NIK admission of prepared Metamath assertion records
 
@@ -300,7 +302,7 @@ theorem changed_revision_refuses_activation_and_preserves_fallback
 the exact validity witness consumed by the optimization admission. -/
 def receiptValidity
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (receipt : PreparedAssertionStepReceipt db projection target assertion pr
@@ -314,7 +316,7 @@ with the complete proof-relevant operational receipt it realizes.  The query
 is the exact assertion label rather than an unrelated table observation. -/
 structure CurrentPreparedAssertionStep
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (assertion : AssertionView)
+    (target : ValidatedCalculusLanguageDef) (assertion : AssertionView)
     (pr : RuntimeProofState) (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula) (substitution : FiniteSubstitution)
     (revision : Nat) : Type where
@@ -329,7 +331,7 @@ structure CurrentPreparedAssertionStep
 operational receipt itself is preserved rather than replaced by a token. -/
 def admitPreparedAssertionStep
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (revision : Nat)
@@ -348,7 +350,7 @@ fallback layers: the exact source record trace and the ordinary live verifier
 step with the same complete proof-state result. -/
 theorem changed_revision_deoptimizes_to_exact_live_step
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (revision : Nat)
@@ -376,7 +378,7 @@ theorem changed_revision_deoptimizes_to_exact_live_step
 receipt, not merely another occurrence with the same label. -/
 structure CurrentAssertionReceiptAdmission
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (receipt : PreparedAssertionStepReceipt db projection target assertion pr
@@ -388,7 +390,7 @@ structure CurrentAssertionReceiptAdmission
 
 def admitAssertionReceipt
     {db : RuntimeDB} {projection : PrefixProjection}
-    {target : ValidatedPresentation} {assertion : AssertionView}
+    {target : ValidatedCalculusLanguageDef} {assertion : AssertionView}
     {pr : RuntimeProofState} {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula} {substitution : FiniteSubstitution}
     (revision : Nat)
@@ -403,7 +405,7 @@ mutual
 /-- Add current NIK admission exactly at assertion occurrences of a retained
 proof receipt.  Active-hypothesis leaves require no assertion optimization. -/
 def admittedTreeReceiptShape
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     {db : RuntimeDB} {pr : RuntimeProofState}
@@ -417,7 +419,7 @@ def admittedTreeReceiptShape
 /-- Preserve exact premise order while admitting every nested assertion
 occurrence. -/
 def admittedForestReceiptShape
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas)
     {db : RuntimeDB} {pr : RuntimeProofState}
@@ -433,7 +435,7 @@ end
 mutual
 
 def admitTreeReceipts
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     {db : RuntimeDB} {pr : RuntimeProofState}
@@ -446,7 +448,7 @@ def admitTreeReceipts
         admitAssertionReceipt revision receipts.2⟩
 
 def admitForestReceipts
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas)
     {db : RuntimeDB} {pr : RuntimeProofState}
@@ -466,7 +468,7 @@ mutual
 the successor revision.  This is structural: duplicate labels remain separate
 conjuncts because they remain separate tree occurrences. -/
 def allAssertionsStaleAtNext
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     {db : RuntimeDB} {pr : RuntimeProofState}
@@ -481,7 +483,7 @@ def allAssertionsStaleAtNext
           (nextRevisionKey projection [assertion.label] revision)
 
 def allForestAssertionsStaleAtNext
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas)
     {db : RuntimeDB} {pr : RuntimeProofState}
@@ -498,7 +500,7 @@ end
 mutual
 
 theorem admittedTreeReceiptShape_all_stale_at_next
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     {db : RuntimeDB} {pr : RuntimeProofState}
@@ -515,7 +517,7 @@ theorem admittedTreeReceiptShape_all_stale_at_next
           admitted.2.current).1
 
 theorem admittedForestReceiptShape_all_stale_at_next
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas)
     {db : RuntimeDB} {pr : RuntimeProofState}
@@ -536,7 +538,7 @@ end
 /-- A complete generated proof receipt together with current admission for
 every assertion occurrence in its exact recursive shape. -/
 structure CurrentGeneratedProvesExecutionReceipt
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     (db : RuntimeDB) (pr finalState : RuntimeProofState)
@@ -545,7 +547,7 @@ structure CurrentGeneratedProvesExecutionReceipt
   admissions : admittedTreeReceiptShape tree operational.occurrences revision
 
 def admitGeneratedProofReceipt
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     {tree : GeneratedProvesTree projection target formula}
     {db : RuntimeDB} {pr finalState : RuntimeProofState}
@@ -560,7 +562,7 @@ retained ordinary proof execution still reaches the identical complete final
 state.  Deoptimization therefore occurs at the whole proof, not only at an
 isolated assertion. -/
 theorem changed_revision_deoptimizes_complete_generated_proof
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     {tree : GeneratedProvesTree projection target formula}
     {db : RuntimeDB} {pr finalState : RuntimeProofState}

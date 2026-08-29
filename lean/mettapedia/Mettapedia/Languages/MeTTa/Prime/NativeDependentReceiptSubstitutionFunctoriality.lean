@@ -29,9 +29,9 @@ open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptCoherenceCandidates.
 open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptSubstitutionTransport
 open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptSubstitutionTransport.Canaries
 open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptGeneratorSubstitutionAction
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.ProofRelevantStructuralComputation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.ProofRelevantStructuralComputation
 
 universe uEvidence uGenerator
 

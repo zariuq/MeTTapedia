@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.SourceGSLTState
 import Mettapedia.Languages.Metamath.SourceInferenceDeclarativeAdequacy
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Normal theorem occurrences in the source-owned Metamath GSLT
 
@@ -36,9 +38,9 @@ structure NormalTheoremStep
     (formula : ConstantHeadedFormula)
     (proofLabels : List String) : Type where
   sourceValid : sourceStateValid before = true
-  target : ValidatedPresentation
+  target : ValidatedCalculusLanguageDef
   presentation_eq :
-    presentationOfSourcePrefix? before.toSourcePrefix = some target.1
+    calculusLanguageDefOfSourcePrefix? before.toSourcePrefix = some target.1
   tree :
     SourceGeneratedProvesTree before.toSourcePrefix target formula
   labels_eq : tree.labels = proofLabels

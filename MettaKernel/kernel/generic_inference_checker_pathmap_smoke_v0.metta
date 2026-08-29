@@ -1,7 +1,7 @@
 !(import! &self generic_inference_checker_v0)
 
 !(assertEqual
-  (gic-check-trace-pathmap (gic-presentation)
+  (gic-check-trace-pathmap (gic-language)
     (TraceCheckCons
       (GTraceCheck (gic-proves (gic-B)) (gic-proof-b-trace) True)
       (TraceCheckCons

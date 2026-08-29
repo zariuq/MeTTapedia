@@ -1,4 +1,5 @@
-import Mettapedia.GSLT.LanguageDef.ValidatedInferenceExtension
+import Mettapedia.GSLT.LanguageDef.InferenceExtension
+import Mettapedia.GSLT.Core.FreeDocumentNormalization
 
 set_option linter.dupNamespace false
 
@@ -48,10 +49,9 @@ than merely type-correct.
 ## Where it genuinely stops
 
 Composition of *authored* extensions is total.  Composition of *admitted* ones
-is not: `admission_not_closed_under_composition` exhibits two proof calculi,
-each admitted against one language, whose merge is rejected.  The cause is name
-collision, and it is not repairable by any choice of elaborator — two
-declarations of one judgment head are ambiguous however they were authored.
+is interpreted separately in `ExtensionCompositionAdmission`; its negative
+example exhibits two individually admitted proof calculi whose merge is
+rejected.
 
 `Compatible` names the overlap condition this forces, and
 `append_isSome_of_compatible` discharges the part of it that the partial monoid
@@ -69,10 +69,9 @@ namespace Mettapedia.GSLT.LanguageDef.ExtensionComposition
 open Mettapedia.GSLT
 open Mettapedia.GSLT.LanguageDef.Extension
 open Mettapedia.GSLT.LanguageDef.InferenceExtension
-open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
-universe uBase uFiber uFiberRight uGen uGenRight
+universe uBase uFiber uFiberRight uFiberThird
 universe uArtifactLeft uArtifactRight uObservationLeft uObservationRight
 
 /-! ## The proof-calculus partial monoid
@@ -300,6 +299,350 @@ def productRealization
 
 end CompositionalLayer
 
+/-! ## Flat free-document layers
+
+`CompositionalLayer` is the general interface: its authored term language may
+have any internal representation of empty and concatenation.  Many important
+layers satisfy a stronger property.  Their source is literally one free
+document over a GSLT of declaration generators.  Retaining that generator
+boundary lets products combine generators first and take the free-document
+closure exactly once, instead of building documents of documents.
+
+`FreeDocumentLayer` is this refinement.  Its map to `CompositionalLayer`
+forgets only the chosen generators.  Unit, product, associator, unitors, and
+braiding below are inherited from the corresponding GSLT constructions, while
+the elaboration laws prove that the structural maps carry exactly the expected
+payload maps.
+-/
+
+/-- An indexed family of exact elaborations from one flat free document over
+an authored generator GSLT. -/
+structure FreeDocumentLayer (Base : Type uBase) where
+  /-- The payload attached over each base. -/
+  Fiber : Base → Type uFiber
+  /-- Generator GSLT, its single document closure, and exact elaboration. -/
+  system : ∀ base, GSLT.FreeDocumentElaboration.{0, uFiber} (Fiber base)
+
+namespace FreeDocumentLayer
+
+variable {Base : Type uBase}
+
+/-- A base-independent free-document elaboration regarded as an indexed
+layer. -/
+def constant (Base : Type uBase)
+    {Payload : Type uFiber}
+    (system : GSLT.FreeDocumentElaboration.{0, uFiber} Payload) :
+    FreeDocumentLayer.{uBase, uFiber} Base where
+  Fiber := fun _ => Payload
+  system := fun _ => system
+
+/-- Forget the chosen generator GSLT while retaining the exact compositional
+elaboration. -/
+def toCompositionalLayer
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base) :
+    CompositionalLayer.{uBase, uFiber} Base where
+  Fiber := layer.Fiber
+  system := fun base => (layer.system base).toCompositionalElaboration
+
+@[simp] theorem toCompositionalLayer_fiber
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base) (base : Base) :
+    layer.toCompositionalLayer.Fiber base = layer.Fiber base :=
+  rfl
+
+/-- The one authored source GSLT at a fixed base. -/
+def sourceGSLT
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base)
+    (base : Base) : GSLT :=
+  GSLT.freeDocument (layer.system base).generators
+
+/-- Elaborate one flat authored document. -/
+def elaborate
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base) (base : Base) :
+    (layer.sourceGSLT base).Term → Option (layer.Fiber base) :=
+  (layer.system base).elaboration.elaborate
+
+/-- Canonical flat authored document for a payload. -/
+def quote
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base) (base : Base) :
+    layer.Fiber base → (layer.sourceGSLT base).Term :=
+  (layer.system base).elaboration.quote
+
+@[simp] theorem elaborate_quote
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base) (base : Base)
+    (value : layer.Fiber base) :
+    layer.elaborate base (layer.quote base value) = some value :=
+  (layer.system base).elaboration.elaborate_quote value
+
+/-- Forget the flat-document refinement at the ordinary coGSLT boundary. -/
+def toCoGSLTLayer
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base) :
+    CoGSLTLayer.{uBase, uFiber, 0} Base :=
+  layer.toCompositionalLayer.toCoGSLTLayer
+
+@[simp] theorem toCoGSLTLayer_sourceGSLT
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base) (base : Base) :
+    layer.toCoGSLTLayer.sourceGSLT base = layer.sourceGSLT base :=
+  rfl
+
+@[simp] theorem toCoGSLTLayer_elaborate
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base) (base : Base) :
+    layer.toCoGSLTLayer.elaborate base = layer.elaborate base :=
+  rfl
+
+/-! ### Symmetric flat composition -/
+
+/-- The neutral layer has no generators and exactly one payload. -/
+def unit (Base : Type uBase) : FreeDocumentLayer.{uBase, 0} Base :=
+  constant Base GSLT.FreeDocumentElaboration.unit.{0}
+
+/-- Flat layer product combines generator GSLTs first, then takes one
+free-document closure. -/
+def product
+    (left : FreeDocumentLayer.{uBase, uFiber} Base)
+    (right : FreeDocumentLayer.{uBase, uFiberRight} Base) :
+    FreeDocumentLayer.{uBase, max uFiber uFiberRight} Base where
+  Fiber := fun base => left.Fiber base × right.Fiber base
+  system := fun base => (left.system base).product (right.system base)
+
+@[simp] theorem product_fiber
+    (left : FreeDocumentLayer.{uBase, uFiber} Base)
+    (right : FreeDocumentLayer.{uBase, uFiberRight} Base)
+    (base : Base) :
+    (left.product right).Fiber base =
+      (left.Fiber base × right.Fiber base) :=
+  rfl
+
+@[simp] theorem product_generators
+    (left : FreeDocumentLayer.{uBase, uFiber} Base)
+    (right : FreeDocumentLayer.{uBase, uFiberRight} Base)
+    (base : Base) :
+    ((left.product right).system base).generators =
+      GSLT.disjointSum (left.system base).generators
+        (right.system base).generators :=
+  rfl
+
+/-- The general nested product is a correct but non-canonical implementation
+of the flat product.  Normalizing its component-document blocks yields exactly
+the flat elaboration, so callers can use one flat source language without
+losing any payload meaning. -/
+theorem nested_product_elaboration_eq_flat
+    (left : FreeDocumentLayer.{uBase, uFiber} Base)
+    (right : FreeDocumentLayer.{uBase, uFiberRight} Base)
+    (base : Base)
+    (source : List
+      (List (left.system base).generators.Term ⊕
+        List (right.system base).generators.Term)) :
+    (left.toCompositionalLayer.product right.toCompositionalLayer).elaborate
+        base source =
+      (left.product right).elaborate base
+        (GSLT.FreeDocumentProduct.flatten source) :=
+  GSLT.FreeDocumentProduct.elaborate_genericProduct_eq_flatProduct
+    (left.system base) (right.system base) source
+
+/-- The flat product restricted to a left document is the left elaboration,
+padded only by the right empty payload. -/
+theorem product_elaborates_left_only
+    (left : FreeDocumentLayer.{uBase, uFiber} Base)
+    (right : FreeDocumentLayer.{uBase, uFiberRight} Base)
+    (base : Base) (source : List (left.system base).generators.Term) :
+    (left.product right).elaborate base
+        (source.map (Sum.inl : (left.system base).generators.Term →
+          (left.system base).generators.Term ⊕
+            (right.system base).generators.Term)) =
+      (left.elaborate base source).map
+        fun value => (value, (right.system base).emptyPayload) :=
+  (left.system base).product_elaborates_left_only
+    (right.system base) source
+
+/-- The symmetric right restriction law. -/
+theorem product_elaborates_right_only
+    (left : FreeDocumentLayer.{uBase, uFiber} Base)
+    (right : FreeDocumentLayer.{uBase, uFiberRight} Base)
+    (base : Base) (source : List (right.system base).generators.Term) :
+    (left.product right).elaborate base
+        (source.map (Sum.inr : (right.system base).generators.Term →
+          (left.system base).generators.Term ⊕
+            (right.system base).generators.Term)) =
+      (right.elaborate base source).map
+        fun value => ((left.system base).emptyPayload, value) :=
+  (left.system base).product_elaborates_right_only
+    (right.system base) source
+
+/-- Rebracketing three flat layers is a structural isomorphism of their one
+authored source GSLT. -/
+def productAssociator
+    (first : FreeDocumentLayer.{uBase, uFiber} Base)
+    (second : FreeDocumentLayer.{uBase, uFiberRight} Base)
+    (third : FreeDocumentLayer.{uBase, uFiberThird} Base)
+    (base : Base) :
+    GSLT.StructuralIsomorphism
+      (((first.product second).product third).sourceGSLT base)
+      ((first.product (second.product third)).sourceGSLT base) :=
+  GSLT.FreeDocumentElaboration.flatProductAssociator
+    (first.system base) (second.system base) (third.system base)
+
+/-- The structural associator carries elaboration to product reassociation. -/
+theorem product_elaboration_associative
+    (first : FreeDocumentLayer.{uBase, uFiber} Base)
+    (second : FreeDocumentLayer.{uBase, uFiberRight} Base)
+    (third : FreeDocumentLayer.{uBase, uFiberThird} Base)
+    (base : Base)
+    (source : List
+      (((first.system base).generators.Term ⊕
+          (second.system base).generators.Term) ⊕
+        (third.system base).generators.Term)) :
+    ((((first.product second).product third).elaborate base source).map
+        (Equiv.prodAssoc (first.Fiber base) (second.Fiber base)
+          (third.Fiber base))) =
+      (first.product (second.product third)).elaborate base
+        ((productAssociator first second third base).termEquiv source) :=
+  GSLT.FreeDocumentElaboration.product_elaboration_associative
+    (first.system base) (second.system base) (third.system base) source
+
+/-- Removing the neutral left layer is a structural isomorphism of the one
+authored source GSLT. -/
+def productLeftUnitor
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base)
+    (base : Base) :
+    GSLT.StructuralIsomorphism
+      ((((unit Base).product layer).sourceGSLT base))
+      (layer.sourceGSLT base) :=
+  GSLT.FreeDocumentElaboration.flatProductLeftUnitor.{uFiber, 0}
+    (layer.system base)
+
+/-- The left unitor removes exactly the neutral `PUnit` payload. -/
+theorem product_elaboration_left_unit
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base)
+    (base : Base)
+    (source : List
+      (GSLT.disjointSumUnit.Term ⊕ (layer.system base).generators.Term)) :
+    ((((unit Base).product layer).elaborate base source).map
+        (Equiv.punitProd (layer.Fiber base))) =
+      layer.elaborate base ((productLeftUnitor layer base).termEquiv source) :=
+  by
+    have unitorAction :=
+      GSLT.FreeDocumentElaboration.flatProductLeftUnitor_apply.{uFiber, 0}
+        (layer.system base) source
+    calc
+      ((((unit Base).product layer).elaborate base source).map
+          (Equiv.punitProd (layer.Fiber base))) =
+          (layer.system base).elaboration.elaborate
+            (GSLT.MixedDocument.right source) :=
+        GSLT.FreeDocumentElaboration.product_elaboration_left_unit.{uFiber, 0}
+          (layer.system base) source
+      _ = (layer.system base).elaboration.elaborate
+          ((GSLT.FreeDocumentElaboration.flatProductLeftUnitor.{uFiber, 0}
+            (layer.system base)).termEquiv source) :=
+        congrArg (layer.system base).elaboration.elaborate
+          unitorAction.symm
+      _ = layer.elaborate base
+          ((productLeftUnitor layer base).termEquiv source) := rfl
+
+/-- Removing the neutral right layer is a structural isomorphism of the one
+authored source GSLT. -/
+def productRightUnitor
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base)
+    (base : Base) :
+    GSLT.StructuralIsomorphism
+      (((layer.product (unit Base)).sourceGSLT base))
+      (layer.sourceGSLT base) :=
+  GSLT.FreeDocumentElaboration.flatProductRightUnitor.{uFiber, 0}
+    (layer.system base)
+
+/-- The right unitor removes exactly the neutral `PUnit` payload. -/
+theorem product_elaboration_right_unit
+    (layer : FreeDocumentLayer.{uBase, uFiber} Base)
+    (base : Base)
+    (source : List
+      ((layer.system base).generators.Term ⊕ GSLT.disjointSumUnit.Term)) :
+    (((layer.product (unit Base)).elaborate base source).map
+        (Equiv.prodPUnit (layer.Fiber base))) =
+      layer.elaborate base ((productRightUnitor layer base).termEquiv source) :=
+  by
+    have unitorAction :=
+      GSLT.FreeDocumentElaboration.flatProductRightUnitor_apply.{uFiber, 0}
+        (layer.system base) source
+    calc
+      (((layer.product (unit Base)).elaborate base source).map
+          (Equiv.prodPUnit (layer.Fiber base))) =
+          (layer.system base).elaboration.elaborate
+            (GSLT.MixedDocument.left source) :=
+        GSLT.FreeDocumentElaboration.product_elaboration_right_unit.{uFiber, 0}
+          (layer.system base) source
+      _ = (layer.system base).elaboration.elaborate
+          ((GSLT.FreeDocumentElaboration.flatProductRightUnitor.{uFiber, 0}
+            (layer.system base)).termEquiv source) :=
+        congrArg (layer.system base).elaboration.elaborate
+          unitorAction.symm
+      _ = layer.elaborate base
+          ((productRightUnitor layer base).termEquiv source) := rfl
+
+/-- Exchanging two flat layers is a structural isomorphism of their one
+authored source GSLT. -/
+def productBraiding
+    (left : FreeDocumentLayer.{uBase, uFiber} Base)
+    (right : FreeDocumentLayer.{uBase, uFiberRight} Base)
+    (base : Base) :
+    GSLT.StructuralIsomorphism
+      ((left.product right).sourceGSLT base)
+      ((right.product left).sourceGSLT base) :=
+  GSLT.FreeDocumentElaboration.flatProductBraiding
+    (left.system base) (right.system base)
+
+/-- Braiding the source exchanges exactly the two payload coordinates. -/
+theorem product_elaboration_commutative
+    (left : FreeDocumentLayer.{uBase, uFiber} Base)
+    (right : FreeDocumentLayer.{uBase, uFiberRight} Base)
+    (base : Base)
+    (source : List
+      ((left.system base).generators.Term ⊕
+        (right.system base).generators.Term)) :
+    (((left.product right).elaborate base source).map
+        (Equiv.prodComm (left.Fiber base) (right.Fiber base))) =
+      (right.product left).elaborate base
+        ((productBraiding left right base).termEquiv source) :=
+  GSLT.FreeDocumentElaboration.product_elaboration_commutative
+    (left.system base) (right.system base) source
+
+/-! ### Executable separation controls -/
+
+namespace Canary
+
+private def naturals : FreeDocumentLayer Unit :=
+  constant Unit (GSLT.FreeDocumentElaboration.orderedList Nat)
+
+private def booleans : FreeDocumentLayer Unit :=
+  constant Unit (GSLT.FreeDocumentElaboration.orderedList Bool)
+
+/-- Positive: two independently authored layers elaborate from one interleaved
+flat document. -/
+example :
+    (naturals.product booleans).elaborate ()
+      [Sum.inl (2 : Nat), Sum.inr true, Sum.inl (5 : Nat), Sum.inr false] =
+        some ([2, 5], [true, false]) :=
+  rfl
+
+/-- Negative: flat composition does not erase the right payload. -/
+theorem right_payload_is_observable :
+    (naturals.product booleans).elaborate ()
+        [Sum.inl (2 : Nat), Sum.inr true] ≠
+      (naturals.product booleans).elaborate ()
+        [Sum.inl (2 : Nat), Sum.inr false] := by
+  intro equality
+  change some (([2] : List Nat), ([true] : List Bool)) =
+    some (([2] : List Nat), ([false] : List Bool)) at equality
+  have payloadEquality :
+      (([2] : List Nat), ([true] : List Bool)) =
+        (([2] : List Nat), ([false] : List Bool)) :=
+    Option.some.inj equality
+  have headEquality : some true = some false :=
+    congrArg (fun payload => payload.2.head?) payloadEquality
+  exact Bool.noConfusion (Option.some.inj headEquality)
+
+end Canary
+
+end FreeDocumentLayer
+
 /-! ## The inference extension is compositional -/
 
 /-- The generic partial-monoid fold is exactly the established calculus
@@ -322,8 +665,8 @@ theorem foldWith_proofCalculus_eq_elaborate :
 documents.  Both the general extension layer and the admitted calculus layer
 below reuse this object; there is no second construction whose laws could
 drift. -/
-def calculusAuthoringGSLT : GSLT.CompositionalElaboration ProofCalculus where
-  authoring := calculusSyntax
+def calculusAuthoringGSLT : GSLT.FreeDocumentElaboration ProofCalculus where
+  generators := calculusDeclarationGSLT
   elaboration :=
     { elaborate := elaborate
       equation := elaborate_equation
@@ -335,12 +678,17 @@ def calculusAuthoringGSLT : GSLT.CompositionalElaboration ProofCalculus where
   elaborate_empty := elaborate_empty
   elaborate_append := elaborate_append
 
+/-- The calculus declarations as a flat indexed authoring layer.  This is the
+generator-preserving refinement used for products that must not nest authored
+documents. -/
+def calculusAuthoringLayer : FreeDocumentLayer LanguageDef :=
+  FreeDocumentLayer.constant LanguageDef calculusAuthoringGSLT
+
 /-- The proof-calculus extension with its complete compositional structure.
 Its atom theory is the authored calculus-declaration GSLT, not a newly
 generated rewrite-free wrapper. -/
-def calculusLayer : CompositionalLayer LanguageDef where
-  Fiber := fun _ => ProofCalculus
-  system := fun _ => calculusAuthoringGSLT
+def calculusLayer : CompositionalLayer LanguageDef :=
+  calculusAuthoringLayer.toCompositionalLayer
 
 /-- The generic compositional construction recovers the established authored
 calculus GSLT definitionally. -/
@@ -484,63 +832,9 @@ theorem padding_is_authored :
   rw [orComposite_left_only, andComposite_left_only] at equality
   exact Bool.noConfusion (Option.some.inj equality)
 
-/-! ## Admission is where composition genuinely stops
-
-Authored composition is total.  Admitted composition is not, and no elaborator
-repairs it: two declarations of one judgment head are ambiguous however they
-were written. -/
-
-private theorem emptyLanguage_validate (name : String) :
-    (LanguageDef.empty name).validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-    simp [LanguageDef.empty, LanguageDef.typeNames]
-
-private def canaryLanguage : LanguageDef :=
-  LanguageDef.empty "extension-composition-canary"
-
 private def canaryJudgment : JudgmentDecl := ⟨"Canary", 1⟩
 
 private def canaryCalculus : ProofCalculus := { judgments := [canaryJudgment] }
-
-private def mergedCalculus : ProofCalculus :=
-  { judgments := [canaryJudgment, canaryJudgment] }
-
-private theorem canaryLanguage_validate : canaryLanguage.validate = [] :=
-  emptyLanguage_validate "extension-composition-canary"
-
-private theorem canaryCalculus_valid :
-    (Presentation.mk canaryLanguage canaryCalculus).isValidV2 = true := by
-  have base : (Presentation.mk canaryLanguage canaryCalculus).isValidV1 = true := by
-    simp [Presentation.isValidV1, Presentation.ruleIds, canaryCalculus,
-      canaryLanguage_validate]
-  unfold Presentation.isValidV2
-  rw [base]
-  decide
-
-private theorem canaryCalculus_merge :
-    proofCalculusMonoid.op canaryCalculus canaryCalculus = some mergedCalculus :=
-  rfl
-
-private theorem mergedCalculus_invalid :
-    (Presentation.mk canaryLanguage mergedCalculus).isValidV2 = false := by
-  have signature :
-      (Presentation.mk canaryLanguage mergedCalculus).judgmentSignatureValid
-        = false := by decide
-  simp [Presentation.isValidV2, signature]
-
-/-- **Admission is not closed under composition.**  Two proof calculi, each
-admitted against one term language, merge successfully as authored data and are
-then rejected.  Composition of extensions is therefore a fibration with a
-compatibility condition, not an unconditional gluing. -/
-theorem admission_not_closed_under_composition :
-    ∃ (language : LanguageDef) (first second merged : ProofCalculus),
-      (Presentation.mk language first).isValidV2 = true ∧
-        (Presentation.mk language second).isValidV2 = true ∧
-        proofCalculusMonoid.op first second = some merged ∧
-        (Presentation.mk language merged).isValidV2 = false :=
-  ⟨canaryLanguage, canaryCalculus, canaryCalculus, mergedCalculus,
-    canaryCalculus_valid, canaryCalculus_valid, canaryCalculus_merge,
-    mergedCalculus_invalid⟩
 
 /-! ## The overlap condition
 

@@ -18,10 +18,10 @@ They are equivalent exactly on supported wires.  Consequently, a rule with a
 canonical conclusion can be interpreted natively from universal premise
 meanings exactly when canonicality of the conclusion forces canonicality of
 every ordered premise.  `CanonicalPremiseClosed` states that condition for an
-authored inference presentation.
+authored inference definition.
 
 The final lifting theorem is the useful architecture boundary: positive
-rule semantics plus canonical-premise closure induces a total presentation
+rule semantics plus canonical-premise closure induces a total definition
 semantics.  Noncanonical raw conclusions remain relationally meaningful, but
 they cannot be mistaken for native evidence.
 -/
@@ -140,7 +140,7 @@ def SumEvidence {Left Right : Type uCertificate}
 /-- Universal proof-relevant semantics sends a disjoint coproduct of exact
 judgment codecs to the product of the two independently usable semantic
 views.  This is the generic extension law behind a multi-judgment hosted
-calculus; no presentation-specific transport theorem is required. -/
+calculus; no definition-specific transport theorem is required. -/
 def universalFibre_product_equiv_sumOfDisjoint
     {Left Right : Type uCertificate} {Wire : Type uWire}
     [DecidableEq Wire]
@@ -176,15 +176,15 @@ def universalFibre_product_equiv_sumOfDisjoint
 
 /-! ## Extending an existing semantics by a genuinely new judgment fibre -/
 
-/-- No rule of a presentation concludes a canonical wire owned by the given
+/-- No rule of a definition concludes a canonical wire owned by the given
 codec.  This is the semantic form of adding a genuinely new judgment family:
 old rules cannot manufacture evidence in its fibre. -/
-def PresentationConclusionsAvoid
+def CalculusLanguageConclusionsAvoid
     {Certificate : Type uCertificate}
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (codec : PartialCodec Certificate Pattern) : Prop :=
   ∀ {ruleInstance premises conclusion},
-    RuleApplication presentation ruleInstance premises conclusion →
+    RuleApplication definition ruleInstance premises conclusion →
       ∀ certificate, codec.encode certificate ≠ conclusion
 
 /-- A wire outside an encoder image has a canonical vacuous universal
@@ -199,20 +199,20 @@ def universalFibreOfAvoids
   intro certificate equality
   exact False.elim (avoids certificate equality)
 
-namespace PresentationSemantics
+namespace CalculusLanguageSemantics
 
 /-- Enlarge an existing rule interpretation by a universal fibre whose
 canonical image no retained rule can conclude.  Ordered premise evidence is
 projected pointwise; no occurrence is dropped from the source derivation. -/
 def productWithVacuousFibre
     {Certificate : Type uCertificate}
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {LeftMeaning : Pattern → Type uEvidence}
-    (semantics : PresentationSemantics presentation LeftMeaning)
+    (semantics : CalculusLanguageSemantics definition LeftMeaning)
     (codec : PartialCodec Certificate Pattern)
     (Evidence : Certificate → Type uEvidence)
-    (avoids : PresentationConclusionsAvoid presentation codec) :
-    PresentationSemantics presentation
+    (avoids : CalculusLanguageConclusionsAvoid definition codec) :
+    CalculusLanguageSemantics definition
       (fun wire => LeftMeaning wire × UniversalFibre codec Evidence wire) where
   ruleMeaning := by
     intro ruleInstance premises conclusion application premiseEvidence
@@ -221,21 +221,21 @@ def productWithVacuousFibre
           (premiseEvidence.map (fun _ evidence => evidence.1)),
         universalFibreOfAvoids (avoids application)⟩
 
-end PresentationSemantics
+end CalculusLanguageSemantics
 
 /-- Negative control: one actual rule application at an encoded conclusion
 refutes the avoidance premise.  A nonempty new judgment family therefore
 cannot be smuggled in through the vacuous-fibre construction. -/
-theorem no_presentationConclusionsAvoid_of_ruleApplication_encoding
+theorem no_calculusLanguageConclusionsAvoid_of_ruleApplication_encoding
     {Certificate : Type uCertificate}
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {codec : PartialCodec Certificate Pattern}
     {ruleInstance premises conclusion}
     (application :
-      RuleApplication presentation ruleInstance premises conclusion)
+      RuleApplication definition ruleInstance premises conclusion)
     (certificate : Certificate)
     (equality : codec.encode certificate = conclusion) :
-    ¬ PresentationConclusionsAvoid presentation codec := by
+    ¬ CalculusLanguageConclusionsAvoid definition codec := by
   intro avoids
   exact avoids application certificate equality
 
@@ -279,14 +279,14 @@ def PremisesClosedAt {Certificate : Type uCertificate} {Wire : Type uWire}
     (conclusion : Wire) : Prop :=
   InImage codec conclusion → PremisesInImage codec premises
 
-/-- A validated presentation is canonical-premise closed when every
+/-- A validated definition is canonical-premise closed when every
 declarative rule application with a canonical conclusion has canonical
 ordered premises.  It does not require arbitrary raw conclusions to decode. -/
 def CanonicalPremiseClosed {Certificate : Type uCertificate}
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (codec : PartialCodec Certificate Pattern) : Prop :=
   ∀ ruleInstance premises conclusion,
-    RuleApplication presentation ruleInstance premises conclusion →
+    RuleApplication definition ruleInstance premises conclusion →
       PremisesClosedAt codec premises conclusion
 
 namespace EvidenceList
@@ -314,22 +314,22 @@ end EvidenceList
 /-- Native rule semantics is stated only at canonical conclusions and consumes
 positive premise evidence.  Closure is the separate surface theorem that
 justifies this consumption. -/
-structure PositivePresentationSemantics
+structure PositiveCalculusLanguageSemantics
     {Certificate : Type uCertificate}
-    (presentation : ValidatedPresentation)
+    (definition : ValidatedCalculusLanguageDef)
     (codec : PartialCodec Certificate Pattern)
     (Evidence : Certificate → Type uEvidence) where
-  premiseClosed : CanonicalPremiseClosed presentation codec
+  premiseClosed : CanonicalPremiseClosed definition codec
   ruleMeaning : ∀ {ruleInstance premises conclusion},
-    RuleApplication presentation ruleInstance premises conclusion →
+    RuleApplication definition ruleInstance premises conclusion →
       InImage codec conclusion →
       EvidenceList (PositiveFibre codec Evidence) premises →
       PositiveFibre codec Evidence conclusion
 
-namespace PositivePresentationSemantics
+namespace PositiveCalculusLanguageSemantics
 
 variable {Certificate : Type uCertificate}
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     {codec : PartialCodec Certificate Pattern}
     {Evidence : Certificate → Type uEvidence}
 
@@ -337,9 +337,9 @@ variable {Certificate : Type uCertificate}
 semantics.  For a noncanonical conclusion the returned universal function has
 no inputs; for a canonical conclusion, premise closure supplies every positive
 child required by the rule. -/
-def toPresentationSemantics
-    (semantics : PositivePresentationSemantics presentation codec Evidence) :
-    PresentationSemantics presentation (UniversalFibre codec Evidence) where
+def toCalculusLanguageSemantics
+    (semantics : PositiveCalculusLanguageSemantics definition codec Evidence) :
+    CalculusLanguageSemantics definition (UniversalFibre codec Evidence) where
   ruleMeaning := by
     intro ruleInstance premises conclusion application premiseEvidence
       certificate equality
@@ -359,12 +359,12 @@ def toPresentationSemantics
 native point.  The derivation itself continues to retain exact raw proof
 identity independently of this semantic projection. -/
 def interpretPositive
-    (semantics : PositivePresentationSemantics presentation codec Evidence)
-    {goal : Pattern} (derivation : Derivation presentation goal)
+    (semantics : PositiveCalculusLanguageSemantics definition codec Evidence)
+    {goal : Pattern} (derivation : Derivation definition goal)
     (support : InImage codec goal) : PositiveFibre codec Evidence goal :=
-  (semantics.toPresentationSemantics.interpret derivation).toPositive support
+  (semantics.toCalculusLanguageSemantics.interpret derivation).toPositive support
 
-end PositivePresentationSemantics
+end PositiveCalculusLanguageSemantics
 
 /-! ## Controls -/
 
@@ -439,12 +439,12 @@ end Canary
 
 #print axioms nonempty_positive_iff_nonempty_universal_of_inImage
 #print axioms universalFibre_product_equiv_sumOfDisjoint
-#print axioms PresentationSemantics.productWithVacuousFibre
-#print axioms no_presentationConclusionsAvoid_of_ruleApplication_encoding
+#print axioms CalculusLanguageSemantics.productWithVacuousFibre
+#print axioms no_calculusLanguageConclusionsAvoid_of_ruleApplication_encoding
 #print axioms noPositiveFibre_of_not_inImage
 #print axioms EvidenceList.toPositive
-#print axioms PositivePresentationSemantics.toPresentationSemantics
-#print axioms PositivePresentationSemantics.interpretPositive
+#print axioms PositiveCalculusLanguageSemantics.toCalculusLanguageSemantics
+#print axioms PositiveCalculusLanguageSemantics.interpretPositive
 #print axioms Canary.no_global_universal_to_positive
 #print axioms Canary.hiddenAlias_not_closed
 #print axioms Canary.unitChoice_product_interprets_left

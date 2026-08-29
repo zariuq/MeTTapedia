@@ -858,6 +858,19 @@ three claims separate: local PC showed no robust benefit here; hindsight replay 
 a small, concentrated collateral portfolio gain; learned query-conditioned retrieval
 weights remain untested.
 
+A subsequent backpropagation-only output-view control kept the AC--NMT encoder, two-cell
+decoder, Luong attention, corpus, and beam budget fixed, and replaced reverse-postfix
+emission with TGAD preorder actions, structural state embeddings, and a legality mask
+(a declared $1.03\%$ parameter increase).  Across three paired seeds, TGAD raised the
+mean valid-candidate rate from $95.16\%$ to $99.52\%$ and physical unique candidates from
+$2{,}435$ to $2{,}746$, but mean distinct whole-OEIS coverage moved only from $1{,}169$
+to $1{,}175$ and coverage per thousand unique candidates fell from $480$ to $428$.
+The views were strongly complementary: their three-seed new-sequence unions contained
+$1{,}128$ and $1{,}175$ A-numbers, only $260$ shared, and $2{,}043$ in union.  Those
+$2{,}043$ checker-verified discoveries were promoted into AC event~20, advancing the
+known-sequence counter from $9{,}624$ to $11{,}667$.  Thus TGAD is a viable structural
+portfolio view here, not a demonstrated replacement for ordinary AC--NMT decoding.
+
 \section{What can and cannot be compared}
 
 The tree and recurrent systems are complementary, not two rows in an architecture

@@ -4,7 +4,7 @@ import Mettapedia.GSLT.LanguageDef.CheckedSource
 # Explicit conversion certificates through the generic checker
 
 Conversion steps remain ordinary judgments and ordinary proof trees in the
-validated presentation.  This module only checks that an explicit sequence of
+validated definition.  This module only checks that an explicit sequence of
 such steps has the requested endpoints.  It adds no source-specific rule
 branch and does not interpret certificate rejection as proof of inequality.
 -/
@@ -20,7 +20,7 @@ open Mettapedia.GSLT.LanguageDef.CheckedSource
 structure RootedConversion (checked : CheckedGSLT) where
   declaration : ConversionDecl
   isRooted :
-    checked.source.presentation.conversion = some declaration
+    checked.source.definition.conversion = some declaration
 
 def RootedConversion.judgment {checked : CheckedGSLT}
     (conversion : RootedConversion checked)
@@ -49,7 +49,7 @@ inductive ConversionDerivation (checked : CheckedGSLT)
     (conversion : RootedConversion checked) : Pattern → Pattern → Type where
   | refl (term : Pattern) : ConversionDerivation checked conversion term term
   | step {source next target : Pattern} :
-      Derivation checked.presentation (conversion.judgment source next) →
+      Derivation checked.definition (conversion.judgment source next) →
       ConversionDerivation checked conversion next target →
       ConversionDerivation checked conversion source target
 
@@ -205,36 +205,37 @@ private def bcRule : RuleSchema :=
     premises := []
     conclusion := .apply conversionDecl.judgmentHead [b, c] }
 
-private def conversionPresentation : Presentation :=
-  { language := conversionLanguage
-    calculus :=
-      { judgments := [{ head := "Converts", arity := 2 }]
-        rules := [abRule, bcRule]
-        conversion := some conversionDecl } }
+private def conversionDefinition : CalculusLanguageDef :=
+  CalculusLanguageDef.extend conversionLanguage
+    { judgments := [{ head := "Converts", arity := 2 }]
+      rules := [abRule, bcRule]
+      conversion := some conversionDecl }
 
-private theorem conversionPresentation_language_validate :
-    conversionPresentation.language.validate = [] := by
+private theorem conversionDefinition_language_validate :
+    conversionDefinition.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly
-      conversionPresentation.language <;>
-    simp [conversionPresentation, conversionLanguage, datumConstructor,
+      conversionDefinition.toLanguageDef <;>
+    simp [conversionDefinition, CalculusLanguageDef.extend,
+      conversionLanguage, datumConstructor,
       LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr]
 
-private theorem conversionPresentation_valid :
-    conversionPresentation.isValidV2 = true := by
-  have hvalidate : conversionPresentation.language.validate = [] :=
-    conversionPresentation_language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+private theorem conversionDefinition_valid :
+    conversionDefinition.isValid = true := by
+  have hvalidate : conversionDefinition.toLanguageDef.validate = [] :=
+    conversionDefinition_language_validate
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [conversionPresentation, conversionLanguage, conversionDecl,
+  simp [conversionDefinition, CalculusLanguageDef.extend,
+    conversionLanguage, conversionDecl,
     abRule, bcRule, datumConstructor,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSchema.isValidV1,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
+    RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
-    patternsHaveNoCollectionRest, Presentation.judgmentSchemaValid,
+    patternsHaveNoCollectionRest, CalculusLanguageDef.judgmentSchemaValid,
     fixedConstructorsValid, fixedConstructorListsValid,
     languageHasConstructorArity, Pattern.isWellScoped,
     Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
@@ -254,15 +255,15 @@ private def conversionSource : GSLTSource :=
           [{ name := "conversion"
              version := "v1"
              payload := .apply "ExplicitCertificates" [] }] }
-    presentation := conversionPresentation }
+    definition := conversionDefinition }
 
 private def conversionChecked : CheckedGSLT :=
   { source := conversionSource
     identityValid := by decide
     assumptionsValid := by decide
     profilesValid := by decide
-    presentationValid := by
-      simpa [conversionSource] using conversionPresentation_valid }
+    definitionValid := by
+      simpa [conversionSource] using conversionDefinition_valid }
 
 private def rootedConversion : RootedConversion conversionChecked :=
   { declaration := conversionDecl
@@ -282,10 +283,10 @@ example : check conversionChecked rootedConversion a c acCertificate = true := b
   simp [check, RootedConversion.judgment, conversionChecked,
     rootedConversion, acCertificate, abProof,
     bcProof, CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-    InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-    conversionSource, conversionPresentation, conversionLanguage,
+    InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+    conversionSource, conversionDefinition, CalculusLanguageDef.extend, conversionLanguage,
     conversionDecl, abRule, bcRule, datumConstructor,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     a, b, c]
@@ -302,10 +303,10 @@ example :
   simp [check, RootedConversion.judgment, conversionChecked,
     rootedConversion, abProof,
     CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-    InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-    conversionSource, conversionPresentation, conversionLanguage,
+    InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+    conversionSource, conversionDefinition, CalculusLanguageDef.extend, conversionLanguage,
     conversionDecl, abRule, bcRule, datumConstructor,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     a, b, c]
@@ -317,10 +318,10 @@ example :
   simp [check, RootedConversion.judgment, conversionChecked,
     rootedConversion, bcProof,
     CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-    InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-    conversionSource, conversionPresentation, conversionLanguage,
+    InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+    conversionSource, conversionDefinition, CalculusLanguageDef.extend, conversionLanguage,
     conversionDecl, abRule, bcRule, datumConstructor,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     a, b, c]
@@ -340,10 +341,10 @@ example :
   simp [checkCommonReduct, acCertificate, check,
     RootedConversion.judgment, conversionChecked, rootedConversion,
     abProof, bcProof, CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-    InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-    conversionSource, conversionPresentation, conversionLanguage,
+    InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+    conversionSource, conversionDefinition, CalculusLanguageDef.extend, conversionLanguage,
     conversionDecl, abRule, bcRule, datumConstructor,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     a, b, c]
@@ -358,10 +359,10 @@ example :
   simp [checkCommonReduct, check, RootedConversion.judgment,
     conversionChecked, rootedConversion, abProof,
     CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-    InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-    conversionSource, conversionPresentation, conversionLanguage,
+    InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+    conversionSource, conversionDefinition, CalculusLanguageDef.extend, conversionLanguage,
     conversionDecl, abRule, bcRule, datumConstructor,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     a, b, c]

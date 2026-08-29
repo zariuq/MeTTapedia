@@ -1026,7 +1026,7 @@ theorem chartForest_grammar_ambiguity_agreement
     (chartForest_grammar_complete grammar input)
 
 theorem chartForest_complete
-    (presentation : GuardCorrespondence.SourcePresentation)
+    (presentation : GuardCorrespondence.SourceDefinition)
     (input : List Codepoint) :
     Complete
       (chartForest (GuardCorrespondence.compile presentation) input)
@@ -1040,7 +1040,7 @@ theorem chartForest_complete
   exact ⟨certificate, rootUnfolds, replay, spans⟩
 
 theorem chartForest_result_set_agreement
-    (presentation : GuardCorrespondence.SourcePresentation)
+    (presentation : GuardCorrespondence.SourceDefinition)
     (input : List Codepoint) :
     packedResults
         (chartForest (GuardCorrespondence.compile presentation) input)
@@ -1049,7 +1049,7 @@ theorem chartForest_result_set_agreement
   complete_result_set_agreement (chartForest_complete presentation input)
 
 theorem chartForest_ambiguity_agreement
-    (presentation : GuardCorrespondence.SourcePresentation)
+    (presentation : GuardCorrespondence.SourceDefinition)
     (input : List Codepoint) :
     PackedForest.Ambiguous
         (packedResults
@@ -1068,7 +1068,7 @@ theorem chart_saturation_fixed
 
 /-! ## Executable grounding controls -/
 
-def controlPresentation : GuardCorrespondence.SourcePresentation :=
+def controlPresentation : GuardCorrespondence.SourceDefinition :=
   { start := "start"
     rules := [
       { sourceRule := "left", category := "start",

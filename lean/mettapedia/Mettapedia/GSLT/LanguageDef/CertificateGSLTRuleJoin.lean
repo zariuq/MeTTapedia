@@ -26,14 +26,14 @@ open Mettapedia.GSLT.LanguageDef.InferenceExtension
 open CategoryTheory Limits
 
 /-- One rule table over a fixed syntax-and-judgment core. -/
-def rulesPresentation (core : LanguageDef) (calculus : ProofCalculus)
+def rulesDefinition (core : LanguageDef) (calculus : ProofCalculus)
     (rules : List RuleSchema) :
-    Presentation :=
-  { language := core, calculus := { calculus with rules } }
+    CalculusLanguageDef :=
+  CalculusLanguageDef.extend core { calculus with rules }
 
-@[simp] theorem rulesPresentation_rules (core : LanguageDef)
+@[simp] theorem rulesDefinition_rules (core : LanguageDef)
     (calculus : ProofCalculus) (rules : List RuleSchema) :
-    (rulesPresentation core calculus rules).rules = rules := rfl
+    (rulesDefinition core calculus rules).rules = rules := rfl
 
 /-- Rule tables with disjoint identifiers. -/
 def RulesDisjoint (leftRules rightRules : List RuleSchema) : Prop :=
@@ -44,16 +44,16 @@ section Join
 
 variable {core : LanguageDef} {calculus : ProofCalculus}
 variable {leftRules rightRules : List RuleSchema}
-variable {leftValid : (rulesPresentation core calculus leftRules).isValidV2 = true}
-variable {rightValid : (rulesPresentation core calculus rightRules).isValidV2 = true}
+variable {leftValid : (rulesDefinition core calculus leftRules).isValid = true}
+variable {rightValid : (rulesDefinition core calculus rightRules).isValid = true}
 variable {joinValid :
-  (rulesPresentation core calculus (leftRules ++ rightRules)).isValidV2 = true}
+  (rulesDefinition core calculus (leftRules ++ rightRules)).isValid = true}
 
 /-- The left theory injects into the join. -/
 theorem join_refines_left :
     RuleLookupRefines
-      ⟨rulesPresentation core calculus leftRules, leftValid⟩
-      ⟨rulesPresentation core calculus (leftRules ++ rightRules), joinValid⟩ := by
+      ⟨rulesDefinition core calculus leftRules, leftValid⟩
+      ⟨rulesDefinition core calculus (leftRules ++ rightRules), joinValid⟩ := by
   apply RuleLookupRefines.of_rules_eq_append rightRules
   rfl
 
@@ -62,11 +62,11 @@ disjoint: right lookups skip the whole left table. -/
 theorem join_refines_right
     (disjoint : RulesDisjoint leftRules rightRules) :
     RuleLookupRefines
-      ⟨rulesPresentation core calculus rightRules, rightValid⟩
-      ⟨rulesPresentation core calculus (leftRules ++ rightRules), joinValid⟩ := by
+      ⟨rulesDefinition core calculus rightRules, rightValid⟩
+      ⟨rulesDefinition core calculus (leftRules ++ rightRules), joinValid⟩ := by
   intro ruleId rule lookup
-  unfold Presentation.lookupRule? at lookup ⊢
-  simp only [rulesPresentation_rules] at lookup ⊢
+  unfold CalculusLanguageDef.lookupRule? at lookup ⊢
+  simp only [rulesDefinition_rules] at lookup ⊢
   rw [List.find?_append]
   have ruleMem : rule ∈ rightRules := List.mem_of_find?_eq_some lookup
   have ruleId_eq : rule.id = ruleId := by
@@ -85,16 +85,16 @@ theorem join_refines_right
 /-- The join is a least upper bound: any theory refined by both components
 is refined by the join.  With the two injections, appended disjoint rule
 tables are binary joins in the rule-retaining preorder. -/
-theorem join_refines_of_both {other : ValidatedPresentation}
+theorem join_refines_of_both {other : ValidatedCalculusLanguageDef}
     (fromLeft : RuleLookupRefines
-      ⟨rulesPresentation core calculus leftRules, leftValid⟩ other)
+      ⟨rulesDefinition core calculus leftRules, leftValid⟩ other)
     (fromRight : RuleLookupRefines
-      ⟨rulesPresentation core calculus rightRules, rightValid⟩ other) :
+      ⟨rulesDefinition core calculus rightRules, rightValid⟩ other) :
     RuleLookupRefines
-      ⟨rulesPresentation core calculus (leftRules ++ rightRules), joinValid⟩ other := by
+      ⟨rulesDefinition core calculus (leftRules ++ rightRules), joinValid⟩ other := by
   intro ruleId rule lookup
-  unfold Presentation.lookupRule? at lookup
-  simp only [rulesPresentation_rules, List.find?_append] at lookup
+  unfold CalculusLanguageDef.lookupRule? at lookup
+  simp only [rulesDefinition_rules, List.find?_append] at lookup
   cases leftLookup : leftRules.find?
       (fun candidate => decide (candidate.id = ruleId)) with
   | some found =>
@@ -110,29 +110,29 @@ theorem join_refines_of_both {other : ValidatedPresentation}
 
 /-- Left injection as a strict certificate-GSLT arrow. -/
 def joinLeftArrow :
-    RuleRetaining.ofPresentation
-        ⟨rulesPresentation core calculus leftRules, leftValid⟩ ⟶
-      RuleRetaining.ofPresentation
-        ⟨rulesPresentation core calculus (leftRules ++ rightRules), joinValid⟩ :=
+    RuleRetaining.ofDefinition
+        ⟨rulesDefinition core calculus leftRules, leftValid⟩ ⟶
+      RuleRetaining.ofDefinition
+        ⟨rulesDefinition core calculus (leftRules ++ rightRules), joinValid⟩ :=
   ⟨join_refines_left⟩
 
 /-- Right injection as a strict certificate-GSLT arrow. -/
 def joinRightArrow (disjoint : RulesDisjoint leftRules rightRules) :
-    RuleRetaining.ofPresentation
-        ⟨rulesPresentation core calculus rightRules, rightValid⟩ ⟶
-      RuleRetaining.ofPresentation
-        ⟨rulesPresentation core calculus (leftRules ++ rightRules), joinValid⟩ :=
+    RuleRetaining.ofDefinition
+        ⟨rulesDefinition core calculus rightRules, rightValid⟩ ⟶
+      RuleRetaining.ofDefinition
+        ⟨rulesDefinition core calculus (leftRules ++ rightRules), joinValid⟩ :=
   ⟨join_refines_right disjoint⟩
 
 /-- The universal arrow out of the join. -/
-def joinDescendArrow {other : ValidatedPresentation}
+def joinDescendArrow {other : ValidatedCalculusLanguageDef}
     (fromLeft : RuleLookupRefines
-      ⟨rulesPresentation core calculus leftRules, leftValid⟩ other)
+      ⟨rulesDefinition core calculus leftRules, leftValid⟩ other)
     (fromRight : RuleLookupRefines
-      ⟨rulesPresentation core calculus rightRules, rightValid⟩ other) :
-    RuleRetaining.ofPresentation
-        ⟨rulesPresentation core calculus (leftRules ++ rightRules), joinValid⟩ ⟶
-      RuleRetaining.ofPresentation other :=
+      ⟨rulesDefinition core calculus rightRules, rightValid⟩ other) :
+    RuleRetaining.ofDefinition
+        ⟨rulesDefinition core calculus (leftRules ++ rightRules), joinValid⟩ ⟶
+      RuleRetaining.ofDefinition other :=
   ⟨join_refines_of_both fromLeft fromRight⟩
 
 /-! ## Exact categorical universal property -/
@@ -140,10 +140,10 @@ def joinDescendArrow {other : ValidatedPresentation}
 /-- The two strict injections as a binary cofan. -/
 def joinCofan (disjoint : RulesDisjoint leftRules rightRules) :
     BinaryCofan
-      (RuleRetaining.ofPresentation
-        ⟨rulesPresentation core calculus leftRules, leftValid⟩)
-      (RuleRetaining.ofPresentation
-        ⟨rulesPresentation core calculus rightRules, rightValid⟩) :=
+      (RuleRetaining.ofDefinition
+        ⟨rulesDefinition core calculus leftRules, leftValid⟩)
+      (RuleRetaining.ofDefinition
+        ⟨rulesDefinition core calculus rightRules, rightValid⟩) :=
   BinaryCofan.mk
     (joinLeftArrow (core := core) (leftRules := leftRules)
       (rightRules := rightRules) (leftValid := leftValid)

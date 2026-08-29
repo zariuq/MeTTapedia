@@ -532,7 +532,8 @@ private abbrev evenLanguageTheory : GSLT :=
   languageGSLT Example.evenNumbers.toLanguageDef evenLaws
 
 private abbrev evenProofTheory : GSLT :=
-  proofSearchGSLT (Example.evenNumbers.checked Example.evenNumbers_admitted)
+  proofSearchGSLT
+    (Example.evenNumbers.validated Example.evenNumbers_admitted)
 
 /-- A real admitted flat calculus language implementing the one-request NIK
 frontend.  Its accepting execution is the existing derivation that zero is

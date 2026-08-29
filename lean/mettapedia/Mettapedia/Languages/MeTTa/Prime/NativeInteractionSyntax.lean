@@ -11,7 +11,7 @@ the existing Prime-native interaction interpretation:
 MeTTa expression text
         ↓ compile-time parser and structural embedding
 Mettapedia Pattern
-        ↓ NativeRawTm.pattern
+        ↓ StagedReflectiveTm.pattern
 closed MeTTa Native term
         ↓ rhoInterpretation
 exact rho interaction endpoint
@@ -25,7 +25,7 @@ obligations.
 
 namespace Mettapedia.Languages.MeTTa.Prime.NativeInteractionSyntax
 
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.MeTTaSyntaxQuotation
@@ -33,11 +33,11 @@ open scoped Mettapedia.OSLF.MeTTaIL.MeTTaSyntaxQuotation
 
 /-- A request endpoint authored in PeTTa expression syntax and embedded as a
 closed MeTTa Native runtime-pattern term. -/
-def requestEndpoint : NativeRawTm 0 0 :=
+def requestEndpoint : StagedReflectiveTm 0 0 :=
   .pattern (metta% petta "(request ticket-7 (payload datum))")
 
 /-- A response endpoint authored in the same dialect. -/
-def responseEndpoint : NativeRawTm 0 0 :=
+def responseEndpoint : StagedReflectiveTm 0 0 :=
   .pattern (metta% petta "(response ticket-7 (result accepted))")
 
 /-- The endpoint interpretation sees precisely the parsed request pattern. -/
@@ -59,7 +59,7 @@ def requestAdmission : rhoInterpretation.Endpoint requestEndpoint :=
 /-- Negative: an intrinsic dependent function is still outside the rho
 endpoint interpretation; adding source quotations does not collapse Prime's
 type-theoretic constructors into runtime patterns. -/
-example (domain : NativeRawTm 0 0) (body : NativeRawTm 0 1) :
+example (domain : StagedReflectiveTm 0 0) (body : StagedReflectiveTm 0 1) :
     rhoInterpretation.lower? (.pi domain body) = none :=
   rfl
 

@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.SyntacticContextualCategory
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SyntacticContextualCategory
 
 /-!
 # Lazy gradual evidence over dependent native capabilities
@@ -26,8 +26,8 @@ namespace Mettapedia.Languages.MeTTa.Prime.GradualDependentCapability
 open CategoryTheory
 open Mettapedia.GSLT.Dynamics
 open Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticContextual
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticContextual
 
 universe uRaw uExact uKey uRetry uCell uRaw' uExact' uRawTwo uExactTwo
   uRevision uTy

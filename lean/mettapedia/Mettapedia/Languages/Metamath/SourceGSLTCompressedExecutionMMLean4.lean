@@ -5,6 +5,8 @@ import Mettapedia.Languages.Metamath.InferenceGeneratedProvesExecution
 import Mettapedia.Languages.Metamath.InferenceNormalStepReflection
 import Mettapedia.Languages.Metamath.InferenceProjectionRuntimeClassification
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Occurrence-preserving compressed execution agreement
 
@@ -45,7 +47,7 @@ open Metamath.Verify
 
 /-- One source proof-node identity denotes exactly one runtime formula. -/
 inductive StackEntriesAgree
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (nodes : List (ProofNode source target)) :
     List Nat → List RuntimeFormula → Type where
   | nil : StackEntriesAgree nodes [] []
@@ -62,7 +64,7 @@ inductive StackEntriesAgree
 Proof entries retain the source node identity even though `mm-lean4` stores
 only the node's formula. -/
 inductive HeapEntryAgrees
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (nodes : List (ProofNode source target)) :
     HeapEntry source → Metamath.Verify.HeapEl → Type where
   | proof
@@ -76,7 +78,7 @@ inductive HeapEntryAgrees
 
 /-- Ordered pointwise agreement of the complete compressed-proof heap. -/
 inductive HeapEntriesAgree
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (nodes : List (ProofNode source target)) :
     List (HeapEntry source) → List Metamath.Verify.HeapEl → Type where
   | nil : HeapEntriesAgree nodes [] []
@@ -96,7 +98,7 @@ by assertion execution.  Source `saves` remain proof-relevant ghost data;
 their identities are observable through the source heap relation. -/
 structure MachineAgrees
     (db : RuntimeDB) (source : SourcePrefix)
-    (target : ValidatedPresentation)
+    (target : ValidatedCalculusLanguageDef)
     (sourceState : MachineState source target)
     (runtimeState : RuntimeProofState) : Type where
   stackFormulas : List RuntimeFormula
@@ -113,7 +115,7 @@ structure MachineAgrees
 /-! ## Structural laws for the representation relation -/
 
 noncomputable def StackEntriesAgree.append
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {leftIds rightIds : List Nat}
     {leftFormulas rightFormulas : List RuntimeFormula}
@@ -127,7 +129,7 @@ noncomputable def StackEntriesAgree.append
       exact .cons node lookup ih
 
 theorem StackEntriesAgree.length_eq
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {nodeIds : List Nat} {runtimeFormulas : List RuntimeFormula}
     (agreement : StackEntriesAgree nodes nodeIds runtimeFormulas) :
@@ -154,7 +156,7 @@ noncomputable def splitSuffixIds
 /-- Split a stack relation at an exact source-identity boundary, retaining
 both ordered runtime images. -/
 noncomputable def StackEntriesAgree.split
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     (leftIds rightIds : List Nat)
     {runtimeFormulas : List RuntimeFormula}
@@ -179,7 +181,7 @@ noncomputable def StackEntriesAgree.split
 
 /-- Singleton stack identity fixes its runtime formula uniquely. -/
 theorem StackEntriesAgree.singleton_eq
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {nodeId : Nat} {runtimeFormulas : List RuntimeFormula}
     (agreement : StackEntriesAgree nodes [nodeId] runtimeFormulas)
@@ -197,7 +199,7 @@ theorem StackEntriesAgree.singleton_eq
 
 /-- The final source node identity and the final runtime formula agree. -/
 theorem StackEntriesAgree.getLast?_eq
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {nodeIds : List Nat} {runtimeFormulas : List RuntimeFormula}
     (agreement : StackEntriesAgree nodes nodeIds runtimeFormulas)
@@ -227,7 +229,7 @@ theorem StackEntriesAgree.getLast?_eq
 identity at the top of the related stack.  The node is recovered from the
 existing occurrence relation, never guessed from formula equality. -/
 noncomputable def StackEntriesAgree.runtimeLastSource
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {nodeIds : List Nat} {runtimeFormulas : List RuntimeFormula}
     (agreement : StackEntriesAgree nodes nodeIds runtimeFormulas)
@@ -260,7 +262,7 @@ noncomputable def StackEntriesAgree.runtimeLastSource
 /-- Resolving the same ordered source node identities determines the runtime
 formula list uniquely. -/
 theorem StackEntriesAgree.eq_runtimeMap_of_resolves
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {nodeIds : List Nat} {runtimeFormulas : List RuntimeFormula}
     {formulas : List ConstantHeadedFormula}
@@ -286,7 +288,7 @@ theorem StackEntriesAgree.eq_runtimeMap_of_resolves
 forest.  This is the constructive inverse used by runtime-to-source
 reflection; no proof tree is reconstructed from formulas alone. -/
 noncomputable def StackEntriesAgree.toResolvedForest
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {nodeIds : List Nat} {runtimeFormulas : List RuntimeFormula}
     (agreement : StackEntriesAgree nodes nodeIds runtimeFormulas) :
@@ -305,7 +307,7 @@ noncomputable def StackEntriesAgree.toResolvedForest
           by simp [hformulas], .cons node forest lookup resolved⟩
 
 noncomputable def HeapEntriesAgree.append
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {leftSource rightSource : List (HeapEntry source)}
     {leftRuntime rightRuntime : List Metamath.Verify.HeapEl}
@@ -321,7 +323,7 @@ noncomputable def HeapEntriesAgree.append
 /-- Existing node references remain exact when later proof occurrences are
 appended to the topologically ordered source DAG. -/
 theorem nodeLookup_append
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes suffix : List (ProofNode source target)}
     {nodeId : Nat} {node : ProofNode source target}
     (lookup : nodes[nodeId]? = some node) :
@@ -332,7 +334,7 @@ theorem nodeLookup_append
   exact lookup
 
 noncomputable def StackEntriesAgree.weakenNodes
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes suffix : List (ProofNode source target)}
     {nodeIds : List Nat} {runtimeFormulas : List RuntimeFormula}
     (agreement : StackEntriesAgree nodes nodeIds runtimeFormulas) :
@@ -343,7 +345,7 @@ noncomputable def StackEntriesAgree.weakenNodes
       exact .cons node (nodeLookup_append lookup) ih
 
 noncomputable def HeapEntryAgrees.weakenNodes
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes suffix : List (ProofNode source target)}
     {sourceEntry : HeapEntry source}
     {runtimeEntry : Metamath.Verify.HeapEl}
@@ -356,7 +358,7 @@ noncomputable def HeapEntryAgrees.weakenNodes
       exact .assertion assertion member
 
 noncomputable def HeapEntriesAgree.weakenNodes
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes suffix : List (ProofNode source target)}
     {sourceEntries : List (HeapEntry source)}
     {runtimeEntries : List Metamath.Verify.HeapEl}
@@ -370,7 +372,7 @@ noncomputable def HeapEntriesAgree.weakenNodes
 /-- Pointwise source-heap lookup carries the corresponding runtime entry at
 the same index. -/
 noncomputable def HeapEntriesAgree.lookup
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {sourceEntries : List (HeapEntry source)}
     {runtimeEntries : List Metamath.Verify.HeapEl}
@@ -395,7 +397,7 @@ noncomputable def HeapEntriesAgree.lookup
 
 /-- Runtime-to-source lookup at the same heap index. -/
 noncomputable def HeapEntriesAgree.runtimeLookup
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {sourceEntries : List (HeapEntry source)}
     {runtimeEntries : List Metamath.Verify.HeapEl}
@@ -421,7 +423,7 @@ noncomputable def HeapEntriesAgree.runtimeLookup
 /-- A source proof reference therefore indexes the exact runtime formula of
 the referenced node. -/
 theorem HeapEntriesAgree.proofLookup
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {sourceEntries : List (HeapEntry source)}
     {runtimeEntries : List Metamath.Verify.HeapEl}
@@ -443,7 +445,7 @@ theorem HeapEntriesAgree.proofLookup
 
 /-- A source assertion schema indexes the exact runtime assertion payload. -/
 theorem HeapEntriesAgree.assertionLookup
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     {sourceEntries : List (HeapEntry source)}
     {runtimeEntries : List Metamath.Verify.HeapEl}
@@ -462,9 +464,9 @@ theorem HeapEntriesAgree.assertionLookup
 /-- Every source proof node denotes a runtime formula accepted by the live
 caller-frame gate. -/
 theorem ProofNode.runtimeFormula_respects
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (db : RuntimeDB)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (node : ProofNode source target) :
     db.formulaSymsRespectFrame node.formula.toRuntime db.frame = true := by
@@ -484,7 +486,7 @@ def headerRuntimeLabel : HeaderItem → String
 runtime proof context. -/
 def emptyMachineAgrees
     (db : RuntimeDB) (source : SourcePrefix)
-    (target : ValidatedPresentation) (runtimeBase : RuntimeProofState) :
+    (target : ValidatedCalculusLanguageDef) (runtimeBase : RuntimeProofState) :
     MachineAgrees db source target (emptyMachine source target)
       {runtimeBase with heap := #[], stack := #[]} :=
   { stackFormulas := []
@@ -499,7 +501,7 @@ def emptyMachineAgrees
 `preload` transition, while hypothesis entries allocate explicit source DAG
 leaves and assertion entries allocate schemas only. -/
 noncomputable def headerStep_runtimePreserved
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {item : HeaderItem}
     {before after : MachineState source target}
     (db : RuntimeDB)
@@ -639,7 +641,7 @@ noncomputable def headerStep_runtimePreserved
 /-- Ordered source header construction is preserved by the corresponding
 ordered fold of verified implementation preloads. -/
 noncomputable def headerBuild_runtimePreserved
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {items : List HeaderItem}
     {before after : MachineState source target}
     (db : RuntimeDB)
@@ -675,9 +677,9 @@ noncomputable def headerBuild_runtimePreserved
 lookup and push.  The resulting state relation retains the original source
 node identity. -/
 noncomputable def proofAction_preserved
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (db : RuntimeDB)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (before : MachineState source target)
     (runtimeBefore : RuntimeProofState)
@@ -720,9 +722,9 @@ noncomputable def proofAction_preserved
 success is tied to the already related source heap entry, so the recovered
 transition retains the original proof-node identity. -/
 noncomputable def proofAction_reflected
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (db : RuntimeDB)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (before : MachineState source target)
     (runtimeBefore runtimeAfter : RuntimeProofState)
@@ -761,9 +763,9 @@ same ordered parent suffix and produce the same formula.  The source result
 additionally allocates a fresh proof-occurrence identity whose exact parent
 identities and unfolding remain in the DAG. -/
 noncomputable def assertionAction_preserved
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (db : RuntimeDB)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (before : MachineState source target)
     (runtimeBefore : RuntimeProofState)
@@ -794,8 +796,8 @@ noncomputable def assertionAction_preserved
       MachineAgrees db source target sourceAfter runtimeAfter := by
   dsimp only
   have hprojection :
-      presentationOfProjection? source.toProjection = some target.1 := by
-    rw [← presentationOfSourcePrefix?_eq_runtime]
+      calculusLanguageDefOfProjection? source.toProjection = some target.1 := by
+    rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
     exact hsource
   have hmemberRuntime :
       assertion.toProjectionView ∈ source.toProjection.assertions := by
@@ -935,9 +937,9 @@ suffix already contains the consumed proof occurrences and therefore yields
 the source children and parent identities without reconstructing either from
 runtime formulas. -/
 noncomputable def assertionAction_reflected
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (db : RuntimeDB)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (before : MachineState source target)
     (runtimeBefore runtimeAfter : RuntimeProofState)
@@ -950,8 +952,8 @@ noncomputable def assertionAction_reflected
       ActionStep before (.step index) sourceAfter ×'
       MachineAgrees db source target sourceAfter runtimeAfter := by
   have hprojection :
-      presentationOfProjection? source.toProjection = some target.1 := by
-    rw [← presentationOfSourcePrefix?_eq_runtime]
+      calculusLanguageDefOfProjection? source.toProjection = some target.1 := by
+    rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
     exact hsource
   have hmemberRuntime :
       assertion.toProjectionView ∈ source.toProjection.assertions := by
@@ -1124,7 +1126,7 @@ noncomputable def assertionAction_reflected
 heap copies the formula, while the source heap and save ledger retain the
 identity of the reused proof node. -/
 noncomputable def saveAction_preserved
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (db : RuntimeDB)
     (before : MachineState source target)
     (runtimeBefore : RuntimeProofState)
@@ -1170,7 +1172,7 @@ noncomputable def saveAction_preserved
 occurrences, so the source node is recovered from the existing stack relation
 before the source heap and save ledger are extended. -/
 noncomputable def saveAction_reflected
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (db : RuntimeDB)
     (before : MachineState source target)
     (runtimeBefore runtimeAfter : RuntimeProofState)
@@ -1227,11 +1229,11 @@ occurrence transition.  Heap dispatch is recovered through the exact related
 entry, while `Z` recovers the top source identity.  Unknown actions are
 excluded by the same source completeness condition used by theorem steps. -/
 noncomputable def actionStep_runtimeReflected
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {before : MachineState source target}
     {action : CompressedAction}
     (db : RuntimeDB)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (runtimeBefore runtimeAfter : RuntimeProofState)
     (agreement : MachineAgrees db source target before runtimeBefore)
@@ -1290,11 +1292,11 @@ theorem applyCompressedActions_eq_runtimeFold
 /-- Every single verified source action has a corresponding successful live
 implementation action and an occurrence-preserving successor relation. -/
 noncomputable def actionStep_runtimePreserved
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {before after : MachineState source target}
     {action : CompressedAction}
     (db : RuntimeDB)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (runtimeBefore : RuntimeProofState)
     (step : ActionStep before action after)
@@ -1337,11 +1339,11 @@ noncomputable def actionStep_runtimePreserved
 action is translated independently, so neither a final-formula shortcut nor
 a token-ledger premise can enter the proof. -/
 noncomputable def execute_runtimeFoldPreserved
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {before after : MachineState source target}
     {actions : List CompressedAction}
     (db : RuntimeDB)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (runtimeBefore : RuntimeProofState)
     (execution : Execute before actions after)
@@ -1371,11 +1373,11 @@ noncomputable def execute_runtimeFoldPreserved
 /-- Full source-execution preservation stated against the shipped
 `mm-lean4` compressed-action driver. -/
 noncomputable def execute_mmLean4Preserved
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {before after : MachineState source target}
     {actions : List CompressedAction}
     (db : RuntimeDB)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (runtimeBefore : RuntimeProofState)
     (execution : Execute before actions after)
@@ -1399,11 +1401,11 @@ Each step reconstructs its source occurrence before the induction proceeds,
 so saved-node reuse and assertion-parent identities remain stable across the
 whole program. -/
 noncomputable def execute_runtimeFoldReflected
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {before : MachineState source target}
     (actions : List CompressedAction)
     (db : RuntimeDB)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (runtimeBefore runtimeAfter : RuntimeProofState)
     (agreement : MachineAgrees db source target before runtimeBefore)
@@ -1456,11 +1458,11 @@ noncomputable def execute_runtimeFoldReflected
 /-- Full execution reflection stated against the shipped `mm-lean4`
 compressed-action driver. -/
 noncomputable def execute_mmLean4Reflected
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {before : MachineState source target}
     (actions : List CompressedAction)
     (db : RuntimeDB)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (runtimeBefore runtimeAfter : RuntimeProofState)
     (agreement : MachineAgrees db source target before runtimeBefore)
@@ -1481,7 +1483,7 @@ noncomputable def execute_mmLean4Reflected
 /-- A singleton source stack fixes the exact singleton runtime stack while
 retaining the source proof-node identity. -/
 theorem MachineAgrees.singletonStack_eq
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {sourceState : MachineState source target}
     {runtimeState : RuntimeProofState}
     {db : RuntimeDB}
@@ -1577,14 +1579,14 @@ noncomputable def CompressedTheoremStep.mmLean4ExecutionPreserved
 
 /-! ## Positive and negative representation boundaries -/
 
-example {source : SourcePrefix} {target : ValidatedPresentation}
+example {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (node : ProofNode source target) :
     StackEntriesAgree [node] [0] [node.formula.toRuntime] := by
   exact .cons node (by simp) .nil
 
 /-- A source save cannot be represented as an assertion heap entry. -/
 theorem proofEntry_not_assertion
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)}
     (nodeId : Nat) (assertion : SourceAssertion) :
     IsEmpty

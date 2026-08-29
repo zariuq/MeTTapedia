@@ -38,7 +38,7 @@ inductive Player where
   | falsifier
 deriving Repr, DecidableEq
 
-/-- A finite-state parity-game presentation.  The carrier is made finite by
+/-- A finite-state parity-game definition.  The carrier is made finite by
 the instances used by checking; the semantic definitions remain relational. -/
 structure Game (State : Type uState) where
   edge : State -> State -> Bool

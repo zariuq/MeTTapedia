@@ -34,7 +34,7 @@ The design follows four distinctions from gradual typing:
 namespace Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan
 
 open Mettapedia.GSLT.Dynamics
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionSyntax
 open Mettapedia.OSLF.MeTTaIL.MeTTaSyntaxQuotation
@@ -339,7 +339,7 @@ end CheckedPlan
 
 namespace NativeCanary
 
-abbrev ClosedNativeTyping (term type : NativeRawTm 0 0) : Prop :=
+abbrev ClosedNativeTyping (term type : StagedReflectiveTm 0 0) : Prop :=
   NativeModalTyping.HasType NativeModalTyping.syntacticConversion .nil term type
 
 inductive ProtocolObligation where
@@ -390,7 +390,7 @@ theorem stale_revision_does_not_share : staleRequestKey ≠ requestKey := by
 /-- The MeTTa-authored request endpoint carries a real native typing
 derivation, rather than a Boolean acceptance tag. -/
 def typedRequest :
-    TypedPlan (NativeRawTm 0 0) (NativeRawTm 0 0) ClosedNativeTyping where
+    TypedPlan (StagedReflectiveTm 0 0) (StagedReflectiveTm 0 0) ClosedNativeTyping where
   term := requestEndpoint
   type := .u0
   typing := by
@@ -398,7 +398,7 @@ def typedRequest :
     exact .pattern_intro .nil _
 
 abbrev NativePlan :=
-  Plan (NativeRawTm 0 0) (NativeRawTm 0 0) ClosedNativeTyping ProtocolKey
+  Plan (StagedReflectiveTm 0 0) (StagedReflectiveTm 0 0) ClosedNativeTyping ProtocolKey
     ProtocolObligation
 
 def typedRequestPlan : NativePlan :=
@@ -412,7 +412,7 @@ theorem typed_request_executes_by_raw_erasure :
   rfl
 
 def rejectedRequest :
-    CheckedPlan (NativeRawTm 0 0) ProtocolKey ProtocolObligation where
+    CheckedPlan (StagedReflectiveTm 0 0) ProtocolKey ProtocolObligation where
   term := requestEndpoint
   origin := ⟨requestKey, .deliberatelyRejected⟩
 

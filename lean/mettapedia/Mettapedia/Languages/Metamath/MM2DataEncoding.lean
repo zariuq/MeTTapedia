@@ -1,6 +1,6 @@
 import Std.Data.String.ToNat
 import Mettapedia.Languages.Metamath.SourceStateGSLT
-import Mettapedia.GSLT.LanguageDef.InferencePresentationWireFormat
+import Mettapedia.GSLT.LanguageDef.InferenceLanguageWireFormat
 import Mettapedia.Languages.ProcessCalculi.MORK.MM2Surface
 import Mettapedia.Languages.ProcessCalculi.MORK.ProofRelevantGSLT
 
@@ -29,9 +29,10 @@ open Mettapedia.Languages.Metamath.SourceGSLTState
 open Mettapedia.Languages.Metamath.SourceStateGSLT
 open Mettapedia.Languages.ProcessCalculi.MORK
 open Mettapedia.Languages.ProcessCalculi.MORK.MM2Surface
+open Mettapedia.GSLT.LanguageDef (CalculusLanguageDef)
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT (WireTerm)
-open Mettapedia.GSLT.LanguageDef.InferencePresentationWire
-  (RuntimePresentation encodeRuntimePresentation decodeRuntimePresentation)
+open Mettapedia.GSLT.LanguageDef.InferenceLanguageWire
+  (RuntimeInferenceLanguage encodeRuntimeInferenceLanguage decodeRuntimeInferenceLanguage)
 
 /-! ## Surface-safe scalar data -/
 
@@ -585,7 +586,7 @@ theorem indexedRows_nodup {Source : Type}
   simp [indexedRows, indexedRow] at rowsEqual
   exact natAtom_injective rowsEqual.1
 
-/-! ## The authored inference presentation as MM2 data -/
+/-! ## The authored inference language as MM2 data -/
 
 private def wireSymbolTag : String := "mm-wire-symbol"
 private def wireNaturalTag : String := "mm-wire-natural"
@@ -594,7 +595,7 @@ private def wireNilTag : String := "mm-wire-nil"
 private def wireConsTag : String := "mm-wire-cons"
 
 mutual
-  /-- Lossless target data for the canonical inference-presentation wire
+  /-- Lossless target data for the canonical inference-language wire
   carrier.  Lists are cons encoded, so no source rule or formula can exceed
   MORK's bounded flat-expression arity. -/
   def wireTermAtom : WireTerm → Atom
@@ -672,27 +673,27 @@ theorem wireTermAtom_injective : Function.Injective wireTermAtom := by
   simpa using decoded
 
 /-- Exact target data for the checker-facing projection of the supplied
-authored presentation.  This includes constructor signatures, judgments,
+authored calculus language.  This includes constructor signatures, judgments,
 ordered rules, side conditions, and conversion identity. -/
-def runtimePresentationAtom
-    (presentation : RuntimePresentation) : Atom :=
-  wireTermAtom (encodeRuntimePresentation presentation)
+def runtimeInferenceLanguageAtom
+    (language : RuntimeInferenceLanguage) : Atom :=
+  wireTermAtom (encodeRuntimeInferenceLanguage language)
 
-def decodeRuntimePresentationAtom
-    (atom : Atom) : Option RuntimePresentation := do
+def decodeRuntimeInferenceLanguageAtom
+    (atom : Atom) : Option RuntimeInferenceLanguage := do
   let wire ← decodeWireTermAtom atom
-  decodeRuntimePresentation wire
+  decodeRuntimeInferenceLanguage wire
 
-@[simp] theorem decodeRuntimePresentationAtom_runtimePresentationAtom
-    (presentation : RuntimePresentation) :
-    decodeRuntimePresentationAtom (runtimePresentationAtom presentation) =
-      some presentation := by
-  simp [decodeRuntimePresentationAtom, runtimePresentationAtom]
+@[simp] theorem decodeRuntimeInferenceLanguageAtom_runtimeInferenceLanguageAtom
+    (language : RuntimeInferenceLanguage) :
+    decodeRuntimeInferenceLanguageAtom (runtimeInferenceLanguageAtom language) =
+      some language := by
+  simp [decodeRuntimeInferenceLanguageAtom, runtimeInferenceLanguageAtom]
 
-theorem runtimePresentationAtom_injective :
-    Function.Injective runtimePresentationAtom := by
+theorem runtimeInferenceLanguageAtom_injective :
+    Function.Injective runtimeInferenceLanguageAtom := by
   intro left right equal
-  have decoded := congrArg decodeRuntimePresentationAtom equal
+  have decoded := congrArg decodeRuntimeInferenceLanguageAtom equal
   simpa using decoded
 
 /-! ## The source database as MM2 tables -/
@@ -756,60 +757,60 @@ def renderSourceStateData? (owner : Atom) (state : SourceState) :
     Option String :=
   renderProgram? (sourceStateRows owner state)
 
-/-! ## Admitted source presentation input -/
+/-! ## Admitted source calculus language input -/
 
 /-- The concrete source input to the MM-to-MM2 transformation.  It contains
 the actual source state and the actual source-generated inference
-presentation, together with their existing admission facts.  No filename,
+language, together with their existing admission facts.  No filename,
 digest, or implementation callback occurs in this input. -/
 structure AdmittedSourceScope where
   state : SourceState
   stateValid : sourceStateValid state = true
-  presentation : SourcePresentation
-  presentationGenerated :
-    presentationOfSourcePrefix? state.toSourcePrefix = some presentation
+  language : CalculusLanguageDef
+  languageGenerated :
+    calculusLanguageDefOfSourcePrefix? state.toSourcePrefix = some language
 
 /-- The target-side data artifact produced before executable MM2 rules are
-added.  Keeping the presentation packet separate from state rows lets later
+added.  Keeping the language fact separate from state rows lets later
 proof-machine rules query one immutable calculus packet and ordinary indexed
 database data. -/
 structure ScopeDataArtifact where
-  presentation : Atom
+  languageFact : Atom
   stateRows : List Atom
 deriving DecidableEq
 
 def ScopeDataArtifact.rows (artifact : ScopeDataArtifact) : List Atom :=
-  artifact.presentation :: artifact.stateRows
+  artifact.languageFact :: artifact.stateRows
 
-def decodeRuntimePresentationFact (owner : Atom) :
-    Atom → Option RuntimePresentation
-  | .expression [.symbol tag, actualOwner, encodedPresentation] =>
-      if tag = "mm-runtime-presentation" && actualOwner = owner then
-        decodeRuntimePresentationAtom encodedPresentation
+def decodeRuntimeInferenceLanguageFact (owner : Atom) :
+    Atom → Option RuntimeInferenceLanguage
+  | .expression [.symbol tag, actualOwner, encodedLanguage] =>
+      if tag = "mm-runtime-inference-language" && actualOwner = owner then
+        decodeRuntimeInferenceLanguageAtom encodedLanguage
       else
         none
   | _ => none
 
-/-- Transform the supplied admitted Metamath presentation and source state
+/-- Transform the supplied admitted Metamath calculus language and source state
 into MM2 data.  This is the representation stage of the compiler, not yet the
 proof-execution stage. -/
 def transformScopeData (owner : Atom)
     (source : AdmittedSourceScope) : ScopeDataArtifact where
-  presentation :=
+  languageFact :=
     .expression
-      [.symbol "mm-runtime-presentation", owner,
-        runtimePresentationAtom
-          (RuntimePresentation.ofPresentation source.presentation)]
+      [.symbol "mm-runtime-inference-language", owner,
+        runtimeInferenceLanguageAtom
+          (RuntimeInferenceLanguage.ofDefinition source.language)]
   stateRows := sourceStateRows owner source.state
 
-/-- The presentation packet in a transformed artifact decodes to the exact
-checker-facing projection of the supplied authored presentation. -/
-theorem transformScopeData_presentation_exact
+/-- The language fact in a transformed artifact decodes to the exact
+checker-facing projection of the supplied authored calculus language. -/
+theorem transformScopeData_language_exact
     (owner : Atom) (source : AdmittedSourceScope) :
-    decodeRuntimePresentationFact owner
-        (transformScopeData owner source).presentation =
-      some (RuntimePresentation.ofPresentation source.presentation) := by
-  simp [transformScopeData, decodeRuntimePresentationFact]
+    decodeRuntimeInferenceLanguageFact owner
+        (transformScopeData owner source).languageFact =
+      some (RuntimeInferenceLanguage.ofDefinition source.language) := by
+  simp [transformScopeData, decodeRuntimeInferenceLanguageFact]
 
 /-- The transformation carries the actual supplied source state, field by
 field, rather than reconstructing it from an external file. -/
@@ -819,18 +820,18 @@ field, rather than reconstructing it from an external file. -/
       sourceStateRows owner source.state :=
   rfl
 
-/-- A checker-facing presentation mutation cannot disappear behind the same
-compiled presentation atom. -/
-theorem transformScopeData_presentation_sensitive
+/-- A checker-facing language mutation cannot disappear behind the same
+compiled language atom. -/
+theorem transformScopeData_language_sensitive
     (owner : Atom) (left right : AdmittedSourceScope)
     (changed :
-      RuntimePresentation.ofPresentation left.presentation ≠
-        RuntimePresentation.ofPresentation right.presentation) :
-    (transformScopeData owner left).presentation ≠
-      (transformScopeData owner right).presentation := by
+      RuntimeInferenceLanguage.ofDefinition left.language ≠
+        RuntimeInferenceLanguage.ofDefinition right.language) :
+    (transformScopeData owner left).languageFact ≠
+      (transformScopeData owner right).languageFact := by
   intro equal
   apply changed
-  apply runtimePresentationAtom_injective
+  apply runtimeInferenceLanguageAtom_injective
   simpa [transformScopeData] using equal
 
 def renderScopeData? (owner : Atom) (source : AdmittedSourceScope) :

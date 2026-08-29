@@ -2,6 +2,8 @@ import Mettapedia.Languages.Metamath.SourceInferenceOperationalAdequacy
 import Mettapedia.Languages.Metamath.InferenceProjectionInvariants
 import Metamath.Spec.Equivalence
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Declarative adequacy of source-owned Metamath inference
 
@@ -513,8 +515,8 @@ theorem sourceOperationalProvable_iff_supportedDeclarative
 /-- Source-owned proof-occurrence trees and the supported declarative
 Metamath semantics define exactly the same proof language. -/
 theorem sourceGeneratedProvesTree_nonempty_iff_supportedDeclarative
-    (source : SourcePrefix) (target : ValidatedPresentation)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (source : SourcePrefix) (target : ValidatedCalculusLanguageDef)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (formula : InferenceEncoding.ConstantHeadedFormula)
     (hrespect :
       formulaSymbolsRespectFrame
@@ -539,8 +541,8 @@ theorem sourceGeneratedProvesTree_nonempty_iff_supportedDeclarative
 /-- Forgetting derivation-local support yields Mario Carneiro's canonical
 declarative provability theorem for every source-owned proof tree. -/
 theorem sourceGeneratedProvesTree_to_semanticProvable
-    (source : SourcePrefix) (target : ValidatedPresentation)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (source : SourcePrefix) (target : ValidatedCalculusLanguageDef)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (formula : InferenceEncoding.ConstantHeadedFormula)
     (hrespect :
       formulaSymbolsRespectFrame
@@ -565,10 +567,10 @@ declarative derivation.  The implementation database is related to the source
 prefix only through the independently checked projection theorem. -/
 theorem mmLean4_normalFold_exists_iff_supportedDeclarative
     (database : MMLean4Bridge.RuntimeDB)
-    (source : SourcePrefix) (target : ValidatedPresentation)
+    (source : SourcePrefix) (target : ValidatedCalculusLanguageDef)
     (base : MMLean4Bridge.RuntimeProofState)
     (formula : InferenceEncoding.ConstantHeadedFormula)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject :
       projectPrefix? database = some source.toProjection)
     (hbaseStack : base.stack = #[])

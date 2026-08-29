@@ -17,7 +17,7 @@ Positive example:
 - a core-fragment `evalStep` yields a `WMConsequenceRuleOn`.
 
 Negative example:
-- this is not a claim that PeTTa runtime reduces to PureKernel `A` or `B`.
+- this is not a claim that PeTTa runtime reduces to IntrinsicPure `A` or `B`.
 -/
 
 namespace Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPeTTaCoreBridge

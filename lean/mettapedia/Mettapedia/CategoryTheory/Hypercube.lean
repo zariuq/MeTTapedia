@@ -1,6 +1,6 @@
 import Mettapedia.CategoryTheory.LambdaTheory
 import Mettapedia.CategoryTheory.PLNInstance
-import Mettapedia.CategoryTheory.NativeTypeTheory
+import Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 import Mettapedia.CategoryTheory.PLNTerms
 import Mettapedia.CategoryTheory.ModalTypes
 import Mettapedia.PLN.Evidence.EvidenceQuantale
@@ -48,7 +48,7 @@ namespace Mettapedia.CategoryTheory.Hypercube
 
 open Mettapedia.CategoryTheory.LambdaTheories
 open Mettapedia.CategoryTheory.PLNInstance
-open Mettapedia.CategoryTheory.NativeTypeTheory
+open Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 open Mettapedia.CategoryTheory.PLNTerms
 open Mettapedia.CategoryTheory.ModalTypes
 open Mettapedia.PLN.Evidence.EvidenceQuantale

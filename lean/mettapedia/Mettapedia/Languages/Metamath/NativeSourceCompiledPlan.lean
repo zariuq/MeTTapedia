@@ -45,8 +45,8 @@ private theorem mapM_some_length {alpha beta : Type}
 fragment.  This proof reduces the authored presentation itself; it does not
 replace it with a separately written compiler fixture. -/
 theorem validatedPresentation_lowers :
-    (lowerValidatedPresentation? validatedPresentation).isSome = true := by
-  rw [lowerValidatedPresentation?_isSome]
+    (lowerValidatedDefinition? validatedDefinition).isSome = true := by
+  rw [lowerValidatedDefinition?_isSome]
   change generatedDefinition.rules.all admittedRuleSupported = true
   set_option maxRecDepth 100000 in
     simp [targetHypotheses, rFloat, sFloat, tFloat,
@@ -65,31 +65,31 @@ theorem validatedPresentation_lowers :
       show UInt32.size = 4294967296 from rfl]
 
 theorem generatedPresentation_lowers :
-    (lowerPresentation? generatedPresentation).isSome = true := by
-  unfold lowerPresentation?
-  rw [dif_pos generatedPresentation_valid]
-  simpa only [validatedPresentation] using validatedPresentation_lowers
+    (lowerDefinition? generatedDefinition).isSome = true := by
+  unfold lowerDefinition?
+  rw [dif_pos generatedDefinition_valid]
+  simpa only [validatedDefinition] using validatedPresentation_lowers
 
 /-- Recognition preserves the eight-rule inventory supplied by the admitted
 source presentation. -/
 theorem generatedPresentation_fragment_witness :
     exists source,
-      lowerValidatedPresentation? validatedPresentation = some source /\
+      lowerValidatedDefinition? validatedDefinition = some source /\
         source.length = 8 := by
   rcases Option.isSome_iff_exists.mp validatedPresentation_lowers with
     ⟨source, success⟩
   refine ⟨source, success, ?_⟩
   have preserved := mapM_some_length lowerAdmittedRule?
-    (show validatedPresentation.1.rules.mapM lowerAdmittedRule? = some source by
-      simpa [lowerValidatedPresentation?] using success)
-  have count : validatedPresentation.1.rules.length = 8 := by rfl
+    (show validatedDefinition.1.rules.mapM lowerAdmittedRule? = some source by
+      simpa [lowerValidatedDefinition?] using success)
+  have count : validatedDefinition.1.rules.length = 8 := by rfl
   exact preserved.trans count
 
 /-- Any packet emitted for this recognized presentation reconstructs exactly
 the meaning assigned by the admitted source lowering. -/
 theorem generated_packet_sound {bytes : List UInt8}
-    (success : compileBytes? generatedPresentation = some bytes) :
-    admitBytes? bytes = admittedMeaning? generatedPresentation :=
+    (success : compileBytes? generatedDefinition = some bytes) :
+    admitBytes? bytes = admittedMeaning? generatedDefinition :=
   Mettapedia.GSLT.LanguageDef.InferenceCompiledPlanLowering.compileBytes?_sound
     success
 

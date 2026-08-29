@@ -6,11 +6,11 @@ import Mettapedia.Languages.Metamath.SourceInferenceProjectionValidation
 
 This module supplies the smallest admitted Metamath scope with one active
 floating hypothesis.  The compiler consumes that scope and its generated
-presentation, while the proof label remains dynamic input.  The resulting
+calculus language, while the proof label remains dynamic input.  The resulting
 ordinary MM2 program is suitable for direct execution by MORK.
 
 The canary is intentionally one proof-machine slice, not a complete verifier.
-Its purpose is to keep the source-presentation, target-presentation, surface,
+Its purpose is to keep the source language, target language, surface,
 and executor boundaries executable while assertion and compressed-proof
 semantics are added.
 -/
@@ -27,6 +27,7 @@ open Mettapedia.Languages.Metamath.SourceGSLTState
 open Mettapedia.Languages.Metamath.SourceInferenceProjection
 open Mettapedia.Languages.Metamath.SourceInferenceProjectionValidation
 open Mettapedia.Languages.ProcessCalculi.MORK.MM2Surface
+open Mettapedia.GSLT.LanguageDef (CalculusLanguageDef)
 
 /-! ## One admitted source scope -/
 
@@ -90,21 +91,21 @@ def hypothesisCanaryGates : SourceProjectionGates exampleSourcePrefix where
   vocabularyValid := hypothesisCanaryVocabulary_valid
   ruleIdsDisjoint := by decide +kernel
 
-def hypothesisCanaryPresentation : SourcePresentation :=
-  rawSourcePresentation exampleSourcePrefix
+def hypothesisCanaryLanguage : CalculusLanguageDef :=
+  rawSourceInferenceLanguageDef exampleSourcePrefix
 
-theorem hypothesisCanaryPresentation_generated :
-    presentationOfSourcePrefix? hypothesisCanaryState.toSourcePrefix =
-      some hypothesisCanaryPresentation := by
+theorem hypothesisCanaryLanguage_generated :
+    calculusLanguageDefOfSourcePrefix? hypothesisCanaryState.toSourcePrefix =
+      some hypothesisCanaryLanguage := by
   rw [hypothesisCanaryState_prefix]
-  exact presentationOfSourcePrefix_eq_some_rawSourcePresentation
+  exact calculusLanguageDefOfSourcePrefix_eq_some_rawSourceInferenceLanguageDef
     exampleSourcePrefix hypothesisCanaryGates
 
 def hypothesisCanarySource : AdmittedSourceScope where
   state := hypothesisCanaryState
   stateValid := hypothesisCanaryState_valid
-  presentation := hypothesisCanaryPresentation
-  presentationGenerated := hypothesisCanaryPresentation_generated
+  language := hypothesisCanaryLanguage
+  languageGenerated := hypothesisCanaryLanguage_generated
 
 def severedGates : SourceProjectionGates initialState.toSourcePrefix where
   prefixValid := by decide
@@ -115,13 +116,13 @@ def severedGates : SourceProjectionGates initialState.toSourcePrefix where
       stringsOfSourceFrame]
   ruleIdsDisjoint := by decide +kernel
 
-def severedPresentation : SourcePresentation :=
-  rawSourcePresentation initialState.toSourcePrefix
+def severedLanguage : CalculusLanguageDef :=
+  rawSourceInferenceLanguageDef initialState.toSourcePrefix
 
-theorem severedPresentation_generated :
-    presentationOfSourcePrefix? initialState.toSourcePrefix =
-      some severedPresentation :=
-  presentationOfSourcePrefix_eq_some_rawSourcePresentation
+theorem severedLanguage_generated :
+    calculusLanguageDefOfSourcePrefix? initialState.toSourcePrefix =
+      some severedLanguage :=
+  calculusLanguageDefOfSourcePrefix_eq_some_rawSourceInferenceLanguageDef
     initialState.toSourcePrefix severedGates
 
 /-- An independently admitted source scope with no active hypothesis.  It is
@@ -129,8 +130,8 @@ the source-level severance control for the same dynamic proof input. -/
 def severedSource : AdmittedSourceScope where
   state := initialState
   stateValid := by decide
-  presentation := severedPresentation
-  presentationGenerated := severedPresentation_generated
+  language := severedLanguage
+  languageGenerated := severedLanguage_generated
 
 /-! ## One admitted assertion scope -/
 
@@ -223,20 +224,20 @@ def assertionCanaryGates :
   vocabularyValid := assertionCanaryVocabulary_valid
   ruleIdsDisjoint := by decide +kernel
 
-def assertionCanaryPresentation : SourcePresentation :=
-  rawSourcePresentation assertionCanaryState.toSourcePrefix
+def assertionCanaryLanguage : CalculusLanguageDef :=
+  rawSourceInferenceLanguageDef assertionCanaryState.toSourcePrefix
 
-theorem assertionCanaryPresentation_generated :
-    presentationOfSourcePrefix? assertionCanaryState.toSourcePrefix =
-      some assertionCanaryPresentation :=
-  presentationOfSourcePrefix_eq_some_rawSourcePresentation
+theorem assertionCanaryLanguage_generated :
+    calculusLanguageDefOfSourcePrefix? assertionCanaryState.toSourcePrefix =
+      some assertionCanaryLanguage :=
+  calculusLanguageDefOfSourcePrefix_eq_some_rawSourceInferenceLanguageDef
     assertionCanaryState.toSourcePrefix assertionCanaryGates
 
 def assertionCanarySource : AdmittedSourceScope where
   state := assertionCanaryState
   stateValid := assertionCanaryState_valid
-  presentation := assertionCanaryPresentation
-  presentationGenerated := assertionCanaryPresentation_generated
+  language := assertionCanaryLanguage
+  languageGenerated := assertionCanaryLanguage_generated
 
 /-! ## An essential-hypothesis assertion scope -/
 
@@ -348,20 +349,20 @@ def essentialCanaryGates :
   vocabularyValid := essentialCanaryVocabulary_valid
   ruleIdsDisjoint := by decide +kernel
 
-def essentialCanaryPresentation : SourcePresentation :=
-  rawSourcePresentation essentialCanaryState.toSourcePrefix
+def essentialCanaryLanguage : CalculusLanguageDef :=
+  rawSourceInferenceLanguageDef essentialCanaryState.toSourcePrefix
 
-theorem essentialCanaryPresentation_generated :
-    presentationOfSourcePrefix? essentialCanaryState.toSourcePrefix =
-      some essentialCanaryPresentation :=
-  presentationOfSourcePrefix_eq_some_rawSourcePresentation
+theorem essentialCanaryLanguage_generated :
+    calculusLanguageDefOfSourcePrefix? essentialCanaryState.toSourcePrefix =
+      some essentialCanaryLanguage :=
+  calculusLanguageDefOfSourcePrefix_eq_some_rawSourceInferenceLanguageDef
     essentialCanaryState.toSourcePrefix essentialCanaryGates
 
 def essentialCanarySource : AdmittedSourceScope where
   state := essentialCanaryState
   stateValid := essentialCanaryState_valid
-  presentation := essentialCanaryPresentation
-  presentationGenerated := essentialCanaryPresentation_generated
+  language := essentialCanaryLanguage
+  languageGenerated := essentialCanaryLanguage_generated
 
 /-! ## A stored assertion with a live disjoint-variable obligation -/
 
@@ -538,35 +539,35 @@ def dvMissingCallerGates :
   vocabularyValid := dvMissingCallerVocabulary_valid
   ruleIdsDisjoint := by decide +kernel
 
-def dvCanaryPresentation : SourcePresentation :=
-  rawSourcePresentation dvCanaryState.toSourcePrefix
+def dvCanaryLanguage : CalculusLanguageDef :=
+  rawSourceInferenceLanguageDef dvCanaryState.toSourcePrefix
 
-def dvMissingCallerPresentation : SourcePresentation :=
-  rawSourcePresentation dvMissingCallerState.toSourcePrefix
+def dvMissingCallerLanguage : CalculusLanguageDef :=
+  rawSourceInferenceLanguageDef dvMissingCallerState.toSourcePrefix
 
-theorem dvCanaryPresentation_generated :
-    presentationOfSourcePrefix? dvCanaryState.toSourcePrefix =
-      some dvCanaryPresentation :=
-  presentationOfSourcePrefix_eq_some_rawSourcePresentation
+theorem dvCanaryLanguage_generated :
+    calculusLanguageDefOfSourcePrefix? dvCanaryState.toSourcePrefix =
+      some dvCanaryLanguage :=
+  calculusLanguageDefOfSourcePrefix_eq_some_rawSourceInferenceLanguageDef
     dvCanaryState.toSourcePrefix dvCanaryGates
 
-theorem dvMissingCallerPresentation_generated :
-    presentationOfSourcePrefix? dvMissingCallerState.toSourcePrefix =
-      some dvMissingCallerPresentation :=
-  presentationOfSourcePrefix_eq_some_rawSourcePresentation
+theorem dvMissingCallerLanguage_generated :
+    calculusLanguageDefOfSourcePrefix? dvMissingCallerState.toSourcePrefix =
+      some dvMissingCallerLanguage :=
+  calculusLanguageDefOfSourcePrefix_eq_some_rawSourceInferenceLanguageDef
     dvMissingCallerState.toSourcePrefix dvMissingCallerGates
 
 def dvCanarySource : AdmittedSourceScope where
   state := dvCanaryState
   stateValid := dvCanaryState_valid
-  presentation := dvCanaryPresentation
-  presentationGenerated := dvCanaryPresentation_generated
+  language := dvCanaryLanguage
+  languageGenerated := dvCanaryLanguage_generated
 
 def dvMissingCallerSource : AdmittedSourceScope where
   state := dvMissingCallerState
   stateValid := dvMissingCallerState_valid
-  presentation := dvMissingCallerPresentation
-  presentationGenerated := dvMissingCallerPresentation_generated
+  language := dvMissingCallerLanguage
+  languageGenerated := dvMissingCallerLanguage_generated
 
 /-! ## Dynamic proof and emitted program -/
 
@@ -988,22 +989,22 @@ theorem empty_source_has_no_canary_lookup :
   rfl
 
 #print axioms hypothesisCanaryState_valid
-#print axioms hypothesisCanaryPresentation_generated
+#print axioms hypothesisCanaryLanguage_generated
 #print axioms hypothesisCanaryProgram_is_selected_target_invocation
 #print axioms hypothesis_lookup_is_source_derived
-#print axioms severedPresentation_generated
+#print axioms severedLanguage_generated
 #print axioms empty_source_has_no_canary_lookup
 #print axioms assertionCanaryState_valid
-#print axioms assertionCanaryPresentation_generated
+#print axioms assertionCanaryLanguage_generated
 #print axioms assertion_execution_index_is_source_derived
 #print axioms severed_assertion_index_is_empty
 #print axioms essentialCanaryState_valid
-#print axioms essentialCanaryPresentation_generated
+#print axioms essentialCanaryLanguage_generated
 #print axioms essential_execution_index_is_source_derived
 #print axioms dvCanaryState_valid
 #print axioms dvMissingCallerState_valid
-#print axioms dvCanaryPresentation_generated
-#print axioms dvMissingCallerPresentation_generated
+#print axioms dvCanaryLanguage_generated
+#print axioms dvMissingCallerLanguage_generated
 #print axioms caller_dv_relation_is_source_derived
 #print axioms missing_caller_dv_relation_is_empty
 #print axioms unlicensed_caller_dv_row_is_absent

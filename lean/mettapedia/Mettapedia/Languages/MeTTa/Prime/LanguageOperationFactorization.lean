@@ -23,7 +23,7 @@ language operation belongs to a finite signature.
 namespace Mettapedia.Languages.MeTTa.Prime.LanguageOperationFactorization
 
 open CategoryTheory
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
 open Mettapedia.Languages.MeTTa.Prime.FiniteLanguageOperationSignature
 
 universe u
@@ -145,7 +145,7 @@ same recovered endpoints as the authored spelling. -/
 theorem normalize_preserves_typing (term : PureTm 0)
     (decoded : signature.DecodedProgram)
     (_accepted : signature.decodeProgram? term = some decoded) :
-    Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.HasTypeDecl
+    Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics.HasTypeDecl
       signature.operationDeclEnv .nil
       (signature.encodeProgram decoded.program)
       (signature.routeType
@@ -257,7 +257,7 @@ open Mettapedia.Languages.MeTTa.Prime.DataFibration
 open Mettapedia.Languages.MeTTa.Prime.DataFibration.FibreTranslation
 open Mettapedia.Languages.MeTTa.Prime.DataFibration.ValidatedLanguageData
 open Mettapedia.Languages.MeTTa.Prime.InternalDataTransport
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.LanguageOperationSyntax
 
 /-- The two semantic readings and executable Data action determined by one

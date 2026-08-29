@@ -1,6 +1,6 @@
 import Mathlib.CategoryTheory.Functor.FullyFaithful
 import Mettapedia.Languages.GF.GFWMConnections
-import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelIntrinsicPureBridge
 import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge
 
 /-!
@@ -26,10 +26,10 @@ open Mettapedia.Languages.GF.HandCrafted.Abstract
 open Mettapedia.Languages.GF.OSLFBridge
 open Mettapedia.Languages.GF.GFWMConnections
 open Mettapedia.PLN.WorldModel.PLNWorldModel
-open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelIntrinsicPureBridge
 open Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine
 open Mettapedia.PLN.Evidence.EvidenceClass
-open Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.ProfileTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 universe u v

@@ -29,6 +29,7 @@ import Mettapedia.Languages.MeTTa.HE.SmallStepContext
 import Mettapedia.Languages.MeTTa.HE.SmallStepMaster
 import Mettapedia.Languages.MeTTa.HE.MatcherBridge
 import Mettapedia.Languages.MeTTa.HE.OutcomeListContracts
+import Mettapedia.Languages.MeTTa.HE.LanguageDefRuleInventory
 
 /-!
 # Hyperon Experimental MeTTa Semantics

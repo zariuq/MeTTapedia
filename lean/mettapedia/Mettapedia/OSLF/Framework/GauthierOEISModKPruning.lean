@@ -14,7 +14,7 @@ open Mettapedia.GSLT.LanguageDef.GauthierE1
 open Mettapedia.GSLT.LanguageDef.GauthierProperties
 open Mettapedia.OSLF.Framework.GauthierOEISNativeTypes
 open Mettapedia.OSLF.Framework.GauthierOEISPruningSoundness
-open Mettapedia.OSLF.NativeType
+open Mettapedia.OSLF.PresheafNativeType
 
 /-- Integer congruence modulo `k`.  For `k = 0` this degenerates to equality;
 the measurement/pruning use sites use positive moduli. -/
@@ -565,14 +565,14 @@ theorem certified_modk_pruning_admissible {k : Nat} {p : Prog} {target : List Ob
   exact hobs (certified_modk_sound (k := k) heval)
 
 /-- Native type of certified mod-k observations. -/
-def modKNatType (k : Nat) : ConstructorNatType gauthierOEIS where
-  sort := signNatType.sort
+def modKNativeType (k : Nat) : ConstructorNativeType gauthierOEIS where
+  sort := signNativeType.sort
   pred := fun pat =>
     ∃ p n v, pat = evalObsPattern p v ∧ (certifiedModKAnalysis k n p).denote v
 
-theorem modKNatType_sound {k : Nat} {p : Prog} {fuel : Nat} {n v : Int} {st' : Store}
+theorem modKNativeType_sound {k : Nat} {p : Prog} {fuel : Nat} {n v : Int} {st' : Store}
     (heval : eval fuel orgE1Signature p (seed n) Store.zero = some (v, st')) :
-    (modKNatType k).pred (evalObsPattern p v) := by
+    (modKNativeType k).pred (evalObsPattern p v) := by
   exact ⟨p, n, v, rfl, certified_modk_sound (k := k) heval⟩
 
 /-! ## Non-vacuity canaries -/

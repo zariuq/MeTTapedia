@@ -1,7 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.InferenceSemanticExtension
 
 /-!
-# Proof-relevant semantics of inference-presentation extensions
+# Proof-relevant semantics of calculus-language extensions
 
 The proposition-valued semantic extension proves that every checked goal is
 true in an independent semantics.  Relational hypotheses, proof programs, and
@@ -10,9 +10,9 @@ an inhabitant of a `Type`-valued semantic fibre, with the ordered evidence for
 every premise retained.
 
 This module supplies that interpretation without changing the generic checker.
-A presentation semantics interprets one rule application from an indexed list
+A calculus-language semantics interprets one rule application from an indexed list
 of premise meanings.  A semantic extension separately interprets retained base
-rules and genuinely added rules.  The target presentation then receives one
+rules and genuinely added rules.  The target definition then receives one
 compositional proof-relevant semantics.
 -/
 
@@ -20,7 +20,7 @@ namespace Mettapedia.GSLT.LanguageDef.InferenceProofRelevantSemanticExtension
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.InferencePresentationExtension
+open Mettapedia.GSLT.LanguageDef.CalculusLanguageExtension
 open Mettapedia.GSLT.LanguageDef.InferenceSemanticExtension
 
 universe uMeaning uFirstMeaning uSecondMeaning
@@ -69,31 +69,31 @@ end EvidenceList
 
 /-! ## Proof-relevant interpretation -/
 
-/-- A compositional proof-relevant interpretation of one validated
-presentation. -/
-structure PresentationSemantics (presentation : ValidatedPresentation)
+/-- A compositional proof-relevant interpretation of one validated calculus
+language. -/
+structure CalculusLanguageSemantics (definition : ValidatedCalculusLanguageDef)
     (Meaning : Pattern → Type uMeaning) where
   ruleMeaning : ∀ {ruleInstance premises conclusion},
-    RuleApplication presentation ruleInstance premises conclusion →
+    RuleApplication definition ruleInstance premises conclusion →
       EvidenceList Meaning premises → Meaning conclusion
 
-namespace PresentationSemantics
+namespace CalculusLanguageSemantics
 
 mutual
 
 /-- Interpret a checked derivation into its exact semantic fibre. -/
-def interpret {presentation : ValidatedPresentation}
+def interpret {definition : ValidatedCalculusLanguageDef}
     {Meaning : Pattern → Type uMeaning}
-    (semantics : PresentationSemantics presentation Meaning) :
-    {goal : Pattern} → Derivation presentation goal → Meaning goal
+    (semantics : CalculusLanguageSemantics definition Meaning) :
+    {goal : Pattern} → Derivation definition goal → Meaning goal
   | _, .byRule _ application children =>
       semantics.ruleMeaning application (interpretList semantics children)
 
 /-- Interpret ordered child derivations without quotienting occurrences. -/
-def interpretList {presentation : ValidatedPresentation}
+def interpretList {definition : ValidatedCalculusLanguageDef}
     {Meaning : Pattern → Type uMeaning}
-    (semantics : PresentationSemantics presentation Meaning) :
-    {premises : List Pattern} → DerivationList presentation premises →
+    (semantics : CalculusLanguageSemantics definition Meaning) :
+    {premises : List Pattern} → DerivationList definition premises →
       EvidenceList Meaning premises
   | [], .nil => .nil
   | _ :: _, .cons head tail =>
@@ -101,17 +101,17 @@ def interpretList {presentation : ValidatedPresentation}
 
 end
 
-end PresentationSemantics
+end CalculusLanguageSemantics
 
 /-! ## Semantic extension -/
 
-/-- Independent proof-relevant semantics for a validated presentation
+/-- Independent proof-relevant semantics for a validated calculus-language
 extension.  Added rules receive meanings only after structural validation has
 identified the exact stored schema and its instantiated ordered premises. -/
-structure SemanticExtension (base : ValidatedPresentation)
-    (extension : ValidatedExtension base)
+structure SemanticExtension (base : ValidatedCalculusLanguageDef)
+    (extension : ValidatedCalculusLanguageExtension base)
     (Meaning : Pattern → Type uMeaning) where
-  baseSemantics : PresentationSemantics base Meaning
+  baseSemantics : CalculusLanguageSemantics base Meaning
   addedRuleMeaning : ∀ (rule : RuleSchema),
     rule ∈ extension.extension.newRules →
       ∀ (ruleInstance : RuleInstance) (premises : List Pattern)
@@ -122,8 +122,8 @@ structure SemanticExtension (base : ValidatedPresentation)
 
 namespace SemanticExtension
 
-variable {base : ValidatedPresentation}
-variable {extension : ValidatedExtension base}
+variable {base : ValidatedCalculusLanguageDef}
+variable {extension : ValidatedCalculusLanguageExtension base}
 variable {Meaning : Pattern → Type uMeaning}
 
 /-- Interpret every target rule by classifying it as a retained base rule or
@@ -163,10 +163,10 @@ noncomputable def targetRuleMeaning
         exact self.addedRuleMeaning rule memberAdded ruleInstance premises
           conclusion targetLookup application premiseEvidence
 
-/-- The composite presentation inherits one proof-relevant semantics. -/
+/-- The composite calculus language inherits one proof-relevant semantics. -/
 noncomputable def targetSemantics
     (self : SemanticExtension base extension Meaning) :
-    PresentationSemantics extension.target Meaning where
+    CalculusLanguageSemantics extension.target Meaning where
   ruleMeaning := self.targetRuleMeaning
 
 /-- A checked target derivation constructs semantic evidence; checking alone
@@ -203,8 +203,8 @@ theorem no_semantic_extension_of_empty_fibre
 
 end SemanticExtension
 
-#print axioms PresentationSemantics.interpret
-#print axioms PresentationSemantics.interpretList
+#print axioms CalculusLanguageSemantics.interpret
+#print axioms CalculusLanguageSemantics.interpretList
 #print axioms SemanticExtension.targetSemantics
 #print axioms SemanticExtension.interpretTransported
 #print axioms SemanticExtension.transported_erasure

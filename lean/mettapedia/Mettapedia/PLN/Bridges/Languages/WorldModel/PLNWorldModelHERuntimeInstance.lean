@@ -34,7 +34,7 @@ Positive example:
 - a state can score the reduced return-state higher than its predecessor.
 
 Negative example:
-- this does not yet identify HE runtime semantics with PureKernel reduction.
+- this does not yet identify HE runtime semantics with IntrinsicPure reduction.
 -/
 
 /-- Pointwise runtime WM state for HE queries. -/

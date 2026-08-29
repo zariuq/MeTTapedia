@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.InferenceAssertionRawCanonicalization
 import Mettapedia.Languages.Metamath.InferenceGeneratedProvesTree
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Reflected leading premises of projected assertions
 
@@ -65,8 +67,8 @@ original dependent derivation list.  Each constructor stores the formula
 index equality supplied by recursive reflection and preserves the exact raw
 proof artifact of that child. -/
 inductive ReflectedLeadingProvesChildren
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1) :
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1) :
     (hypotheses : List HypothesisView) →
       (bodies : List Pattern) →
       (actuals : List ConstantHeadedFormula) →
@@ -118,8 +120,8 @@ inductive ReflectedLeadingProvesChildren
 /-- The reflected child vector supplies precisely the raw-body decoder needed
 by assertion canonicalization. -/
 theorem ReflectedLeadingProvesChildren.toRawHypothesisBodiesDecode
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    {hprojection : presentationOfProjection? projection = some target.1}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    {hprojection : calculusLanguageDefOfProjection? projection = some target.1}
     {hypotheses : List HypothesisView} {bodies : List Pattern}
     {actuals : List ConstantHeadedFormula}
     {substitution : FiniteSubstitution}
@@ -142,8 +144,8 @@ theorem ReflectedLeadingProvesChildren.toRawHypothesisBodiesDecode
 /-- Forgetting the original derivations yields the exact ordered forest of
 recursively reflected generated trees. -/
 def ReflectedLeadingProvesChildren.toForest
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    {hprojection : presentationOfProjection? projection = some target.1}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    {hprojection : calculusLanguageDefOfProjection? projection = some target.1}
     {hypotheses : List HypothesisView} {bodies : List Pattern}
     {actuals : List ConstantHeadedFormula}
     {substitution : FiniteSubstitution}
@@ -162,8 +164,8 @@ def ReflectedLeadingProvesChildren.toForest
 /-- The original leading child vector and the reflected forest assemble to
 exactly the same ordered raw proof list. -/
 theorem ReflectedLeadingProvesChildren.erase_eq_toForest
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    {hprojection : presentationOfProjection? projection = some target.1}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    {hprojection : calculusLanguageDefOfProjection? projection = some target.1}
     {hypotheses : List HypothesisView} {bodies : List Pattern}
     {actuals : List ConstantHeadedFormula}
     {substitution : FiniteSubstitution}
@@ -185,8 +187,8 @@ theorem ReflectedLeadingProvesChildren.erase_eq_toForest
 /-- The reflected vector therefore canonicalizes its complete leading premise
 index, not merely the erased proof list. -/
 theorem ReflectedLeadingProvesChildren.rawPremises_eq
-    {projection : PrefixProjection} {target : ValidatedPresentation}
-    {hprojection : presentationOfProjection? projection = some target.1}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    {hprojection : calculusLanguageDefOfProjection? projection = some target.1}
     {hypotheses : List HypothesisView} {bodies : List Pattern}
     {actuals : List ConstantHeadedFormula}
     {substitution : FiniteSubstitution}
@@ -205,8 +207,8 @@ private def boundaryFloating : HypothesisView :=
 
 /-- Positive: a genuine reflected active leaf inhabits the one-child bridge,
 with its exact original raw proof artifact retained. -/
-example {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hmember : boundaryFloating ∈ projection.activeHypotheses) :
     let actual := boundaryFloating.formula
     let tree : GeneratedProvesTree projection target actual :=
@@ -222,8 +224,8 @@ private def boundaryActual : ConstantHeadedFormula :=
 
 /-- Negative: no derivation artifact can make a noncanonical raw body into a
 reflection of the fixed actual formula. -/
-example {projection : PrefixProjection} {target : ValidatedPresentation}
-    (hprojection : presentationOfProjection? projection = some target.1)
+example {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (head : Derivation target
       (proves (rawFormulaPattern "wff" (.fvar "not-a-body")))) :
     ¬ Nonempty (ReflectedLeadingProvesChildren projection target hprojection

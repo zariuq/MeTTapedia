@@ -15,6 +15,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.MeTTa.Prime.PackageAuthority
 
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
@@ -109,11 +110,11 @@ private def cacheCalculus :
       { head := "ppi.Convertible", arity := 2 }]
     rules := package.rules ++ package.conversions }
 
-def cache : Presentation :=
-  { language := cacheLanguage, calculus := cacheCalculus }
+def cache : CalculusLanguageDef :=
+  CalculusLanguageDef.extend cacheLanguage cacheCalculus
 
 def validatePackage (candidate : PrimeRulePackageV1)
-    (cached : Presentation) : Bool :=
+    (cached : CalculusLanguageDef) : Bool :=
   candidate.format == "prime-rule-package-v1" &&
     candidate.dialect == "prime" &&
     candidate.semanticVersion == "0.5" &&
@@ -121,8 +122,8 @@ def validatePackage (candidate : PrimeRulePackageV1)
         (candidate.rules ++ candidate.conversions) with
     | .error _ => false
     | .ok projected =>
-        renderPresentation projected == renderPresentation cached &&
-          cached.isValidV2
+        renderDefinition projected == renderDefinition cached &&
+          cached.isValid
 
 private def premiseMutated : PrimeRulePackageV1 :=
   { package with
@@ -140,8 +141,8 @@ private def conversionMutated : PrimeRulePackageV1 :=
     conversions := [schema "ppi.conv-refl" [("term", 0)] []
       (ppiConvertible (pvar "term") ppiA)] }
 
-private def wrongCache : Presentation :=
-  { cache with calculus := { cache.calculus with judgments := [] } }
+private def wrongCache : CalculusLanguageDef :=
+  { cache with judgments := [] }
 
 def main : IO Unit := do
   unless validatePackage package cache do

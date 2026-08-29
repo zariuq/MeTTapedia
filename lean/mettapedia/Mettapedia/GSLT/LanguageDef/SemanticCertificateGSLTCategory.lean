@@ -5,12 +5,12 @@ import Mettapedia.GSLT.Core.Ultrainfinite
 /-!
 # Exact semantic CertificateGSLTs and their interpretations
 
-The ordinary category of CertificateGSLT presentations remembers derivation-valued
-rule interpretations but not the semantic meaning for which a presentation is
+The ordinary category of CertificateGSLT definitions remembers derivation-valued
+rule interpretations but not the semantic meaning for which a definition is
 an authority.  This module defines the fixed-meaning category needed before a
 filtered growth construction can claim to preserve proof authority.
 
-Objects are validated presentations with two-sided adequacy for one independent
+Objects are validated calculus languages with two-sided adequacy for one independent
 meaning.  Morphisms are derivation-valued interpretations whose judgment
 encoding commutes exactly.  They transport proof objects forward.  Because
 both endpoints are semantically exact, theorem *existence* is also reflected;
@@ -30,35 +30,35 @@ open Mettapedia.GSLT.LanguageDef.CompletenessSpectrum
 
 universe uClaim uTarget uThird uIndex
 
-/-- A CertificateGSLT presentation with exact authority for a fixed independent
+/-- A CertificateGSLT definition with exact authority for a fixed independent
 semantic meaning. -/
 structure ExactObject (Claim : Type uClaim) (Meaning : Claim → Prop) where
   toCertificateGSLT : CertificateGSLT.Object
-  adequacy : ExactJudgmentPresentation Claim Meaning toCertificateGSLT.presentation
+  adequacy : ExactJudgmentEncoding Claim Meaning toCertificateGSLT.definition
 
 namespace ExactObject
 
 variable {Claim : Type uClaim} {Meaning : Claim → Prop}
 
-/-- The judgment pattern used by this semantic presentation. -/
+/-- The judgment pattern used by this semantic authority. -/
 abbrev encode (object : ExactObject Claim Meaning) : Claim → Pattern :=
-  object.adequacy.toJudgmentPresentationAdequacy.encode
+  object.adequacy.toJudgmentEncodingAdequacy.encode
 
 /-- Exactness is the object-level theoremhood/meaning correspondence. -/
 theorem derivation_iff_meaning (object : ExactObject Claim Meaning)
     (claim : Claim) :
-    Nonempty (Derivation object.toCertificateGSLT.presentation (object.encode claim)) ↔
+    Nonempty (Derivation object.toCertificateGSLT.definition (object.encode claim)) ↔
       Meaning claim := by
   constructor
-  · exact object.adequacy.toJudgmentPresentationAdequacy.derivation_sound claim
+  · exact object.adequacy.toJudgmentEncodingAdequacy.derivation_sound claim
   · exact object.adequacy.derivation_complete claim
 
-/-- Any two exact presentations of the same meaning agree on theorem
+/-- Any two exact authorities for the same meaning agree on theorem
 existence, even before choosing an interpretation between their proof terms. -/
 theorem theoremhood_iff (source target : ExactObject Claim Meaning)
     (claim : Claim) :
-    Nonempty (Derivation source.toCertificateGSLT.presentation (source.encode claim)) ↔
-      Nonempty (Derivation target.toCertificateGSLT.presentation (target.encode claim)) := by
+    Nonempty (Derivation source.toCertificateGSLT.definition (source.encode claim)) ↔
+      Nonempty (Derivation target.toCertificateGSLT.definition (target.encode claim)) := by
   rw [source.derivation_iff_meaning, target.derivation_iff_meaning]
 
 end ExactObject
@@ -179,15 +179,15 @@ for encoding commutation are proof-irrelevant. -/
 /-- Transport a proof of an encoded semantic claim through an interpretation. -/
 def mapClaimDerivation (morphism : Morphism source target) (claim : Claim)
     (derivation :
-      Derivation source.toCertificateGSLT.presentation (source.encode claim)) :
-    Derivation target.toCertificateGSLT.presentation (target.encode claim) :=
+      Derivation source.toCertificateGSLT.definition (source.encode claim)) :
+    Derivation target.toCertificateGSLT.definition (target.encode claim) :=
   morphism.encode_commutes claim ▸
     morphism.interpretation.mapDerivation derivation
 
 /-- Forward proof transport preserves theoremhood with the proof term retained. -/
 theorem maps_theoremhood (morphism : Morphism source target) (claim : Claim) :
-    Nonempty (Derivation source.toCertificateGSLT.presentation (source.encode claim)) →
-      Nonempty (Derivation target.toCertificateGSLT.presentation (target.encode claim)) := by
+    Nonempty (Derivation source.toCertificateGSLT.definition (source.encode claim)) →
+      Nonempty (Derivation target.toCertificateGSLT.definition (target.encode claim)) := by
   rintro ⟨derivation⟩
   exact ⟨morphism.mapClaimDerivation claim derivation⟩
 
@@ -195,13 +195,13 @@ theorem maps_theoremhood (morphism : Morphism source target) (claim : Claim) :
 weaker than a backward proof translation: the source witness is reconstructed
 from semantic completeness rather than extracted from the target proof. -/
 theorem theoremhood_iff (_morphism : Morphism source target) (claim : Claim) :
-    Nonempty (Derivation source.toCertificateGSLT.presentation (source.encode claim)) ↔
-      Nonempty (Derivation target.toCertificateGSLT.presentation (target.encode claim)) :=
+    Nonempty (Derivation source.toCertificateGSLT.definition (source.encode claim)) ↔
+      Nonempty (Derivation target.toCertificateGSLT.definition (target.encode claim)) :=
   source.theoremhood_iff target claim
 
 end Morphism
 
-/-- Exact semantic presentations and encoding-preserving interpretations form
+/-- Exact semantic authorities and encoding-preserving interpretations form
 a genuine category. -/
 instance {Claim : Type uClaim} {Meaning : Claim → Prop} :
     CategoryTheory.Category (ExactObject Claim Meaning) where
@@ -239,20 +239,20 @@ structure Object where
   Claim : Type uClaim
   Meaning : Claim → Prop
   toCertificateGSLT : CertificateGSLT.Object
-  adequacy : ExactJudgmentPresentation Claim Meaning toCertificateGSLT.presentation
+  adequacy : ExactJudgmentEncoding Claim Meaning toCertificateGSLT.definition
 
 namespace Object
 
 /-- The claim encoding selected by an exact authority. -/
 abbrev encode (object : Object) : object.Claim → Pattern :=
-  object.adequacy.toJudgmentPresentationAdequacy.encode
+  object.adequacy.toJudgmentEncodingAdequacy.encode
 
 /-- Object exactness identifies derivability and meaning. -/
 theorem derivation_iff_meaning (object : Object) (claim : object.Claim) :
-    Nonempty (Derivation object.toCertificateGSLT.presentation (object.encode claim)) ↔
+    Nonempty (Derivation object.toCertificateGSLT.definition (object.encode claim)) ↔
       object.Meaning claim := by
   constructor
-  · exact object.adequacy.toJudgmentPresentationAdequacy.derivation_sound claim
+  · exact object.adequacy.toJudgmentEncodingAdequacy.derivation_sound claim
   · exact object.adequacy.derivation_complete claim
 
 end Object
@@ -301,8 +301,8 @@ claim. -/
 def mapClaimDerivation (morphism : Morphism source target)
     (claim : source.Claim)
     (derivation :
-      Derivation source.toCertificateGSLT.presentation (source.encode claim)) :
-    Derivation target.toCertificateGSLT.presentation
+      Derivation source.toCertificateGSLT.definition (source.encode claim)) :
+    Derivation target.toCertificateGSLT.definition
       (target.encode (morphism.mapClaim claim)) :=
   morphism.encode_commutes claim ▸
     morphism.interpretation.mapDerivation derivation
@@ -315,7 +315,7 @@ theorem preservesMeaning (morphism : Morphism source target)
   intro meaningful
   obtain ⟨derivation⟩ :=
     source.adequacy.derivation_complete claim meaningful
-  exact target.adequacy.toJudgmentPresentationAdequacy.derivation_sound
+  exact target.adequacy.toJudgmentEncodingAdequacy.derivation_sound
     (morphism.mapClaim claim)
     ⟨morphism.mapClaimDerivation claim derivation⟩
 
@@ -334,8 +334,8 @@ def Reflects (morphism : Morphism source target) : Prop :=
 correspondence on translated claims. -/
 theorem theoremhood_iff_of_reflects (morphism : Morphism source target)
     (reflects : morphism.Reflects) (claim : source.Claim) :
-    Nonempty (Derivation source.toCertificateGSLT.presentation (source.encode claim)) ↔
-      Nonempty (Derivation target.toCertificateGSLT.presentation
+    Nonempty (Derivation source.toCertificateGSLT.definition (source.encode claim)) ↔
+      Nonempty (Derivation target.toCertificateGSLT.definition
         (target.encode (morphism.mapClaim claim))) := by
   constructor
   · rintro ⟨derivation⟩
@@ -343,7 +343,7 @@ theorem theoremhood_iff_of_reflects (morphism : Morphism source target)
   · intro targetDerivation
     exact source.adequacy.derivation_complete claim
       (reflects claim
-        (target.adequacy.toJudgmentPresentationAdequacy.derivation_sound
+        (target.adequacy.toJudgmentEncodingAdequacy.derivation_sound
           (morphism.mapClaim claim) targetDerivation))
 
 end Morphism
@@ -390,7 +390,7 @@ open scoped CategoryTheory
 
 variable {Claim : Type uClaim} {Meaning : Claim → Prop}
 
-/-- A filtered growth presentation whose stages and apex all carry exact
+/-- A filtered growth diagram whose stages and apex all carry exact
 authority for the same meaning.  This specializes the existing abstract
 filtered-growth object to the authority-preserving category; it does not assert
 that such colimits exist or are created by forgetting semantic structure. -/
@@ -408,7 +408,7 @@ theorem apex_derivation_iff_meaning
     {stages : CategoryTheory.Functor Index (ExactObject Claim Meaning)}
     (growth : Growth stages) (claim : Claim) :
     Nonempty
-        (Derivation growth.cocone.pt.toCertificateGSLT.presentation
+        (Derivation growth.cocone.pt.toCertificateGSLT.definition
           (growth.cocone.pt.encode claim)) ↔
       Meaning claim :=
   growth.cocone.pt.derivation_iff_meaning claim

@@ -9,7 +9,7 @@ projection, and the direction of that projection is not symmetric.  This
 module makes the asymmetry a theorem rather than a slogan, and then
 de-truncates the statements that were needlessly stated about the shadow.
 
-For a validated presentation `P` and judgment `J`:
+For a validated definition `P` and judgment `J`:
 
 ```
    Derivation P J          the proof — proof-relevant, a Type
@@ -49,20 +49,20 @@ open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 /-! ## The projection -/
 
 /-- Forget which proof.  This is the only direction that is canonical. -/
-@[reducible] def truncate {presentation : ValidatedPresentation}
-    {goal : Pattern} (derivation : Derivation presentation goal) :
-    Nonempty (Derivation presentation goal) := ⟨derivation⟩
+@[reducible] def truncate {definition : ValidatedCalculusLanguageDef}
+    {goal : Pattern} (derivation : Derivation definition goal) :
+    Nonempty (Derivation definition goal) := ⟨derivation⟩
 
 /-! ### Size of a closed derivation, as a proof-relevant measure -/
 
 mutual
 
-def derivationSize {presentation : ValidatedPresentation} :
-    {goal : Pattern} → Derivation presentation goal → Nat
+def derivationSize {definition : ValidatedCalculusLanguageDef} :
+    {goal : Pattern} → Derivation definition goal → Nat
   | _, .byRule _ _ children => derivationListSize children + 1
 
-def derivationListSize {presentation : ValidatedPresentation} :
-    {goals : List Pattern} → DerivationList presentation goals → Nat
+def derivationListSize {definition : ValidatedCalculusLanguageDef} :
+    {goals : List Pattern} → DerivationList definition goals → Nat
   | _, .nil => 0
   | _, .cons head tail => derivationSize head + derivationListSize tail
 
@@ -107,25 +107,25 @@ private def ambientCalculus :
   { judgments := [{ head := "AJ", arity := 1 }]
     rules := [directRule, viaAxiom, viaStep] }
 
-private def ambientPresentation : Presentation :=
-  { language := ambientLanguage, calculus := ambientCalculus }
+private def ambientDefinition : CalculusLanguageDef :=
+  CalculusLanguageDef.extend ambientLanguage ambientCalculus
 
 private theorem ambient_validate :
-    ambientPresentation.language.validate = [] := by
+    ambientDefinition.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-    simp [ambientPresentation, ambientLanguage, ambientType, atomRule,
+    simp [ambientDefinition, ambientLanguage, ambientType, atomRule,
       LanguageDef.typeNames, TermParam.typeExpr, TypeDecl.plain]
 
-theorem ambient_valid : ambientPresentation.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem ambient_valid : ambientDefinition.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [ambient_validate]
-  simp [ambientPresentation, ambientCalculus, ambientLanguage, ambientType, atomRule,
+  simp [ambientDefinition, ambientCalculus, ambientLanguage, ambientType, atomRule,
     directRule, viaAxiom, viaStep, goalJ, target, middle,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -133,17 +133,17 @@ theorem ambient_valid : ambientPresentation.isValidV2 = true := by
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
-def ambientValidated : ValidatedPresentation :=
-  ⟨ambientPresentation, ambient_valid⟩
+def ambientValidated : ValidatedCalculusLanguageDef :=
+  ⟨ambientDefinition, ambient_valid⟩
 
 private theorem direct_instantiates :
     instantiateRule? ambientValidated ⟨⟨"amb-direct"⟩, []⟩ =
       some ([], goalJ target) := by
-  simp [instantiateRule?, ambientValidated, ambientPresentation, ambientCalculus,
-    ambientLanguage, directRule, viaAxiom, viaStep, Presentation.lookupRule?,
+  simp [instantiateRule?, ambientValidated, ambientDefinition, ambientCalculus,
+    ambientLanguage, directRule, viaAxiom, viaStep, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, RuleSchema.sideConditionsHold, instantiateSchemas?,
     instantiateSchema?, instantiateSchemasAt?, instantiateSchemaAt?, goalJ,
     target]
@@ -151,8 +151,8 @@ private theorem direct_instantiates :
 private theorem viaAxiom_instantiates :
     instantiateRule? ambientValidated ⟨⟨"amb-via-axiom"⟩, []⟩ =
       some ([], goalJ middle) := by
-  simp [instantiateRule?, ambientValidated, ambientPresentation, ambientCalculus,
-    ambientLanguage, directRule, viaAxiom, viaStep, Presentation.lookupRule?,
+  simp [instantiateRule?, ambientValidated, ambientDefinition, ambientCalculus,
+    ambientLanguage, directRule, viaAxiom, viaStep, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, RuleSchema.sideConditionsHold, instantiateSchemas?,
     instantiateSchema?, instantiateSchemasAt?, instantiateSchemaAt?, goalJ,
     middle]
@@ -160,8 +160,8 @@ private theorem viaAxiom_instantiates :
 private theorem viaStep_instantiates :
     instantiateRule? ambientValidated ⟨⟨"amb-via-step"⟩, []⟩ =
       some ([goalJ middle], goalJ target) := by
-  simp [instantiateRule?, ambientValidated, ambientPresentation, ambientCalculus,
-    ambientLanguage, directRule, viaAxiom, viaStep, Presentation.lookupRule?,
+  simp [instantiateRule?, ambientValidated, ambientDefinition, ambientCalculus,
+    ambientLanguage, directRule, viaAxiom, viaStep, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, RuleSchema.sideConditionsHold, instantiateSchemas?,
     instantiateSchema?, instantiateSchemasAt?, instantiateSchemaAt?, goalJ,
     target, middle]
@@ -214,7 +214,7 @@ theorem cost_does_not_factor_through_provability :
 so it has no left inverse. -/
 theorem truncate_not_injective :
     ¬ Function.Injective
-      (truncate (presentation := ambientValidated) (goal := goalJ target)) := by
+      (truncate (definition := ambientValidated) (goal := goalJ target)) := by
   intro injective
   have equal : shortProof = longProof := injective (Subsingleton.elim _ _)
   have sizes : derivationSize shortProof = derivationSize longProof := by
@@ -233,26 +233,24 @@ theorem both_routes_accepted :
 
 /-! ## Compact proof support: a finite article needs only a finite theory
 
-The growth story for a large library.  An article over a presentation with
+The growth story for a large library.  An article over a definition with
 tens of thousands of rules cites a handful of them; the restriction of the
-presentation to exactly those identifiers accepts exactly the same article.
+definition to exactly those identifiers accepts exactly the same article.
 So a proof over an ever-growing theory factors through a finite stage of
 that theory, which is what makes an ind-completion the right home for
 growth rather than a decoration on it. -/
 
-/-- Restrict a presentation to a named set of rule identifiers.  Everything
+/-- Restrict a definition to a named set of rule identifiers.  Everything
 else — syntax, judgments, conversion interface — is untouched. -/
-def restrictRules (presentation : Presentation) (ids : List RuleId) :
-    Presentation :=
-  { presentation with
-    calculus :=
-      { presentation.calculus with
-        rules := presentation.rules.filter fun rule => ids.contains rule.id } }
+def restrictRules (definition : CalculusLanguageDef) (ids : List RuleId) :
+    CalculusLanguageDef :=
+  { definition with
+    rules := definition.rules.filter fun rule => ids.contains rule.id }
 
-@[simp] theorem restrictRules_rules (presentation : Presentation)
+@[simp] theorem restrictRules_rules (definition : CalculusLanguageDef)
     (ids : List RuleId) :
-    (restrictRules presentation ids).rules =
-      presentation.rules.filter (fun rule => ids.contains rule.id) := rfl
+    (restrictRules definition ids).rules =
+      definition.rules.filter (fun rule => ids.contains rule.id) := rfl
 
 /-- Filtering a rule table cannot move the first match: any rule the filter
 keeps is still found, and any rule it drops was not the match anyway.  No
@@ -282,25 +280,25 @@ private theorem find?_filter_id :
 
 /-- Looking up a retained identifier in the restriction finds the same
 rule. -/
-theorem lookupRule?_restrictRules {presentation : Presentation}
+theorem lookupRule?_restrictRules {definition : CalculusLanguageDef}
     (ids : List RuleId) {id : RuleId} (retained : ids.contains id = true) :
-    (restrictRules presentation ids).lookupRule? id =
-      presentation.lookupRule? id :=
-  find?_filter_id presentation.rules ids id retained
+    (restrictRules definition ids).lookupRule? id =
+      definition.lookupRule? id :=
+  find?_filter_id definition.rules ids id retained
 
-/-- **Compact proof support.**  An article is accepted by a presentation
-exactly when it is accepted by the restriction of that presentation to the
+/-- **Compact proof support.**  An article is accepted by a definition
+exactly when it is accepted by the restriction of that definition to the
 identifiers the article cites.  A finite proof therefore never depends on
 the size of the ambient theory, only on its own finite cone — the property
 that makes growth by filtered colimit sound, and the reason a proof over a
 library the size of a mathematical corpus remains a finite object. -/
 theorem checkWireArticle_restrictRules {article : WireArticle}
-    {presentation : Presentation} (valid : presentation.isValidV2 = true)
+    {definition : CalculusLanguageDef} (valid : definition.isValid = true)
     (restrictedValid :
-      (restrictRules presentation article.citedRuleIds).isValidV2 = true) :
-    checkWireArticle ⟨presentation, valid⟩ article = true ↔
+      (restrictRules definition article.citedRuleIds).isValid = true) :
+    checkWireArticle ⟨definition, valid⟩ article = true ↔
       checkWireArticle
-        ⟨restrictRules presentation article.citedRuleIds, restrictedValid⟩
+        ⟨restrictRules definition article.citedRuleIds, restrictedValid⟩
         article = true := by
   refine checkWireArticle_iff_articleRuleAgreement ?_
   intro id cited
@@ -323,12 +321,12 @@ structure DiamondFiller {State : Type} (Step : State → State → Prop)
   fromLeft : Step left join
   fromRight : Step right join
 
-/-- A conversion edge is an ordinary derivation of the presentation's
+/-- A conversion edge is an ordinary derivation of the definition's
 declared conversion judgment.  Reading it as a path, transport along it is
 what a cast term denotes; this is the interface the certified conversion
 tier should be stated over. -/
-def ConversionEdge (presentation : ValidatedPresentation)
+def ConversionEdge (definition : ValidatedCalculusLanguageDef)
     (declaration : ConversionDecl) (left right : Pattern) : Type :=
-  Derivation presentation (.apply declaration.judgmentHead [left, right])
+  Derivation definition (.apply declaration.judgmentHead [left, right])
 
 end Mettapedia.GSLT.LanguageDef.CertificateGSLT.Ambient

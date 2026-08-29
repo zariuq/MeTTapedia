@@ -48,15 +48,15 @@ def sidePremiseJudgment? (profile : EvidenceProfile) : Premise → Option Patter
       some (profile.relationJudgment relation arguments)
   | _ => none
 
-/-- Proof-erased recognition used by presentation generation.  Keeping this
+/-- Proof-erased recognition used by language-definition generation.  Keeping this
 computational path separate from the dependent recognition certificate below
-prevents proof terms from becoming part of generated presentation data. -/
+prevents proof terms from becoming part of generated definition data. -/
 def checkedInputProof? (profile : EvidenceProfile) : Pattern → Option Pattern
   | .apply head [proof] =>
       if head == profile.checkHead then some proof else none
   | _ => none
 
-/-- Proof-erased successful-output recognition for presentation generation. -/
+/-- Proof-erased successful-output recognition for definition generation. -/
 def checkedOutputResult? (profile : EvidenceProfile) : Pattern → Option Pattern
   | .apply head [result] =>
       if head == profile.okHead then some result else none
@@ -119,7 +119,7 @@ def extractedSchema (profile : EvidenceProfile) (rule : RewriteRule)
   let remaining := occurrenceKeepOut authoredUsed usedOccurrences
   { draft with metavariables := authoredUsed ++ remaining }
 
-/-- Proof-erased rule extraction used by the generated presentation.  It has
+/-- Proof-erased rule extraction used by the generated definition.  It has
 the same recognizers and the same `extractedSchema` constructor as the
 proof-producing `extractRule?` boundary below. -/
 def extractRuleSchema? (profile : EvidenceProfile) (language : LanguageDef)
@@ -250,7 +250,7 @@ def extractRule? (profile : EvidenceProfile) (language : LanguageDef)
       sideConditionsEmpty := rfl }
 
 /-- Proof erasure commutes with rule extraction: the schema placed in a
-generated presentation is exactly the schema carried by the corresponding
+generated definition is exactly the schema carried by the corresponding
 proof-producing extraction certificate. -/
 theorem extractRuleSchema?_eq_extractRule?_schema
     (profile : EvidenceProfile) (language : LanguageDef)
@@ -318,46 +318,44 @@ def relationFactRules (profile : EvidenceProfile)
       premises := []
       conclusion := profile.relationJudgment fact.1 fact.2 }
 
-def rawPresentation? (profile : EvidenceProfile)
-    (language : LanguageDef) (logic : LogicProgram := []) : Option Presentation := do
+def rawDefinition? (profile : EvidenceProfile)
+    (language : LanguageDef) (logic : LogicProgram := []) :
+    Option CalculusLanguageDef := do
   let rules ← language.rewrites.mapM (extractRuleSchema? profile language)
-  pure
-    { language
-      calculus :=
-        { judgments :=
-            { head := profile.derivedHead, arity := 1 } ::
-              (relationJudgmentDecls profile language).eraseDups
-          rules := relationFactRules profile language logic ++ rules } }
+  pure <| CalculusLanguageDef.extend language
+    { judgments :=
+        { head := profile.derivedHead, arity := 1 } ::
+          (relationJudgmentDecls profile language).eraseDups
+      rules := relationFactRules profile language logic ++ rules }
 
-/-- Structurally recursive specification of generated presentation assembly.
-It is convenient for kernel reasoning; `rawPresentation?` remains the
+/-- Structurally recursive specification of generated definition assembly.
+It is convenient for kernel reasoning; `rawDefinition?` remains the
 tail-recursive executable implementation. -/
-def rawPresentationStructural? (profile : EvidenceProfile)
-    (language : LanguageDef) (logic : LogicProgram := []) : Option Presentation := do
+def rawDefinitionStructural? (profile : EvidenceProfile)
+    (language : LanguageDef) (logic : LogicProgram := []) :
+    Option CalculusLanguageDef := do
   let rules ← language.rewrites.mapM'
     (extractRuleSchema? profile language)
-  pure
-    { language
-      calculus :=
-        { judgments :=
-            { head := profile.derivedHead, arity := 1 } ::
-              (relationJudgmentDecls profile language).eraseDups
-          rules := relationFactRules profile language logic ++ rules } }
+  pure <| CalculusLanguageDef.extend language
+    { judgments :=
+        { head := profile.derivedHead, arity := 1 } ::
+          (relationJudgmentDecls profile language).eraseDups
+      rules := relationFactRules profile language logic ++ rules }
 
-/-- Executable and structurally recursive presentation assembly agree
+/-- Executable and structurally recursive definition assembly agree
 exactly. -/
-theorem rawPresentation?_eq_structural (profile : EvidenceProfile)
+theorem rawDefinition?_eq_structural (profile : EvidenceProfile)
     (language : LanguageDef) (logic : LogicProgram := []) :
-    rawPresentation? profile language logic =
-      rawPresentationStructural? profile language logic := by
-  rw [rawPresentationStructural?]
-  rw [rawPresentation?]
+    rawDefinition? profile language logic =
+      rawDefinitionStructural? profile language logic := by
+  rw [rawDefinitionStructural?]
+  rw [rawDefinition?]
   rw [List.mapM'_eq_mapM]
 
-def validatedPresentation? (profile : EvidenceProfile)
+def validatedDefinition? (profile : EvidenceProfile)
     (language : LanguageDef) (logic : LogicProgram := []) :
-    Option ValidatedPresentation := do
-  let presentation ← rawPresentation? profile language logic
-  presentation.validateV2?
+    Option ValidatedCalculusLanguageDef := do
+  let definition ← rawDefinition? profile language logic
+  definition.validate?
 
 end Mettapedia.GSLT.LanguageDef.InferenceExtraction

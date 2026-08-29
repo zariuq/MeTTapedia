@@ -1,6 +1,6 @@
 import Mettapedia.TypeTheory.FreeWhiskeredCellTransportComposition
 import Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptSubstitutionTransport
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.RetainedStructuralSubstitutionCoherence
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RetainedStructuralSubstitutionCoherence
 
 /-!
 # Functorial substitution actions on dependent receipt generators
@@ -28,9 +28,9 @@ open Mettapedia.TypeTheory.FreeWhiskeredCell
 open Mettapedia.TypeTheory.JudgmentalEquality
 open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptComputad
 open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptSubstitutionTransport
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.ProofRelevantStructuralComputation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.ProofRelevantStructuralComputation
 
 universe uEvidence uGenerator
 

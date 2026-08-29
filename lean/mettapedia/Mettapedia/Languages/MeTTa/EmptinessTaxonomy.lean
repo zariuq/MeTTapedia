@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.Core.Separation
+import Mettapedia.GSLT.Core.ObservationIndexedPruning
 
 /-!
 # A taxonomy of emptinesses, and which of them may share a spelling
@@ -52,6 +53,8 @@ inside the computation; it requires an elimination form that reifies the bag.
 namespace Mettapedia.Languages.MeTTa.Emptiness
 
 open Mettapedia.GSLT.Core.Separation
+open Mettapedia.GSLT.Core.ObservationIndexedPruning
+open Mettapedia.Cybernetics
 
 /-! ## The language -/
 
@@ -200,6 +203,112 @@ one answer, which no continuation can do. -/
 theorem collapse_observes_absence :
     denoteClean (.collapse zeroOutcomes) ≠ denoteClean (.collapse unitDatum) := by
   simp [denoteClean, encode, zeroOutcomes, unitDatum]
+
+/-! ## Receipted pruning by computational zero
+
+A loop watcher may propose dropping a branch, but the proposal is lawful only
+when a checker establishes that the branch denotes no answers at the declared
+observation.  This is the semantic role of computational zero.  It is not the
+ordinary datum spelled `Empty`.
+-/
+
+/-- Observe a list of choice branches by concatenating their answer streams. -/
+def choiceBranchObserver : Observer (List Expr) (List Datum) where
+  observe := fun branches => branches.flatMap denoteClean
+
+/-- Removing one named branch, with exact occurrence accounting. -/
+def pruneBranch (before : List Expr) (branch : Expr) (after : List Expr) :
+    PruningChange Expr Unit where
+  source := before ++ branch :: after
+  target := before ++ after
+  receipt := ()
+  removed := {branch}
+  accounting := by
+    rw [← Multiset.coe_add before (branch :: after),
+      ← Multiset.coe_add before after,
+      ← Multiset.cons_coe branch after,
+      ← Multiset.singleton_add]
+    ac_rfl
+
+/-- Replacing a denotationally zero branch by choice-zero preserves even the
+ordered answer stream, hence every coarser postcomposed observation. -/
+theorem prune_denotational_zero_lawful
+    (before after : List Expr) (branch : Expr)
+    (silent : denoteClean branch = []) :
+    LawfulAt choiceBranchObserver
+      (pruneBranch before branch after).toChange := by
+  simp [LawfulAt, choiceBranchObserver, pruneBranch, silent]
+
+/-- The explicit computation form used for `(empty)` is a positive instance:
+it contributes no answer and can therefore disappear from a choice. -/
+theorem prune_choice_zero_lawful :
+    LawfulAt choiceBranchObserver
+      (pruneBranch [] zeroOutcomes [unitDatum]).toChange := by
+  apply prune_denotational_zero_lawful
+  rfl
+
+/-- A syntactic proposal to remove a productive branch is not authority. -/
+theorem prune_productive_branch_not_lawful :
+    Not (LawfulAt choiceBranchObserver
+      (pruneBranch [] unitDatum []).toChange) := by
+  simp [LawfulAt, choiceBranchObserver, pruneBranch,
+    denoteClean, unitDatum]
+
+def productiveBranchProposal : Proposal Nat Expr Unit where
+  toPruningChange := pruneBranch [] unitDatum []
+  observedRevision := 7
+
+def productiveBranchSnapshot : Snapshot Nat Expr Unit where
+  revision := 7
+  live := [unitDatum]
+  pruned := 0
+  receipts := []
+
+/-- A current watcher proposal still has no exact admission when it would
+erase a productive branch.  Currency is necessary, never sufficient. -/
+theorem productive_branch_has_no_exact_admission :
+    Not (Admission choiceBranchObserver productiveBranchSnapshot
+      productiveBranchProposal) := by
+  intro admission
+  exact prune_productive_branch_not_lawful admission.lawful
+
+def choiceZeroProposal : Proposal Nat Expr Unit where
+  toPruningChange := pruneBranch [] zeroOutcomes [unitDatum]
+  observedRevision := 7
+
+def choiceZeroSnapshot : Snapshot Nat Expr Unit where
+  revision := 7
+  live := [zeroOutcomes, unitDatum]
+  pruned := 0
+  receipts := []
+
+/-- A current checked zero proposal receives admission. -/
+def choiceZeroAdmission : Admission choiceBranchObserver
+    choiceZeroSnapshot choiceZeroProposal where
+  revisionCurrent := rfl
+  sourceCurrent := rfl
+  lawful := prune_choice_zero_lawful
+
+/-- The admitted transition retains exact occurrence accounting. -/
+theorem choiceZero_apply_conserves :
+    ((applyProposal choiceBranchObserver choiceZeroSnapshot
+        choiceZeroProposal choiceZeroAdmission).live : Multiset Expr) +
+      (applyProposal choiceBranchObserver choiceZeroSnapshot
+        choiceZeroProposal choiceZeroAdmission).pruned =
+    (choiceZeroSnapshot.live : Multiset Expr) +
+      choiceZeroSnapshot.pruned :=
+  applyProposal_conserves _ _ _ _
+
+def staleChoiceZeroProposal : Proposal Nat Expr Unit :=
+  { choiceZeroProposal with observedRevision := 6 }
+
+/-- Even a semantically valid zero certificate cannot be replayed at a stale
+revision. -/
+theorem stale_choice_zero_has_no_admission :
+    Not (Admission choiceBranchObserver choiceZeroSnapshot
+      staleChoiceZeroProposal) := by
+  apply stale_has_no_admission
+  decide
 
 /-! ## Branch one: the reading applied everywhere
 
@@ -365,3 +474,9 @@ theorem empty_collection_and_empty_type_never_compete (context : SortedCtx) :
       emptyCollectionAnswer, emptyTypeName] at accepted rejected
 
 end Mettapedia.Languages.MeTTa.Emptiness
+
+#print axioms Mettapedia.Languages.MeTTa.Emptiness.prune_choice_zero_lawful
+#print axioms Mettapedia.Languages.MeTTa.Emptiness.prune_productive_branch_not_lawful
+#print axioms Mettapedia.Languages.MeTTa.Emptiness.productive_branch_has_no_exact_admission
+#print axioms Mettapedia.Languages.MeTTa.Emptiness.choiceZero_apply_conserves
+#print axioms Mettapedia.Languages.MeTTa.Emptiness.stale_choice_zero_has_no_admission

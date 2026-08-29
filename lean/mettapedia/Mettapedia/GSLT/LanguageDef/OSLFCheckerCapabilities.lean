@@ -1,6 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.KernelAuthority
 import Mettapedia.OSLF.Framework.GSLTTypeSynthesis
-import Mettapedia.OSLF.Framework.NativeTypeTheory
+import Mettapedia.OSLF.StructuralModal.Formula
 
 /-!
 # Checker capabilities of OSLF-generated native types
@@ -25,22 +25,22 @@ open Mettapedia.GSLT.LanguageDef.KernelAuthority
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.DerivedModalities
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
-open Mettapedia.OSLF.Framework.NativeTypeTheory
+open Mettapedia.OSLF.StructuralModal
 
 /-! ## Exact positive native certificates -/
 
 /-- On the explicitly admitted finitary fragment, semantic inhabitation is
 equivalent to existence of a finite positive native certificate. -/
 theorem positiveCertificate_iff_satisfies
-    {span : ReductionSpan Pattern} (nativeType : NativeType)
-    (pattern : Pattern) (supported : nativeType.finitelyCertifiable = true) :
-    Nonempty (Certificate span nativeType pattern) <->
-      satisfiesOver span nativeType pattern := by
+    {span : ReductionSpan Pattern} (formula : Formula)
+    (pattern : Pattern) (supported : formula.finitelyCertifiable = true) :
+    Nonempty (Certificate span formula pattern) <->
+      satisfiesOver span formula pattern := by
   constructor
   · rintro ⟨certificate⟩
     exact certificate.sound
   · intro inhabited
-    exact Certificate.complete nativeType pattern supported inhabited
+    exact Certificate.complete formula pattern supported inhabited
 
 /-! ## A true box judgment outside the positive certificate language -/
 

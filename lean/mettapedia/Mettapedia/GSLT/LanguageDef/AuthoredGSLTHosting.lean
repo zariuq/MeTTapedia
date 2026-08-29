@@ -608,7 +608,7 @@ structure WholeTextSurfaceHosting
     {Raw : Type uRaw}
     (authoredLex runtimeLex : Raw → List Codepoint → Prop)
     (presentation :
-      Mettapedia.GSLT.Parsing.GuardCorrespondence.SourcePresentation)
+      Mettapedia.GSLT.Parsing.GuardCorrespondence.SourceDefinition)
     {Value : Type uValue}
     (source target : ObservedOperationalObject Value) where
   lexical : ExactLexicalRealization authoredLex runtimeLex
@@ -622,7 +622,7 @@ namespace WholeTextSurfaceHosting
 variable {Raw : Type uRaw}
 variable {authoredLex runtimeLex : Raw → List Codepoint → Prop}
 variable {presentation :
-  Mettapedia.GSLT.Parsing.GuardCorrespondence.SourcePresentation}
+  Mettapedia.GSLT.Parsing.GuardCorrespondence.SourceDefinition}
 variable {Value : Type uValue}
 variable {source target : ObservedOperationalObject Value}
 
@@ -740,7 +740,7 @@ two-sided operational hosting proof.  `Elaborates` is a relation rather than a
 function so authored ambiguity may remain explicit. -/
 structure MaySetSurfaceHosting {Value : Type uValue}
     (presentation :
-      Mettapedia.GSLT.Parsing.GuardCorrespondence.SourcePresentation)
+      Mettapedia.GSLT.Parsing.GuardCorrespondence.SourceDefinition)
     (input : List Codepoint)
     (source target : ObservedOperationalObject Value) where
   forest : Forest
@@ -752,7 +752,7 @@ namespace MaySetSurfaceHosting
 
 variable {Value : Type uValue}
 variable {presentation :
-  Mettapedia.GSLT.Parsing.GuardCorrespondence.SourcePresentation}
+  Mettapedia.GSLT.Parsing.GuardCorrespondence.SourceDefinition}
 variable {input : List Codepoint}
 variable {source target : ObservedOperationalObject Value}
 

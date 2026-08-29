@@ -51,9 +51,9 @@ def renderConversion (conversion : Option ConversionDecl) : String :=
   InferenceCettaWire.CettaTerm.render
     (InferenceCettaWire.encodeConversion conversion)
 
-def renderPresentation (presentation : Presentation) : String :=
+def renderDefinition (definition : CalculusLanguageDef) : String :=
   InferenceCettaWire.CettaTerm.render
-    (InferenceCettaWire.encodePresentation presentation)
+    (InferenceCettaWire.encodeDefinition definition)
 
 def renderSourceIdentity (identity : SourceIdentity) : String :=
   s!"(SourceIdentityV1 {quote identity.systemId} {quote identity.revision} " ++
@@ -79,7 +79,7 @@ def renderGSLTSource (source : GSLTSource) : String :=
   s!"(GSLTSourceV1 {renderSourceIdentity source.identity} " ++
     s!"{renderAssumptionLedger source.assumptions} " ++
     s!"{renderProfileLedger source.profiles} " ++
-    s!"{renderPresentation source.presentation})"
+    s!"{renderDefinition source.definition})"
 
 def renderRuleInstance (ruleInstance : RuleInstance) : String :=
   InferenceCettaWire.CettaTerm.render

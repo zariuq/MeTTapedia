@@ -3,7 +3,7 @@ import Mettapedia.GSLT.LanguageDef.CertificateGSLTOpenDAG
 /-!
 # Exact transport of open DAG evidence
 
-Rule-retaining presentation refinement preserves not only the meaning of an
+Rule-retaining definition refinement preserves not only the meaning of an
 open DAG but the very same chronological artifact.  The proof is executable:
 each successful source rule instantiation is the same successful target
 instantiation, so node, block, and root computations replay unchanged.
@@ -19,7 +19,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 private theorem instantiateRule?_eq_some_of_refines
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (refines : RuleLookupRefines source target)
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {conclusion : Pattern}
@@ -31,7 +31,7 @@ private theorem instantiateRule?_eq_some_of_refines
       refines)
 
 private theorem checkOpenDAGNode?_eq_some_of_refines
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (refines : RuleLookupRefines source target)
     {context : List Pattern} {entries next : List OpenDAGEntry}
     {node : OpenDAGNode}
@@ -58,7 +58,7 @@ private theorem checkOpenDAGNode?_eq_some_of_refines
               exact checked
 
 private theorem checkOpenDAGNodes?_eq_some_of_refines
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (refines : RuleLookupRefines source target) {context : List Pattern} :
     ∀ {entries : List OpenDAGEntry} {nodes : List OpenDAGNode}
       {next : List OpenDAGEntry},
@@ -82,7 +82,7 @@ private theorem checkOpenDAGNodes?_eq_some_of_refines
           exact inductionHypothesis checked
 
 private theorem checkOpenDAGBlocks?_eq_some_of_refines
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (refines : RuleLookupRefines source target) {context : List Pattern} :
     ∀ {entries : List OpenDAGEntry} {blocks : List (List OpenDAGNode)}
       {next : List OpenDAGEntry},
@@ -106,7 +106,7 @@ private theorem checkOpenDAGBlocks?_eq_some_of_refines
           exact inductionHypothesis checked
 
 theorem expandOpenDAGBlocks?_eq_some_of_ruleLookupRefines
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (refines : RuleLookupRefines source target)
     {context : List Pattern} {goal : Pattern} {rootId : Nat}
     {blocks : List (List OpenDAGNode)} {proof : RawOpenProof}
@@ -125,7 +125,7 @@ theorem expandOpenDAGBlocks?_eq_some_of_ruleLookupRefines
 
 /-- Exact refinement preserves acceptance of the same open-DAG artifact. -/
 theorem checkOpenDAGBlocks_true_of_ruleLookupRefines
-    {source target : ValidatedPresentation}
+    {source target : ValidatedCalculusLanguageDef}
     (refines : RuleLookupRefines source target)
     {context : List Pattern} {goal : Pattern} {rootId : Nat}
     {blocks : List (List OpenDAGNode)}
@@ -145,7 +145,7 @@ namespace CheckedOpenDAG
 
 /-- Transport a checked DAG without changing identifiers, blocks, or sharing. -/
 def transport {source target : Object}
-    (refines : RuleLookupRefines source.presentation target.presentation)
+    (refines : RuleLookupRefines source.definition target.definition)
     {context : List Pattern} {goal : Pattern}
     (dag : CheckedOpenDAG source context goal) :
     CheckedOpenDAG target context goal :=
@@ -155,13 +155,13 @@ def transport {source target : Object}
       checkOpenDAGBlocks_true_of_ruleLookupRefines refines dag.accepted }
 
 @[simp] theorem transport_rootId {source target : Object}
-    (refines : RuleLookupRefines source.presentation target.presentation)
+    (refines : RuleLookupRefines source.definition target.definition)
     {context : List Pattern} {goal : Pattern}
     (dag : CheckedOpenDAG source context goal) :
     (dag.transport refines).rootId = dag.rootId := rfl
 
 @[simp] theorem transport_blocks {source target : Object}
-    (refines : RuleLookupRefines source.presentation target.presentation)
+    (refines : RuleLookupRefines source.definition target.definition)
     {context : List Pattern} {goal : Pattern}
     (dag : CheckedOpenDAG source context goal) :
     (dag.transport refines).blocks = dag.blocks := rfl

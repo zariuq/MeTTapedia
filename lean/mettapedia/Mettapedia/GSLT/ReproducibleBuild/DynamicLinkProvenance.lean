@@ -47,7 +47,7 @@ namespace Mettapedia.GSLT.ReproducibleBuild.DynamicLinkProvenance
 open Mettapedia.GSLT.LooseRelationEquipment
 open Mettapedia.GSLT.ReproducibleBuild.GSLTIL
 open Mettapedia.GSLT.WorldOfViews
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.RelationalInternalLanguage
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RelationalInternalLanguage
 
 universe u
 

@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.PureKernel.RegularBidirectional
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.RegularBidirectional
 
 /-!
 # Prime open lambda-Pi correspondence
@@ -16,11 +16,11 @@ lambda-Pi fragment.
 
 namespace Mettapedia.Languages.MeTTa.Prime.OpenLambdaPiCorrespondence
 
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.Context
-open Mettapedia.Languages.MeTTa.PureKernel.Renaming
-open Mettapedia.Languages.MeTTa.PureKernel.Substitution
-open Mettapedia.Languages.MeTTa.PureKernel.PresentationBoundary
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Context
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Renaming
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Substitution
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PresentationBoundary
 
 /-- Intrinsically scoped syntax accepted by the stable Prime lambda-Pi
 judgment.  The domain stored by `lam` is elaboration data. -/

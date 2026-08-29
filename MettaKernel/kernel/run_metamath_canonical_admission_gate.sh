@@ -273,7 +273,7 @@ SOURCE_SUITE_LOG="$LOGDIR/source-suite.log"
 if ! "$ROOT/run_gslt_checked_source_v1_gate.sh" >"$SOURCE_SUITE_LOG" 2>&1; then
   fail "GSLT source-indexed checker suite; log: $SOURCE_SUITE_LOG"
 fi
-grep -Fq 'PASS (24/24 assertions; 0 failures)' "$SOURCE_SUITE_LOG" ||
+grep -Fq 'PASS (29/29 assertions; 0 failures)' "$SOURCE_SUITE_LOG" ||
   fail "GSLT source-indexed checker summary absent; log: $SOURCE_SUITE_LOG"
 
 run_cetta "$ROOT/metamath_demo0_generated_v0.metta" \

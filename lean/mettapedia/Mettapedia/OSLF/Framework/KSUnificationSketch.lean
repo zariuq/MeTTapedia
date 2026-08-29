@@ -1,7 +1,7 @@
 import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.TypeSynthesis
-import Mettapedia.OSLF.NativeType.Construction
+import Mettapedia.OSLF.PresheafNativeType.PresheafSemantics
 import Mettapedia.PLN.Evidence.EvidenceQuantale
 import Mettapedia.PLN.WorldModel.PLNWorldModel
 import Mettapedia.PLN.WorldModel.PLNWorldModelCalculus
@@ -348,8 +348,8 @@ bounds are strictly distinct. -/
 theorem nativeType_heyting_probability_gate
     (L : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory)
     (S : L.Obj)
-    (ν : ModularValuation (Mettapedia.OSLF.NativeType.NatTypeFiber L S))
-    (a : Mettapedia.OSLF.NativeType.NatTypeFiber L S) :
+    (ν : ModularValuation (Mettapedia.OSLF.PresheafNativeType.NativeTypeFiber L S))
+    (a : Mettapedia.OSLF.PresheafNativeType.NativeTypeFiber L S) :
     ν.val a + ν.val aᶜ = ν.val (a ⊔ aᶜ) ∧
     lowerBound ν a ≤ upperBound ν a ∧
     (a ⊔ aᶜ = ⊤ → lowerBound ν a = upperBound ν a) ∧

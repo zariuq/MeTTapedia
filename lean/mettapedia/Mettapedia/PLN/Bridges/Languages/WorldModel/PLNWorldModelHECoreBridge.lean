@@ -17,7 +17,7 @@ Positive example:
 - a core-fragment HE rule yields a `WMConsequenceRuleOn`.
 
 Negative example:
-- this is not a claim that HE runtime reduces to PureKernel `A` or `B`.
+- this is not a claim that HE runtime reduces to IntrinsicPure `A` or `B`.
 -/
 
 namespace Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelHECoreBridge

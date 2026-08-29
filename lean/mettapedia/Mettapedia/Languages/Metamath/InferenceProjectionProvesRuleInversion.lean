@@ -17,6 +17,7 @@ runtime checker agreement.
 namespace Mettapedia.Languages.Metamath.InferenceProjection
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.Metamath.MMLean4Bridge
 open Mettapedia.Languages.Metamath.InferenceEncoding
@@ -26,7 +27,7 @@ open Mettapedia.Languages.Metamath.InferenceSideConditions
 
 /-- Raw application data for a projected active-hypothesis rule. -/
 def ActiveHypothesisApplicationView
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (ruleInstance : RuleInstance) (premises : List Pattern)
     (formulaPattern : Pattern) : Prop :=
   ∃ hypothesis : HypothesisView,
@@ -46,7 +47,7 @@ def ActiveHypothesisApplicationView
 `AssertionView` exposes its authored metadata, while the instance arguments
 and all instantiated patterns remain uninterpreted syntax. -/
 def AssertionApplicationView
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (ruleInstance : RuleInstance) (premises : List Pattern)
     (formulaPattern : Pattern) : Prop :=
   ∃ assertion : AssertionView,
@@ -69,7 +70,7 @@ def AssertionApplicationView
 /-- A reflected active-hypothesis view reconstructs the exact generic local
 application. -/
 theorem ActiveHypothesisApplicationView.toRuleApplication
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {formulaPattern : Pattern}
     (view : ActiveHypothesisApplicationView projection target ruleInstance
@@ -83,7 +84,7 @@ theorem ActiveHypothesisApplicationView.toRuleApplication
 /-- A reflected assertion view reconstructs the exact generic local
 application without strengthening any raw argument into a decoded formula. -/
 theorem AssertionApplicationView.toRuleApplication
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {formulaPattern : Pattern}
     (view : AssertionApplicationView projection target ruleInstance premises
@@ -103,16 +104,16 @@ presentation rather than an enumeration of the current rule table. -/
 theorem sideRule_conclusion_isSideJudgment
     {rule : RuleSchema} (hmember : rule ∈ sideRules) :
     IsSideJudgment rule.conclusion := by
-  have hvalid := rule_isValidIn_of_mem validatedSidePresentation (by
-    simpa [validatedSidePresentation, sidePresentation, sideCalculus]
+  have hvalid := rule_isValidIn_of_mem validatedSideDefinition (by
+    simpa [validatedSideDefinition, sideDefinition, sideCalculus]
       using hmember)
   simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalid
   have hconclusionValid :
-      sidePresentation.judgmentSchemaValid rule.conclusion = true :=
+      sideDefinition.judgmentSchemaValid rule.conclusion = true :=
     (List.all_eq_true.mp hvalid.2.1) rule.conclusion (by
       simp [RuleSchema.patterns])
   exact isSideJudgment_of_sidePresentation_hasJudgmentShape
-    (Presentation.hasJudgmentShape_of_judgmentSchemaValid hconclusionValid)
+    (CalculusLanguageDef.hasJudgmentShape_of_judgmentSchemaValid hconclusionValid)
 
 /-- No standalone side rule can instantiate its conclusion to a `Proves`
 judgment. -/
@@ -132,9 +133,9 @@ theorem sideRule_cannot_instantiate_proves
 active hypothesis or an assertion.  The side-rule prefix is impossible, and
 the assertion branch makes no formula-decoding claim. -/
 theorem ruleApplication_proves_cases
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {formulaPattern : Pattern}
     (application :
@@ -147,7 +148,7 @@ theorem ruleApplication_proves_cases
   | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hmember : rule ∈ target.1.rules :=
         List.mem_of_find?_eq_some hlookup
-      rw [rules_eq_of_presentationOfProjection?_eq_some
+      rw [rules_eq_of_calculusLanguageDefOfProjection?_eq_some
         projection target.1 hprojection] at hmember
       rcases List.mem_append.mp hmember with hside | hsource
       · exact False.elim
@@ -166,9 +167,9 @@ theorem ruleApplication_proves_cases
 /-- Exact local characterization: projected `Proves` rule applications are
 precisely the union of the two raw generated-source views. -/
 theorem ruleApplication_proves_iff_sourceView
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {formulaPattern : Pattern} :
     RuleApplication target ruleInstance premises (proves formulaPattern) ↔
@@ -195,7 +196,7 @@ theorem activeHypothesisRule_ne_assertionRule
 
 /-- The two branches of root classification are disjoint. -/
 theorem sourceApplicationViews_exclusive
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {ruleInstance : RuleInstance} {premises : List Pattern}
     {formulaPattern : Pattern} :
     ¬ (ActiveHypothesisApplicationView projection target ruleInstance premises
@@ -214,9 +215,9 @@ theorem sourceApplicationViews_exclusive
 /-- Root classification lifts directly from local applications to arbitrary
 generic derivations.  Child reflection remains a separate recursive theorem. -/
 theorem provesDerivation_root_cases
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {formulaPattern : Pattern}
     (derivation : Derivation target (proves formulaPattern)) :
     ∃ ruleInstance premises,
@@ -233,8 +234,8 @@ theorem provesDerivation_root_cases
 
 /-- Positive: a genuinely witnessed generic `Proves` application exposes one
 of the two projected source-schema shapes. -/
-example (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+example (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (ruleInstance : RuleInstance) (premises : List Pattern)
     (formulaPattern : Pattern)
     (application :

@@ -13,7 +13,7 @@ disjoint-variable checking as ordinary side-judgment premises.
 Projection is fail-closed.  It rejects malformed runtime objects, unsupported
 formula shapes, duplicate floating-variable bindings, and source strings that
 would collide with the generated inference vocabulary.  The resulting raw
-presentation is still passed through `validateV2?`; this module makes no claim
+language definition is still passed through `validate?`; this module makes no claim
 yet that a projected rule application is equivalent to `DB.stepNormal`.
 
 `RuntimeDB` itself carries no history proving that it was captured before a
@@ -25,6 +25,7 @@ provenance remains a separate theorem obligation.
 namespace Mettapedia.Languages.Metamath.InferenceProjection
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.Metamath.MMLean4Bridge
 open Mettapedia.Languages.Metamath.InferenceEncoding
@@ -72,7 +73,7 @@ structure AssertionView where
   frame : RuntimeFrame
   hypotheses : List HypothesisView
 
-/-- Inspectable finite snapshot used to generate one presentation. -/
+/-- Inspectable finite snapshot used to generate one calculus language. -/
 structure PrefixProjection where
   declaredConstants : List String
   declaredVariables : List String
@@ -771,39 +772,38 @@ def generatedSourceRules (projection : PrefixProjection) : List RuleSchema :=
   projection.activeHypotheses.map activeHypothesisRule ++
     projection.assertions.map (assertionRule projection.callerFrame)
 
-/-- Any validated presentation with the projected rule-table shape retains
+/-- Any validated calculus language with the projected rule-table shape retains
 the complete side-condition proof calculus.  The generic transport theorem
 then reuses side derivations with their exact raw proof trees. -/
-theorem validatedSidePresentation_refines_of_generated_rules
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+theorem validatedSideDefinition_refines_of_generated_rules
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hrules :
       target.1.rules = sideRules ++ generatedSourceRules projection) :
-    RuleLookupRefines validatedSidePresentation target := by
+    RuleLookupRefines validatedSideDefinition target := by
   apply RuleLookupRefines.of_rules_eq_append
       (generatedSourceRules projection)
-  simpa [validatedSidePresentation, sidePresentation, sideCalculus] using hrules
+  simpa [validatedSideDefinition, sideDefinition, sideCalculus] using hrules
 
-def presentationOfProjection? (projection : PrefixProjection) :
-    Option Presentation := do
+def calculusLanguageDefOfProjection? (projection : PrefixProjection) :
+    Option CalculusLanguageDef := do
   guard (prefixProjectionValid projection)
   let vocabulary := sourceVocabulary projection
   guard (sourceVocabularyValid vocabulary)
   let sourceRules := generatedSourceRules projection
   guard (sourceRuleIdsDisjoint (sourceRules.map RuleSchema.id))
-  some
-    { language := languageWithSourceVocabulary vocabulary
-      calculus :=
-        { judgments := judgmentDecls ++ [provesDecl]
-          rules := sideRules ++ sourceRules } }
+  some <| CalculusLanguageDef.extend
+    (languageWithSourceVocabulary vocabulary)
+    { judgments := judgmentDecls ++ [provesDecl]
+      rules := sideRules ++ sourceRules }
 
-/-- A successful presentation projection exposes exactly the side calculus
+/-- A successful language projection exposes exactly the side calculus
 followed by the generated source rules. -/
-theorem rules_eq_of_presentationOfProjection?_eq_some
-    (projection : PrefixProjection) (presentation : Presentation)
+theorem rules_eq_of_calculusLanguageDefOfProjection?_eq_some
+    (projection : PrefixProjection) (definition : CalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some presentation) :
-    presentation.rules = sideRules ++ generatedSourceRules projection := by
-  unfold presentationOfProjection? at hprojection
+      calculusLanguageDefOfProjection? projection = some definition) :
+    definition.rules = sideRules ++ generatedSourceRules projection := by
+  unfold calculusLanguageDefOfProjection? at hprojection
   simp only [Option.bind_eq_bind] at hprojection
   rw [Option.bind_eq_some_iff] at hprojection
   rcases hprojection with ⟨_, _, hprojection⟩
@@ -815,33 +815,33 @@ theorem rules_eq_of_presentationOfProjection?_eq_some
   cases hprojection
   rfl
 
-/-- Every successfully validated projected presentation admits exact transport
-of side-condition proofs from the standalone side presentation. -/
-theorem validatedSidePresentation_refines_of_projection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+/-- Every successfully validated projected language admits exact transport
+of side-condition proofs from the standalone side language. -/
+theorem validatedSideDefinition_refines_of_projection
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1) :
-    RuleLookupRefines validatedSidePresentation target :=
-  validatedSidePresentation_refines_of_generated_rules projection target
-    (rules_eq_of_presentationOfProjection?_eq_some
+      calculusLanguageDefOfProjection? projection = some target.1) :
+    RuleLookupRefines validatedSideDefinition target :=
+  validatedSideDefinition_refines_of_generated_rules projection target
+    (rules_eq_of_calculusLanguageDefOfProjection?_eq_some
       projection target.1 hprojection)
 
 /-- Raw general projection.  This is useful for inspecting the generated
 schema before admission. -/
-def rawPresentation? (db : RuntimeDB) : Option Presentation := do
+def rawDefinition? (db : RuntimeDB) : Option CalculusLanguageDef := do
   let projection ← projectPrefix? db
-  presentationOfProjection? projection
+  calculusLanguageDefOfProjection? projection
 
 /-- Proof-carrying V2-admitted projection. -/
-def projectValidated? (db : RuntimeDB) : Option ValidatedPresentation := do
-  let presentation ← rawPresentation? db
-  presentation.validateV2?
+def projectValidated? (db : RuntimeDB) : Option ValidatedCalculusLanguageDef := do
+  let definition ← rawDefinition? db
+  definition.validate?
 
 /-- Target-facing projection rejects an already present (and hence potentially
-self-usable) target label before admitting the prefix presentation.  Freshness
+self-usable) target label before admitting the prefix language.  Freshness
 is an absence check, not a proof of chronological parser provenance. -/
 def projectForFreshTarget? (db : RuntimeDB) (targetLabel : String) :
-    Option ValidatedPresentation := do
+    Option ValidatedCalculusLanguageDef := do
   guard (sourceRuleLabelsValid [targetLabel])
   guard (db.find? targetLabel).isNone
   projectValidated? db
@@ -938,17 +938,17 @@ def globalTagIncoherentDB : RuntimeDB :=
 def examplePrefixResult : Option PrefixProjection :=
   projectPrefix? exampleDB
 
-def exampleValidatedResult : Option ValidatedPresentation :=
+def exampleValidatedResult : Option ValidatedCalculusLanguageDef :=
   projectValidated? exampleDB
 
-def freshTargetResult : Option ValidatedPresentation :=
+def freshTargetResult : Option ValidatedCalculusLanguageDef :=
   projectForFreshTarget? exampleDB "th-ph"
 
-def occupiedTargetResult : Option ValidatedPresentation :=
+def occupiedTargetResult : Option ValidatedCalculusLanguageDef :=
   projectForFreshTarget? exampleDB "ax-ph"
 
-def reservedStringResult : Option Presentation :=
-  rawPresentation? reservedStringDB
+def reservedStringResult : Option CalculusLanguageDef :=
+  rawDefinition? reservedStringDB
 
 def variableHeadedResult : Option PrefixProjection :=
   projectPrefix? variableHeadedHypothesisDB

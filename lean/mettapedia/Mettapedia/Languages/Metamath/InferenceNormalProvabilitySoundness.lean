@@ -1,5 +1,7 @@
 import Mettapedia.Languages.Metamath.InferenceNormalFoldReflection
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Operational provability of native normal Metamath proofs
 
@@ -135,11 +137,11 @@ theorem acceptedNormalFold_to_exists_operationalProvable
 authored labels execute in the same runtime database. -/
 theorem generatedProvesTree_to_operationalProvable
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (formula : ConstantHeadedFormula)
     (tree : GeneratedProvesTree projection target formula)
     (Γ : OperationalDatabase) (fr : OperationalFrame)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (hdatabase : Metamath.Kernel.toDatabase db = some Γ)
     (hframe : Metamath.Kernel.toFrame db db.frame = some fr)
@@ -163,10 +165,10 @@ theorem generatedProvesTree_to_operationalProvable
 postfix labels. -/
 theorem provesDerivation_to_operationalProvable
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (formula : ConstantHeadedFormula)
     (Γ : OperationalDatabase) (fr : OperationalFrame)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (hdatabase : Metamath.Kernel.toDatabase db = some Γ)
     (hframe : Metamath.Kernel.toFrame db db.frame = some fr)
@@ -187,9 +189,9 @@ derivation.  The witnesses expose the exact operational database and ambient
 frame produced by the verified runtime bridge. -/
 theorem provesDerivation_to_exists_operationalProvable
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (formula : ConstantHeadedFormula)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (hbaseStack : base.stack = #[])
     (derivation : Derivation target (proves (encodeFormula formula))) :
@@ -211,9 +213,9 @@ is the proposition-level endpoint: it forgets which native derivation was
 checked, while retaining the exact same-database image equalities. -/
 theorem nonempty_provesDerivation_to_exists_operationalProvable
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (formula : ConstantHeadedFormula)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (hbaseStack : base.stack = #[])
     (hnative :

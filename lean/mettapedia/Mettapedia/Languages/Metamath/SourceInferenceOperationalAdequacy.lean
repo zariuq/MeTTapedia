@@ -4,6 +4,8 @@ import Mettapedia.Languages.Metamath.InferenceOperationalSpecStepSoundness
 import Mettapedia.Languages.Metamath.InferenceOperationalAssertionReification
 import Mettapedia.Languages.Metamath.InferenceOperationalProjectionReification
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Direct operational adequacy of source-owned Metamath inference
 
@@ -155,15 +157,15 @@ theorem sourceOperationalDatabase_lookup_exists
 /-- Successful source-presentation generation exposes the source validity
 gate without consulting a runtime database. -/
 theorem sourcePrefixValid_of_presentationOfSourcePrefix?_eq_some
-    (source : SourcePrefix) (target : ValidatedPresentation)
-    (hsource : presentationOfSourcePrefix? source = some target.1) :
+    (source : SourcePrefix) (target : ValidatedCalculusLanguageDef)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1) :
     sourcePrefixValid source = true := by
   have hruntime :
-      presentationOfProjection? source.toProjection = some target.1 := by
-    rw [← presentationOfSourcePrefix?_eq_runtime]
+      calculusLanguageDefOfProjection? source.toProjection = some target.1 := by
+    rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
     exact hsource
   have hvalid :=
-    prefixProjectionValid_of_presentationOfProjection?_eq_some
+    prefixProjectionValid_of_calculusLanguageDefOfProjection?_eq_some
       source.toProjection target.1 hruntime
   simpa using hvalid
 
@@ -174,9 +176,9 @@ mutual
 /-- Every result in a source-owned proof tree respects the source caller's
 active-variable classification. -/
 theorem sourceTree_result_respects
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (tree : SourceGeneratedProvesTree source target formula) :
     formulaSymbolsRespectFrame
       (floatingVariableNames source.activeHypotheses) formula = true := by
@@ -184,9 +186,9 @@ theorem sourceTree_result_respects
   | active hypothesis hmember =>
       have hvalid :
           prefixProjectionValid source.toProjection = true := by
-        exact prefixProjectionValid_of_presentationOfProjection?_eq_some
+        exact prefixProjectionValid_of_calculusLanguageDefOfProjection?_eq_some
           source.toProjection target.1
-            (presentationOfSourcePrefix?_eq_runtime source ▸ hsource)
+            (calculusLanguageDefOfSourcePrefix?_eq_runtime source ▸ hsource)
       simp only [prefixProjectionValid, Bool.and_eq_true] at hvalid
       have hframe :
           frameProjectionValid source.callerFrame.toRuntime
@@ -195,12 +197,12 @@ theorem sourceTree_result_respects
       exact List.all_eq_true.mp hframe.1.2 hypothesis hmember
   | @assertion assertion actuals _result substitution hmember node children =>
       have hruntime :
-          presentationOfProjection? source.toProjection = some target.1 := by
-        rw [← presentationOfSourcePrefix?_eq_runtime]
+          calculusLanguageDefOfProjection? source.toProjection = some target.1 := by
+        rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
         exact hsource
       have hprojectionValid :
           prefixProjectionValid source.toProjection = true :=
-        prefixProjectionValid_of_presentationOfProjection?_eq_some
+        prefixProjectionValid_of_calculusLanguageDefOfProjection?_eq_some
           source.toProjection target.1 hruntime
       have hassertionMember :
           assertion.toProjectionView ∈ source.toProjection.assertions :=
@@ -250,10 +252,10 @@ decreasing_by
 /-- Every formula in a source-owned proof forest respects the same caller
 classification. -/
 theorem sourceForest_all_respect
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : SourceGeneratedProvesForest source target formulas)
-    (hsource : presentationOfSourcePrefix? source = some target.1) :
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1) :
     formulas.all (formulaSymbolsRespectFrame
       (floatingVariableNames source.activeHypotheses)) = true := by
   cases forest with
@@ -275,8 +277,8 @@ end
 /-- One proof-relevant source assertion node is exactly an operational
 assertion step in the database derived from the same source prefix. -/
 theorem sourceGeneratedAssertionNode_toProofValidFrom
-    (source : SourcePrefix) (target : ValidatedPresentation)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (source : SourcePrefix) (target : ValidatedCalculusLanguageDef)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (assertion : SourceAssertion)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)
@@ -301,15 +303,15 @@ theorem sourceGeneratedAssertionNode_toProofValidFrom
     sourceOperationalFrame assertion.frame assertion.hypotheses
   let specSubstitution := operationalSubstitution fallback substitution
   have hruntime :
-      presentationOfProjection? source.toProjection = some target.1 := by
-    rw [← presentationOfSourcePrefix?_eq_runtime]
+      calculusLanguageDefOfProjection? source.toProjection = some target.1 := by
+    rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
     exact hsource
   have hassertionMember :
       assertion.toProjectionView ∈ source.toProjection.assertions :=
     List.mem_map.mpr ⟨assertion, hmember, rfl⟩
   have hprojectionValid :
       prefixProjectionValid source.toProjection = true :=
-    prefixProjectionValid_of_presentationOfProjection?_eq_some
+    prefixProjectionValid_of_calculusLanguageDefOfProjection?_eq_some
       source.toProjection target.1 hruntime
   have hsourceValid :
       sourcePrefixValid source = true :=
@@ -535,7 +537,7 @@ mutual
 /-- Reverse-chronological operational steps carried by a source proof tree.
 This order is the native order of `Metamath.Spec.ProofValidFrom`. -/
 def sourceTreeOperationalSteps
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (fallback : Metamath.Spec.Subst) :
     SourceGeneratedProvesTree source target formula →
@@ -551,7 +553,7 @@ def sourceTreeOperationalSteps
 /-- Reverse-chronological operational steps for a forest whose trees execute
 from head to tail. -/
 def sourceForestOperationalSteps
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (fallback : Metamath.Spec.Subst) :
     SourceGeneratedProvesForest source target formulas →
@@ -567,9 +569,9 @@ mutual
 
 /-- Exact direct operational execution of a source-owned proof tree. -/
 theorem sourceTree_toProofValidFrom
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (tree : SourceGeneratedProvesTree source target formula)
     (fallback : Metamath.Spec.Subst)
     (remaining : List Metamath.Spec.Expr) :
@@ -602,9 +604,9 @@ decreasing_by
 
 /-- Exact direct execution of an ordered source-owned proof forest. -/
 theorem sourceForest_toProofValidFrom
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (forest : SourceGeneratedProvesForest source target formulas)
     (fallback : Metamath.Spec.Subst)
     (remaining : List Metamath.Spec.Expr) :
@@ -640,9 +642,9 @@ end
 /-- A source proof-occurrence tree proves its conclusion in the operational
 Metamath semantics derived from the same source prefix. -/
 theorem sourceTree_to_sourceOperationalProvable
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (tree : SourceGeneratedProvesTree source target formula)
     (fallback : Metamath.Spec.Subst) :
     Metamath.Spec.Provable
@@ -665,14 +667,14 @@ theorem sourceTree_to_sourceOperationalProvable
 
 /-- One source proof tree together with its dependent conclusion formula. -/
 structure SourceProofItem (source : SourcePrefix)
-    (target : ValidatedPresentation) where
+    (target : ValidatedCalculusLanguageDef) where
   formula : ConstantHeadedFormula
   tree : SourceGeneratedProvesTree source target formula
 
 /-- Erase a stack of source proof occurrences to the operational expression
 stack. -/
 def sourceProofStackImage
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (items : List (SourceProofItem source target)) :
     List Metamath.Spec.Expr :=
   items.map (operationalExpr ∘ SourceProofItem.formula)
@@ -680,7 +682,7 @@ def sourceProofStackImage
 /-- Reassemble a list of dependent source proof items as an ordered source
 proof forest. -/
 def sourceProofItemsToForest
-    {source : SourcePrefix} {target : ValidatedPresentation} :
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef} :
     (items : List (SourceProofItem source target)) →
       SourceGeneratedProvesForest source target
         (items.map SourceProofItem.formula)
@@ -691,8 +693,8 @@ def sourceProofItemsToForest
 /-- Every formula carried by a source proof stack has the unique canonical
 tagging determined by its operational erasure and the source caller frame. -/
 theorem sourceProofItems_formulas_eq_reify_image
-    {source : SourcePrefix} {target : ValidatedPresentation}
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (items : List (SourceProofItem source target)) :
     items.map SourceProofItem.formula =
       (sourceProofStackImage items).map
@@ -709,8 +711,8 @@ theorem sourceProofItems_formulas_eq_reify_image
 
 /-- Image equality therefore determines the exact source formula list. -/
 theorem sourceProofItems_formulas_eq_reify
-    {source : SourcePrefix} {target : ValidatedPresentation}
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (items : List (SourceProofItem source target))
     (expressions : List Metamath.Spec.Expr)
     (himage : sourceProofStackImage items = expressions) :
@@ -753,8 +755,8 @@ theorem reifyOperationalActuals_eq_map_reifyNeeded
 /-- Every operational proof over the source-derived database has a stack of
 source-owned proof occurrences with exactly the same expression image. -/
 theorem proofValid_exists_sourceProofStack
-    (source : SourcePrefix) (target : ValidatedPresentation)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (source : SourcePrefix) (target : ValidatedCalculusLanguageDef)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     {stack : List Metamath.Spec.Expr}
     {steps : List Metamath.Spec.ProofStep}
     (proof : Metamath.Spec.ProofValid
@@ -899,8 +901,8 @@ theorem proofValid_exists_sourceProofStack
           SourceGeneratedProvesForest source target canonicalActuals :=
         hactualFormulas ▸ sourceProofItemsToForest actualItems
       have hruntime :
-          presentationOfProjection? source.toProjection = some target.1 := by
-        rw [← presentationOfSourcePrefix?_eq_runtime]
+          calculusLanguageDefOfProjection? source.toProjection = some target.1 := by
+        rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
         exact hsource
       have hassertionProjectionMember :
           assertion.toProjectionView ∈ source.toProjection.assertions :=
@@ -965,8 +967,8 @@ canonical source-owned proof-occurrence tree.  The conclusion is reified with
 the source caller frame because operational expressions erase source
 variable/constant tags. -/
 theorem sourceOperationalProvable_to_sourceTree
-    (source : SourcePrefix) (target : ValidatedPresentation)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (source : SourcePrefix) (target : ValidatedCalculusLanguageDef)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     {expression : Metamath.Spec.Expr}
     (hprovable :
       Metamath.Spec.Provable
@@ -1011,8 +1013,8 @@ theorem sourceOperationalProvable_to_sourceTree
 Metamath provability define the same proof language on frame-respecting source
 formulas. -/
 theorem sourceGeneratedProvesTree_nonempty_iff_sourceOperationalProvable
-    (source : SourcePrefix) (target : ValidatedPresentation)
-    (hsource : presentationOfSourcePrefix? source = some target.1)
+    (source : SourcePrefix) (target : ValidatedCalculusLanguageDef)
+    (hsource : calculusLanguageDefOfSourcePrefix? source = some target.1)
     (formula : ConstantHeadedFormula)
     (hrespect :
       formulaSymbolsRespectFrame

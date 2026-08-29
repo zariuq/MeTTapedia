@@ -104,8 +104,8 @@ race total in addition to each candidate's weight — sufficient
 (`raceShare_eq_of_total_eq`) and necessary
 (`normalizedShare_not_candidatewise`).  Finally, firing is two-axis:
 semiring annihilation gates the zero grade (`zero_grade_never_fires`),
-but affordability lives outside the value algebra
-(`grade_annihilation_cannot_gate`).
+while a nonzero grade does not establish firing because affordability lives
+outside the value algebra (`nonzero_grade_does_not_establish_firing`).
 -/
 
 namespace Mettapedia.GSLT.Core
@@ -602,7 +602,7 @@ A candidate with a nonzero grade and an unaffordable price does not fire,
 yet every condition of the pure value fragment `value ≠ 0` already
 holds — the purse is invisible to the semiring's multiplication, so cost
 cannot be folded into the guard's algebra. -/
-theorem grade_annihilation_cannot_gate :
+theorem nonzero_grade_does_not_establish_firing :
     ∃ value purse price : ℝ, value ≠ 0 ∧ ¬ fires value price purse := by
   refine ⟨1, 0, 1, by norm_num, ?_⟩
   norm_num [fires]
@@ -614,6 +614,6 @@ theorem grade_annihilation_cannot_gate :
 #print axioms raceShare_eq_of_total_eq
 #print axioms normalizedShare_not_candidatewise
 #print axioms zero_grade_never_fires
-#print axioms grade_annihilation_cannot_gate
+#print axioms nonzero_grade_does_not_establish_firing
 
 end Mettapedia.GSLT.Core

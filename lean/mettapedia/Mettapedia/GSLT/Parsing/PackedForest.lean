@@ -115,7 +115,7 @@ theorem member_packCertificates_unfolds
 /-- A packed witness is accepted only together with exact-span certificate
 replay against the compiled grammar. -/
 def PackedReplays (forest : Forest)
-    (presentation : GuardCorrespondence.SourcePresentation)
+    (presentation : GuardCorrespondence.SourceDefinition)
     (input : List Codepoint) (certificate : Certificate)
     (tree : ParseTree) : Prop :=
   RootUnfolds forest certificate ∧
@@ -151,7 +151,7 @@ theorem grammar_packed_replay_sound
 /-- Packed replay cannot invent a source parse. -/
 theorem packed_replay_sound
     {forest : Forest}
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint} {certificate : Certificate} {tree : ParseTree}
     (replay : PackedReplays forest presentation input certificate tree) :
     SourceDerivesAt presentation input presentation.start
@@ -236,7 +236,7 @@ private theorem certificateReplay_hasKey
 /-- Every source result has a finite tree-shaped SPPF witness.  Sharing several
 such witnesses with `packCertificates` preserves every alternative. -/
 theorem source_derivation_has_packed_witness
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint}
     {tree : ParseTree}
     (derivation : SourceDerivesAt presentation input presentation.start
@@ -289,7 +289,7 @@ theorem grammar_complete_result_set_agreement
   · exact complete tree
 
 def packedResults (forest : Forest)
-    (presentation : GuardCorrespondence.SourcePresentation)
+    (presentation : GuardCorrespondence.SourceDefinition)
     (input : List Codepoint) : Set ParseTree :=
   { tree | ∃ certificate,
       PackedReplays forest presentation input certificate tree }
@@ -297,7 +297,7 @@ def packedResults (forest : Forest)
 /-- The explicit scheduler obligation: every source result is present in one
 shared forest. -/
 def Complete (forest : Forest)
-    (presentation : GuardCorrespondence.SourcePresentation)
+    (presentation : GuardCorrespondence.SourceDefinition)
     (input : List Codepoint) : Prop :=
   ∀ tree, SourceDerivesAt presentation input presentation.start
       0 input.length tree →
@@ -305,7 +305,7 @@ def Complete (forest : Forest)
 
 theorem packedResults_subset_sourceResults
     (forest : Forest)
-    (presentation : GuardCorrespondence.SourcePresentation)
+    (presentation : GuardCorrespondence.SourceDefinition)
     (input : List Codepoint) :
     packedResults forest presentation input ⊆
       GuardCorrespondence.sourceResults presentation input := by
@@ -315,7 +315,7 @@ theorem packedResults_subset_sourceResults
 
 theorem complete_result_set_agreement
     {forest : Forest}
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint}
     (complete : Complete forest presentation input) :
     packedResults forest presentation input =
@@ -340,7 +340,7 @@ theorem grammar_complete_ambiguity_agreement
 
 theorem complete_ambiguity_agreement
     {forest : Forest}
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint}
     (complete : Complete forest presentation input) :
     Ambiguous (packedResults forest presentation input) ↔
@@ -351,7 +351,7 @@ theorem complete_ambiguity_agreement
 explicit completeness obligation. -/
 theorem complete_forests_result_set_agreement
     {left right : Forest}
-    {presentation : GuardCorrespondence.SourcePresentation}
+    {presentation : GuardCorrespondence.SourceDefinition}
     {input : List Codepoint}
     (leftComplete : Complete left presentation input)
     (rightComplete : Complete right presentation input) :
@@ -362,7 +362,7 @@ theorem complete_forests_result_set_agreement
 
 /-! ## Executable packed-ambiguity controls -/
 
-def toyPresentation : GuardCorrespondence.SourcePresentation :=
+def toyPresentation : GuardCorrespondence.SourceDefinition :=
   { start := "start"
     rules := [
       { sourceRule := "left", category := "start",

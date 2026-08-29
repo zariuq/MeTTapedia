@@ -4,13 +4,13 @@ import Mettapedia.GSLT.LanguageDef.InferenceChecker
 # Relational MeTTa projection of LanguageDef inference rules
 
 Renders the inference rules of a constructor-only `LanguageDef`
-presentation as an EXECUTABLE MeTTa relational program: one ordered clause
+calculus language definition as an EXECUTABLE MeTTa relational program: one ordered clause
 per rule, judgment applications as ordinary applications, metavariables as
 MeTTa variables, and premises as a `let`-chain over the private derivation
 token `ptg-true`.  Clause backtracking then realizes derivation search.
 
 This is the executable sibling of `InferenceMeTTaRender` (which serializes
-the same presentation as DATA for the operational generic checker): two
+the same definition as DATA for the operational generic checker): two
 projections of one authored root, kept in the authored rule order.
 
 Fail-closed contract: rules with side conditions, binder-arity
@@ -104,10 +104,10 @@ def projectable (rule : RuleSchema) : Bool :=
   sourceSyntaxOk rule.conclusion &&
   rule.premises.all sourceSyntaxOk
 
-/-- The full relational program for a presentation's rules, or `none` if
+/-- The full relational program for a language definition's rules, or `none` if
 any rule falls outside the projectable fragment. -/
-def renderProgram? (presentation : Presentation) : Option String := do
-  let clauses ← renderClauses? presentation.rules
+def renderProgram? (definition : CalculusLanguageDef) : Option String := do
+  let clauses ← renderClauses? definition.rules
   some (String.intercalate "\n" clauses ++ "\n")
 
 end Mettapedia.GSLT.LanguageDef.InferenceRelationalMeTTaRender

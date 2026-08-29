@@ -1,5 +1,7 @@
 import Mettapedia.Languages.Metamath.SourceGSLTNormalTheorem
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Source-owned compressed Metamath proof occurrences
 
@@ -224,7 +226,7 @@ theorem decode_unknown_cannot_close_index :
 identities consumed by an assertion occurrence.  `tree` is its verified
 normal unfolding, not its identity. -/
 structure ProofNode (source : SourcePrefix)
-    (target : ValidatedPresentation) where
+    (target : ValidatedCalculusLanguageDef) where
   formula : ConstantHeadedFormula
   tree : SourceGeneratedProvesTree source target formula
   parents : List Nat
@@ -232,7 +234,7 @@ structure ProofNode (source : SourcePrefix)
 /-- Resolve an ordered list of parent identities to the exact proof forest
 consumed by one assertion occurrence. -/
 inductive ResolvesForest
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (nodes : List (ProofNode source target)) :
     (parents : List Nat) →
     (formulas : List ConstantHeadedFormula) →
@@ -255,7 +257,7 @@ namespace ProofNode
 /-- A node is valid relative to the strict prefix of nodes preceding it.
 This is the acyclicity and parent-identity law for the source proof DAG. -/
 inductive Valid
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (prior : List (ProofNode source target)) :
     ProofNode source target → Type where
   | active
@@ -286,7 +288,7 @@ end ProofNode
 
 /-- A complete topological validity witness for a proof-node list. -/
 inductive DAGValid
-    {source : SourcePrefix} {target : ValidatedPresentation} :
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef} :
     List (ProofNode source target) → Type where
   | nil : DAGValid []
   | snoc
@@ -308,14 +310,14 @@ inductive HeapEntry
 /-- Source-owned compressed machine.  The stack and saved-receipt list contain
 node identities, not copied proof trees. -/
 structure MachineState
-    (source : SourcePrefix) (target : ValidatedPresentation) where
+    (source : SourcePrefix) (target : ValidatedCalculusLanguageDef) where
   nodes : List (ProofNode source target)
   heap : List (HeapEntry source)
   stack : List Nat
   saves : List Nat
 
 def emptyMachine
-    (source : SourcePrefix) (target : ValidatedPresentation) :
+    (source : SourcePrefix) (target : ValidatedCalculusLanguageDef) :
     MachineState source target :=
   { nodes := []
     heap := []
@@ -345,7 +347,7 @@ def headerItems (state : SourceState)
 /-- One exact header-preload transition.  Hypotheses allocate leaf nodes;
 assertions allocate schemas only. -/
 inductive HeaderStep
-    {source : SourcePrefix} {target : ValidatedPresentation} :
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef} :
     HeaderItem →
     MachineState source target →
     MachineState source target → Type where
@@ -390,7 +392,7 @@ inductive HeaderStep
 /-- Every source header transition carries the exact Appendix-B admission
 fact for its indexed item. -/
 def HeaderStep.itemAdmitted
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {item : HeaderItem}
     {before after : MachineState source target}
     (step : HeaderStep item before after) : item.Admitted := by
@@ -402,7 +404,7 @@ def HeaderStep.itemAdmitted
 /-- Ordered header construction, beginning with mandatory hypotheses and then
 the authored explicit label list. -/
 inductive HeaderBuild
-    {source : SourcePrefix} {target : ValidatedPresentation} :
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef} :
     List HeaderItem →
     MachineState source target →
     MachineState source target → Type where
@@ -418,7 +420,7 @@ inductive HeaderBuild
 /-- Every item in an authored header build carries its constructor-indexed
 Appendix-B admission fact. -/
 def HeaderBuild.itemAdmitted
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {items : List HeaderItem}
     {before after : MachineState source target}
     (build : HeaderBuild items before after) :
@@ -432,7 +434,7 @@ def HeaderBuild.itemAdmitted
       · exact ih item member
 
 noncomputable def HeaderStep.preservesDAGValid
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {item : HeaderItem}
     {before after : MachineState source target}
     (step : HeaderStep item before after)
@@ -448,7 +450,7 @@ noncomputable def HeaderStep.preservesDAGValid
       exact valid
 
 noncomputable def HeaderBuild.preservesDAGValid
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {items : List HeaderItem}
     {before after : MachineState source target}
     (build : HeaderBuild items before after)
@@ -465,7 +467,7 @@ noncomputable def HeaderBuild.preservesDAGValid
 `unknown`: incomplete-proof admission is a distinct source judgment and cannot
 manufacture a proof tree. -/
 inductive ActionStep
-    {source : SourcePrefix} {target : ValidatedPresentation} :
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef} :
     MachineState source target →
     CompressedAction →
     MachineState source target → Type where
@@ -512,7 +514,7 @@ inductive ActionStep
           saves := before.saves ++ [nodeId] }
 
 inductive Execute
-    {source : SourcePrefix} {target : ValidatedPresentation} :
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef} :
     MachineState source target →
     List CompressedAction →
     MachineState source target → Type where
@@ -526,7 +528,7 @@ inductive Execute
       Execute before (action :: actions) after
 
 noncomputable def ActionStep.preservesDAGValid
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {before after : MachineState source target}
     {action : CompressedAction}
     (step : ActionStep before action after)
@@ -543,7 +545,7 @@ noncomputable def ActionStep.preservesDAGValid
       exact valid
 
 noncomputable def Execute.preservesDAGValid
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {before after : MachineState source target}
     {actions : List CompressedAction}
     (execution : Execute before actions after)
@@ -555,7 +557,7 @@ noncomputable def Execute.preservesDAGValid
       exact ih (head.preservesDAGValid valid)
 
 theorem Execute.actions_verified
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {before after : MachineState source target}
     {actions : List CompressedAction}
     (execution : Execute before actions after) :
@@ -573,7 +575,7 @@ theorem Execute.actions_verified
 /-- `Z` extends the heap with the same node identity; it neither copies nor
 allocates a proof node. -/
 theorem ActionStep.save_reuses_identity
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {before after : MachineState source target}
     (step : ActionStep before .save after) :
     ∃ nodeId node,
@@ -596,9 +598,9 @@ structure CompressedTheoremStep
     (explicitHeaderLabels : List String)
     (bodyWords : List (List UInt8)) : Type where
   sourceValid : sourceStateValid before = true
-  target : ValidatedPresentation
+  target : ValidatedCalculusLanguageDef
   presentation_eq :
-    presentationOfSourcePrefix? before.toSourcePrefix = some target.1
+    calculusLanguageDefOfSourcePrefix? before.toSourcePrefix = some target.1
   actions : List CompressedAction
   decoded : decodeProgram bodyWords = some actions
   initialState :

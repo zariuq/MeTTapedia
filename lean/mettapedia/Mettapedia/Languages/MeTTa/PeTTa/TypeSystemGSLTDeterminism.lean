@@ -10,7 +10,7 @@ Companion to `TypeSystemGSLT.lean`: the determinism/effect half of PeTTa's
 lattice, effect join, overload aggregation, clause-head overlap,
 closed-domain exhaustiveness, and the syntax-directed body walker.  The
 generic V2 checker contains no branch for this fixture; every acceptance
-and rejection below is decided by the presentation data alone.
+and rejection below is decided by the definition data alone.
 
 Provenance discipline: each rule's doc-comment cites the reference clause it
 was extracted from (paths relative to the reference repository at the pinned
@@ -572,8 +572,6 @@ private abbrev definition : CalculusLanguageDef :=
 
 private def language : LanguageDef := definition.toLanguageDef
 private def calculus : ProofCalculus := definition.toCalculus
-private def presentation : Presentation := definition.toNested
-
 /-! ## Receipts -/
 
 theorem language_validate : language.validate = [] := by
@@ -582,20 +580,20 @@ theorem language_validate : language.validate = [] := by
       LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
       TypeExpr.baseNames]
 
-theorem presentation_valid : presentation.isValidV2 = true := by
-  have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation, language] using language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem definition_valid : definition.isValid = true := by
+  have hvalidate : definition.toLanguageDef.validate = [] := by
+    simpa [definition, language] using language_validate
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [presentation,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSchema.isValidV1,
+  simp [definition,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
+    RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, fixedConstructorsValid,
+    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
     fixedConstructorListsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
@@ -626,13 +624,13 @@ theorem presentation_valid : presentation.isValidV2 = true := by
 
 /-- The determinism/effect language and its fifty rules as one GSLT. -/
 def totalTheory : Mettapedia.GSLT.GSLT :=
-  definition.toGSLTOfNoEquations presentation_valid rfl
+  definition.toGSLTOfNoEquations definition_valid rfl
 
 theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := by
   unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
   rfl
 
-def checked : ValidatedPresentation := ⟨presentation, presentation_valid⟩
+def checked : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 /-- Inventory pin: 22 constructors. -/
 theorem language_constructor_count : language.terms.length = 22 := by decide
@@ -649,7 +647,7 @@ private def detNondetLeProof : RawProof :=
 theorem mode_le_det_nondet :
     checkRaw checked (modeLe mDet mNondet)
       detNondetLeProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     detNondetLeProof, modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet,
     modeLeDetNondet, committedDet, committedSemidet, effectJoinUnspecLeft,
     effectJoinUnspecRight, effectJoinLeft, effectJoinRight,
@@ -665,7 +663,7 @@ theorem mode_le_det_nondet :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     modeLe, committed, effectJoin, modeInstance,
@@ -689,7 +687,7 @@ private def joinDetSemidetProof : RawProof :=
 theorem effect_join_det_semidet :
     checkRaw checked (effectJoin mDet mSemidet mSemidet)
       joinDetSemidetProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     joinDetSemidetProof, detSemidetLeProof, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -705,7 +703,7 @@ theorem effect_join_det_semidet :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -726,7 +724,7 @@ private def joinUnspecProof : RawProof :=
 theorem effect_join_unspecified_absorbs :
     checkRaw checked (effectJoin mUnspecified mDet mUnspecified)
       joinUnspecProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     joinUnspecProof, modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet,
     modeLeDetNondet, committedDet, committedSemidet, effectJoinUnspecLeft,
     effectJoinUnspecRight, effectJoinLeft, effectJoinRight,
@@ -742,7 +740,7 @@ theorem effect_join_unspecified_absorbs :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -763,7 +761,7 @@ private def effectVarProof : RawProof :=
 theorem effect_var_instantiates_to_det :
     checkRaw checked (modeInstance mEffectVar mDet)
       effectVarProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     effectVarProof, modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet,
     modeLeDetNondet, committedDet, committedSemidet, effectJoinUnspecLeft,
     effectJoinUnspecRight, effectJoinLeft, effectJoinRight,
@@ -779,7 +777,7 @@ theorem effect_var_instantiates_to_det :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -801,7 +799,7 @@ private def overloadWeakenProof : RawProof :=
 theorem overload_det_semidet_weakens :
     checkRaw checked (overloadAgg mDet mSemidet mSemidet)
       overloadWeakenProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     overloadWeakenProof, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -817,7 +815,7 @@ theorem overload_det_semidet_weakens :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     modeLe, committed, effectJoin, modeInstance,
@@ -842,7 +840,7 @@ private def conflictProof : RawProof :=
 theorem conflicting_declarations_det_nondet :
     checkRaw checked (conflictingDecls mDet mNondet)
       conflictProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     conflictProof, committedDetProof, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -858,7 +856,7 @@ theorem conflicting_declarations_det_nondet :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -897,7 +895,7 @@ private def seqBodyProof : RawProof :=
 theorem body_composition_superpose_nondet :
     checkRaw checked (bodyVerdict (bSeq bCollapse bSuperpose) verNondet)
       seqBodyProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     seqBodyProof, collapseOkProof, superposeNondetProof,
     okNondetJoinProof, okNondetLeProof, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
@@ -914,7 +912,7 @@ theorem body_composition_superpose_nondet :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -937,7 +935,7 @@ private def onceCapProof : RawProof :=
 theorem once_caps_nondet_to_may_fail :
     checkRaw checked (bodyVerdict (bOnce bSuperpose) verMayFail)
       onceCapProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     onceCapProof, superposeNondetProof, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -953,7 +951,7 @@ theorem once_caps_nondet_to_may_fail :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -983,7 +981,7 @@ declaration (`det_proofs.pl:990-1010`). -/
 theorem det_body_admits_det_arrow :
     checkRaw checked (arrowAdmits mDet verOk)
       detAdmitsProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     detAdmitsProof, clauseSetDetProof, detReflLeProof, modeLeRefl,
     modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet, committedDet,
     committedSemidet, effectJoinUnspecLeft, effectJoinUnspecRight,
@@ -999,7 +997,7 @@ theorem det_body_admits_det_arrow :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -1029,7 +1027,7 @@ declaration: weakening is downgraded, never rejected. -/
 theorem nondet_arrow_admits_nondet_body :
     checkRaw checked (arrowAdmits mNondet verNondet)
       nondetAdmitsProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     nondetAdmitsProof, clauseSetNondetProof, nondetReflLeProof,
     modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet,
     committedDet, committedSemidet, effectJoinUnspecLeft,
@@ -1046,7 +1044,7 @@ theorem nondet_arrow_admits_nondet_body :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -1067,7 +1065,7 @@ unifiable-on-copies (`det_validate.pl:245`). -/
 theorem variable_head_overlaps :
     checkRaw checked (overlapHeads hVarHead hTrue)
       varOverlapProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     varOverlapProof, modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet,
     modeLeDetNondet, committedDet, committedSemidet, effectJoinUnspecLeft,
     effectJoinUnspecRight, effectJoinLeft, effectJoinRight,
@@ -1083,7 +1081,7 @@ theorem variable_head_overlaps :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -1124,7 +1122,7 @@ private def exhaustiveProof : RawProof :=
 theorem exhaustive_bool_with_both_keys :
     checkRaw checked (exhaustiveBool boolHeads)
       exhaustiveProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     exhaustiveProof, boolHeads, coversTrueProof, coversFalseInnerProof,
     coversFalseProof, modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet,
     modeLeDetNondet, committedDet, committedSemidet, effectJoinUnspecLeft,
@@ -1141,7 +1139,7 @@ theorem exhaustive_bool_with_both_keys :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -1172,7 +1170,7 @@ supplies a refl derivation, which concludes the wrong inequality. -/
 theorem det_arrow_rejects_nondet_body :
     checkRaw checked (arrowAdmits mDet verNondet)
       nondetIntoDetCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     nondetIntoDetCandidate, clauseSetNondetProof, nondetReflLeProof,
     modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet,
     committedDet, committedSemidet, effectJoinUnspecLeft,
@@ -1189,7 +1187,7 @@ theorem det_arrow_rejects_nondet_body :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -1212,7 +1210,7 @@ private def overloadConflictCandidate : RawProof :=
 theorem overload_refl_rejects_det_nondet :
     checkRaw checked (overloadAgg mDet mNondet mNondet)
       overloadConflictCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     overloadConflictCandidate, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -1228,7 +1226,7 @@ theorem overload_refl_rejects_det_nondet :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -1249,7 +1247,7 @@ instantiates to the wrong pair (`det_validate.pl:245`). -/
 theorem distinct_literal_heads_do_not_overlap :
     checkRaw checked (overlapHeads hTrue hFalse)
       overlapReflCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     overlapReflCandidate, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -1265,7 +1263,7 @@ theorem distinct_literal_heads_do_not_overlap :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -1286,7 +1284,7 @@ it cannot be instantiated at `HTrue`. -/
 theorem distinct_literal_heads_var_candidate_rejects :
     checkRaw checked (overlapHeads hTrue hFalse)
       overlapVarCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     overlapVarCandidate, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -1302,7 +1300,7 @@ theorem distinct_literal_heads_var_candidate_rejects :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -1327,7 +1325,7 @@ the error is exactly a failed coverage derivation on a closed domain). -/
 theorem missing_false_key_not_covered :
     checkRaw checked (covers (dCons hTrue dNil) hFalse)
       missingKeyCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     missingKeyCandidate, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -1343,7 +1341,7 @@ theorem missing_false_key_not_covered :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
@@ -1366,7 +1364,7 @@ private def onceLaunderCandidate : RawProof :=
 theorem once_does_not_launder_nondet_to_ok :
     checkRaw checked (bodyVerdict (bOnce bSuperpose) verOk)
       onceLaunderCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation,
+  simp [checkRaw, checkRawChildren, checked, definition,
     onceLaunderCandidate, superposeNondetProof, modeLeRefl,
     modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet, committedDet,
     committedSemidet, effectJoinUnspecLeft, effectJoinUnspecRight,
@@ -1382,7 +1380,7 @@ theorem once_does_not_launder_nondet_to_ok :
     clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,

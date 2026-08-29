@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.SourceInferenceProjection
 import Mettapedia.Languages.Metamath.InferenceNormalProvabilitySoundness
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Source-owned Metamath proof occurrences and verified execution
 
@@ -34,7 +36,7 @@ mutual
 
 /-- Proof-relevant occurrence tree indexed by one source-owned scoped prefix. -/
 inductive SourceGeneratedProvesTree (source : SourcePrefix)
-    (target : ValidatedPresentation) : ConstantHeadedFormula → Type where
+    (target : ValidatedCalculusLanguageDef) : ConstantHeadedFormula → Type where
   | active (hypothesis : HypothesisView)
       (hmember : hypothesis ∈ source.activeHypotheses) :
       SourceGeneratedProvesTree source target hypothesis.formula
@@ -51,7 +53,7 @@ inductive SourceGeneratedProvesTree (source : SourcePrefix)
 
 /-- Ordered source-owned trees for an assertion's mandatory hypotheses. -/
 inductive SourceGeneratedProvesForest (source : SourcePrefix)
-    (target : ValidatedPresentation) :
+    (target : ValidatedCalculusLanguageDef) :
     List ConstantHeadedFormula → Type where
   | nil : SourceGeneratedProvesForest source target []
   | cons {formula : ConstantHeadedFormula}
@@ -67,7 +69,7 @@ end
 mutual
 
 def SourceGeneratedProvesTree.toRuntime
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula} :
     SourceGeneratedProvesTree source target formula →
       GeneratedProvesTree source.toProjection target formula
@@ -80,7 +82,7 @@ def SourceGeneratedProvesTree.toRuntime
         node children.toRuntime
 
 def SourceGeneratedProvesForest.toRuntime
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula} :
     SourceGeneratedProvesForest source target formulas →
       GeneratedProvesForest source.toProjection target formulas
@@ -94,7 +96,7 @@ end
 mutual
 
 def SourceGeneratedProvesTree.labels
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula} :
     SourceGeneratedProvesTree source target formula → List String
   | .active hypothesis _ => [hypothesis.label]
@@ -102,7 +104,7 @@ def SourceGeneratedProvesTree.labels
       children.labels ++ [assertion.label]
 
 def SourceGeneratedProvesForest.labels
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula} :
     SourceGeneratedProvesForest source target formulas → List String
   | .nil => []
@@ -113,7 +115,7 @@ end
 mutual
 
 @[simp] theorem SourceGeneratedProvesTree.labels_toRuntime
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : SourceGeneratedProvesTree source target formula) :
     tree.toRuntime.labels = tree.labels := by
@@ -127,7 +129,7 @@ mutual
         children.labels_toRuntime]
 
 @[simp] theorem SourceGeneratedProvesForest.labels_toRuntime
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : SourceGeneratedProvesForest source target formulas) :
     forest.toRuntime.labels = forest.labels := by
@@ -146,7 +148,7 @@ end
 mutual
 
 theorem runtimeTree_exists_source
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree source.toProjection target formula) :
     ∃ sourceTree : SourceGeneratedProvesTree source target formula,
@@ -165,7 +167,7 @@ theorem runtimeTree_exists_source
       simp [SourceGeneratedProvesTree.toRuntime, hsourceChildren]
 
 theorem runtimeForest_exists_source
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest source.toProjection target formulas) :
     ∃ sourceForest : SourceGeneratedProvesForest source target formulas,
@@ -187,10 +189,10 @@ end
 labels of a source-owned proof-occurrence tree. -/
 theorem normalFold_accepts_iff_exactSourceTree
     (db : RuntimeDB) (source : SourcePrefix)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (formula : ConstantHeadedFormula) (labels : List String)
     (hsource :
-      presentationOfSourcePrefix? source = some target.1)
+      calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (hbaseStack : base.stack = #[]) :
     labels.foldlM (fun state label => db.stepNormal state label) base =
@@ -199,8 +201,8 @@ theorem normalFold_accepts_iff_exactSourceTree
         { tree : SourceGeneratedProvesTree source target formula //
           tree.labels = labels } := by
   have hruntime :
-      presentationOfProjection? source.toProjection = some target.1 := by
-    rw [← presentationOfSourcePrefix?_eq_runtime]
+      calculusLanguageDefOfProjection? source.toProjection = some target.1 := by
+    rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
     exact hsource
   rw [normalFold_accepts_iff_exactGeneratedTree
     db source.toProjection target base formula labels
@@ -227,12 +229,12 @@ theorem normalFold_accepts_iff_exactSourceTree
 Metamath semantics represented by the same verified runtime database. -/
 theorem sourceTree_to_operationalProvable
     (db : RuntimeDB) (source : SourcePrefix)
-    (target : ValidatedPresentation) (base : RuntimeProofState)
+    (target : ValidatedCalculusLanguageDef) (base : RuntimeProofState)
     (formula : ConstantHeadedFormula)
     (tree : SourceGeneratedProvesTree source target formula)
     (Γ : OperationalDatabase) (fr : OperationalFrame)
     (hsource :
-      presentationOfSourcePrefix? source = some target.1)
+      calculusLanguageDefOfSourcePrefix? source = some target.1)
     (hproject : projectPrefix? db = some source.toProjection)
     (hdatabase : Metamath.Kernel.toDatabase db = some Γ)
     (hframe : Metamath.Kernel.toFrame db db.frame = some fr)
@@ -240,8 +242,8 @@ theorem sourceTree_to_operationalProvable
     OperationalProvable Γ fr
       (Metamath.Kernel.toExpr formula.toRuntime) := by
   have hruntime :
-      presentationOfProjection? source.toProjection = some target.1 := by
-    rw [← presentationOfSourcePrefix?_eq_runtime]
+      calculusLanguageDefOfProjection? source.toProjection = some target.1 := by
+    rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
     exact hsource
   exact generatedProvesTree_to_operationalProvable
     db source.toProjection target base formula tree.toRuntime Γ fr
@@ -250,7 +252,7 @@ theorem sourceTree_to_operationalProvable
 /-- A source-owned proof occurrence always contributes at least one authored
 normal-proof label. -/
 theorem SourceGeneratedProvesTree.labels_ne_nil
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : SourceGeneratedProvesTree source target formula) :
     tree.labels ≠ [] := by

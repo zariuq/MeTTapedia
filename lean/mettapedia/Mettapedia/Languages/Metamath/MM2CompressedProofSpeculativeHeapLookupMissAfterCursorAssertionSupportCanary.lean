@@ -1,0 +1,34 @@
+import Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissInertProofPlanCanary
+
+set_option autoImplicit false
+
+namespace Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissAfterCursorAssertionSupportCanary
+
+open Mettapedia.Languages.Metamath.MM2CompressedProofExecution
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupCanary
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissCursorAssertionCanary
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissInertPlanData
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissInertProofPlanCanary
+open Mettapedia.Languages.ProcessCalculi.MORK
+open Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveComputable
+open Mettapedia.Languages.ProcessCalculi.MORK.WQComputable
+
+theorem speculative_miss_after_cursor_assertion_supported_exact :
+    cSupportedSourceExecFacts speculativeMissAfterCursorAssertionProbe =
+      missAfterCursorAssertionCandidates := by
+  exact cSupportedSourceExecFacts_after_inert
+    speculativeMissAfterCursorFaultProbe compressedAssertionLaunchDirective
+    missAfterCursorFaultCandidates
+    extract_compressedAssertionLaunchRule_exact
+    speculative_miss_cursor_assertion_no_matches
+    speculative_miss_after_cursor_fault_supported_exact
+
+theorem missAfterCursorAssertionCandidates_exact :
+    missAfterCursorAssertionCandidates =
+      [compressedHeapLookupAdvanceDirective] := by
+  decide +kernel
+
+#print axioms speculative_miss_after_cursor_assertion_supported_exact
+#print axioms missAfterCursorAssertionCandidates_exact
+
+end Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissAfterCursorAssertionSupportCanary

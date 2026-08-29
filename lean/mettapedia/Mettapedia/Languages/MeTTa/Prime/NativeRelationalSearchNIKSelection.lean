@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.NIKMaximalNativeAdmission
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.MILCheckedNativeListSearch
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILCheckedNativeListSearch
 
 /-!
 # Request-local NIK selection for proof-relevant native search
@@ -29,10 +29,10 @@ open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.MaximalNativeCalculus
 open Mettapedia.GSLT.LanguageDef.NIKMaximalNativeAdmission
-open Mettapedia.Languages.MeTTa.PureKernel.Universe
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.RelationalInternalLanguage.Semantic
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.IntrinsicMILNativeSearch
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.IntrinsicMILNativeListSearch
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RelationalInternalLanguage.Semantic
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.IntrinsicMILNativeSearch
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.IntrinsicMILNativeListSearch
 open Mettapedia.TypeTheory.IndexedPolynomial
 
 universe u
@@ -341,8 +341,8 @@ theorem finiteOnly_does_not_claim_functionality
 
 namespace Canary
 
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.NativeIndexedFamilies
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.MILCheckedNativeListSearch
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedFamilies
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILCheckedNativeListSearch
 
 def dependencies : DependencySystem where
   Revision := Bool

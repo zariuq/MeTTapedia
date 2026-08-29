@@ -87,15 +87,15 @@ theorem liftRawProof_accepts (distance cutoff : Nat) (term : Term) :
       · have hlt := ltRawProof_accepts hbelow
         simp (config := { maxSteps := 1000000, decide := true })
           [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-           InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-           source, presentation, language, allRules, liftRawProof, rawProof,
+           InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+           source, allRules, liftRawProof, rawProof,
            liftVarBelowRule, rule, formal, m, instantiateRule?,
-           Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+           CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
            instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
            argumentsValidAt, encodeNat_argumentValid, lifts, lt, encodeTerm,
            LFTyping.lift, hbelow, var, ruleId]
-        simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, ltZeroSuccRule, ltSuccSuccRule,
+        simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, ltZeroSuccRule, ltSuccSuccRule,
           liftVarBelowRule, rule, formal, m, lt, encodeNat, zero, succ,
           lifts, var, ruleId] using hlt
       · by_cases hequal : index = cutoff
@@ -103,16 +103,16 @@ theorem liftRawProof_accepts (distance cutoff : Nat) (term : Term) :
           have hadd := addRawProof_accepts cutoff distance
           simp (config := { maxSteps := 1000000, decide := true })
             [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-             InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-             checked, source, presentation, language, allRules, liftRawProof,
+             InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+             checked, source, allRules, liftRawProof,
              rawProof, liftVarEqualRule, rule, formal, m, instantiateRule?,
-             Presentation.lookupRule?, instantiateSchema?,
+             CalculusLanguageDef.lookupRule?, instantiateSchema?,
              instantiateSchemaAt?, instantiateSchemas?,
              instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
              encodeNat_argumentValid, lifts, add, encodeTerm, LFTyping.lift,
              var, ruleId]
-          simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked,
-            source, presentation, language, allRules, addZeroRule, addSuccRule,
+          simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked,
+            source, allRules, addZeroRule, addSuccRule,
             liftVarEqualRule, rule, formal, m, add, encodeNat, zero, succ,
             lifts, var, ruleId] using hadd
         · have habove : cutoff < index := by omega
@@ -120,94 +120,94 @@ theorem liftRawProof_accepts (distance cutoff : Nat) (term : Term) :
           have hadd := addRawProof_accepts index distance
           simp (config := { maxSteps := 1000000, decide := true })
             [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-             InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-             checked, source, presentation, language, allRules, liftRawProof,
+             InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+             checked, source, allRules, liftRawProof,
              rawProof, liftVarAboveRule, rule, formal, m, instantiateRule?,
-             Presentation.lookupRule?, instantiateSchema?,
+             CalculusLanguageDef.lookupRule?, instantiateSchema?,
              instantiateSchemaAt?, instantiateSchemas?,
              instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
              encodeNat_argumentValid, lifts, lt, add, encodeTerm,
              LFTyping.lift, hbelow, hequal, var, ruleId]
           constructor
-          · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked,
-              source, presentation, language, allRules, ltZeroSuccRule,
+          · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked,
+              source, allRules, ltZeroSuccRule,
               ltSuccSuccRule, liftVarAboveRule, rule, formal, m, lt, encodeNat,
               add, zero, succ, lifts, var, ruleId] using hlt
-          · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked,
-              source, presentation, language, allRules, addZeroRule,
+          · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked,
+              source, allRules, addZeroRule,
               addSuccRule, liftVarAboveRule, rule, formal, m, add, encodeNat,
               lt, zero, succ, lifts, var, ruleId] using hadd
   | srt sort =>
       cases sort <;>
         simp (config := { maxSteps := 1000000, decide := true })
           [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-           InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-           source, presentation, language, allRules, liftRawProof, rawProof,
+           InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+           source, allRules, liftRawProof, rawProof,
            liftSrtRule, rule, formal, m, instantiateRule?,
-           Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+           CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
            instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
            argumentsValidAt, encodeNat_argumentValid, lifts, encodeTerm,
            LFTyping.lift, typeSort, kindSort, srt, ruleId]
   | con name =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, allRules, liftRawProof, rawProof,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, allRules, liftRawProof, rawProof,
          liftConRule, rule, formal, m, instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeNat_argumentValid, encodeName_argumentValid,
          lifts, encodeTerm, LFTyping.lift, con, ruleId]
   | pi domain body domainIH bodyIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, allRules, liftRawProof, rawProof,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, allRules, liftRawProof, rawProof,
          liftPiRule, rule, formal, m, instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeNat_argumentValid, encodeTerm_argumentValid,
          lifts, succ, encodeTerm, LFTyping.lift, pi, ruleId]
       constructor
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, liftPiRule, rule, formal, m, lifts,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, liftPiRule, rule, formal, m, lifts,
           encodeNat, succ, pi, ruleId] using domainIH cutoff
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, liftPiRule, rule, formal, m, lifts,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, liftPiRule, rule, formal, m, lifts,
           encodeNat, succ, pi, ruleId] using bodyIH (cutoff + 1)
   | lam domain body domainIH bodyIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, allRules, liftRawProof, rawProof,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, allRules, liftRawProof, rawProof,
          liftLamRule, rule, formal, m, instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeNat_argumentValid, encodeTerm_argumentValid,
          lifts, succ, encodeTerm, LFTyping.lift, lam, ruleId]
       constructor
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, liftLamRule, rule, formal, m, lifts,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, liftLamRule, rule, formal, m, lifts,
           encodeNat, succ, lam, ruleId] using domainIH cutoff
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, liftLamRule, rule, formal, m, lifts,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, liftLamRule, rule, formal, m, lifts,
           encodeNat, succ, lam, ruleId] using bodyIH (cutoff + 1)
   | app function argument functionIH argumentIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, allRules, liftRawProof, rawProof,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, allRules, liftRawProof, rawProof,
          liftAppRule, rule, formal, m, instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeNat_argumentValid, encodeTerm_argumentValid,
          lifts, encodeTerm, LFTyping.lift, app, ruleId]
       constructor
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, liftAppRule, rule, formal, m, lifts,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, liftAppRule, rule, formal, m, lifts,
           app, ruleId] using functionIH cutoff
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, liftAppRule, rule, formal, m, lifts,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, liftAppRule, rule, formal, m, lifts,
           app, ruleId] using argumentIH cutoff
 
 /-! ## Capture-avoiding substitution -/
@@ -287,10 +287,10 @@ theorem substRawProof_accepts (index : Nat) (replacement term : Term) :
       · subst variableIndex
         simp (config := { maxSteps := 1000000, decide := true })
           [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-           InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-           source, presentation, language, allRules, substRawProof, rawProof,
+           InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+           source, allRules, substRawProof, rawProof,
            substVarEqualRule, rule, formal, m, instantiateRule?,
-           Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+           CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
            instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
            argumentsValidAt, encodeNat_argumentValid, encodeTerm_argumentValid,
            substitutes, encodeTerm, LFTyping.subst, var, ruleId]
@@ -299,17 +299,17 @@ theorem substRawProof_accepts (index : Nat) (replacement term : Term) :
           have hlt := ltRawProof_accepts hbelow
           simp (config := { maxSteps := 1000000, decide := true })
             [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-             InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-             checked, source, presentation, language, allRules, substRawProof,
+             InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+             checked, source, allRules, substRawProof,
              rawProof, substVarBelowRule, rule, formal, m, instantiateRule?,
-             Presentation.lookupRule?, instantiateSchema?,
+             CalculusLanguageDef.lookupRule?, instantiateSchema?,
              instantiateSchemaAt?, instantiateSchemas?,
              instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
              encodeNat_argumentValid, encodeTerm_argumentValid, substitutes,
              lt, encodeTerm, LFTyping.subst, hequal, hbelow, hnotAbove, var,
              ruleId]
-          simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked,
-            source, presentation, language, allRules, ltZeroSuccRule,
+          simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked,
+            source, allRules, ltZeroSuccRule,
             ltSuccSuccRule, substVarBelowRule, rule, formal, m, lt, substitutes,
             var, ruleId] using hlt
         · have habove : index < variableIndex := by omega
@@ -324,10 +324,10 @@ theorem substRawProof_accepts (index : Nat) (replacement term : Term) :
             exact hlt
           simp (config := { maxSteps := 1000000, decide := true })
             [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-             InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-             checked, source, presentation, language, allRules, substRawProof,
+             InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+             checked, source, allRules, substRawProof,
              rawProof, substVarAboveRule, rule, formal, m, instantiateRule?,
-             Presentation.lookupRule?, instantiateSchema?,
+             CalculusLanguageDef.lookupRule?, instantiateSchema?,
              instantiateSchemaAt?, instantiateSchemas?,
              instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
              encodeNat_argumentValid, encodeTerm_argumentValid, substitutes,
@@ -335,18 +335,18 @@ theorem substRawProof_accepts (index : Nat) (replacement term : Term) :
              var, ruleId]
           constructor
           · exact hencoded
-          · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked,
-              source, presentation, language, allRules, ltZeroSuccRule,
+          · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked,
+              source, allRules, ltZeroSuccRule,
               ltSuccSuccRule, substVarAboveRule, rule, formal, m, lt,
               substitutes, succ, var, ruleId] using hltPredecessor
   | srt sort =>
       cases sort <;>
         simp (config := { maxSteps := 1000000, decide := true })
           [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-           InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-           source, presentation, language, allRules, substRawProof, rawProof,
+           InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+           source, allRules, substRawProof, rawProof,
            substSrtRule, rule, formal, m, instantiateRule?,
-           Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+           CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
            instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
            argumentsValidAt, encodeNat_argumentValid, encodeTerm_argumentValid,
            substitutes, encodeTerm, LFTyping.subst, typeSort, kindSort, srt,
@@ -354,10 +354,10 @@ theorem substRawProof_accepts (index : Nat) (replacement term : Term) :
   | con name =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, allRules, substRawProof, rawProof,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, allRules, substRawProof, rawProof,
          substConRule, rule, formal, m, instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeNat_argumentValid, encodeTerm_argumentValid,
          encodeName_argumentValid, substitutes, encodeTerm, LFTyping.subst, con,
@@ -365,69 +365,69 @@ theorem substRawProof_accepts (index : Nat) (replacement term : Term) :
   | pi domain body domainIH bodyIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, allRules, substRawProof, rawProof,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, allRules, substRawProof, rawProof,
          substPiRule, rule, formal, m, instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeNat_argumentValid, encodeTerm_argumentValid,
          substitutes, lifts, one, zero, succ, encodeTerm, LFTyping.subst, pi,
          ruleId]
       constructor
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, substPiRule, rule, formal, m,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, substPiRule, rule, formal, m,
           substitutes, lifts, one, zero, succ, pi, ruleId] using
             domainIH index replacement
       constructor
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, substPiRule, rule, formal, m,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, substPiRule, rule, formal, m,
           substitutes, lifts, one, zero, encodeNat, succ, pi, ruleId] using
             liftRawProof_accepts 1 0 replacement
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, substPiRule, rule, formal, m,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, substPiRule, rule, formal, m,
           substitutes, lifts, one, zero, encodeNat, succ, pi, ruleId] using
             bodyIH (index + 1) (LFTyping.lift 1 0 replacement)
   | lam domain body domainIH bodyIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, allRules, substRawProof, rawProof,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, allRules, substRawProof, rawProof,
          substLamRule, rule, formal, m, instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeNat_argumentValid, encodeTerm_argumentValid,
          substitutes, lifts, one, zero, succ, encodeTerm, LFTyping.subst, lam,
          ruleId]
       constructor
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, substLamRule, rule, formal, m,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, substLamRule, rule, formal, m,
           substitutes, lifts, one, zero, succ, lam, ruleId] using
             domainIH index replacement
       constructor
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, substLamRule, rule, formal, m,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, substLamRule, rule, formal, m,
           substitutes, lifts, one, zero, encodeNat, succ, lam, ruleId] using
             liftRawProof_accepts 1 0 replacement
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, substLamRule, rule, formal, m,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, substLamRule, rule, formal, m,
           substitutes, lifts, one, zero, encodeNat, succ, lam, ruleId] using
             bodyIH (index + 1) (LFTyping.lift 1 0 replacement)
   | app function argument functionIH argumentIH =>
       simp (config := { maxSteps := 1000000, decide := true })
         [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-         InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-         source, presentation, language, allRules, substRawProof, rawProof,
+         InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+         source, allRules, substRawProof, rawProof,
          substAppRule, rule, formal, m, instantiateRule?,
-         Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+         CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
          instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
          argumentsValidAt, encodeNat_argumentValid, encodeTerm_argumentValid,
          substitutes, encodeTerm, LFTyping.subst, app, ruleId]
       constructor
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, substAppRule, rule, formal, m,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, substAppRule, rule, formal, m,
           substitutes, app, ruleId] using functionIH index replacement
-      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, substAppRule, rule, formal, m,
+      · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, substAppRule, rule, formal, m,
           substitutes, app, ruleId] using argumentIH index replacement
 
 /-! ## Unused-binder elimination -/
@@ -504,15 +504,15 @@ theorem unbindCertified?_sound :
         · simp [LFBetaEta.unbind, hbelow]
         · simp (config := { maxSteps := 1000000, decide := true })
             [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-             InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-             checked, source, presentation, language, allRules, rawProof,
+             InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+             checked, source, allRules, rawProof,
              unbindVarBelowRule, rule, formal, m, instantiateRule?,
-             Presentation.lookupRule?, instantiateSchema?,
+             CalculusLanguageDef.lookupRule?, instantiateSchema?,
              instantiateSchemaAt?, instantiateSchemas?,
              instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
              encodeNat_argumentValid, unbinds, lt, encodeTerm, var, ruleId]
-          simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked,
-            source, presentation, language, allRules, ltZeroSuccRule,
+          simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked,
+            source, allRules, ltZeroSuccRule,
             ltSuccSuccRule, unbindVarBelowRule, rule, formal, m, lt, unbinds,
             var, ruleId] using hlt
       · by_cases hequal : variableIndex = cutoff
@@ -534,18 +534,18 @@ theorem unbindCertified?_sound :
           · simp [LFBetaEta.unbind, hbelow, hequal]
           · simp (config := { maxSteps := 1000000, decide := true })
               [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-               InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-               checked, source, presentation, language, allRules, rawProof,
+               InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+               checked, source, allRules, rawProof,
                unbindVarAboveRule, rule, formal, m, instantiateRule?,
-               Presentation.lookupRule?, instantiateSchema?,
+               CalculusLanguageDef.lookupRule?, instantiateSchema?,
                instantiateSchemaAt?, instantiateSchemas?,
                instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
                encodeNat_argumentValid, unbinds, lt, succ, encodeTerm, var,
                ruleId]
             constructor
             · exact hencoded
-            · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked,
-                source, presentation, language, allRules, ltZeroSuccRule,
+            · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked,
+                source, allRules, ltZeroSuccRule,
                 ltSuccSuccRule, unbindVarAboveRule, rule, formal, m, lt,
                 unbinds, succ, var, ruleId] using hltPredecessor
   | srt sort =>
@@ -557,18 +557,18 @@ theorem unbindCertified?_sound :
       · simp [LFBetaEta.unbind]
       · simp (config := { maxSteps := 1000000, decide := true })
           [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-           InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-           source, presentation, language, allRules, rawProof, unbindSrtRule,
-           rule, formal, m, instantiateRule?, Presentation.lookupRule?,
+           InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+           source, allRules, rawProof, unbindSrtRule,
+           rule, formal, m, instantiateRule?, CalculusLanguageDef.lookupRule?,
            instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
            instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
            encodeNat_argumentValid, unbinds, encodeTerm, typeSort, srt, ruleId]
       · simp [LFBetaEta.unbind]
       · simp (config := { maxSteps := 1000000, decide := true })
           [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-           InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-           source, presentation, language, allRules, rawProof, unbindSrtRule,
-           rule, formal, m, instantiateRule?, Presentation.lookupRule?,
+           InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+           source, allRules, rawProof, unbindSrtRule,
+           rule, formal, m, instantiateRule?, CalculusLanguageDef.lookupRule?,
            instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
            instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
            encodeNat_argumentValid, unbinds, encodeTerm, kindSort, srt, ruleId]
@@ -580,9 +580,9 @@ theorem unbindCertified?_sound :
       · simp [LFBetaEta.unbind]
       · simp (config := { maxSteps := 1000000, decide := true })
           [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-           InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-           source, presentation, language, allRules, rawProof, unbindConRule,
-           rule, formal, m, instantiateRule?, Presentation.lookupRule?,
+           InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+           source, allRules, rawProof, unbindConRule,
+           rule, formal, m, instantiateRule?, CalculusLanguageDef.lookupRule?,
            instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
            instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
            encodeNat_argumentValid, encodeName_argumentValid, unbinds,
@@ -611,21 +611,21 @@ theorem unbindCertified?_sound :
               · simp [LFBetaEta.unbind, hdomainRuntime, hbodyRuntime]
               · simp (config := { maxSteps := 1000000, decide := true })
                   [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-                   InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-                   checked, source, presentation, language, allRules, rawProof,
+                   InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+                   checked, source, allRules, rawProof,
                    unbindPiRule, rule, formal, m, instantiateRule?,
-                   Presentation.lookupRule?, instantiateSchema?,
+                   CalculusLanguageDef.lookupRule?, instantiateSchema?,
                    instantiateSchemaAt?, instantiateSchemas?,
                    instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
                    encodeNat_argumentValid, encodeTerm_argumentValid, unbinds,
                    succ, encodeTerm, pi, ruleId]
                 constructor
-                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation,
-                    checked, source, presentation, language, allRules,
+                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition,
+                    checked, source, allRules,
                     unbindPiRule, rule, formal, m, unbinds, succ, pi, ruleId]
                     using hdomainCheck
-                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation,
-                    checked, source, presentation, language, allRules,
+                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition,
+                    checked, source, allRules,
                     unbindPiRule, rule, formal, m, unbinds, encodeNat, succ, pi,
                     ruleId] using hbodyCheck
   | lam domain body domainIH bodyIH =>
@@ -652,21 +652,21 @@ theorem unbindCertified?_sound :
               · simp [LFBetaEta.unbind, hdomainRuntime, hbodyRuntime]
               · simp (config := { maxSteps := 1000000, decide := true })
                   [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-                   InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-                   checked, source, presentation, language, allRules, rawProof,
+                   InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+                   checked, source, allRules, rawProof,
                    unbindLamRule, rule, formal, m, instantiateRule?,
-                   Presentation.lookupRule?, instantiateSchema?,
+                   CalculusLanguageDef.lookupRule?, instantiateSchema?,
                    instantiateSchemaAt?, instantiateSchemas?,
                    instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
                    encodeNat_argumentValid, encodeTerm_argumentValid, unbinds,
                    succ, encodeTerm, lam, ruleId]
                 constructor
-                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation,
-                    checked, source, presentation, language, allRules,
+                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition,
+                    checked, source, allRules,
                     unbindLamRule, rule, formal, m, unbinds, succ, lam, ruleId]
                     using hdomainCheck
-                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation,
-                    checked, source, presentation, language, allRules,
+                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition,
+                    checked, source, allRules,
                     unbindLamRule, rule, formal, m, unbinds, encodeNat, succ,
                     lam, ruleId] using hbodyCheck
   | app function argument functionIH argumentIH =>
@@ -693,21 +693,21 @@ theorem unbindCertified?_sound :
               · simp [LFBetaEta.unbind, hfunctionRuntime, hargumentRuntime]
               · simp (config := { maxSteps := 1000000, decide := true })
                   [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-                   InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
-                   checked, source, presentation, language, allRules, rawProof,
+                   InferenceChecker.checkRawChildren, CheckedGSLT.definition,
+                   checked, source, allRules, rawProof,
                    unbindAppRule, rule, formal, m, instantiateRule?,
-                   Presentation.lookupRule?, instantiateSchema?,
+                   CalculusLanguageDef.lookupRule?, instantiateSchema?,
                    instantiateSchemaAt?, instantiateSchemas?,
                    instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
                    encodeNat_argumentValid, encodeTerm_argumentValid, unbinds,
                    encodeTerm, app, ruleId]
                 constructor
-                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation,
-                    checked, source, presentation, language, allRules,
+                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition,
+                    checked, source, allRules,
                     unbindAppRule, rule, formal, m, unbinds, app, ruleId] using
                     hfunctionCheck
-                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation,
-                    checked, source, presentation, language, allRules,
+                · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition,
+                    checked, source, allRules,
                     unbindAppRule, rule, formal, m, unbinds, app, ruleId] using
                     hargumentCheck
 
@@ -729,15 +729,15 @@ theorem betaRootRawProof_accepts (domain body argument : Term) :
   have hsubst := substRawProof_accepts 0 argument body
   simp (config := { maxSteps := 1000000, decide := true })
     [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-     InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-     source, presentation, language, allRules, betaRootRawProof, rawProof,
+     InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+     source, allRules, betaRootRawProof, rawProof,
      rootBetaRule, rule, formal, m, instantiateRule?,
-     Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+     CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
      instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
      argumentsValidAt, encodeTerm_argumentValid, rootStep, substitutes, zero,
      encodeTerm, LFTyping.subst0, app, lam, ruleId]
-  simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-    presentation, language, allRules, rootBetaRule, rule, formal, m, rootStep,
+  simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+    allRules, rootBetaRule, rule, formal, m, rootStep,
     substitutes, zero, encodeNat, app, lam, ruleId] using hsubst
 
 /-- Compile a root eta contraction when unused-binder elimination succeeds. -/
@@ -773,15 +773,15 @@ theorem etaRootCertified?_sound
       · exact hruntime
       · simp (config := { maxSteps := 1000000, decide := true })
           [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-           InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-           source, presentation, language, allRules, rawProof, rootEtaRule,
-           rule, formal, m, instantiateRule?, Presentation.lookupRule?,
+           InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+           source, allRules, rawProof, rootEtaRule,
+           rule, formal, m, instantiateRule?, CalculusLanguageDef.lookupRule?,
            instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
            instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
            encodeTerm_argumentValid, rootStep, unbinds, zero, encodeNat,
            encodeTerm, lam, app, var, ruleId]
-        simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-          presentation, language, allRules, rootEtaRule, rule, formal, m,
+        simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+          allRules, rootEtaRule, rule, formal, m,
           rootStep, unbinds, zero, encodeNat, lam, app, var, ruleId] using hcheck
 
 /-- Place any accepted encoded root contraction in any runtime one-hole
@@ -812,23 +812,23 @@ theorem contextualRawProof_accepts
   have htargetPlug := plugRawProof_accepts context rootTarget
   simp (config := { maxSteps := 1000000, decide := true })
     [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-     InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-     source, presentation, language, allRules, contextualRawProof, rawProof,
+     InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+     source, allRules, contextualRawProof, rawProof,
      contextualConversionRule, rule, formal, m, instantiateRule?,
-     Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+     CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
      instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
      argumentsValidAt, encodeContext_argumentValid, encodeTerm_argumentValid,
      converts, rootStep, plugs, ruleId]
   constructor
-  · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-      presentation, language, allRules, contextualConversionRule, rule, formal,
+  · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+      allRules, contextualConversionRule, rule, formal,
       m, converts, rootStep, plugs, ruleId] using hroot
   constructor
-  · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-      presentation, language, allRules, contextualConversionRule, rule, formal,
+  · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+      allRules, contextualConversionRule, rule, formal,
       m, converts, rootStep, plugs, ruleId] using hsourcePlug
-  · simpa [CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked, source,
-      presentation, language, allRules, contextualConversionRule, rule, formal,
+  · simpa [CheckedGSLT.checkRaw, CheckedGSLT.definition, checked, source,
+      allRules, contextualConversionRule, rule, formal,
       m, converts, rootStep, plugs, ruleId] using htargetPlug
 
 /-- Universal proof-producing contextual beta conversion. -/
@@ -923,16 +923,15 @@ def refl (term : Term) : ConversionCertificate :=
 theorem refl_accepted (term : Term) : (refl term).Accepted := by
   simp (config := { maxSteps := 1000000, decide := true })
     [Accepted, CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-     InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
+     InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
      LFFirstOrderContextualConversion.source,
-     LFFirstOrderContextualConversion.presentation,
-     LFFirstOrderContextualConversion.language,
+     LFFirstOrderContextualConversion.definition,
      LFFirstOrderContextualConversion.allRules, refl, rawProof,
      LFFirstOrderContextualConversion.conversionReflRule,
      LFFirstOrderContextualConversion.rule,
      LFFirstOrderContextualConversion.formal,
      LFFirstOrderContextualConversion.m, instantiateRule?,
-     Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+     CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
      instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
      argumentsValidAt, encodeTerm_argumentValid, converts,
      LFFirstOrderContextualConversion.ruleId]
@@ -954,25 +953,23 @@ theorem trans_accepted (first second : ConversionCertificate)
     (trans first second hendpoints).Accepted := by
   simp (config := { maxSteps := 1000000, decide := true })
     [Accepted, CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-     InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
+     InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
      LFFirstOrderContextualConversion.source,
-     LFFirstOrderContextualConversion.presentation,
-     LFFirstOrderContextualConversion.language,
+     LFFirstOrderContextualConversion.definition,
      LFFirstOrderContextualConversion.allRules, trans, rawProof,
      LFFirstOrderContextualConversion.conversionTransRule,
      LFFirstOrderContextualConversion.rule,
      LFFirstOrderContextualConversion.formal,
      LFFirstOrderContextualConversion.m, instantiateRule?,
-     Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+     CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
      instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
      argumentsValidAt, encodeTerm_argumentValid, converts,
      LFFirstOrderContextualConversion.ruleId]
   constructor
   · exact hfirst
-  · simpa [Accepted, CheckedGSLT.checkRaw, CheckedGSLT.presentation, checked,
+  · simpa [Accepted, CheckedGSLT.checkRaw, CheckedGSLT.definition, checked,
       LFFirstOrderContextualConversion.source,
-      LFFirstOrderContextualConversion.presentation,
-      LFFirstOrderContextualConversion.language,
+      LFFirstOrderContextualConversion.definition,
       LFFirstOrderContextualConversion.allRules,
       LFFirstOrderContextualConversion.conversionTransRule,
       LFFirstOrderContextualConversion.rule,
@@ -1187,10 +1184,10 @@ theorem changed_beta_target_rejects :
       (betaRootRawProof (.srt .type) (.var 0) (.srt .kind)) = false := by
   simp (config := { maxSteps := 1000000, decide := true })
     [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-     InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-     source, presentation, language, allRules, betaRootRawProof, rawProof,
+     InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+     source, allRules, betaRootRawProof, rawProof,
      rootBetaRule, rule, formal, m, instantiateRule?,
-     Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+     CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
      instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
      rootStep, substitutes, encodeTerm, LFTyping.subst0, zero, typeSort,
      kindSort, srt, app, lam, var, ruleId]
@@ -1253,10 +1250,10 @@ theorem changed_lift_target_rejects :
       (liftRawProof 2 1 (.var 3)) = false := by
   simp (config := { maxSteps := 1000000, decide := true })
     [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
-     InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-     source, presentation, language, allRules, liftRawProof, rawProof,
+     InferenceChecker.checkRawChildren, CheckedGSLT.definition, checked,
+     source, allRules, liftRawProof, rawProof,
      liftVarAboveRule, rule, formal, m, instantiateRule?,
-     Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
+     CalculusLanguageDef.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
      instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
      lifts, encodeTerm, ltRawProof, addRawProof, lt, add, encodeNat, zero, succ,
      var, ruleId]

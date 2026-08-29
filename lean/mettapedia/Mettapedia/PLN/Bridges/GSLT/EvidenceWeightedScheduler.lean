@@ -189,7 +189,7 @@ def internalNeedEvidencePolicy
     (score : NeedOccurrence Origin Local Resume Rule Value StableFault
       RetryableFault Effect → BinaryEvidence)
     (prefer : EvidenceHplus → EvidenceHplus → Bool) :
-    Mettapedia.Languages.MeTTa.NativeTypeTheory.familiesCwF.Tm PrimeContext
+    Mettapedia.Languages.MeTTa.StagedReflective.familiesCwF.Tm PrimeContext
       (policyTyFor (Origin := Origin) (Local := Local) (Resume := Resume)
         (Rule := Rule) (Value := Value) (StableFault := StableFault)
         (RetryableFault := RetryableFault) (Effect := Effect) EvidenceHplus) :=

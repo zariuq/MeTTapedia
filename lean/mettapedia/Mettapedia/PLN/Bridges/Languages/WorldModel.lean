@@ -7,11 +7,11 @@ import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPeTTaRuntimeBrid
 import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPeTTaCoreBridge
 import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPeTTaRuntimeInstance
 import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPeTTaSpaceCoreBridge
-import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelIntrinsicPureBridge
 
 /-!
 # PLN world-model bridges to language runtimes
 
-Runtime-facing bridges from HE, PeTTa, and PureKernel fragments into the PLN
+Runtime-facing bridges from HE, PeTTa, and IntrinsicPure fragments into the PLN
 world-model consequence interface.
 -/

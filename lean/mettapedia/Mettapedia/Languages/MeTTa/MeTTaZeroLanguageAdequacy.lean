@@ -1,14 +1,14 @@
 import Mettapedia.Languages.MeTTa.MeTTaZero
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
-import Mettapedia.OSLF.Framework.NativeTypeTheory
-import Mettapedia.OSLF.Framework.NativeTypeCertificateGSLT
+import Mettapedia.OSLF.StructuralModal.Formula
+import Mettapedia.OSLF.StructuralModal.CertificateGSLT
 import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 import Mathlib.Tactic.NormNum
 
 /-!
 # Adequacy of the authored MeTTa Zero language
 
-`MeTTaZero.language` is the authored five-field presentation.  Its two
+`MeTTaZero.language` is the authored five-field definition.  Its two
 relation premises are realized here from the semantic kernel, with evaluation
 computed exclusively by `MeTTaZero.evaluateOne`, hence ultimately by public
 query plus the declared grounding portal.
@@ -29,7 +29,7 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.OSLF.Framework.TypeSynthesis
-open Mettapedia.OSLF.Framework.NativeTypeTheory
+open Mettapedia.OSLF.StructuralModal
 
 /-- The generic executor and the total GSLT use one relation environment.
 This abbreviation deliberately introduces no second semantic authority. -/
@@ -259,48 +259,48 @@ noncomputable def nativeSpan (model : Model) (space : model.Space)
   langSpanUsing (relationEnv model space spaceTerm) language
 
 /-- Native inhabitation derived from the interpreted Zero span. -/
-noncomputable def nativeSatisfies (model : Model) (space : model.Space)
-    (spaceTerm : Pattern) : NativeType → Pattern → Prop :=
+noncomputable def structuralModalSatisfies (model : Model) (space : model.Space)
+    (spaceTerm : Pattern) : Formula → Pattern → Prop :=
   satisfiesOver (nativeSpan model space spaceTerm)
 
 /-- The spatial type of an ordinary equation atom. -/
-def equationNativeType : NativeType :=
+def equationFormula : Formula :=
   .headed "=" [.top, .top]
 
 /-- The spatial type of a public query request. -/
-def queryRequestNativeType : NativeType :=
+def queryRequestFormula : Formula :=
   .headed "zero-query" [.top, .top, .top]
 
 /-- The spatial type of a public query answer. -/
-def queryAnswerNativeType : NativeType :=
+def queryAnswerFormula : Formula :=
   .headed "zero-query-answer" [.top]
 
 /-- The spatial type of a public evaluation request. -/
-def evaluationRequestNativeType : NativeType :=
+def evaluationRequestFormula : Formula :=
   .headed "zero-evaluate" [.top, .top]
 
 /-- The spatial type of a public evaluation answer. -/
-def evaluationAnswerNativeType : NativeType :=
+def evaluationAnswerFormula : Formula :=
   .headed "zero-evaluate-answer" [.top]
 
 /-- The complete spatial signature mechanically generated from Zero's term
 grammar. -/
-theorem zero_constructorTypes : constructorTypes language =
-    [equationNativeType, queryRequestNativeType,
-      queryAnswerNativeType, evaluationRequestNativeType,
-      evaluationAnswerNativeType] :=
+theorem zero_constructorFormulas : constructorFormulas language =
+    [equationFormula, queryRequestFormula,
+      queryAnswerFormula, evaluationRequestFormula,
+      evaluationAnswerFormula] :=
   rfl
 
 @[simp] theorem nativeSatisfies_queryRequest (model : Model)
     (space : model.Space) (spaceTerm pattern template : Pattern) :
-    nativeSatisfies model space spaceTerm queryRequestNativeType
+    structuralModalSatisfies model space spaceTerm queryRequestFormula
       (queryRequestPattern spaceTerm pattern template) := by
   exact ⟨[spaceTerm, pattern, template], rfl, ⟨trivial, ⟨trivial,
     ⟨trivial, trivial⟩⟩⟩⟩
 
 @[simp] theorem nativeSatisfies_evaluationRequest (model : Model)
     (space : model.Space) (spaceTerm subject : Pattern) :
-    nativeSatisfies model space spaceTerm evaluationRequestNativeType
+    structuralModalSatisfies model space spaceTerm evaluationRequestFormula
       (evaluationRequestPattern spaceTerm subject) := by
   exact ⟨[spaceTerm, subject], rfl, ⟨trivial, ⟨trivial, trivial⟩⟩⟩
 
@@ -308,7 +308,7 @@ theorem zero_constructorTypes : constructorTypes language =
 constructor. -/
 theorem nativeSatisfies_queryAnswer_iff (model : Model)
     (space : model.Space) (spaceTerm target : Pattern) :
-    nativeSatisfies model space spaceTerm queryAnswerNativeType target ↔
+    structuralModalSatisfies model space spaceTerm queryAnswerFormula target ↔
       ∃ answer, target = queryAnswerPattern answer := by
   constructor
   · rintro ⟨children, shape, inhabited⟩
@@ -325,7 +325,7 @@ theorem nativeSatisfies_queryAnswer_iff (model : Model)
 answer constructor. -/
 theorem nativeSatisfies_evaluationAnswer_iff (model : Model)
     (space : model.Space) (spaceTerm target : Pattern) :
-    nativeSatisfies model space spaceTerm evaluationAnswerNativeType target ↔
+    structuralModalSatisfies model space spaceTerm evaluationAnswerFormula target ↔
       ∃ answer, target = evaluationAnswerPattern answer := by
   constructor
   · rintro ⟨children, shape, inhabited⟩
@@ -342,11 +342,11 @@ theorem nativeSatisfies_evaluationAnswer_iff (model : Model)
 when the two-line Zero query semantics contains an answer. -/
 theorem native_queryDiamond_iff (model : Model) (space : model.Space)
     (spaceTerm pattern template : Pattern) :
-    nativeSatisfies model space spaceTerm (.diamond queryAnswerNativeType)
+    structuralModalSatisfies model space spaceTerm (.diamond queryAnswerFormula)
         (queryRequestPattern spaceTerm pattern template) ↔
       ∃ answer, answer ∈ query model space pattern template := by
   change langDiamondUsing (relationEnv model space spaceTerm) language
-      (nativeSatisfies model space spaceTerm queryAnswerNativeType)
+      (structuralModalSatisfies model space spaceTerm queryAnswerFormula)
       (queryRequestPattern spaceTerm pattern template) ↔ _
   rw [langDiamondUsing_spec]
   constructor
@@ -368,12 +368,12 @@ theorem native_queryDiamond_iff (model : Model) (space : model.Space)
 exactly when the two-line Zero evaluator contains an answer. -/
 theorem native_evaluationDiamond_iff (model : Model) (space : model.Space)
     (spaceTerm subject : Pattern) :
-    nativeSatisfies model space spaceTerm
-        (.diamond evaluationAnswerNativeType)
+    structuralModalSatisfies model space spaceTerm
+        (.diamond evaluationAnswerFormula)
         (evaluationRequestPattern spaceTerm subject) ↔
       ∃ answer, answer ∈ evaluateOne model space subject := by
   change langDiamondUsing (relationEnv model space spaceTerm) language
-      (nativeSatisfies model space spaceTerm evaluationAnswerNativeType)
+      (structuralModalSatisfies model space spaceTerm evaluationAnswerFormula)
       (evaluationRequestPattern spaceTerm subject) ↔ _
   rw [langDiamondUsing_spec]
   constructor
@@ -397,8 +397,8 @@ at least one answer edge, even when no equation or grounding capability
 understands the subject. -/
 theorem native_evaluationDiamond (model : Model) (space : model.Space)
     (spaceTerm subject : Pattern) :
-    nativeSatisfies model space spaceTerm
-      (.diamond evaluationAnswerNativeType)
+    structuralModalSatisfies model space spaceTerm
+      (.diamond evaluationAnswerFormula)
       (evaluationRequestPattern spaceTerm subject) := by
   rw [native_evaluationDiamond_iff]
   apply Multiset.exists_mem_of_ne_zero
@@ -413,7 +413,7 @@ theorem query_nativeCertificate_iff (model : Model) (space : model.Space)
     (spaceTerm pattern template : Pattern) :
     Nonempty
         (Certificate (nativeSpan model space spaceTerm)
-          (.diamond queryAnswerNativeType)
+          (.diamond queryAnswerFormula)
           (queryRequestPattern spaceTerm pattern template)) ↔
       ∃ answer, answer ∈ query model space pattern template := by
   constructor
@@ -432,7 +432,7 @@ theorem evaluation_nativeCertificate_iff (model : Model)
     (space : model.Space) (spaceTerm subject : Pattern) :
     Nonempty
         (Certificate (nativeSpan model space spaceTerm)
-          (.diamond evaluationAnswerNativeType)
+          (.diamond evaluationAnswerFormula)
           (evaluationRequestPattern spaceTerm subject)) ↔
       ∃ answer, answer ∈ evaluateOne model space subject := by
   constructor
@@ -450,7 +450,7 @@ theorem evaluation_nativeCertificate (model : Model) (space : model.Space)
     (spaceTerm subject : Pattern) :
     Nonempty
       (Certificate (nativeSpan model space spaceTerm)
-        (.diamond evaluationAnswerNativeType)
+        (.diamond evaluationAnswerFormula)
         (evaluationRequestPattern spaceTerm subject)) := by
   rw [evaluation_nativeCertificate_iff]
   exact (native_evaluationDiamond_iff model space spaceTerm subject).mp
@@ -469,13 +469,13 @@ def NativeRequestRoute.signature : NativeRequestRoute → HeadSignature
   | .query => ⟨"zero-query", 3⟩
   | .evaluate => ⟨"zero-evaluate", 2⟩
 
-@[simp] theorem queryRequestNativeType_signature :
-    queryRequestNativeType.headSignature? =
+@[simp] theorem queryRequestFormula_signature :
+    queryRequestFormula.headSignature? =
       some NativeRequestRoute.query.signature :=
   rfl
 
-@[simp] theorem evaluationRequestNativeType_signature :
-    evaluationRequestNativeType.headSignature? =
+@[simp] theorem evaluationRequestFormula_signature :
+    evaluationRequestFormula.headSignature? =
       some NativeRequestRoute.evaluate.signature :=
   rfl
 
@@ -717,9 +717,9 @@ theorem query_request_ne_evaluation_request (model : Model)
   intro equal
   cases equal
 
-/-! ## CertificateGSLT presentation of Zero's generated native judgments
+/-! ## CertificateGSLT definition of Zero's generated native judgments
 
-The presentation below is a proof layer over the existing authored Zero
+The definition below is a proof layer over the existing authored Zero
 language.  It does not redefine Zero reduction.  Spatial judgments are
 generated from Zero's constructors; behavioral judgments require an explicit
 query/evaluation-row premise.  Consequently a native checker may replay the
@@ -730,7 +730,7 @@ namespace NativeProof
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
-open Mettapedia.OSLF.Framework.NativeTypeCertificateGSLT
+open Mettapedia.OSLF.StructuralModal.CertificateGSLT
 
 def topJ (term : Pattern) : Pattern :=
   .apply "ZeroNativeTop" [term]
@@ -841,8 +841,6 @@ def definition : CalculusLanguageDef :=
         { head := "ZeroEvaluationRow", arity := 3 } ]
     rules }
 
-def presentation : Presentation := definition.toNested
-
 private theorem root_terms : language.terms =
     [equationConstructor, queryRequestConstructor, queryAnswerConstructor,
       evaluationRequestConstructor, evaluationAnswerConstructor] :=
@@ -872,26 +870,26 @@ private theorem root_terms : language.terms =
       evaluationAnswerConstructor.params.length = 1 :=
   by decide
 
-theorem presentation_valid : presentation.isValidV2 = true := by
-  have rootValid : presentation.language.validate = [] := by
-    simpa [presentation, definition] using language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem definition_valid : definition.isValid = true := by
+  have rootValid : definition.toLanguageDef.validate = [] := by
+    simpa [definition] using language_validate
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [rootValid]
-  simp [presentation, definition, rules, topRule, equationRule,
+  simp [definition, rules, topRule, equationRule,
     queryRequestRule, queryAnswerRule, evaluationRequestRule,
     evaluationAnswerRule, queryLiveRule, evaluationLiveRule, schema,
     ruleId, topJ, equationJ, queryRequestJ, queryAnswerJ,
     evaluationRequestJ, evaluationAnswerJ, queryLiveJ, evaluationLiveJ,
     queryRowJ, evaluationRowJ, queryRequestPattern, queryAnswerPattern,
     evaluationRequestPattern, evaluationAnswerPattern,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSchema.isValidV1, RuleSchema.metavariableNames,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
+    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
     RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, fixedConstructorsValid,
+    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
     fixedConstructorListsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
@@ -901,7 +899,7 @@ theorem presentation_valid : presentation.isValidV2 = true := by
   norm_num [List.eraseDupsBy.loop]
   decide
 
-def checked : ValidatedPresentation := ⟨presentation, presentation_valid⟩
+def checked : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 /-- Proof syntax for the native fragment generated and used by Zero.  Native
 formers outside this finite fragment map to a declared judgment with no rules,
@@ -909,43 +907,43 @@ so native replay fails closed. -/
 noncomputable def encodeClaim (claim : Claim) : Pattern := by
   classical
   exact
-    if claim.nativeType = .top then topJ claim.term
-    else if claim.nativeType = equationNativeType then equationJ claim.term
-    else if claim.nativeType = queryRequestNativeType then queryRequestJ claim.term
-    else if claim.nativeType = queryAnswerNativeType then queryAnswerJ claim.term
-    else if claim.nativeType = evaluationRequestNativeType then
+    if claim.formula = .top then topJ claim.term
+    else if claim.formula = equationFormula then equationJ claim.term
+    else if claim.formula = queryRequestFormula then queryRequestJ claim.term
+    else if claim.formula = queryAnswerFormula then queryAnswerJ claim.term
+    else if claim.formula = evaluationRequestFormula then
       evaluationRequestJ claim.term
-    else if claim.nativeType = evaluationAnswerNativeType then
+    else if claim.formula = evaluationAnswerFormula then
       evaluationAnswerJ claim.term
-    else if claim.nativeType = .diamond queryAnswerNativeType then
+    else if claim.formula = .diamond queryAnswerFormula then
       queryLiveJ claim.term
-    else if claim.nativeType = .diamond evaluationAnswerNativeType then
+    else if claim.formula = .diamond evaluationAnswerFormula then
       evaluationLiveJ claim.term
     else unsupportedJ claim.term
 
-/-- Semantic interpretation of every judgment exposed by the presentation.
+/-- Semantic interpretation of every judgment exposed by the definition.
 Row judgments denote occurrence membership in the exact semantic model; the
 other judgments denote OSLF-native inhabitation over the same interpreted
 span. -/
 noncomputable def judgmentMeaning (model : Model) (space : model.Space)
     (spaceTerm : Pattern) : Pattern → Prop
   | .apply "ZeroNativeTop" [term] =>
-      nativeSatisfies model space spaceTerm .top term
+      structuralModalSatisfies model space spaceTerm .top term
   | .apply "ZeroNativeEquation" [term] =>
-      nativeSatisfies model space spaceTerm equationNativeType term
+      structuralModalSatisfies model space spaceTerm equationFormula term
   | .apply "ZeroNativeQueryRequest" [term] =>
-      nativeSatisfies model space spaceTerm queryRequestNativeType term
+      structuralModalSatisfies model space spaceTerm queryRequestFormula term
   | .apply "ZeroNativeQueryAnswer" [term] =>
-      nativeSatisfies model space spaceTerm queryAnswerNativeType term
+      structuralModalSatisfies model space spaceTerm queryAnswerFormula term
   | .apply "ZeroNativeEvaluationRequest" [term] =>
-      nativeSatisfies model space spaceTerm evaluationRequestNativeType term
+      structuralModalSatisfies model space spaceTerm evaluationRequestFormula term
   | .apply "ZeroNativeEvaluationAnswer" [term] =>
-      nativeSatisfies model space spaceTerm evaluationAnswerNativeType term
+      structuralModalSatisfies model space spaceTerm evaluationAnswerFormula term
   | .apply "ZeroNativeQueryLive" [term] =>
-      nativeSatisfies model space spaceTerm (.diamond queryAnswerNativeType) term
+      structuralModalSatisfies model space spaceTerm (.diamond queryAnswerFormula) term
   | .apply "ZeroNativeEvaluationLive" [term] =>
-      nativeSatisfies model space spaceTerm
-        (.diamond evaluationAnswerNativeType) term
+      structuralModalSatisfies model space spaceTerm
+        (.diamond evaluationAnswerFormula) term
   | .apply "ZeroQueryRow" [candidateSpace, pattern, template, answer] =>
       candidateSpace = spaceTerm ∧ answer ∈ query model space pattern template
   | .apply "ZeroEvaluationRow" [candidateSpace, subject, answer] =>
@@ -953,7 +951,7 @@ noncomputable def judgmentMeaning (model : Model) (space : model.Space)
   | _ => False
 
 /-- The proof encoding never changes the meaning of a supported native claim;
-the unsupported branch has no semantic inhabitants in this presentation. -/
+the unsupported branch has no semantic inhabitants in this definition. -/
 theorem encodeClaim_sound (model : Model) (space : model.Space)
     (spaceTerm : Pattern) (claim : Claim)
     (evidence : judgmentMeaning model space spaceTerm (encodeClaim claim)) :
@@ -964,26 +962,26 @@ theorem encodeClaim_sound (model : Model) (space : model.Space)
   split_ifs at evidence with htop hequation hqueryRequest hqueryAnswer
       hevaluationRequest hevaluationAnswer hqueryLive hevaluationLive
   · subst nativeType
-    simpa [judgmentMeaning, Claim.Meaning, nativeSatisfies, topJ] using evidence
+    simpa [judgmentMeaning, Claim.Meaning, structuralModalSatisfies, topJ] using evidence
   · subst nativeType
-    simpa [judgmentMeaning, Claim.Meaning, nativeSatisfies, equationJ] using evidence
+    simpa [judgmentMeaning, Claim.Meaning, structuralModalSatisfies, equationJ] using evidence
   · subst nativeType
-    simpa [judgmentMeaning, Claim.Meaning, nativeSatisfies, queryRequestJ]
+    simpa [judgmentMeaning, Claim.Meaning, structuralModalSatisfies, queryRequestJ]
       using evidence
   · subst nativeType
-    simpa [judgmentMeaning, Claim.Meaning, nativeSatisfies, queryAnswerJ]
+    simpa [judgmentMeaning, Claim.Meaning, structuralModalSatisfies, queryAnswerJ]
       using evidence
   · subst nativeType
-    simpa [judgmentMeaning, Claim.Meaning, nativeSatisfies,
+    simpa [judgmentMeaning, Claim.Meaning, structuralModalSatisfies,
       evaluationRequestJ] using evidence
   · subst nativeType
-    simpa [judgmentMeaning, Claim.Meaning, nativeSatisfies,
+    simpa [judgmentMeaning, Claim.Meaning, structuralModalSatisfies,
       evaluationAnswerJ] using evidence
   · subst nativeType
-    simpa [judgmentMeaning, Claim.Meaning, nativeSatisfies, queryLiveJ]
+    simpa [judgmentMeaning, Claim.Meaning, structuralModalSatisfies, queryLiveJ]
       using evidence
   · subst nativeType
-    simpa [judgmentMeaning, Claim.Meaning, nativeSatisfies, evaluationLiveJ]
+    simpa [judgmentMeaning, Claim.Meaning, structuralModalSatisfies, evaluationLiveJ]
       using evidence
   · simp [judgmentMeaning, unsupportedJ] at evidence
 
@@ -1058,8 +1056,8 @@ private theorem rule_mem_of_lookup {ruleInstance : RuleInstance}
     {rule : RuleSchema}
     (lookup : checked.1.lookupRule? ruleInstance.ruleId = some rule) :
     rule ∈ rules := by
-  unfold Presentation.lookupRule? at lookup
-  simpa [checked, presentation, definition] using
+  unfold CalculusLanguageDef.lookupRule? at lookup
+  simpa [checked, definition, definition] using
     List.mem_of_find?_eq_some lookup
 
 /-- Every admitted native-proof rule preserves the exact Zero/OSLF meaning.
@@ -1092,7 +1090,7 @@ theorem rule_application_sound (model : Model) (space : model.Space)
     rcases Prod.mk.inj outputs with ⟨premisesEq, conclusionEq⟩
     subst premises
     subst conclusion
-    simp [judgmentMeaning, topJ, nativeSatisfies, satisfiesOver]
+    simp [judgmentMeaning, topJ, structuralModalSatisfies, satisfiesOver]
   · obtain ⟨left, right, rfl⟩ := arguments_two argumentsValid
     change argumentsValidAt [("left", 0), ("right", 0)] [left, right] = true
       at argumentsValid
@@ -1107,7 +1105,7 @@ theorem rule_application_sound (model : Model) (space : model.Space)
     rcases Prod.mk.inj outputs with ⟨premisesEq, conclusionEq⟩
     subst premises
     subst conclusion
-    change nativeSatisfies model space spaceTerm equationNativeType
+    change structuralModalSatisfies model space spaceTerm equationFormula
       (.apply "=" [left, right])
     exact ⟨[left, right], rfl, ⟨trivial, ⟨trivial, trivial⟩⟩⟩
   · obtain ⟨requestSpace, pattern, template, rfl⟩ :=
@@ -1127,7 +1125,7 @@ theorem rule_application_sound (model : Model) (space : model.Space)
     rcases Prod.mk.inj outputs with ⟨premisesEq, conclusionEq⟩
     subst premises
     subst conclusion
-    change nativeSatisfies model space spaceTerm queryRequestNativeType
+    change structuralModalSatisfies model space spaceTerm queryRequestFormula
       (queryRequestPattern requestSpace pattern template)
     exact ⟨[requestSpace, pattern, template], rfl,
       ⟨trivial, ⟨trivial, ⟨trivial, trivial⟩⟩⟩⟩
@@ -1144,7 +1142,7 @@ theorem rule_application_sound (model : Model) (space : model.Space)
     rcases Prod.mk.inj outputs with ⟨premisesEq, conclusionEq⟩
     subst premises
     subst conclusion
-    change nativeSatisfies model space spaceTerm queryAnswerNativeType
+    change structuralModalSatisfies model space spaceTerm queryAnswerFormula
       (queryAnswerPattern answer)
     exact (nativeSatisfies_queryAnswer_iff model space spaceTerm _).mpr
       ⟨answer, rfl⟩
@@ -1163,7 +1161,7 @@ theorem rule_application_sound (model : Model) (space : model.Space)
     rcases Prod.mk.inj outputs with ⟨premisesEq, conclusionEq⟩
     subst premises
     subst conclusion
-    change nativeSatisfies model space spaceTerm evaluationRequestNativeType
+    change structuralModalSatisfies model space spaceTerm evaluationRequestFormula
       (evaluationRequestPattern requestSpace subject)
     exact ⟨[requestSpace, subject], rfl,
       ⟨trivial, ⟨trivial, trivial⟩⟩⟩
@@ -1180,7 +1178,7 @@ theorem rule_application_sound (model : Model) (space : model.Space)
     rcases Prod.mk.inj outputs with ⟨premisesEq, conclusionEq⟩
     subst premises
     subst conclusion
-    change nativeSatisfies model space spaceTerm evaluationAnswerNativeType
+    change structuralModalSatisfies model space spaceTerm evaluationAnswerFormula
       (evaluationAnswerPattern answer)
     exact (nativeSatisfies_evaluationAnswer_iff model space spaceTerm _).mpr
       ⟨answer, rfl⟩
@@ -1205,8 +1203,8 @@ theorem rule_application_sound (model : Model) (space : model.Space)
     have row := premisesSound
       (queryRowJ requestSpace pattern template answer) (by simp)
     simp [judgmentMeaning, queryRowJ] at row
-    change nativeSatisfies model space spaceTerm
-      (.diamond queryAnswerNativeType)
+    change structuralModalSatisfies model space spaceTerm
+      (.diamond queryAnswerFormula)
       (queryRequestPattern requestSpace pattern template)
     rw [row.1]
     exact (native_queryDiamond_iff model space spaceTerm pattern template).mpr
@@ -1231,19 +1229,19 @@ theorem rule_application_sound (model : Model) (space : model.Space)
     have row := premisesSound
       (evaluationRowJ requestSpace subject answer) (by simp)
     simp [judgmentMeaning, evaluationRowJ] at row
-    change nativeSatisfies model space spaceTerm
-      (.diamond evaluationAnswerNativeType)
+    change structuralModalSatisfies model space spaceTerm
+      (.diamond evaluationAnswerFormula)
       (evaluationRequestPattern requestSpace subject)
     rw [row.1]
     exact (native_evaluationDiamond_iff model space spaceTerm subject).mpr
       ⟨answer, row.2⟩
 
-/-- The admitted Zero native presentation is adequate for the interpreted
+/-- The admitted Zero native definition is adequate for the interpreted
 OSLF span.  Open premise occurrences retain their semantic obligations; only
 locally sound rule applications are composed by CertificateGSLT. -/
 noncomputable def openAdequacy (model : Model) (space : model.Space)
     (spaceTerm : Pattern) :
-    OpenPresentationAdequacy (nativeSpan model space spaceTerm) checked where
+    OpenLanguageAdequacy (nativeSpan model space spaceTerm) checked where
   encode := encodeClaim
   premiseMeaning := judgmentMeaning model space spaceTerm
   derivation_sound := by
@@ -1283,7 +1281,7 @@ theorem CheckedNativeLowering.satisfies
     (accepted : lowering.nativeCheck claim evidence = true)
     (premisesValid : ∀ premise ∈ claim.context,
       judgmentMeaning model space spaceTerm premise) :
-    nativeSatisfies model space spaceTerm claim.claim.nativeType
+    structuralModalSatisfies model space spaceTerm claim.claim.formula
       claim.claim.term :=
   OpenNativeCheckedLowering.satisfies lowering accepted premisesValid
 
@@ -1296,7 +1294,7 @@ def sampleAnswer : Pattern := .apply "zero-native-sample-answer" []
 
 def sampleClaim : Claim :=
   { term := queryRequestPattern sampleSpaceTerm samplePattern sampleTemplate
-    nativeType := .diamond queryAnswerNativeType }
+    formula := .diamond queryAnswerFormula }
 
 def sampleOpenClaim : OpenClaim :=
   { context := [queryRowJ sampleSpaceTerm samplePattern sampleTemplate sampleAnswer]
@@ -1312,8 +1310,8 @@ theorem sample_rule_instantiates :
         ([queryRowJ sampleSpaceTerm samplePattern sampleTemplate sampleAnswer],
           queryLiveJ
             (queryRequestPattern sampleSpaceTerm samplePattern sampleTemplate)) := by
-  simp [instantiateRule?, checked, presentation, definition, rules,
-    Presentation.lookupRule?, topRule, equationRule, queryRequestRule,
+  simp [instantiateRule?, checked, definition, definition, rules,
+    CalculusLanguageDef.lookupRule?, topRule, equationRule, queryRequestRule,
     queryAnswerRule, evaluationRequestRule, evaluationAnswerRule,
     queryLiveRule, evaluationLiveRule, schema, ruleId, sampleRuleInstance,
     sampleSpaceTerm, samplePattern, sampleTemplate, sampleAnswer, queryRowJ,
@@ -1347,8 +1345,8 @@ theorem sample_article_accepted {AuthorityId : Type}
       sampleOpenClaim sampleArticle = true := by
   simp [semanticAuthority, openWireAuthority_check, sampleArticle,
     openAdequacy, sampleOpenClaim, sampleClaim, encodeClaim,
-    equationNativeType, queryRequestNativeType, queryAnswerNativeType,
-    evaluationRequestNativeType, evaluationAnswerNativeType,
+    equationFormula, queryRequestFormula, queryAnswerFormula,
+    evaluationRequestFormula, evaluationAnswerFormula,
     checkOpenDAGBlocks,
     expandOpenDAGBlocks?, checkOpenDAGBlocks?, checkOpenDAGNodes?,
     checkOpenDAGNode?, resolveOpenDAGChildren?, resolveOpenDAGReference?,
@@ -1362,8 +1360,8 @@ theorem sample_wrong_premise_rejected {AuthorityId : Type}
       sampleOpenClaim sampleWrongPremiseArticle = false := by
   simp [semanticAuthority, openWireAuthority_check, sampleWrongPremiseArticle,
     sampleArticle, openAdequacy, sampleOpenClaim, sampleClaim, encodeClaim,
-    equationNativeType, queryRequestNativeType, queryAnswerNativeType,
-    evaluationRequestNativeType, evaluationAnswerNativeType,
+    equationFormula, queryRequestFormula, queryAnswerFormula,
+    evaluationRequestFormula, evaluationAnswerFormula,
     checkOpenDAGBlocks, expandOpenDAGBlocks?, checkOpenDAGBlocks?,
     checkOpenDAGNodes?, checkOpenDAGNode?, resolveOpenDAGChildren?,
     resolveOpenDAGReference?, findOpenDAGEntry?, sampleNode,
@@ -1373,8 +1371,8 @@ theorem sample_wrong_premise_rejected {AuthorityId : Type}
 corresponding OSLF behavioral type. -/
 theorem sample_article_semantic (model : Model) (space : model.Space)
     (row : sampleAnswer ∈ query model space samplePattern sampleTemplate) :
-    nativeSatisfies model space sampleSpaceTerm
-      (.diamond queryAnswerNativeType)
+    structuralModalSatisfies model space sampleSpaceTerm
+      (.diamond queryAnswerFormula)
       (queryRequestPattern sampleSpaceTerm samplePattern sampleTemplate) := by
   have meaning :=
     (semanticAuthority "zero-native-proof-v1" model space sampleSpaceTerm).sound

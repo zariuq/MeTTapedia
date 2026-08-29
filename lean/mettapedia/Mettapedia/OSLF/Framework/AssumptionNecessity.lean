@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.Framework.PiRhoCanonicalBridge
-import Mettapedia.OSLF.NativeType.Construction
+import Mettapedia.OSLF.PresheafNativeType.PresheafSemantics
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep
 
@@ -409,10 +409,10 @@ theorem types_nonempty_necessary_for_piSigma :
 /-- Two distinct `ScopedConstructorPred`s witnessing that not all fragments are
 closed under `ScopedReachable`. -/
 theorem hClosed_necessary_for_fragment :
-    ∃ (Frag : Mettapedia.OSLF.NativeType.ScopedConstructorPred rhoCalc → Prop),
-      ∃ (A B : Mettapedia.OSLF.NativeType.ScopedConstructorPred rhoCalc),
+    ∃ (Frag : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred rhoCalc → Prop),
+      ∃ (A B : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred rhoCalc),
         Frag A ∧
-        Mettapedia.OSLF.NativeType.ScopedReachable A B ∧
+        Mettapedia.OSLF.PresheafNativeType.ScopedReachable A B ∧
         ¬ Frag B := by
   -- Define Frag that accepts only predicates with seed = basePat
   refine ⟨fun X => X.seed = basePat, ?_⟩
@@ -422,9 +422,9 @@ theorem hClosed_necessary_for_fragment :
   have hNat : ∀ seed, Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
       rhoCalc rhoProc seed (fun _ => True) := by
     intro seed _ _ g h _; trivial
-  let A : Mettapedia.OSLF.NativeType.ScopedConstructorPred rhoCalc :=
+  let A : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred rhoCalc :=
     ⟨rhoProc, basePat, fun _ => True, hNat basePat⟩
-  let B : Mettapedia.OSLF.NativeType.ScopedConstructorPred rhoCalc :=
+  let B : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred rhoCalc :=
     ⟨rhoProc, zeroPat, fun _ => True, hNat zeroPat⟩
   refine ⟨A, B, rfl, ?_, ?_⟩
   · -- ScopedReachable A B: need Nonempty (ScopedConstructorPredHom rhoCalc A B)
@@ -432,7 +432,7 @@ theorem hClosed_necessary_for_fragment :
       base := CategoryTheory.CategoryStruct.id _
       fiberLe := by
         intro U x _
-        simp [Mettapedia.OSLF.NativeType.ScopedConstructorPred.toFullGrothObj,
+        simp [Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred.toFullGrothObj,
               CategoryTheory.Subfunctor.preimage]
         trivial
     }⟩

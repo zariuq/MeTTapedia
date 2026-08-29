@@ -5,7 +5,8 @@ import Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 `InferenceExtension` supplies the authored coGSLT and its raw elaborated
 payload.  `InferenceChecker` supplies the admission predicate.  This module
-combines them without adding fields to the term language.
+exposes the internal fibre factorization of the flat calculus language
+definition.
 
 For each term language, the fibre consists of proof calculi admitted against
 that exact base.  Fibre morphisms preserve declared judgments, successful rule
@@ -25,27 +26,28 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 /-- The admitted proof-calculus fibre over one exact term language. -/
 abbrev AdmittedCalculus (language : LanguageDef) :=
   { calculus : ProofCalculus //
-    (Presentation.mk language calculus).isValidV2 = true }
+    (CalculusLanguageDef.extend language calculus).isValid = true }
 
 /-- Validated proof calculi form an indexed extension layer. -/
 def layer : ExtensionLayer LanguageDef where
   Fiber := AdmittedCalculus
 
-/-- Repackage the checker's historical sigma subtype as the explicit fibre
-total space. -/
-def toAttached (presentation : ValidatedPresentation) : layer.Total :=
-  ⟨presentation.1.language,
-    ⟨presentation.1.calculus, presentation.2⟩⟩
+/-- Expose a validated flat definition as the explicit fibre total space. -/
+def toAttached (definition : ValidatedCalculusLanguageDef) : layer.Total :=
+  ⟨definition.1.toLanguageDef,
+    ⟨definition.1.toCalculus, definition.2⟩⟩
 
-/-- Recover the checker-facing validated presentation from a fibre object. -/
-def ofAttached (attached : layer.Total) : ValidatedPresentation :=
-  ⟨{ language := attached.1, calculus := attached.2.1 }, attached.2.2⟩
+/-- Flatten a fibre object back into the canonical validated definition. -/
+def ofAttached (attached : layer.Total) : ValidatedCalculusLanguageDef :=
+  ⟨CalculusLanguageDef.extend attached.1 attached.2.1,
+    attached.2.2⟩
 
-@[simp] theorem ofAttached_toAttached (presentation : ValidatedPresentation) :
-    ofAttached (toAttached presentation) = presentation := by
-  cases presentation with
-  | mk presentation valid =>
-      cases presentation
+@[simp] theorem ofAttached_toAttached
+    (definition : ValidatedCalculusLanguageDef) :
+    ofAttached (toAttached definition) = definition := by
+  cases definition with
+  | mk definition valid =>
+      cases definition
       rfl
 
 @[simp] theorem toAttached_ofAttached (attached : layer.Total) :
@@ -76,8 +78,8 @@ structure Refines {language : LanguageDef}
 namespace Refines
 
 @[refl] theorem refl {language : LanguageDef}
-    (presentation : AdmittedCalculus language) :
-    Refines presentation presentation where
+    (definition : AdmittedCalculus language) :
+    Refines definition definition where
   judgments := fun _ member => member
   rules := fun _ _ found => found
   conversion := fun _ declared => declared

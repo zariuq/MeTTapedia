@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedExecutionMMLean4
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedParserMMLean4
 
+open Mettapedia.GSLT.LanguageDef
+
 set_option autoImplicit false
 set_option maxRecDepth 100000
 
@@ -295,7 +297,7 @@ theorem projectedAssertion_reverse_fidelity
 header transition.  The successor machine is forced by the `HeaderStep`
 constructor, and its agreement is the forward preservation image. -/
 noncomputable def headerStep_runtimeReflected
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {item : HeaderItem}
     {before : MachineState source target}
     (db : RuntimeDB)
@@ -393,7 +395,7 @@ private theorem optionExceptOk_inj {ε α : Type _} {a b : α}
 over an item list reconstructs the ordered source header build, with
 the shipped successor identified stepwise by determinism. -/
 noncomputable def headerBuild_runtimeReflected
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     (db : RuntimeDB)
     (hproject : projectPrefix? db = some source.toProjection) :
     ∀ {items : List HeaderItem} {before : MachineState source target}
@@ -453,7 +455,7 @@ theorem ConstantHeadedFormula.toRuntime_injective
 
 /-- Witness extraction from a singleton stack agreement. -/
 noncomputable def stackSingletonWitness
-    {source : SourcePrefix} {target : ValidatedPresentation}
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
     {nodes : List (ProofNode source target)} {stack : List Nat}
     {f : RuntimeFormula}
     (h : StackEntriesAgree nodes stack [f]) :
@@ -476,9 +478,9 @@ noncomputable def compressedTheoremStep_of_mmLean4
     {formula : ConstantHeadedFormula}
     {explicitHeaderLabels : List String}
     {bodyWords : List (List UInt8)}
-    (target : ValidatedPresentation)
+    (target : ValidatedCalculusLanguageDef)
     (hvalid : sourceStateValid before = true)
-    (hpres : presentationOfSourcePrefix? before.toSourcePrefix =
+    (hpres : calculusLanguageDefOfSourcePrefix? before.toSourcePrefix =
       some target.1)
     (hins : insertAssertion? before label formula = some next)
     {actions : List CompressedAction}

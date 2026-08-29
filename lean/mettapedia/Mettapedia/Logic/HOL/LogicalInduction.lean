@@ -30,5 +30,5 @@ The PLN-facing WM empirical special case and its regression wrapper live under
 
 The Pure-kernel artifact boundary for encoded HOL formulas lives on the language
 side under
-`Mettapedia.Languages.MeTTa.PureKernel.HOLLogicalInductionBridge`.
+`Mettapedia.Languages.MeTTa.Pure.Intrinsic.HOLLogicalInductionBridge`.
 -/

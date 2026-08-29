@@ -664,6 +664,7 @@ AGREEMENT — never deleted. -/
 section Canary
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
 
@@ -691,7 +692,7 @@ theorem union_disagreement_canary :
       unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr,
       hasTypeTrue, hasTypeFalse, hasTypeWildcard, hasTypeUnion,
       hasTypeBrand, hasTypeNilList, hasTypeConsList, guardPassesRule,
-      instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+      instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
       argumentValidAt, RuleSchema.sideConditionsHold,
       instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
       instantiateSchemasAt?, lookupArgumentAt?, valueHasType,

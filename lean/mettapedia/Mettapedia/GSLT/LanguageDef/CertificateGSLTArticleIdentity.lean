@@ -15,7 +15,7 @@ thousands.  `checkWireArticle_iff_articleRuleAgreement` replaces it with the
 exact hypothesis — agreement on the cited identifiers only — and gets a
 biconditional instead of an implication.  This is what makes
 content-addressed article reuse across large, independently growing
-presentations possible.
+definitions possible.
 
 **Rootedness.**  The version-1 checker validates every node and then requires
 only that the root carry the target; it never requires nodes to be reachable
@@ -42,15 +42,15 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 def WireArticle.citedRuleIds (article : WireArticle) : List RuleId :=
   article.nodes.map fun node => node.ruleInstance.ruleId
 
-/-- Two presentations agree on everything this article cites. -/
-def ArticleRuleAgreement (source target : ValidatedPresentation)
+/-- Two definitions agree on everything this article cites. -/
+def ArticleRuleAgreement (source target : ValidatedCalculusLanguageDef)
     (article : WireArticle) : Prop :=
   ∀ id ∈ article.citedRuleIds,
     source.1.lookupRule? id = target.1.lookupRule? id
 
-/-- Instantiation depends on the presentation only through the looked-up
+/-- Instantiation depends on the definition only through the looked-up
 schema. -/
-theorem instantiateRule?_congr {source target : ValidatedPresentation}
+theorem instantiateRule?_congr {source target : ValidatedCalculusLanguageDef}
     {ruleInstance : RuleInstance}
     (agree : source.1.lookupRule? ruleInstance.ruleId =
       target.1.lookupRule? ruleInstance.ruleId) :
@@ -59,7 +59,7 @@ theorem instantiateRule?_congr {source target : ValidatedPresentation}
   simp only [instantiateRule?, agree]
 
 /-- Checking one node depends only on the schema its instance names. -/
-theorem checkOpenDAGNode?_congr {source target : ValidatedPresentation}
+theorem checkOpenDAGNode?_congr {source target : ValidatedCalculusLanguageDef}
     {context : List Pattern} {entries : List OpenDAGEntry}
     {node : OpenDAGNode}
     (agree : source.1.lookupRule? node.ruleInstance.ruleId =
@@ -69,7 +69,7 @@ theorem checkOpenDAGNode?_congr {source target : ValidatedPresentation}
   unfold checkOpenDAGNode?
   rw [instantiateRule?_congr agree]
 
-theorem checkOpenDAGNodes?_congr {source target : ValidatedPresentation}
+theorem checkOpenDAGNodes?_congr {source target : ValidatedCalculusLanguageDef}
     {context : List Pattern} :
     ∀ (nodes : List OpenDAGNode) (entries : List OpenDAGEntry),
       (∀ node ∈ nodes, source.1.lookupRule? node.ruleInstance.ruleId =
@@ -89,7 +89,7 @@ theorem checkOpenDAGNodes?_congr {source target : ValidatedPresentation}
           exact inductionHypothesis middle
             (fun n member => agree n (List.mem_cons_of_mem _ member))
 
-theorem checkOpenDAGBlocks?_congr {source target : ValidatedPresentation}
+theorem checkOpenDAGBlocks?_congr {source target : ValidatedCalculusLanguageDef}
     {context : List Pattern} :
     ∀ (blocks : List (List OpenDAGNode)) (entries : List OpenDAGEntry),
       (∀ block ∈ blocks, ∀ node ∈ block,
@@ -111,13 +111,13 @@ theorem checkOpenDAGBlocks?_congr {source target : ValidatedPresentation}
           exact inductionHypothesis middle
             (fun b member => agree b (List.mem_cons_of_mem _ member))
 
-/-- **Local rule agreement suffices.**  Two presentations that resolve every
+/-- **Local rule agreement suffices.**  Two definitions that resolve every
 identifier the article cites to the same schema accept exactly the same
 article.  Unlike whole-table refinement this is a biconditional, and it is
 insensitive to everything the article does not mention — which is what makes
 it usable against a large, independently growing library. -/
 theorem checkWireArticle_iff_articleRuleAgreement
-    {source target : ValidatedPresentation} {article : WireArticle}
+    {source target : ValidatedCalculusLanguageDef} {article : WireArticle}
     (agree : ArticleRuleAgreement source target article) :
     checkWireArticle source article = true ↔
       checkWireArticle target article = true := by
@@ -139,7 +139,7 @@ theorem checkWireArticle_iff_articleRuleAgreement
 /-- Whole-table retention is the special case in which every identifier
 agrees, so the earlier transport theorem factors through this one. -/
 theorem articleRuleAgreement_of_lookup_eq
-    {source target : ValidatedPresentation} (article : WireArticle)
+    {source target : ValidatedCalculusLanguageDef} (article : WireArticle)
     (agree : ∀ id, source.1.lookupRule? id = target.1.lookupRule? id) :
     ArticleRuleAgreement source target article :=
   fun id _ => agree id
@@ -194,32 +194,32 @@ def WireArticle.rootedCheck (article : WireArticle) : Bool :=
 
 /-- The rooted article checker: version-1 acceptance plus the requirement
 that no node rides along unused. -/
-def checkRootedArticle (presentation : ValidatedPresentation)
+def checkRootedArticle (definition : ValidatedCalculusLanguageDef)
     (article : WireArticle) : Bool :=
-  checkWireArticle presentation article && article.rootedCheck
+  checkWireArticle definition article && article.rootedCheck
 
 /-- Rooted acceptance is a strengthening: it still yields a derivation of the
 stored target.  Soundness is inherited unchanged, so adopting rootedness
 cannot admit anything new. -/
-theorem checkRootedArticle_sound {presentation : ValidatedPresentation}
+theorem checkRootedArticle_sound {definition : ValidatedCalculusLanguageDef}
     {article : WireArticle}
-    (accepted : checkRootedArticle presentation article = true) :
-    Nonempty (Derivation presentation article.target) := by
+    (accepted : checkRootedArticle definition article = true) :
+    Nonempty (Derivation definition article.target) := by
   simp only [checkRootedArticle, Bool.and_eq_true] at accepted
   exact checkWireArticle_sound accepted.1
 
 /-- Rooted acceptance implies plain acceptance. -/
 theorem checkWireArticle_of_checkRootedArticle
-    {presentation : ValidatedPresentation} {article : WireArticle}
-    (accepted : checkRootedArticle presentation article = true) :
-    checkWireArticle presentation article = true := by
+    {definition : ValidatedCalculusLanguageDef} {article : WireArticle}
+    (accepted : checkRootedArticle definition article = true) :
+    checkWireArticle definition article = true := by
   simp only [checkRootedArticle, Bool.and_eq_true] at accepted
   exact accepted.1
 
 /-- Local rule agreement transports rooted acceptance too: rootedness is a
-property of the article alone and does not mention the presentation. -/
+property of the article alone and does not mention the definition. -/
 theorem checkRootedArticle_iff_articleRuleAgreement
-    {source target : ValidatedPresentation} {article : WireArticle}
+    {source target : ValidatedCalculusLanguageDef} {article : WireArticle}
     (agree : ArticleRuleAgreement source target article) :
     checkRootedArticle source article = true ↔
       checkRootedArticle target article = true := by
@@ -232,7 +232,7 @@ theorem checkRootedArticle_iff_articleRuleAgreement
 anything new.  What is *not* yet proved is that it admits everything the
 version-1 checker admits from a real derivation, namely:
 
-    ∀ (derivation : Derivation presentation goal),
+    ∀ (derivation : Derivation definition goal),
       (articleOfDerivation derivation).rootedCheck = true
 
 `Derivation.linearize` emits exactly the nodes of the derivation tree and

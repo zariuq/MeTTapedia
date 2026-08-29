@@ -15,10 +15,10 @@ open Mettapedia.Languages.GF.Typing
 open Mettapedia.Languages.GF.GFWMConnections
 open Mettapedia.Languages.GF.GFWMObligationAdapter
 open Mettapedia.PLN.WorldModel.PLNWorldModel
-open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelIntrinsicPureBridge
 open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.PLN.Evidence.EvidenceQuantale
-open Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.ProfileTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open scoped ENNReal
 

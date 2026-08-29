@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.Core.ProofRelevantPresentation
+import Mettapedia.GSLT.Core.ProofRelevantGSLT
 import Mettapedia.Languages.ProcessCalculi.MORK.GSLTSemantics
 
 /-!
@@ -24,7 +24,7 @@ namespace Mettapedia.Languages.ProcessCalculi.MORK
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.GSLT
-open Mettapedia.GSLT.ProofRelevantPresentation
+open Mettapedia.GSLT.ProofRelevant
 
 mutual
   /-- Every variable occurrence authored directly in a template has a match
@@ -548,6 +548,43 @@ theorem mem_cUnionSupport_iff (candidate : Atom)
       simp only [cUnionSupport, induction, mem_insertSupport_iff,
         List.mem_cons]
       aesop
+
+/-- An add-only suffix preserves every atom already present in the space. -/
+theorem mem_cApplyReflectiveSinkBatch_of_all_add
+    (rows : List Subst) {space : List Atom} {sinks : List Sink}
+    {candidate : Atom}
+    (allAdd : ∀ sink ∈ sinks, ∃ authored, sink = .add authored)
+    (member : candidate ∈ space) :
+    candidate ∈ cApplyReflectiveSinkBatch rows space sinks := by
+  induction sinks generalizing space with
+  | nil => exact member
+  | cons sink rest induction =>
+      obtain ⟨authored, rfl⟩ := allAdd sink (by simp)
+      simp only [cApplyReflectiveSinkBatch]
+      apply induction
+      · intro later laterMember
+        exact allAdd later (by simp [laterMember])
+      · change candidate ∈ cUnionSupport space _
+        exact (mem_cUnionSupport_iff candidate space _).2 (Or.inl member)
+
+/-- A successful row for an add sink publishes the instantiated atom, and an
+add-only continuation cannot erase it. -/
+theorem mem_cApplyReflectiveSinkBatch_add_cons_of_row
+    (rows : List Subst) (space : List Atom) (authored candidate : Atom)
+    (rest : List Sink) (substitution : Subst)
+    (rowMember : substitution ∈ rows)
+    (instantiates :
+      instantiateTemplateAtom? substitution authored = some candidate)
+    (restAdd : ∀ sink ∈ rest, ∃ later, sink = .add later) :
+    candidate ∈
+      cApplyReflectiveSinkBatch rows space (.add authored :: rest) := by
+  simp only [cApplyReflectiveSinkBatch]
+  apply mem_cApplyReflectiveSinkBatch_of_all_add rows restAdd
+  change candidate ∈ cUnionSupport space _
+  rw [mem_cUnionSupport_iff]
+  right
+  rw [mem_foldl_stageReflectiveSupportSink_iff]
+  exact Or.inr ⟨substitution, rowMember, instantiates⟩
 
 /-- In an add/remove-only batch, every surviving atom was either already in
 the input space or was instantiated by an authored add sink. -/
@@ -1263,14 +1300,14 @@ theorem reflectiveScheduledEvent_nonempty_iff_step
 
 /-- Proof-relevant presentation of the ordinary MM2 execution profile used
 by compilers that may stage executable rules as data. -/
-noncomputable def reflectiveStepPresentation :
-    StepPresentation (reflectiveSourceExecGSLT .leaveInert) where
+noncomputable def reflectiveStepEvidence :
+    StepEvidence (reflectiveSourceExecGSLT .leaveInert) where
   Evidence := ReflectiveScheduledEvent
   erases_iff := reflectiveScheduledEvent_nonempty_iff_step
 
-noncomputable def reflectivePresented : PresentedGSLT :=
+noncomputable def reflectivePresented : ProofRelevantGSLT :=
   { theory := reflectiveSourceExecGSLT .leaveInert
-    steps := reflectiveStepPresentation }
+    steps := reflectiveStepEvidence }
 
 /-- A selected directive yields its exact proof-relevant event. -/
 def reflectiveEventOfSelected {source : Space} {directive : SourceExecFact}

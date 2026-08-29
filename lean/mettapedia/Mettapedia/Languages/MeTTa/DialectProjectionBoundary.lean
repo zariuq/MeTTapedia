@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.NativeTypeTheoryDerivation
+import Mettapedia.Languages.MeTTa.TypeTheory.StagedReflective.Presentation
 import Mettapedia.Languages.MeTTa.HE.TypeSystemGSLT
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTDeterminism
@@ -20,7 +20,7 @@ of them.  This module makes both facts explicit and gives the nondegenerate
 target interface for the later exact calculus instances.
 -/
 
-namespace Mettapedia.Languages.MeTTa.NativeTypeTheory.DialectProjectionBoundary
+namespace Mettapedia.Languages.MeTTa.StagedReflective.DialectProjectionBoundary
 
 /-! ## Exact capability projections already available -/
 
@@ -144,4 +144,4 @@ theorem petta_base_and_guard_have_distinct_rule_counts :
   exact ⟨Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT.calculus_rule_count,
     Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTGuard.guard_rule_count⟩
 
-end Mettapedia.Languages.MeTTa.NativeTypeTheory.DialectProjectionBoundary
+end Mettapedia.Languages.MeTTa.StagedReflective.DialectProjectionBoundary

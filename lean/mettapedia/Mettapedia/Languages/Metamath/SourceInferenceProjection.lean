@@ -4,14 +4,14 @@ import Mettapedia.Languages.Metamath.InferenceProjection
 # Source-owned Metamath inference projection
 
 The executable inference development originally generated its checker
-presentation from an `mm-lean4` runtime database.  This file introduces the
+language from an `mm-lean4` runtime database.  This file introduces the
 source-side waist needed to reverse that authority direction.  Frames,
 assertions, and database prefixes are represented without runtime arrays or a
 runtime object map, and the generated assertion rules encode those source
 objects directly.
 
 The agreement theorems then show that translating a source prefix into the
-runtime projection carrier preserves the complete generated presentation.
+runtime projection carrier preserves the complete generated language definition.
 They do not yet construct a source prefix from a raw-byte parse; that is the
 next composition boundary.
 -/
@@ -19,6 +19,7 @@ next composition boundary.
 namespace Mettapedia.Languages.Metamath.SourceInferenceProjection
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.Metamath.MMLean4Bridge
 open Mettapedia.Languages.Metamath.InferenceEncoding
@@ -28,8 +29,6 @@ open Mettapedia.Languages.Metamath.InferenceProjection
 
 abbrev SourceRuleId := Mettapedia.OSLF.MeTTaIL.Syntax.RuleId
 abbrev SourceRuleSchema := Mettapedia.OSLF.MeTTaIL.Syntax.RuleSchema
-abbrev SourcePresentation :=
-  Mettapedia.GSLT.LanguageDef.InferenceChecker.Presentation
 
 /-! ## Source-owned semantic carriers -/
 
@@ -316,39 +315,38 @@ theorem sourceAssertionRule_eq_runtime
   simp [sourceGeneratedRules, generatedSourceRules,
     SourcePrefix.toProjection, sourceAssertionRule_eq_runtime]
 
-/-! ## Source-owned indexed presentation -/
+/-! ## Source-owned indexed calculus language -/
 
-def presentationOfSourcePrefix? (source : SourcePrefix) :
-    Option SourcePresentation := do
+def calculusLanguageDefOfSourcePrefix? (source : SourcePrefix) :
+    Option CalculusLanguageDef := do
   guard (sourcePrefixValid source)
   let vocabulary := sourcePrefixVocabulary source
   guard (sourceVocabularyValid vocabulary)
   let sourceRules := sourceGeneratedRules source
   guard (sourceRuleIdsDisjoint
     (sourceRules.map Mettapedia.OSLF.MeTTaIL.Syntax.RuleSchema.id))
-  some
-    { language := languageWithSourceVocabulary vocabulary
-      calculus :=
-        { judgments := judgmentDecls ++ [provesDecl]
-          rules := sideRules ++ sourceRules } }
+  some <| CalculusLanguageDef.extend
+    (languageWithSourceVocabulary vocabulary)
+    { judgments := judgmentDecls ++ [provesDecl]
+      rules := sideRules ++ sourceRules }
 
-/-- The source-owned and runtime-projection presentation generators agree
+/-- The source-owned and runtime-projection language generators agree
 extensionally, although their input authority and frame representations are
 independent. -/
-theorem presentationOfSourcePrefix?_eq_runtime
+theorem calculusLanguageDefOfSourcePrefix?_eq_runtime
     (source : SourcePrefix) :
-    presentationOfSourcePrefix? source =
-      presentationOfProjection? source.toProjection := by
-  simp [presentationOfSourcePrefix?, presentationOfProjection?]
+    calculusLanguageDefOfSourcePrefix? source =
+      calculusLanguageDefOfProjection? source.toProjection := by
+  simp [calculusLanguageDefOfSourcePrefix?, calculusLanguageDefOfProjection?]
 
-/-- A source presentation carries exactly the generic side calculus followed
+/-- A source calculus language carries exactly the generic side calculus followed
 by the rules generated from that source prefix. -/
-theorem rules_eq_of_presentationOfSourcePrefix?_eq_some
-    (source : SourcePrefix) (presentation : SourcePresentation)
+theorem rules_eq_of_calculusLanguageDefOfSourcePrefix?_eq_some
+    (source : SourcePrefix) (definition : CalculusLanguageDef)
     (hsource :
-      presentationOfSourcePrefix? source = some presentation) :
-    presentation.rules = sideRules ++ sourceGeneratedRules source := by
-  unfold presentationOfSourcePrefix? at hsource
+      calculusLanguageDefOfSourcePrefix? source = some definition) :
+    definition.rules = sideRules ++ sourceGeneratedRules source := by
+  unfold calculusLanguageDefOfSourcePrefix? at hsource
   simp only [Option.bind_eq_bind] at hsource
   rw [Option.bind_eq_some_iff] at hsource
   rcases hsource with ⟨_, _, hsource⟩

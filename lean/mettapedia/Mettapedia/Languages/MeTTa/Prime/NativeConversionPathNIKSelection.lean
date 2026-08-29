@@ -30,12 +30,12 @@ open Mettapedia.GSLT.LanguageDef.MaximalNativeCalculus
 open Mettapedia.GSLT.LanguageDef.NIKMaximalNativeAdmission
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
-open Mettapedia.Languages.MeTTa.PureKernel.Universe
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyPresentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyConversionPath
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyTypedConversion
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration.ComputationAuthority
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyPresentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyConversionPath
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyTypedConversion
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration.ComputationAuthority
 open Mettapedia.TypeTheory
 
 noncomputable section

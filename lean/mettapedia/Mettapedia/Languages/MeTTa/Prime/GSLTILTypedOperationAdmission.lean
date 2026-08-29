@@ -1,6 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.GSLTILUniversalStructure
 import Mettapedia.Languages.MeTTa.Prime.GSLTILLayeredCrown
-import Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
 
 /-!
 # Typed Prime operations through GSLT-IL elaboration and NIK admission
@@ -38,7 +38,7 @@ open Mettapedia.Languages.MeTTa.Prime.LanguageOperationSyntax
 open Mettapedia.Languages.MeTTa.Prime.LanguageOperationFactorization
 open Mettapedia.Languages.MeTTa.Prime.LanguageOperationNIKAdmission
 open Mettapedia.Languages.MeTTa.Prime.IndexedLanguageChange
-open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-! ## Source-faithful singleton authored profiles -/
@@ -149,7 +149,7 @@ occurrence rather than replacing it by the decoded quotient. -/
 /-- The term retained in the occurrence is independently well typed at the
 endpoints used by the selected route. -/
 theorem selected_term_wellTyped (operation : RecognizedOperation) :
-    Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.HasTypeDecl
+    Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics.HasTypeDecl
       operationDeclEnv .nil operation.term
       (routeType (languageTerm operation.decoded.source)
         (languageTerm operation.decoded.target)) :=

@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.NIKMaximalNativeAdmission
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyNativeKernel
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyConstruction
 
 /-!
 # NIK capability selection for constructional indexed-family kernels
@@ -28,14 +28,14 @@ open Mettapedia.GSLT.LanguageDef.MaximalNativeCalculus
 open Mettapedia.GSLT.LanguageDef.NIKMaximalNativeAdmission
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
-open Mettapedia.Languages.MeTTa.PureKernel.Universe
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredDeclarationSignature
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyNativeKernel
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyPresentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.AuthoredIndexedFamilyTypedConversion
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration.ComputationAuthority
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredDeclarationSignature
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyConstruction
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyPresentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyTypedConversion
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration.ComputationAuthority
 open Mettapedia.TypeTheory
 
 noncomputable section
@@ -472,7 +472,7 @@ def admitUniformAt {presented : PresentedCandidate}
 
 namespace Canary
 
-open AuthoredIndexedFamilyNativeKernel.NativeList
+open AuthoredIndexedFamilyConstruction.NativeList
 open NativeIndexedFamilies.Intrinsic
 open NativeIndexedFamilySource
 

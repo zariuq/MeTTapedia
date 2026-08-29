@@ -1,5 +1,5 @@
 import Mettapedia.Languages.Megalodon.DefinitionConversionKernel
-import Mettapedia.GSLT.LanguageDef.InferencePresentationExtension
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageExtension
 
 /-!
 # Megalodon theory admission kernel
@@ -544,10 +544,8 @@ def definition : CalculusLanguageDef :=
       additionalJudgments
     rules := DefinitionConversionKernel.definition.rules ++ additionalRules }
 
-def presentation : Presentation := definition.toNested
-
 def admissionExtension :
-    InferencePresentationExtension.PresentationExtension :=
+    CalculusLanguageExtension :=
   { newTerms := additionalConstructors.map fun declaration =>
       TermQuantifiedKernel.expressionConstructor declaration.1 declaration.2
     newJudgments := additionalJudgments
@@ -555,28 +553,28 @@ def admissionExtension :
     rename := some definition.name }
 
 @[simp] theorem admissionExtension_apply :
-    admissionExtension.apply DefinitionConversionKernel.presentation =
-      presentation := by
+    admissionExtension.apply DefinitionConversionKernel.definition =
+      definition := by
   rfl
 
 theorem admissionExtension_disjoint :
     admissionExtension.disjointFrom
-      DefinitionConversionKernel.presentation = true := by
+      DefinitionConversionKernel.definition = true := by
   rfl
 
 private theorem admissionTermDisjoint
     {newTerm oldTerm : GrammarRule}
     (newMember : newTerm ∈ admissionExtension.newTerms)
     (oldMember : oldTerm ∈
-      DefinitionConversionKernel.presentation.language.terms) :
+      DefinitionConversionKernel.definition.toLanguageDef.terms) :
     newTerm.label ≠ oldTerm.label := by
   have disjoint := admissionExtension_disjoint
-  unfold InferencePresentationExtension.PresentationExtension.disjointFrom at disjoint
+  unfold CalculusLanguageExtension.disjointFrom at disjoint
   simp only [Bool.and_eq_true] at disjoint
   have fresh := List.all_eq_true.mp disjoint.1.1 newTerm newMember
   intro equalLabels
   have collision :
-      DefinitionConversionKernel.presentation.language.terms.any
+      DefinitionConversionKernel.definition.toLanguageDef.terms.any
           (fun existing => existing.label == newTerm.label) = true :=
     List.any_eq_true.mpr
       ⟨oldTerm, oldMember, by simp [equalLabels]⟩
@@ -586,15 +584,15 @@ private theorem admissionJudgmentDisjoint
     {newJudgment oldJudgment : JudgmentDecl}
     (newMember : newJudgment ∈ admissionExtension.newJudgments)
     (oldMember : oldJudgment ∈
-      DefinitionConversionKernel.presentation.judgments) :
+      DefinitionConversionKernel.definition.judgments) :
     newJudgment.head ≠ oldJudgment.head := by
   have disjoint := admissionExtension_disjoint
-  unfold InferencePresentationExtension.PresentationExtension.disjointFrom at disjoint
+  unfold CalculusLanguageExtension.disjointFrom at disjoint
   simp only [Bool.and_eq_true] at disjoint
   have fresh := List.all_eq_true.mp disjoint.1.2 newJudgment newMember
   intro equalHeads
   have collision :
-      DefinitionConversionKernel.presentation.judgments.any
+      DefinitionConversionKernel.definition.judgments.any
           (fun existing => existing.head == newJudgment.head) = true :=
     List.any_eq_true.mpr
       ⟨oldJudgment, oldMember, by simp [equalHeads]⟩
@@ -604,15 +602,15 @@ private theorem admissionJudgmentDisjoint
 private theorem constructorLookup_preserved (head : String) (arity : Nat)
     (sourceValid :
       languageHasConstructorArity
-        DefinitionConversionKernel.presentation.language head arity = true) :
-    languageHasConstructorArity presentation.language head arity = true := by
+        DefinitionConversionKernel.definition.toLanguageDef head arity = true) :
+    languageHasConstructorArity definition.toLanguageDef head arity = true := by
   unfold languageHasConstructorArity at sourceValid ⊢
-  rw [show presentation.language.terms =
-      DefinitionConversionKernel.presentation.language.terms ++
+  rw [show definition.toLanguageDef.terms =
+      DefinitionConversionKernel.definition.toLanguageDef.terms ++
         admissionExtension.newTerms by rfl,
     List.filter_append]
   generalize sourceFiltered :
-      DefinitionConversionKernel.presentation.language.terms.filter
+      DefinitionConversionKernel.definition.toLanguageDef.terms.filter
         (fun declaration => declaration.label == head) = filtered at sourceValid ⊢
   cases filtered with
   | nil => simp at sourceValid
@@ -621,7 +619,7 @@ private theorem constructorLookup_preserved (head : String) (arity : Nat)
       | nil =>
           have declarationFiltered :
               declaration ∈
-                DefinitionConversionKernel.presentation.language.terms.filter
+                DefinitionConversionKernel.definition.toLanguageDef.terms.filter
                   (fun candidate => candidate.label == head) := by
             rw [sourceFiltered]
             simp
@@ -644,16 +642,16 @@ private theorem constructorLookup_preserved (head : String) (arity : Nat)
 
 private theorem judgmentLookup_preserved (head : String) (arity : Nat)
     (sourceValid :
-      (DefinitionConversionKernel.presentation.lookupJudgment?
+      (DefinitionConversionKernel.definition.lookupJudgment?
         head arity).isSome = true) :
-    (presentation.lookupJudgment? head arity).isSome = true := by
-  unfold Presentation.lookupJudgment? at sourceValid ⊢
-  rw [show presentation.judgments =
-      DefinitionConversionKernel.presentation.judgments ++
+    (definition.lookupJudgment? head arity).isSome = true := by
+  unfold CalculusLanguageDef.lookupJudgment? at sourceValid ⊢
+  rw [show definition.judgments =
+      DefinitionConversionKernel.definition.judgments ++
         admissionExtension.newJudgments by rfl,
     List.filter_append]
   generalize sourceFiltered :
-      DefinitionConversionKernel.presentation.judgments.filter
+      DefinitionConversionKernel.definition.judgments.filter
         (fun declaration =>
           declaration.head == head && declaration.arity == arity) = filtered at sourceValid ⊢
   cases filtered with
@@ -663,7 +661,7 @@ private theorem judgmentLookup_preserved (head : String) (arity : Nat)
       | nil =>
           have declarationFiltered :
               declaration ∈
-                DefinitionConversionKernel.presentation.judgments.filter
+                DefinitionConversionKernel.definition.judgments.filter
                   (fun candidate =>
                     candidate.head == head && candidate.arity == arity) := by
             rw [sourceFiltered]
@@ -692,8 +690,8 @@ mutual
   private theorem fixedConstructorsValid_preserved (pattern : Pattern)
       (sourceValid :
         fixedConstructorsValid
-          DefinitionConversionKernel.presentation.language pattern = true) :
-      fixedConstructorsValid presentation.language pattern = true := by
+          DefinitionConversionKernel.definition.toLanguageDef pattern = true) :
+      fixedConstructorsValid definition.toLanguageDef pattern = true := by
     cases pattern with
     | bvar index => simp [fixedConstructorsValid]
     | fvar name => simp [fixedConstructorsValid]
@@ -718,8 +716,8 @@ mutual
   private theorem fixedConstructorListsValid_preserved (patterns : List Pattern)
       (sourceValid :
         fixedConstructorListsValid
-          DefinitionConversionKernel.presentation.language patterns = true) :
-      fixedConstructorListsValid presentation.language patterns = true := by
+          DefinitionConversionKernel.definition.toLanguageDef patterns = true) :
+      fixedConstructorListsValid definition.toLanguageDef patterns = true := by
     cases patterns with
     | nil => simp [fixedConstructorListsValid]
     | cons pattern patterns =>
@@ -730,30 +728,30 @@ end
 
 private theorem judgmentSchemaValid_preserved (judgment : Pattern)
     (sourceValid :
-      DefinitionConversionKernel.presentation.judgmentSchemaValid judgment =
+      DefinitionConversionKernel.definition.judgmentSchemaValid judgment =
         true) :
-    presentation.judgmentSchemaValid judgment = true := by
+    definition.judgmentSchemaValid judgment = true := by
   cases judgment with
   | apply head arguments =>
-      simp only [Presentation.judgmentSchemaValid, Bool.and_eq_true] at sourceValid ⊢
+      simp only [CalculusLanguageDef.judgmentSchemaValid, Bool.and_eq_true] at sourceValid ⊢
       exact ⟨judgmentLookup_preserved head arguments.length sourceValid.1,
         fixedConstructorListsValid_preserved arguments sourceValid.2⟩
-  | bvar index => simp [Presentation.judgmentSchemaValid] at sourceValid
-  | fvar name => simp [Presentation.judgmentSchemaValid] at sourceValid
+  | bvar index => simp [CalculusLanguageDef.judgmentSchemaValid] at sourceValid
+  | fvar name => simp [CalculusLanguageDef.judgmentSchemaValid] at sourceValid
   | lambda binder body =>
-      simp [Presentation.judgmentSchemaValid] at sourceValid
+      simp [CalculusLanguageDef.judgmentSchemaValid] at sourceValid
   | multiLambda arity binder body =>
-      simp [Presentation.judgmentSchemaValid] at sourceValid
+      simp [CalculusLanguageDef.judgmentSchemaValid] at sourceValid
   | subst body replacement =>
-      simp [Presentation.judgmentSchemaValid] at sourceValid
+      simp [CalculusLanguageDef.judgmentSchemaValid] at sourceValid
   | collection kind elements rest =>
-      simp [Presentation.judgmentSchemaValid] at sourceValid
+      simp [CalculusLanguageDef.judgmentSchemaValid] at sourceValid
 
 private theorem ruleIsValidIn_preserved (candidate : RuleSchema)
     (sourceValid :
-      RuleSchema.isValidIn DefinitionConversionKernel.presentation candidate =
+      RuleSchema.isValidIn DefinitionConversionKernel.definition candidate =
         true) :
-    RuleSchema.isValidIn presentation candidate = true := by
+    RuleSchema.isValidIn definition candidate = true := by
   unfold RuleSchema.isValidIn at sourceValid ⊢
   simp only [Bool.and_eq_true] at sourceValid ⊢
   refine ⟨sourceValid.1, ?_, sourceValid.2.2⟩
@@ -764,39 +762,39 @@ private theorem ruleIsValidIn_preserved (candidate : RuleSchema)
 
 set_option maxRecDepth 200000 in
 set_option maxHeartbeats 12000000 in
-theorem presentation_valid : presentation.isValidV2 = true := by
-  have hbaseValid := DefinitionConversionKernel.presentation_valid
-  unfold Presentation.isValidV2 at hbaseValid
+theorem definition_valid : definition.isValid = true := by
+  have hbaseValid := DefinitionConversionKernel.definition_valid
+  unfold CalculusLanguageDef.isValid at hbaseValid
   simp only [Bool.and_eq_true] at hbaseValid
   have hbaseV1 := hbaseValid.1.1.1
   have hbaseJudgments := hbaseValid.1.1.2
   have hbaseRulesIn := hbaseValid.1.2
   have hbaseConversion := hbaseValid.2
-  unfold Presentation.isValidV1 at hbaseV1
+  unfold CalculusLanguageDef.hasValidLocalRules at hbaseV1
   simp only [Bool.and_eq_true] at hbaseV1
   have hbaseRulesV1 := hbaseV1.1.2
   change DefinitionConversionKernel.definition.rules.all
-      RuleSchema.isValidV1 = true at hbaseRulesV1
+      RuleSchema.isLocallyValid = true at hbaseRulesV1
   change DefinitionConversionKernel.definition.rules.all
-      (RuleSchema.isValidIn DefinitionConversionKernel.presentation) = true at hbaseRulesIn
+      (RuleSchema.isValidIn DefinitionConversionKernel.definition) = true at hbaseRulesIn
   have hbaseRulesInTarget :
       DefinitionConversionKernel.definition.rules.all
-        (RuleSchema.isValidIn presentation) = true := by
+        (RuleSchema.isValidIn definition) = true := by
     apply List.all_eq_true.mpr
     intro candidate member
     exact ruleIsValidIn_preserved candidate
       (List.all_eq_true.mp hbaseRulesIn candidate member)
   have hadditionalRulesIn :
-      additionalRules.all (RuleSchema.isValidIn presentation) = true := by
+      additionalRules.all (RuleSchema.isValidIn definition) = true := by
     simp (config := { maxSteps := 12000000, decide := true })
-      [ presentation, definition, additionalConstructors,
+      [ definition, definition, additionalConstructors,
         additionalJudgments, additionalRules,
-        Presentation.lookupJudgment?, RuleSchema.isValidIn,
-        RuleSchema.isValidV1, RuleSchema.metavariableNames,
+        CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
+        RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
         RuleSchema.occurrences, RuleSchema.patterns,
         patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
         patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-        Presentation.judgmentSchemaValid, fixedConstructorsValid,
+        CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
         fixedConstructorListsValid, languageHasConstructorArity,
         Pattern.isWellScoped, Pattern.isWellScopedAt,
         Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
@@ -827,14 +825,14 @@ theorem presentation_valid : presentation.isValidV2 = true := by
         DefinitionConversionKernel.fullProves, DefinitionConversionKernel.a,
         PolymorphicKernel.hasType, PolymorphicKernel.a]
   have htargetRulesIn :
-      presentation.rules.all (RuleSchema.isValidIn presentation) = true := by
+      definition.rules.all (RuleSchema.isValidIn definition) = true := by
     change (DefinitionConversionKernel.definition.rules ++ additionalRules).all
-      (RuleSchema.isValidIn presentation) = true
+      (RuleSchema.isValidIn definition) = true
     simp only [List.all_append, hbaseRulesInTarget, hadditionalRulesIn,
       Bool.and_self]
-  have hvalidate : presentation.language.validate = [] := by
+  have hvalidate : definition.toLanguageDef.validate = [] := by
     apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-      simp [presentation, definition, additionalConstructors,
+      simp [definition, definition, additionalConstructors,
         DefinitionConversionKernel.definition,
         DefinitionConversionKernel.additionalConstructors,
         DefinitionConversionKernel.definitionParameterName,
@@ -850,16 +848,16 @@ theorem presentation_valid : presentation.isValidV2 = true := by
         LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
         TypeExpr.baseNames]
   have hstatic :
-      presentation.isValidV1 = true ∧
-        presentation.judgmentSignatureValid = true ∧
-        presentation.conversionDeclarationValid = true := by
-    unfold Presentation.isValidV1
+      definition.hasValidLocalRules = true ∧
+        definition.judgmentSignatureValid = true ∧
+        definition.conversionDeclarationValid = true := by
+    unfold CalculusLanguageDef.hasValidLocalRules
     rw [hvalidate]
     simp (config := { maxSteps := 12000000, decide := true })
-      [ presentation, definition, additionalConstructors,
+      [ definition, definition, additionalConstructors,
         additionalJudgments, additionalRules,
-        Presentation.ruleIds,
-        RuleSchema.isValidV1, RuleSchema.metavariableNames,
+        CalculusLanguageDef.ruleIds,
+        RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
         RuleSchema.occurrences, RuleSchema.patterns,
         patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
         patternHasNoCollectionRest, patternsHaveNoCollectionRest,
@@ -893,119 +891,119 @@ theorem presentation_valid : presentation.isValidV2 = true := by
         DefinitionConversionKernel.a, PolymorphicKernel.hasType,
         PolymorphicKernel.a,
         hbaseRulesV1]
-  unfold Presentation.isValidV2
+  unfold CalculusLanguageDef.isValid
   simp only [Bool.and_eq_true]
   exact ⟨⟨⟨hstatic.1, hstatic.2.1⟩, htargetRulesIn⟩, hstatic.2.2⟩
 
-def validated : ValidatedPresentation := ⟨presentation, presentation_valid⟩
+def validated : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 private theorem lookupBaseRule (id : RuleId) (candidate : RuleSchema)
-    (lookup : DefinitionConversionKernel.presentation.lookupRule? id =
+    (lookup : DefinitionConversionKernel.definition.lookupRule? id =
       some candidate) :
-    presentation.lookupRule? id = some candidate :=
-  Presentation.lookupRule?_append_of_eq_some
-    DefinitionConversionKernel.presentation additionalRules lookup
+    definition.lookupRule? id = some candidate :=
+  CalculusLanguageDef.lookupRule?_append_of_eq_some
+    DefinitionConversionKernel.definition additionalRules lookup
 
 private theorem lookupAdditionalRule (id : String) (candidate : RuleSchema)
-    (missing : DefinitionConversionKernel.presentation.lookupRule?
+    (missing : DefinitionConversionKernel.definition.lookupRule?
       (ruleId id) = none)
     (lookup : additionalRules.find?
       (fun existing => decide (existing.id = ruleId id)) = some candidate) :
-    presentation.lookupRule? (ruleId id) = some candidate := by
-  unfold Presentation.lookupRule? at missing ⊢
+    definition.lookupRule? (ruleId id) = some candidate := by
+  unfold CalculusLanguageDef.lookupRule? at missing ⊢
   change List.find? (fun existing => decide (existing.id = ruleId id))
-      (DefinitionConversionKernel.presentation.rules ++ additionalRules) =
+      (DefinitionConversionKernel.definition.rules ++ additionalRules) =
     some candidate
   rw [List.find?_append]
   rw [missing]
   exact lookup
 
 @[simp] private theorem lookup_checksConsRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-theory-checks-cons" } : RuleId) =
       some checksConsRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
 
 @[simp] private theorem lookup_checksNilRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-theory-checks-nil" } : RuleId) =
       some checksNilRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
 
 @[simp] private theorem lookup_admitPrimitiveRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-theory-admit-primitive" } : RuleId) =
       some admitPrimitiveRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
 
 @[simp] private theorem lookup_admitAxiomRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-theory-admit-axiom" } : RuleId) =
       some admitAxiomRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
 
 @[simp] private theorem lookup_admitTheoremRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-theory-admit-theorem" } : RuleId) =
       some admitTheoremRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
 
 @[simp] private theorem lookup_primitiveAppendZeroRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-theory-primitive-append-zero" } : RuleId) =
       some primitiveAppendZeroRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
 
 @[simp] private theorem lookup_primitiveTypeZeroRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-theory-primitive-type-zero" } : RuleId) =
       some primitiveTypeZeroRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
 
 @[simp] private theorem lookup_typePrimitiveRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-theory-term-primitive" } : RuleId) =
       some typePrimitiveRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
 
 @[simp] private theorem lookup_proofKnownRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-theory-proof-known" } : RuleId) =
       some proofKnownRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
 
 @[simp] private theorem lookup_projectNilRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-def-project-nil" } : RuleId) =
       some DefinitionConversionKernel.projectNilRule :=
   lookupBaseRule _ _ (by rfl)
 
 @[simp] private theorem lookup_projectDefinitionRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-def-project-definition" } : RuleId) =
       some DefinitionConversionKernel.projectDefinitionRule :=
   lookupBaseRule _ _ (by rfl)
 
 @[simp] private theorem lookup_polyTypePlainRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-def-poly-type-plain" } : RuleId) =
       some DefinitionConversionKernel.polyTypePlainRule :=
   lookupBaseRule _ _ (by rfl)
 
 @[simp] private theorem lookup_plainTypePropRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-poly-type-prop" } : RuleId) =
       some PolymorphicKernel.plainPropRule :=
   lookupBaseRule _ _ (by rfl)
 
 @[simp] private theorem lookup_knownHereRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-env-known-here" } : RuleId) =
       some EnvironmentKernel.knownHereRule :=
   lookupBaseRule _ _ (by rfl)
 
 @[simp] private theorem lookup_pathReflRule :
-    presentation.lookupRule?
+    definition.lookupRule?
         ({ value := "megalodon-def-path-refl" } : RuleId) =
       some DefinitionConversionKernel.pathReflRule :=
   lookupBaseRule _ _ (by rfl)

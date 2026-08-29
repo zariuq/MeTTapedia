@@ -28,11 +28,11 @@ open Mettapedia.TypeTheory.FreeWhiskeredCell
 open Mettapedia.TypeTheory.JudgmentalEquality
 open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptCoherenceCandidates
 open Mettapedia.Languages.MeTTa.Prime.NativeGradualDependentNaturality
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.ProofRelevantStructuralComputation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticContextual
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticJudgmentalPi
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.ProofRelevantStructuralComputation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticContextual
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticJudgmentalPi
 
 universe uEvidence uTarget
 

@@ -9,13 +9,13 @@ import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeNeighborhoodCa
 Neighborhood semantics is strictly broader than relational Kripke semantics:
 a world may select an arbitrary family of supported propositions rather than
 the supersets of one successor set.  This module connects that semantic breadth
-to proof-carrying GSLT presentations.
+to proof-carrying calculus languages.
 
-An exact CertificateGSLT presentation of a sound-and-complete neighborhood calculus
+An exact CertificateGSLT definition of a sound-and-complete neighborhood calculus
 is promoted to exact authority for neighborhood WM consequence.  Consequently
 existence of an accepted wire article is equivalent to the independently
 defined neighborhood meaning.  Derivation-valued CertificateGSLT interpretations
-then transport source proofs into any target presentation that is sound for
+then transport source proofs into any target definition that is sound for
 the same meaning.
 
 The final section gives both sides of the Kripke boundary.  Canonical Kripke
@@ -31,6 +31,7 @@ open LO.Modal
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.GSLT.LanguageDef.CompletenessSpectrum
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelNeighborhood
 
@@ -90,37 +91,37 @@ theorem provable_iff_meaning
   exact provable_imp_iff_singletonStrengthLEOn
     (S := System) (𝓢 := system) (C := frameClass)
 
-/-- Promote an exact presentation of syntactic neighborhood provability to an
-exact presentation of the independently defined neighborhood-WM meaning. -/
-def exactSemanticPresentation
+/-- Promote exact syntactic neighborhood adequacy to exact adequacy for the
+independently defined neighborhood-WM meaning. -/
+def exactSemanticAdequacy
     {System : Type*} [Entailment System ModalQuery]
     (system : System) (frameClass : Neighborhood.FrameClass)
     [Sound system frameClass] [Complete system frameClass]
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     (provability :
-      ExactJudgmentPresentation ImplicationClaim (Provable system) presentation) :
-    ExactJudgmentPresentation ImplicationClaim (Meaning frameClass) presentation where
-  toJudgmentPresentationAdequacy :=
-    { encode := provability.toJudgmentPresentationAdequacy.encode
+      ExactJudgmentEncoding ImplicationClaim (Provable system) definition) :
+    ExactJudgmentEncoding ImplicationClaim (Meaning frameClass) definition where
+  toJudgmentEncodingAdequacy :=
+    { encode := provability.toJudgmentEncodingAdequacy.encode
       derivation_sound := fun claim derivation =>
         (provable_iff_meaning system frameClass claim).mp
-          (provability.toJudgmentPresentationAdequacy.derivation_sound
+          (provability.toJudgmentEncodingAdequacy.derivation_sound
             claim derivation) }
   derivation_complete := fun claim meaningful =>
     provability.derivation_complete claim
       ((provable_iff_meaning system frameClass claim).mpr meaningful)
 
-/-- Package the promoted presentation as a semantically complete CertificateGSLT. -/
+/-- Package the promoted adequacy as a semantically complete CertificateGSLT. -/
 def semanticCertificateGSLT
     {System : Type*} [Entailment System ModalQuery]
     (system : System) (frameClass : Neighborhood.FrameClass)
     [Sound system frameClass] [Complete system frameClass]
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     (provability :
-      ExactJudgmentPresentation ImplicationClaim (Provable system) presentation) :
+      ExactJudgmentEncoding ImplicationClaim (Provable system) definition) :
     SemanticallyCompleteCertificateGSLT ImplicationClaim (Meaning frameClass) where
-  presentation := presentation
-  adequacy := exactSemanticPresentation system frameClass provability
+  definition := definition
+  adequacy := exactSemanticAdequacy system frameClass provability
 
 /-- The same authority as an object of the fixed-meaning semantic CertificateGSLT
 category.  This is the appropriate stage object for later filtered growth; no
@@ -129,13 +130,13 @@ def exactSemanticObject
     {System : Type*} [Entailment System ModalQuery]
     (system : System) (frameClass : Neighborhood.FrameClass)
     [Sound system frameClass] [Complete system frameClass]
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     (provability :
-      ExactJudgmentPresentation ImplicationClaim (Provable system) presentation) :
+      ExactJudgmentEncoding ImplicationClaim (Provable system) definition) :
     Mettapedia.GSLT.LanguageDef.CertificateGSLT.Semantic.ExactObject
       ImplicationClaim (Meaning frameClass) where
-  toCertificateGSLT := ⟨presentation⟩
-  adequacy := exactSemanticPresentation system frameClass provability
+  toCertificateGSLT := ⟨definition⟩
+  adequacy := exactSemanticAdequacy system frameClass provability
 
 /-- Accepted CertificateGSLT articles are neither merely sound certificates nor a
 restatement of derivability: their existence is exactly neighborhood-WM
@@ -145,9 +146,9 @@ theorem exists_accepted_article_iff_meaning
     {System : Type*} [Entailment System ModalQuery]
     (system : System) (frameClass : Neighborhood.FrameClass)
     [Sound system frameClass] [Complete system frameClass]
-    {presentation : ValidatedPresentation}
+    {definition : ValidatedCalculusLanguageDef}
     (provability :
-      ExactJudgmentPresentation ImplicationClaim (Provable system) presentation)
+      ExactJudgmentEncoding ImplicationClaim (Provable system) definition)
     (claim : ImplicationClaim) :
     (∃ article,
         ((semanticCertificateGSLT system frameClass provability).checker authorityId).check
@@ -162,7 +163,7 @@ theorem exists_accepted_article_iff_meaning
       authorityId).complete claim meaningful
 
 /-- A derivation-valued CertificateGSLT interpretation transports a source proof
-into a target presentation.  If the target presentation is sound for
+into a target definition.  If the target definition is sound for
 neighborhood meaning, the transported source proof therefore has that meaning.
 This is the theorem-preserving direction; reflection requires separate data. -/
 theorem meaning_of_interpreted_derivation
@@ -170,11 +171,11 @@ theorem meaning_of_interpreted_derivation
     (interpretation : Interpretation source target)
     {frameClass : Neighborhood.FrameClass}
     (targetSound :
-      JudgmentPresentationAdequacy ImplicationClaim (Meaning frameClass)
-        target.presentation)
+      JudgmentEncodingAdequacy ImplicationClaim (Meaning frameClass)
+        target.definition)
     (claim : ImplicationClaim)
     (sourceDerivation : Nonempty
-      (Derivation source.presentation (targetSound.encode claim))) :
+      (Derivation source.definition (targetSound.encode claim))) :
     Meaning frameClass claim := by
   obtain ⟨derivation⟩ := sourceDerivation
   exact targetSound.derivation_sound claim

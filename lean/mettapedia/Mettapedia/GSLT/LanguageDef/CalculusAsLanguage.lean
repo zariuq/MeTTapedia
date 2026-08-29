@@ -12,7 +12,7 @@ authored calculus syntax is the GSLT in
 `ProofCalculus`, which is admitted only together with an exact five-field
 `LanguageDef`.
 
-An admitted presentation nevertheless induces a genuine GSLT: its terms are
+An admitted definition nevertheless induces a genuine GSLT: its terms are
 ordered proof-obligation lists and one rewrite replaces the first obligation
 by the premises of one admitted rule application.  This is a semantic
 construction, not a representation trick:
@@ -21,7 +21,7 @@ construction, not a representation trick:
   `RuleApplication` relation;
 * a goal rewrites to the empty obligation list exactly when it has a
   type-valued derivation;
-* an admitted presentation with no rules has no proof-search steps.
+* an admitted definition with no rules has no proof-search steps.
 
 Thus inference rules are rewrite rules at the meta-level of proof obligations.
 They are not object-language rewrites, equations, grammar constructors, or
@@ -40,22 +40,22 @@ abbrev GoalState := List Pattern
 
 /-- One backward proof-search step.  The first outstanding conclusion is
 replaced by the ordered premises of one admitted rule instance. -/
-def Resolves (presentation : ValidatedPresentation) :
+def Resolves (definition : ValidatedCalculusLanguageDef) :
     GoalState → GoalState → Prop :=
   fun source target =>
     ∃ ruleInstance premises conclusion rest,
-      instantiateRule? presentation ruleInstance =
+      instantiateRule? definition ruleInstance =
         some (premises, conclusion) ∧
       source = conclusion :: rest ∧
       target = premises ++ rest
 
-/-- The proof-search GSLT induced by an admitted term-language/calculus pair. -/
-def proofSearchGSLT (presentation : ValidatedPresentation) : GSLT where
+/-- The proof-search GSLT induced by one validated calculus language. -/
+def proofSearchGSLT (definition : ValidatedCalculusLanguageDef) : GSLT where
   Term := GoalState
   equations :=
     { r := Eq
       iseqv := ⟨Eq.refl, Eq.symm, Eq.trans⟩ }
-  rewrites := Resolves presentation
+  rewrites := Resolves definition
   rewrites_resp_left := by
     intro source source' target equal step
     subst source'
@@ -67,10 +67,10 @@ def proofSearchGSLT (presentation : ValidatedPresentation) : GSLT where
 
 /-- The GSLT step is exactly executable local rule instantiation. -/
 theorem proofSearchGSLT_step_iff_instantiation
-    (presentation : ValidatedPresentation) (source target : GoalState) :
-    (proofSearchGSLT presentation).Step source target ↔
+    (definition : ValidatedCalculusLanguageDef) (source target : GoalState) :
+    (proofSearchGSLT definition).Step source target ↔
       ∃ ruleInstance premises conclusion rest,
-        instantiateRule? presentation ruleInstance =
+        instantiateRule? definition ruleInstance =
           some (premises, conclusion) ∧
         source = conclusion :: rest ∧
         target = premises ++ rest :=
@@ -79,20 +79,20 @@ theorem proofSearchGSLT_step_iff_instantiation
 /-- The same step relation stated independently of the executable
 instantiator. -/
 theorem proofSearchGSLT_step_iff_application
-    (presentation : ValidatedPresentation) (source target : GoalState) :
-    (proofSearchGSLT presentation).Step source target ↔
+    (definition : ValidatedCalculusLanguageDef) (source target : GoalState) :
+    (proofSearchGSLT definition).Step source target ↔
       ∃ ruleInstance premises conclusion rest,
-        RuleApplication presentation ruleInstance premises conclusion ∧
+        RuleApplication definition ruleInstance premises conclusion ∧
         source = conclusion :: rest ∧
         target = premises ++ rest := by
   simp only [proofSearchGSLT_step_iff_instantiation,
     instantiateRule?_eq_some_iff_application]
 
 /-- Resolving obligations is stable under an untouched suffix. -/
-theorem Resolves.append_right {presentation : ValidatedPresentation}
+theorem Resolves.append_right {definition : ValidatedCalculusLanguageDef}
     {source target : GoalState}
-    (step : Resolves presentation source target) (suffix : GoalState) :
-    Resolves presentation (source ++ suffix) (target ++ suffix) := by
+    (step : Resolves definition source target) (suffix : GoalState) :
+    Resolves definition (source ++ suffix) (target ++ suffix) := by
   rcases step with
     ⟨ruleInstance, premises, conclusion, rest, instantiated, rfl, rfl⟩
   refine ⟨ruleInstance, premises, conclusion, rest ++ suffix,
@@ -101,50 +101,50 @@ theorem Resolves.append_right {presentation : ValidatedPresentation}
   · simp [List.append_assoc]
 
 /-- Multi-step proof search is stable under an untouched suffix. -/
-def multiStep_append_right {presentation : ValidatedPresentation}
+def multiStep_append_right {definition : ValidatedCalculusLanguageDef}
     {source target : GoalState}
-    (steps : (proofSearchGSLT presentation).MultiStep source target)
+    (steps : (proofSearchGSLT definition).MultiStep source target)
     (suffix : GoalState) :
-    (proofSearchGSLT presentation).MultiStep
+    (proofSearchGSLT definition).MultiStep
       (source ++ suffix) (target ++ suffix) :=
   match steps with
   | .refl state => by
       change GoalState at state
-      exact @GSLT.MultiStep.refl (proofSearchGSLT presentation)
+      exact @GSLT.MultiStep.refl (proofSearchGSLT definition)
         (state ++ suffix)
   | .step first rest =>
       .step (first.append_right suffix)
         (multiStep_append_right rest suffix)
 
 /-- Transitivity of the reflexive-transitive proof-search closure. -/
-def multiStep_trans {presentation : ValidatedPresentation}
+def multiStep_trans {definition : ValidatedCalculusLanguageDef}
     {first second third : GoalState}
     (firstSecond :
-      (proofSearchGSLT presentation).MultiStep first second)
+      (proofSearchGSLT definition).MultiStep first second)
     (secondThird :
-      (proofSearchGSLT presentation).MultiStep second third) :
-    (proofSearchGSLT presentation).MultiStep first third :=
+      (proofSearchGSLT definition).MultiStep second third) :
+    (proofSearchGSLT definition).MultiStep first third :=
   match firstSecond with
   | .refl _ => secondThird
   | .step first rest =>
       .step first (multiStep_trans rest secondThird)
 
 /-- Concatenate derivations for two ordered obligation lists. -/
-def derivationListAppend {presentation : ValidatedPresentation}
+def derivationListAppend {definition : ValidatedCalculusLanguageDef}
     {first second : List Pattern}
-    (left : DerivationList presentation first)
-    (right : DerivationList presentation second) :
-    DerivationList presentation (first ++ second) :=
+    (left : DerivationList definition first)
+    (right : DerivationList definition second) :
+    DerivationList definition (first ++ second) :=
   match left with
   | .nil => right
   | .cons head tail => .cons head (derivationListAppend tail right)
 
 /-- Split derivations at an authored list boundary. -/
-def derivationListSplitAppend {presentation : ValidatedPresentation}
+def derivationListSplitAppend {definition : ValidatedCalculusLanguageDef}
     (first second : List Pattern) :
-    DerivationList presentation (first ++ second) →
-      DerivationList presentation first ×
-        DerivationList presentation second :=
+    DerivationList definition (first ++ second) →
+      DerivationList definition first ×
+        DerivationList definition second :=
   match first with
   | [] => fun derivations => (.nil, derivations)
   | _ :: rest => fun derivations =>
@@ -158,13 +158,13 @@ mutual
 /-- A derivation discharges its singleton obligation by proof-search
 rewriting. -/
 def derivationToProofSearch
-    {presentation : ValidatedPresentation} {goal : Pattern}
-    (derivation : Derivation presentation goal) :
-    (proofSearchGSLT presentation).MultiStep [goal] [] :=
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern}
+    (derivation : Derivation definition goal) :
+    (proofSearchGSLT definition).MultiStep [goal] [] :=
   match derivation with
   | @Derivation.byRule _ ruleInstance premises conclusion application children => by
       have first :
-          (proofSearchGSLT presentation).Step [conclusion] premises := by
+          (proofSearchGSLT definition).Step [conclusion] premises := by
         apply (proofSearchGSLT_step_iff_instantiation _ _ _).mpr
         refine ⟨ruleInstance, premises, conclusion, [], ?_, rfl, by simp⟩
         exact instantiateRule?_eq_some_iff_application.mpr application
@@ -172,11 +172,11 @@ def derivationToProofSearch
 
 /-- An ordered derivation list discharges exactly its obligation list. -/
 def derivationListToProofSearch
-    {presentation : ValidatedPresentation} {goals : List Pattern}
-    (derivations : DerivationList presentation goals) :
-    (proofSearchGSLT presentation).MultiStep goals [] :=
+    {definition : ValidatedCalculusLanguageDef} {goals : List Pattern}
+    (derivations : DerivationList definition goals) :
+    (proofSearchGSLT definition).MultiStep goals [] :=
   match derivations with
-  | .nil => @GSLT.MultiStep.refl (proofSearchGSLT presentation) []
+  | .nil => @GSLT.MultiStep.refl (proofSearchGSLT definition) []
   | .cons head tail =>
       multiStep_trans
         (multiStep_append_right (derivationToProofSearch head) _)
@@ -186,10 +186,10 @@ end
 
 /-- One proof-search step transports derivation-list inhabitation backwards. -/
 theorem nonemptyDerivationList_of_step
-    {presentation : ValidatedPresentation} {source target : GoalState}
-    (step : (proofSearchGSLT presentation).Step source target)
-    (targetInhabited : Nonempty (DerivationList presentation target)) :
-    Nonempty (DerivationList presentation source) := by
+    {definition : ValidatedCalculusLanguageDef} {source target : GoalState}
+    (step : (proofSearchGSLT definition).Step source target)
+    (targetInhabited : Nonempty (DerivationList definition target)) :
+    Nonempty (DerivationList definition source) := by
   obtain ⟨targetDerivations⟩ := targetInhabited
   rcases step with
     ⟨ruleInstance, premises, conclusion, suffix,
@@ -209,15 +209,15 @@ obligations and a search trace together yield derivations of the initial
 obligations.  The conclusion is kept in `Prop` via `Nonempty`, so no proof in
 `Prop` is illicitly eliminated into computational data. -/
 theorem nonemptyDerivationList_of_multiStep
-    {presentation : ValidatedPresentation} {source target : GoalState}
-    (steps : (proofSearchGSLT presentation).MultiStep source target) :
-    Nonempty (DerivationList presentation target) →
-      Nonempty (DerivationList presentation source) := by
+    {definition : ValidatedCalculusLanguageDef} {source target : GoalState}
+    (steps : (proofSearchGSLT definition).MultiStep source target) :
+    Nonempty (DerivationList definition target) →
+      Nonempty (DerivationList definition source) := by
   let motive : ∀ (first last : GoalState),
-      (proofSearchGSLT presentation).MultiStep first last → Prop :=
+      (proofSearchGSLT definition).MultiStep first last → Prop :=
     fun first last _ =>
-      Nonempty (DerivationList presentation last) →
-        Nonempty (DerivationList presentation first)
+      Nonempty (DerivationList definition last) →
+        Nonempty (DerivationList definition first)
   exact GSLT.MultiStep.rec (motive := motive)
     (fun _ inhabited => inhabited)
     (fun first _ inductionHypothesis targetInhabited =>
@@ -228,9 +228,9 @@ theorem nonemptyDerivationList_of_multiStep
 /-- **Adequacy.**  Derivability of an ordered goal list is equivalent to
 reachability of the empty proof-obligation state. -/
 theorem derivationList_nonempty_iff_proofSearch
-    (presentation : ValidatedPresentation) (goals : GoalState) :
-    Nonempty (DerivationList presentation goals) ↔
-      (proofSearchGSLT presentation).MultiStep goals [] := by
+    (definition : ValidatedCalculusLanguageDef) (goals : GoalState) :
+    Nonempty (DerivationList definition goals) ↔
+      (proofSearchGSLT definition).MultiStep goals [] := by
   constructor
   · rintro ⟨derivations⟩
     exact derivationListToProofSearch derivations
@@ -240,9 +240,9 @@ theorem derivationList_nonempty_iff_proofSearch
 /-- Singleton form of adequacy: a judgment is derivable exactly when backward
 proof search reaches no outstanding obligations. -/
 theorem derivation_nonempty_iff_proofSearch
-    (presentation : ValidatedPresentation) (goal : Pattern) :
-    Nonempty (Derivation presentation goal) ↔
-      (proofSearchGSLT presentation).MultiStep [goal] [] := by
+    (definition : ValidatedCalculusLanguageDef) (goal : Pattern) :
+    Nonempty (Derivation definition goal) ↔
+      (proofSearchGSLT definition).MultiStep [goal] [] := by
   constructor
   · rintro ⟨derivation⟩
     exact derivationToProofSearch derivation
@@ -271,31 +271,30 @@ private def canaryRule : RuleSchema :=
     premises := []
     conclusion := canaryGoal }
 
-private def canaryPresentation : Presentation :=
-  { language := canaryLanguage
-    calculus :=
-      { judgments := [{ head := "Provable", arity := 1 }]
-        rules := [canaryRule] } }
+private def canaryDefinition : CalculusLanguageDef :=
+  { toLanguageDef := canaryLanguage
+    judgments := [{ head := "Provable", arity := 1 }]
+    rules := [canaryRule] }
 
-private theorem canaryPresentation_valid :
-    canaryPresentation.isValidV2 = true := by
+private theorem canaryDefinition_valid :
+    canaryDefinition.isValid = true := by
   have languageValid : canaryLanguage.validate = [] := by
     apply LanguageDef.validate_eq_nil_of_constructorOnly canaryLanguage <;>
       simp [canaryLanguage, LanguageDef.typeNames, TypeDecl.plain,
         TermParam.typeExpr]
-  have presentationLanguageValid : canaryPresentation.language.validate = [] := by
-    simpa [canaryPresentation] using languageValid
-  unfold Presentation.isValidV2 Presentation.isValidV1
-  rw [presentationLanguageValid]
-  simp [canaryPresentation, canaryLanguage, canaryRule, canaryGoal,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSchema.isValidV1, RuleSchema.metavariableNames,
+  have definitionLanguageValid : canaryDefinition.toLanguageDef.validate = [] := by
+    simpa [canaryDefinition] using languageValid
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
+  rw [definitionLanguageValid]
+  simp [canaryDefinition, canaryLanguage, canaryRule, canaryGoal,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
+    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
     RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, fixedConstructorsValid,
+    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
     fixedConstructorListsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
@@ -303,8 +302,8 @@ private theorem canaryPresentation_valid :
     Pattern.mapHead, Pattern.evalHead]
   decide
 
-private def canaryValidated : ValidatedPresentation :=
-  ⟨canaryPresentation, canaryPresentation_valid⟩
+private def canaryValidated : ValidatedCalculusLanguageDef :=
+  ⟨canaryDefinition, canaryDefinition_valid⟩
 
 /-- Positive canary: a zero-premise rule discharges its singleton goal in one
 genuine GSLT step. -/
@@ -315,27 +314,27 @@ example :
       canaryValidated [canaryGoal] []).mpr
   refine ⟨{ ruleId := ⟨"axiom-A"⟩, arguments := [] },
     [], canaryGoal, [], ?_, rfl, rfl⟩
-  simp [instantiateRule?, canaryValidated, canaryPresentation, canaryRule,
-    canaryGoal, Presentation.lookupRule?, argumentsValidAt,
+  simp [instantiateRule?, canaryValidated, canaryDefinition, canaryRule,
+    canaryGoal, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchemas?, instantiateSchema?,
     instantiateSchemasAt?, instantiateSchemaAt?]
 
-private def emptyPresentation : Presentation :=
-  { language := LanguageDef.empty "proof-search-empty" }
+private def emptyDefinition : CalculusLanguageDef :=
+  { toLanguageDef := LanguageDef.empty "proof-search-empty" }
 
-private theorem emptyPresentation_valid :
-    emptyPresentation.isValidV2 = true := by
+private theorem emptyDefinition_valid :
+    emptyDefinition.isValid = true := by
   have languageValid :
       (LanguageDef.empty "proof-search-empty").validate = [] := by
     apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
       simp [LanguageDef.empty, LanguageDef.typeNames]
-  simp [emptyPresentation, Presentation.isValidV2, Presentation.isValidV1,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    ProofCalculus.empty, languageValid]
+  simp [emptyDefinition, CalculusLanguageDef.isValid, CalculusLanguageDef.hasValidLocalRules,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.conversionDeclarationValid, languageValid]
 
-private def emptyValidated : ValidatedPresentation :=
-  ⟨emptyPresentation, emptyPresentation_valid⟩
+private def emptyValidated : ValidatedCalculusLanguageDef :=
+  ⟨emptyDefinition, emptyDefinition_valid⟩
 
 /-- Negative canary: an admitted calculus with no rules has no proof-search
 step, even though its base language remains a valid five-field definition. -/
@@ -350,8 +349,8 @@ theorem empty_calculus_has_no_step (source target : GoalState) :
   cases application with
   | intro rule lookup _ _ _ _ =>
       have impossible : False := by
-        simp [emptyValidated, emptyPresentation, ProofCalculus.empty,
-          Presentation.lookupRule?] at lookup
+        simp [emptyValidated, emptyDefinition,
+          CalculusLanguageDef.lookupRule?] at lookup
       exact impossible.elim
 
 end Mettapedia.GSLT.LanguageDef.CalculusAsLanguage

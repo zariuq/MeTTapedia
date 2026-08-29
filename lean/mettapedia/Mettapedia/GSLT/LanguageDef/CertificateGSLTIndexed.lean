@@ -6,13 +6,13 @@ import Mettapedia.GSLT.LanguageDef.CertificateGSLTSemantics
 # Indexed proof semantics over CertificateGSLTs
 
 For each fixed judgment, closed derivations form a covariant family over the
-category of semantic presentations: interpreting a presentation transports
+category of semantic definitions: interpreting a definition transports
 every derivation.  The same holds for open derivations with a fixed ordered
 premise context.  These functors are the precise indexed structure behind the
 informal statement that derivations are the fibers of `CertificateGSLT`.
 
 Covariance is intentional.  A proof interpretation pushes derivations from
-the source presentation to the target.  Context substitution inside an open
+the source definition to the target.  Context substitution inside an open
 derivation is a separate, contravariant-looking axis supplied by `bind`.
 -/
 
@@ -25,10 +25,10 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 universe u
 
 /-- Closed derivations of one judgment, covariantly indexed by semantic
-presentation interpretations. -/
+definition interpretations. -/
 def derivationFunctor (goal : Pattern) :
     CategoryTheory.Functor Object Type where
-  obj object := Derivation object.presentation goal
+  obj object := Derivation object.definition goal
   map interpretation :=
     TypeCat.ofHom (Interpretation.mapDerivation interpretation)
   map_id object := by
@@ -41,10 +41,10 @@ def derivationFunctor (goal : Pattern) :
     exact Interpretation.comp_mapDerivation earlier later derivation
 
 /-- Open derivations of one judgment from one ordered premise context,
-covariantly indexed by semantic-presentation interpretations. -/
+covariantly indexed by semantic-definition interpretations. -/
 def openDerivationFunctor (context : List Pattern) (goal : Pattern) :
     CategoryTheory.Functor Object Type where
-  obj object := OpenDerivation object.presentation context goal
+  obj object := OpenDerivation object.definition context goal
   map interpretation :=
     TypeCat.ofHom (Interpretation.mapOpen interpretation)
   map_id object := by
@@ -81,33 +81,33 @@ def modelFunctor :
 
 /-! ## Concrete Grothendieck/category-of-elements endpoints -/
 
-/-- Total category of a presentation together with one closed derivation of
-`goal`.  A morphism is a presentation interpretation whose derivation action
+/-- Total category of a definition together with one closed derivation of
+`goal`.  A morphism is a definition interpretation whose derivation action
 sends the source proof to the target proof exactly. -/
 abbrev DerivationTotal (goal : Pattern) :=
   (derivationFunctor goal).Elements
 
-/-- Projection from total proof objects to their semantic presentations. -/
+/-- Projection from total proof objects to their semantic definitions. -/
 def derivationProjection (goal : Pattern) :
     DerivationTotal goal ⥤ Object :=
   CategoryTheory.CategoryOfElements.π (derivationFunctor goal)
 
-/-- Total category of a presentation together with one open derivation from
+/-- Total category of a definition together with one open derivation from
 the fixed ordered premise context. -/
 abbrev OpenDerivationTotal (context : List Pattern) (goal : Pattern) :=
   (openDerivationFunctor context goal).Elements
 
-/-- Projection from total open proofs to their semantic presentations. -/
+/-- Projection from total open proofs to their semantic definitions. -/
 def openDerivationProjection (context : List Pattern) (goal : Pattern) :
     OpenDerivationTotal context goal ⥤ Object :=
   CategoryTheory.CategoryOfElements.π
     (openDerivationFunctor context goal)
 
-/-- Total category of set-valued models, over the opposite presentation
+/-- Total category of set-valued models, over the opposite definition
 category because model transport is pullback. -/
 abbrev ModelTotal := (modelFunctor.{u}).Elements
 
-/-- Projection from semantic models to the presentations they realize. -/
+/-- Projection from semantic models to the definitions they realize. -/
 def modelProjection : ModelTotal.{u} ⥤ Opposite Object :=
   CategoryTheory.CategoryOfElements.π modelFunctor.{u}
 
@@ -115,7 +115,7 @@ def modelProjection : ModelTotal.{u} ⥤ Opposite Object :=
 translation operation. -/
 @[simp] theorem derivationFunctor_map_apply
     {source target : Object} (interpretation : source ⟶ target)
-    {goal : Pattern} (derivation : Derivation source.presentation goal) :
+    {goal : Pattern} (derivation : Derivation source.definition goal) :
     (derivationFunctor goal).map interpretation derivation =
       interpretation.mapDerivation derivation := rfl
 
@@ -123,18 +123,18 @@ translation operation. -/
 @[simp] theorem openDerivationFunctor_map_apply
     {source target : Object} (interpretation : source ⟶ target)
     {context : List Pattern} {goal : Pattern}
-    (derivation : OpenDerivation source.presentation context goal) :
+    (derivation : OpenDerivation source.definition context goal) :
     (openDerivationFunctor context goal).map interpretation derivation =
       interpretation.mapOpen derivation := rfl
 
-/-- Plugging is natural in the presentation index: translating after plugging
+/-- Plugging is natural in the definition index: translating after plugging
 equals plugging the translated proof and translated environment. -/
 theorem bind_natural
     {source target : Object} (interpretation : source ⟶ target)
     {sourceContext targetContext : List Pattern} {goal : Pattern}
-    (derivation : OpenDerivation source.presentation sourceContext goal)
+    (derivation : OpenDerivation source.definition sourceContext goal)
     (environment :
-      OpenDerivationList source.presentation targetContext sourceContext) :
+      OpenDerivationList source.definition targetContext sourceContext) :
     interpretation.mapOpen (derivation.bind environment) =
       (interpretation.mapOpen derivation).bind
         (interpretation.mapOpenList environment) :=

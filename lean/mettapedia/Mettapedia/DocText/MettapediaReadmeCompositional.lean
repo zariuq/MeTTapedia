@@ -141,7 +141,7 @@ def renderMettapediaClaim : MettapediaClaim → String
       mkPresPos subj (complV2 (mkV2 (regV "host")) (properNameNP "pi-calculus, rho-calculus, spice calculus, and pi-to-rho encoding"))
   | .subprojectCategoryTheory =>
       let subj := properNameNP "CategoryTheory"
-      mkPresPos subj (complV2 (mkV2 (regV "host")) (properNameNP "NativeTypeTheory, a PLN categorical instance, and de Finetti categorical development"))
+      mkPresPos subj (complV2 (mkV2 (regV "host")) (properNameNP "StagedReflectivePresentation, a PLN categorical instance, and de Finetti categorical development"))
   | .subprojectCognitiveArchitecture =>
       let subj := properNameNP "CognitiveArchitecture"
       mkPresPos subj (complV2 (mkV2 (regV "host")) (properNameNP "MetaMo, OpenPsi, MicroPsi, and value-system models"))

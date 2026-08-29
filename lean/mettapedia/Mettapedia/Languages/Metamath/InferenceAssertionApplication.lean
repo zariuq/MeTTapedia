@@ -19,6 +19,7 @@ them and does not discuss runtime `stepNormal`.
 namespace Mettapedia.Languages.Metamath.InferenceProjection.AssertionApplication
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.Metamath.MMLean4Bridge
 open Mettapedia.Languages.Metamath.InferenceEncoding
@@ -237,32 +238,32 @@ private theorem find?_eq_some_of_mem_of_map_eraseDups_length_eq
         simp [hheadNe, ih htailUnique hmem]
 
 private theorem lookupRule?_eq_some_of_mem
-    (presentation : ValidatedPresentation) {rule : RuleSchema}
+    (presentation : ValidatedCalculusLanguageDef) {rule : RuleSchema}
     (hmem : rule ∈ presentation.1.rules) :
     presentation.1.lookupRule? rule.id = some rule := by
   have hvalid := presentation.2
-  simp only [Presentation.isValidV2, Presentation.isValidV1,
+  simp only [CalculusLanguageDef.isValid, CalculusLanguageDef.hasValidLocalRules,
     Bool.and_eq_true, beq_iff_eq] at hvalid
   have hunique :
       (presentation.1.rules.map RuleSchema.id).eraseDups.length =
         presentation.1.rules.length := by
-    simpa [Presentation.ruleIds] using hvalid.1.1.1.2
-  simpa [Presentation.lookupRule?] using
+    simpa [CalculusLanguageDef.ruleIds] using hvalid.1.1.1.2
+  simpa [CalculusLanguageDef.lookupRule?] using
     find?_eq_some_of_mem_of_map_eraseDups_length_eq
       RuleSchema.id presentation.1.rules rule hunique hmem
 
 /-- Assertion membership in an exact successful projection determines the
 schema selected by the assertion label. -/
 theorem lookup_assertionRule_of_projection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView} (hassertion : assertion ∈ projection.assertions) :
     target.1.lookupRule? ⟨assertion.label⟩ =
       some (assertionRule projection.callerFrame assertion) := by
   have hmem :
       assertionRule projection.callerFrame assertion ∈ target.1.rules := by
-    rw [rules_eq_of_presentationOfProjection?_eq_some
+    rw [rules_eq_of_calculusLanguageDefOfProjection?_eq_some
       projection target.1 hprojection]
     apply List.mem_append.mpr
     apply Or.inr
@@ -276,7 +277,7 @@ theorem lookup_assertionRule_of_projection
   exact lookupRule?_eq_some_of_mem target hmem
 
 private theorem assertionRuleFormalNames_nodup_of_lookup
-    (target : ValidatedPresentation) (callerFrame : RuntimeFrame)
+    (target : ValidatedCalculusLanguageDef) (callerFrame : RuntimeFrame)
     (assertion : AssertionView)
     (hlookup :
       target.1.lookupRule? ⟨assertion.label⟩ =
@@ -284,7 +285,7 @@ private theorem assertionRuleFormalNames_nodup_of_lookup
     ((assertionRule callerFrame assertion).metavariables.map Prod.fst).Nodup := by
   have hvalidIn := rule_isValidIn_of_lookup target hlookup
   have hvalidV1 :
-      RuleSchema.isValidV1 (assertionRule callerFrame assertion) = true := by
+      RuleSchema.isLocallyValid (assertionRule callerFrame assertion) = true := by
     simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalidIn
     exact hvalidIn.1
   have hunique :
@@ -292,7 +293,7 @@ private theorem assertionRuleFormalNames_nodup_of_lookup
           (assertionRule callerFrame assertion)).eraseDups).length =
         (RuleSchema.metavariableNames
           (assertionRule callerFrame assertion)).length := by
-    simp only [RuleSchema.isValidV1, Bool.and_eq_true, beq_iff_eq] at hvalidV1
+    simp only [RuleSchema.isLocallyValid, Bool.and_eq_true, beq_iff_eq] at hvalidV1
     exact hvalidV1.1.1.1.1.1.2
   have hnames :
       (RuleSchema.metavariableNames
@@ -301,7 +302,7 @@ private theorem assertionRuleFormalNames_nodup_of_lookup
   simpa [RuleSchema.metavariableNames] using hnames
 
 private theorem assertionHypothesisFormalNames_nodup_of_lookup
-    (target : ValidatedPresentation) (callerFrame : RuntimeFrame)
+    (target : ValidatedCalculusLanguageDef) (callerFrame : RuntimeFrame)
     (assertion : AssertionView)
     (hlookup :
       target.1.lookupRule? ⟨assertion.label⟩ =
@@ -1270,8 +1271,8 @@ private theorem instantiate_assertionSubstitution_from_instances
 ordered hypothesis bodies and conclusion body, and produces precisely the
 canonical ordered premise vector. -/
 theorem assertionRuleApplication_of_instances
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView}
     (hassertion : assertion ∈ projection.assertions)
     {actuals : List ConstantHeadedFormula}
@@ -1485,8 +1486,8 @@ private theorem argumentsValidAt_length_eq_local
           simp [ih hvalid.2]
 
 private theorem assertionRuleApplication_length
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView}
     (hassertion : assertion ∈ projection.assertions)
     {actuals : List ConstantHeadedFormula}
@@ -1562,8 +1563,8 @@ private theorem applySubst_left_injective
 /-- The local generated-rule application carries exactly the independently
 defined mandatory-hypothesis instances and the assertion result typecode. -/
 theorem assertionRuleApplication_iff_instances
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView}
     (hassertion : assertion ∈ projection.assertions)
     {actuals : List ConstantHeadedFormula}
@@ -1653,14 +1654,14 @@ theorem assertionRuleApplication_iff_instances
 
 /-- Ordered derivations of precisely the essential-hypothesis substitution
 judgments.  The list index records both order and exact formulas. -/
-structure EssentialPremiseEvidence (target : ValidatedPresentation)
+structure EssentialPremiseEvidence (target : ValidatedCalculusLanguageDef)
     (substitution : FiniteSubstitution) (hypotheses : List HypothesisView)
     (actuals : List ConstantHeadedFormula) : Type where
   derivations : DerivationList target
     (assertionEssentialPremises substitution hypotheses actuals)
 
 def EssentialPremiseEvidence.toDerivationList
-    {target : ValidatedPresentation} {substitution : FiniteSubstitution}
+    {target : ValidatedCalculusLanguageDef} {substitution : FiniteSubstitution}
     {hypotheses : List HypothesisView}
     {actuals : List ConstantHeadedFormula}
     (evidence : EssentialPremiseEvidence target substitution
@@ -1670,7 +1671,7 @@ def EssentialPremiseEvidence.toDerivationList
   evidence.derivations
 
 def EssentialPremiseEvidence.ofDerivationList
-    {target : ValidatedPresentation} {substitution : FiniteSubstitution}
+    {target : ValidatedCalculusLanguageDef} {substitution : FiniteSubstitution}
     {hypotheses : List HypothesisView}
     {actuals : List ConstantHeadedFormula}
     (derivations : DerivationList target
@@ -1679,7 +1680,7 @@ def EssentialPremiseEvidence.ofDerivationList
   ⟨derivations⟩
 
 @[simp] theorem EssentialPremiseEvidence.to_of
-    {target : ValidatedPresentation} {substitution : FiniteSubstitution}
+    {target : ValidatedCalculusLanguageDef} {substitution : FiniteSubstitution}
     {hypotheses : List HypothesisView}
     {actuals : List ConstantHeadedFormula}
     (derivations : DerivationList target
@@ -1688,7 +1689,7 @@ def EssentialPremiseEvidence.ofDerivationList
       derivations := rfl
 
 @[simp] theorem EssentialPremiseEvidence.of_to
-    {target : ValidatedPresentation} {substitution : FiniteSubstitution}
+    {target : ValidatedCalculusLanguageDef} {substitution : FiniteSubstitution}
     {hypotheses : List HypothesisView}
     {actuals : List ConstantHeadedFormula}
     (evidence : EssentialPremiseEvidence target substitution
@@ -1699,7 +1700,7 @@ def EssentialPremiseEvidence.ofDerivationList
   rfl
 
 /-- Concatenate ordered derivation vectors without changing any tree. -/
-def appendDerivationLists {presentation : ValidatedPresentation}
+def appendDerivationLists {presentation : ValidatedCalculusLanguageDef}
     {left right : List Pattern} :
     DerivationList presentation left →
       DerivationList presentation right →
@@ -1709,7 +1710,7 @@ def appendDerivationLists {presentation : ValidatedPresentation}
       .cons head (appendDerivationLists tail rightDerivations)
 
 /-- Split an indexed derivation vector at an exact list prefix. -/
-def splitDerivationLists {presentation : ValidatedPresentation}
+def splitDerivationLists {presentation : ValidatedCalculusLanguageDef}
     : (left right : List Pattern) →
       DerivationList presentation (left ++ right) →
         DerivationList presentation left ×
@@ -1720,7 +1721,7 @@ def splitDerivationLists {presentation : ValidatedPresentation}
       ⟨.cons head split.1, split.2⟩
 
 @[simp] theorem splitDerivationLists_append
-    {presentation : ValidatedPresentation}
+    {presentation : ValidatedCalculusLanguageDef}
     {left right : List Pattern}
     (leftDerivations : DerivationList presentation left)
     (rightDerivations : DerivationList presentation right) :
@@ -1737,7 +1738,7 @@ def splitDerivationLists {presentation : ValidatedPresentation}
           simp [appendDerivationLists, splitDerivationLists, ih]
 
 @[simp] theorem appendDerivationLists_split
-    {presentation : ValidatedPresentation}
+    {presentation : ValidatedCalculusLanguageDef}
     (left right : List Pattern)
     (derivations : DerivationList presentation (left ++ right)) :
     appendDerivationLists
@@ -1754,7 +1755,7 @@ def splitDerivationLists {presentation : ValidatedPresentation}
 /-- All side-condition evidence carried by one generated assertion node.
 The three fields retain the essential prefix, DV check, and final result check
 as distinct proof-relevant data. -/
-structure AssertionSideEvidence (target : ValidatedPresentation)
+structure AssertionSideEvidence (target : ValidatedCalculusLanguageDef)
     (substitution : FiniteSubstitution) (callerFrame : RuntimeFrame)
     (assertion : AssertionView) (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula) : Type where
@@ -1768,7 +1769,7 @@ structure AssertionSideEvidence (target : ValidatedPresentation)
       (encodeFormula assertion.formula) (encodeFormula result))
 
 def AssertionSideEvidence.toDerivationList
-    {target : ValidatedPresentation} {substitution : FiniteSubstitution}
+    {target : ValidatedCalculusLanguageDef} {substitution : FiniteSubstitution}
     {callerFrame : RuntimeFrame} {assertion : AssertionView}
     {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula}
@@ -1787,7 +1788,7 @@ def AssertionSideEvidence.toDerivationList
     (.cons evidence.dv (.cons evidence.result .nil))
 
 def AssertionSideEvidence.ofDerivationList
-    {target : ValidatedPresentation} {substitution : FiniteSubstitution}
+    {target : ValidatedCalculusLanguageDef} {substitution : FiniteSubstitution}
     {callerFrame : RuntimeFrame} {assertion : AssertionView}
     {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula}
@@ -1827,8 +1828,8 @@ private theorem dvOK_isSideJudgment_local
   simp [IsSideJudgment, dvOK, reservedJudgmentHeads]
 
 private theorem applySubst_projection_derivation_iff_semantics
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (substitution : FiniteSubstitution)
     (source result : ConstantHeadedFormula) :
     Nonempty (Derivation target
@@ -1840,8 +1841,8 @@ private theorem applySubst_projection_derivation_iff_semantics
     (applySubst_derivation_iff substitution source result)
 
 private theorem dvOK_projection_derivation_iff_semantics
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (substitution : FiniteSubstitution)
     (callerFrame calleeFrame : RuntimeFrame) :
     Nonempty (Derivation target
@@ -1853,8 +1854,8 @@ private theorem dvOK_projection_derivation_iff_semantics
     (dvOK_derivation_iff substitution callerFrame calleeFrame)
 
 private theorem essentialEvidence_nonempty_iff_matches
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {hypotheses : List HypothesisView}
     {actuals : List ConstantHeadedFormula}
     {instanceSubstitution substitution : FiniteSubstitution}
@@ -1898,8 +1899,8 @@ private theorem essentialEvidence_nonempty_iff_matches
         exact ⟨⟨.cons head tailDerivations⟩⟩
 
 theorem assertionSideEvidence_nonempty_iff_semantics
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView}
     {actuals : List ConstantHeadedFormula}
     {substitution : FiniteSubstitution}
@@ -1939,7 +1940,7 @@ theorem assertionSideEvidence_nonempty_iff_semantics
 and only its side premises.  Leading `Proves` premise derivations are
 deliberately absent and must be supplied by the caller during assembly. -/
 structure GeneratedAssertionNode (projection : PrefixProjection)
-    (target : ValidatedPresentation) (assertion : AssertionView)
+    (target : ValidatedCalculusLanguageDef) (assertion : AssertionView)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)
     (substitution : FiniteSubstitution) : Type where
@@ -1955,7 +1956,7 @@ structure GeneratedAssertionNode (projection : PrefixProjection)
 proofs of every `Proves` premise.  This is the explicit recursive-proof
 boundary: a local generated node never fabricates those witnesses. -/
 def GeneratedAssertionNode.assemble
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {assertion : AssertionView}
     {actuals : List ConstantHeadedFormula}
     {result : ConstantHeadedFormula}
@@ -1977,8 +1978,8 @@ the independent assertion-application semantics.  This theorem concerns one
 local generated rule node, not arbitrary `Proves` derivations and not runtime
 reduction. -/
 theorem generatedAssertionNode_nonempty_iff_semantics
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     {assertion : AssertionView}
     (hassertion : assertion ∈ projection.assertions)
     (actuals : List ConstantHeadedFormula)

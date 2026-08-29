@@ -34,57 +34,57 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open CategoryTheory
 
 /-- An object of the classifying category: an ordered context of premise
-occurrences for the fixed presentation. -/
-structure ClassifyingContext (presentation : ValidatedPresentation) where
+occurrences for the fixed definition. -/
+structure ClassifyingContext (definition : ValidatedCalculusLanguageDef) where
   judgments : List Pattern
 
 namespace ClassifyingContext
 
-variable {presentation : ValidatedPresentation}
+variable {definition : ValidatedCalculusLanguageDef}
 
 /-- Contexts and open-derivation vectors form a category: identity is the
 assumption environment and composition is substitution.  Each law is one of
 the already-proved substitution theorems. -/
-instance instCategory (presentation : ValidatedPresentation) :
-    CategoryTheory.Category (ClassifyingContext presentation) where
+instance instCategory (definition : ValidatedCalculusLanguageDef) :
+    CategoryTheory.Category (ClassifyingContext definition) where
   Hom source target :=
-    OpenDerivationList presentation source.judgments target.judgments
-  id source := assumptionEnvironment presentation source.judgments
+    OpenDerivationList definition source.judgments target.judgments
+  id source := assumptionEnvironment definition source.judgments
   comp first second := second.bind first
   id_comp first := OpenDerivationList.bind_assumptionEnvironment first
   comp_id first := OpenDerivationList.assumptionEnvironment_bind first
   assoc first second third :=
     (OpenDerivationList.bind_assoc third second first).symm
 
-@[simp] theorem id_def (source : ClassifyingContext presentation) :
-    𝟙 source = assumptionEnvironment presentation source.judgments := rfl
+@[simp] theorem id_def (source : ClassifyingContext definition) :
+    𝟙 source = assumptionEnvironment definition source.judgments := rfl
 
-@[simp] theorem comp_def {source middle target : ClassifyingContext presentation}
+@[simp] theorem comp_def {source middle target : ClassifyingContext definition}
     (first : source ⟶ middle) (second : middle ⟶ target) :
     first ≫ second = second.bind first := rfl
 
 /-! ## The empty context is terminal -/
 
 /-- The empty premise context. -/
-def emptyContext (presentation : ValidatedPresentation) :
-    ClassifyingContext presentation :=
+def emptyContext (definition : ValidatedCalculusLanguageDef) :
+    ClassifyingContext definition :=
   ⟨[]⟩
 
 /-- The unique morphism into the empty context. -/
-def toEmpty (source : ClassifyingContext presentation) :
-    source ⟶ emptyContext presentation :=
+def toEmpty (source : ClassifyingContext definition) :
+    source ⟶ emptyContext definition :=
   .nil
 
 /-- Every open-derivation vector with no goals is empty. -/
 theorem OpenDerivationList.eq_nil {context : List Pattern}
-    (derivations : OpenDerivationList presentation context []) :
+    (derivations : OpenDerivationList definition context []) :
     derivations = .nil := by
   cases derivations
   rfl
 
 /-- The empty context admits exactly one morphism from every context. -/
-theorem toEmpty_unique {source : ClassifyingContext presentation}
-    (morphism : source ⟶ emptyContext presentation) :
+theorem toEmpty_unique {source : ClassifyingContext definition}
+    (morphism : source ⟶ emptyContext definition) :
     morphism = toEmpty source :=
   OpenDerivationList.eq_nil morphism
 
@@ -94,36 +94,36 @@ end ClassifyingContext
 
 namespace OpenDerivationList
 
-variable {presentation : ValidatedPresentation}
+variable {definition : ValidatedCalculusLanguageDef}
 
 /-- Concatenate two ordered derivation vectors over one shared context. -/
 def append {context firstGoals secondGoals : List Pattern}
-    (left : OpenDerivationList presentation context firstGoals)
-    (right : OpenDerivationList presentation context secondGoals) :
-    OpenDerivationList presentation context (firstGoals ++ secondGoals) :=
+    (left : OpenDerivationList definition context firstGoals)
+    (right : OpenDerivationList definition context secondGoals) :
+    OpenDerivationList definition context (firstGoals ++ secondGoals) :=
   match left with
   | .nil => right
   | .cons head tail => .cons head (tail.append right)
 
 @[simp] theorem nil_append {context secondGoals : List Pattern}
-    (right : OpenDerivationList presentation context secondGoals) :
+    (right : OpenDerivationList definition context secondGoals) :
     (OpenDerivationList.nil).append right = right := rfl
 
 @[simp] theorem cons_append {context : List Pattern} {goal : Pattern}
     {firstGoals secondGoals : List Pattern}
-    (head : OpenDerivation presentation context goal)
-    (tail : OpenDerivationList presentation context firstGoals)
-    (right : OpenDerivationList presentation context secondGoals) :
+    (head : OpenDerivation definition context goal)
+    (tail : OpenDerivationList definition context firstGoals)
+    (right : OpenDerivationList definition context secondGoals) :
     (OpenDerivationList.cons head tail).append right =
       .cons head (tail.append right) := rfl
 
 /-- Substitution distributes over concatenation. -/
 @[simp] theorem append_bind
     {sourceContext targetContext firstGoals secondGoals : List Pattern}
-    (left : OpenDerivationList presentation sourceContext firstGoals)
-    (right : OpenDerivationList presentation sourceContext secondGoals)
+    (left : OpenDerivationList definition sourceContext firstGoals)
+    (right : OpenDerivationList definition sourceContext secondGoals)
     (environment :
-      OpenDerivationList presentation targetContext sourceContext) :
+      OpenDerivationList definition targetContext sourceContext) :
     (left.append right).bind environment =
       (left.bind environment).append (right.bind environment) := by
   cases left with
@@ -174,9 +174,9 @@ theorem get_right {firstGoals secondGoals : List Pattern}
 /-- Substituting through a transported derivation transports the result. -/
 theorem cast_bind {sourceContext targetContext : List Pattern}
     {firstGoal secondGoal : Pattern} (equal : firstGoal = secondGoal)
-    (derivation : OpenDerivation presentation sourceContext firstGoal)
+    (derivation : OpenDerivation definition sourceContext firstGoal)
     (environment :
-      OpenDerivationList presentation targetContext sourceContext) :
+      OpenDerivationList definition targetContext sourceContext) :
     (equal ▸ derivation).bind environment =
       equal ▸ (derivation.bind environment) := by
   cases equal
@@ -184,8 +184,8 @@ theorem cast_bind {sourceContext targetContext : List Pattern}
 
 /-- Selecting a left-block entry of a concatenated vector. -/
 theorem append_get_left {context firstGoals secondGoals : List Pattern}
-    (left : OpenDerivationList presentation context firstGoals)
-    (right : OpenDerivationList presentation context secondGoals)
+    (left : OpenDerivationList definition context firstGoals)
+    (right : OpenDerivationList definition context secondGoals)
     (index : Fin firstGoals.length) :
     (left.append right).get ⟨index.1, length_left index⟩ =
       (get_left index).symm ▸ left.get index := by
@@ -198,8 +198,8 @@ theorem append_get_left {context firstGoals secondGoals : List Pattern}
 
 /-- Selecting a right-block entry of a concatenated vector. -/
 theorem append_get_right {context firstGoals secondGoals : List Pattern}
-    (left : OpenDerivationList presentation context firstGoals)
-    (right : OpenDerivationList presentation context secondGoals)
+    (left : OpenDerivationList definition context firstGoals)
+    (right : OpenDerivationList definition context secondGoals)
     (index : Fin secondGoals.length) :
     (left.append right).get
         ⟨index.1 + firstGoals.length, length_right index⟩ =
@@ -211,7 +211,7 @@ theorem append_get_right {context firstGoals secondGoals : List Pattern}
 /-- Transporting a derivation and then transporting back is the identity. -/
 theorem cast_cast {context : List Pattern}
     {firstGoal secondGoal : Pattern} (equal : firstGoal = secondGoal)
-    (derivation : OpenDerivation presentation context secondGoal) :
+    (derivation : OpenDerivation definition context secondGoal) :
     equal ▸ (equal.symm ▸ derivation) = derivation := by
   cases equal
   rfl
@@ -221,7 +221,7 @@ theorem cast_cast {context : List Pattern}
 /-- Derive every left-block judgment from its own premise occurrence inside
 the concatenated context. -/
 def leftProjection (firstGoals secondGoals : List Pattern) :
-    OpenDerivationList presentation (firstGoals ++ secondGoals) firstGoals :=
+    OpenDerivationList definition (firstGoals ++ secondGoals) firstGoals :=
   OpenDerivationList.ofFn firstGoals fun index =>
     get_left index ▸
       OpenDerivation.assumption ⟨index.1, length_left index⟩
@@ -229,7 +229,7 @@ def leftProjection (firstGoals secondGoals : List Pattern) :
 /-- Derive every right-block judgment from its own premise occurrence inside
 the concatenated context. -/
 def rightProjection (firstGoals secondGoals : List Pattern) :
-    OpenDerivationList presentation (firstGoals ++ secondGoals) secondGoals :=
+    OpenDerivationList definition (firstGoals ++ secondGoals) secondGoals :=
   OpenDerivationList.ofFn secondGoals fun index =>
     get_right index ▸
       OpenDerivation.assumption
@@ -239,8 +239,8 @@ def rightProjection (firstGoals secondGoals : List Pattern) :
 recovers the left vector exactly. -/
 theorem leftProjection_bind_append
     {context firstGoals secondGoals : List Pattern}
-    (toFirst : OpenDerivationList presentation context firstGoals)
-    (toSecond : OpenDerivationList presentation context secondGoals) :
+    (toFirst : OpenDerivationList definition context firstGoals)
+    (toSecond : OpenDerivationList definition context secondGoals) :
     (leftProjection firstGoals secondGoals).bind (toFirst.append toSecond) =
       toFirst := by
   unfold leftProjection
@@ -255,8 +255,8 @@ theorem leftProjection_bind_append
 recovers the right vector exactly. -/
 theorem rightProjection_bind_append
     {context firstGoals secondGoals : List Pattern}
-    (toFirst : OpenDerivationList presentation context firstGoals)
-    (toSecond : OpenDerivationList presentation context secondGoals) :
+    (toFirst : OpenDerivationList definition context firstGoals)
+    (toSecond : OpenDerivationList definition context secondGoals) :
     (rightProjection firstGoals secondGoals).bind (toFirst.append toSecond) =
       toSecond := by
   unfold rightProjection
@@ -273,41 +273,41 @@ end OpenDerivationList
 
 namespace ClassifyingContext
 
-variable {presentation : ValidatedPresentation}
+variable {definition : ValidatedCalculusLanguageDef}
 
 /-- The product context: concatenation of premise contexts. -/
-def concat (first second : ClassifyingContext presentation) :
-    ClassifyingContext presentation :=
+def concat (first second : ClassifyingContext definition) :
+    ClassifyingContext definition :=
   ⟨first.judgments ++ second.judgments⟩
 
 /-- First projection: each left-block judgment is its own premise
 occurrence inside the concatenated context. -/
-def fstProjection (first second : ClassifyingContext presentation) :
+def fstProjection (first second : ClassifyingContext definition) :
     concat first second ⟶ first :=
   OpenDerivationList.leftProjection first.judgments second.judgments
 
 /-- Second projection: each right-block judgment is its own premise
 occurrence inside the concatenated context. -/
-def sndProjection (first second : ClassifyingContext presentation) :
+def sndProjection (first second : ClassifyingContext definition) :
     concat first second ⟶ second :=
   OpenDerivationList.rightProjection first.judgments second.judgments
 
 /-- Pairing: concatenate the two derivation vectors. -/
-def pair {source first second : ClassifyingContext presentation}
+def pair {source first second : ClassifyingContext definition}
     (toFirst : source ⟶ first) (toSecond : source ⟶ second) :
     source ⟶ concat first second :=
   OpenDerivationList.append toFirst toSecond
 
 /-- The first projection law: pairing then projecting left recovers the
 left derivation vector exactly. -/
-@[simp] theorem pair_fst {source first second : ClassifyingContext presentation}
+@[simp] theorem pair_fst {source first second : ClassifyingContext definition}
     (toFirst : source ⟶ first) (toSecond : source ⟶ second) :
     pair toFirst toSecond ≫ fstProjection first second = toFirst :=
   OpenDerivationList.leftProjection_bind_append toFirst toSecond
 
 /-- The second projection law: pairing then projecting right recovers the
 right derivation vector exactly. -/
-@[simp] theorem pair_snd {source first second : ClassifyingContext presentation}
+@[simp] theorem pair_snd {source first second : ClassifyingContext definition}
     (toFirst : source ⟶ first) (toSecond : source ⟶ second) :
     pair toFirst toSecond ≫ sndProjection first second = toSecond :=
   OpenDerivationList.rightProjection_bind_append toFirst toSecond

@@ -41,7 +41,7 @@ universe uId uClaim uCertificate uNative uScore uState uAction
 /-- A checker together with the semantic statement its acceptance entails.
 
 `AuthorityId` is intentionally abstract.  Deployment may realize it by a
-canonical presentation identity, a signed registry identifier, or another
+canonical definition identity, a signed registry identifier, or another
 authenticated name.  This layer requires only exact equality and therefore
 does not freeze a digest or serialization design. -/
 structure SemanticAuthority (AuthorityId : Type uId) (Claim : Type uClaim)
@@ -196,15 +196,15 @@ theorem CheckedLowering.sound
 
 /-- The real chronological article checker, packaged as a semantic authority.
 The evidence proves exactly its stored target under the supplied validated
-presentation. -/
+definition. -/
 def wireArticleAuthority {AuthorityId : Type uId}
-    (authorityId : AuthorityId) (presentation : ValidatedPresentation) :
+    (authorityId : AuthorityId) (definition : ValidatedCalculusLanguageDef) :
     SemanticAuthority AuthorityId Pattern where
   id := authorityId
   Certificate := WireArticle
   check := fun goal article =>
-    decide (article.target = goal) && checkWireArticle presentation article
-  Meaning := fun goal => Nonempty (Derivation presentation goal)
+    decide (article.target = goal) && checkWireArticle definition article
+  Meaning := fun goal => Nonempty (Derivation definition goal)
   sound := by
     intro goal article accepted
     simp only [Bool.and_eq_true, decide_eq_true_eq] at accepted
@@ -213,19 +213,19 @@ def wireArticleAuthority {AuthorityId : Type uId}
 
 @[simp] theorem wireArticleAuthority_check
     {AuthorityId : Type uId} (authorityId : AuthorityId)
-    (presentation : ValidatedPresentation) (goal : Pattern)
+    (definition : ValidatedCalculusLanguageDef) (goal : Pattern)
     (article : WireArticle) :
-    (wireArticleAuthority authorityId presentation).check goal article =
+    (wireArticleAuthority authorityId definition).check goal article =
       (decide (article.target = goal) &&
-        checkWireArticle presentation article) := rfl
+        checkWireArticle definition article) := rfl
 
 /-- Every derivation supplies evidence accepted by the actual article
 authority. -/
 theorem wireArticleAuthority_complete
     {AuthorityId : Type uId} (authorityId : AuthorityId)
-    {presentation : ValidatedPresentation} {goal : Pattern}
-    (derivation : Derivation presentation goal) :
-    (wireArticleAuthority authorityId presentation).check goal
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern}
+    (derivation : Derivation definition goal) :
+    (wireArticleAuthority authorityId definition).check goal
       (articleOfDerivation derivation) = true := by
   rw [wireArticleAuthority_check]
   rw [checkWireArticle_articleOfDerivation derivation]
@@ -234,14 +234,14 @@ theorem wireArticleAuthority_complete
 /-- Exact certificate-existence correspondence at the authority boundary. -/
 theorem wireArticleAuthority_correspondence
     {AuthorityId : Type uId} (authorityId : AuthorityId)
-    (presentation : ValidatedPresentation) (goal : Pattern) :
+    (definition : ValidatedCalculusLanguageDef) (goal : Pattern) :
     (∃ article : WireArticle,
-        (wireArticleAuthority authorityId presentation).check goal article =
+        (wireArticleAuthority authorityId definition).check goal article =
           true) ↔
-      Nonempty (Derivation presentation goal) := by
+      Nonempty (Derivation definition goal) := by
   constructor
   · rintro ⟨article, accepted⟩
-    exact (wireArticleAuthority authorityId presentation).sound accepted
+    exact (wireArticleAuthority authorityId definition).sound accepted
   · rintro ⟨derivation⟩
     exact ⟨articleOfDerivation derivation,
       wireArticleAuthority_complete authorityId derivation⟩
@@ -250,7 +250,7 @@ theorem wireArticleAuthority_correspondence
 
 /-- A labelled transition system whose predicates are executable.  Finiteness
 is required only by the checker below, not by the semantic soundness theorem,
-so future symbolic or infinite-state presentations remain possible. -/
+so future symbolic or infinite-state definitions remain possible. -/
 structure LabeledSystem (State : Type uState) (Action : Type uAction) where
   step : State → Action → State → Bool
   accepting : State → Bool
@@ -511,7 +511,7 @@ structure BuchiControllerClaim (State : Type uState) (Action : Type uAction)
 
 /-- The finite progress checker is a semantic authority for controller
 recurrence.  The identifier remains supplied by the caller and can therefore
-track a presentation, abstraction, and policy without fixing their encoding
+track a definition, abstraction, and policy without fixing their encoding
 here. -/
 def buchiControllerAuthority
     {AuthorityId : Type uId} {State : Type uState} {Action : Type uAction}

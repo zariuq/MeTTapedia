@@ -26,7 +26,7 @@ open Mettapedia.GSLT.Core.InteractionEvent
 open Mettapedia.GSLT.Dynamics
 open Mettapedia.GSLT.Dynamics.IndexedEventValuation
 open Mettapedia.GSLT.Dynamics.InteractionEventValuation
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation
 open Mettapedia.OSLF.MeTTaIL.Syntax
@@ -42,7 +42,7 @@ context.  Its endpoint and event-path evidence is not projected away. -/
 abbrev Computation
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory)
-    (source target : NativeRawTm 0 0) :=
+    (source target : StagedReflectiveTm 0 0) :=
   (interpretation.computationTy presentation source target) PUnit.unit
 
 /-- The exact event path retained inside an intrinsic interaction
@@ -50,7 +50,7 @@ computation. -/
 def path
     {interpretation : EndpointInterpretation theory}
     {presentation : InteractionPresentation theory}
-    {source target : NativeRawTm 0 0}
+    {source target : StagedReflectiveTm 0 0}
     (execution : Computation interpretation presentation source target) :
     EventPath presentation execution.1.1 execution.2.1.1 :=
   execution.2.2
@@ -59,7 +59,7 @@ def path
 def events
     {interpretation : EndpointInterpretation theory}
     {presentation : InteractionPresentation theory}
-    {source target : NativeRawTm 0 0}
+    {source target : StagedReflectiveTm 0 0}
     (execution : Computation interpretation presentation source target) :
     List (Occurrence presentation) :=
   EventPath.events presentation (path execution)
@@ -69,7 +69,7 @@ retaining the richer execution separately. -/
 def erase
     {interpretation : EndpointInterpretation theory}
     {presentation : InteractionPresentation theory}
-    {source target : NativeRawTm 0 0}
+    {source target : StagedReflectiveTm 0 0}
     (execution : Computation interpretation presentation source target) :
     theory.RewritePath execution.1.1 execution.2.1.1 :=
   (path execution).erase
@@ -80,7 +80,7 @@ refinement below. -/
 @[simp] theorem events_length_eq_erase_length
     {interpretation : EndpointInterpretation theory}
     {presentation : InteractionPresentation theory}
-    {source target : NativeRawTm 0 0}
+    {source target : StagedReflectiveTm 0 0}
     (execution : Computation interpretation presentation source target) :
     (events execution).length = (erase execution).length := by
   have eventsLength : ∀ {first last}
@@ -103,7 +103,7 @@ refinement below. -/
 def returnComputation
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory)
-    {term : NativeRawTm 0 0} (endpoint : interpretation.Endpoint term) :
+    {term : StagedReflectiveTm 0 0} (endpoint : interpretation.Endpoint term) :
     Computation interpretation presentation term term :=
   (interpretation.returnPath presentation endpoint) PUnit.unit
 
@@ -112,7 +112,7 @@ execution family. -/
 def compose
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory)
-    {source middle target : NativeRawTm 0 0}
+    {source middle target : StagedReflectiveTm 0 0}
     (first : Computation interpretation presentation source middle)
     (second : Computation interpretation presentation middle target) :
     Computation interpretation presentation source target :=
@@ -122,7 +122,7 @@ def compose
 @[simp] theorem events_return
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory)
-    {term : NativeRawTm 0 0} (endpoint : interpretation.Endpoint term) :
+    {term : StagedReflectiveTm 0 0} (endpoint : interpretation.Endpoint term) :
     events (returnComputation interpretation presentation endpoint) = [] := by
   rfl
 
@@ -130,7 +130,7 @@ def compose
 @[simp] theorem events_compose
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory)
-    {source middle target : NativeRawTm 0 0}
+    {source middle target : StagedReflectiveTm 0 0}
     (first : Computation interpretation presentation source middle)
     (second : Computation interpretation presentation middle target) :
     events (compose interpretation presentation first second) =
@@ -161,7 +161,7 @@ def provenanceObservation
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory) :
     IndexedExecutionObservation (provenanceDiscipline presentation)
-      (NativeRawTm 0 0) (Computation interpretation presentation) where
+      (StagedReflectiveTm 0 0) (Computation interpretation presentation) where
   events := events
   container := events
   collects := fun _ => rfl
@@ -171,7 +171,7 @@ exactly inhabited Prime interaction fibres. -/
 def provenanceArchitecture
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory) :
-    CapabilityIndexedObservationArchitecture (NativeRawTm 0 0)
+    CapabilityIndexedObservationArchitecture (StagedReflectiveTm 0 0)
       (Computation interpretation presentation) where
   Event := Occurrence presentation
   discipline := provenanceDiscipline presentation
@@ -201,7 +201,7 @@ list concatenation. -/
 theorem provenance_container_compose
     (interpretation : EndpointInterpretation theory)
     (presentation : InteractionPresentation theory)
-    {source middle target : NativeRawTm 0 0}
+    {source middle target : StagedReflectiveTm 0 0}
     (first : Computation interpretation presentation source middle)
     (second : Computation interpretation presentation middle target) :
     (provenanceChronological presentation).algebra.op
@@ -224,7 +224,7 @@ structure CollectedComputation
     (presentation : InteractionPresentation theory)
     (discipline : ObservationDiscipline.{_, uContainer, uValue}
       (Occurrence presentation))
-    (source target : NativeRawTm 0 0) where
+    (source target : StagedReflectiveTm 0 0) where
   computation : Computation interpretation presentation source target
   container : discipline.collection.Container
   collected : discipline.collection.collect (events computation) =
@@ -237,7 +237,7 @@ def collectedArchitecture
     (presentation : InteractionPresentation theory)
     (discipline : ObservationDiscipline.{_, uContainer, uValue}
       (Occurrence presentation)) :
-    CapabilityIndexedObservationArchitecture (NativeRawTm 0 0)
+    CapabilityIndexedObservationArchitecture (StagedReflectiveTm 0 0)
       (CollectedComputation interpretation presentation discipline) where
   Event := Occurrence presentation
   discipline := discipline
@@ -253,7 +253,7 @@ namespace Canary
 
 open Mettapedia.GSLT.Core.InteractionEvent.Canary
 
-def loopTerm : NativeRawTm 0 0 :=
+def loopTerm : StagedReflectiveTm 0 0 :=
   .pattern (.apply "prime-observation-loop" [])
 
 def loopInterpretation : EndpointInterpretation loopTheory where

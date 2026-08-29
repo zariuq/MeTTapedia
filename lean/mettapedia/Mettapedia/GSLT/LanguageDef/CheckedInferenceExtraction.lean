@@ -2,10 +2,10 @@ import Mettapedia.GSLT.LanguageDef.CheckedSource
 import Mettapedia.GSLT.LanguageDef.InferenceExtraction
 
 /-!
-# Checked admission of generated inference presentations
+# Checked admission of generated inference definitions
 
 This is the single generic route from one `LanguageDef` root and one evidence
-profile to a proof-carrying source package.  The generated presentation is not
+profile to a proof-carrying source package.  The generated definition is not
 accepted as a separate caller-supplied argument: it is recomputed from the root
 immediately before ordinary checked-source admission.
 -/
@@ -32,15 +32,15 @@ deriving Repr, DecidableEq
 
 def AdmissionInput.generatedSource (input : AdmissionInput) :
     Option GSLTSource := do
-  let presentation ← rawPresentation? input.evidenceProfile input.language
+  let definition ← rawDefinition? input.evidenceProfile input.language
   pure
     { identity := input.identity
       assumptions := input.assumptions
       profiles := input.profiles
-      presentation }
+      definition }
 
 /-- Generate and validate in one operation.  There is no parameter through
-which a producer can substitute a presentation unrelated to `input.language`.
+which a producer can substitute a definition unrelated to `input.language`.
 -/
 def admit (input : AdmissionInput) : Except AdmissionError CheckedGSLT :=
   match input.generatedSource with
@@ -55,21 +55,21 @@ def admissionError : Except AdmissionError CheckedGSLT → Option AdmissionError
   | .ok _ => none
   | .error error => some error
 
-/-- Successful admission exposes exactly the presentation generated from the
+/-- Successful admission exposes exactly the definition generated from the
 same root and evidence profile. -/
-theorem admit_presentation_is_generated {input : AdmissionInput}
+theorem admit_definition_is_generated {input : AdmissionInput}
     {checked : CheckedGSLT} (hadmit : admit input = .ok checked) :
-    rawPresentation? input.evidenceProfile input.language =
-      some checked.source.presentation := by
-  cases hextraction : rawPresentation? input.evidenceProfile input.language with
+    rawDefinition? input.evidenceProfile input.language =
+      some checked.source.definition := by
+  cases hextraction : rawDefinition? input.evidenceProfile input.language with
   | none =>
       simp [admit, AdmissionInput.generatedSource, hextraction] at hadmit
-  | some presentation =>
+  | some definition =>
       let source : GSLTSource :=
         { identity := input.identity
           assumptions := input.assumptions
           profiles := input.profiles
-          presentation }
+          definition }
       have hgenerated : input.generatedSource = some source := by
         simp [AdmissionInput.generatedSource, hextraction, source]
       cases hadmission : source.validate with
@@ -124,7 +124,7 @@ private def fixtureInput : AdmissionInput :=
     evidenceProfile := fixtureEvidenceProfile
     language := LanguageDef.empty "generated-route-fixture" }
 
-/- Positive: a presentation generated from a valid root is admitted. -/
+/- Positive: a definition generated from a valid root is admitted. -/
 #guard admissionAccepted (admit fixtureInput)
 
 /-- Negative: admission cannot omit the explicit source-profile ledger. -/

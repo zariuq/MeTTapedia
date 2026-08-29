@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.Core.ProofRelevantPresentation
+import Mettapedia.GSLT.Core.ProofRelevantGSLT
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedTheorem
 
 /-!
@@ -18,7 +18,7 @@ from being confused with a Metamath declaration or proof step.
 namespace Mettapedia.Languages.Metamath.SourceStateGSLT
 
 open Mettapedia.GSLT
-open Mettapedia.GSLT.ProofRelevantPresentation
+open Mettapedia.GSLT.ProofRelevant
 open Mettapedia.Languages.Metamath.InferenceEncoding
 open Mettapedia.Languages.Metamath.SourceGSLTOperations
 open Mettapedia.Languages.Metamath.SourceGSLTState
@@ -79,10 +79,10 @@ inductive Transition : StateAction → SourceState → SourceState → Type
 
 /-- The complete occurrence fibre of one source-state reduction includes the
 selected action and its exact transition evidence. -/
-abbrev StepEvidence (before after : SourceState) :=
+abbrev TransitionEvidence (before after : SourceState) :=
   Sigma fun action => Transition action before after
 
-/-! ## GSLT and exact proof-relevant presentation -/
+/-! ## Extensional GSLT and exact step evidence -/
 
 /-- The extensional state GSLT is the propositional shadow of the authored
 occurrence relation. -/
@@ -94,7 +94,7 @@ def theory : GSLT where
         { refl := fun _ => rfl
           symm := fun equality => equality.symm
           trans := fun first second => first.trans second } }
-  rewrites := fun before after => Nonempty (StepEvidence before after)
+  rewrites := fun before after => Nonempty (TransitionEvidence before after)
   rewrites_resp_left := by
     intro before before' after before_eq step
     subst before_eq
@@ -105,17 +105,17 @@ def theory : GSLT where
     exact step
 
 /-- Authored occurrences cover exactly the state GSLT's semantic steps. -/
-def stepPresentation : StepPresentation theory where
-  Evidence := StepEvidence
+def stepEvidence : Mettapedia.GSLT.ProofRelevant.StepEvidence theory where
+  Evidence := TransitionEvidence
   erases_iff := by
     intros
     rfl
 
 /-- The compiler-facing source object: semantic GSLT plus retained transition
 occurrences. -/
-def presented : PresentedGSLT :=
+def system : ProofRelevantGSLT :=
   { theory := theory
-    steps := stepPresentation }
+    steps := stepEvidence }
 
 /-! ## Operation coverage and boundaries -/
 

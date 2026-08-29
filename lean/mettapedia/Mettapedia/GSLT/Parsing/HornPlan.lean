@@ -24,7 +24,7 @@ open CompilerCorrespondence GuardCorrespondence HornSpecialization
 open PackedForest GroundedChart BackendCorrespondence
 
 abbrev NormalizedRule := GuardCorrespondence.SourceRule
-abbrev NormalizedPresentation := GuardCorrespondence.SourcePresentation
+abbrev NormalizedPresentation := GuardCorrespondence.SourceDefinition
 
 structure LinearRequest where
   certificate : SpecializationCertificate

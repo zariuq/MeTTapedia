@@ -2,11 +2,11 @@
 
 !(println!
   (case
-    (lib_parse:generate-presentation
+    (lib_parse:generate-language
       (Cons (VarD x Expr) Nil)
       "scale-source"
       (repeat-atom 4096 x))
-    (((LPInferencePresentation $presentation) ScaleOK)
+    (((LPInferenceLanguage $language) ScaleOK)
      ((LPInferenceError $reason) ScaleError)
      ($other ScaleOther))))
 

@@ -60,7 +60,7 @@ def equalityCongStatus : LadderCaseStatus :=
     mettail := .represented
     mm2 := .openIssue
     hePrime := .syntaxSupport
-    nextObligation := "connect source equality proofs to PureKernel Id terms" }
+    nextObligation := "connect source equality proofs to IntrinsicPure Id terms" }
 
 def dependentPairStatus : LadderCaseStatus :=
   { caseName := "Dependent pair/proof packaging"
@@ -126,10 +126,10 @@ theorem finVec_needs_indexed_family_oracle :
 def capacitySpecLedger : List CapacitySpecLedgerCase :=
   [ { caseName := "UnitRec syntax/oracle seed"
       relation := .capacityGap
-      note := "he-prime emits the UnitRec certificate atom; PureKernel checks the exact shape; general trace bridge is still narrow" }
+      note := "he-prime emits the UnitRec certificate atom; IntrinsicPure checks the exact shape; general trace bridge is still narrow" }
   , { caseName := "Capability forged read"
       relation := .conservative
-      note := "he-prime rejects the attack; PureKernel seed now has a closed certificate rejection" }
+      note := "he-prime rejects the attack; IntrinsicPure seed now has a closed certificate rejection" }
   , { caseName := "NatRec eliminator"
       relation := .capacityGap
       note := "NatRec type, generated obligations, and generated zero iota rule exist; succ rule and reduction semantics are still absent" }

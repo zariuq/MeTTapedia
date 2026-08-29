@@ -1,10 +1,10 @@
 import Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 /-!
-# Generic derivation search over an authored presentation
+# Generic derivation search over an authored definition
 
 The repair of the banked union disagreement: search compiled FROM the
-presentation's own `RuleSchema` data, not from a hand mirror.  For a
+definition's own `RuleSchema` data, not from a hand mirror.  For a
 ground goal the search enumerates EVERY rule in authored order, matches
 the goal against each rule's conclusion by one-sided matching (nonlinear
 metavariables checked by structural equality), instantiates premises
@@ -14,7 +14,7 @@ instantiation semantics — and recurses under an explicit fuel bound.
 Every candidate proof is validated with `checkRaw` before it is
 returned, so the single soundness theorem that matters —
 
-    found proof  →  checkRaw presentation goal proof = true
+    found proof  →  checkRaw definition goal proof = true
 
 — holds BY CONSTRUCTION: the authored checker is the only judge, and the
 search is merely its client.  Fuel exhaustion is a distinct outcome from
@@ -22,9 +22,9 @@ a closed (fully traversed) search, so the four-valued verdict discipline
 above this searcher never mistakes a resource bound for semantic
 absence.
 
-Environments enter as presentation EXTENSIONS (runtime declarations are
+Environments enter as definition EXTENSIONS (runtime declarations are
 zero-premise rules added through the validated-extension calculus), so
-this one searcher serves every layer of a presentation tower.
+this one searcher serves every layer of a definition tower.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.InferenceSearch
@@ -121,23 +121,23 @@ inductive PremiseOutcome where
 
 mutual
 
-/-- Fair backward search: every rule of the presentation is tried in
+/-- Fair backward search: every rule of the definition is tried in
 authored order. -/
-def searchGoal (presentation : ValidatedPresentation) (fuel : Nat)
+def searchGoal (definition : ValidatedCalculusLanguageDef) (fuel : Nat)
     (goal : Pattern) : SearchOutcome :=
   match fuel with
   | 0 => .exhausted
-  | fuel + 1 => searchRules presentation fuel presentation.1.rules goal
+  | fuel + 1 => searchRules definition fuel definition.1.rules goal
 
-def searchRules (presentation : ValidatedPresentation) (fuel : Nat)
+def searchRules (definition : ValidatedCalculusLanguageDef) (fuel : Nat)
     (rules : List RuleSchema) (goal : Pattern) : SearchOutcome :=
   match rules with
   | [] => .closed
   | rule :: rest =>
-      (searchViaRule presentation fuel rule goal).orElse fun () =>
-        searchRules presentation fuel rest goal
+      (searchViaRule definition fuel rule goal).orElse fun () =>
+        searchRules definition fuel rest goal
 
-def searchViaRule (presentation : ValidatedPresentation) (fuel : Nat)
+def searchViaRule (definition : ValidatedCalculusLanguageDef) (fuel : Nat)
     (rule : RuleSchema) (goal : Pattern) : SearchOutcome :=
   match matchPattern rule.conclusion goal [] with
   | none => .closed
@@ -145,18 +145,18 @@ def searchViaRule (presentation : ValidatedPresentation) (fuel : Nat)
       match argumentsFor rule assignment with
       | none => .closed
       | some arguments =>
-          match instantiateRule? presentation
+          match instantiateRule? definition
               { ruleId := rule.id, arguments } with
           | none => .closed
           | some instantiated =>
-              match searchPremises presentation fuel
+              match searchPremises definition fuel
                   instantiated.1 with
               | .failed => .closed
               | .exhausted => .exhausted
               | .proved childProofs =>
                   /- The authored checker is the only judge: an
                   unverified candidate is never returned. -/
-                  if checkRaw presentation goal
+                  if checkRaw definition goal
                       (.node { ruleId := rule.id, arguments }
                         childProofs) then
                     .found
@@ -164,16 +164,16 @@ def searchViaRule (presentation : ValidatedPresentation) (fuel : Nat)
                         childProofs)
                   else .closed
 
-def searchPremises (presentation : ValidatedPresentation) (fuel : Nat)
+def searchPremises (definition : ValidatedCalculusLanguageDef) (fuel : Nat)
     (premises : List Pattern) : PremiseOutcome :=
   match premises with
   | [] => .proved []
   | premise :: rest =>
-      match searchGoal presentation fuel premise with
+      match searchGoal definition fuel premise with
       | .exhausted => .exhausted
       | .closed => .failed
       | .found proof =>
-          match searchPremises presentation fuel rest with
+          match searchPremises definition fuel rest with
           | .proved proofs => .proved (proof :: proofs)
           | .failed => .failed
           | .exhausted => .exhausted
@@ -183,9 +183,9 @@ end
 /-! ## Soundness, by construction -/
 
 theorem searchViaRule_found_checkRaw
-    {presentation fuel rule goal proof}
-    (h : searchViaRule presentation fuel rule goal = .found proof) :
-    checkRaw presentation goal proof = true := by
+    {definition fuel rule goal proof}
+    (h : searchViaRule definition fuel rule goal = .found proof) :
+    checkRaw definition goal proof = true := by
   unfold searchViaRule at h
   split at h
   · cases h
@@ -203,9 +203,9 @@ theorem searchViaRule_found_checkRaw
           · cases h
 
 theorem searchRules_found_checkRaw
-    {presentation fuel goal proof} :
-    ∀ {rules}, searchRules presentation fuel rules goal = .found proof →
-      checkRaw presentation goal proof = true := by
+    {definition fuel goal proof} :
+    ∀ {rules}, searchRules definition fuel rules goal = .found proof →
+      checkRaw definition goal proof = true := by
   intro rules
   induction rules with
   | nil => intro h; simp [searchRules] at h
@@ -228,9 +228,9 @@ theorem searchRules_found_checkRaw
 checker has already accepted.  Every verdict layer and every specialized
 executor built over this search inherits it. -/
 theorem searchGoal_found_checkRaw
-    {presentation fuel goal proof}
-    (h : searchGoal presentation fuel goal = .found proof) :
-    checkRaw presentation goal proof = true := by
+    {definition fuel goal proof}
+    (h : searchGoal definition fuel goal = .found proof) :
+    checkRaw definition goal proof = true := by
   unfold searchGoal at h
   split at h
   · cases h

@@ -2,6 +2,8 @@ import Mettapedia.Languages.Metamath.InferenceCheckHypForward
 import Mettapedia.Languages.Metamath.InferenceDVRuntimeBridge
 import Mettapedia.Languages.Metamath.InferenceRuntimeAssertionGraph
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Forward agreement for one projected Metamath assertion step
 
@@ -432,8 +434,8 @@ theorem assertionApplicationSemantics_to_stepNormal
 consequence once the independent stack-window obligations are supplied. -/
 theorem generatedAssertionNode_to_stepGraph
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView) (pr : RuntimeProofState)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)

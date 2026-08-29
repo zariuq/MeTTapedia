@@ -31,9 +31,9 @@ namespace NativeDependentReceiptCoherenceObservation
 open Mettapedia.GSLT.Core
 open Mettapedia.TypeTheory.FreeWhiskeredCell
 open Mettapedia.TypeTheory.FreeWhiskeredCell.CoherenceObservation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticContextual
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.SyntacticContextual.TowerExamples
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticContextual
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.SyntacticContextual.TowerExamples
 open NativeDependentReceiptCoherenceCandidates
 open NativeDependentReceiptCoherenceCandidates.Canaries
 open NativeDependentReceiptComputad

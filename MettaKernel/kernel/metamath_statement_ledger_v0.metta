@@ -1,6 +1,6 @@
 ; Canonical ordered Metamath statement ledger derived from a checked gparse
 ; source tree.  Parser output is accepted only after the grammar-derived
-; inference presentation checks its complete source-indexed derivation.
+; inference language checks its complete source-indexed derivation.
 
 !(import! &self lib_parse_metamath)
 !(import! &self lib_parse_inference_v0)
@@ -238,7 +238,7 @@
       ($other (metamath-ledger:contains-include $rest)))))
 
 ; Index the exact token ledger by the same boundary constructors used in the
-; admitted grammar presentation.  The final boundary has no token payload.
+; admitted grammar language.  The final boundary has no token payload.
 (= (metamath-ledger:index-source-tokens $space Nil $index)
    (let $boundary-label (lib_parse:boundary-label $index)
      (let $added-boundary
@@ -355,9 +355,9 @@
       ($error (MMTreeError missing-accepted-dag-node)))))
 
 ; There is one fixed grammar root.  Source identity is carried by the same
-; CheckedSource package as the generated grammar presentation.
+; CheckedSource package as the generated grammar language.
 (= (metamath-ledger:source-package
-      (MMSourceIdentityV0 $revision $digest) $presentation)
+      (MMSourceIdentityV0 $revision $digest) $language)
    (GSLTSourceV1
      (SourceIdentityV1 "Metamath" $revision $digest)
      (AssumptionLedgerV1 LNil)
@@ -367,7 +367,7 @@
            "ordered-statement-ledger" "v0"
            (PApp "__metamath.ordered-statement-ledger.v0" LNil))
          LNil))
-     $presentation))
+     $language))
 
 (= (metamath-ledger:checked-dag-ledger
       $space $revision $digest $tokens $parser-tree
@@ -397,16 +397,15 @@
 
 (= (metamath-ledger:checked-lower
       (MMSourceIdentityV0 $revision $digest) $tokens $tree)
-   (case (lib_parse:dag-presentation-candidate
+   (case (lib_parse:dag-language-candidate
            (lib_parse:mm-database-grammar) $digest $tokens)
-     (((LPInferencePresentation
-          (GPresentation $constructors $judgments $rules))
+     (((LPInferenceLanguage $language)
        (case (gparse:inference-dag-proof
                (lib_parse:mm-database-grammar)
                $digest outer_database $tokens $tree)
          (((LPInferenceDagBlocks $goal $root $blocks $node-count)
            ; Operationally destructure the one source package in place.  Deep
-           ; generated presentations are not rewrapped or recopied between
+           ; generated languages are not rewrapped or recopied between
            ; admission and checking.
            (let $identity
              (SourceIdentityV1 "Metamath" $revision $digest)
@@ -421,15 +420,14 @@
                  (if (and (gslt-identity-valid-v1 $identity)
                           (and (gslt-assumptions-valid-v1 $assumptions)
                                (gslt-profiles-valid-v1 $profiles)))
-                   (case (gic-build-pathmap-index-parts
-                           $constructors $judgments $rules)
+                   (case (gic-build-pathmap-index $language)
                      (((GICIndexOK $space)
                        (metamath-ledger:checked-dag-ledger
                          $space $revision $digest $tokens $tree
                          $goal $root $blocks $node-count))
                       ($_
                        (MMStatementLedgerError
-                         generated-presentation-rejected))))
+                         generated-language-rejected))))
                    (MMStatementLedgerError source-metadata-rejected))))))
           ($error $error))))
       ($error $error))))

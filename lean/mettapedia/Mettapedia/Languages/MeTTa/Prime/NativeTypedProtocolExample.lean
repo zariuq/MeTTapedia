@@ -24,7 +24,7 @@ open Mettapedia.GSLT.Dynamics.InteractionEventValuation
 open Mettapedia.Languages.MeTTa.MeTTaInteraction
 open Mettapedia.Languages.MeTTa.MeTTaInteraction.Canary
 open Mettapedia.Languages.MeTTa.MeTTaInteractionBind.Canary
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan
 open Mettapedia.Languages.MeTTa.Prime.NativeAgentInteractionExample
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
@@ -42,11 +42,11 @@ def authoredTarget : ClosedTyping :=
   native% petta "(native:pattern (interaction-b))"
 
 @[simp] theorem authoredSource_term :
-    authoredSource.term = (.pattern a : NativeRawTm 0 0) :=
+    authoredSource.term = (.pattern a : StagedReflectiveTm 0 0) :=
   rfl
 
 @[simp] theorem authoredTarget_term :
-    authoredTarget.term = (.pattern b : NativeRawTm 0 0) :=
+    authoredTarget.term = (.pattern b : StagedReflectiveTm 0 0) :=
   rfl
 
 @[simp] theorem authoredSource_type : authoredSource.type = .u0 :=
@@ -56,7 +56,7 @@ def authoredTarget : ClosedTyping :=
   rfl
 
 abbrev NativeTypedPlan :=
-  TypedPlan (NativeRawTm 0 0) (NativeRawTm 0 0)
+  TypedPlan (StagedReflectiveTm 0 0) (StagedReflectiveTm 0 0)
     NativeCanary.ClosedNativeTyping
 
 def authoredSourcePlan : NativeTypedPlan where

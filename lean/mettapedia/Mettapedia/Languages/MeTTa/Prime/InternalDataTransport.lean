@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.NativeTypeTheoryDerivation
+import Mettapedia.Languages.MeTTa.TypeTheory.StagedReflective.Presentation
 import Mettapedia.Languages.MeTTa.Prime.DataTranslationKernel
 import Mettapedia.GSLT.LanguageDef.WellSorted
 
@@ -23,7 +23,7 @@ open CategoryTheory
 open scoped CategoryTheory
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.WellSorted
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.DataFibration
 open Mettapedia.Languages.MeTTa.Prime.DataFibration.ValidatedLanguageData
 open Mettapedia.OSLF.MeTTaIL.Substitution

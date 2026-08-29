@@ -7,11 +7,11 @@ import Mathlib.Tactic
 This module tests a syntax-free authoring boundary for Prime proof packages.
 The authored package content is an ordered list of judgment rules.  Fixed data
 constructor arities and outer judgment arities are deterministically projected
-as a companion cache required by the current generic checker.
+as a companion definition required by the current generic checker.
 
-The projection does not parse terms and does not make the companion cache an
-authority.  Exact projection agreement is required before a cached
-presentation can be used.  The examples establish package-relative replay,
+The projection does not parse terms and does not make the companion definition
+an authority.  Exact projection agreement is required before a cached
+definition can be used.  The examples establish package-relative replay,
 not consistency, truth, source adequacy, or completeness of an object logic.
 -/
 
@@ -19,6 +19,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.MeTTa.Prime.MinimalCheckingPackage
 
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
@@ -154,35 +155,37 @@ private def cacheLanguage (constructors : ArityTable) : LanguageDef :=
     equations := []
     rewrites := [] }
 
-@[simp] private def cachePresentation (constructors : ArityTable)
-    (judgments : List JudgmentDecl) (rules : List RuleSchema) : Presentation :=
-  { language := cacheLanguage constructors
-    calculus := { judgments, rules } }
+@[simp] private def cacheDefinition (constructors : ArityTable)
+    (judgments : List JudgmentDecl) (rules : List RuleSchema) :
+    CalculusLanguageDef :=
+  CalculusLanguageDef.extend (cacheLanguage constructors) { judgments, rules }
 
 /-- Deterministically build the current checker's structural companion from
 the authored rule list.  This is a calibration projection, not a new source
 language definition. -/
-def project (rules : List RuleSchema) : Except ProjectionError Presentation := do
+def project (rules : List RuleSchema) :
+    Except ProjectionError CalculusLanguageDef := do
   let (constructors, judgments) ← collectRules [] [] rules
-  pure <| cachePresentation constructors
+  pure <| cacheDefinition constructors
     (judgments.map fun (head, arity) => { head, arity }) rules
 
 /-- Exact cache agreement is deliberately propositional.  An implementation
 may compare a canonical serialization, but a cache never validates itself. -/
-def CacheAgrees (rules : List RuleSchema) (cached : Presentation) : Prop :=
+def CacheAgrees (rules : List RuleSchema)
+    (cached : CalculusLanguageDef) : Prop :=
   project rules = .ok cached
 
-/-- Once an exact projected presentation is admitted and its raw checker
+/-- Once an exact projected definition is admitted and its raw checker
 accepts a proof, the existing checker reconstructs a typed derivation with the
 same proof tree. -/
 theorem projected_check_sound
-    {rules : List RuleSchema} {presentation : Presentation}
+    {rules : List RuleSchema} {definition : CalculusLanguageDef}
     {goal : Pattern} {proof : RawProof}
-    (hagrees : CacheAgrees rules presentation)
-    (hvalid : presentation.isValidV2 = true)
-    (hcheck : checkRaw ⟨presentation, hvalid⟩ goal proof = true) :
-    CacheAgrees rules presentation ∧
-      ∃ derivation : Derivation ⟨presentation, hvalid⟩ goal,
+    (hagrees : CacheAgrees rules definition)
+    (hvalid : definition.isValid = true)
+    (hcheck : checkRaw ⟨definition, hvalid⟩ goal proof = true) :
+    CacheAgrees rules definition ∧
+      ∃ derivation : Derivation ⟨definition, hvalid⟩ goal,
         derivation.erase = proof := by
   exact ⟨hagrees,
     checkRaw_exists_derivation_with_exact_erasure hcheck⟩
@@ -259,8 +262,8 @@ private theorem collect_mp_rule :
       Except.bind, Except.pure]
 
 /-- Independently written companion cache for the MP package. -/
-def mpCache : Presentation :=
-  cachePresentation
+def mpCache : CalculusLanguageDef :=
+  cacheDefinition
       [(symbol 'A', 0), (symbol 'I', 2), (symbol 'B', 0)]
     [{ head := symbol 'P', arity := 1 }] mpRules
 
@@ -269,23 +272,24 @@ theorem mp_cache_exact : CacheAgrees mpRules mpCache := by
     collect_mp_rule_imp, collect_mp_rule, mpCache, Bind.bind, Pure.pure,
     Except.bind, Except.pure]
 
-private theorem mp_cache_language_valid : mpCache.language.validate = [] := by
+private theorem mp_cache_language_valid :
+    mpCache.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [mpCache, cacheLanguage, dataConstructor, LanguageDef.typeNames,
       TypeDecl.plain, TermParam.typeExpr, TypeExpr.baseNames]
 
-theorem mp_cache_valid : mpCache.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem mp_cache_valid : mpCache.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [mp_cache_language_valid]
   simp [mpCache, mpRules, mpRuleA, mpRuleImp, mpRule, schema,
     cacheLanguage, dataConstructor,
-    Presentation.ruleIds, RuleSchema.isValidV1,
+    CalculusLanguageDef.ruleIds, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
-    patternsHaveNoCollectionRest, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    patternsHaveNoCollectionRest, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
     languageHasConstructorArity, Pattern.isWellScoped,
     Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
@@ -295,7 +299,7 @@ theorem mp_cache_valid : mpCache.isValidV2 = true := by
   norm_num [List.eraseDupsBy.loop]
   decide
 
-def mpValidated : ValidatedPresentation := ⟨mpCache, mp_cache_valid⟩
+def mpValidated : ValidatedCalculusLanguageDef := ⟨mpCache, mp_cache_valid⟩
 
 private def mpProofA : RawProof :=
   .node (ruleInstance (symbol 'a')) []
@@ -311,7 +315,7 @@ def mpBGoal : Pattern := mpProves mpB
 theorem mp_proof_b_accepted : checkRaw mpValidated mpBGoal mpProofB = true := by
   simp [mpValidated, mpCache, mpRules, mpRuleA, mpRuleImp, mpRule,
     schema, ruleInstance,
-    checkRaw, instantiateRule?, Presentation.lookupRule?,
+    checkRaw, instantiateRule?, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, Pattern.isGroundAt, Pattern.isGroundListAt,
@@ -319,14 +323,14 @@ theorem mp_proof_b_accepted : checkRaw mpValidated mpBGoal mpProofB = true := by
     Pattern.hasCanonicalBinderMetadataList, mpBGoal, mpProofB, mpProofA,
     mpProofImp, mpProves, mpImp, mpA, mpB, app, pvar]
   simp [checkRawChildren, checkRaw, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, instantiateSchema?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?]
 
 theorem mp_wrong_goal_rejected :
     checkRaw mpValidated (mpProves mpA) mpProofB = false := by
   simp [mpValidated, mpCache, mpRules, mpRuleA, mpRuleImp, mpRule,
     schema, ruleInstance,
-    checkRaw, instantiateRule?, Presentation.lookupRule?,
+    checkRaw, instantiateRule?, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, Pattern.isGroundAt, Pattern.isGroundListAt,
@@ -445,8 +449,8 @@ private theorem collect_dtt_rule_beta :
       Except.bind, Except.pure]
 
 /-- Independently written companion cache for the DTT-shaped package. -/
-def dttCache : Presentation :=
-  cachePresentation
+def dttCache : CalculusLanguageDef :=
+  cacheDefinition
       [(symbol 'C', 0), (symbol 'Z', 0), (symbol 'N', 0),
        (symbol 'i', 0), (symbol 'F', 2), (symbol '@', 2)]
     [{ head := symbol 'T', arity := 3 },
@@ -459,24 +463,24 @@ theorem dtt_cache_exact : CacheAgrees dttRules dttCache := by
     Except.pure]
 
 private theorem dtt_cache_language_valid :
-    dttCache.language.validate = [] := by
+    dttCache.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [dttCache, cacheLanguage, dataConstructor, LanguageDef.typeNames,
       TypeDecl.plain, TermParam.typeExpr, TypeExpr.baseNames]
 
-theorem dtt_cache_valid : dttCache.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem dtt_cache_valid : dttCache.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [dtt_cache_language_valid]
   simp [dttCache, dttRules, dttRuleZero, dttRuleId, dttRuleApp,
     dttRuleBeta, schema,
     cacheLanguage, dataConstructor,
-    Presentation.ruleIds, RuleSchema.isValidV1,
+    CalculusLanguageDef.ruleIds, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
-    patternsHaveNoCollectionRest, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    patternsHaveNoCollectionRest, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
     languageHasConstructorArity, Pattern.isWellScoped,
     Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
@@ -487,7 +491,7 @@ theorem dtt_cache_valid : dttCache.isValidV2 = true := by
   norm_num [List.eraseDupsBy.loop]
   decide
 
-def dttValidated : ValidatedPresentation :=
+def dttValidated : ValidatedCalculusLanguageDef :=
   ⟨dttCache, dtt_cache_valid⟩
 
 private def dttProofZero : RawProof :=
@@ -532,7 +536,7 @@ theorem dtt_id_zero_accepted :
     checkRaw dttValidated dttIdZeroGoal dttProofIdZero = true := by
   simp [dttValidated, dttCache, dttRules, dttRuleZero, dttRuleId,
     dttRuleApp, schema, ruleInstance, checkRaw, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, Pattern.isGroundAt,
     Pattern.isGroundListAt, Pattern.hasCanonicalBinderMetadata,
@@ -540,7 +544,7 @@ theorem dtt_id_zero_accepted :
     dttProofId, dttProofZero, dttHasType, dttCtx, dttZero, dttNat,
     dttId, dttPi, dttApp, app, pvar]
   simp [checkRawChildren, checkRaw, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, instantiateSchema?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?]
 
 theorem dtt_wrong_goal_rejected :
@@ -548,7 +552,7 @@ theorem dtt_wrong_goal_rejected :
       dttProofZero = false := by
   simp [dttValidated, dttCache, dttRules, dttRuleZero, dttRuleId,
     dttRuleApp, schema, ruleInstance, checkRaw, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, dttProofZero, dttHasType, dttCtx, dttZero,
     dttNat, dttId, app, pvar]
@@ -557,7 +561,7 @@ theorem dtt_beta_zero_accepted :
     checkRaw dttValidated dttBetaZeroGoal dttProofBetaZero = true := by
   simp [dttValidated, dttCache, dttRules, dttRuleBeta, dttRuleZero,
     dttRuleId, dttRuleApp, schema, ruleInstance, checkRaw,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
     Pattern.isGroundAt, Pattern.isGroundListAt,
@@ -574,7 +578,7 @@ theorem dtt_beta_wrong_result_rejected :
         false := by
   simp [dttValidated, dttCache, dttRules, dttRuleBeta, dttRuleZero,
     dttRuleId, dttRuleApp, schema, ruleInstance, checkRaw,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt,
     Pattern.isGroundAt, Pattern.isGroundListAt,
     Pattern.hasCanonicalBinderMetadata,
@@ -587,7 +591,7 @@ theorem dtt_structural_beta_accepted :
       true := by
   simp [dttValidated, dttCache, dttRules, dttRuleBeta, dttRuleZero,
     dttRuleId, dttRuleApp, schema, ruleInstance, checkRaw,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
     Pattern.isGroundAt, Pattern.isGroundListAt,
@@ -683,8 +687,8 @@ private theorem collect_hotg_rule_power_closed :
       Bind.bind, Pure.pure, Except.bind, Except.pure]
 
 /-- Independently written companion cache for the HOTG-shaped package. -/
-def hotgCache : Presentation :=
-  cachePresentation
+def hotgCache : CalculusLanguageDef :=
+  cacheDefinition
       [(symbol 'I', 2), (symbol 'n', 0), (symbol 'U', 1),
        (symbol 'C', 1), (symbol 'W', 1)]
     [{ head := symbol 'H', arity := 1 }] hotgRules
@@ -696,23 +700,23 @@ theorem hotg_cache_exact : CacheAgrees hotgRules hotgCache := by
     Except.bind, Except.pure]
 
 private theorem hotg_cache_language_valid :
-    hotgCache.language.validate = [] := by
+    hotgCache.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [hotgCache, cacheLanguage, dataConstructor, LanguageDef.typeNames,
       TypeDecl.plain, TermParam.typeExpr, TypeExpr.baseNames]
 
-theorem hotg_cache_valid : hotgCache.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem hotg_cache_valid : hotgCache.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hotg_cache_language_valid]
   simp [hotgCache, hotgRules, hotgRuleUniverseMember,
     hotgRuleUniverseClosed, hotgRulePowerClosed, schema, cacheLanguage,
-    dataConstructor, Presentation.ruleIds, RuleSchema.isValidV1,
+    dataConstructor, CalculusLanguageDef.ruleIds, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
-    patternsHaveNoCollectionRest, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    patternsHaveNoCollectionRest, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
     languageHasConstructorArity, Pattern.isWellScoped,
     Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
@@ -723,7 +727,7 @@ theorem hotg_cache_valid : hotgCache.isValidV2 = true := by
   norm_num [List.eraseDupsBy.loop]
   decide
 
-def hotgValidated : ValidatedPresentation :=
+def hotgValidated : ValidatedCalculusLanguageDef :=
   ⟨hotgCache, hotg_cache_valid⟩
 
 private def hotgProofUniverseMember : RawProof :=
@@ -743,7 +747,7 @@ theorem hotg_power_accepted :
     checkRaw hotgValidated hotgPowerGoal hotgProofPower = true := by
   simp [hotgValidated, hotgCache, hotgRules, hotgRuleUniverseMember,
     hotgRuleUniverseClosed, hotgRulePowerClosed, schema, ruleInstance,
-    checkRaw, instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    checkRaw, instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
     Pattern.isGroundAt, Pattern.isGroundListAt,
@@ -752,7 +756,7 @@ theorem hotg_power_accepted :
     hotgProofUniverseClosed, hotgProofUniverseMember, hotgProves,
     hotgClosed, hotgIn, hotgPower, hotgUnivOf, hotgN, app, pvar]
   simp [checkRawChildren, checkRaw, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, Pattern.isGroundAt,
     Pattern.isGroundListAt, Pattern.hasCanonicalBinderMetadata,
@@ -762,14 +766,14 @@ theorem dtt_proof_rejected_by_hotg_package :
     checkRaw hotgValidated hotgPowerGoal dttProofIdZero = false := by
   simp [hotgValidated, hotgCache, hotgRules, hotgRuleUniverseMember,
     hotgRuleUniverseClosed, hotgRulePowerClosed, schema, dttProofIdZero,
-    ruleInstance, checkRaw, instantiateRule?, Presentation.lookupRule?,
+    ruleInstance, checkRaw, instantiateRule?, CalculusLanguageDef.lookupRule?,
     List.find?]
 
 theorem hotg_proof_rejected_by_dtt_package :
     checkRaw dttValidated dttIdZeroGoal hotgProofPower = false := by
   simp [dttValidated, dttCache, dttRules, dttRuleZero, dttRuleId,
     dttRuleApp, dttRuleBeta, schema, hotgProofPower, ruleInstance, checkRaw,
-    instantiateRule?, Presentation.lookupRule?, List.find?]
+    instantiateRule?, CalculusLanguageDef.lookupRule?, List.find?]
 
 /-! ## Projection conflict calibration -/
 

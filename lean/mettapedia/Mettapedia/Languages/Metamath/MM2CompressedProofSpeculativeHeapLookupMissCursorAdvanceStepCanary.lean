@@ -1,0 +1,21 @@
+import Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissAfterCursorAssertionSupportCanary
+import Mettapedia.Languages.Metamath.MM2CompressedProofCursorAfterAssertionScheduling
+
+set_option autoImplicit false
+set_option maxRecDepth 100000
+
+namespace Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissCursorAdvanceStepCanary
+
+open Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupCanary
+open Mettapedia.Languages.ProcessCalculi.MORK
+open Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveComputable
+
+theorem speculative_miss_cursor_advance_selected_continuously :
+    cReflectiveSourceWorkQueueStep .leaveInert
+        speculativeMissAfterCursorAssertionProbe =
+      some speculativeMissAfterAdvance := by
+  decide +kernel
+
+#print axioms speculative_miss_cursor_advance_selected_continuously
+
+end Mettapedia.Languages.Metamath.MM2CompressedProofSpeculativeHeapLookupMissCursorAdvanceStepCanary

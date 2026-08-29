@@ -1,5 +1,7 @@
 import Mettapedia.Languages.Metamath.InferenceOperationalAssertionReification
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Projection-derived canonical Metamath assertion evidence
 
@@ -141,8 +143,8 @@ the canonical local assertion reifier.  The caller names are definitionally
 the projected caller's authored floating names, preventing an arbitrary name
 list from being conflated with the operational frame used by step soundness. -/
 theorem generatedAssertionNode_of_projectedOperational
-    (projection : PrefixProjection) (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView)
     (hmember : assertion ∈ projection.assertions)
     (specSubstitution : Metamath.Spec.Subst)
@@ -169,7 +171,7 @@ theorem generatedAssertionNode_of_projectedOperational
           (floatingVariableNames projection.activeHypotheses)
           specSubstitution assertion.hypotheses)) := by
   have hvalid : prefixProjectionValid projection = true :=
-    prefixProjectionValid_of_presentationOfProjection?_eq_some
+    prefixProjectionValid_of_calculusLanguageDefOfProjection?_eq_some
       projection target.1 hprojection
   have hvalidParts := hvalid
   simp only [prefixProjectionValid, Bool.and_eq_true] at hvalidParts

@@ -5,6 +5,8 @@ import Mettapedia.Languages.Metamath.SourceGSLTRuntimeCompressedTransport
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedReflection
 import Mettapedia.Languages.Metamath.InferenceNormalByteReflection
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Prefix bisimulation for the Metamath source GSLT and shipped reader
 
@@ -3123,12 +3125,12 @@ noncomputable def ReaderFinishedNormalProof.toNormalDischarge
     (anchor : ParserProofAnchor db runtimeFormula labelPos label initial)
     (finished : ReaderFinishedNormalProof anchor sourceLabels entries final)
     (agreement : RuntimeDBAgrees db before)
-    (runtimeTarget sourceTarget : ValidatedPresentation)
+    (runtimeTarget sourceTarget : ValidatedCalculusLanguageDef)
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix before) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix before) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? before.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? before.toSourcePrefix =
         some sourceTarget.1)
     (formula : ConstantHeadedFormula)
     (formula_eq : runtimeFormula = formula.toRuntime) :
@@ -3144,9 +3146,9 @@ noncomputable def ReaderFinishedNormalProof.toNormalDischarge
     rw [finished.ledger.anchor_eq, anchor.database_eq]
     exact agreement.projectPrefix_eq
   have runtimeProjection :
-      presentationOfProjection? (runtimePrefix before).toProjection =
+      calculusLanguageDefOfProjection? (runtimePrefix before).toProjection =
         some runtimeTarget.1 := by
-    rw [← presentationOfSourcePrefix?_eq_runtime]
+    rw [← calculusLanguageDefOfSourcePrefix?_eq_runtime]
     exact runtimePresentation
   have targetFormulaEq : ledger.targetFormula = formula.toRuntime :=
     finished.ledger.target_formula_eq.trans formula_eq
@@ -3315,12 +3317,12 @@ noncomputable def SpelledCallTrace.verifiedNormalStatement
       .ok (.const typecode.name :: bodySymbols))
     (inserted : insertAssertion? before label.name
       ⟨typecode.name, bodySymbols⟩ = some after)
-    (runtimeTarget sourceTarget : ValidatedPresentation)
+    (runtimeTarget sourceTarget : ValidatedCalculusLanguageDef)
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix before) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix before) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? before.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? before.toSourcePrefix =
         some sourceTarget.1) :
     ReaderVerifiedNormalStatement before after
       ⟨typecode.name, bodySymbols⟩
@@ -4625,12 +4627,12 @@ noncomputable def ReaderAcceptedCompressedStatement.toVerified
     (accepted : ReaderAcceptedCompressedStatement db before after label
       formula header words final)
     (verifiedWords : VerifiedCompressedWords words)
-    (runtimeTarget sourceTarget : ValidatedPresentation)
+    (runtimeTarget sourceTarget : ValidatedCalculusLanguageDef)
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix before) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix before) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? before.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? before.toSourcePrefix =
         some sourceTarget.1)
     (headerAdmitted : ∀ explicitLabel ∈ header,
       explicitLabel ∉
@@ -4746,12 +4748,12 @@ noncomputable def SpelledCallTrace.verifiedCompressedStatement
       .ok (.const typecode.name :: bodySymbols))
     (inserted : insertAssertion? before label.name
       ⟨typecode.name, bodySymbols⟩ = some after)
-    (runtimeTarget sourceTarget : ValidatedPresentation)
+    (runtimeTarget sourceTarget : ValidatedCalculusLanguageDef)
     (runtimePresentation :
-      presentationOfSourcePrefix? (runtimePrefix before) =
+      calculusLanguageDefOfSourcePrefix? (runtimePrefix before) =
         some runtimeTarget.1)
     (sourcePresentation :
-      presentationOfSourcePrefix? before.toSourcePrefix =
+      calculusLanguageDefOfSourcePrefix? before.toSourcePrefix =
         some sourceTarget.1)
     (headerAdmitted : ∀ explicitLabel ∈ header.map LocatedName.name,
       explicitLabel ∉

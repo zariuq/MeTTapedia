@@ -8,7 +8,7 @@ import Mettapedia.Languages.Metamath.MMLean4SemanticView
 
 This module formalizes the same narrow slice exercised operationally by
 `metamath_native_source_calculus_v0.metta`: the normal proof of the small
-syllogism corpus.  Its generated presentation contains ground source rules,
+syllogism corpus.  Its generated language definition contains ground source rules,
 ordered native premises, an explicit identity-substitution witness, and an
 explicit source-context witness.  The checked proof is related directly to
 Mario Carneiro's declarative `Metamath.Provable` relation.
@@ -85,7 +85,7 @@ def targetFormula : List String := ["|-", "R", "|=", "T"]
 def targetProofLabels : List String :=
   ["tR", "tS", "tT", "th.1", "th.2", "ax-syl"]
 
-/-! ## Generated generic-checker presentation -/
+/-! ## Generated generic-checker language -/
 
 def app (head : String) (arguments : List Pattern := []) : Pattern :=
   .apply head arguments
@@ -206,9 +206,6 @@ abbrev generatedDefinition : CalculusLanguageDef :=
 /-- The object-language projection used by source validation. -/
 abbrev sourceLanguage : LanguageDef := generatedDefinition.toLanguageDef
 
-/-- The derived nested checker input retained for the validation API. -/
-abbrev generatedPresentation : Presentation := generatedDefinition.toNested
-
 theorem sourceLanguage_validate : sourceLanguage.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly sourceLanguage <;>
     simp [staticConstructors, sourceVocabulary,
@@ -216,13 +213,13 @@ theorem sourceLanguage_validate : sourceLanguage.validate = [] := by
       LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
       TypeExpr.baseNames]
 
-theorem generatedPresentation_valid : generatedPresentation.isValidV2 = true := by
+theorem generatedDefinition_valid : generatedDefinition.isValid = true := by
   have generatedLanguageValidate :
-      generatedPresentation.language.validate = [] := by
-    simpa [generatedPresentation] using sourceLanguage_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+      generatedDefinition.toLanguageDef.validate = [] := by
+    exact sourceLanguage_validate
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [generatedLanguageValidate]
-  simp [generatedPresentation, staticConstructors,
+  simp [generatedDefinition, staticConstructors,
     sourceVocabulary, sourceDigest,
     sourceRevision, constructorRule, dataType, targetHypotheses,
     rFloat, sFloat, tFloat, theoremRSEssential, theoremSTEssential,
@@ -232,13 +229,13 @@ theorem generatedPresentation_valid : generatedPresentation.isValidV2 = true := 
     contextJudgment, substitutionPattern, identityBindingsPattern,
     bindingPattern, contextPattern, substitutionRuleId, contextRuleId,
     SourceHypothesis.formula, SourceHypothesis.label,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, RuleSchema.isValidIn,
-    RuleSchema.isValidV1, RuleSchema.metavariableNames,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, RuleSchema.isValidIn,
+    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
     RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorsValid, fixedConstructorListsValid,
     languageHasConstructorArity, Pattern.zipHead, Pattern.mapHead,
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
@@ -248,12 +245,12 @@ theorem generatedPresentation_valid : generatedPresentation.isValidV2 = true := 
 
 /-- The complete native slice as one GSLT. -/
 def totalTheory : GSLT :=
-  generatedDefinition.toGSLTOfNoEquations generatedPresentation_valid rfl
+  generatedDefinition.toGSLTOfNoEquations generatedDefinition_valid rfl
 
 theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := rfl
 
-def validatedPresentation : ValidatedPresentation :=
-  ⟨generatedPresentation, generatedPresentation_valid⟩
+def validatedDefinition : ValidatedCalculusLanguageDef :=
+  ⟨generatedDefinition, generatedDefinition_valid⟩
 
 private def rawNode (id : String) (children : List RawProof := []) : RawProof :=
   .node { ruleId := ⟨id⟩, arguments := [] } children
@@ -268,8 +265,8 @@ def targetGoal : Pattern := provesPattern targetFormula
 
 local macro "native_check_core" : tactic =>
   `(tactic|
-    simp [checkRaw, checkRawChildren, validatedPresentation,
-      generatedPresentation, targetHypotheses, rFloat, sFloat, tFloat,
+    simp [checkRaw, checkRawChildren, validatedDefinition,
+      generatedDefinition, targetHypotheses, rFloat, sFloat, tFloat,
       theoremRSEssential, theoremSTEssential, hypothesisRule,
       assertionRules, axiomSyllogism, rsEssential, stEssential, rule,
       app, sourceRevision, sourceDigest, provesPattern, identityPattern,
@@ -278,7 +275,7 @@ local macro "native_check_core" : tactic =>
       substitutionPattern, identityBindingsPattern, bindingPattern,
       contextPattern, substitutionRuleId, contextRuleId,
       SourceHypothesis.formula, SourceHypothesis.label, rawNode,
-      instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+      instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
       argumentValidAt, instantiateSchema?, instantiateSchemaAt?,
       instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
       Pattern.isGroundAt, Pattern.isGroundListAt,
@@ -286,12 +283,12 @@ local macro "native_check_core" : tactic =>
       Pattern.hasCanonicalBinderMetadataList])
 
 theorem targetRawProof_checked :
-    checkRaw validatedPresentation targetGoal targetRawProof = true := by
+    checkRaw validatedDefinition targetGoal targetRawProof = true := by
   simp only [targetRawProof, targetGoal, targetFormula]
   native_check_core
 
 theorem targetRawProof_exact_derivation :
-    ∃ derivation : Derivation validatedPresentation targetGoal,
+    ∃ derivation : Derivation validatedDefinition targetGoal,
       derivation.erase = targetRawProof :=
   checkRaw_exists_derivation_with_exact_erasure targetRawProof_checked
 
@@ -308,7 +305,7 @@ def checkedSource : GSLTSource :=
           [{ name := "native-source-calculus"
              version := "v0"
              payload := app "__metamath.NativeSourceSliceV0" }] }
-    presentation := generatedPresentation }
+    definition := generatedDefinition }
 
 theorem checkedSource_identity_valid : checkedSource.identity.isValid = true := by
   rfl
@@ -320,34 +317,34 @@ theorem checkedSource_assumptions_valid :
 theorem checkedSource_profiles_valid : checkedSource.profiles.isValid = true := by
   rfl
 
-theorem checkedSource_presentation_valid :
-    checkedSource.presentation.isValidV2 = true := by
-  exact generatedPresentation_valid
+theorem checkedSource_definition_valid :
+    checkedSource.definition.isValid = true := by
+  exact generatedDefinition_valid
 
 def admittedSource : CheckedGSLT :=
   { source := checkedSource
     identityValid := checkedSource_identity_valid
     assumptionsValid := checkedSource_assumptions_valid
     profilesValid := checkedSource_profiles_valid
-    presentationValid := checkedSource_presentation_valid }
+    definitionValid := checkedSource_definition_valid }
 
 theorem checkedSource_validate : checkedSource.validate = .ok admittedSource := by
   have hprofilesNonempty : checkedSource.profiles.entries.isEmpty = false := by
     rfl
   simp [GSLTSource.validate, admittedSource, checkedSource_identity_valid,
     checkedSource_assumptions_valid, checkedSource_profiles_valid,
-    checkedSource_presentation_valid, hprofilesNonempty]
+    checkedSource_definition_valid, hprofilesNonempty]
 
 theorem checkedSource_accepted : validationAccepted checkedSource.validate = true := by
   rw [checkedSource_validate]
   rfl
 
-theorem checkedSource_presentation_is_generated :
-    checkedSource.presentation = generatedPresentation := rfl
+theorem checkedSource_definition_is_generated :
+    checkedSource.definition = generatedDefinition := rfl
 
 theorem checkedSource_exact_native_derivation :
     ∃ (checked : CheckedGSLT)
-        (derivation : Derivation checked.presentation targetGoal),
+        (derivation : Derivation checked.definition targetGoal),
       checkedSource.validate = .ok checked ∧
         derivation.erase = targetRawProof := by
   have hcheck : admittedSource.checkRaw targetGoal targetRawProof = true := by
@@ -481,7 +478,7 @@ theorem runtimeSourceMatches_sound {database : Metamath.Verify.DB}
 
 structure NativeSourceCertificate where
   checked : CheckedGSLT
-  native : Derivation checked.presentation targetGoal
+  native : Derivation checked.definition targetGoal
   sourceAdmission : checkedSource.validate = .ok checked
   exactErasure : native.erase = targetRawProof
   declarative : Metamath.Provable sourceAxioms theoremContext formulaRT
@@ -524,11 +521,11 @@ def missingContextProof : RawProof :=
     (targetHypotheses.map (fun hypothesis => rawNode hypothesis.label) ++
       [rawNode (substitutionRuleId axiomSyllogism)])
 
-example : checkRaw validatedPresentation targetGoal wrongPremiseOrderProof = false := by
+example : checkRaw validatedDefinition targetGoal wrongPremiseOrderProof = false := by
   simp only [wrongPremiseOrderProof, targetGoal, targetFormula]
   native_check_core
 
-example : checkRaw validatedPresentation targetGoal missingContextProof = false := by
+example : checkRaw validatedDefinition targetGoal missingContextProof = false := by
   simp only [missingContextProof, targetGoal, targetFormula]
   native_check_core
 

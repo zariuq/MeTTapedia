@@ -1,7 +1,7 @@
 import Mathlib.CategoryTheory.PathCategory.Basic
 import Mathlib.Data.List.OfFn
 import Mettapedia.GSLT.LanguageDef.StructuralCategory
-import Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSpec
 
 /-!
 # Finite authored language-operation signatures
@@ -27,13 +27,13 @@ open CategoryTheory
 open scoped CategoryTheory
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.StructuralMorphism
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.Context
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec
-open Mettapedia.Languages.MeTTa.PureKernel.Renaming
-open Mettapedia.Languages.MeTTa.PureKernel.Substitution
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Context
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationEnv
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSpec
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Renaming
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Substitution
 
 /-- The four names shared by every finite language-operation presentation. -/
 structure CoreNames where

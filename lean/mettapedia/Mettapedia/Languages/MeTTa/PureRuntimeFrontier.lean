@@ -1,16 +1,16 @@
 import Mettapedia.Languages.MeTTa.Pure.Core
 import Mettapedia.Languages.ProcessCalculi.MORK.MeTTaILBridge
 import Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
-import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
-import Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
-import Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
-import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.CoreEmbedding
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.ProfileTheory
+import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelIntrinsicPureBridge
 
 /-!
 # Pure ↔ Runtime Frontier
 
 Classifies the current boundary between:
-- the trusted closed Pure/PureKernel branch, and
+- the trusted closed Pure/IntrinsicPure branch, and
 - the direct `R_exec₀` / MORK source-rule bridge.
 
 This file is intentionally descriptive and theoremic. It does not try to force
@@ -24,11 +24,11 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.Languages.MeTTa.Pure.Core
 open Mettapedia.Languages.ProcessCalculi.MORK
 open Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
-open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
-open Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
-open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.CoreEmbedding
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.ProfileTheory
+open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelIntrinsicPureBridge
 open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.PLN.Evidence.EvidenceClass
 
@@ -94,7 +94,7 @@ theorem no_mettaPure_rewrite_fits_direct_runtimeExec0_source_bridge
   rcases hfit with ⟨x, hlhs, _⟩
   exact (mettaPure_rewrite_lhs_not_fvar r hr x) hlhs
 
-/-- The real current overlap is the closed Pure/PureKernel bridge: one-step
+/-- The real current overlap is the closed Pure/IntrinsicPure bridge: one-step
 closed Pure computations already land in the quoted C1 interface. -/
 theorem closedPure_overlap_via_abc
     {t u : PureTm 0} (h : PureOpStep t u) :
@@ -116,22 +116,22 @@ theorem closedPure_overlap_via_abc_to_wm
 
 /-- The same closed overlap extends to the strongest assumption-free
 declaration-aware slice: when declaration values are absent, declaration
-multi-step reduction collapses to core PureKernel reduction, so the quoted
+multi-step reduction collapses to core IntrinsicPure reduction, so the quoted
 closed terms inherit the existing WM-strength obligation bridge. -/
 theorem closedNoValuesDecl_overlap_via_abc_to_wm
     {State Query : Type*}
     [EvidenceType State] [BinaryWorldModel State Query]
     (I : PureJudgmentWMInterface State Query)
-    {specs : List Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.DeclSpec}
+    {specs : List Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSpec.DeclSpec}
     (hSig :
-      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.SignatureWellFormed
+      Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSpec.SignatureWellFormed
         specs)
     (hNone : ∀ s ∈ specs, s.value? = none)
     {W : State} (hW : I.side W)
     {t u : PureTm 0}
     (h :
-      Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics.RedStarDecl
-        (Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec.envOfSpecs specs) t u) :
+      Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics.RedStarDecl
+        (Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSpec.envOfSpecs specs) t u) :
     WMStrengthObligation State Query W
       (I.encode (quoteClosedTm t))
       (I.encode (quoteClosedTm u)) := by

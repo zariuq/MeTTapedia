@@ -74,6 +74,29 @@ def classifyArrow (lang : LanguageDef) (procSort : String)
   else if cod.val = procSort then .reflecting
   else .neutral
 
+/-- Backward pressure from the derived modality to the presentation: an arrow
+is classified as quoting exactly when its domain is the designated reduction
+sort.  Requiring a constructor to carry `◇` therefore constrains which sort
+may reduce, rather than the other way round. -/
+theorem classifyArrow_eq_quoting_iff (lang : LanguageDef) (procSort : String)
+    {dom cod : LangSort lang} (arr : SortArrow lang dom cod) :
+    classifyArrow lang procSort arr = .quoting ↔ dom.val = procSort := by
+  unfold classifyArrow
+  by_cases domain : dom.val = procSort
+  · simp [domain]
+  · by_cases codomain : cod.val = procSort <;> simp [domain, codomain]
+
+/-- Dually, an arrow is reflecting exactly when its codomain, and not its
+domain, is the reduction sort. -/
+theorem classifyArrow_eq_reflecting_iff (lang : LanguageDef) (procSort : String)
+    {dom cod : LangSort lang} (arr : SortArrow lang dom cod) :
+    classifyArrow lang procSort arr = .reflecting ↔
+      dom.val ≠ procSort ∧ cod.val = procSort := by
+  unfold classifyArrow
+  by_cases domain : dom.val = procSort
+  · simp [domain]
+  · by_cases codomain : cod.val = procSort <;> simp [domain, codomain]
+
 /-- The modal operator assigned to each constructor role. -/
 def roleAction (lang : LanguageDef) (role : ConstructorRole)
     (φ : Pattern → Prop) : Pattern → Prop :=

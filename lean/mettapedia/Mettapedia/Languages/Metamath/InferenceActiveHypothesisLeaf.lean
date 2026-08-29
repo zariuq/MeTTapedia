@@ -18,6 +18,7 @@ obligation; no such reflection is assumed here.
 namespace Mettapedia.Languages.Metamath.InferenceHypothesisStepAgreement
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.Metamath.MMLean4Bridge
 open Mettapedia.Languages.Metamath.InferenceEncoding
@@ -102,32 +103,32 @@ private theorem find?_eq_some_of_mem_of_map_eraseDups_length_eq
         simp [hheadNe, ih htailUnique hmem]
 
 private theorem lookupRule?_eq_some_of_mem
-    (presentation : ValidatedPresentation) {rule : RuleSchema}
+    (presentation : ValidatedCalculusLanguageDef) {rule : RuleSchema}
     (hmem : rule ∈ presentation.1.rules) :
     presentation.1.lookupRule? rule.id = some rule := by
   have hvalid := presentation.2
-  simp only [Presentation.isValidV2, Presentation.isValidV1,
+  simp only [CalculusLanguageDef.isValid, CalculusLanguageDef.hasValidLocalRules,
     Bool.and_eq_true, beq_iff_eq] at hvalid
   have hunique :
       (presentation.1.rules.map RuleSchema.id).eraseDups.length =
         presentation.1.rules.length := by
-    simpa [Presentation.ruleIds] using hvalid.1.1.1.2
-  simpa [Presentation.lookupRule?] using
+    simpa [CalculusLanguageDef.ruleIds] using hvalid.1.1.1.2
+  simpa [CalculusLanguageDef.lookupRule?] using
     find?_eq_some_of_mem_of_map_eraseDups_length_eq
       RuleSchema.id presentation.1.rules rule hunique hmem
 
 /-- Active-hypothesis membership selects its exact generated schema. -/
 theorem lookup_activeHypothesisRule_of_projection
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {hypothesis : HypothesisView}
     (hmember : hypothesis ∈ projection.activeHypotheses) :
     target.1.lookupRule? ⟨hypothesis.label⟩ =
       some (activeHypothesisRule hypothesis) := by
   have hruleMember :
       activeHypothesisRule hypothesis ∈ target.1.rules := by
-    rw [rules_eq_of_presentationOfProjection?_eq_some
+    rw [rules_eq_of_calculusLanguageDefOfProjection?_eq_some
       projection target.1 hprojection]
     apply List.mem_append.mpr
     apply Or.inr
@@ -231,9 +232,9 @@ end
 /-- The canonical active-hypothesis instance has no premises and concludes
 the exact encoded formula retained by the projection. -/
 theorem activeHypothesisRule_application
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {hypothesis : HypothesisView}
     (hmember : hypothesis ∈ projection.activeHypotheses) :
     RuleApplication target (activeHypothesisRuleInstance hypothesis) []
@@ -254,7 +255,7 @@ theorem activeHypothesisRule_application
 hypothesis leaf.  Unlike a bare `Derivation`, this records which source rule
 is at the root. -/
 structure GeneratedActiveHypothesisLeaf
-    (target : ValidatedPresentation) (hypothesis : HypothesisView) : Type where
+    (target : ValidatedCalculusLanguageDef) (hypothesis : HypothesisView) : Type where
   application :
     RuleApplication target (activeHypothesisRuleInstance hypothesis) []
       (proves (encodeFormula hypothesis.formula))
@@ -262,16 +263,16 @@ structure GeneratedActiveHypothesisLeaf
 /-- Forget the root-pinning only after constructing the exact zero-child
 leaf. -/
 def GeneratedActiveHypothesisLeaf.toDerivation
-    {target : ValidatedPresentation} {hypothesis : HypothesisView}
+    {target : ValidatedCalculusLanguageDef} {hypothesis : HypothesisView}
     (leaf : GeneratedActiveHypothesisLeaf target hypothesis) :
     Derivation target (proves (encodeFormula hypothesis.formula)) :=
   .byRule (activeHypothesisRuleInstance hypothesis) leaf.application .nil
 
 /-- Projection membership constructs the exact root-pinned generated leaf. -/
 def generatedActiveHypothesisLeaf
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {hypothesis : HypothesisView}
     (hmember : hypothesis ∈ projection.activeHypotheses) :
     GeneratedActiveHypothesisLeaf target hypothesis :=
@@ -279,16 +280,16 @@ def generatedActiveHypothesisLeaf
 
 /-- Stable convenience API for recursive source-pinned proof structure. -/
 def activeHypothesisDerivation
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {hypothesis : HypothesisView}
     (hmember : hypothesis ∈ projection.activeHypotheses) :
     Derivation target (proves (encodeFormula hypothesis.formula)) :=
   (generatedActiveHypothesisLeaf projection target hprojection hmember).toDerivation
 
 @[simp] theorem GeneratedActiveHypothesisLeaf.erase_toDerivation
-    {target : ValidatedPresentation} {hypothesis : HypothesisView}
+    {target : ValidatedCalculusLanguageDef} {hypothesis : HypothesisView}
     (leaf : GeneratedActiveHypothesisLeaf target hypothesis) :
     leaf.toDerivation.erase =
       .node (activeHypothesisRuleInstance hypothesis) [] := by
@@ -299,9 +300,9 @@ def activeHypothesisDerivation
 the canonical empty premise vector and canonical encoded conclusion.  This is
 local-rule identification, not reflection of arbitrary `Proves` trees. -/
 theorem activeHypothesisRule_application_outputs
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {hypothesis : HypothesisView}
     (hmember : hypothesis ∈ projection.activeHypotheses)
     {premises : List Pattern} {conclusion : Pattern}
@@ -315,9 +316,9 @@ theorem activeHypothesisRule_application_outputs
 /-! ## Positive and negative boundaries -/
 
 /-- Positive: active membership constructs a typed, zero-child leaf. -/
-example (projection : PrefixProjection) (target : ValidatedPresentation)
+example (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     (hypothesis : HypothesisView)
     (hmember : hypothesis ∈ projection.activeHypotheses) :
     Derivation target (proves (encodeFormula hypothesis.formula)) :=
@@ -326,9 +327,9 @@ example (projection : PrefixProjection) (target : ValidatedPresentation)
 /-- Negative: the pinned active-hypothesis instance cannot acquire a
 nonempty premise vector. -/
 theorem not_activeHypothesisRule_application_of_nonempty_premises
-    (projection : PrefixProjection) (target : ValidatedPresentation)
+    (projection : PrefixProjection) (target : ValidatedCalculusLanguageDef)
     (hprojection :
-      presentationOfProjection? projection = some target.1)
+      calculusLanguageDefOfProjection? projection = some target.1)
     {hypothesis : HypothesisView}
     (hmember : hypothesis ∈ projection.activeHypotheses)
     {premises : List Pattern} {conclusion : Pattern}

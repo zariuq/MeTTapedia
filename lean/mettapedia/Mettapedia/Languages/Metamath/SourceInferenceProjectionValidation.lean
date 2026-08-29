@@ -4,11 +4,11 @@ import Mathlib.Data.List.Nodup
 import Std.Data.String.ToNat
 
 /-!
-# Validation of source-generated inference presentations
+# Validation of source-generated inference languages
 
 The source projection is fail-closed at its three semantic namespace gates.
-This module proves that passing those gates produces a V2-valid inference
-presentation, so proof reflection can construct the required validated target
+This module proves that passing those gates produces a contextually valid
+calculus language, so proof reflection can construct the required validated target
 rather than receive it from a caller.
 -/
 
@@ -17,6 +17,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.Metamath.SourceInferenceProjectionValidation
 
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.Languages.Metamath.MMLean4Bridge
 open Mettapedia.Languages.Metamath.InferenceEncoding
@@ -26,31 +27,29 @@ open Mettapedia.Languages.Metamath.SourceInferenceProjection
 
 /-- Append a finite source vocabulary and source rule table to the fixed
 Metamath side-condition calculus. -/
-def sourceInferencePresentation
+def sourceInferenceLanguageDef
     (vocabulary : List String) (sourceRules : List SourceRuleSchema) :
-    SourcePresentation :=
-  { language := languageWithSourceVocabulary vocabulary
-    calculus :=
-      { judgments := judgmentDecls ++ [provesDecl]
-        rules := sideRules ++ sourceRules } }
+    CalculusLanguageDef :=
+  CalculusLanguageDef.extend (languageWithSourceVocabulary vocabulary)
+    { judgments := judgmentDecls ++ [provesDecl]
+      rules := sideRules ++ sourceRules }
 
-/-- The raw presentation selected after the three source-projection gates. -/
-def rawSourcePresentation (source : SourcePrefix) : SourcePresentation :=
-  sourceInferencePresentation (sourcePrefixVocabulary source)
+/-- The raw language selected after the three source-projection gates. -/
+def rawSourceInferenceLanguageDef (source : SourcePrefix) : CalculusLanguageDef :=
+  sourceInferenceLanguageDef (sourcePrefixVocabulary source)
     (sourceGeneratedRules source)
 
 /-- Fixed Metamath side-condition calculus with the source-provability
 judgment declared, before adding any prefix-indexed constructors or rules. -/
-def sourceInferenceBasePresentation : SourcePresentation :=
-  { language := dataLanguage
-    calculus :=
-      { judgments := judgmentDecls ++ [provesDecl]
-        rules := sideRules } }
+def sourceInferenceBaseLanguageDef : CalculusLanguageDef :=
+  CalculusLanguageDef.extend dataLanguage
+    { judgments := judgmentDecls ++ [provesDecl]
+      rules := sideRules }
 
-theorem sourceInferenceBasePresentation_judgmentSignatureValid :
-    sourceInferenceBasePresentation.judgmentSignatureValid = true := by
-  simp [sourceInferenceBasePresentation,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
+theorem sourceInferenceBaseLanguageDef_judgmentSignatureValid :
+    sourceInferenceBaseLanguageDef.judgmentSignatureValid = true := by
+  simp [sourceInferenceBaseLanguageDef,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
     judgmentDecls, provesDecl, dataLanguage, dataConstructor,
     dataTypeName, stringHead, nilHead, consHead, constSymHead, varSymHead,
     formulaHead, dvPairHead, frameHead, bindingHead, substitutionHead,
@@ -75,11 +74,11 @@ private theorem guard_some {condition : Prop} [Decidable condition]
   simp [guard, falseCondition] at guarded
 
 theorem sourceProjectionGates_of_generated
-    {source : SourcePrefix} {presentation : SourcePresentation}
+    {source : SourcePrefix} {definition : CalculusLanguageDef}
     (generated :
-      presentationOfSourcePrefix? source = some presentation) :
+      calculusLanguageDefOfSourcePrefix? source = some definition) :
     SourceProjectionGates source := by
-  unfold presentationOfSourcePrefix? at generated
+  unfold calculusLanguageDefOfSourcePrefix? at generated
   simp only [Option.bind_eq_bind] at generated
   rw [Option.bind_eq_some_iff] at generated
   rcases generated with ⟨unitPrefix, guardedPrefix, generated⟩
@@ -92,28 +91,28 @@ theorem sourceProjectionGates_of_generated
       vocabularyValid := guard_some guardedVocabulary
       ruleIdsDisjoint := guard_some guardedRules }
 
-theorem presentation_eq_rawSourcePresentation_of_generated
-    {source : SourcePrefix} {presentation : SourcePresentation}
+theorem definition_eq_rawSourceInferenceLanguageDef_of_generated
+    {source : SourcePrefix} {definition : CalculusLanguageDef}
     (generated :
-      presentationOfSourcePrefix? source = some presentation) :
-    presentation = rawSourcePresentation source := by
-  unfold presentationOfSourcePrefix? at generated
+      calculusLanguageDefOfSourcePrefix? source = some definition) :
+    definition = rawSourceInferenceLanguageDef source := by
+  unfold calculusLanguageDefOfSourcePrefix? at generated
   simp only [Option.bind_eq_bind] at generated
   repeat' first
     | rw [Option.bind_eq_some_iff] at generated
       rcases generated with ⟨_, _, generated⟩
-  simpa [rawSourcePresentation, sourceInferencePresentation] using
+  simpa [rawSourceInferenceLanguageDef, sourceInferenceLanguageDef] using
     Option.some.inj generated.symm
 
 /-- Passing the three source-owned projection gates constructs exactly the
-raw presentation derived from that source prefix.  This is the forward
+raw language derived from that source prefix.  This is the forward
 counterpart of `sourceProjectionGates_of_generated`: callers need not execute
 the partial generator merely to recover its successful result. -/
-theorem presentationOfSourcePrefix_eq_some_rawSourcePresentation
+theorem calculusLanguageDefOfSourcePrefix_eq_some_rawSourceInferenceLanguageDef
     (source : SourcePrefix) (gates : SourceProjectionGates source) :
-    presentationOfSourcePrefix? source =
-      some (rawSourcePresentation source) := by
-  unfold presentationOfSourcePrefix?
+    calculusLanguageDefOfSourcePrefix? source =
+      some (rawSourceInferenceLanguageDef source) := by
+  unfold calculusLanguageDefOfSourcePrefix?
   rw [gates.prefixValid]
   simp only [guard]
   rw [gates.vocabularyValid]
@@ -217,7 +216,7 @@ private theorem languageWithSourceVocabulary_validate
     (languageWithSourceVocabulary heads).validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly
   all_goals
-    simp [languageWithSourceVocabulary, dataLanguage, dataConstructor,
+    simp [languageWithSourceVocabulary, dataConstructor,
       nullaryDataConstructor, dataTypeName, stringHead, nilHead, consHead,
       constSymHead, varSymHead, formulaHead, dvPairHead, frameHead,
       bindingHead, substitutionHead, LanguageDef.typeNames,
@@ -257,15 +256,16 @@ private theorem languageWithSourceVocabulary_validate
         simpa [Function.comp_def, nullaryDataConstructor, dataConstructor] using
           sourceVocabularyValid_nodup valid ⟩
 
-private theorem sourceInferencePresentation_judgmentSignatureValid
+private theorem sourceInferenceLanguageDef_judgmentSignatureValid
     (heads : List String) (sourceRules : List SourceRuleSchema)
     (valid : sourceVocabularyValid heads = true) :
-    (sourceInferencePresentation heads sourceRules).judgmentSignatureValid =
+    (sourceInferenceLanguageDef heads sourceRules).judgmentSignatureValid =
       true := by
-  have base := sourceInferenceBasePresentation_judgmentSignatureValid
-  unfold Presentation.judgmentSignatureValid at base ⊢
-  simp only [sourceInferenceBasePresentation, sourceInferencePresentation,
-    languageWithSourceVocabulary, Bool.and_eq_true] at base ⊢
+  have base := sourceInferenceBaseLanguageDef_judgmentSignatureValid
+  unfold CalculusLanguageDef.judgmentSignatureValid at base ⊢
+  simp only [sourceInferenceBaseLanguageDef, sourceInferenceLanguageDef,
+    CalculusLanguageDef.extend, languageWithSourceVocabulary,
+    Bool.and_eq_true] at base ⊢
   refine ⟨⟨base.1.1, base.1.2⟩, ?_⟩
   apply List.all_eq_true.mpr
   intro judgmentHead judgmentHeadMember
@@ -353,31 +353,31 @@ private theorem filter_eq_singleton_of_map_nodup_mem
             targetTail]
 
 private theorem lookupJudgment?_eq_some_of_signatureValid
-    (presentation : Presentation)
-    (signatureValid : presentation.judgmentSignatureValid = true)
+    (definition : CalculusLanguageDef)
+    (signatureValid : definition.judgmentSignatureValid = true)
     {declaration : JudgmentDecl}
-    (member : declaration ∈ presentation.judgments) :
-    presentation.lookupJudgment? declaration.head declaration.arity =
+    (member : declaration ∈ definition.judgments) :
+    definition.lookupJudgment? declaration.head declaration.arity =
       some declaration := by
-  simp only [Presentation.judgmentSignatureValid, Bool.and_eq_true,
+  simp only [CalculusLanguageDef.judgmentSignatureValid, Bool.and_eq_true,
     beq_iff_eq] at signatureValid
-  have headsNodup : (presentation.judgmentHeads).Nodup := by
+  have headsNodup : (definition.judgmentHeads).Nodup := by
     exact nodup_of_eraseDups_length_eq _ signatureValid.1.2
   have headFilter :
-      presentation.judgments.filter
+      definition.judgments.filter
           (fun candidate => candidate.head == declaration.head) =
         [declaration] := by
     exact filter_eq_singleton_of_map_nodup_mem JudgmentDecl.head
-      presentation.judgments declaration headsNodup member
+      definition.judgments declaration headsNodup member
   have combinedFilter :
-      presentation.judgments.filter (fun candidate =>
+      definition.judgments.filter (fun candidate =>
           candidate.head == declaration.head &&
             candidate.arity == declaration.arity) = [declaration] := by
     have filterFactorization :
-        presentation.judgments.filter (fun candidate =>
+        definition.judgments.filter (fun candidate =>
             candidate.head == declaration.head &&
               candidate.arity == declaration.arity) =
-          (presentation.judgments.filter (fun candidate =>
+          (definition.judgments.filter (fun candidate =>
               candidate.head == declaration.head)).filter
             (fun candidate => candidate.arity == declaration.arity) := by
       symm
@@ -385,7 +385,7 @@ private theorem lookupJudgment?_eq_some_of_signatureValid
       simp [Bool.and_comm]
     rw [filterFactorization, headFilter]
     simp
-  unfold Presentation.lookupJudgment?
+  unfold CalculusLanguageDef.lookupJudgment?
   rw [combinedFilter]
 
 private theorem languageWithSourceVocabulary_has_source_constructor
@@ -553,26 +553,26 @@ private theorem fixedConstructorListsValid_mono
 termination_by patterns => sizeOf patterns
 end
 
-private theorem sidePresentation_lookup_proves_none (arity : Nat) :
-    sidePresentation.lookupJudgment? provesHead arity = none := by
-  simp [Presentation.lookupJudgment?, sidePresentation, sideCalculus, judgmentDecls,
+private theorem sideDefinition_lookup_proves_none (arity : Nat) :
+    sideDefinition.lookupJudgment? provesHead arity = none := by
+  simp [CalculusLanguageDef.lookupJudgment?, judgmentDecls,
     provesHead, appendHead, lookupHead, substBodyHead, applySubstHead,
     varsHead, memberHead, dvRelHead, allWithHead, allPairsHead,
     dvListsHead, dvOKHead]
 
-private theorem sourceInferencePresentation_preserves_side_lookup
+private theorem sourceInferenceLanguageDef_preserves_side_lookup
     (heads : List String) (sourceRules : List SourceRuleSchema)
     {head : String} {arity : Nat} {declaration : JudgmentDecl}
     (lookup :
-      sidePresentation.lookupJudgment? head arity = some declaration) :
-    (sourceInferencePresentation heads sourceRules).lookupJudgment?
+      sideDefinition.lookupJudgment? head arity = some declaration) :
+    (sourceInferenceLanguageDef heads sourceRules).lookupJudgment?
         head arity = some declaration := by
   have headNe : head ≠ provesHead := by
     intro equal
     subst head
-    rw [sidePresentation_lookup_proves_none] at lookup
+    rw [sideDefinition_lookup_proves_none] at lookup
     contradiction
-  unfold Presentation.lookupJudgment? at lookup ⊢
+  unfold CalculusLanguageDef.lookupJudgment? at lookup ⊢
   change
     (match (judgmentDecls ++ [provesDecl]).filter (fun candidate =>
         candidate.head == head && candidate.arity == arity) with
@@ -586,38 +586,38 @@ private theorem sourceInferencePresentation_preserves_side_lookup
   rw [extraAbsent, List.append_nil]
   exact lookup
 
-private theorem sideJudgmentSchemaValid_in_sourceInferencePresentation
+private theorem sideJudgmentSchemaValid_in_sourceInferenceLanguageDef
     (heads : List String) (sourceRules : List SourceRuleSchema)
     (vocabularyValid : sourceVocabularyValid heads = true)
     (pattern : Pattern)
-    (valid : sidePresentation.judgmentSchemaValid pattern = true) :
-    (sourceInferencePresentation heads sourceRules).judgmentSchemaValid
+    (valid : sideDefinition.judgmentSchemaValid pattern = true) :
+    (sourceInferenceLanguageDef heads sourceRules).judgmentSchemaValid
         pattern = true := by
   cases pattern with
-  | bvar index => simp [Presentation.judgmentSchemaValid] at valid
-  | fvar name => simp [Presentation.judgmentSchemaValid] at valid
+  | bvar index => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
+  | fvar name => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
   | lambda binder body =>
-      simp [Presentation.judgmentSchemaValid] at valid
+      simp [CalculusLanguageDef.judgmentSchemaValid] at valid
   | multiLambda arity binders body =>
-      simp [Presentation.judgmentSchemaValid] at valid
+      simp [CalculusLanguageDef.judgmentSchemaValid] at valid
   | subst body replacement =>
-      simp [Presentation.judgmentSchemaValid] at valid
+      simp [CalculusLanguageDef.judgmentSchemaValid] at valid
   | collection kind elements rest =>
-      simp [Presentation.judgmentSchemaValid] at valid
+      simp [CalculusLanguageDef.judgmentSchemaValid] at valid
   | apply head arguments =>
-      simp only [Presentation.judgmentSchemaValid, Bool.and_eq_true]
+      simp only [CalculusLanguageDef.judgmentSchemaValid, Bool.and_eq_true]
         at valid ⊢
       cases lookupEquation :
-          sidePresentation.lookupJudgment? head arguments.length with
+          sideDefinition.lookupJudgment? head arguments.length with
       | none => simp [lookupEquation] at valid
       | some declaration =>
           refine ⟨?_, ?_⟩
-          · rw [sourceInferencePresentation_preserves_side_lookup
+          · rw [sourceInferenceLanguageDef_preserves_side_lookup
               heads sourceRules lookupEquation]
             rfl
           · have baseFixed := valid.2
-            exact fixedConstructorListsValid_mono sidePresentation.language
-              (sourceInferencePresentation heads sourceRules).language
+            exact fixedConstructorListsValid_mono sideDefinition.toLanguageDef
+              (sourceInferenceLanguageDef heads sourceRules).toLanguageDef
               (fun constructorHead constructorArity accepted => by
                 have acceptedData :
                     languageHasConstructorArity dataLanguage constructorHead
@@ -631,24 +631,24 @@ private theorem sideJudgmentSchemaValid_in_sourceInferencePresentation
                 exact extendedAccepted)
               arguments baseFixed
 
-private theorem sourceInferencePresentation_has_source_constructor
+private theorem sourceInferenceLanguageDef_has_source_constructor
     {heads : List String} (sourceRules : List SourceRuleSchema)
     (vocabularyValid : sourceVocabularyValid heads = true)
     {head : String} (member : head ∈ heads) :
     languageHasConstructorArity
-        (sourceInferencePresentation heads sourceRules).language head 0 = true := by
+        (sourceInferenceLanguageDef heads sourceRules).toLanguageDef head 0 = true := by
   have accepted := languageWithSourceVocabulary_has_source_constructor
     vocabularyValid member
   unfold languageHasConstructorArity at accepted ⊢
   exact accepted
 
-private theorem sourceInferencePresentation_preserves_accepted_constructor
+private theorem sourceInferenceLanguageDef_preserves_accepted_constructor
     {heads : List String} (sourceRules : List SourceRuleSchema)
     (vocabularyValid : sourceVocabularyValid heads = true)
     {head : String} {arity : Nat}
     (accepted : languageHasConstructorArity dataLanguage head arity = true) :
     languageHasConstructorArity
-        (sourceInferencePresentation heads sourceRules).language
+        (sourceInferenceLanguageDef heads sourceRules).toLanguageDef
         head arity = true := by
   have extended :=
     languageWithSourceVocabulary_preserves_accepted_constructor
@@ -683,16 +683,16 @@ private theorem fixedConstructorsValid_apply_of
     ⟨headValid,
       fixedConstructorListsValid_of_forall language arguments argumentsValid⟩
 
-private theorem sideRules_isValidIn_sourceInferencePresentation
+private theorem sideRules_isValidIn_sourceInferenceLanguageDef
     (heads : List String) (sourceRules : List SourceRuleSchema)
     (vocabularyValid : sourceVocabularyValid heads = true) :
     sideRules.all
       (RuleSchema.isValidIn
-        (sourceInferencePresentation heads sourceRules)) = true := by
-  have sideValid := sidePresentation_valid
-  simp only [Presentation.isValidV2, Bool.and_eq_true] at sideValid
+        (sourceInferenceLanguageDef heads sourceRules)) = true := by
+  have sideValid := sideDefinition_valid
+  simp only [CalculusLanguageDef.isValid, Bool.and_eq_true] at sideValid
   have sideRulesValid :
-      sideRules.all (RuleSchema.isValidIn sidePresentation) = true :=
+      sideRules.all (RuleSchema.isValidIn sideDefinition) = true :=
     sideValid.1.2
   apply List.all_eq_true.mpr
   intro rule ruleMember
@@ -702,7 +702,7 @@ private theorem sideRules_isValidIn_sourceInferencePresentation
   refine ⟨baseRuleValid.1, ?_, baseRuleValid.2.2⟩
   apply List.all_eq_true.mpr
   intro pattern patternMember
-  exact sideJudgmentSchemaValid_in_sourceInferencePresentation
+  exact sideJudgmentSchemaValid_in_sourceInferenceLanguageDef
     heads sourceRules vocabularyValid pattern
       (List.all_eq_true.mp baseRuleValid.2.1 pattern patternMember)
 
@@ -1450,10 +1450,10 @@ private theorem sourceAssertionRule_formal_occurs
     · exact List.mem_append_right _ (by simp)
     · exact conclusionBodyFormal_occurs_in_proves assertion.formula.typecode
 
-private theorem sourceAssertionRule_isValidV1
+private theorem sourceAssertionRule_isLocallyValid
     (callerFrame : SourceFrame) (assertion : SourceAssertion)
     (labelNonempty : assertion.label != "") :
-    RuleSchema.isValidV1
+    RuleSchema.isLocallyValid
         (sourceAssertionRule callerFrame assertion) = true := by
   let rule := sourceAssertionRule callerFrame assertion
   have formalsEquation :
@@ -1522,20 +1522,20 @@ private theorem sourceAssertionRule_isValidV1
     apply List.all_eq_true.mpr
     intro pattern patternMember
     exact (patternsAllowed pattern patternMember).2.2.2
-  simp only [RuleSchema.isValidV1, Bool.and_eq_true]
+  simp only [RuleSchema.isLocallyValid, Bool.and_eq_true]
   exact
     ⟨⟨⟨⟨⟨⟨⟨idNonempty, namesNonempty⟩, namesUnique⟩,
       occurrencesAllowed⟩, everyFormalOccurs⟩, patternsScoped⟩,
       patternsNoRest⟩, patternsCanonical⟩
 
-private theorem activeHypothesisRule_isValidV1
+private theorem activeHypothesisRule_isLocallyValid
     (hypothesis : HypothesisView)
     (labelNonempty : hypothesis.label != "") :
-    RuleSchema.isValidV1 (activeHypothesisRule hypothesis) = true := by
+    RuleSchema.isLocallyValid (activeHypothesisRule hypothesis) = true := by
   have formulaGround := schemaGroundAt_encodeFormula 0 hypothesis.formula
   rcases formulaGround with
     ⟨formulaOccurrences, formulaScoped, formulaNoRest, formulaCanonical⟩
-  simp only [RuleSchema.isValidV1]
+  simp only [RuleSchema.isLocallyValid]
   rw [show ((activeHypothesisRule hypothesis).id.value != "") = true by
     rw [activeHypothesisRule_id_value]
     exact labelNonempty]
@@ -1559,16 +1559,16 @@ private theorem sourcePrefixRuleLabel_nonempty
   simp only [Bool.and_eq_true] at accepted
   exact accepted.1
 
-private theorem sourceGeneratedRules_isValidV1
+private theorem sourceGeneratedRules_areLocallyValid
     (source : SourcePrefix) (valid : sourcePrefixValid source = true) :
-    (sourceGeneratedRules source).all RuleSchema.isValidV1 = true := by
+    (sourceGeneratedRules source).all RuleSchema.isLocallyValid = true := by
   rw [sourceGeneratedRules, List.all_append]
   simp only [Bool.and_eq_true]
   constructor
   · apply List.all_eq_true.mpr
     intro rule ruleMember
     rcases List.mem_map.mp ruleMember with ⟨hypothesis, hypothesisMember, rfl⟩
-    apply activeHypothesisRule_isValidV1
+    apply activeHypothesisRule_isLocallyValid
     apply sourcePrefixRuleLabel_nonempty valid
     unfold sourcePrefixRuleLabels
     exact List.mem_append_left _
@@ -1576,36 +1576,36 @@ private theorem sourceGeneratedRules_isValidV1
   · apply List.all_eq_true.mpr
     intro rule ruleMember
     rcases List.mem_map.mp ruleMember with ⟨assertion, assertionMember, rfl⟩
-    apply sourceAssertionRule_isValidV1
+    apply sourceAssertionRule_isLocallyValid
     apply sourcePrefixRuleLabel_nonempty valid
     unfold sourcePrefixRuleLabels
     exact List.mem_append_right _
       (List.mem_map_of_mem assertionMember)
 
-private theorem sideRules_isValidV1 :
-    sideRules.all RuleSchema.isValidV1 = true := by
-  have valid := sidePresentation_valid
-  simp only [Presentation.isValidV2, Presentation.isValidV1,
+private theorem sideRules_areLocallyValid :
+    sideRules.all RuleSchema.isLocallyValid = true := by
+  have valid := sideDefinition_valid
+  simp only [CalculusLanguageDef.isValid, CalculusLanguageDef.hasValidLocalRules,
     Bool.and_eq_true] at valid
   exact valid.1.1.1.1.2
 
-private theorem sourceInferencePresentation_isValidV1
+private theorem rawSourceInferenceLanguageDef_hasValidLocalRules
     (source : SourcePrefix) (gates : SourceProjectionGates source) :
-    (rawSourcePresentation source).isValidV1 = true := by
-  unfold Presentation.isValidV1
-  simp only [rawSourcePresentation, sourceInferencePresentation,
+    (rawSourceInferenceLanguageDef source).hasValidLocalRules = true := by
+  unfold CalculusLanguageDef.hasValidLocalRules
+  simp only [rawSourceInferenceLanguageDef, sourceInferenceLanguageDef,
     Bool.and_eq_true]
   refine ⟨⟨?_, ?_⟩, ?_⟩
   · simpa using languageWithSourceVocabulary_validate
       (sourcePrefixVocabulary source) gates.vocabularyValid
   · change
       (sideRules ++ sourceGeneratedRules source).all
-        RuleSchema.isValidV1 = true
+        RuleSchema.isLocallyValid = true
     rw [List.all_append]
     simp only [Bool.and_eq_true]
     exact
-      ⟨sideRules_isValidV1,
-        sourceGeneratedRules_isValidV1 source gates.prefixValid⟩
+      ⟨sideRules_areLocallyValid,
+        sourceGeneratedRules_areLocallyValid source gates.prefixValid⟩
   · exact beq_iff_eq.mpr
       (combinedRuleIds_eraseDups_length gates.prefixValid
         gates.ruleIdsDisjoint)
@@ -1683,38 +1683,38 @@ private theorem stringsOfSourceAssertion_hypothesis
 
 /-! ## Fixed-constructor coverage of source encodings -/
 
-private theorem sourceInferencePresentation_rawString_fixed
+private theorem sourceInferenceLanguageDef_rawString_fixed
     {heads : List String} (sourceRules : List SourceRuleSchema)
     (vocabularyValid : sourceVocabularyValid heads = true)
     (value : String) (member : value ∈ heads) :
     fixedConstructorsValid
-        (sourceInferencePresentation heads sourceRules).language
+        (sourceInferenceLanguageDef heads sourceRules).toLanguageDef
         (Builder.rawString value) = true := by
   apply fixedConstructorsValid_apply_of
-  · exact sourceInferencePresentation_has_source_constructor sourceRules
+  · exact sourceInferenceLanguageDef_has_source_constructor sourceRules
       vocabularyValid member
   · intro argument argumentMember
     simp at argumentMember
 
-private theorem sourceInferencePresentation_encodeString_fixed
+private theorem sourceInferenceLanguageDef_encodeString_fixed
     {heads : List String} (sourceRules : List SourceRuleSchema)
     (vocabularyValid : sourceVocabularyValid heads = true)
     (value : String) (member : value ∈ heads) :
     fixedConstructorsValid
-        (sourceInferencePresentation heads sourceRules).language
+        (sourceInferenceLanguageDef heads sourceRules).toLanguageDef
         (encodeString value) = true := by
   apply fixedConstructorsValid_apply_of
-  · apply sourceInferencePresentation_preserves_accepted_constructor
+  · apply sourceInferenceLanguageDef_preserves_accepted_constructor
       sourceRules vocabularyValid
     simpa using (show
       languageHasConstructorArity dataLanguage stringHead 1 = true by decide)
   · intro argument argumentMember
     simp only [List.mem_singleton] at argumentMember
     subst argument
-    exact sourceInferencePresentation_rawString_fixed sourceRules
+    exact sourceInferenceLanguageDef_rawString_fixed sourceRules
       vocabularyValid value member
 
-private theorem sourceInferencePresentation_encodeListWith_fixed
+private theorem sourceInferenceLanguageDef_encodeListWith_fixed
     {alpha : Type} {heads : List String}
     (sourceRules : List SourceRuleSchema)
     (vocabularyValid : sourceVocabularyValid heads = true)
@@ -1722,14 +1722,14 @@ private theorem sourceInferencePresentation_encodeListWith_fixed
     ∀ values,
       (∀ value ∈ values,
         fixedConstructorsValid
-          (sourceInferencePresentation heads sourceRules).language
+          (sourceInferenceLanguageDef heads sourceRules).toLanguageDef
           (encode value) = true) →
       fixedConstructorsValid
-        (sourceInferencePresentation heads sourceRules).language
+        (sourceInferenceLanguageDef heads sourceRules).toLanguageDef
         (encodeListWith encode values) = true
   | [], _ => by
       apply fixedConstructorsValid_apply_of
-      · apply sourceInferencePresentation_preserves_accepted_constructor
+      · apply sourceInferenceLanguageDef_preserves_accepted_constructor
           sourceRules vocabularyValid
         simpa using (show
           languageHasConstructorArity dataLanguage nilHead 0 = true by decide)
@@ -1737,7 +1737,7 @@ private theorem sourceInferencePresentation_encodeListWith_fixed
         simp at argumentMember
   | value :: values, elementsValid => by
       apply fixedConstructorsValid_apply_of
-      · apply sourceInferencePresentation_preserves_accepted_constructor
+      · apply sourceInferenceLanguageDef_preserves_accepted_constructor
           sourceRules vocabularyValid
         simpa using (show
           languageHasConstructorArity dataLanguage consHead 2 = true by decide)
@@ -1745,22 +1745,22 @@ private theorem sourceInferencePresentation_encodeListWith_fixed
         simp only [List.mem_cons, List.not_mem_nil, or_false] at argumentMember
         rcases argumentMember with rfl | rfl
         · exact elementsValid value (by simp)
-        · apply sourceInferencePresentation_encodeListWith_fixed sourceRules
+        · apply sourceInferenceLanguageDef_encodeListWith_fixed sourceRules
             vocabularyValid encode values
           intro tail tailMember
           exact elementsValid tail (by simp [tailMember])
 
-private theorem sourceInferencePresentation_encodeSym_fixed
+private theorem sourceInferenceLanguageDef_encodeSym_fixed
     {heads : List String} (sourceRules : List SourceRuleSchema)
     (vocabularyValid : sourceVocabularyValid heads = true)
     (symbol : RuntimeSym) (member : symbol.value ∈ heads) :
     fixedConstructorsValid
-        (sourceInferencePresentation heads sourceRules).language
+        (sourceInferenceLanguageDef heads sourceRules).toLanguageDef
         (encodeSym symbol) = true := by
   cases symbol with
   | const name =>
       apply fixedConstructorsValid_apply_of
-      · apply sourceInferencePresentation_preserves_accepted_constructor
+      · apply sourceInferenceLanguageDef_preserves_accepted_constructor
           sourceRules vocabularyValid
         simpa using (show
           languageHasConstructorArity dataLanguage constSymHead 1 = true by
@@ -1768,11 +1768,11 @@ private theorem sourceInferencePresentation_encodeSym_fixed
       · intro argument argumentMember
         simp only [List.mem_singleton] at argumentMember
         subst argument
-        exact sourceInferencePresentation_encodeString_fixed sourceRules
+        exact sourceInferenceLanguageDef_encodeString_fixed sourceRules
           vocabularyValid name member
   | var name =>
       apply fixedConstructorsValid_apply_of
-      · apply sourceInferencePresentation_preserves_accepted_constructor
+      · apply sourceInferenceLanguageDef_preserves_accepted_constructor
           sourceRules vocabularyValid
         simpa using (show
           languageHasConstructorArity dataLanguage varSymHead 1 = true by
@@ -1780,77 +1780,77 @@ private theorem sourceInferencePresentation_encodeSym_fixed
       · intro argument argumentMember
         simp only [List.mem_singleton] at argumentMember
         subst argument
-        exact sourceInferencePresentation_encodeString_fixed sourceRules
+        exact sourceInferenceLanguageDef_encodeString_fixed sourceRules
           vocabularyValid name member
 
-private theorem sourceInferencePresentation_encodeFormula_fixed
+private theorem sourceInferenceLanguageDef_encodeFormula_fixed
     {heads : List String} (sourceRules : List SourceRuleSchema)
     (vocabularyValid : sourceVocabularyValid heads = true)
     (formula : ConstantHeadedFormula)
     (declared : ∀ value ∈ stringsOfFormula formula, value ∈ heads) :
     fixedConstructorsValid
-        (sourceInferencePresentation heads sourceRules).language
+        (sourceInferenceLanguageDef heads sourceRules).toLanguageDef
         (encodeFormula formula) = true := by
   apply fixedConstructorsValid_apply_of
-  · apply sourceInferencePresentation_preserves_accepted_constructor
+  · apply sourceInferenceLanguageDef_preserves_accepted_constructor
       sourceRules vocabularyValid
     simpa using (show
       languageHasConstructorArity dataLanguage formulaHead 2 = true by decide)
   · intro argument argumentMember
     simp only [List.mem_cons, List.not_mem_nil, or_false] at argumentMember
     rcases argumentMember with rfl | rfl
-    · exact sourceInferencePresentation_encodeString_fixed sourceRules
+    · exact sourceInferenceLanguageDef_encodeString_fixed sourceRules
         vocabularyValid formula.typecode
         (declared formula.typecode (by simp [stringsOfFormula]))
-    · apply sourceInferencePresentation_encodeListWith_fixed sourceRules
+    · apply sourceInferenceLanguageDef_encodeListWith_fixed sourceRules
         vocabularyValid encodeSym formula.body
       intro symbol symbolMember
-      apply sourceInferencePresentation_encodeSym_fixed sourceRules
+      apply sourceInferenceLanguageDef_encodeSym_fixed sourceRules
         vocabularyValid symbol
       apply declared symbol.value
       simp [stringsOfFormula, List.mem_map_of_mem symbolMember]
 
-private theorem sourceInferencePresentation_encodeDVPair_fixed
+private theorem sourceInferenceLanguageDef_encodeDVPair_fixed
     {heads : List String} (sourceRules : List SourceRuleSchema)
     (vocabularyValid : sourceVocabularyValid heads = true)
     (pair : String × String) (leftMember : pair.1 ∈ heads)
     (rightMember : pair.2 ∈ heads) :
     fixedConstructorsValid
-        (sourceInferencePresentation heads sourceRules).language
+        (sourceInferenceLanguageDef heads sourceRules).toLanguageDef
         (encodeDVPair pair) = true := by
   apply fixedConstructorsValid_apply_of
-  · apply sourceInferencePresentation_preserves_accepted_constructor
+  · apply sourceInferenceLanguageDef_preserves_accepted_constructor
       sourceRules vocabularyValid
     simpa using (show
       languageHasConstructorArity dataLanguage dvPairHead 2 = true by decide)
   · intro argument argumentMember
     simp only [List.mem_cons, List.not_mem_nil, or_false] at argumentMember
     rcases argumentMember with rfl | rfl
-    · exact sourceInferencePresentation_encodeString_fixed sourceRules
+    · exact sourceInferenceLanguageDef_encodeString_fixed sourceRules
         vocabularyValid pair.1 leftMember
-    · exact sourceInferencePresentation_encodeString_fixed sourceRules
+    · exact sourceInferenceLanguageDef_encodeString_fixed sourceRules
         vocabularyValid pair.2 rightMember
 
-private theorem sourceInferencePresentation_encodeSourceFrame_fixed
+private theorem sourceInferenceLanguageDef_encodeSourceFrame_fixed
     {heads : List String} (sourceRules : List SourceRuleSchema)
     (vocabularyValid : sourceVocabularyValid heads = true)
     (frame : SourceFrame)
     (declared : ∀ value ∈ stringsOfSourceFrame frame, value ∈ heads) :
     fixedConstructorsValid
-        (sourceInferencePresentation heads sourceRules).language
+        (sourceInferenceLanguageDef heads sourceRules).toLanguageDef
         (encodeSourceFrame frame) = true := by
   apply fixedConstructorsValid_apply_of
-  · apply sourceInferencePresentation_preserves_accepted_constructor
+  · apply sourceInferenceLanguageDef_preserves_accepted_constructor
       sourceRules vocabularyValid
     simpa using (show
       languageHasConstructorArity dataLanguage frameHead 2 = true by decide)
   · intro argument argumentMember
     simp only [List.mem_cons, List.not_mem_nil, or_false] at argumentMember
     rcases argumentMember with rfl | rfl
-    · apply sourceInferencePresentation_encodeListWith_fixed sourceRules
+    · apply sourceInferenceLanguageDef_encodeListWith_fixed sourceRules
         vocabularyValid encodeDVPair frame.distinctVariables
       intro pair pairMember
-      apply sourceInferencePresentation_encodeDVPair_fixed sourceRules
+      apply sourceInferenceLanguageDef_encodeDVPair_fixed sourceRules
           vocabularyValid pair
       · apply declared pair.1
         unfold stringsOfSourceFrame
@@ -1860,10 +1860,10 @@ private theorem sourceInferencePresentation_encodeSourceFrame_fixed
         unfold stringsOfSourceFrame
         exact List.mem_append_left _ (List.mem_flatMap.mpr
           ⟨pair, pairMember, by simp⟩)
-    · apply sourceInferencePresentation_encodeListWith_fixed sourceRules
+    · apply sourceInferenceLanguageDef_encodeListWith_fixed sourceRules
         vocabularyValid encodeString frame.hypothesisLabels
       intro label labelMember
-      apply sourceInferencePresentation_encodeString_fixed sourceRules
+      apply sourceInferenceLanguageDef_encodeString_fixed sourceRules
         vocabularyValid label
       apply declared label
       unfold stringsOfSourceFrame

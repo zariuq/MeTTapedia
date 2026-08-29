@@ -84,23 +84,23 @@ private def deniedRules : List RuleSchema :=
 /-! ## The database is the join of the two tables -/
 
 private theorem evidenceCore_validate (rules : List RuleSchema) :
-    (rulesPresentation evidenceCore evidenceCalculus rules).language.validate = [] := by
+    (rulesPresentation evidenceCore evidenceCalculus rules).toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [rulesPresentation, evidenceCore, evidenceType, atomRule,
       LanguageDef.typeNames, TypeDecl.plain]
 
 private theorem holds_valid :
-    (rulesPresentation evidenceCore evidenceCalculus holdsRules).isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+    (rulesPresentation evidenceCore evidenceCalculus holdsRules).isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [evidenceCore_validate]
   simp [rulesPresentation, evidenceCore, evidenceType, atomRule,
     holdsRules, holdsAlphaRule, holdsBetaRule, holdsJ,
     atomAlpha, atomBeta,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -108,21 +108,21 @@ private theorem holds_valid :
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
 private theorem denied_valid :
-    (rulesPresentation evidenceCore evidenceCalculus deniedRules).isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+    (rulesPresentation evidenceCore evidenceCalculus deniedRules).isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [evidenceCore_validate]
   simp [rulesPresentation, evidenceCore, evidenceType, atomRule,
     deniedRules, deniedAlphaRule, deniedDeltaRule, deniedJ,
     atomAlpha, atomDelta,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -130,23 +130,23 @@ private theorem denied_valid :
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
 private theorem database_valid :
     (rulesPresentation evidenceCore evidenceCalculus
-      (holdsRules ++ deniedRules)).isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+      (holdsRules ++ deniedRules)).isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [evidenceCore_validate]
   simp [rulesPresentation, evidenceCore, evidenceType, atomRule,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, holdsJ, deniedJ,
     atomAlpha, atomBeta, atomDelta,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -154,10 +154,10 @@ private theorem database_valid :
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
-private def database : ValidatedPresentation :=
+private def database : ValidatedCalculusLanguageDef :=
   ⟨rulesPresentation evidenceCore evidenceCalculus (holdsRules ++ deniedRules),
     database_valid⟩
 
@@ -188,7 +188,7 @@ private theorem holdsAlpha_instantiates :
   simp [instantiateRule?, database, rulesPresentation, evidenceCore,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, holdsJ, atomAlpha,
-    Presentation.lookupRule?, argumentsValidAt, instantiateSchemas?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchemas?,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemasAt?]
 
 private theorem holdsBeta_instantiates :
@@ -197,7 +197,7 @@ private theorem holdsBeta_instantiates :
   simp [instantiateRule?, database, rulesPresentation, evidenceCore,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, holdsJ, atomBeta,
-    Presentation.lookupRule?, argumentsValidAt, instantiateSchemas?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchemas?,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemasAt?]
 
 private theorem deniedAlpha_instantiates :
@@ -206,7 +206,7 @@ private theorem deniedAlpha_instantiates :
   simp [instantiateRule?, database, rulesPresentation, evidenceCore,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, deniedJ, atomAlpha,
-    Presentation.lookupRule?, argumentsValidAt, instantiateSchemas?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchemas?,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemasAt?]
 
 private theorem deniedDelta_instantiates :
@@ -215,7 +215,7 @@ private theorem deniedDelta_instantiates :
   simp [instantiateRule?, database, rulesPresentation, evidenceCore,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, deniedJ, atomDelta,
-    Presentation.lookupRule?, argumentsValidAt, instantiateSchemas?,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchemas?,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemasAt?]
 
 private def holdsAlphaDerivation : Derivation database (holdsJ atomAlpha) :=
@@ -260,8 +260,8 @@ private theorem database_application_shape {ruleInstance : RuleInstance}
             rule = deniedAlphaRule ∨ rule = deniedDeltaRule := by
         have := lookup
         simp only [database, rulesPresentation, evidenceCore, holdsRules,
-          deniedRules, Presentation.lookupRule?,
-          Presentation.rules] at this
+          deniedRules, CalculusLanguageDef.lookupRule?,
+          CalculusLanguageDef.rules] at this
         all_goals simp_all
         rcases this with ⟨_, ruleEq⟩ | ⟨_, ⟨_, ruleEq⟩ | ⟨_, ⟨_, ruleEq⟩ |
           ⟨_, _, ruleEq⟩⟩⟩
@@ -357,18 +357,18 @@ private def explosionRule : RuleSchema :=
 
 private theorem exploded_valid :
     (rulesPresentation evidenceCore evidenceCalculus
-      ((holdsRules ++ deniedRules) ++ [explosionRule])).isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+      ((holdsRules ++ deniedRules) ++ [explosionRule])).isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [evidenceCore_validate]
   simp [rulesPresentation, evidenceCore, evidenceType, atomRule,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, explosionRule, holdsJ, deniedJ,
     atomAlpha, atomBeta, atomDelta, atomGamma,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -376,10 +376,10 @@ private theorem exploded_valid :
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
-private def exploded : ValidatedPresentation :=
+private def exploded : ValidatedCalculusLanguageDef :=
   ⟨rulesPresentation evidenceCore evidenceCalculus
     ((holdsRules ++ deniedRules) ++ [explosionRule]), exploded_valid⟩
 
@@ -394,7 +394,7 @@ private theorem explosion_instantiates :
   simp [instantiateRule?, exploded, rulesPresentation, evidenceCore,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, explosionRule, holdsJ, deniedJ,
-    atomAlpha, atomGamma, Presentation.lookupRule?, argumentsValidAt,
+    atomAlpha, atomGamma, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     instantiateSchemas?, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemasAt?]
 

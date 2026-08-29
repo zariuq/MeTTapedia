@@ -8,13 +8,15 @@ authority for work generation.  Consequently every controlled emission keeps
 its exact Need derivation and transition clock.
 
 The syntax grammar for authored weighted/parity policies is a separate I2
-obligation.  This file establishes the semantic internalization boundary and
-an open command vocabulary; it does not claim that every Lean function is
-already expressible by Prime syntax.
+obligation.  This file establishes the semantic internalization boundary.
+Open schedule command types and schedule memory are supplied by
+`InferenceControl.Controller.Program`; this module does not introduce a
+closed host enumeration of strategies, and it does not claim that every Lean
+function is already expressible by Prime syntax.
 -/
 
 import Mettapedia.GSLT.Core.WeightedMuScheduler
-import Mettapedia.Languages.MeTTa.NativeTypeTheoryDerivation
+import Mettapedia.Languages.MeTTa.TypeTheory.StagedReflective.Presentation
 import Mettapedia.Languages.MeTTa.PrimeNeedInferenceControl
 import Mettapedia.Logic.ModalMuCalculusEvaluationGame
 
@@ -25,39 +27,11 @@ open scoped ENNReal
 open Mettapedia.GSLT.Core.BranchingTemporal
 open Mettapedia.GSLT.Core.InferenceControl
 open Mettapedia.GSLT.Core.WeightedMuScheduler
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.PrimeNeedInferenceControl
 open Mettapedia.Languages.MeTTa.PrimeNeedReference
 
-universe uOrigin uLocal uResume uRule uValue uStable uRetry uEffect uFeature
-
-/-! ## An open authored policy vocabulary -/
-
-/-- The fixed structural commands are small; language- or agent-specific rank
-features remain an open type parameter instead of extending a host enum. -/
-inductive PolicyCommand (Feature : Type uFeature) where
-  | breadthFirst
-  | depthFirst
-  | rankBy (feature : Feature)
-deriving DecidableEq, Repr
-
-/-- Interpretation is explicit data at the capability boundary.  A rank
-feature is allowed to reorder only; the resulting scheduler still proves exact
-frontier permutation. -/
-noncomputable def interpretCommand
-    (rankScheduler : Feature → Scheduler Node) :
-    PolicyCommand Feature → Scheduler Node
-  | .breadthFirst => Scheduler.breadthFirst
-  | .depthFirst => Scheduler.depthFirst
-  | .rankBy feature => rankScheduler feature
-
-/-- An authored policy command is already a program in the generic inference
-control language. -/
-def commandProgram (command : PolicyCommand Feature) :
-    Controller.Program Node Answer (PolicyCommand Feature) Unit where
-  initialMemory := ()
-  command _ := command
-  advance _ _ _ _ := ()
+universe uOrigin uLocal uResume uRule uValue uStable uRetry uEffect
 
 /-! ## Prime Need as a quantale-policy instance -/
 
@@ -84,10 +58,11 @@ abbrev NeedAnswer (Value : Type uValue) (StableFault : Type uStable)
     (RetryableFault : Type uRetry) :=
   Produced Value StableFault RetryableFault × List Nat
 
-/-- Prime Need's conservative default policy: every occurrence has unit grade
-and breadth-first ordering.  Demand behavior remains in the Need machine; this
-policy only schedules the machine's live branch occurrences. -/
-noncomputable def needPolicy :
+/-- One explicit reference policy: every occurrence has unit grade and uses
+breadth-first ordering.  It is an executable example, not Prime's language
+default.  Demand behavior remains in the Need machine; this policy only
+schedules the machine's live branch occurrences. -/
+noncomputable def breadthFirstNeedPolicy :
     QuantalePolicy ℝ≥0∞
       (NeedOccurrence Origin Local Resume Rule Value StableFault RetryableFault Effect)
       (NeedAnswer Value StableFault RetryableFault) Unit :=
@@ -95,8 +70,8 @@ noncomputable def needPolicy :
 
 /-- The neutral quantale instance elaborates to exactly the pre-existing
 breadth-first scheduler. -/
-theorem needPolicy_scheduler_exact :
-    (needPolicy (Origin := Origin) (Local := Local) (Resume := Resume)
+theorem breadthFirstNeedPolicy_scheduler_exact :
+    (breadthFirstNeedPolicy (Origin := Origin) (Local := Local) (Resume := Resume)
       (Rule := Rule) (Value := Value) (StableFault := StableFault)
       (RetryableFault := RetryableFault) (Effect := Effect)).scheduler () =
         (Scheduler.breadthFirst : Scheduler
@@ -105,20 +80,22 @@ theorem needPolicy_scheduler_exact :
 
 /-- Controlled Prime Need execution retains the generic reachability safety
 invariant for every observation budget. -/
-theorem needPolicy_run_sound
+theorem breadthFirstNeedPolicy_run_sound
     (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
     (initial : NeedMachine Origin Local Resume Rule Value StableFault RetryableFault Effect)
     (fuel : Nat) :
-    (Snapshot.run (Reference.occurrenceSystem spec) needPolicy.controller fuel
-      (Snapshot.initial needPolicy.controller
+    (Snapshot.run (Reference.occurrenceSystem spec)
+      breadthFirstNeedPolicy.controller fuel
+      (Snapshot.initial breadthFirstNeedPolicy.controller
         [WorkOccurrence.root initial])).search.Sound
       (Reference.occurrenceSystem spec) [WorkOccurrence.root initial] :=
-  QuantalePolicy.run_sound needPolicy (Reference.occurrenceSystem spec)
+  QuantalePolicy.run_sound breadthFirstNeedPolicy
+    (Reference.occurrenceSystem spec)
     [WorkOccurrence.root initial] fuel
 
 /-- A scheduler-selected answer still carries an exact Need derivation and
 the original occurrence trace. -/
-theorem needPolicy_emission_has_steps
+theorem breadthFirstNeedPolicy_emission_has_steps
     (spec : Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
     (initial : NeedMachine Origin Local Resume Rule Value StableFault RetryableFault Effect)
     (fuel : Nat)
@@ -126,14 +103,15 @@ theorem needPolicy_emission_has_steps
       (NeedOccurrence Origin Local Resume Rule Value StableFault RetryableFault Effect)
       (NeedAnswer Value StableFault RetryableFault)}
     (member : event ∈
-      (Snapshot.run (Reference.occurrenceSystem spec) needPolicy.controller fuel
-        (Snapshot.initial needPolicy.controller
+      (Snapshot.run (Reference.occurrenceSystem spec)
+        breadthFirstNeedPolicy.controller fuel
+        (Snapshot.initial breadthFirstNeedPolicy.controller
           [WorkOccurrence.root initial])).search.events) :
     Steps spec event.origin.trace.length initial event.origin.state ∧
       haltedOutcome event.origin.state = some event.value.1 ∧
       event.value.2 = event.origin.trace :=
-  Reference.controlled_emission_has_steps spec needPolicy.controller initial
-    fuel member
+  Reference.controlled_emission_has_steps spec
+    breadthFirstNeedPolicy.controller initial fuel member
 
 /-! ## Semantic Prime internalization -/
 
@@ -150,7 +128,7 @@ def policyTyFor (Q : Type) [Semigroup Q] [CompleteLattice Q] [IsQuantale Q] :
     (NeedOccurrence Origin Local Resume Rule Value StableFault RetryableFault Effect)
     (NeedAnswer Value StableFault RetryableFault) Unit
 
-/-- The existing default policy uses the extended nonnegative reals. -/
+/-- The reference policy carrier uses the extended nonnegative reals. -/
 abbrev policyTy : familiesCwF.Ty PrimeContext :=
   policyTyFor (Origin := Origin) (Local := Local) (Resume := Resume)
     (Rule := Rule) (Value := Value) (StableFault := StableFault)
@@ -169,21 +147,23 @@ def weightedParityAutomatonTy (Q State : Type)
     familiesCwF.Ty PrimeContext :=
   fun _ => WeightedParityAutomaton Q State
 
-/-- The default Need policy as an ordinary closed Prime term. -/
-noncomputable def internalNeedPolicy :
+/-- The explicit breadth-first reference policy as an ordinary closed Prime
+term. -/
+noncomputable def internalBreadthFirstNeedPolicy :
     familiesCwF.Tm PrimeContext
       (policyTy (Origin := Origin) (Local := Local) (Resume := Resume)
         (Rule := Rule) (Value := Value) (StableFault := StableFault)
         (RetryableFault := RetryableFault) (Effect := Effect)) :=
-  fun _ => needPolicy
+  fun _ => breadthFirstNeedPolicy
 
 /-- Evaluating the internal term returns exactly the policy used by the
 controller realization. -/
-@[simp] theorem internalNeedPolicy_apply :
-    internalNeedPolicy (Origin := Origin) (Local := Local) (Resume := Resume)
+@[simp] theorem internalBreadthFirstNeedPolicy_apply :
+    internalBreadthFirstNeedPolicy
+        (Origin := Origin) (Local := Local) (Resume := Resume)
         (Rule := Rule) (Value := Value) (StableFault := StableFault)
         (RetryableFault := RetryableFault) (Effect := Effect) PUnit.unit =
-      (needPolicy : QuantalePolicy ℝ≥0∞
+      (breadthFirstNeedPolicy : QuantalePolicy ℝ≥0∞
         (NeedOccurrence Origin Local Resume Rule Value StableFault RetryableFault Effect)
         (NeedAnswer Value StableFault RetryableFault) Unit) :=
   rfl

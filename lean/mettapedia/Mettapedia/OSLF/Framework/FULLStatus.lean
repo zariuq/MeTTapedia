@@ -13,7 +13,7 @@ import Mettapedia.OSLF.Framework.PaperSection12Examples
 import Mettapedia.OSLF.Framework.IdentityEvidenceTransfer
 import Mettapedia.OSLF.Framework.ModalEquivalence
 import Mettapedia.OSLF.Framework.SubstitutabilityTheorem1
-import Mettapedia.OSLF.NativeType.Construction
+import Mettapedia.OSLF.PresheafNativeType.PresheafSemantics
 import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.Decidability
 import Mettapedia.OSLF.Framework.TinyMLInstance
@@ -167,7 +167,7 @@ def tracker : List Milestone :=
   , { area := "Literature Alignment"
       title := "Theory-translation preservation of Π/Σ/Ω in Native Type route"
       status := .done
-      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: TheoryMorphism, TheoryMorphism.preserves_piType, TheoryMorphism.preserves_sigmaType, TheoryMorphism.preserves_omegaTop, TheoryMorphism.preserves_propImp, TheoryMorphism.piOmega_translation_endpoint, TheoryMorphism.piOmegaProp_translation_endpoint, TheoryMorphism.piSigmaOmegaProp_translation_endpoint, TheoryMorphism.id_piOmega_translation_endpoint, TheoryMorphism.id_piOmegaProp_translation_endpoint, TheoryMorphism.id_piSigmaOmegaProp_translation_endpoint; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf (future-work discussion on preserving Π and Ω)"
+      codeRef := "Mettapedia/OSLF/PresheafNativeType/PresheafSemantics.lean: TheoryMorphism, TheoryMorphism.preserves_piType, TheoryMorphism.preserves_sigmaType, TheoryMorphism.preserves_omegaTop, TheoryMorphism.preserves_propImp, TheoryMorphism.piOmega_translation_endpoint, TheoryMorphism.piOmegaProp_translation_endpoint, TheoryMorphism.piSigmaOmegaProp_translation_endpoint, TheoryMorphism.id_piOmega_translation_endpoint, TheoryMorphism.id_piOmegaProp_translation_endpoint, TheoryMorphism.id_piSigmaOmegaProp_translation_endpoint; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf (future-work discussion on preserving Π and Ω)"
       note := "Native Type translation conditions are explicit and theorem-level: a sort-indexed `TheoryMorphism` contract certifies Π (`sInf`), Σ (`sSup`), Ω-top, and fiber implication (`Prop` constructor), with canonical bundled endpoints and identity-canary instances." }
   ]
 
@@ -225,7 +225,7 @@ def strictTracker : List Milestone :=
   , { area := "Native Type Theory Future Work"
       title := "Colax preservation rules for Π/Σ/Prop under theory translation"
       status := .done
-      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: TheoryMorphism.colax_piType/lax_piType, TheoryMorphism.colax_sigmaType/lax_sigmaType, TheoryMorphism.colax_propImp/lax_propImp, TheoryMorphism.colax_pi_elim/colax_pi_intro, TheoryMorphism.colax_sigma_intro/colax_sigma_elim, TheoryMorphism.colax_prop_mp/colax_prop_intro, TheoryMorphism.PiPropColaxRuleSet, TheoryMorphism.PiSigmaPropColaxRuleSet, TheoryMorphism.piProp_colax_rules, TheoryMorphism.piSigmaProp_colax_rules, TheoryMorphism.comp, TheoryMorphism.comp_piProp_colax_rules, TheoryMorphism.comp_piSigmaProp_colax_rules; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf lines ~514, ~676"
+      codeRef := "Mettapedia/OSLF/PresheafNativeType/PresheafSemantics.lean: TheoryMorphism.colax_piType/lax_piType, TheoryMorphism.colax_sigmaType/lax_sigmaType, TheoryMorphism.colax_propImp/lax_propImp, TheoryMorphism.colax_pi_elim/colax_pi_intro, TheoryMorphism.colax_sigma_intro/colax_sigma_elim, TheoryMorphism.colax_prop_mp/colax_prop_intro, TheoryMorphism.PiPropColaxRuleSet, TheoryMorphism.PiSigmaPropColaxRuleSet, TheoryMorphism.piProp_colax_rules, TheoryMorphism.piSigmaProp_colax_rules, TheoryMorphism.comp, TheoryMorphism.comp_piProp_colax_rules, TheoryMorphism.comp_piSigmaProp_colax_rules; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf lines ~514, ~676"
       note := "Full theorem-level colax/lax rule-sets are formalized for Π/Σ/Prop translation: directional preservation, intro/elim rules, and composition stability are packaged as canonical endpoints." }
   , { area := "OSLF/GSLT Future Work"
       title := "Internal constructor-category restriction of `stepForward` to modal fiber action"
@@ -235,7 +235,7 @@ def strictTracker : List Milestone :=
   , { area := "Native Type Theory Future Work"
       title := "Concrete Mathlib Grothendieck native-type category endpoint (cross-sort morphisms)"
       status := .done
-      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: constructorPredFiberFunctorDual / ConstructorGrothendieckDual / constructorNatType_toGrothObj / grothObj_to_constructorNatType / constructorNatTypeHom_to_grothHom / grothHom_to_constructorNatTypeHom / constructorNatTypeHom_groth_roundtrip; plus ConstructorNatType / constructorReindex_* / ConstructorNatTypeHom / constructorNatTypeTransport_* / rho_roundtrip_constructorNatTypeHom"
+      codeRef := "Mettapedia/OSLF/PresheafNativeType/PresheafSemantics.lean: constructorPredFiberFunctorDual / ConstructorGrothendieckDual / constructorNativeType_toGrothObj / grothObj_to_constructorNativeType / constructorNativeTypeHom_to_grothHom / grothHom_to_constructorNativeTypeHom / constructorNativeTypeHom_groth_roundtrip; plus ConstructorNativeType / constructorReindex_* / ConstructorNativeTypeHom / constructorNativeTypeTransport_* / rho_roundtrip_constructorNativeTypeHom"
       note := "Concrete Mathlib `CategoryTheory.Grothendieck` endpoint is now theorem-level over constructor sorts, with explicit conversion maps and a scoped constructor→Grothendieck→constructor roundtrip theorem, in addition to the prior nontrivial constructor transport layer." }
   ]
 
@@ -281,17 +281,17 @@ def paperParityTracker : List Milestone :=
   , { area := "Native Type Theory Core"
       title := "Full NT route over presheaf/base-fibration construction (endpoint subset)"
       status := .done
-      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: fullPresheafGrothendieckCategory (Category instance) / FullPresheafGrothendieckObj / FullPresheafGrothendieckHom / fullPresheafGrothendieckHom_comp_assoc / fullPresheafGrothendieckHom_id_comp / fullPresheafGrothendieckHom_comp_id; Mettapedia/OSLF/CoreMain.lean: coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
+      codeRef := "Mettapedia/OSLF/PresheafNativeType/PresheafSemantics.lean: fullPresheafGrothendieckCategory (Category instance) / FullPresheafGrothendieckObj / FullPresheafGrothendieckHom / fullPresheafGrothendieckHom_comp_assoc / fullPresheafGrothendieckHom_id_comp / fullPresheafGrothendieckHom_comp_id; Mettapedia/OSLF/CoreMain.lean: coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
       note := "Endpoint subset: Full Category instance on FullPresheafGrothendieckObj with proven associativity and identity laws. Consumed by coreMain_paper_parity_full_package." }
   , { area := "Native Type Theory Core"
       title := "Comparison theorem: full presheaf-native Grothendieck endpoint restricts to constructor endpoint"
       status := .done
-      codeRef := "Mettapedia/OSLF/NativeType/Construction.lean: fullGrothObj_to_scopedConstructorPred_at_representable / scoped_full_scoped_obj_roundtrip / FullRouteRestrictionEquivalence / full_route_restriction_equivalence_package / ScopedConstructorPredHom.toFullGrothHom_comp; Mettapedia/OSLF/CoreMain.lean: coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
+      codeRef := "Mettapedia/OSLF/PresheafNativeType/PresheafSemantics.lean: fullGrothObj_to_scopedConstructorPred_at_representable / scoped_full_scoped_obj_roundtrip / FullRouteRestrictionEquivalence / full_route_restriction_equivalence_package / ScopedConstructorPredHom.toFullGrothHom_comp; Mettapedia/OSLF/CoreMain.lean: coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
       note := "Genuine equivalence at representable objects: scoped→full→scoped roundtrip is identity, full route restriction equivalence with morphism-level composition preservation. Consumed by coreMain_paper_parity_full_package." }
   , { area := "Native Type Theory Core"
       title := "Topos -> internal-language bridge theorem family (fiber-logic endpoint subset)"
       status := .done
-      codeRef := "Mettapedia/OSLF/Framework/ToposTOGLBridge.lean: topos_full_internal_logic_bridge_package (⊤/⊥/∧/∨/Frame →/¬) + topos_representable_patternPred_piSigma_transport_via_rulePack + topos_representable_patternPred_piSigma_transport_pack_via_rulePack + topos_representable_patternPred_piSigma_transport_pack_via_prop12 + topos_representable_patternPred_piSigma_transport_via_prop12_pack; Mettapedia/OSLF/NativeType/CodomainFibration.lean: prop12_piSigmaPredicateRulePack / prop12_piEta_presheaf / prop12_sigmaEta_presheaf; Mettapedia/OSLF/Framework/BeckChevalleyOSLF.lean: representable_patternPred_piSigma_transport_via_rulePack / representable_patternPred_piSigma_transport_pack_via_rulePack / representable_patternPred_piSigma_transport_via_prop12_pack / RepresentablePiSigmaTransportPack / representable_patternPred_piSigma_transport_pack_via_prop12; Mettapedia/OSLF/Framework/OSLFNTTWMCanonicalClosure.lean: canonical_rulePack_transport_pack_and_fixpoint_endpoint_compact / canonical_prop12_transport_pack_and_fixpoint_endpoint_compact / canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal / canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal / canonicalConsequenceRuleOn_compact_fixpoint; Mettapedia/OSLF/CoreMain.lean: coreMain_representable_patternPred_piSigma_transport_via_rulePack / coreMain_representable_patternPred_piSigma_transport_pack_via_rulePack / coreMain_representable_patternPred_piSigma_transport_via_prop12_pack / coreMain_representable_patternPred_piSigma_transport_pack / coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
+      codeRef := "Mettapedia/OSLF/Framework/ToposTOGLBridge.lean: topos_full_internal_logic_bridge_package (⊤/⊥/∧/∨/Frame →/¬) + topos_representable_patternPred_piSigma_transport_via_rulePack + topos_representable_patternPred_piSigma_transport_pack_via_rulePack + topos_representable_patternPred_piSigma_transport_pack_via_prop12 + topos_representable_patternPred_piSigma_transport_via_prop12_pack; Mettapedia/OSLF/PresheafNativeType/InternalLanguage.lean: prop12_piSigmaPredicateRulePack / prop12_piEta_presheaf / prop12_sigmaEta_presheaf; Mettapedia/OSLF/Framework/BeckChevalleyOSLF.lean: representable_patternPred_piSigma_transport_via_rulePack / representable_patternPred_piSigma_transport_pack_via_rulePack / representable_patternPred_piSigma_transport_via_prop12_pack / RepresentablePiSigmaTransportPack / representable_patternPred_piSigma_transport_pack_via_prop12; Mettapedia/OSLF/Framework/OSLFNTTWMCanonicalClosure.lean: canonical_rulePack_transport_pack_and_fixpoint_endpoint_compact / canonical_prop12_transport_pack_and_fixpoint_endpoint_compact / canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal / canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal / canonicalConsequenceRuleOn_compact_fixpoint; Mettapedia/OSLF/CoreMain.lean: coreMain_representable_patternPred_piSigma_transport_via_rulePack / coreMain_representable_patternPred_piSigma_transport_pack_via_rulePack / coreMain_representable_patternPred_piSigma_transport_via_prop12_pack / coreMain_representable_patternPred_piSigma_transport_pack / coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
       note := "Endpoint subset: ⊤/⊥/∧/∨ internalization plus Frame-derived →/¬ and a representable Π/Σ transport theorem family that is rule-pack-first (`...via_rulePack`), with explicit Prop-12 compatibility wrappers (`...via_prop12...`) and compact canonical WM-closure endpoints." }
   , { area := "TOGL/Graph Foundations"
       title := "Explicit formal bridge from graph-theoretic foundations to OSLF canonical endpoint"
@@ -492,38 +492,38 @@ These checks tie tracker statements to concrete constants in the codebase.
 #check @Mettapedia.OSLF.Framework.PaperSection12Examples.section12_worked_examples_bundle
 #check @Mettapedia.OSLF.Framework.GeneratedTyping.dependent_parametric_generated_type_system_extension
 #check @Mettapedia.OSLF.Framework.GeneratedTyping.rhoCalc_dependent_parametric_generated_type_system_extension
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.preserves_piType
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.preserves_omegaTop
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.preserves_propImp
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piOmega_translation_endpoint
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piOmegaProp_translation_endpoint
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.id_piOmega_translation_endpoint
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.id_piOmegaProp_translation_endpoint
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.colax_piType
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.lax_piType
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.colax_propImp
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.lax_propImp
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.colax_pi_elim
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.colax_pi_intro
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.colax_prop_mp
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.colax_prop_intro
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.PiPropColaxRuleSet
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.piProp_colax_rules
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.comp
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.comp_piProp_colax_rules
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.comp_piOmegaProp_with_constructor_transport_bundle
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.preserves_piType
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.preserves_omegaTop
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.preserves_propImp
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piOmega_translation_endpoint
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piOmegaProp_translation_endpoint
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id_piOmega_translation_endpoint
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id_piOmegaProp_translation_endpoint
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.colax_piType
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.lax_piType
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.colax_propImp
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.lax_propImp
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.colax_pi_elim
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.colax_pi_intro
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.colax_prop_mp
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.colax_prop_intro
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.PiPropColaxRuleSet
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piProp_colax_rules
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp_piProp_colax_rules
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.comp_piOmegaProp_with_constructor_transport_bundle
 -- Category LambdaTheory instance (Thm 23 upgrade)
-#check @Mettapedia.OSLF.NativeType.lambdaTheoryCategoryStruct
-#check @Mettapedia.OSLF.NativeType.lambdaTheoryCategory
-#check @Mettapedia.OSLF.NativeType.lambdaTheory_id_eq
-#check @Mettapedia.OSLF.NativeType.lambdaTheory_comp_eq
+#check @Mettapedia.OSLF.PresheafNativeType.lambdaTheoryCategoryStruct
+#check @Mettapedia.OSLF.PresheafNativeType.lambdaTheoryCategory
+#check @Mettapedia.OSLF.PresheafNativeType.lambdaTheory_id_eq
+#check @Mettapedia.OSLF.PresheafNativeType.lambdaTheory_comp_eq
 -- Layer 2: LambdaTheory ⥤ Cat functor
-#check @Mettapedia.OSLF.NativeType.natTypePreorder
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.mapPred_mono
-#check @Mettapedia.OSLF.NativeType.TheoryMorphism.mapNatType_monotone
-#check @Mettapedia.OSLF.NativeType.theoryMorphismNatTypeFunctor
-#check @Mettapedia.OSLF.NativeType.nativeTypeFunctor
+#check @Mettapedia.OSLF.PresheafNativeType.nativeTypePreorder
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.mapPred_mono
+#check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.mapNativeType_monotone
+#check @Mettapedia.OSLF.PresheafNativeType.theoryMorphismNativeTypeFunctor
+#check @Mettapedia.OSLF.PresheafNativeType.nativeTypeFunctor
 -- Simulation maps preserve modal semantics
 #check @Mettapedia.OSLF.Framework.SimulationPreservation.ForwardSimulationMap
 #check @Mettapedia.OSLF.Framework.SimulationPreservation.BisimulationMap
@@ -534,44 +534,44 @@ These checks tie tracker statements to concrete constants in the codebase.
 #check @Mettapedia.OSLF.Framework.ModalEquivalence.diamondAction_iff_constructor_graphStepForward
 #check @Mettapedia.OSLF.Framework.ModalEquivalence.boxAction_iff_constructor_graphIncoming
 #check @Mettapedia.GSLT.Core.LambdaTheoryWithFibration.stepForward
-#check @Mettapedia.OSLF.NativeType.NatType
-#check @Mettapedia.OSLF.NativeType.NatTypeFiber
-#check @Mettapedia.OSLF.NativeType.NatTypeTransport
-#check @Mettapedia.OSLF.NativeType.NatTypeHom
-#check @Mettapedia.OSLF.NativeType.equalityNatTypeTransport
-#check @Mettapedia.OSLF.NativeType.equalityNatTypeTransport_crossSort_comp
-#check @Mettapedia.OSLF.NativeType.equalityNatTypeTransport_endpoint
-#check @Mettapedia.OSLF.NativeType.ConstructorNatType
-#check @Mettapedia.OSLF.NativeType.constructorReindex_id
-#check @Mettapedia.OSLF.NativeType.constructorReindex_comp
-#check @Mettapedia.OSLF.NativeType.ConstructorNatTypeHom
-#check @Mettapedia.OSLF.NativeType.constructorNatTypeTransport_crossSort_comp
-#check @Mettapedia.OSLF.NativeType.constructorNatTypeTransport_endpoint
-#check @Mettapedia.OSLF.NativeType.rho_roundtrip_constructorNatTypeHom
-#check @Mettapedia.OSLF.NativeType.constructorPredFiberFunctorDual
-#check @Mettapedia.OSLF.NativeType.ConstructorGrothendieckDual
-#check @Mettapedia.OSLF.NativeType.constructorNatType_toGrothObj
-#check @Mettapedia.OSLF.NativeType.grothObj_to_constructorNatType
-#check @Mettapedia.OSLF.NativeType.constructorNatTypeHom_to_grothHom
-#check @Mettapedia.OSLF.NativeType.grothHom_to_constructorNatTypeHom
-#check @Mettapedia.OSLF.NativeType.constructorNatTypeHom_groth_roundtrip
-#check @Mettapedia.OSLF.NativeType.fullPredFiberFunctorDual
-#check @Mettapedia.OSLF.NativeType.FullPresheafGrothendieckObj
-#check @Mettapedia.OSLF.NativeType.FullPresheafGrothendieckHom
-#check @Mettapedia.OSLF.NativeType.ScopedConstructorPred
-#check @Mettapedia.OSLF.NativeType.ScopedConstructorPred.toFullGrothObj
-#check @Mettapedia.OSLF.NativeType.ScopedConstructorPredHom
-#check @Mettapedia.OSLF.NativeType.ScopedConstructorPredHom.toFullGrothHom
-#check @Mettapedia.OSLF.NativeType.ScopedConstructorPredHom.toFullGrothHom_comp
-#check @Mettapedia.OSLF.NativeType.scoped_full_constructor_comparison_package
-#check @Mettapedia.OSLF.NativeType.scoped_full_constructor_obj_comparison
-#check @Mettapedia.OSLF.NativeType.scoped_fullGroth_base_eq_representable
-#check @Mettapedia.OSLF.NativeType.FullRouteRestrictionEquivalence
-#check @Mettapedia.OSLF.NativeType.full_route_restriction_equivalence_package
-#check @Mettapedia.OSLF.NativeType.full_presheaf_comparison_bundle
-#check @Mettapedia.OSLF.NativeType.ScopedReachable
-#check @Mettapedia.OSLF.NativeType.full_presheaf_comparison_bundle_reachable
-#check @Mettapedia.OSLF.NativeType.full_presheaf_comparison_bundle_reachable_fragment
+#check @Mettapedia.OSLF.PresheafNativeType.NativeType
+#check @Mettapedia.OSLF.PresheafNativeType.NativeTypeFiber
+#check @Mettapedia.OSLF.PresheafNativeType.NativeTypeTransport
+#check @Mettapedia.OSLF.PresheafNativeType.NativeTypeHom
+#check @Mettapedia.OSLF.PresheafNativeType.equalityNativeTypeTransport
+#check @Mettapedia.OSLF.PresheafNativeType.equalityNativeTypeTransport_crossSort_comp
+#check @Mettapedia.OSLF.PresheafNativeType.equalityNativeTypeTransport_endpoint
+#check @Mettapedia.OSLF.PresheafNativeType.ConstructorNativeType
+#check @Mettapedia.OSLF.PresheafNativeType.constructorReindex_id
+#check @Mettapedia.OSLF.PresheafNativeType.constructorReindex_comp
+#check @Mettapedia.OSLF.PresheafNativeType.ConstructorNativeTypeHom
+#check @Mettapedia.OSLF.PresheafNativeType.constructorNativeTypeTransport_crossSort_comp
+#check @Mettapedia.OSLF.PresheafNativeType.constructorNativeTypeTransport_endpoint
+#check @Mettapedia.OSLF.PresheafNativeType.rho_roundtrip_constructorNativeTypeHom
+#check @Mettapedia.OSLF.PresheafNativeType.constructorPredFiberFunctorDual
+#check @Mettapedia.OSLF.PresheafNativeType.ConstructorGrothendieckDual
+#check @Mettapedia.OSLF.PresheafNativeType.constructorNativeType_toGrothObj
+#check @Mettapedia.OSLF.PresheafNativeType.grothObj_to_constructorNativeType
+#check @Mettapedia.OSLF.PresheafNativeType.constructorNativeTypeHom_to_grothHom
+#check @Mettapedia.OSLF.PresheafNativeType.grothHom_to_constructorNativeTypeHom
+#check @Mettapedia.OSLF.PresheafNativeType.constructorNativeTypeHom_groth_roundtrip
+#check @Mettapedia.OSLF.PresheafNativeType.fullPredFiberFunctorDual
+#check @Mettapedia.OSLF.PresheafNativeType.FullPresheafGrothendieckObj
+#check @Mettapedia.OSLF.PresheafNativeType.FullPresheafGrothendieckHom
+#check @Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred
+#check @Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred.toFullGrothObj
+#check @Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom
+#check @Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom.toFullGrothHom
+#check @Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom.toFullGrothHom_comp
+#check @Mettapedia.OSLF.PresheafNativeType.scoped_full_constructor_comparison_package
+#check @Mettapedia.OSLF.PresheafNativeType.scoped_full_constructor_obj_comparison
+#check @Mettapedia.OSLF.PresheafNativeType.scoped_fullGroth_base_eq_representable
+#check @Mettapedia.OSLF.PresheafNativeType.FullRouteRestrictionEquivalence
+#check @Mettapedia.OSLF.PresheafNativeType.full_route_restriction_equivalence_package
+#check @Mettapedia.OSLF.PresheafNativeType.full_presheaf_comparison_bundle
+#check @Mettapedia.OSLF.PresheafNativeType.ScopedReachable
+#check @Mettapedia.OSLF.PresheafNativeType.full_presheaf_comparison_bundle_reachable
+#check @Mettapedia.OSLF.PresheafNativeType.full_presheaf_comparison_bundle_reachable_fragment
 #check @Mettapedia.OSLF.Framework.Theorem1SubstitutabilityEquiv
 #check @Mettapedia.OSLF.Framework.theorem1_substitutability_forward
 #check @Mettapedia.OSLF.Framework.theorem1_substitutability_imageFinite

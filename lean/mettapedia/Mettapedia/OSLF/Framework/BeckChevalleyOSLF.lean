@@ -4,7 +4,7 @@ import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ToposReduction
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.GSLT.Topos.PredicateFibration
-import Mettapedia.OSLF.NativeType.CodomainFibration
+import Mettapedia.OSLF.PresheafNativeType.InternalLanguage
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
 
@@ -212,7 +212,7 @@ theorem representable_patternPred_sigma_transport_via_prop12_pack
         from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
           lang s seed φ hNat)
       ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) ψ) := by
-  let Δ : Mettapedia.OSLF.NativeType.PresheafDepCtx (C := ConstructorObj lang) :=
+  let Δ : Mettapedia.OSLF.PresheafNativeType.PresheafDepCtx (C := ConstructorObj lang) :=
     { A := Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s
       B := D
       f := f }
@@ -229,9 +229,9 @@ theorem representable_patternPred_sigma_transport_via_prop12_pack
           from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
             lang s seed φ hNat)
         ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) ψ) := by
-    simpa [Δ, Mettapedia.OSLF.NativeType.PresheafDepCtx.pb,
-      Mettapedia.OSLF.NativeType.PresheafDepCtx.sigmaForm] using!
-      (Mettapedia.OSLF.NativeType.prop12_sigmaEta_presheaf
+    simpa [Δ, Mettapedia.OSLF.PresheafNativeType.PresheafDepCtx.pb,
+      Mettapedia.OSLF.PresheafNativeType.PresheafDepCtx.sigmaForm] using!
+      (Mettapedia.OSLF.PresheafNativeType.prop12_sigmaEta_presheaf
         (C := ConstructorObj lang) (Δ := Δ)
         (φ := (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
           lang s seed φ hNat :
@@ -266,7 +266,7 @@ theorem representable_patternPred_pi_transport_via_prop12_pack
       (Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f
         (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
           lang s seed φ hNat)) := by
-  let Δ : Mettapedia.OSLF.NativeType.PresheafDepCtx (C := ConstructorObj lang) :=
+  let Δ : Mettapedia.OSLF.PresheafNativeType.PresheafDepCtx (C := ConstructorObj lang) :=
     { A := Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s
       B := D
       f := f }
@@ -279,9 +279,9 @@ theorem representable_patternPred_pi_transport_via_prop12_pack
         (Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f
           (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
             lang s seed φ hNat)) := by
-    simpa [Δ, Mettapedia.OSLF.NativeType.PresheafDepCtx.pb,
-      Mettapedia.OSLF.NativeType.PresheafDepCtx.piForm] using!
-      (Mettapedia.OSLF.NativeType.prop12_piEta_presheaf
+    simpa [Δ, Mettapedia.OSLF.PresheafNativeType.PresheafDepCtx.pb,
+      Mettapedia.OSLF.PresheafNativeType.PresheafDepCtx.piForm] using!
+      (Mettapedia.OSLF.PresheafNativeType.prop12_piEta_presheaf
         (C := ConstructorObj lang) (Δ := Δ)
         (ψ := χ)
         (φ := Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
@@ -327,7 +327,7 @@ theorem representable_patternPred_piSigma_transport_via_rulePack
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         lang s seed φ)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
+      Mettapedia.OSLF.PresheafNativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj lang))
     {D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) Type}
     (f :
@@ -356,7 +356,7 @@ theorem representable_patternPred_piSigma_transport_via_rulePack
         ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f)
           (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
             lang s seed φ hNat))) := by
-  let Δ : Mettapedia.OSLF.NativeType.PresheafDepCtx (C := ConstructorObj lang) :=
+  let Δ : Mettapedia.OSLF.PresheafNativeType.PresheafDepCtx (C := ConstructorObj lang) :=
     { A := Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s
       B := D
       f := f }
@@ -373,8 +373,8 @@ theorem representable_patternPred_piSigma_transport_via_rulePack
           from Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
             lang s seed φ hNat)
         ≤ ((Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).pullback f) ψ) := by
-    simpa [Δ, Mettapedia.OSLF.NativeType.PresheafDepCtx.pb,
-      Mettapedia.OSLF.NativeType.PresheafDepCtx.sigmaForm] using!
+    simpa [Δ, Mettapedia.OSLF.PresheafNativeType.PresheafDepCtx.pb,
+      Mettapedia.OSLF.PresheafNativeType.PresheafDepCtx.sigmaForm] using!
       (hPiSigmaPack.sigmaEta Δ
         (φ := (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
           lang s seed φ hNat :
@@ -390,8 +390,8 @@ theorem representable_patternPred_piSigma_transport_via_rulePack
         (Mettapedia.GSLT.Topos.presheafChangeOfBase (C := ConstructorObj lang)).universalImage f
           (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
             lang s seed φ hNat)) := by
-    simpa [Δ, Mettapedia.OSLF.NativeType.PresheafDepCtx.pb,
-      Mettapedia.OSLF.NativeType.PresheafDepCtx.piForm] using!
+    simpa [Δ, Mettapedia.OSLF.PresheafNativeType.PresheafDepCtx.pb,
+      Mettapedia.OSLF.PresheafNativeType.PresheafDepCtx.piForm] using!
       (hPiSigmaPack.piEta Δ
         (ψ := χ)
         (φ := (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
@@ -438,7 +438,7 @@ theorem representable_patternPred_piSigma_transport_via_prop12_pack
             lang s seed φ hNat))) := by
   exact representable_patternPred_piSigma_transport_via_rulePack
     (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
-    (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
+    (hPiSigmaPack := Mettapedia.OSLF.PresheafNativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
       (C := ConstructorObj lang))
     (f := f) (χ := χ) (ψ := ψ)
 
@@ -532,7 +532,7 @@ theorem representable_patternPred_piSigma_transport_pack_via_rulePack
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         lang s seed φ)
     (hPiSigmaPack :
-      Mettapedia.OSLF.NativeType.PiSigmaPredicateRulePack.{0, 0, 0}
+      Mettapedia.OSLF.PresheafNativeType.PiSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj lang))
     {D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) Type}
     (f :
@@ -579,7 +579,7 @@ theorem representable_patternPred_piSigma_transport_pack_via_prop12
       (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat) (f := f) := by
   exact representable_patternPred_piSigma_transport_pack_via_rulePack
     (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
-    (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
+    (hPiSigmaPack := Mettapedia.OSLF.PresheafNativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
       (C := ConstructorObj lang))
     (f := f)
 
@@ -599,7 +599,7 @@ theorem transport_pack_via_prop12_eq_via_rulePack
       lang s seed φ hNat f =
     representable_patternPred_piSigma_transport_pack_via_rulePack
       lang s seed φ hNat
-      (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
+      (hPiSigmaPack := Mettapedia.OSLF.PresheafNativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj lang))
       f := rfl
 
@@ -620,7 +620,7 @@ theorem transport_via_prop12_pack_eq_via_rulePack
       lang s seed φ hNat f χ ψ =
     representable_patternPred_piSigma_transport_via_rulePack
       lang s seed φ hNat
-      (hPiSigmaPack := Mettapedia.OSLF.NativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
+      (hPiSigmaPack := Mettapedia.OSLF.PresheafNativeType.prop12_piSigmaPredicateRulePack.{0, 0, 0}
         (C := ConstructorObj lang))
       f χ ψ := rfl
 

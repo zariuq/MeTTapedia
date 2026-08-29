@@ -25,18 +25,18 @@ def hol4EvidenceProfile : EvidenceProfile :=
     derivedHead := "$hol.thm"
     relationHeadPrefix := "$hol.rel." }
 
-def holLightInferencePresentation? : Option Presentation :=
-  rawPresentation? holLightEvidenceProfile holLightEqKernel holLightLogic.1
+def holLightInferenceDefinition? : Option CalculusLanguageDef :=
+  rawDefinition? holLightEvidenceProfile holLightEqKernel holLightLogic.1
 
-def hol4InferencePresentation? : Option Presentation :=
-  rawPresentation? hol4EvidenceProfile hol4LcfKernel hol4Logic.1
+def hol4InferenceDefinition? : Option CalculusLanguageDef :=
+  rawDefinition? hol4EvidenceProfile hol4LcfKernel hol4Logic.1
 
-def holLightValidatedPresentation? : Option ValidatedPresentation :=
-  validatedPresentation? holLightEvidenceProfile holLightEqKernel
+def holLightValidatedDefinition? : Option ValidatedCalculusLanguageDef :=
+  validatedDefinition? holLightEvidenceProfile holLightEqKernel
     holLightLogic.1
 
-def hol4ValidatedPresentation? : Option ValidatedPresentation :=
-  validatedPresentation? hol4EvidenceProfile hol4LcfKernel hol4Logic.1
+def hol4ValidatedDefinition? : Option ValidatedCalculusLanguageDef :=
+  validatedDefinition? hol4EvidenceProfile hol4LcfKernel hol4Logic.1
 
 def extractedEvidenceArity? (profile : EvidenceProfile)
     (language : LanguageDef) : Option (List Nat) := do
@@ -57,8 +57,8 @@ def extractedRulesInBindingFragment? (profile : EvidenceProfile)
     (RuleSchema.patterns extraction.schema).all
       (checkBindingSchemaFragment extraction.schema.metavariables)
 
-#guard holLightValidatedPresentation?.isSome
-#guard hol4ValidatedPresentation?.isSome
+#guard holLightValidatedDefinition?.isSome
+#guard hol4ValidatedDefinition?.isSome
 
 #guard extractedEvidenceArity? holLightEvidenceProfile holLightEqKernel ==
   some [0, 2, 2, 1, 0, 0, 2, 2, 1, 1, 2, 2, 2, 1, 0]
@@ -77,8 +77,8 @@ def extractedRulesInBindingFragment? (profile : EvidenceProfile)
 #guard (relationFactRules hol4EvidenceProfile hol4LcfKernel
   hol4Logic.1).length == 3
 
-#guard holLightInferencePresentation?.map (·.rules.length) == some 18
-#guard hol4InferencePresentation?.map (·.rules.length) == some 11
+#guard holLightInferenceDefinition?.map (·.rules.length) == some 18
+#guard hol4InferenceDefinition?.map (·.rules.length) == some 11
 
 #guard extractedRulesInBindingFragment? holLightEvidenceProfile holLightEqKernel ==
   some true
@@ -107,63 +107,63 @@ private def node (id : String) (arguments : List Pattern := [])
     (children : List RawProof := []) : RawProof :=
   .node (ruleInstance id arguments) children
 
-private def factProof? (presentation : Presentation) (goal : Pattern) : Option RawProof := do
-  let rule ← presentation.rules.find? fun candidate =>
+private def factProof? (definition : CalculusLanguageDef) (goal : Pattern) : Option RawProof := do
+  let rule ← definition.rules.find? fun candidate =>
     candidate.metavariables.isEmpty && candidate.premises.isEmpty &&
       decide (candidate.conclusion = goal)
   pure <| node rule.id.value
 
 private def relationFactProof? (profile : EvidenceProfile)
-    (presentation : Presentation) (relation : String) (arguments : List Pattern) :
+    (definition : CalculusLanguageDef) (relation : String) (arguments : List Pattern) :
     Option RawProof :=
-  factProof? presentation (profile.relationJudgment relation arguments)
+  factProof? definition (profile.relationJudgment relation arguments)
 
 def hol4ImpIdGoal : Pattern :=
   hol4EvidenceProfile.derived
     (seq (removeHyp A (hyp A)) (impTerm A A))
 
 def hol4ImpIdProof? : Option RawProof := do
-  let presentation ← hol4InferencePresentation?
-  let boolA ← relationFactProof? hol4EvidenceProfile presentation "isBool" [A]
+  let definition ← hol4InferenceDefinition?
+  let boolA ← relationFactProof? hol4EvidenceProfile definition "isBool" [A]
   let assumeA := node "H4_ASSUME" [A] [boolA]
   pure <| node "H4_DISCH" [A, hyp A, A] [assumeA, boolA]
 
 def hol4ImpIdMissingChildProof? : Option RawProof := do
-  let presentation ← hol4InferencePresentation?
-  let boolA ← relationFactProof? hol4EvidenceProfile presentation "isBool" [A]
+  let definition ← hol4InferenceDefinition?
+  let boolA ← relationFactProof? hol4EvidenceProfile definition "isBool" [A]
   let assumeA := node "H4_ASSUME" [A] [boolA]
   pure <| node "H4_DISCH" [A, hyp A, A] [assumeA]
 
 def hol4ImpIdReorderedProof? : Option RawProof := do
-  let presentation ← hol4InferencePresentation?
-  let boolA ← relationFactProof? hol4EvidenceProfile presentation "isBool" [A]
+  let definition ← hol4InferenceDefinition?
+  let boolA ← relationFactProof? hol4EvidenceProfile definition "isBool" [A]
   let assumeA := node "H4_ASSUME" [A] [boolA]
   pure <| node "H4_DISCH" [A, hyp A, A] [boolA, assumeA]
 
 def hol4ImpIdExtraChildProof? : Option RawProof := do
-  let presentation ← hol4InferencePresentation?
-  let boolA ← relationFactProof? hol4EvidenceProfile presentation "isBool" [A]
+  let definition ← hol4InferenceDefinition?
+  let boolA ← relationFactProof? hol4EvidenceProfile definition "isBool" [A]
   let assumeA := node "H4_ASSUME" [A] [boolA]
   pure <| node "H4_DISCH" [A, hyp A, A] [assumeA, boolA, boolA]
 
 def hol4ImpIdWrongRuleProof? : Option RawProof := do
-  let presentation ← hol4InferencePresentation?
-  let boolA ← relationFactProof? hol4EvidenceProfile presentation "isBool" [A]
+  let definition ← hol4InferenceDefinition?
+  let boolA ← relationFactProof? hol4EvidenceProfile definition "isBool" [A]
   pure <| node "H4_ASSUME" [A] [boolA]
 
 def hol4ImpIdChecks : Option (Bool × Bool × Bool × Bool × Bool) := do
-  let presentation ← hol4ValidatedPresentation?
+  let definition ← hol4ValidatedDefinition?
   let positive ← hol4ImpIdProof?
   let missing ← hol4ImpIdMissingChildProof?
   let reordered ← hol4ImpIdReorderedProof?
   let extra ← hol4ImpIdExtraChildProof?
   let wrongRule ← hol4ImpIdWrongRuleProof?
   pure
-    (checkRaw presentation hol4ImpIdGoal positive,
-      checkRaw presentation hol4ImpIdGoal missing,
-      checkRaw presentation hol4ImpIdGoal reordered,
-      checkRaw presentation hol4ImpIdGoal extra,
-      checkRaw presentation hol4ImpIdGoal wrongRule)
+    (checkRaw definition hol4ImpIdGoal positive,
+      checkRaw definition hol4ImpIdGoal missing,
+      checkRaw definition hol4ImpIdGoal reordered,
+      checkRaw definition hol4ImpIdGoal extra,
+      checkRaw definition hol4ImpIdGoal wrongRule)
 
 #guard hol4ImpIdChecks == some (true, false, false, false, false)
 
@@ -171,10 +171,10 @@ def holLightSelfImpGoal : Pattern :=
   holLightEvidenceProfile.derived (seq emptyHyps (impTerm A A))
 
 def holLightSelfImpProof? : Option RawProof := do
-  let presentation ← holLightInferencePresentation?
-  let boolA ← relationFactProof? holLightEvidenceProfile presentation "isBool" [A]
+  let definition ← holLightInferenceDefinition?
+  let boolA ← relationFactProof? holLightEvidenceProfile definition "isBool" [A]
   let boolAnd ←
-    relationFactProof? holLightEvidenceProfile presentation "isBool" [AndAA]
+    relationFactProof? holLightEvidenceProfile definition "isBool" [AndAA]
   let assumeA := node "HL_ASSUME" [A] [boolA]
   let assumeAnd := node "HL_ASSUME" [AndAA] [boolAnd]
   let conj := node "HL_CONJ_AA_REPLAY" [] [assumeA, assumeA, boolA]
@@ -184,10 +184,10 @@ def holLightSelfImpProof? : Option RawProof := do
   pure <| node "HL_EQ_MP_EMPTY" [eqTerm AndAA A, impTerm A A] [impDef, deduct]
 
 def holLightSelfImpReorderedProof? : Option RawProof := do
-  let presentation ← holLightInferencePresentation?
-  let boolA ← relationFactProof? holLightEvidenceProfile presentation "isBool" [A]
+  let definition ← holLightInferenceDefinition?
+  let boolA ← relationFactProof? holLightEvidenceProfile definition "isBool" [A]
   let boolAnd ←
-    relationFactProof? holLightEvidenceProfile presentation "isBool" [AndAA]
+    relationFactProof? holLightEvidenceProfile definition "isBool" [AndAA]
   let assumeA := node "HL_ASSUME" [A] [boolA]
   let assumeAnd := node "HL_ASSUME" [AndAA] [boolAnd]
   let conj := node "HL_CONJ_AA_REPLAY" [] [assumeA, assumeA, boolA]
@@ -197,10 +197,10 @@ def holLightSelfImpReorderedProof? : Option RawProof := do
   pure <| node "HL_EQ_MP_EMPTY" [eqTerm AndAA A, impTerm A A] [deduct, impDef]
 
 def holLightSelfImpMissingChildProof? : Option RawProof := do
-  let presentation ← holLightInferencePresentation?
-  let boolA ← relationFactProof? holLightEvidenceProfile presentation "isBool" [A]
+  let definition ← holLightInferenceDefinition?
+  let boolA ← relationFactProof? holLightEvidenceProfile definition "isBool" [A]
   let boolAnd ←
-    relationFactProof? holLightEvidenceProfile presentation "isBool" [AndAA]
+    relationFactProof? holLightEvidenceProfile definition "isBool" [AndAA]
   let assumeA := node "HL_ASSUME" [A] [boolA]
   let assumeAnd := node "HL_ASSUME" [AndAA] [boolAnd]
   let conj := node "HL_CONJ_AA_REPLAY" [] [assumeA, assumeA, boolA]
@@ -209,10 +209,10 @@ def holLightSelfImpMissingChildProof? : Option RawProof := do
   pure <| node "HL_EQ_MP_EMPTY" [eqTerm AndAA A, impTerm A A] [deduct]
 
 def holLightSelfImpExtraChildProof? : Option RawProof := do
-  let presentation ← holLightInferencePresentation?
-  let boolA ← relationFactProof? holLightEvidenceProfile presentation "isBool" [A]
+  let definition ← holLightInferenceDefinition?
+  let boolA ← relationFactProof? holLightEvidenceProfile definition "isBool" [A]
   let boolAnd ←
-    relationFactProof? holLightEvidenceProfile presentation "isBool" [AndAA]
+    relationFactProof? holLightEvidenceProfile definition "isBool" [AndAA]
   let assumeA := node "HL_ASSUME" [A] [boolA]
   let assumeAnd := node "HL_ASSUME" [AndAA] [boolAnd]
   let conj := node "HL_CONJ_AA_REPLAY" [] [assumeA, assumeA, boolA]
@@ -223,23 +223,23 @@ def holLightSelfImpExtraChildProof? : Option RawProof := do
     node "HL_EQ_MP_EMPTY" [eqTerm AndAA A, impTerm A A] [impDef, deduct, impDef]
 
 def holLightSelfImpWrongRuleProof? : Option RawProof := do
-  let presentation ← holLightInferencePresentation?
-  let boolA ← relationFactProof? holLightEvidenceProfile presentation "isBool" [A]
+  let definition ← holLightInferenceDefinition?
+  let boolA ← relationFactProof? holLightEvidenceProfile definition "isBool" [A]
   pure <| node "HL_ASSUME" [A] [boolA]
 
 def holLightSelfImpChecks : Option (Bool × Bool × Bool × Bool × Bool) := do
-  let presentation ← holLightValidatedPresentation?
+  let definition ← holLightValidatedDefinition?
   let positive ← holLightSelfImpProof?
   let reordered ← holLightSelfImpReorderedProof?
   let missing ← holLightSelfImpMissingChildProof?
   let extra ← holLightSelfImpExtraChildProof?
   let wrongRule ← holLightSelfImpWrongRuleProof?
   pure
-    (checkRaw presentation holLightSelfImpGoal positive,
-      checkRaw presentation holLightSelfImpGoal reordered,
-      checkRaw presentation holLightSelfImpGoal missing,
-      checkRaw presentation holLightSelfImpGoal extra,
-      checkRaw presentation holLightSelfImpGoal wrongRule)
+    (checkRaw definition holLightSelfImpGoal positive,
+      checkRaw definition holLightSelfImpGoal reordered,
+      checkRaw definition holLightSelfImpGoal missing,
+      checkRaw definition holLightSelfImpGoal extra,
+      checkRaw definition holLightSelfImpGoal wrongRule)
 
 #guard holLightSelfImpChecks == some (true, false, false, false, false)
 

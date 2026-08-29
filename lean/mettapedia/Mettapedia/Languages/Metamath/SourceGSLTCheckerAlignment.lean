@@ -2,6 +2,8 @@ import Mettapedia.Languages.Metamath.InferenceOneShotByteLog
 import Mettapedia.Languages.Metamath.SourceGSLT
 import Mettapedia.Languages.Metamath.VerifiedCheckerSemantics
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Metamath source-GSLT to verified-checker alignment
 
@@ -137,14 +139,14 @@ structure CheckedParserOutput (bytes : ByteArray) where
   source : ClassifiedSource
   sourceValid : source.isValid = true
   lexicalValid : lexicallyValidSource source = true
-  presentation : ValidatedPresentation
+  definition : ValidatedCalculusLanguageDef
   admitted :
-    admitLexicalDAGPresentation sourceGrammar lexicalDeclarations source =
-      some presentation
+    admitLexicalDAGDefinition sourceGrammar lexicalDeclarations source =
+      some definition
   rootId : Nat
   blocks : List (List DAGNode)
   grammarChecked :
-    checkDAGBlocks presentation
+    checkDAGBlocks definition
       (dagRootJudgment source.ledger outerDatabaseSort) rootId blocks = true
   orderedTokensChecked : orderedTokenAgreement bytes source = true
   readerAccepted : (Metamath.Verify.checkBytes bytes).error? = none
@@ -156,17 +158,17 @@ ordered ledger, together with its exact generic-proof erasure. -/
 theorem syntaxExact {bytes : ByteArray}
     (output : CheckedParserOutput bytes) :
     ∃ (proof : RawProof)
-        (derivation : Derivation output.presentation
+        (derivation : Derivation output.definition
           (dagRootJudgment output.source.ledger outerDatabaseSort))
         (tree : Pattern),
-      expandDAGBlocks? output.presentation
+      expandDAGBlocks? output.definition
           (dagRootJudgment output.source.ledger outerDatabaseSort)
           output.rootId output.blocks = some proof ∧
         derivation.erase = proof ∧
         Derives
           (lexicalizedLanguage sourceGrammar lexicalDeclarations output.source)
           outerDatabaseSort output.source.ledger.tokens tree :=
-  checkedMetamathSourceBlocks_exact output.source output.presentation
+  checkedMetamathSourceBlocks_exact output.source output.definition
     output.admitted output.rootId output.blocks output.grammarChecked
 
 /-- The parser ledger and verified reader consumed the same significant
@@ -236,10 +238,10 @@ def EndToEndCertificate
     {bytes : ByteArray} (output : CheckedParserOutput bytes)
     (label : String) (formula : Metamath.Verify.Formula) : Prop :=
   ∃ (rawProof : RawProof)
-      (derivation : Derivation output.presentation
+      (derivation : Derivation output.definition
         (dagRootJudgment output.source.ledger outerDatabaseSort))
       (tree : Pattern),
-    expandDAGBlocks? output.presentation
+    expandDAGBlocks? output.definition
         (dagRootJudgment output.source.ledger outerDatabaseSort)
         output.rootId output.blocks = some rawProof ∧
       derivation.erase = rawProof ∧

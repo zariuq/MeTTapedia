@@ -1,10 +1,10 @@
 import Mettapedia.Languages.MeTTa.PeTTa.TypedEval
 import Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
-import Mettapedia.Languages.MeTTa.PureKernel.NatDecl
-import Mettapedia.Languages.MeTTa.PureKernel.RecursorDecl
-import Mettapedia.Languages.MeTTa.PureKernel.InductiveDecl
-import Mettapedia.Languages.MeTTa.PureKernel.Substitution
-import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.NatDecl
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.RecursorDecl
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.InductiveDecl
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.Substitution
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.CoreEmbedding
 
 /-!
 # DTT Seed Proof Path
@@ -14,7 +14,7 @@ A tiny, executable proof path for the he-prime DTT tranche:
 1. A typed PeTTa rule application is accepted by the typed evaluation judgment.
 2. Erasing the type guard gives an ordinary PeTTa evaluation.
 3. The same rule application is sound in the compiled LP model.
-4. The PureKernel side has the matching checked-step shape: a typed closed term
+4. The IntrinsicPure side has the matching checked-step shape: a typed closed term
    reduces while preserving its type.
 
 This file is intentionally small. It records the first reusable proof shape for
@@ -29,20 +29,20 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.Logic.LP
 open Mettapedia.OSLF.MeTTaIL.LPBridge
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.Context
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationEnv
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationSpec
-open Mettapedia.Languages.MeTTa.PureKernel.UnitDecl
-open Mettapedia.Languages.MeTTa.PureKernel.NatDecl
-open Mettapedia.Languages.MeTTa.PureKernel.RecursorDecl
-open Mettapedia.Languages.MeTTa.PureKernel.IndDecl
-open Mettapedia.Languages.MeTTa.PureKernel.Substitution
-open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
-open Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
-open Mettapedia.Languages.MeTTa.PureKernel.Assembly
-open Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Context
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationEnv
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSpec
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.UnitDecl
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.NatDecl
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.RecursorDecl
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.IndDecl
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Substitution
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.ProfileTheory
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Assembly
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.CoreEmbedding
 
 /-! ## PeTTa-side typed program -/
 
@@ -109,7 +109,7 @@ theorem typedSucc_first_proof_path :
       leastHerbrandModel (pettaSpaceToLPKB typedSuccSpace) :=
   ⟨typedSucc_eval, typedSucc_erases_to_petta, typedSucc_rule_lp_sound⟩
 
-/-! ## PureKernel-side checked-step shape -/
+/-! ## IntrinsicPure-side checked-step shape -/
 
 theorem pureNatAlias_preserves_type_step :
     ∃ A : PureTm 0,
@@ -260,7 +260,7 @@ structure HePrimeOracleReduction where
 
 /-- First runtime/oracle bridge: the he-prime syntax call
 `(TutUnitRecSyntax TutUnit TutUnitCtor TutUnitCtor)` is the same closed
-Unit-rec computation witnessed by the PureKernel oracle. -/
+Unit-rec computation witnessed by the IntrinsicPure oracle. -/
 def hePrime_tutUnitRecSyntax_oracle_certificate : HePrimeOracleReduction :=
   { syntaxSource := tutUnitRecSyntaxOnCtorPattern
     syntaxTarget := tutUnitCtorPattern
@@ -440,7 +440,7 @@ theorem simplest_general_inductive_checker_path :
       checkIndDecl badNegDecl = none :=
   ⟨unitDecl_specs_agree, natDecl_specs_agree, check_badNegDecl⟩
 
-/-! ## Capability-safety PureKernel seed -/
+/-! ## Capability-safety IntrinsicPure seed -/
 
 def capPrincipalName : DeclName := `DTTSeed.Principal
 def capSecretName : DeclName := `DTTSeed.Secret

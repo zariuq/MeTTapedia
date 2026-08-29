@@ -29,9 +29,9 @@ open Mettapedia.TypeTheory.FreeWhiskeredCell.CoherenceObservation
 open Mettapedia.TypeTheory.JudgmentalEquality
 open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptComputad
 open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptCoherenceCandidates
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.ProofRelevantStructuralComputation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.ProofRelevantStructuralComputation
 
 universe uEvidence uSourceGenerator uTargetGenerator
 

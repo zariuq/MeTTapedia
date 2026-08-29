@@ -3,6 +3,8 @@ import Mettapedia.Languages.Metamath.InferenceHypothesisStepAgreement
 import Mettapedia.Languages.Metamath.InferenceAssertionStackInvariant
 import Mettapedia.Languages.Metamath.InferenceAssertionStepAgreement
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Exact execution of source-pinned generated Metamath derivations
 
@@ -90,8 +92,8 @@ live source frame has mandatory hypotheses.  This is derived jointly from
 generated-node semantics and projection fidelity. -/
 theorem generatedAssertionNode_actuals_length_eq_frameHyps
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)
@@ -125,8 +127,8 @@ generated result.  Complete proof-state equality and the frame invariant are
 both conclusions. -/
 theorem generatedAssertionNode_execute_after_children
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (assertion : AssertionView)
     (actuals : List ConstantHeadedFormula)
@@ -212,11 +214,11 @@ mutual
 preserves all non-stack proof-state fields, and pushes exactly its indexed
 formula. -/
 theorem GeneratedProvesTree.execute
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     (db : RuntimeDB)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (pr : RuntimeProofState)
     (hstack :
@@ -247,11 +249,11 @@ theorem GeneratedProvesTree.execute
 runtime formula array to the original stack and preserves the complete
 surrounding proof state and caller-frame invariant. -/
 theorem GeneratedProvesForest.execute
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formulas : List ConstantHeadedFormula}
     (forest : GeneratedProvesForest projection target formulas)
     (db : RuntimeDB)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (pr : RuntimeProofState)
     (hstack :
@@ -290,11 +292,11 @@ end
 /-- Exact execution rules out every unequal complete proof state; the theorem
 does not merely constrain the final stack. -/
 theorem GeneratedProvesTree.execute_ne_wrong_state
-    {projection : PrefixProjection} {target : ValidatedPresentation}
+    {projection : PrefixProjection} {target : ValidatedCalculusLanguageDef}
     {formula : ConstantHeadedFormula}
     (tree : GeneratedProvesTree projection target formula)
     (db : RuntimeDB)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (hproject : projectPrefix? db = some projection)
     (pr wrong : RuntimeProofState)
     (hstack :

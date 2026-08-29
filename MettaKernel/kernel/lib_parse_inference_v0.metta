@@ -5,7 +5,7 @@
 ;
 ; Classification: generic substrate.  Native SLR/GLR/GLL code is an
 ; untrusted proof producer.  This module derives a finite inference
-; presentation from grammar data and a token ledger, lowers shared parser
+; language from grammar data and a token ledger, lowers shared parser
 ; trees to ordinary GProof values, and delegates acceptance to the generic
 ; inference checker.
 ;
@@ -219,21 +219,23 @@
 ; ---------- Ground source-ledger rules -------------------------------------
 (= (lib_parse:boundary-rule $source $index)
    (let $payload (lib_parse:indexed-payload $source $index)
-     (GRule (lib_parse:rule-id "boundary" $payload)
+     (GRuleV1 (lib_parse:rule-id "boundary" $payload)
        LNil LNil
        (lib_parse:boundary-judgment
          (lib_parse:source-pattern $source)
-         (lib_parse:boundary-pattern $index)))))
+         (lib_parse:boundary-pattern $index))
+       LNil)))
 
 (= (lib_parse:token-rule $source $index $token)
    (let $payload (lib_parse:indexed-payload $source $index)
-     (GRule (lib_parse:rule-id "token" $payload)
+     (GRuleV1 (lib_parse:rule-id "token" $payload)
        LNil LNil
        (lib_parse:token-span-judgment
          (lib_parse:source-pattern $source)
          (lib_parse:boundary-pattern $index)
          (lib_parse:boundary-pattern (+ $index 1))
-         (lib_parse:token-pattern $token)))))
+         (lib_parse:token-pattern $token))
+       LNil)))
 
 (= (lib_parse:leaf-tree $token)
    (PApp "__lib_parse.leaf"
@@ -241,24 +243,26 @@
 
 (= (lib_parse:leaf-rule $source $index $token $sort)
    (let $payload (lib_parse:indexed-payload $source $index)
-     (GRule (lib_parse:rule-id "leaf" $payload)
+     (GRuleV1 (lib_parse:rule-id "leaf" $payload)
        LNil LNil
        (lib_parse:derives-judgment
          (lib_parse:source-pattern $source)
          (lib_parse:sort-pattern $sort)
          (lib_parse:boundary-pattern $index)
          (lib_parse:boundary-pattern (+ $index 1))
-         (lib_parse:leaf-tree $token)))))
+         (lib_parse:leaf-tree $token))
+       LNil)))
 
 (= (lib_parse:leaf-node-rule $source $index $token $sort)
    (let $payload (lib_parse:indexed-payload $source $index)
-     (GRule (lib_parse:rule-id "leaf" $payload)
+     (GRuleV1 (lib_parse:rule-id "leaf" $payload)
        LNil LNil
        (lib_parse:derives-node-judgment
          (lib_parse:source-pattern $source)
          (lib_parse:sort-pattern $sort)
          (lib_parse:boundary-pattern $index)
-         (lib_parse:boundary-pattern (+ $index 1))))))
+         (lib_parse:boundary-pattern (+ $index 1)))
+       LNil)))
 
 (= (lib_parse:boundary-rules-onto $tokens $source $index $tail)
    (case $tokens
@@ -409,7 +413,7 @@
                        LNil))
                     ($nonempty
                      (lib_parse:template-premises $template 0 0))))
-                 (GRule (lib_parse:rule-id "production" $label-text)
+                 (GRuleV1 (lib_parse:rule-id "production" $label-text)
                    $formals
                    $premises
                    (lib_parse:derives-judgment
@@ -418,7 +422,8 @@
                      (lib_parse:boundary-variable 0)
                      (lib_parse:boundary-variable $template-size)
                      (PApp $label-text
-                       (lib_parse:template-children $template 0))))))))))))
+                       (lib_parse:template-children $template 0)))
+                   LNil)))))))))
 
 (= (lib_parse:production-rules $grammar)
    (case $grammar
@@ -483,14 +488,15 @@
                    LNil))
                 ($nonempty
                  (lib_parse:template-node-premises $template 0))))
-             (GRule (lib_parse:rule-id "production" $label-text)
+             (GRuleV1 (lib_parse:rule-id "production" $label-text)
                $formals
                $premises
                (lib_parse:derives-node-judgment
                  (FVar "source")
                  (lib_parse:sort-pattern $sort)
                  (lib_parse:boundary-variable 0)
-                 (lib_parse:boundary-variable $template-size)))))))))
+                 (lib_parse:boundary-variable $template-size))
+               LNil)))))))
 
 (= (lib_parse:production-node-rules $grammar)
    (case $grammar
@@ -504,7 +510,7 @@
        (lib_parse:production-node-rules $rest))
       ($other (LPInferenceError unsupported-grammar-entry)))))
 
-; ---------- Presentation generation and admission --------------------------
+; ---------- Language generation and admission --------------------------
 (= (lib_parse:source-valid $source $tokens)
    (case $tokens
      ((Nil (if (== $source "") False True))
@@ -514,119 +520,133 @@
            (lib_parse:source-valid $source $rest))))
       ($other False))))
 
-(= (lib_parse:raw-presentation $grammar $source $tokens)
-   (GPresentation
+(= (lib_parse:raw-language $grammar $source $tokens)
+   (GInferenceLanguageV1 1
      (lib_parse:constructors $grammar $source $tokens)
      (lib_parse:judgments)
      (lib_parse:boundary-rules-onto $tokens $source 0
        (lib_parse:token-rules-onto $tokens $source 0
          (lib_parse:leaf-rules-onto $grammar $tokens $source 0
-           (lib_parse:production-rules $grammar))))))
+           (lib_parse:production-rules $grammar))))
+     GNoConversion))
 
-(= (lib_parse:raw-dag-presentation $grammar $source $tokens)
-   (GPresentation
+(= (lib_parse:raw-dag-language $grammar $source $tokens)
+   (GInferenceLanguageV1 1
      (lib_parse:constructors $grammar $source $tokens)
      (lib_parse:dag-judgments)
      (lib_parse:boundary-rules-onto $tokens $source 0
        (lib_parse:token-rules-onto $tokens $source 0
          (lib_parse:leaf-node-rules-onto $grammar $tokens $source 0
-           (lib_parse:production-node-rules $grammar))))))
+           (lib_parse:production-node-rules $grammar))))
+     GNoConversion))
 
-(= (lib_parse:raw-presentation-optimized $grammar $source $tokens)
+(= (lib_parse:raw-language-optimized $grammar $source $tokens)
    (function
-     (case (gparse:inference-presentation $grammar $source $tokens)
-       (((GPresentation $constructors $judgments $rules)
-         (return (GPresentation $constructors $judgments $rules)))
+     (case (gparse:inference-language $grammar $source $tokens)
+       (((GInferenceLanguageV1
+            $version $constructors $judgments $rules $conversion)
+         (return (GInferenceLanguageV1
+           $version $constructors $judgments $rules $conversion)))
         ((Error $where $reason)
          (return
            (LPInferenceError
-             (native-presentation-rejected $where $reason))))
+             (native-language-rejected $where $reason))))
         ($other
          (case (lib_parse:source-valid $source $tokens)
            ((True
-             (case (lib_parse:raw-presentation $grammar $source $tokens)
-               (($presentation (return $presentation)))))
+             (case (lib_parse:raw-language $grammar $source $tokens)
+               (($language (return $language)))))
             ($invalid
              (return (LPInferenceError invalid-source-ledger))))))))))
 
-(: lib_parse:indexed-presentation-valid (-> Atom Bool))
-(: lib_parse:indexed-presentation-parts-valid (-> Atom Atom Atom Bool))
+(: lib_parse:indexed-language-fields-valid
+   (-> Atom Atom Atom Atom Atom Bool))
 
-(= (lib_parse:indexed-presentation-parts-valid
-      $constructors $judgments $rules)
-   (case
-     (gic-build-index-parts $constructors $judgments $rules)
+; `generate-language` has already exposed the fields of the canonical flat
+; language.  Compile those fields directly instead of reconstructing the
+; deeply nested artifact merely to destructure it again.  This is the
+; specialized lowering of the generic `gic-build-index` boundary; both use
+; `gic-build-index-fields-in`, so the admission judgment is unchanged.
+(= (lib_parse:indexed-language-fields-valid
+      $version $constructors $judgments $rules $conversion)
+   (let $space (new-space)
+     (case
+       (gic-build-index-fields-in
+         $space $version $constructors $judgments $rules $conversion)
      (((GICIndexOK $space) True)
       (GICIndexFail False)
       ((Error $where $reason)
-       (case (gic-build-pathmap-index-parts $constructors $judgments $rules)
-         (((GICIndexOK $fallback-space) True)
-          ($fallback-other False))))
-      ($other False))))
+       (let $fallback-space (new-space pathmap)
+         (case
+           (gic-build-index-fields-in
+             $fallback-space $version $constructors $judgments
+             $rules $conversion)
+           (((GICIndexOK $indexed-space) True)
+            ($fallback-other False)))))
+      ($other False)))))
 
-(= (lib_parse:indexed-presentation-valid $presentation)
-   (case $presentation
-     (((GPresentation $constructors $judgments $rules)
-       (lib_parse:indexed-presentation-parts-valid
-         $constructors $judgments $rules))
-      ($other False))))
-
-(= (lib_parse:presentation-candidate-admitted $grammar $source $tokens)
+(= (lib_parse:language-candidate-admitted $grammar $source $tokens)
    (function
      (case (lp-admit $grammar)
        ((Admitted
-         (case (lib_parse:raw-presentation-optimized
+         (case (lib_parse:raw-language-optimized
                  $grammar $source $tokens)
-           (((GPresentation $constructors $judgments $rules)
+           (((GInferenceLanguageV1
+                $version $constructors $judgments $rules $conversion)
              (return
-               (LPInferencePresentation
-                 (GPresentation $constructors $judgments $rules))))
+               (LPInferenceLanguage
+                 (GInferenceLanguageV1
+                   $version $constructors $judgments $rules $conversion))))
             ((LPInferenceError $reason)
              (return (LPInferenceError $reason)))
             ($other
-             (return (LPInferenceError invalid-generated-presentation))))))
+             (return (LPInferenceError invalid-generated-language))))))
         ($rejected
          (return (LPInferenceError grammar-not-admitted)))))))
 
-(= (lib_parse:presentation-candidate $grammar $source $tokens)
+(= (lib_parse:language-candidate $grammar $source $tokens)
    (function
-     (case (lib_parse:presentation-candidate-admitted
+     (case (lib_parse:language-candidate-admitted
              $grammar $source $tokens)
        (($result (return $result))))))
 
-; DAG presentation generation uses the same admitted grammar and source
+; DAG language generation uses the same admitted grammar and source
 ; ledger, but derives the shared GrammarDerivesNode judgment.  There is no
 ; hand-authored fallback: failure of the grammar-derived producer rejects.
-(= (lib_parse:dag-presentation-candidate $grammar $source $tokens)
+(= (lib_parse:dag-language-candidate $grammar $source $tokens)
    (function
      (case (lp-admit $grammar)
        ((Admitted
-         (case (gparse:inference-dag-presentation
+         (case (gparse:inference-dag-language
                  $grammar $source $tokens)
-           (((GPresentation $constructors $judgments $rules)
+           (((GInferenceLanguageV1
+                $version $constructors $judgments $rules $conversion)
              (return
-               (LPInferencePresentation
-                 (GPresentation $constructors $judgments $rules))))
+               (LPInferenceLanguage
+                 (GInferenceLanguageV1
+                   $version $constructors $judgments $rules $conversion))))
             ((Error $where $reason)
              (return
                (LPInferenceError
-                 (native-dag-presentation-rejected $where $reason))))
+                 (native-dag-language-rejected $where $reason))))
             ($other
-             (return (LPInferenceError invalid-dag-presentation))))))
+             (return (LPInferenceError invalid-dag-language))))))
         ($rejected
          (return (LPInferenceError grammar-not-admitted)))))))
 
-(= (lib_parse:generate-presentation $grammar $source $tokens)
+(= (lib_parse:generate-language $grammar $source $tokens)
    (function
-     (case (lib_parse:presentation-candidate $grammar $source $tokens)
-       (((LPInferencePresentation
-            (GPresentation $constructors $judgments $rules))
-         (if (lib_parse:indexed-presentation-parts-valid
-               $constructors $judgments $rules)
+     (case (lib_parse:language-candidate $grammar $source $tokens)
+       (((LPInferenceLanguage
+            (GInferenceLanguageV1
+              $version $constructors $judgments $rules $conversion))
+         (if (lib_parse:indexed-language-fields-valid
+               $version $constructors $judgments $rules $conversion)
            (return
-             (LPInferencePresentation
-               (GPresentation $constructors $judgments $rules)))
-           (return (LPInferenceError invalid-generated-presentation))))
+             (LPInferenceLanguage
+               (GInferenceLanguageV1
+                 $version $constructors $judgments $rules $conversion)))
+           (return (LPInferenceError invalid-generated-language))))
         ($error (return $error))))))
 
 ; ---------- Shared-tree to GProof lowering ---------------------------------
@@ -792,12 +812,12 @@
       ($error $error))))
 
 (= (lib_parse:check-shared $grammar $source $start $tokens $cert)
-   (case (lib_parse:presentation-candidate $grammar $source $tokens)
-     (((LPInferencePresentation $presentation)
+   (case (lib_parse:language-candidate $grammar $source $tokens)
+     (((LPInferenceLanguage $language)
        (case (lib_parse:proof-from-shared
                $grammar $source $start $tokens $cert)
          (((LPInferenceProof $goal $proof)
-           (gic-check $presentation $goal $proof))
+           (gic-check $language $goal $proof))
           ($error False))))
       ($error False))))
 

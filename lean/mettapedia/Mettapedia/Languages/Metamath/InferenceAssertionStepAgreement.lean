@@ -1,6 +1,8 @@
 import Mettapedia.Languages.Metamath.InferenceAssertionStepForward
 import Mettapedia.Languages.Metamath.InferenceCheckHypReverse
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Exact agreement for one projected Metamath assertion step
 
@@ -297,8 +299,8 @@ live assertion-step graph has the canonical result.  Leading `Proves`
 derivations remain outside this local-node equivalence. -/
 theorem generatedAssertionNode_nonempty_iff_stepGraph
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView) (pr : RuntimeProofState)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)
@@ -331,8 +333,8 @@ when the live verifier accepts the corresponding assertion label and produces
 the canonical complete proof-state result. -/
 theorem generatedAssertionNode_nonempty_iff_stepNormal
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView) (pr : RuntimeProofState)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)

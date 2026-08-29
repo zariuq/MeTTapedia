@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.PureKernel.Universe.NativeFamilyContainerLifting
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeFamilyContainerLifting
 import Mettapedia.Languages.MeTTa.Prime.NativeRelationalSearchNIKSelection
 
 /-!
@@ -30,13 +30,13 @@ namespace NativeFamilyCapabilityNIKSelection
 
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.NIKMaximalNativeAdmission
-open Mettapedia.Languages.MeTTa.PureKernel.Universe
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.RelationalInternalLanguage.Semantic
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.RelationalEvidence
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.IntrinsicMILNativeSearch
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.IntrinsicMILNativeLiftingSearch
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.NativeFamilyContainerLifting
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.NativeIndexedContainerLiftingSearch
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RelationalInternalLanguage.Semantic
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RelationalEvidence
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.IntrinsicMILNativeSearch
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.IntrinsicMILNativeLiftingSearch
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeFamilyContainerLifting
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedContainerLiftingSearch
 open Mettapedia.Languages.MeTTa.Prime.NativeRelationalSearchNIKSelection
 open Mettapedia.TypeTheory
 open Mettapedia.TypeTheory.IndexedPolynomial

@@ -49,9 +49,9 @@ def pCons (head tail : Pattern) : Pattern := .apply "PCons" [head, tail]
 def pArrow (components : Pattern) : Pattern := .apply "PArrow" [components]
 
 /-! The syntax-to-judgment interpretation is a separate authored component:
-it explains how ordinary Prime type atoms enter this presentation.  Exact
+it explains how ordinary Prime type atoms enter this language fragment.  Exact
 nullary maps cover primitive type symbols; the variadic map lowers a
-nonempty source arrow telescope into the presentation's explicit list
+nonempty source arrow telescope into the fragment's explicit list
 algebra.  A compile-time backend may specialize this data, but may not infer
 it from `P*` naming conventions. -/
 
@@ -180,7 +180,6 @@ abbrev definition : CalculusLanguageDef :=
 
 def language : LanguageDef := definition.toLanguageDef
 def calculus := definition.toCalculus
-def presentation : Presentation := definition.toNested
 
 private def hasConstructorArity (name : String) (arity : Nat) : Bool :=
   language.terms.any fun declaration =>
@@ -212,20 +211,20 @@ theorem language_validate : language.validate = [] := by
       LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
       TypeExpr.baseNames]
 
-theorem presentation_valid : presentation.isValidV2 = true := by
-  have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation, language] using language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem definition_valid : definition.isValid = true := by
+  have hvalidate : definition.toLanguageDef.validate = [] := by
+    simpa [definition, language] using language_validate
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [presentation, definition,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSchema.isValidV1, RuleSchema.metavariableNames,
+  simp [definition,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
+    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
     RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, fixedConstructorsValid,
+    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
     fixedConstructorListsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
@@ -246,13 +245,13 @@ theorem syntax_binding_valid : syntaxBindingValid = true := by
 fragment to a final definition of Prime; it only totalizes the declarations
 authored in this deliberately bounded module. -/
 def totalTheory : Mettapedia.GSLT.GSLT :=
-  definition.toGSLTOfNoEquations presentation_valid rfl
+  definition.toGSLTOfNoEquations definition_valid rfl
 
 theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := by
   unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
   rfl
 
-def checked : ValidatedPresentation := ⟨presentation, presentation_valid⟩
+def checked : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 private def ruleInstance (id : String) (arguments : List Pattern := []) :
     RuleInstance :=
@@ -277,24 +276,24 @@ def emptyArrowProof : RawProof :=
 def emptyArrowGoal : Pattern := notForm (pArrow pNil)
 
 theorem number_accepted : checkRaw checked (form pNumber) numberProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, definition,
+  simp [checkRaw, checkRawChildren, checked, definition,
     numberProof, ruleInstance, formNumber, primitiveRule, form, pNumber,
     formType, formDynamic, formAtom, formSymbol, formVariable,
     formExpression, formGrounded, formBool, formString, formError,
     formComponentsOne, formComponentsCons, formArrow, notFormEmptyArrow,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     ruleId]
 
 theorem arrow_accepted : checkRaw checked arrowGoal arrowProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, definition,
+  simp [checkRaw, checkRawChildren, checked, definition,
     arrowGoal, arrowProof, numberProof, ruleInstance, formArrow,
     formComponentsCons, formComponentsOne, formNumber, formString,
     primitiveRule, form, formComponents, pArrow, pCons, pNil, pNumber,
     pString, formType, formDynamic, formAtom, formSymbol, formVariable,
     formExpression, formGrounded, formBool, formError, notFormEmptyArrow,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, ruleId, Pattern.isGroundAt, Pattern.isGroundListAt,
@@ -303,13 +302,13 @@ theorem arrow_accepted : checkRaw checked arrowGoal arrowProof = true := by
 
 theorem empty_arrow_refutation_accepted :
     checkRaw checked emptyArrowGoal emptyArrowProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, definition,
+  simp [checkRaw, checkRawChildren, checked, definition,
     emptyArrowGoal, emptyArrowProof, ruleInstance, notFormEmptyArrow,
     notForm, pArrow, pNil, formType, formDynamic, formAtom, formSymbol,
     formVariable, formExpression, formGrounded, formNumber, formBool,
     formString, formError, formComponentsOne, formComponentsCons, formArrow,
     primitiveRule, form, formComponents, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, ruleId]
 
@@ -319,16 +318,16 @@ def unknownNominal : Pattern := .apply "PNominal" []
 
 theorem unknown_nominal_not_established_by_number_proof :
     checkRaw checked (form unknownNominal) numberProof = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation, definition,
+  simp [checkRaw, checkRawChildren, checked, definition,
     unknownNominal, numberProof, ruleInstance, formNumber, primitiveRule,
     form, pNumber, formType, formDynamic, formAtom, formSymbol, formVariable,
     formExpression, formGrounded, formBool, formString, formError,
     formComponentsOne, formComponentsCons, formArrow, notFormEmptyArrow,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemas?, instantiateSchemasAt?, ruleId]
 
-def exportedPresentation : Presentation := presentation
+def exportedDefinition : CalculusLanguageDef := definition
 def sampleFormGoal : Pattern := arrowGoal
 def sampleFormProof : RawProof := arrowProof
 def sampleRefuteGoal : Pattern := emptyArrowGoal

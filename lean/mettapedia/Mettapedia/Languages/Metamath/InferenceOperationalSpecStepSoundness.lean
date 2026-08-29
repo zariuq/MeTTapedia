@@ -1,5 +1,7 @@
 import Mettapedia.Languages.Metamath.InferenceAssertionStepAgreement
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Soundness of projected Metamath steps in the operational specification
 
@@ -735,8 +737,8 @@ application, supplies all essential, DV, and result-substitution evidence
 needed by the exact upstream `useAxiom` constructor. -/
 theorem generatedAssertionNode_toProofValidFrom
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)
@@ -773,8 +775,8 @@ the direct operational-spec constructor and the already-proved exact live
 transition. -/
 theorem generatedAssertionNode_toSpec_and_stepNormal
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView) (pr : RuntimeProofState)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)

@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.CertificateGSLTStepPresentation
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTStepTraceLanguage
 import Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-!
@@ -9,7 +9,7 @@ exercising both fragment features: a ground rewrite `a → b` and an authored
 congruence rule `f p → f q` whose single premise is
 `Premise.congruence p q`.
 
-For the generated trace presentation of this language:
+For the generated trace definition of this language:
 
 * **soundness** — every checked `Step` derivation is a declarative
   `langReduces` step, and every checked `Steps` derivation is a reflexive-
@@ -88,13 +88,13 @@ private def stepLanguage : LanguageDef :=
     rewrites := [rewriteAB, congruenceF] }
 
 private theorem stepPremisesSupported :
-    LanguageDef.directTracePresentable stepLanguage = true := by
+    LanguageDef.directTraceSupported stepLanguage = true := by
   rfl
 
 private def directStepLanguage : DirectTraceLanguage :=
   ⟨stepLanguage, stepPremisesSupported⟩
 
-/-! ## Admission of the generated presentation -/
+/-! ## Admission of the generated definition -/
 
 private theorem abRule_id_spelling :
     ("step-rewrite-" ++ "ab" : String) = "step-rewrite-ab" := rfl
@@ -103,25 +103,25 @@ private theorem congFRule_id_spelling :
     ("step-rewrite-" ++ "cong-f" : String) = "step-rewrite-cong-f" := rfl
 
 private theorem stepAdequacy_validate :
-    (stepPresentation directStepLanguage).language.validate = [] := by
+    (stepTraceDefinition directStepLanguage).toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-    simp [stepPresentation, directStepLanguage, stepLanguage, genType, genA, genB, genF,
+    simp [stepTraceDefinition, directStepLanguage, stepLanguage, genType, genA, genB, genF,
       LanguageDef.typeNames, TermParam.typeExpr, TypeExpr.baseNames,
       TypeDecl.plain]
 
 private theorem stepAdequacy_valid :
-    (stepPresentation directStepLanguage).isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+    (stepTraceDefinition directStepLanguage).isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [stepAdequacy_validate]
-  simp [stepPresentation, directStepLanguage, stepLanguage, genType, genA, genB, genF,
+  simp [stepTraceDefinition, directStepLanguage, stepLanguage, genType, genA, genB, genF,
     rewriteAB, congruenceF, rewriteStepRule, rewritePremiseJudgments,
     stepReflRule, stepTransRule, termA, termB, termF,
     abRule_id_spelling, congFRule_id_spelling,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.ruleIds, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.ruleIds, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
-    languageHasConstructorArity, RuleSchema.isValidV1,
+    languageHasConstructorArity, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
@@ -129,11 +129,11 @@ private theorem stepAdequacy_valid :
     Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
-    Presentation.conversionDeclarationValid]
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
-private def traceValidated : ValidatedPresentation :=
-  ⟨stepPresentation directStepLanguage, stepAdequacy_valid⟩
+private def traceValidated : ValidatedCalculusLanguageDef :=
+  ⟨stepTraceDefinition directStepLanguage, stepAdequacy_valid⟩
 
 /-! ## Well-formed terms: the checker's argument discipline -/
 
@@ -284,10 +284,10 @@ private def transInstance (source middle target : Pattern) : RuleInstance :=
 private theorem ab_instantiates :
     instantiateRule? traceValidated abInstance =
       some ([], stepJ termA termB) := by
-  simp [instantiateRule?, traceValidated, stepPresentation, directStepLanguage, stepLanguage,
+  simp [instantiateRule?, traceValidated, stepTraceDefinition, directStepLanguage, stepLanguage,
     rewriteAB, congruenceF, rewriteStepRule, rewritePremiseJudgments,
     stepReflRule, stepTransRule, abInstance, stepJ, termA, termB,
-    abRule_id_spelling, congFRule_id_spelling, Presentation.lookupRule?,
+    abRule_id_spelling, congFRule_id_spelling, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, instantiateSchemas?, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemasAt?]
 
@@ -297,10 +297,10 @@ private theorem congF_instantiates (first second : Pattern)
       some ([stepJ first second], stepJ (termF first) (termF second)) := by
   obtain ⟨firstGround, firstBinder⟩ := wfFirst
   obtain ⟨secondGround, secondBinder⟩ := wfSecond
-  simp [instantiateRule?, traceValidated, stepPresentation, directStepLanguage, stepLanguage,
+  simp [instantiateRule?, traceValidated, stepTraceDefinition, directStepLanguage, stepLanguage,
     rewriteAB, congruenceF, rewriteStepRule, rewritePremiseJudgments,
     stepReflRule, stepTransRule, congFInstance, stepJ, termF,
-    abRule_id_spelling, congFRule_id_spelling, Presentation.lookupRule?,
+    abRule_id_spelling, congFRule_id_spelling, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, firstGround, firstBinder,
     secondGround, secondBinder, lookupArgumentAt?, instantiateSchemas?,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemasAt?]
@@ -310,10 +310,10 @@ private theorem refl_instantiates (point : Pattern)
     instantiateRule? traceValidated (reflInstance point) =
       some ([], stepsJ point point) := by
   obtain ⟨pointGround, pointBinder⟩ := wfPoint
-  simp [instantiateRule?, traceValidated, stepPresentation, directStepLanguage, stepLanguage,
+  simp [instantiateRule?, traceValidated, stepTraceDefinition, directStepLanguage, stepLanguage,
     rewriteAB, congruenceF, rewriteStepRule, rewritePremiseJudgments,
     stepReflRule, stepTransRule, reflInstance, stepsJ,
-    abRule_id_spelling, congFRule_id_spelling, Presentation.lookupRule?,
+    abRule_id_spelling, congFRule_id_spelling, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, pointGround, pointBinder,
     lookupArgumentAt?, instantiateSchemas?, instantiateSchema?,
     instantiateSchemaAt?, instantiateSchemasAt?]
@@ -327,10 +327,10 @@ private theorem trans_instantiates (source middle target : Pattern)
   obtain ⟨sourceGround, sourceBinder⟩ := wfSource
   obtain ⟨middleGround, middleBinder⟩ := wfMiddle
   obtain ⟨targetGround, targetBinder⟩ := wfTarget
-  simp [instantiateRule?, traceValidated, stepPresentation, directStepLanguage, stepLanguage,
+  simp [instantiateRule?, traceValidated, stepTraceDefinition, directStepLanguage, stepLanguage,
     rewriteAB, congruenceF, rewriteStepRule, rewritePremiseJudgments,
     stepReflRule, stepTransRule, transInstance, stepJ, stepsJ,
-    abRule_id_spelling, congFRule_id_spelling, Presentation.lookupRule?,
+    abRule_id_spelling, congFRule_id_spelling, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, sourceGround, sourceBinder,
     middleGround, middleBinder, targetGround, targetBinder,
     lookupArgumentAt?, instantiateSchemas?, instantiateSchema?,
@@ -396,7 +396,7 @@ private theorem argumentsValidAt_three_inversion
                     valid.2.2.1.1, valid.2.2.1.2⟩
               | cons fourth rest => simp [argumentsValidAt] at valid
 
-/-- Every admitted rule application of the generated presentation is one of
+/-- Every admitted rule application of the generated definition is one of
 the four generated schemas, with well-formed arguments and the schema's
 instantiated premises and conclusion. -/
 private theorem application_shape {ruleInstance : RuleInstance}
@@ -423,9 +423,8 @@ private theorem application_shape {ruleInstance : RuleInstance}
           rule = rewriteStepRule congruenceF ∨
           rule = stepReflRule ∨ rule = stepTransRule := by
         have := lookup
-        simp only [traceValidated, stepPresentation, directStepLanguage, stepLanguage,
-          Presentation.lookupRule?, Presentation.rules,
-          List.map] at this
+        simp only [traceValidated, stepTraceDefinition, directStepLanguage, stepLanguage,
+          CalculusLanguageDef.lookupRule?, List.map] at this
         all_goals simp_all
         rcases this with ⟨_, ruleEq⟩ | ⟨_, ⟨_, ruleEq⟩ | ⟨_, ⟨_, ruleEq⟩ |
           ⟨_, _, ruleEq⟩⟩⟩
@@ -805,16 +804,16 @@ theorem box_constrains_checked_predecessors {target : Pattern}
 
 /-! ## The finite-certificate floor -/
 
-/-- General, any presentation and goal: a judgment is derivable exactly
+/-- General, any definition and goal: a judgment is derivable exactly
 when some finite raw proof is accepted by the Boolean checker.  This is the
 certificate-existence shape associated with semidecidability.  A literal
 arithmetical-hierarchy classification additionally requires an effective
 coding and enumeration of `RawProof`; no such classification is claimed
 here. -/
 theorem derivation_nonempty_iff_certificate
-    (presentation : ValidatedPresentation) (goal : Pattern) :
-    Nonempty (Derivation presentation goal) ↔
-      ∃ proof : RawProof, checkRaw presentation goal proof = true := by
+    (definition : ValidatedCalculusLanguageDef) (goal : Pattern) :
+    Nonempty (Derivation definition goal) ↔
+      ∃ proof : RawProof, checkRaw definition goal proof = true := by
   constructor
   · rintro ⟨derivation⟩
     exact ⟨derivation.erase, checkRaw_erase derivation⟩
@@ -982,32 +981,32 @@ deriving Repr, DecidableEq
 
 /-- Accept a certificate only when it both fits the rule-node budget and
 passes the Boolean checker. -/
-def checkWithinBudget (presentation : ValidatedPresentation)
+def checkWithinBudget (definition : ValidatedCalculusLanguageDef)
     (goal : Pattern) (budget : Nat) (proof : RawProof) : BudgetVerdict :=
   if rawRuleNodes proof ≤ budget ∧
-      checkRaw presentation goal proof = true then
+      checkRaw definition goal proof = true then
     .established
   else
     .undetermined
 
 /-- Established verdicts are sound: the certificate really checks. -/
-theorem established_sound {presentation : ValidatedPresentation}
+theorem established_sound {definition : ValidatedCalculusLanguageDef}
     {goal : Pattern} {budget : Nat} {proof : RawProof}
-    (established : checkWithinBudget presentation goal budget proof =
+    (established : checkWithinBudget definition goal budget proof =
       .established) :
-    checkRaw presentation goal proof = true := by
+    checkRaw definition goal proof = true := by
   unfold checkWithinBudget at established
   split at established
   case isTrue condition => exact condition.2
   case isFalse => cases established
 
 /-- Raising the budget never demotes an established verdict. -/
-theorem established_budget_mono {presentation : ValidatedPresentation}
+theorem established_budget_mono {definition : ValidatedCalculusLanguageDef}
     {goal : Pattern} {budget budget' : Nat} {proof : RawProof}
     (le : budget ≤ budget')
-    (established : checkWithinBudget presentation goal budget proof =
+    (established : checkWithinBudget definition goal budget proof =
       .established) :
-    checkWithinBudget presentation goal budget' proof = .established := by
+    checkWithinBudget definition goal budget' proof = .established := by
   unfold checkWithinBudget at established ⊢
   split at established
   case isTrue condition =>

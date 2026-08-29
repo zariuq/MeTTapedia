@@ -1,4 +1,5 @@
-import Mettapedia.GSLT.LanguageDef.ExtensionComposition
+import Mettapedia.GSLT.LanguageDef.ExtensionCompositionAdmission
+import Mettapedia.GSLT.LanguageDef.ValidatedInferenceExtension
 
 /-!
 # Gluing admitted proof calculi
@@ -43,6 +44,7 @@ open Mettapedia.GSLT.LanguageDef.Extension
 open Mettapedia.GSLT.LanguageDef.InferenceExtension
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.ExtensionComposition
+open Mettapedia.GSLT.LanguageDef.ExtensionCompositionAdmission
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-! ## Duplicate-freedom as a length comparison
@@ -176,7 +178,7 @@ associativity of the merge, with no further condition. -/
 
 /-- An increment is admitted over a base when the two together are admitted. -/
 def AdmittedOver (language : LanguageDef) (base increment : ProofCalculus) : Prop :=
-  (Presentation.mk language (mergeOf base increment)).isValidV2 = true
+  (CalculusLanguageDef.extend language (mergeOf base increment)).isValid = true
 
 /-- **Layers stack.**  A layer admitted over a base, followed by a layer
 admitted over that extended base, is one increment admitted over the original
@@ -193,7 +195,7 @@ theorem admittedOver_stack {language : LanguageDef}
 /-- Admission over the empty base is ordinary admission. -/
 theorem admittedOver_empty (language : LanguageDef) (calculus : ProofCalculus) :
     AdmittedOver language .empty calculus ↔
-      (Presentation.mk language calculus).isValidV2 = true := by
+      (CalculusLanguageDef.extend language calculus).isValid = true := by
   unfold AdmittedOver
   rw [mergeOf_empty_left]
 
@@ -219,12 +221,12 @@ private theorem judgmentFilter_eq_nil {judgments : List JudgmentDecl}
   exact absent (matching.1 ▸ List.mem_map_of_mem member)
 
 /-- A successful lookup names a declared head. -/
-theorem mem_judgmentHeads_of_lookup {presentation : Presentation}
+theorem mem_judgmentHeads_of_lookup {definition : CalculusLanguageDef}
     {head : String} {arity : Nat}
-    (found : (presentation.lookupJudgment? head arity).isSome = true) :
-    head ∈ presentation.judgments.map JudgmentDecl.head := by
+    (found : (definition.lookupJudgment? head arity).isSome = true) :
+    head ∈ definition.judgments.map JudgmentDecl.head := by
   by_contra absent
-  rw [Presentation.lookupJudgment?, judgmentFilter_eq_nil absent] at found
+  rw [CalculusLanguageDef.lookupJudgment?, judgmentFilter_eq_nil absent] at found
   simp at found
 
 /-- **Lookup transports from the left.**  A head the right side never declares
@@ -232,8 +234,8 @@ resolves in the merge exactly as it resolved on the left. -/
 theorem lookupJudgment_merge_left (language : LanguageDef)
     (first second : ProofCalculus) {head : String} {arity : Nat}
     (absent : head ∉ second.judgments.map JudgmentDecl.head) :
-    (Presentation.mk language (mergeOf first second)).lookupJudgment? head arity =
-      (Presentation.mk language first).lookupJudgment? head arity := by
+    (CalculusLanguageDef.extend language (mergeOf first second)).lookupJudgment? head arity =
+      (CalculusLanguageDef.extend language first).lookupJudgment? head arity := by
   show (match ((mergeOf first second).judgments.filter fun declaration =>
       declaration.head == head && declaration.arity == arity) with
     | [declaration] => some declaration
@@ -246,8 +248,8 @@ theorem lookupJudgment_merge_left (language : LanguageDef)
 theorem lookupJudgment_merge_right (language : LanguageDef)
     (first second : ProofCalculus) {head : String} {arity : Nat}
     (absent : head ∉ first.judgments.map JudgmentDecl.head) :
-    (Presentation.mk language (mergeOf first second)).lookupJudgment? head arity =
-      (Presentation.mk language second).lookupJudgment? head arity := by
+    (CalculusLanguageDef.extend language (mergeOf first second)).lookupJudgment? head arity =
+      (CalculusLanguageDef.extend language second).lookupJudgment? head arity := by
   show (match ((mergeOf first second).judgments.filter fun declaration =>
       declaration.head == head && declaration.arity == arity) with
     | [declaration] => some declaration
@@ -265,54 +267,54 @@ private theorem judgmentSchemaValid_merge_left (language : LanguageDef)
     (disjoint : ∀ head ∈ first.judgments.map JudgmentDecl.head,
       head ∉ second.judgments.map JudgmentDecl.head)
     {pattern : Pattern}
-    (valid : (Presentation.mk language first).judgmentSchemaValid pattern = true) :
-    (Presentation.mk language (mergeOf first second)).judgmentSchemaValid pattern
+    (valid : (CalculusLanguageDef.extend language first).judgmentSchemaValid pattern = true) :
+    (CalculusLanguageDef.extend language (mergeOf first second)).judgmentSchemaValid pattern
       = true := by
   cases pattern with
   | apply head arguments =>
-      simp only [Presentation.judgmentSchemaValid, Bool.and_eq_true] at valid ⊢
+      simp only [CalculusLanguageDef.judgmentSchemaValid, Bool.and_eq_true] at valid ⊢
       refine ⟨?_, valid.2⟩
       rw [lookupJudgment_merge_left language first second
         (disjoint head (mem_judgmentHeads_of_lookup valid.1))]
       exact valid.1
-  | bvar _ => simp [Presentation.judgmentSchemaValid] at valid
-  | fvar _ => simp [Presentation.judgmentSchemaValid] at valid
-  | lambda _ _ => simp [Presentation.judgmentSchemaValid] at valid
-  | multiLambda _ _ _ => simp [Presentation.judgmentSchemaValid] at valid
-  | subst _ _ => simp [Presentation.judgmentSchemaValid] at valid
-  | collection _ _ _ => simp [Presentation.judgmentSchemaValid] at valid
+  | bvar _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
+  | fvar _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
+  | lambda _ _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
+  | multiLambda _ _ _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
+  | subst _ _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
+  | collection _ _ _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
 
 private theorem judgmentSchemaValid_merge_right (language : LanguageDef)
     (first second : ProofCalculus)
     (disjoint : ∀ head ∈ first.judgments.map JudgmentDecl.head,
       head ∉ second.judgments.map JudgmentDecl.head)
     {pattern : Pattern}
-    (valid : (Presentation.mk language second).judgmentSchemaValid pattern = true) :
-    (Presentation.mk language (mergeOf first second)).judgmentSchemaValid pattern
+    (valid : (CalculusLanguageDef.extend language second).judgmentSchemaValid pattern = true) :
+    (CalculusLanguageDef.extend language (mergeOf first second)).judgmentSchemaValid pattern
       = true := by
   cases pattern with
   | apply head arguments =>
-      simp only [Presentation.judgmentSchemaValid, Bool.and_eq_true] at valid ⊢
+      simp only [CalculusLanguageDef.judgmentSchemaValid, Bool.and_eq_true] at valid ⊢
       refine ⟨?_, valid.2⟩
       have absent : head ∉ first.judgments.map JudgmentDecl.head := by
         intro member
         exact disjoint head member (mem_judgmentHeads_of_lookup valid.1)
       rw [lookupJudgment_merge_right language first second absent]
       exact valid.1
-  | bvar _ => simp [Presentation.judgmentSchemaValid] at valid
-  | fvar _ => simp [Presentation.judgmentSchemaValid] at valid
-  | lambda _ _ => simp [Presentation.judgmentSchemaValid] at valid
-  | multiLambda _ _ _ => simp [Presentation.judgmentSchemaValid] at valid
-  | subst _ _ => simp [Presentation.judgmentSchemaValid] at valid
-  | collection _ _ _ => simp [Presentation.judgmentSchemaValid] at valid
+  | bvar _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
+  | fvar _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
+  | lambda _ _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
+  | multiLambda _ _ _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
+  | subst _ _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
+  | collection _ _ _ => simp [CalculusLanguageDef.judgmentSchemaValid] at valid
 
 private theorem isValidIn_merge_left (language : LanguageDef)
     (first second : ProofCalculus)
     (disjoint : ∀ head ∈ first.judgments.map JudgmentDecl.head,
       head ∉ second.judgments.map JudgmentDecl.head)
     {rule : RuleSchema}
-    (valid : RuleSchema.isValidIn (Presentation.mk language first) rule = true) :
-    RuleSchema.isValidIn (Presentation.mk language (mergeOf first second)) rule
+    (valid : RuleSchema.isValidIn (CalculusLanguageDef.extend language first) rule = true) :
+    RuleSchema.isValidIn (CalculusLanguageDef.extend language (mergeOf first second)) rule
       = true := by
   simp only [RuleSchema.isValidIn, Bool.and_eq_true, List.all_eq_true] at valid ⊢
   refine ⟨valid.1, fun pattern member => ?_, valid.2.2⟩
@@ -324,8 +326,8 @@ private theorem isValidIn_merge_right (language : LanguageDef)
     (disjoint : ∀ head ∈ first.judgments.map JudgmentDecl.head,
       head ∉ second.judgments.map JudgmentDecl.head)
     {rule : RuleSchema}
-    (valid : RuleSchema.isValidIn (Presentation.mk language second) rule = true) :
-    RuleSchema.isValidIn (Presentation.mk language (mergeOf first second)) rule
+    (valid : RuleSchema.isValidIn (CalculusLanguageDef.extend language second) rule = true) :
+    RuleSchema.isValidIn (CalculusLanguageDef.extend language (mergeOf first second)) rule
       = true := by
   simp only [RuleSchema.isValidIn, Bool.and_eq_true, List.all_eq_true] at valid ⊢
   refine ⟨valid.1, fun pattern member => ?_, valid.2.2⟩
@@ -342,31 +344,34 @@ With `admission_not_closed_under_composition` this is sharp in both directions:
 the merge is admitted exactly when the overlap condition holds, and the
 condition is about names rather than about how the declarations were written. -/
 theorem gluing_of_compatible (language : LanguageDef) (first second : ProofCalculus)
-    (firstValid : (Presentation.mk language first).isValidV2 = true)
-    (secondValid : (Presentation.mk language second).isValidV2 = true)
+    (firstValid : (CalculusLanguageDef.extend language first).isValid = true)
+    (secondValid : (CalculusLanguageDef.extend language second).isValid = true)
     (compatible : Compatible first second) :
     proofCalculusMonoid.op first second = some (mergeOf first second) ∧
-      (Presentation.mk language (mergeOf first second)).isValidV2 = true := by
+      (CalculusLanguageDef.extend language (mergeOf first second)).isValid = true := by
   refine ⟨append_eq_mergeOf compatible, ?_⟩
-  simp only [Presentation.isValidV2, Bool.and_eq_true] at firstValid secondValid ⊢
+  simp only [CalculusLanguageDef.isValid, CalculusLanguageDef.extend,
+    Bool.and_eq_true] at firstValid secondValid ⊢
   obtain ⟨⟨⟨firstBase, firstSignature⟩, firstRules⟩, firstConversion⟩ := firstValid
   obtain ⟨⟨⟨secondBase, secondSignature⟩, secondRules⟩, secondConversion⟩ :=
     secondValid
   refine ⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩
   · -- V1: the base language is untouched; rule schemas are pointwise; rule
     -- identifiers stay duplicate-free because they were disjoint.
-    simp only [Presentation.isValidV1, Bool.and_eq_true] at firstBase secondBase ⊢
+    simp only [CalculusLanguageDef.hasValidLocalRules,
+      Bool.and_eq_true] at firstBase secondBase ⊢
     refine ⟨⟨firstBase.1.1, ?_⟩, ?_⟩
-    · simp only [Presentation.rules, mergeOf_rules, List.all_append,
+    · simp only [mergeOf_rules, List.all_append,
         Bool.and_eq_true]
       exact ⟨firstBase.1.2, secondBase.1.2⟩
-    · simp only [Presentation.ruleIds, Presentation.rules, mergeOf_rules,
-        List.map_append]
+    · simp only [CalculusLanguageDef.ruleIds,
+        mergeOf_rules, List.map_append]
       exact eraseDups_length_append firstBase.2 secondBase.2
         (fun value member other => compatible.ruleIds value member other)
   · -- The judgment signature: pointwise conditions plus disjoint heads.
-    simp only [Presentation.judgmentSignatureValid, Bool.and_eq_true,
-      Presentation.judgments, Presentation.judgmentHeads, mergeOf_judgments,
+    simp only [CalculusLanguageDef.judgmentSignatureValid,
+      Bool.and_eq_true,
+      CalculusLanguageDef.judgmentHeads, mergeOf_judgments,
       List.all_append, List.map_append] at firstSignature secondSignature ⊢
     refine ⟨⟨⟨firstSignature.1.1, secondSignature.1.1⟩, ?_⟩,
       firstSignature.2, secondSignature.2⟩
@@ -374,7 +379,7 @@ theorem gluing_of_compatible (language : LanguageDef) (first second : ProofCalcu
       (fun value member other => compatible.judgmentHeads value member other)
   · -- Every rule of either side stays valid, because every head it uses is
     -- declared on its own side and nowhere else.
-    simp only [Presentation.rules, mergeOf_rules, List.all_append,
+    simp only [mergeOf_rules, List.all_append,
       Bool.and_eq_true, List.all_eq_true] at firstRules secondRules ⊢
     constructor
     · intro rule member
@@ -392,13 +397,13 @@ theorem gluing_of_compatible (language : LanguageDef) (first second : ProofCalcu
           cases hsecond : second.conversion <;> simp [mergeOf, firstNone, hsecond]
         cases hsecond : second.conversion with
         | none =>
-            simp only [Presentation.conversionDeclarationValid,
-              Presentation.conversion, conversionEq, hsecond]
+            simp only [CalculusLanguageDef.conversionDeclarationValid,
+              conversionEq, hsecond]
         | some declaration =>
-            simp only [Presentation.conversionDeclarationValid,
-              Presentation.conversion, hsecond] at secondConversion
-            simp only [Presentation.conversionDeclarationValid,
-              Presentation.conversion, conversionEq, hsecond, Bool.and_eq_true]
+            simp only [CalculusLanguageDef.conversionDeclarationValid,
+              hsecond] at secondConversion
+            simp only [CalculusLanguageDef.conversionDeclarationValid,
+              conversionEq, hsecond, Bool.and_eq_true]
               at secondConversion ⊢
             refine ⟨secondConversion.1, ?_⟩
             have absent : declaration.judgmentHead ∉
@@ -406,6 +411,9 @@ theorem gluing_of_compatible (language : LanguageDef) (first second : ProofCalcu
               intro member
               exact compatible.judgmentHeads declaration.judgmentHead member
                 (mem_judgmentHeads_of_lookup secondConversion.2)
+            change ((CalculusLanguageDef.extend language
+              (mergeOf first second)).lookupJudgment?
+                declaration.judgmentHead 2).isSome = true
             rw [lookupJudgment_merge_right language first second absent]
             exact secondConversion.2
     | inr secondNone =>
@@ -413,15 +421,18 @@ theorem gluing_of_compatible (language : LanguageDef) (first second : ProofCalcu
           cases hfirst : first.conversion <;> simp [mergeOf, secondNone, hfirst]
         cases hfirst : first.conversion with
         | none =>
-            simp only [Presentation.conversionDeclarationValid,
-              Presentation.conversion, conversionEq, hfirst]
+            simp only [CalculusLanguageDef.conversionDeclarationValid,
+              conversionEq, hfirst]
         | some declaration =>
-            simp only [Presentation.conversionDeclarationValid,
-              Presentation.conversion, hfirst] at firstConversion
-            simp only [Presentation.conversionDeclarationValid,
-              Presentation.conversion, conversionEq, hfirst, Bool.and_eq_true]
+            simp only [CalculusLanguageDef.conversionDeclarationValid,
+              hfirst] at firstConversion
+            simp only [CalculusLanguageDef.conversionDeclarationValid,
+              conversionEq, hfirst, Bool.and_eq_true]
               at firstConversion ⊢
             refine ⟨firstConversion.1, ?_⟩
+            change ((CalculusLanguageDef.extend language
+              (mergeOf first second)).lookupJudgment?
+                declaration.judgmentHead 2).isSome = true
             rw [lookupJudgment_merge_left language first second
               (compatible.judgmentHeads declaration.judgmentHead
                 (mem_judgmentHeads_of_lookup firstConversion.2))]
@@ -434,9 +445,10 @@ The source merge is the one forced by calculus-document concatenation;
 `Compatible` is exactly the domain-specific overlap law needed by the
 validator. -/
 def calculusAdmission (language : LanguageDef) :
-    GSLT.ContextualAdmission calculusAuthoringGSLT where
+    GSLT.ContextualAdmission
+      calculusAuthoringGSLT.toCompositionalElaboration where
   Admitted := fun calculus =>
-    (Presentation.mk language calculus).isValidV2 = true
+    (CalculusLanguageDef.extend language calculus).isValid = true
   Compatible := Compatible
   glue := by
     intro first second firstValid secondValid compatible
@@ -453,7 +465,7 @@ abbrev CompositionalAdmittedOver (language : LanguageDef)
   (calculusAdmission language).AdmittedOver base increment
 
 /-- When the overlap condition holds, the partial authored notion and the
-existing total `mergeOf` presentation coincide. -/
+existing total `mergeOf` calculus coincide. -/
 theorem compositionalAdmittedOver_iff (language : LanguageDef)
     {base increment : ProofCalculus} (compatible : Compatible base increment) :
     CompositionalAdmittedOver language base increment ↔
@@ -474,11 +486,11 @@ theorem compositionalAdmittedOver_iff (language : LanguageDef)
 calculus theorem. -/
 theorem contextual_glue_exists (language : LanguageDef)
     {first second : ProofCalculus}
-    (firstValid : (Presentation.mk language first).isValidV2 = true)
-    (secondValid : (Presentation.mk language second).isValidV2 = true)
+    (firstValid : (CalculusLanguageDef.extend language first).isValid = true)
+    (secondValid : (CalculusLanguageDef.extend language second).isValid = true)
     (compatible : Compatible first second) :
     ∃ merged, calculusAuthoringGSLT.merge first second = some merged ∧
-      (Presentation.mk language merged).isValidV2 = true :=
+      (CalculusLanguageDef.extend language merged).isValid = true :=
   (calculusAdmission language).exists_glue firstValid secondValid compatible
 
 /-- The admitted fibre inherits the merge: gluing sends a compatible pair of

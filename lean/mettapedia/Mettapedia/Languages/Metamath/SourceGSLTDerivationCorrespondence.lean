@@ -10,7 +10,7 @@ Item 2's derivation legs.  The authored `sourceGrammar` carries no
 token-sort productions — lexical leaves enter only through the generic
 `lexicalizedLanguage` extension (one leaf rule per classified source
 token), exactly as the checked parser path
-(`admitLexicalDAGPresentation`) consumes them.  The correspondence is
+(`admitLexicalDAGDefinition`) consumes them.  The correspondence is
 therefore stated over any language satisfying the two honest
 interfaces:
 

@@ -40,9 +40,9 @@ open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptSubstitutionTranspor
 open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptSubstitutionTransport.Canaries
 open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptGeneratorSubstitutionAction
 open Mettapedia.Languages.MeTTa.Prime.NativeDependentReceiptSubstitutionFunctoriality
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.Declaration
-open Mettapedia.Languages.MeTTa.PureKernel.Universe.Presentation.ProofRelevantStructuralComputation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.Declaration
+open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.Presentation.ProofRelevantStructuralComputation
 
 /-! ## The exact capability supplied by a hosted generator family -/
 

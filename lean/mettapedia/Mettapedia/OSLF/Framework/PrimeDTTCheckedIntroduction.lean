@@ -3,7 +3,7 @@ import Mettapedia.Languages.MeTTa.Prime.LanguageDef
 import Mettapedia.Languages.MeTTa.Pure.Typing
 import Mettapedia.Languages.MeTTa.Pure.SubjectReduction
 import Mettapedia.OSLF.Framework.GSLTTypeSynthesis
-import Mettapedia.OSLF.Framework.NativeTypeTheory
+import Mettapedia.OSLF.StructuralModal.Formula
 
 /-!
 # Prime operational/native-type and checked DTT reference canaries
@@ -89,9 +89,9 @@ authored typing relation.  In particular, OSLF synthesis from that definition
 cannot reconstruct the MeTTa-Pure judgments below. -/
 theorem prime_language_does_not_determine_authored_typing :
     ¬ Factors
-        (fun typed : NativeTypeTheory.TypedLanguage => typed.1)
+        (fun typed : StructuralModal.TypedLanguage => typed.1)
         (fun typed => typed.2) :=
-  NativeTypeTheory.authored_typing_not_determined_by_language
+  StructuralModal.authored_typing_not_determined_by_language
     Mettapedia.Languages.MeTTa.Prime.LanguageDef.language
 
 end AuthoredTypingBoundary

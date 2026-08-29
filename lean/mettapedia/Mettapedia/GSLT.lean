@@ -1,5 +1,9 @@
 import Mettapedia.GSLT.Core.LambdaTheoryCategory
 import Mettapedia.GSLT.Core.BranchingTemporal
+import Mettapedia.GSLT.Core.TickAutomatonLaneRecurrence
+import Mettapedia.GSLT.Core.SearchControlProperties
+import Mettapedia.GSLT.Core.OpenTotalityObservation
+import Mettapedia.GSLT.Core.ObservationIndexedPruning
 import Mettapedia.GSLT.Core.Web
 import Mettapedia.GSLT.Core.ChangeOfBase
 import Mettapedia.GSLT.Core.Composition
@@ -11,13 +15,20 @@ import Mettapedia.GSLT.Core.ClosureCriteria
 import Mettapedia.GSLT.Core.InteractionEvent
 import Mettapedia.GSLT.Core.InteractionComposition
 import Mettapedia.GSLT.Core.Ultrainfinite
+import Mettapedia.GSLT.Core.StagePerspectiveProfunctor
+import Mettapedia.GSLT.Core.StagePerspectiveProfunctorCanary
+import Mettapedia.GSLT.Core.AgeProtectedSchedule
+import Mettapedia.GSLT.Core.ScheduleProgramFactorization
+import Mettapedia.GSLT.Core.ExtensibleScheduleDiscipline
 import Mettapedia.GSLT.Core.UltrainfiniteTransport
 import Mettapedia.GSLT.Core.IndexedOperational
 import Mettapedia.GSLT.Core.IndexedOperationalCanary
-import Mettapedia.GSLT.Core.ProofRelevantPresentation
+import Mettapedia.GSLT.Core.ProofRelevantGSLT
 import Mettapedia.GSLT.Core.WeightedMuScheduler
 import Mettapedia.GSLT.Core.WeightedOccurrenceControl
 import Mettapedia.GSLT.Core.BranchCaptureAlgebra
+import Mettapedia.GSLT.Core.AuthorizedRestoration
+import Mettapedia.GSLT.Core.SelectionExpansionAnalysis
 import Mettapedia.GSLT.Core.GradedSelectionIrreducibility
 import Mettapedia.GSLT.Dynamics.QueryRevision
 import Mettapedia.GSLT.Dynamics.InteractionEventValuation
@@ -41,6 +52,9 @@ import Mettapedia.GSLT.Dynamics.CapabilityGeneratedObservationUniversal
 import Mettapedia.GSLT.Dynamics.IndexedExecutionObservation
 import Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture
 import Mettapedia.GSLT.Dynamics.ObservationPolicyFamilyUniversal
+import Mettapedia.GSLT.Dynamics.ScheduleObservationFactorization
+import Mettapedia.GSLT.Dynamics.ParallelFuelLease
+import Mettapedia.GSLT.Dynamics.ParallelFuelContractionRefund
 import Mettapedia.GSLT.GraphTheory.Basic
 import Mettapedia.GSLT.GraphTheory.BohmTree
 import Mettapedia.GSLT.GraphTheory.WeakProduct
@@ -111,6 +125,19 @@ import Mettapedia.GSLT.LanguageDef.WaltersZantemaDATriangle
 import Mettapedia.GSLT.LanguageDef.WaltersZantemaDANTT
 import Mettapedia.GSLT.LanguageDef.WaltersZantemaDAWire
 import Mettapedia.GSLT.LanguageDef.StructuralCoproduct
+import Mettapedia.GSLT.LanguageDef.StructuralCoproductCanary
+import Mettapedia.GSLT.LanguageDef.StructuralCoproductTyping
+import Mettapedia.GSLT.LanguageDef.StructuralRenamingSemantics
+import Mettapedia.GSLT.LanguageDef.StructuralCoproductOperational
+import Mettapedia.GSLT.LanguageDef.StructuralPresentationCategory
+import Mettapedia.GSLT.LanguageDef.ArithmeticTargetCoproduct
+import Mettapedia.GSLT.LanguageDef.ArithmeticTargetCoproductNTT
+import Mettapedia.GSLT.LanguageDef.CarrierWellSorted
+import Mettapedia.GSLT.LanguageDef.StructuredC
+import Mettapedia.GSLT.LanguageDef.StructuredCNTT
+import Mettapedia.GSLT.LanguageDef.ExternalCallToStructuredC
+import Mettapedia.GSLT.LanguageDef.ExternalCallToStructuredCTyping
+import Mettapedia.GSLT.LanguageDef.ExternalCallToStructuredCSemantics
 import Mettapedia.GSLT.LanguageDef.RadixDigitMachine
 import Mettapedia.GSLT.LanguageDef.RadixDigitLanguageDef
 import Mettapedia.GSLT.LanguageDef.RadixDigitRelationCatalog
@@ -137,6 +164,7 @@ import Mettapedia.GSLT.LanguageDef.DescentInterface
 import Mettapedia.GSLT.LanguageDef.GSLTIL
 import Mettapedia.GSLT.LanguageDef.GSLTILSyntax
 import Mettapedia.GSLT.LanguageDef.GSLTILUniversalStructure
+import Mettapedia.GSLT.LanguageDef.GSLTILObservationSelection
 import Mettapedia.GSLT.LanguageDef.GSLTILCapabilityGeneratedObservation
 import Mettapedia.GSLT.LanguageDef.GSLTILCanary
 import Mettapedia.GSLT.LanguageDef.NIKDefaultProfile
@@ -155,6 +183,19 @@ import Mettapedia.GSLT.LanguageDef.TwoNTTCoherence
 import Mettapedia.GSLT.LanguageDef.ReflectiveStructuralCategory
 import Mettapedia.GSLT.LanguageDef.ReflectiveWellSorted
 import Mettapedia.GSLT.LanguageDef.ReflectiveWellSortedChecker
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageExtension
+import Mettapedia.GSLT.LanguageDef.ConstructorTermExtension
+import Mettapedia.GSLT.LanguageDef.StatefulCalculusExtension
+import Mettapedia.GSLT.LanguageDef.IncrementalCalculusGenerator
+import Mettapedia.GSLT.LanguageDef.ConstructorPermutation
+import Mettapedia.GSLT.LanguageDef.ConstructionProvenance
+import Mettapedia.GSLT.LanguageDef.DialectGluing
+import Mettapedia.GSLT.LanguageDef.ObservedOperationalRealization
+import Mettapedia.GSLT.LanguageDef.AuthorityLedger
+import Mettapedia.GSLT.LanguageDef.MapLanguageDef
+import Mettapedia.GSLT.LanguageDef.StructuralSimulation
+import Mettapedia.GSLT.LanguageDef.ConstructorRoleTransport
+import Mettapedia.GSLT.LanguageDef.DialectGluingMorphisms
 
 /-!
 # Graph-Structured Lambda Theories (GSLT)

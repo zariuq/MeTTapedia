@@ -4,7 +4,7 @@ import Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
 /-!
 # MeTTa serialization for generated inference presentations
 
-This executable renderer transports a validated generic inference presentation
+This executable renderer transports a validated generic inference definition
 and its raw proof trees into the data format consumed by the operational MIK
 checker.  Every source-backed export enters through canonical source admission.
 -/
@@ -12,6 +12,7 @@ checker.  Every source-backed export enters through canonical source admission.
 namespace Mettapedia.Languages.Metamath.InferenceMeTTaExport
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
 open Mettapedia.GSLT.LanguageDef.CheckedSource
@@ -310,7 +311,7 @@ private structure CompressedExpansion where
   heap : Array ExpandedHeapEntry
   stack : List ExpandedProofEntry
   actions : List String
-  accumulator : Nat
+  phase : Metamath.Verify.CompressedPhase
   saves : Nat
   savedReferences : Nat
 
@@ -463,12 +464,12 @@ private def applyCompressedAction (db : RuntimeDB)
 private def applyCompressedToken (db : RuntimeDB)
     (state : CompressedExpansion) (token : ByteSlice) :
     Except String CompressedExpansion := do
-  let (actions, accumulator) ←
-    match Metamath.Verify.ParserState.decodeCompressed token state.accumulator with
+  let (actions, phase) ←
+    match Metamath.Verify.ParserState.decodeCompressed token state.phase with
     | .ok value => pure value
     | .error error => throw s!"mm-lean4 rejected compressed token: {repr error}"
   let state ← actions.foldlM (applyCompressedAction db) state
-  pure { state with accumulator }
+  pure { state with phase }
 
 private def splitCompressedTokens :
     List ByteSlice → Except String (List ByteSlice × List ByteSlice)
@@ -500,7 +501,7 @@ private def expandCompressedProof (proof : ObservedProofIngress) :
       heap := mandatoryHeap.toArray
       stack := []
       actions := []
-      accumulator := 0
+      phase := .betweenSteps
       saves := 0
       savedReferences := 0 }
   let preloaded ← preloadLabels.foldlM (fun state label => do
@@ -513,8 +514,10 @@ private def expandCompressedProof (proof : ObservedProofIngress) :
       pure { state with runtime, heap := state.heap.push heapEntry }) initial
   let expanded ← compressedTokens.foldlM
     (applyCompressedToken proof.anchor.db) preloaded
-  unless expanded.accumulator == 0 do
-    throw "compressed proof ended with an incomplete numeric accumulator"
+  match expanded.phase with
+  | .openIndex _ =>
+      throw "compressed proof ended with an incomplete numeric index"
+  | .betweenSteps | .justCompletedStep => pure ()
   unless expanded.runtime.stack == #[proof.initial.fmla] do
     throw "compressed replay did not finish with exactly the target formula"
   unless expanded.stack.length == 1 do
@@ -588,7 +591,7 @@ private structure LoweringReplayState where
 
 private structure SourceLowering where
   sourcePackage : GSLTSource
-  presentation : Presentation
+  definition : CalculusLanguageDef
   goal : Pattern
   proof : RawProof
   actions : List String
@@ -617,7 +620,7 @@ private def renderDatabaseOutput (kind : String) (rootBytes : ByteArray)
     "  (gslt-source-validation-v1 (mm-database-source))\n" ++
     "  SourceAcceptedV1)\n" ++
     s!"!(MMDatabaseSummary {quote kind} {rootBytes.size} " ++
-      s!"{checked.source.presentation.rules.length} 1 1 0)\n"
+      s!"{checked.source.definition.rules.length} 1 1 0)\n"
 
 private def renderDatabaseBytes (sourceBytes : ByteArray) :
     Except String String := do
@@ -673,7 +676,7 @@ private def lowerSourceProof (source targetLabel : String) :
   let targetView ← match ConstantHeadedFormula.ofRuntime? targetFormula with
     | some value => pure value
     | none => throw s!"{targetLabel} is not constant-headed"
-  let presentation := input.presentation.1
+  let definition := input.definition.1
   let initialRuntime :=
     prefixDB.mkProofState ingress.initial.pos targetLabel targetFormula targetFrame
   let replay ←
@@ -702,7 +705,7 @@ private def lowerSourceProof (source targetLabel : String) :
   pure <|
     (show SourceLowering from
     { sourcePackage := checkedArtifact.checked.source
-      presentation
+      definition
       goal
       proof
       actions := proofActions

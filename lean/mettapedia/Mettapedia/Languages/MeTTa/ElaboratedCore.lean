@@ -8,17 +8,17 @@ import Mettapedia.Languages.MeTTa.PureRuntimeFrontier
 /-!
 # Elaborated MeTTa-Core
 
-Classification layer sitting above `PureKernel` and `RuntimeExec`.
+Classification layer sitting above `IntrinsicPure` and `RuntimeExec`.
 
 Current regions:
 
-- `pureKernelRegion`: trusted typed fragment routed to `PureKernel`
+- `pureKernelRegion`: trusted typed fragment routed to `IntrinsicPure`
 - `runtimeExecRegion`: effectful/runtime fragment routed to `RuntimeSpec` and
   an execution/query seam
 - `oracleRegion`: grounded/FFI/oracle boundary kept explicit
 - `metaRegion`: proof/elaboration-time reflection layer
 
-In the live default path, the trusted `PureKernel` is only the small
+In the live default path, the trusted `IntrinsicPure` is only the small
 Pi/Sigma/Id/universe waist plus ordinary families admitted through the general
 `DeclSpec`/`DeclEnv` mechanism.
 -/
@@ -29,9 +29,9 @@ open Mettapedia.Languages.MeTTa.DialectProfile
 open Mettapedia.Languages.MeTTa.RuntimeSpec
 open Mettapedia.Languages.MeTTa.RuntimeExec
 open Mettapedia.Languages.MeTTa.OSLFCore.Bridge
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.Typing
-open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Typing
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 abbrev CoreAtom := Mettapedia.Languages.MeTTa.OSLFCore.Atom
@@ -84,7 +84,7 @@ theorem elaborateCheckedPureConversion_quoteAgreement
 /-- Small typed MeTTa-Core source fragment whose atoms already have a shared
 artifact view through `Core.Bridge.atomToPattern`.
 
-This is intentionally weaker than a direct PureKernel compilation target:
+This is intentionally weaker than a direct IntrinsicPure compilation target:
 - positive example: symbolic atoms, variables, and expression constructors that
   already admit a `Pattern` view
 - negative example: grounded atoms do not currently admit such a view and are
@@ -344,7 +344,7 @@ theorem elaborate_pureClosedSyntax_term
 theorem elaborate_pureClosedSyntax_quoteAgreement
     (term : PureSyntaxTerm 0) :
     (ElaboratedNode.artifact (elaborate (SyntaxNode.pureClosedSyntax term))).pattern =
-      Mettapedia.Languages.MeTTa.PureKernel.PatternBridge.quoteClosedTm term.toPureTm := by
+      Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge.quoteClosedTm term.toPureTm := by
   exact term.toClosedPattern_eq_quoteClosedTm
 
 theorem elaborate_heRuntimeRule_backend

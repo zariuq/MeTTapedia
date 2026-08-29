@@ -173,7 +173,6 @@ abbrev definition : CalculusLanguageDef :=
 
 def language : LanguageDef := definition.toLanguageDef
 def calculus := definition.toCalculus
-def presentation : Presentation := definition.toNested
 
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly language <;>
@@ -181,20 +180,20 @@ theorem language_validate : language.validate = [] := by
       constructor, LanguageDef.typeNames,
       TypeDecl.plain, TermParam.typeExpr, TypeExpr.baseNames]
 
-theorem presentation_valid : presentation.isValidV2 = true := by
-  have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation, language] using language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem definition_valid : definition.isValid = true := by
+  have hvalidate : definition.toLanguageDef.validate = [] := by
+    simpa [language] using language_validate
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [presentation, Presentation.ruleIds,
-    Presentation.judgmentSignatureValid, Presentation.judgmentHeads,
-    Presentation.conversionDeclarationValid, Presentation.lookupJudgment?,
+  simp [definition, CalculusLanguageDef.ruleIds,
+    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
+    CalculusLanguageDef.conversionDeclarationValid, CalculusLanguageDef.lookupJudgment?,
     RuleSchema.isValidIn, RuleSideCondition.isValidFor,
-    RuleSchema.isValidV1, RuleSchema.metavariableNames,
+    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
     RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, fixedConstructorsValid,
+    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
     fixedConstructorListsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
@@ -208,7 +207,7 @@ theorem presentation_valid : presentation.isValidV2 = true := by
 
 /-- The complete LF grammar and rooted conversion calculus as one GSLT. -/
 def totalTheory : Mettapedia.GSLT.GSLT :=
-  definition.toGSLTOfNoEquations presentation_valid rfl
+  definition.toGSLTOfNoEquations definition_valid rfl
 
 theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := by
   unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
@@ -231,15 +230,15 @@ def source : GSLTSource :=
            { name := "conversion"
              version := conversionDeclaration.version
              payload := .apply "CommonReduct" [] }] }
-    presentation }
+    definition := definition }
 
 def checked : CheckedGSLT :=
   { source
     identityValid := by decide
     assumptionsValid := by decide
     profilesValid := by decide
-    presentationValid := by
-      simpa [source] using presentation_valid }
+    definitionValid := by
+      simpa [source] using definition_valid }
 
 def rootedConversion : RootedConversion checked :=
   { declaration := conversionDeclaration
@@ -264,11 +263,11 @@ theorem beta_certificate_accepts :
     check checked rootedConversion betaSource typeTerm betaCertificate = true := by
   simp [check, RootedConversion.judgment, CheckedGSLT.checkRaw,
     InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-    CheckedGSLT.presentation, checked, source, presentation,
+    CheckedGSLT.definition, checked, source, definition,
     rootedConversion, betaCertificate, betaProof, betaSource, identity,
     betaRule, etaRule, appCongruenceRule, piCongruenceRule,
     lamCongruenceRule, conversionDeclaration, instantiateRule?,
-    Presentation.lookupRule?, argumentsValidAt, argumentValidAt,
+    CalculusLanguageDef.lookupRule?, argumentsValidAt, argumentValidAt,
     RuleSchema.sideConditionsHold, RuleSideCondition.holds,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, Pattern.isGroundAt,
@@ -294,10 +293,10 @@ theorem eta_certificate_accepts :
     check checked rootedConversion etaSource typeTerm etaCertificate = true := by
   simp [check, RootedConversion.judgment, CheckedGSLT.checkRaw,
     InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-    CheckedGSLT.presentation, checked, source, presentation,
+    CheckedGSLT.definition, checked, source, definition,
     rootedConversion, etaCertificate, etaProof, etaSource, betaRule,
     etaRule, appCongruenceRule, piCongruenceRule, lamCongruenceRule,
-    conversionDeclaration, instantiateRule?, Presentation.lookupRule?,
+    conversionDeclaration, instantiateRule?, CalculusLanguageDef.lookupRule?,
     argumentsValidAt, argumentValidAt, RuleSchema.sideConditionsHold,
     RuleSideCondition.holds, instantiateSchema?, instantiateSchemaAt?,
     instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
@@ -330,11 +329,11 @@ theorem captured_eta_rejects :
     check checked rootedConversion capturedEtaSource typeTerm
       (.step typeTerm capturedEtaProof .refl) = false := by
   simp [check, RootedConversion.judgment, CheckedGSLT.checkRaw,
-    InferenceChecker.checkRaw, CheckedGSLT.presentation, checked, source,
-    presentation, rootedConversion, capturedEtaProof,
+    InferenceChecker.checkRaw, CheckedGSLT.definition, checked, source,
+    definition, rootedConversion, capturedEtaProof,
     capturedEtaSource, betaRule, etaRule, appCongruenceRule,
     piCongruenceRule, lamCongruenceRule, conversionDeclaration,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, RuleSideCondition.holds,
     Pattern.isGroundAt, Pattern.isGroundListAt,
     Pattern.hasCanonicalBinderMetadata,
@@ -352,11 +351,11 @@ theorem fabricated_beta_result_rejects :
     check checked rootedConversion betaSource kindTerm
       (.step kindTerm fabricatedBetaProof .refl) = false := by
   simp [check, RootedConversion.judgment, CheckedGSLT.checkRaw,
-    InferenceChecker.checkRaw, CheckedGSLT.presentation, checked, source,
-    presentation, rootedConversion, fabricatedBetaProof,
+    InferenceChecker.checkRaw, CheckedGSLT.definition, checked, source,
+    definition, rootedConversion, fabricatedBetaProof,
     betaSource, identity, betaRule, etaRule, appCongruenceRule,
     piCongruenceRule, lamCongruenceRule, conversionDeclaration,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold, RuleSideCondition.holds,
     Pattern.isGroundAt, Pattern.isGroundListAt,
     Pattern.hasCanonicalBinderMetadata,
@@ -365,7 +364,7 @@ theorem fabricated_beta_result_rejects :
     srt, sortType, sortKind, ruleId]
 
 #print axioms language_validate
-#print axioms presentation_valid
+#print axioms definition_valid
 #print axioms beta_certificate_accepts
 #print axioms eta_certificate_accepts
 #print axioms beta_common_reduct_accepts

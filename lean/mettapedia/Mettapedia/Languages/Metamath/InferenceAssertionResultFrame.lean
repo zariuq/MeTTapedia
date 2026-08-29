@@ -1,5 +1,7 @@
 import Mettapedia.Languages.Metamath.InferenceAssertionStepForward
 
+open Mettapedia.GSLT.LanguageDef
+
 /-!
 # Caller-frame preservation for generated Metamath assertion results
 
@@ -222,8 +224,8 @@ theorem assertionApplicationSemantics_result_respects_callerFrame
 consequence, without assuming execution of `stepNormal`. -/
 theorem generatedAssertionNode_result_respects_callerFrame
     (db : RuntimeDB) (projection : PrefixProjection)
-    (target : ValidatedPresentation)
-    (hprojection : presentationOfProjection? projection = some target.1)
+    (target : ValidatedCalculusLanguageDef)
+    (hprojection : calculusLanguageDefOfProjection? projection = some target.1)
     (assertion : AssertionView) (stack : Array RuntimeFormula)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)

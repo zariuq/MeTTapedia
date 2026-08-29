@@ -42,7 +42,7 @@ open Mettapedia.GSLT.Core.InteractionComposition
 open Mettapedia.GSLT.Core.InteractionEvent
 open Mettapedia.GSLT.Core.WeightedMuScheduler
 open Mettapedia.GSLT.Dynamics.InteractionEventValuation
-open Mettapedia.Languages.MeTTa.NativeTypeTheory
+open Mettapedia.Languages.MeTTa.StagedReflective
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 
 universe uSite uEvent uEvidence uNode uAnswer

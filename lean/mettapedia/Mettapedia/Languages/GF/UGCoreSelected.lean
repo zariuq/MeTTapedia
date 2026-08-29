@@ -30,7 +30,7 @@ open Mettapedia.OSLF.QuantifiedFormula2
 open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.PLN.Evidence.EvidenceQuantale
-open Mettapedia.CategoryTheory.NativeTypeTheory
+open Mettapedia.PLN.Bridges.CategoryTheory.EvidenceFibration
 open scoped ENNReal
 
 universe u
@@ -167,9 +167,9 @@ noncomputable def englishCzechSelectedSignature
     | .czechSem => Prop
     | .evidence => BinaryEvidence
     | .strength => ℝ≥0∞
-    | .scopeNT => Sigma fun A : NativeTypeBundle => Sigma fun B : NativeTypeBundle => Hom A B
-    | .closedNT₁ => NativeTypeBundle
-    | .closedNT₂ => NativeTypeBundle
+    | .scopeNT => Sigma fun A : EvidenceObject => Sigma fun B : EvidenceObject => Hom A B
+    | .closedNT₁ => EvidenceObject
+    | .closedNT₂ => EvidenceObject
   observe
     | .englishSem => fun t =>
         sem (langReduces englishGFLanguageDef) Isem φsem (gfAbstractToPattern t)

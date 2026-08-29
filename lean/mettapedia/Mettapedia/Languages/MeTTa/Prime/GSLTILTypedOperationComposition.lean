@@ -38,7 +38,7 @@ open Mettapedia.Languages.MeTTa.Prime.LanguageOperationFactorization
 open Mettapedia.Languages.MeTTa.Prime.LanguageOperationNIKAdmission
 open Mettapedia.Languages.MeTTa.Prime.LanguageOperationSyntax
 open Mettapedia.Languages.MeTTa.Prime.IndexedLanguageChange
-open Mettapedia.Languages.MeTTa.PureKernel.DeclarationSemantics
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics
 
 /-! ## One endpoint-indexed program at all three layers -/
 

@@ -373,18 +373,14 @@ abbrev extendedDefinition :
 calculus-authoring GSLT, not an additional field of the object language. -/
 def calculusSource : CalculusSyntax := quote calculus
 
-/-- The derived input consumed by the existing inference checker.  It is a
-reducible view of `definition`, not a second authored object. -/
-abbrev presentation : Presentation := definition.toNested
-
 /-- The authored GSLT document elaborates to exactly the derived checker
 input. -/
 @[simp] theorem calculusSource_elaborates :
-    elaborateDefinition? language calculusSource = some presentation := by
+    elaborateDefinition? language calculusSource = some definition := by
   exact elaborateDefinition?_quote language calculus
 
 /-- Erasing the calculus fibre recovers the exact five-field object language. -/
-@[simp] theorem presentation_erase : presentation.erase = language := rfl
+@[simp] theorem definition_language : definition.toLanguageDef = language := rfl
 
 /-! ## Receipts -/
 
@@ -394,20 +390,20 @@ theorem language_validate : language.validate = [] := by
       LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
       TypeExpr.baseNames]
 
-theorem presentation_valid : presentation.isValidV2 = true := by
-  have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation] using language_validate
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem definition_valid : definition.isValid = true := by
+  have hvalidate : definition.toLanguageDef.validate = [] := by
+    simpa [definition] using language_validate
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [hvalidate]
-  simp [presentation,
-    Presentation.ruleIds, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, Presentation.conversionDeclarationValid,
-    Presentation.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSchema.isValidV1,
+  simp [definition,
+    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
+    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
+    RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Presentation.judgmentSchemaValid, fixedConstructorsValid,
+    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
     fixedConstructorListsValid, languageHasConstructorArity,
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
@@ -426,7 +422,7 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     ruleId]
   decide
 
-abbrev checked : ValidatedPresentation := definition.checked presentation_valid
+abbrev checked : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩
 
 /-- Inventory pin: 25 constructors. -/
 theorem language_constructor_count : language.terms.length = 25 := by decide
@@ -450,7 +446,7 @@ theorem number_consistent_with_dynamic :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, consistent, tNum, tUndefined,
@@ -472,7 +468,7 @@ theorem dynamic_consistent_with_string :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, consistent, tStr, tUndefined,
@@ -508,7 +504,7 @@ theorem number_consistent_with_union :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, consistent, unionMember,
@@ -531,7 +527,7 @@ theorem value_num_has_type_number :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, valueHasType, vNum, tNum,
@@ -556,7 +552,7 @@ theorem value_num_has_branded_type :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, valueHasType, vNum, tNum,
@@ -581,7 +577,7 @@ theorem guard_passes_on_welltyped :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, guardPasses, valueHasType,
@@ -612,7 +608,7 @@ theorem non_transitivity_candidate_refl_rejects :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, checkRawChildren,
@@ -634,7 +630,7 @@ theorem non_transitivity_candidate_dyn_left_rejects :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, checkRawChildren,
@@ -656,7 +652,7 @@ theorem non_transitivity_candidate_dyn_right_rejects :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, checkRawChildren,
@@ -681,7 +677,7 @@ theorem value_true_not_number :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, checkRawChildren,
@@ -706,7 +702,7 @@ theorem distinct_brands_reject :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, checkRawChildren,
@@ -744,7 +740,7 @@ abbrev reductionRespectsEquations : ReductionRespectsEquations language :=
 /-- **The PeTTa type system as one GSLT.**  Object terms and proof obligations
 under a single carrier, equation relation, and reduction relation. -/
 def totalTheory : GSLT :=
-  definition.toGSLT presentation_valid reductionRespectsEquations
+  definition.toGSLT definition_valid reductionRespectsEquations
 
 /-- **The carrier**: an object pattern, or a proof-obligation state. -/
 theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ GoalState) := rfl
@@ -819,7 +815,7 @@ theorem totalTheory_dynRight_discharges :
     unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
     hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
     hasTypeNilList, hasTypeConsList, guardPassesRule,
-    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
     argumentValidAt, RuleSchema.sideConditionsHold,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
     instantiateSchemasAt?, lookupArgumentAt?, consistent, tNum, tUndefined,
@@ -831,13 +827,13 @@ end TotalTheory
 
 /-! ## Export interface (consumed by `TypeSystemGSLTMeTTaExport`)
 
-Public aliases over the private presentation and receipt fixtures, so the
+Public aliases over the checked language definition and receipt fixtures, so the
 exporter renders exactly the checked objects: the executable relational
 projection and the operational generic-checker audit both derive from
-`corePresentation`, and the sample goals/proofs are the same derivations
+`coreDefinition`, and the sample goals/proofs are the same derivations
 the `checkRaw` receipts above accept and reject. -/
 
-def corePresentation : Presentation := presentation
+def coreDefinition : CalculusLanguageDef := definition
 
 def sampleAcceptGoal : Pattern := consistent tNum tUndefined edgeDynamic
 def sampleAcceptProof : RawProof := dynRightProof

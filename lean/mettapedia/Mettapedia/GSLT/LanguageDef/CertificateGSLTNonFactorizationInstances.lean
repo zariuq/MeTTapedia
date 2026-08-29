@@ -49,11 +49,11 @@ quantity at a time, and not as a matter of proof difficulty.
 Cost, provenance, which route was taken, whether two translations agree: each
 is an instance obtained by naming two derivations it separates. -/
 theorem no_separating_invariant_survives_truncation
-    {presentation : ValidatedPresentation} {goal : Pattern} {V : Sort uV}
-    (invariant : Derivation presentation goal → V)
-    {left right : Derivation presentation goal}
+    {definition : ValidatedCalculusLanguageDef} {goal : Pattern} {V : Sort uV}
+    (invariant : Derivation definition goal → V)
+    {left right : Derivation definition goal}
     (separates : invariant left ≠ invariant right) :
-    ¬ Factors (Ambient.truncate (presentation := presentation) (goal := goal))
+    ¬ Factors (Ambient.truncate (definition := definition) (goal := goal))
         invariant :=
   NonTrivialFiber.not_factors
     { left := left, right := right, sameShadow := rfl
@@ -62,7 +62,7 @@ theorem no_separating_invariant_survives_truncation
 /-- The size fibre: one judgment, two derivations, different sizes. -/
 def sizeFiber :
     NonTrivialFiber
-      (Ambient.truncate (presentation := Ambient.ambientValidated)
+      (Ambient.truncate (definition := Ambient.ambientValidated)
         (goal := Ambient.goalJ Ambient.target))
       Ambient.derivationSize where
   left := Ambient.shortProof
@@ -75,7 +75,7 @@ def sizeFiber :
 /-- The original cost result, recovered from the criterion. -/
 theorem cost_does_not_factor :
     ¬ Factors
-        (Ambient.truncate (presentation := Ambient.ambientValidated)
+        (Ambient.truncate (definition := Ambient.ambientValidated)
           (goal := Ambient.goalJ Ambient.target))
         Ambient.derivationSize :=
   sizeFiber.not_factors
@@ -133,13 +133,13 @@ Acceptance loses nothing, because the fibres of the rule-table projection are
 trivial.  This is the same criterion with the opposite verdict, and stating
 it here makes the two comparable. -/
 
-/-- **Acceptance factors through the rule table.**  Two presentations with
+/-- **Acceptance factors through the rule table.**  Two definitions with
 the same rule lookup accept exactly the same proofs, so nothing else about a
-presentation reaches the checker. -/
+definition reaches the checker. -/
 theorem acceptance_constantOnFibers :
-    ConstantOnFibers (fun presentation : ValidatedPresentation =>
-        presentation.1.lookupRule?)
-      (fun presentation : ValidatedPresentation => checkRaw presentation) := by
+    ConstantOnFibers (fun definition : ValidatedCalculusLanguageDef =>
+        definition.1.lookupRule?)
+      (fun definition : ValidatedCalculusLanguageDef => checkRaw definition) := by
   intro source target agree
   funext goal proof
   exact checkRaw_congr (fun id => congrFun agree id) goal proof

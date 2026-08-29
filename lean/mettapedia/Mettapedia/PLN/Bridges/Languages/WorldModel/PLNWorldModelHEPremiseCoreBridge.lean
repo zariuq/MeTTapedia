@@ -17,7 +17,7 @@ Positive example:
 
 Negative example:
 - this is not yet a guarded-source execution theorem
-- this does not identify premise-bearing HE reduction with PureKernel `A/B/C1`
+- this does not identify premise-bearing HE reduction with IntrinsicPure `A/B/C1`
 -/
 
 namespace Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelHEPremiseCoreBridge

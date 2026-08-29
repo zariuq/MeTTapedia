@@ -77,8 +77,8 @@ def renderCategoryTheoryClaim : CategoryTheoryClaim → String
       mkPresPos (properNameNP "LambdaTheory.lean")
         (complV2 (mkV2 (regV "define")) (properNameNP "SubobjectFibration and LambdaTheory with finite limits and Heyting fibers"))
   | .nativeTypeTheoryFileRole =>
-      mkPresPos (properNameNP "NativeTypeTheory.lean")
-        (complV2 (mkV2 (regV "define")) (properNameNP "NativeTypeBundle as a Grothendieck construction"))
+      mkPresPos (properNameNP "EvidenceFibration.lean")
+        (complV2 (mkV2 (regV "define")) (properNameNP "the PLN EvidenceObject fibration"))
   | .plnInstanceFileRole =>
       mkPresPos (properNameNP "PLNInstance.lean")
         (complV2 (mkV2 (regV "define")) (properNameNP "PLN as a frame-fiber instance with modal composition"))
@@ -237,7 +237,7 @@ def categoryTheoryReadmeBlocks : List ReadmeBlock :=
       ]
   , .heading 3 (renderCategoryTheoryHeading .strandOne)
   , .fileRef "LambdaTheory.lean" (renderCategoryTheoryClaim .lambdaTheoryFileRole)
-  , .fileRef "NativeTypeTheory.lean" (renderCategoryTheoryClaim .nativeTypeTheoryFileRole)
+  , .fileRef "EvidenceFibration.lean" (renderCategoryTheoryClaim .nativeTypeTheoryFileRole)
   , .fileRef "PLNInstance.lean" (renderCategoryTheoryClaim .plnInstanceFileRole)
   , .fileRef "PLNTerms.lean" (renderCategoryTheoryClaim .plnTermsFileRole)
   , .fileRef "ModalTypes.lean" (renderCategoryTheoryClaim .modalTypesFileRole)
@@ -269,7 +269,7 @@ def categoryTheoryReadmeBlocks : List ReadmeBlock :=
   , .heading 2 (renderCategoryTheoryHeading .dependencyFlow)
   , .paragraph [renderCategoryTheoryClaim .dependencyFlowCaption]
   , .codeBlock ""
-      "LambdaTheory -> PLNInstance -> NativeTypeTheory\n                    |\n              PLNTerms -> ModalTypes -> Hypercube\n\nDeFinettiCategoricalInterface -> PermutationCone -> KernelInterface\n  -> SequenceKernelCone -> HausdorffBridge -> PerNDiagram\n  -> GlobalFinitaryDiagram -> KleisliGirySkeleton -> StableExports -> Exports"
+      "LambdaTheory -> PLNInstance -> StagedReflectivePresentation\n                    |\n              PLNTerms -> ModalTypes -> Hypercube\n\nDeFinettiCategoricalInterface -> PermutationCone -> KernelInterface\n  -> SequenceKernelCone -> HausdorffBridge -> PerNDiagram\n  -> GlobalFinitaryDiagram -> KleisliGirySkeleton -> StableExports -> Exports"
   ]
 
 def categoryTheoryReadmeMarkdown : String :=

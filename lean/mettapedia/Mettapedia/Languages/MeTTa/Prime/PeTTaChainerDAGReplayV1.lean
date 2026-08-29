@@ -14,6 +14,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.MeTTa.Prime.PeTTaChainerDAGReplayV1
 
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
@@ -90,30 +91,30 @@ private def cacheCalculus :
   { judgments := [{ head := "ppd.Derives", arity := 1 }]
     rules }
 
-def cache : Presentation :=
-  { language := cacheLanguage, calculus := cacheCalculus }
+def cache : CalculusLanguageDef :=
+  CalculusLanguageDef.extend cacheLanguage cacheCalculus
 
 def projectedCache :=
   Mettapedia.Languages.MeTTa.Prime.MinimalCheckingPackage.project rules
 
-private theorem cache_language_valid : cache.language.validate = [] := by
+private theorem cache_language_valid : cache.toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [cache, cacheLanguage, dataConstructor, LanguageDef.typeNames,
       TypeDecl.plain, TermParam.typeExpr, TypeExpr.baseNames]
 
-theorem cache_is_valid : cache.isValidV2 = true := by
-  unfold Presentation.isValidV2 Presentation.isValidV1
+theorem cache_is_valid : cache.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [cache_language_valid]
   simp [cache, cacheCalculus, rules, ruleEdgeAB, ruleEdgeToPath, ruleEdgeToReach,
     rulePathReachWitness, schema, derives, edge, path, reach, witness,
     atomA, atomB, app, pvar, cacheLanguage, dataConstructor,
-    Presentation.ruleIds, RuleSchema.isValidV1,
+    CalculusLanguageDef.ruleIds, RuleSchema.isLocallyValid,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
     RuleSchema.patterns, patternMetavariableOccurrencesAt,
     patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
-    patternsHaveNoCollectionRest, Presentation.judgmentSignatureValid,
-    Presentation.judgmentHeads, RuleSchema.isValidIn,
-    Presentation.judgmentSchemaValid, Presentation.lookupJudgment?,
+    patternsHaveNoCollectionRest, CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, RuleSchema.isValidIn,
+    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
     fixedConstructorListsValid, fixedConstructorsValid,
     languageHasConstructorArity, Pattern.isWellScoped,
     Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
@@ -123,7 +124,7 @@ theorem cache_is_valid : cache.isValidV2 = true := by
   norm_num [List.eraseDupsBy.loop]
   decide
 
-def validated : ValidatedPresentation := ⟨cache, cache_is_valid⟩
+def validated : ValidatedCalculusLanguageDef := ⟨cache, cache_is_valid⟩
 
 def goal : Pattern := derives (witness atomA atomB)
 def wrongGoal : Pattern := derives (path atomA atomB)
@@ -570,7 +571,7 @@ private def runChecks : IO Unit := do
   | .error _ =>
       throw <| IO.userError "rule package projection failed"
   | .ok projected =>
-      unless renderPresentation projected == renderPresentation cache do
+      unless renderDefinition projected == renderDefinition cache do
         throw <| IO.userError "derived cache differs from the independent cache"
   unless replay canonicalDAG goal do
     throw <| IO.userError "canonical shared DAG was rejected"

@@ -1,13 +1,13 @@
 import Mettapedia.Languages.MeTTa.PureNormalizationService
-import Mettapedia.Languages.MeTTa.PureKernel.SubjectReduction
-import Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
-import Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
-import Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.SubjectReduction
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.CoreEmbedding
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
+import Mettapedia.Languages.MeTTa.Pure.Intrinsic.ProfileTheory
 
 /-!
 # Pure Canonical Evaluation Service
 
-Parser-free checked canonicalization over the live trusted `PureKernel`.
+Parser-free checked canonicalization over the live trusted `IntrinsicPure`.
 
 This module intentionally stays inside the purified kernel boundary:
 
@@ -23,15 +23,15 @@ CLI tooling.
 
 namespace Mettapedia.Languages.MeTTa.ElaboratedCore
 
-open Mettapedia.Languages.MeTTa.PureKernel
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.Context
-open Mettapedia.Languages.MeTTa.PureKernel.Reduction
-open Mettapedia.Languages.MeTTa.PureKernel.Typing
-open Mettapedia.Languages.MeTTa.PureKernel.SubjectReduction
-open Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
-open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
-open Mettapedia.Languages.MeTTa.PureKernel.ProfileTheory
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Context
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Reduction
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Typing
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.SubjectReduction
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.CoreEmbedding
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
+open Mettapedia.Languages.MeTTa.Pure.Intrinsic.ProfileTheory
 
 theorem subjectReductionRedStar {Γ : Ctx n} {t u A : PureTm n}
     (ht : HasType Γ t A) (h : RedStar t u) :
