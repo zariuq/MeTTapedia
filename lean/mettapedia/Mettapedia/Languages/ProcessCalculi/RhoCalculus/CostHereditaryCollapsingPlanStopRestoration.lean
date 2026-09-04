@@ -13,7 +13,7 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInterac
 
 /-- The authored rho quotation has exactly one process parameter. -/
 theorem rhoCalc_params_eq_singleton_process_of_label_eq_quote
-    (rule : StructuralMorphism.AuthoredConstructor
+    (rule : StructuralMorphism.DeclaredConstructor
       rhoIGSLT.presentation.presentation)
     (label : rule.1.label = rhoReflectivePresentation.quoteConstructor) :
     rule.1.params = [.simple "p" (.base "Proc")] := by
@@ -34,7 +34,7 @@ theorem rhoCalc_params_eq_singleton_process_of_label_eq_quote
 
 /-- The authored rho Drop has exactly one name parameter. -/
 theorem rhoCalc_params_eq_singleton_name_of_label_eq_drop
-    (rule : StructuralMorphism.AuthoredConstructor
+    (rule : StructuralMorphism.DeclaredConstructor
       rhoIGSLT.presentation.presentation)
     (label : rule.1.label = rhoReflectivePresentation.dropConstructor) :
     rule.1.params = [.simple "n" (.base "Name")] := by
@@ -55,7 +55,7 @@ theorem rhoCalc_params_eq_singleton_name_of_label_eq_drop
 
 /-- The exact authored rho Drop constructor. -/
 def rhoDropConstructor :
-    StructuralMorphism.AuthoredConstructor rhoValidatedLanguageDef :=
+    StructuralMorphism.DeclaredConstructor rhoValidatedLanguageDef :=
   ⟨rhoCalc.terms[1], List.getElem_mem (by simp [rhoCalc])⟩
 
 /-- Drop belongs to the wrapped rho fragment. -/

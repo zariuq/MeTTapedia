@@ -14,8 +14,8 @@ closes two precise compatibility seams between them:
    nor invents transformations between representable sorts.
 2. The internal OSLF reduction subfunctor supplies the rewrite relation of a
    full Meredith lambda theory.  On constant program terms, this relation is
-   equivalent to both internal-subfunctor membership and the original
-   `langReducesUsing` judgment.
+   equivalent to both internal-subfunctor membership and the canonical
+   equation-saturated language step.
 
 The second result concerns reduction support.  It deliberately does not claim
 to preserve distinct derivation or rule-occurrence identities with the same
@@ -29,10 +29,12 @@ open Opposite
 open Mettapedia.GSLT.Meredith
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.CategoryBridge
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Framework.ToposReduction
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.GSLT.LanguageDef.EquationSemantics
 
 /-! ## Constructor sharing through Yoneda -/
 
@@ -158,7 +160,7 @@ theorem languageOperationalLambdaTheoryUsing_constant_rewrite_iff
     (languageOperationalLambdaTheoryUsing relEnv lang).rewriteRel
         (constantProgramEndomorphism lang p)
         (constantProgramEndomorphism lang q) ↔
-      langReducesUsing relEnv lang p q := by
+      langSemanticReducesUsing relEnv lang p q := by
   constructor
   · intro h
     have hmem := h
@@ -192,24 +194,46 @@ theorem languageOperationalLambdaTheoryUsing_constant_rewrite_iff_internal
     (C := ConstructorObj lang) (relEnv := relEnv) (lang := lang)
     (X := Opposite.op (ConstructorObj.mk s)) (p := p) (q := q)).symm
 
-/-- Executable agreement: constant-term rewriting in the full lambda theory is
-equivalent to the executable `LanguageDef` engine. -/
-theorem languageOperationalLambdaTheoryUsing_constant_rewrite_iff_exec
+/-- Every executable primitive step embeds into constant-term rewriting in the
+full operational lambda theory. -/
+theorem languageOperationalLambdaTheoryUsing_constant_rewrite_of_exec
     (relEnv : RelationEnv) (lang : LanguageDef) (s : LangSort lang)
     (p q : Pattern) :
-    (languageOperationalLambdaTheoryUsing relEnv lang).rewriteRel
+    langReducesExecUsing relEnv lang p q →
+      (languageOperationalLambdaTheoryUsing relEnv lang).rewriteRel
         (constantProgramEndomorphism lang p)
-        (constantProgramEndomorphism lang q) ↔
-      langReducesExecUsing relEnv lang p q := by
-  rw [languageOperationalLambdaTheoryUsing_constant_rewrite_iff
-    relEnv lang s p q]
-  exact langReducesUsing_iff_execUsing relEnv lang p q
+        (constantProgramEndomorphism lang q) := by
+  intro executable
+  exact (languageOperationalLambdaTheoryUsing_constant_rewrite_iff
+    relEnv lang s p q).2
+      (langReducesUsing_to_semantic relEnv lang
+        (exec_to_langReducesUsing relEnv lang executable))
+
+/-- Conversely, a constant semantic rewrite exposes the exact executable
+boundary: an equation change, one primitive engine step, and another equation
+change. -/
+theorem languageOperationalLambdaTheoryUsing_constant_rewrite_decomposes
+    (relEnv : RelationEnv) (lang : LanguageDef) (s : LangSort lang)
+    (p q : Pattern)
+    (semantic :
+      (languageOperationalLambdaTheoryUsing relEnv lang).rewriteRel
+        (constantProgramEndomorphism lang p)
+        (constantProgramEndomorphism lang q)) :
+    ∃ redex contractum : Pattern,
+      EquationEquiv (engineBasePremises relEnv) lang p redex ∧
+      langReducesExecUsing relEnv lang redex contractum ∧
+      EquationEquiv (engineBasePremises relEnv) lang contractum q := by
+  have member := (languageOperationalLambdaTheoryUsing_constant_rewrite_iff_internal
+    relEnv lang s p q).1 semantic
+  exact reductionSubfunctorUsing_mem_decomposes
+    (ConstructorObj lang) relEnv lang member
 
 /-- The OSLF possibility modality agrees with existence of a related constant
 program term in the full operational lambda theory. -/
 theorem langDiamondUsing_iff_exists_operationalLambdaRewrite
     (relEnv : RelationEnv) (lang : LanguageDef) (s : LangSort lang)
-    (φ : Pattern → Prop) (p : Pattern) :
+    (φ : Mettapedia.OSLF.Framework.GSLTTypeSynthesis.EquationPredicate
+      (langGSLTUsing relEnv lang)) (p : Pattern) :
     langDiamondUsing relEnv lang φ p ↔
       ∃ q,
         (languageOperationalLambdaTheoryUsing relEnv lang).rewriteRel
@@ -234,7 +258,8 @@ theorem langDiamondUsing_iff_exists_operationalLambdaRewrite
 incoming related constant program terms in the full operational lambda theory. -/
 theorem langBoxUsing_iff_forall_operationalLambdaIncoming
     (relEnv : RelationEnv) (lang : LanguageDef) (s : LangSort lang)
-    (φ : Pattern → Prop) (p : Pattern) :
+    (φ : Mettapedia.OSLF.Framework.GSLTTypeSynthesis.EquationPredicate
+      (langGSLTUsing relEnv lang)) (p : Pattern) :
     langBoxUsing relEnv lang φ p ↔
       ∀ q,
         (languageOperationalLambdaTheoryUsing relEnv lang).rewriteRel
@@ -254,7 +279,8 @@ theorem langBoxUsing_iff_forall_operationalLambdaIncoming
 /-- Default-environment possibility agreement. -/
 theorem langDiamond_iff_exists_operationalLambdaRewrite
     (lang : LanguageDef) (s : LangSort lang)
-    (φ : Pattern → Prop) (p : Pattern) :
+    (φ : Mettapedia.OSLF.Framework.GSLTTypeSynthesis.EquationPredicate
+      (langGSLT lang)) (p : Pattern) :
     langDiamond lang φ p ↔
       ∃ q,
         (languageOperationalLambdaTheory lang).rewriteRel
@@ -268,7 +294,8 @@ theorem langDiamond_iff_exists_operationalLambdaRewrite
 /-- Default-environment rely/box agreement. -/
 theorem langBox_iff_forall_operationalLambdaIncoming
     (lang : LanguageDef) (s : LangSort lang)
-    (φ : Pattern → Prop) (p : Pattern) :
+    (φ : Mettapedia.OSLF.Framework.GSLTTypeSynthesis.EquationPredicate
+      (langGSLT lang)) (p : Pattern) :
     langBox lang φ p ↔
       ∀ q,
         (languageOperationalLambdaTheory lang).rewriteRel
@@ -283,7 +310,7 @@ theorem langBox_iff_forall_operationalLambdaIncoming
 lambda-theory relation on constant terms. -/
 theorem languageOperationalLambdaTheoryUsing_constant_not_rewrite
     (relEnv : RelationEnv) (lang : LanguageDef) (s : LangSort lang)
-    (p q : Pattern) (h : ¬ langReducesUsing relEnv lang p q) :
+    (p q : Pattern) (h : ¬ langSemanticReducesUsing relEnv lang p q) :
     ¬ (languageOperationalLambdaTheoryUsing relEnv lang).rewriteRel
         (constantProgramEndomorphism lang p)
         (constantProgramEndomorphism lang q) := by

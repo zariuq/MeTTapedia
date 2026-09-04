@@ -23,6 +23,7 @@ open Mettapedia.OSLF.Framework.Mode2Skeleton
 open Mettapedia.OSLF.Framework.Mode2PureBoundary
 open Mettapedia.OSLF.Framework.ModeMapPredCommutingSquares
 open Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 /-- The doctrine's Galois field is definitionally the framework one. -/
 @[simp] theorem doctrine_galois_is_langGalois (L : LanguageDef) :
@@ -45,7 +46,7 @@ theorem eqCategory_mapPred_functorial
 /-- Runtime edges in mode skeleton agree with category-wrapper predicate pullback. -/
 @[simp] theorem runtime_mode_mapPred_agrees
     {L₁ L₂ : LanguageDef}
-    (f : Hom L₁ L₂) (ψ : Pattern → Prop) :
+    (f : Hom L₁ L₂) (ψ : EquationPredicate (langGSLT L₂)) :
     Mode2Skeleton.ModeHom.mapPred (Mode2Skeleton.ModeHom.runtimeMap f) ψ =
       mapPred f ψ := rfl
 
@@ -58,7 +59,8 @@ theorem eqCategory_mapPred_functorial
 /-- Coherence: runtime-mode composition agrees with category-wrapper pullback composition. -/
 theorem runtime_mode_comp_coherence
     {L₁ L₂ L₃ : LanguageDef}
-    (f : Hom L₁ L₂) (g : Hom L₂ L₃) (ψ : Pattern → Prop) :
+    (f : Hom L₁ L₂) (g : Hom L₂ L₃)
+    (ψ : EquationPredicate (langGSLT L₃)) :
     Mode2Skeleton.ModeHom.mapPred
       (Mode2Skeleton.ModeHom.comp
         (Mode2Skeleton.ModeHom.runtimeMap f)
@@ -69,14 +71,16 @@ theorem runtime_mode_comp_coherence
 /-- Eq-category law bundle agrees with direct functorial pullback statement. -/
 theorem eqCategory_law_bundle_agrees
     {L₁ L₂ L₃ : LanguageDef}
-    (f : Hom L₁ L₂) (g : Hom L₂ L₃) (ψ : Pattern → Prop) :
+    (f : Hom L₁ L₂) (g : Hom L₂ L₃)
+    (ψ : EquationPredicate (langGSLT L₃)) :
     mapPred (comp f g) ψ = mapPred f (mapPred g ψ) := by
   exact mapPred_comp_holds f g ψ
 
 /-- Mode-level and category-level runtime/runtime commuting square. -/
 theorem runtime_runtime_square_coherence
     {L₁ L₂ L₃ : LanguageDef}
-    (f : Hom L₁ L₂) (g : Hom L₂ L₃) (ψ : Pattern → Prop) :
+    (f : Hom L₁ L₂) (g : Hom L₂ L₃)
+    (ψ : EquationPredicate (langGSLT L₃)) :
     ModeHom.mapPred (ModeHom.runtimeMap (comp f g)) ψ =
       mapPred (comp f g) ψ := by
   exact runtime_runtime_square f g ψ
@@ -84,7 +88,8 @@ theorem runtime_runtime_square_coherence
 /-- Mode-level and category-level runtime/behavioral commuting square. -/
 theorem runtime_behavioral_square_coherence
     {L₁ L₂ L₃ : LanguageDef}
-    (f : Hom L₁ L₂) (g : Hom L₂ L₃) (ψ : Pattern → Prop) :
+    (f : Hom L₁ L₂) (g : Hom L₂ L₃)
+    (ψ : EquationPredicate (langGSLT L₃)) :
     ModeHom.mapPred (ModeHom.runtimeToBehavioral (comp f g)) ψ =
       mapPred (comp f g) ψ := by
   exact runtime_behavioral_square f g ψ
@@ -93,9 +98,9 @@ theorem runtime_behavioral_square_coherence
 theorem runtime_mode_diamond_transport
     {L₁ L₂ : LanguageDef}
     (f : Hom L₁ L₂)
-    {φ : Pattern → Prop} {p : Pattern}
+    {φ : EquationPredicate (langGSLT L₁)} {p : Pattern}
     (h : langDiamond L₁ φ p) :
-    ∃ q, langReduces L₁ p q ∧ φ q ∧
+    ∃ q, langSemanticReduces L₁ p q ∧ φ q ∧
       ∃ T, LangReducesStar L₂ (f.mapTerm p) T ∧ T = f.mapTerm q := by
   exact diamond_witness_transport (m := f) (φ := φ) (p := p) h
 
@@ -103,9 +108,9 @@ theorem runtime_mode_diamond_transport
 theorem runtime_mode_diamond_transport_comp
     {L₁ L₂ L₃ : LanguageDef}
     (f : Hom L₁ L₂) (g : Hom L₂ L₃)
-    {φ : Pattern → Prop} {p : Pattern}
+    {φ : EquationPredicate (langGSLT L₁)} {p : Pattern}
     (h : langDiamond L₁ φ p) :
-    ∃ q, langReduces L₁ p q ∧ φ q ∧
+    ∃ q, langSemanticReduces L₁ p q ∧ φ q ∧
       ∃ T, LangReducesStar L₃ ((comp f g).mapTerm p) T ∧ T = (comp f g).mapTerm q := by
   exact diamond_witness_transport_comp (m₁₂ := f) (m₂₃ := g) (φ := φ) (p := p) h
 
@@ -114,7 +119,7 @@ theorem matt_provable_now_bundle
     {L₁ L₂ L₃ : LanguageDef}
     (L : LanguageDef)
     (f : Hom L₁ L₂) (g : Hom L₂ L₃)
-    (ψ : Pattern → Prop) :
+    (ψ : EquationPredicate (langGSLT L₃)) :
     mettaILRuntimeBehavioralDoctrine.galois L = langGalois L ∧
     mettaILRuntimeBehavioralDoctrine.modalAdjunction L =
       Mettapedia.OSLF.Framework.CategoryBridge.langModalAdjunction L ∧
@@ -139,7 +144,7 @@ theorem matt_provable_now_bundle_ext
     {L₁ L₂ L₃ : LanguageDef}
     (L : LanguageDef)
     (f : Hom L₁ L₂) (g : Hom L₂ L₃)
-    (ψ : Pattern → Prop) :
+    (ψ : EquationPredicate (langGSLT L₃)) :
     mettaILRuntimeBehavioralDoctrine.galois L = langGalois L ∧
     mettaILRuntimeBehavioralDoctrine.modalAdjunction L =
       Mettapedia.OSLF.Framework.CategoryBridge.langModalAdjunction L ∧
@@ -158,12 +163,12 @@ theorem matt_provable_now_bundle_transport
     {L₁ L₂ L₃ : LanguageDef}
     (L : LanguageDef)
     (f : Hom L₁ L₂) (g : Hom L₂ L₃)
-    (ψ : Pattern → Prop)
-    {φ : Pattern → Prop} {p : Pattern}
+    (ψ : EquationPredicate (langGSLT L₃))
+    {φ : EquationPredicate (langGSLT L₁)} {p : Pattern}
     (h : langDiamond L₁ φ p) :
     mettaILRuntimeBehavioralDoctrine.galois L = langGalois L ∧
     mapPred (comp f g) ψ = mapPred f (mapPred g ψ) ∧
-    (∃ q, langReduces L₁ p q ∧ φ q ∧
+    (∃ q, langSemanticReduces L₁ p q ∧ φ q ∧
       ∃ T, LangReducesStar L₃ ((comp f g).mapTerm p) T ∧
         T = (comp f g).mapTerm q) := by
   refine ⟨doctrine_galois_eq L, mapPred_comp_holds f g ψ, ?_⟩
@@ -179,9 +184,10 @@ theorem pure_mode_isolation
 /-- Specialization: canonical runtime→behavioral witness transport for
 `mettaPure` in the current mode skeleton. -/
 theorem mettaPure_runtime_behavioral_transport
-    {φ : Pattern → Prop} {p : Pattern}
+    {φ : EquationPredicate
+      (langGSLT Mettapedia.Languages.MeTTa.Pure.Core.mettaPure)} {p : Pattern}
     (h : langDiamond Mettapedia.Languages.MeTTa.Pure.Core.mettaPure φ p) :
-    ∃ q, langReduces Mettapedia.Languages.MeTTa.Pure.Core.mettaPure p q ∧ φ q ∧
+    ∃ q, langSemanticReduces Mettapedia.Languages.MeTTa.Pure.Core.mettaPure p q ∧ φ q ∧
       ∃ T, LangReducesStar Mettapedia.Languages.MeTTa.Pure.Core.mettaPure
         (mettaPureRuntimeToBehavioral.termMap p) T ∧
         T = mettaPureRuntimeToBehavioral.termMap q :=

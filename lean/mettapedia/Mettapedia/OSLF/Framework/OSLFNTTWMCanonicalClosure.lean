@@ -29,6 +29,7 @@ open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.CategoryBridge
 open Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 open Mettapedia.OSLF.Framework.ModalSubobjectBridge
@@ -50,6 +51,9 @@ structure CanonicalClosureContext where
       (g : SortPath lang a b) (h : SortPath lang b s),
         pathSem lang g (pathSem lang h seed) = pathSem lang (g.comp h) seed
   hSemEPolicy : ControlledStepPolicy relEnv I
+  hInvariant :
+    EquationInvariant (langGSLTUsing relEnv lang)
+      (commDi qComm (PathSemClosedPred lang φpred))
 
 namespace CanonicalClosureContext
 
@@ -142,6 +146,9 @@ theorem oslf_ntt_wm_star_sound
     (relEnv : RelationEnv)
     (I : EvidenceAtomSem)
     (policy : ModalSubobjectControlledPolicy lang s seed qComm relEnv I)
+    (hInvariant :
+      EquationInvariant (langGSLTUsing relEnv lang)
+        (commDi qComm (PathSemClosedPred lang φpred)))
     {Pm Bm Dm : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
     (pi1m : Pm ⟶ (languageSortRepresentableObj lang s))
     (pi2m : Pm ⟶ Bm)
@@ -180,7 +187,8 @@ theorem oslf_ntt_wm_star_sound
               lang s seed qComm φpred policy.pathLiftPkg))))
     ∧
     (langDiamondUsing relEnv lang
-      (commDi qComm (PathSemClosedPred lang φpred)) pmodal ↔
+      (commDiPredicateUsing relEnv lang qComm
+        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -211,7 +219,8 @@ theorem oslf_ntt_wm_star_sound
                 lang s seed qComm φpred policy.pathLiftPkg))))
       ∧
       (langDiamondUsing relEnv lang
-        (commDi qComm (PathSemClosedPred lang φpred)) pmodal ↔
+        (commDiPredicateUsing relEnv lang qComm
+          (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -224,6 +233,7 @@ theorem oslf_ntt_wm_star_sound
     modalSubobject_commDi_bc_graph_endpoint_of_policy
       (lang := lang) (s := s) (seed := seed) (q := qComm)
       (φ := φpred) (relEnv := relEnv) (I := I) (policy := policy)
+      (hInvariant := hInvariant)
       (pi1 := pi1m) (pi2 := pi2m) (f := fm) (g := gm)
       (hpb := hpbm) (hf := hfm) (hpi2 := hpi2m)
       (X := Xmodal) (p := pmodal)
@@ -245,6 +255,9 @@ theorem oslf_ntt_wm_step_sound
     (relEnv : RelationEnv)
     (I : EvidenceAtomSem)
     (policy : ModalSubobjectControlledPolicy lang s seed qComm relEnv I)
+    (hInvariant :
+      EquationInvariant (langGSLTUsing relEnv lang)
+        (commDi qComm (PathSemClosedPred lang φpred)))
     {Pm Bm Dm : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
     (pi1m : Pm ⟶ (languageSortRepresentableObj lang s))
     (pi2m : Pm ⟶ Bm)
@@ -283,7 +296,8 @@ theorem oslf_ntt_wm_step_sound
               lang s seed qComm φpred policy.pathLiftPkg))))
     ∧
     (langDiamondUsing relEnv lang
-      (commDi qComm (PathSemClosedPred lang φpred)) pmodal ↔
+      (commDiPredicateUsing relEnv lang qComm
+        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -305,6 +319,7 @@ theorem oslf_ntt_wm_step_sound
     (relEnv := relEnv)
     (I := I)
     (policy := policy)
+    (hInvariant := hInvariant)
     (pi1m := pi1m) (pi2m := pi2m) (fm := fm) (gm := gm)
     (hpbm := hpbm) (hfm := hfm) (hpi2m := hpi2m)
     (Xmodal := Xmodal) (pmodal := pmodal)
@@ -328,6 +343,9 @@ theorem oslf_ntt_wm_star_sound_of_pathOrder
         (g : SortPath lang a b) (h : SortPath lang b s),
           pathSem lang g (pathSem lang h seed) = pathSem lang (g.comp h) seed)
     (hSemEPolicy : ControlledStepPolicy relEnv I)
+    (hInvariant :
+      EquationInvariant (langGSLTUsing relEnv lang)
+        (commDi qComm (PathSemClosedPred lang φpred)))
     {Pm Bm Dm : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
     (pi1m : Pm ⟶ (languageSortRepresentableObj lang s))
     (pi2m : Pm ⟶ Bm)
@@ -370,7 +388,8 @@ theorem oslf_ntt_wm_star_sound_of_pathOrder
                 lang s seed qComm hPathOrder)))))
     ∧
     (langDiamondUsing relEnv lang
-      (commDi qComm (PathSemClosedPred lang φpred)) pmodal ↔
+      (commDiPredicateUsing relEnv lang qComm
+        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -394,6 +413,7 @@ theorem oslf_ntt_wm_star_sound_of_pathOrder
     (relEnv := relEnv)
     (I := I)
     (policy := policy)
+    (hInvariant := hInvariant)
     (pi1m := pi1m) (pi2m := pi2m) (fm := fm) (gm := gm)
     (hpbm := hpbm) (hfm := hfm) (hpi2m := hpi2m)
     (Xmodal := Xmodal) (pmodal := pmodal)
@@ -420,6 +440,9 @@ theorem oslf_ntt_wm_step_sound_of_pathOrder
         (g : SortPath lang a b) (h : SortPath lang b s),
           pathSem lang g (pathSem lang h seed) = pathSem lang (g.comp h) seed)
     (hSemEPolicy : ControlledStepPolicy relEnv I)
+    (hInvariant :
+      EquationInvariant (langGSLTUsing relEnv lang)
+        (commDi qComm (PathSemClosedPred lang φpred)))
     {Pm Bm Dm : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
     (pi1m : Pm ⟶ (languageSortRepresentableObj lang s))
     (pi2m : Pm ⟶ Bm)
@@ -462,7 +485,8 @@ theorem oslf_ntt_wm_step_sound_of_pathOrder
                 lang s seed qComm hPathOrder)))))
     ∧
     (langDiamondUsing relEnv lang
-      (commDi qComm (PathSemClosedPred lang φpred)) pmodal ↔
+      (commDiPredicateUsing relEnv lang qComm
+        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -486,6 +510,7 @@ theorem oslf_ntt_wm_step_sound_of_pathOrder
     (relEnv := relEnv)
     (I := I)
     (policy := policy)
+    (hInvariant := hInvariant)
     (pi1m := pi1m) (pi2m := pi2m) (fm := fm) (gm := gm)
     (hpbm := hpbm) (hfm := hfm) (hpi2m := hpi2m)
     (Xmodal := Xmodal) (pmodal := pmodal)
@@ -508,6 +533,9 @@ theorem oslf_formula_ntt_wm_star_sound
     (relEnv : RelationEnv)
     (I : EvidenceAtomSem)
     (policy : ModalSubobjectControlledPolicy lang s seed qComm relEnv I)
+    (hInvariant :
+      EquationInvariant (langGSLTUsing relEnv lang)
+        (commDi qComm (PathSemClosedPred lang φpred)))
     {Pm Bm Dm : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
     (pi1m : Pm ⟶ (languageSortRepresentableObj lang s))
     (pi2m : Pm ⟶ Bm)
@@ -553,7 +581,8 @@ theorem oslf_formula_ntt_wm_star_sound
               lang s seed qComm φpred policy.pathLiftPkg))))
     ∧
     (langDiamondUsing relEnv lang
-      (commDi qComm (PathSemClosedPred lang φpred)) pmodal ↔
+      (commDiPredicateUsing relEnv lang qComm
+        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -588,6 +617,7 @@ theorem oslf_formula_ntt_wm_star_sound
       (relEnv := relEnv)
       (I := I)
       (policy := policy)
+      (hInvariant := hInvariant)
       (pi1m := pi1m) (pi2m := pi2m) (fm := fm) (gm := gm)
       (hpbm := hpbm) (hfm := hfm) (hpi2m := hpi2m)
       (Xmodal := Xmodal) (pmodal := pmodal)
@@ -608,6 +638,9 @@ theorem oslf_formula_ntt_wm_step_sound
     (relEnv : RelationEnv)
     (I : EvidenceAtomSem)
     (policy : ModalSubobjectControlledPolicy lang s seed qComm relEnv I)
+    (hInvariant :
+      EquationInvariant (langGSLTUsing relEnv lang)
+        (commDi qComm (PathSemClosedPred lang φpred)))
     {Pm Bm Dm : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
     (pi1m : Pm ⟶ (languageSortRepresentableObj lang s))
     (pi2m : Pm ⟶ Bm)
@@ -653,7 +686,8 @@ theorem oslf_formula_ntt_wm_step_sound
               lang s seed qComm φpred policy.pathLiftPkg))))
     ∧
     (langDiamondUsing relEnv lang
-      (commDi qComm (PathSemClosedPred lang φpred)) pmodal ↔
+      (commDiPredicateUsing relEnv lang qComm
+        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -688,6 +722,7 @@ theorem oslf_formula_ntt_wm_step_sound
       (relEnv := relEnv)
       (I := I)
       (policy := policy)
+      (hInvariant := hInvariant)
       (pi1m := pi1m) (pi2m := pi2m) (fm := fm) (gm := gm)
       (hpbm := hpbm) (hfm := hfm) (hpi2m := hpi2m)
       (Xmodal := Xmodal) (pmodal := pmodal)
@@ -712,6 +747,9 @@ theorem oslf_formula_ntt_wm_star_sound_of_pathOrder
         (g : SortPath lang a b) (h : SortPath lang b s),
           pathSem lang g (pathSem lang h seed) = pathSem lang (g.comp h) seed)
     (hSemEPolicy : ControlledStepPolicy relEnv I)
+    (hInvariant :
+      EquationInvariant (langGSLTUsing relEnv lang)
+        (commDi qComm (PathSemClosedPred lang φpred)))
     {Pm Bm Dm : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
     (pi1m : Pm ⟶ (languageSortRepresentableObj lang s))
     (pi2m : Pm ⟶ Bm)
@@ -761,7 +799,8 @@ theorem oslf_formula_ntt_wm_star_sound_of_pathOrder
                 lang s seed qComm hPathOrder)))))
     ∧
     (langDiamondUsing relEnv lang
-      (commDi qComm (PathSemClosedPred lang φpred)) pmodal ↔
+      (commDiPredicateUsing relEnv lang qComm
+        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -785,6 +824,7 @@ theorem oslf_formula_ntt_wm_star_sound_of_pathOrder
     (relEnv := relEnv)
     (I := I)
     (policy := policy)
+    (hInvariant := hInvariant)
     (pi1m := pi1m) (pi2m := pi2m) (fm := fm) (gm := gm)
     (hpbm := hpbm) (hfm := hfm) (hpi2m := hpi2m)
     (Xmodal := Xmodal) (pmodal := pmodal)
@@ -849,7 +889,8 @@ theorem oslf_formula_ntt_wm_star_sound_ctx
               ctx.policy.pathLiftPkg))))
     ∧
     (langDiamondUsing ctx.relEnv ctx.lang
-      (commDi ctx.qComm (PathSemClosedPred ctx.lang ctx.φpred)) pmodal ↔
+      (commDiPredicateUsing ctx.relEnv ctx.lang ctx.qComm
+        (PathSemClosedPred ctx.lang ctx.φpred) ctx.hInvariant) pmodal ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj ctx.lang) ctx.relEnv ctx.lang).Edge.obj Xmodal,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -870,6 +911,7 @@ theorem oslf_formula_ntt_wm_star_sound_ctx
     (relEnv := ctx.relEnv)
     (I := ctx.I)
     (policy := ctx.policy)
+    (hInvariant := ctx.hInvariant)
     (pi1m := pi1m) (pi2m := pi2m) (fm := fm) (gm := gm)
     (hpbm := hpbm) (hfm := hfm) (hpi2m := hpi2m)
     (Xmodal := Xmodal) (pmodal := pmodal)
@@ -1426,6 +1468,9 @@ theorem oslf_formula_ntt_wm_step_sound_of_pathOrder
         (g : SortPath lang a b) (h : SortPath lang b s),
           pathSem lang g (pathSem lang h seed) = pathSem lang (g.comp h) seed)
     (hSemEPolicy : ControlledStepPolicy relEnv I)
+    (hInvariant :
+      EquationInvariant (langGSLTUsing relEnv lang)
+        (commDi qComm (PathSemClosedPred lang φpred)))
     {Pm Bm Dm : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
     (pi1m : Pm ⟶ (languageSortRepresentableObj lang s))
     (pi2m : Pm ⟶ Bm)
@@ -1475,7 +1520,8 @@ theorem oslf_formula_ntt_wm_step_sound_of_pathOrder
                 lang s seed qComm hPathOrder)))))
     ∧
     (langDiamondUsing relEnv lang
-      (commDi qComm (PathSemClosedPred lang φpred)) pmodal ↔
+      (commDiPredicateUsing relEnv lang qComm
+        (PathSemClosedPred lang φpred) hInvariant) pmodal ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj lang) relEnv lang).Edge.obj Xmodal,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -1499,6 +1545,7 @@ theorem oslf_formula_ntt_wm_step_sound_of_pathOrder
     (relEnv := relEnv)
     (I := I)
     (policy := policy)
+    (hInvariant := hInvariant)
     (pi1m := pi1m) (pi2m := pi2m) (fm := fm) (gm := gm)
     (hpbm := hpbm) (hfm := hfm) (hpi2m := hpi2m)
     (Xmodal := Xmodal) (pmodal := pmodal)
@@ -1527,6 +1574,9 @@ theorem oslf_formula_ntt_wm_star_internalLogic_endpoint_of_pathOrder
         (g : SortPath lang a b) (h : SortPath lang b s),
           pathSem lang g (pathSem lang h seed) = pathSem lang (g.comp h) seed)
     (hSemEPolicy : ControlledStepPolicy relEnv I)
+    (hInvariant :
+      EquationInvariant (langGSLTUsing relEnv lang)
+        (commDi qComm (PathSemClosedPred lang φpred)))
     (hφTop :
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         lang s seed φpred)
@@ -1597,6 +1647,7 @@ theorem oslf_formula_ntt_wm_star_internalLogic_endpoint_of_pathOrder
       (I := I)
       (hPathOrder := hPathOrder)
       (hSemEPolicy := hSemEPolicy)
+      (hInvariant := hInvariant)
       (pi1m := pi1m) (pi2m := pi2m) (fm := fm) (gm := gm)
       (hpbm := hpbm) (hfm := hfm) (hpi2m := hpi2m)
       (Xmodal := Xmodal) (pmodal := pmodal)

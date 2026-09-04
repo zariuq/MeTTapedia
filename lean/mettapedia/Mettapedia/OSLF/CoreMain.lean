@@ -12,12 +12,10 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 import Mettapedia.OSLF.Framework.RewriteSystem
 import Mettapedia.OSLF.Framework.RhoInstance
 import Mettapedia.OSLF.Framework.DerivedModalities
-import Mettapedia.OSLF.Framework.InterpretedTypeSynthesis
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.FULLStatus
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.GeneratedTyping
-import Mettapedia.OSLF.Framework.SynthesisBridge
 import Mettapedia.OSLF.Framework.ToposReduction
 import Mettapedia.OSLF.Framework.LambdaInstance
 import Mettapedia.OSLF.Framework.PetriNetInstance
@@ -259,7 +257,7 @@ export Mettapedia.OSLF.Framework.IdentityEvidenceTransfer (
   atomSemBase
   atomSemWithIdentity
   sem_withIdentity_disabled_iff
-  checkLangUsing_sat_sound_withIdentity_unused
+  checkLangUsing_sat_sound_withIdentity
   identity_semantic_transfer_endpoint
 )
 
@@ -884,21 +882,21 @@ theorem coreMain_theorem1_substitutability_imageFinite
     hImageFinite hPredFinite
 
 /-- CoreMain-facing canonical Theorem-1 equivalence endpoint on the default
-`langReduces` relation, under explicit finiteness of both the forward and
+equation-saturated semantic relation, under explicit finiteness of both the forward and
 predecessor images. -/
-theorem coreMain_theorem1_langReduces_of_finite
+theorem coreMain_theorem1_langSemanticReduces_of_finite
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (hImageFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
       Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang p q})
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces lang p q})
     (hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
       Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang q p}) :
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces lang q p}) :
     Mettapedia.OSLF.Framework.Theorem1SubstitutabilityEquiv
-      (Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang) I := by
+      (Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces lang) I := by
   exact coreMain_theorem1_substitutability_imageFinite
-    (R := Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang)
+    (R := Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces lang)
     (I := I)
     hImageFinite
     hPredFinite
@@ -1023,9 +1021,9 @@ theorem coreMain_paper_parity_theorem_package
         (lang := lang) (relEnv := relEnv) (C := C) (X := X) p r
       ↔
       ∃ q,
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang p q
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang p q
         ∧
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang q r) := by
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang q r) := by
   refine ⟨coreMain_theorem1_canonical_contract (R := R) (I := I), ?_, ?_⟩
   · intro B C hA hAB hBC
     exact Mettapedia.OSLF.PresheafNativeType.full_presheaf_comparison_bundle_reachable_fragment
@@ -1036,10 +1034,10 @@ theorem coreMain_paper_parity_theorem_package
         (lang := lang) (relEnv := relEnv) (C := C) (X := X) (p := p) (r := r))
 
 /-- CoreMain-facing paper-parity theorem package specialized to the canonical
-relation `langReduces`:
+equation-saturated semantic relation:
 returns Theorem-1 equivalence on the canonical relation plus the existing
 fragment and TOGL composition endpoint fields. -/
-theorem coreMain_paper_parity_theorem_package_langReduces_of_finite
+theorem coreMain_paper_parity_theorem_package_langSemanticReduces_of_finite
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (A : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang)
@@ -1048,12 +1046,12 @@ theorem coreMain_paper_parity_theorem_package_langReduces_of_finite
       Frag X → Mettapedia.OSLF.PresheafNativeType.ScopedReachable X Y → Frag Y)
     (hImageFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
       Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang p q})
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces lang p q})
     (hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
       Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang q p}) :
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces lang q p}) :
     Mettapedia.OSLF.Framework.Theorem1SubstitutabilityEquiv
-      (Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang) I
+      (Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces lang) I
     ∧
     (∀ {B C : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang},
       Frag A →
@@ -1083,12 +1081,12 @@ theorem coreMain_paper_parity_theorem_package_langReduces_of_finite
         (lang := lang) (relEnv := relEnv) (C := C) (X := X) p r
       ↔
       ∃ q,
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang p q
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang p q
         ∧
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang q r) := by
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang q r) := by
   rcases coreMain_paper_parity_theorem_package
       (lang := lang)
-      (R := Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang)
+      (R := Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces lang)
       (I := I) (A := A) (Frag := Frag) hClosed with
     ⟨hContract, hFrag, hTogl⟩
   refine ⟨?_, hFrag, hTogl⟩
@@ -1096,22 +1094,22 @@ theorem coreMain_paper_parity_theorem_package_langReduces_of_finite
     hImageFinite hPredFinite
 
 /-- Canonical CoreMain paper-parity contract record:
-packages the `langReduces` Theorem-1 endpoint, fragment-parametric full-route
+packages the equation-saturated Theorem-1 endpoint, fragment-parametric full-route
 comparison, and TOGL graph-composition law in one field-based API. -/
 structure CoreMainPaperParityCanonicalPackage
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (A : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang)
     (Frag : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang → Prop) : Prop where
-  theorem1_langReduces_of_finite :
+  theorem1_langSemanticReduces_of_finite :
     (∀ p : Mettapedia.OSLF.Framework.Pat,
       Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang p q}) →
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces lang p q}) →
     (∀ p : Mettapedia.OSLF.Framework.Pat,
       Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang q p}) →
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces lang q p}) →
       Mettapedia.OSLF.Framework.Theorem1SubstitutabilityEquiv
-        (Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang) I
+        (Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces lang) I
   full_presheaf_fragment :
     ∀ {B C : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang},
       Frag A →
@@ -1141,9 +1139,9 @@ structure CoreMainPaperParityCanonicalPackage
         (lang := lang) (relEnv := relEnv) (C := C) (X := X) p r
       ↔
       ∃ q,
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang p q
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang p q
         ∧
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang q r
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang q r
 
 /-- CoreMain-facing canonical paper-parity package endpoint:
 builds the field-based contract from the existing specialized theorem package. -/
@@ -1157,7 +1155,7 @@ theorem coreMain_paper_parity_canonical_package
     CoreMainPaperParityCanonicalPackage lang I A Frag := by
   refine ⟨?_, ?_, ?_⟩
   · intro hImageFinite hPredFinite
-    exact coreMain_theorem1_langReduces_of_finite
+    exact coreMain_theorem1_langSemanticReduces_of_finite
       (lang := lang) (I := I) hImageFinite hPredFinite
   · intro B C hA hAB hBC
     exact Mettapedia.OSLF.PresheafNativeType.full_presheaf_comparison_bundle_reachable_fragment
@@ -1227,10 +1225,10 @@ theorem coreMain_paper_parity_full_package
 
 #check @coreMain_paper_parity_full_package
 
-#check Mettapedia.OSLF.Framework.FULLStatus.remaining_eq_nil
-#check Mettapedia.OSLF.Framework.FULLStatus.remainingCount_eq_zero
-#check Mettapedia.OSLF.Framework.FULLStatus.strictRemaining_eq_nil
-#check Mettapedia.OSLF.Framework.FULLStatus.strictRemainingCount_eq_zero
+#check Mettapedia.OSLF.Framework.FULLStatus.remaining_ne_nil
+#check Mettapedia.OSLF.Framework.FULLStatus.remainingCount_eq_three
+#check Mettapedia.OSLF.Framework.FULLStatus.strictRemaining_ne_nil
+#check Mettapedia.OSLF.Framework.FULLStatus.strictRemainingCount_eq_three
 #check Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFull
 #check Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullOSLF
 #check Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReducesAtUsing
@@ -1297,9 +1295,9 @@ theorem coreMain_paper_parity_full_package
 #check @coreMain_theorem1_canonical_contract
 #check @coreMain_theorem1_substitutability_forward
 #check @coreMain_theorem1_substitutability_imageFinite
-#check @coreMain_theorem1_langReduces_of_finite
+#check @coreMain_theorem1_langSemanticReduces_of_finite
 #check @coreMain_paper_parity_theorem_package
-#check @coreMain_paper_parity_theorem_package_langReduces_of_finite
+#check @coreMain_paper_parity_theorem_package_langSemanticReduces_of_finite
 #check @Mettapedia.OSLF.CoreMainPaperParityCanonicalPackage
 #check @Mettapedia.OSLF.coreMain_paper_parity_canonical_package
 -- Category LambdaTheory (Thm 23 upgrade)

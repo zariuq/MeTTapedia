@@ -1,5 +1,4 @@
 import Mathlib.Order.GaloisConnection.Defs
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 
 /-!
 # Derived Modalities from Change-of-Base Adjunctions
@@ -14,8 +13,9 @@ construction at the Set level and proves the key results:
    - `◇ = ∃_src ∘ tgt*` (step-future)
    - `□ = ∀_tgt ∘ src*` (step-past)
 3. **Generic Galois connection**: `◇ ⊣ □` by composing `∃_src ⊣ src*` and `tgt* ⊣ ∀_tgt`
-4. **ρ-calculus**: The derived operators equal `possiblyProp`/`relyProp`,
-   making the existing Galois connection a corollary of the general construction.
+4. **Reusable semantic core**: equation-aware GSLTs instantiate this span
+   construction only after their equation quotient and compatible step have
+   been formed.
 
 ## References
 
@@ -164,69 +164,6 @@ theorem derived_galois (span : ReductionSpan X) :
   -- ◇(φ) ≤ ψ ↔ ∃_src(tgt*(φ)) ≤ ψ ↔ tgt*(φ) ≤ src*(ψ) ↔ φ ≤ ∀_tgt(src*(ψ)) ↔ φ ≤ □(ψ)
   exact Iff.trans (di_pb_adj span.source _ _) (pb_ui_adj span.target _ _)
 
-/-! ## ρ-Calculus Instantiation
-
-We instantiate the generic construction for the ρ-calculus and prove that the
-derived operators equal the hand-written `possiblyProp` and `relyProp` from
-`Reduction.lean`. This makes the existing Galois connection a **corollary** of
-the general adjoint-composition argument.
--/
-
-open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
-
-/-- The ρ-calculus reduction span.
-
-    Edges are pairs `(p, q)` with a witness that `p ⇝ q`.
-    - `source`: the process before reduction
-    - `target`: the process after reduction -/
-def rhoSpan : ReductionSpan Pattern where
-  Edge := { pair : Pattern × Pattern // Nonempty (pair.1 ⇝ pair.2) }
-  source := fun e => e.val.1
-  target := fun e => e.val.2
-
-/-- The derived ◇ equals `possiblyProp`.
-
-    Both compute `fun p => ∃ q, Nonempty (p ⇝ q) ∧ φ q`. -/
-theorem derived_diamond_eq_possiblyProp (φ : Pattern → Prop) :
-    derivedDiamond rhoSpan φ = possiblyProp φ := by
-  ext p
-  simp only [derivedDiamond, di, pb, Function.comp, rhoSpan, possiblyProp]
-  constructor
-  · rintro ⟨⟨⟨p', q⟩, hred⟩, hp_eq, hφ⟩
-    simp at hp_eq
-    subst hp_eq
-    exact ⟨q, hred, hφ⟩
-  · rintro ⟨q, hred, hφ⟩
-    exact ⟨⟨⟨p, q⟩, hred⟩, rfl, hφ⟩
-
-/-- The derived □ equals `relyProp`.
-
-    Both compute `fun p => ∀ q, Nonempty (q ⇝ p) → φ q`. -/
-theorem derived_box_eq_relyProp (φ : Pattern → Prop) :
-    derivedBox rhoSpan φ = relyProp φ := by
-  ext p
-  simp only [derivedBox, ui, pb, Function.comp, rhoSpan, relyProp]
-  constructor
-  · intro h q hred
-    exact h ⟨⟨q, p⟩, hred⟩ rfl
-  · rintro h ⟨⟨q, p'⟩, hred⟩ hp_eq
-    simp at hp_eq
-    subst hp_eq
-    exact h q hred
-
-/-- The ρ-calculus Galois connection `possiblyProp ⊣ relyProp` as a
-    **corollary** of the generic `derived_galois` construction.
-
-    This demonstrates that the OSLF paper's claim — modal operators arise
-    from adjoint triples along the reduction span — is not just a slogan
-    but a formally verified derivation. -/
-theorem rho_galois_from_span : GaloisConnection possiblyProp relyProp := by
-  have h := derived_galois rhoSpan
-  intro φ ψ
-  rw [← derived_diamond_eq_possiblyProp φ, ← derived_box_eq_relyProp ψ]
-  exact h φ ψ
-
 /-! ## Summary
 
 **0 sorries. 0 axioms.**
@@ -235,14 +172,12 @@ This file establishes:
 
 1. `di_pb_adj` / `pb_ui_adj` — the adjoint triple `∃_f ⊣ f* ⊣ ∀_f` at the Set level
 2. `derived_galois` — generic `◇ ⊣ □` for any reduction span
-3. `derived_diamond_eq_possiblyProp` / `derived_box_eq_relyProp` — ρ-calculus operators
-   are instances of the general construction
-4. `rho_galois_from_span` — the ρ-calculus Galois connection as a corollary
+3. `GSLTTypeSynthesis.lean` applies this construction to the semantic
+   equation quotient and compatible step of a GSLT
 
 **Connection to other files:**
-- `Reduction.lean`: provides `possiblyProp`, `relyProp`, `Reduces` (the hand-written versions)
-- `RhoInstance.lean`: uses the hand-written versions in `OSLFTypeSystem`; could be refactored
-  to use the derived versions via this file
+- `RhoInstance.lean`: specializes the canonical equation-respecting
+  GSLT-to-OSLF construction to the presentation-derived rho GSLT
 - `GSLT/Core/ChangeOfBase.lean`: the same adjoint triple at the categorical level;
   this file is the concrete Set-level realization
 -/

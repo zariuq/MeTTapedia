@@ -1,0 +1,69 @@
+; Valid references take the direct indexed path.  Only a request with no exact
+; cell starts the live-frontier cursor.  Reserved capacity cannot suppress the
+; explicit missing observation.
+(exec (00 hybrid-direct-hit)
+  (, (hybrid-request $owner $index)
+     (heap-cell $owner $index $kind $value))
+  (O (- (hybrid-request $owner $index))
+     (+ (heap-result hybrid found $owner $index $kind $value))))
+
+(exec (01 hybrid-fallback-start)
+  (, (hybrid-request $owner $index)
+     (heap-origin $owner $origin)
+     (hybrid-handler fault $fault-rule)
+     (hybrid-handler advance $advance-rule))
+  (O (- (hybrid-request $owner $index))
+     (+ (hybrid-frontier-walk $owner $index $origin))
+     (+ $fault-rule)
+     (+ $advance-rule)))
+
+(exec (02 hybrid-frontier-fault)
+  (, (hybrid-frontier-walk $owner $query $frontier)
+     (heap-frontier $owner $frontier))
+  (O (- (hybrid-frontier-walk $owner $query $frontier))
+     (+ (heap-result hybrid missing $owner $query $frontier))))
+
+(exec (03 hybrid-frontier-advance)
+  (, (hybrid-frontier-walk $owner $query $cursor)
+     (heap-successor $owner $cursor $next)
+     (hybrid-handler fault $fault-rule)
+     (hybrid-handler advance $advance-rule))
+  (O (- (hybrid-frontier-walk $owner $query $cursor))
+     (+ (hybrid-frontier-walk $owner $query $next))
+     (+ $fault-rule)
+     (+ $advance-rule)))
+
+(hybrid-handler fault
+  (exec (02 hybrid-frontier-fault)
+    (, (hybrid-frontier-walk $owner $query $frontier)
+       (heap-frontier $owner $frontier))
+    (O (- (hybrid-frontier-walk $owner $query $frontier))
+       (+ (heap-result hybrid missing $owner $query $frontier)))))
+
+(hybrid-handler advance
+  (exec (03 hybrid-frontier-advance)
+    (, (hybrid-frontier-walk $owner $query $cursor)
+       (heap-successor $owner $cursor $next)
+       (hybrid-handler fault $fault-rule)
+       (hybrid-handler advance $advance-rule))
+    (O (- (hybrid-frontier-walk $owner $query $cursor))
+       (+ (hybrid-frontier-walk $owner $query $next))
+       (+ $fault-rule)
+       (+ $advance-rule))))
+
+; One valid reference.
+(heap-origin heap-A 0)
+(heap-cell heap-A 0 proof node-0)
+(heap-cell heap-A 1 assertion ax-1)
+(heap-successor heap-A 0 1)
+(heap-successor heap-A 1 2)
+(heap-frontier heap-A 2)
+(hybrid-request heap-A 1)
+
+; One invalid reference, with a reserved successor beyond the live frontier.
+(heap-origin heap-B 0)
+(heap-cell heap-B 0 proof node-B0)
+(heap-successor heap-B 0 1)
+(heap-successor heap-B 1 2)
+(heap-frontier heap-B 1)
+(hybrid-request heap-B 3)

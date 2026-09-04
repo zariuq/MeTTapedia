@@ -113,8 +113,8 @@ theorem malformed_raw_goal_oslf :
       generic_checker_alone_accepts_malformed_context
   exact ⟨derivation⟩
 
-/-- Generated raw OSLF reachability and positive intrinsic support are
-provably distinct outside the canonical codec image. -/
+/-- Generated OSLF reachability for the raw schema-search GSLT and positive
+intrinsic support are provably distinct outside the canonical codec image. -/
 theorem malformed_oslf_but_no_positiveMeaning :
     (gsltOSLF (proofSearchGSLT checked)).satisfies [malformedLegacyGoal]
         (derivableNativeType checked).pred ∧

@@ -1,0 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.LeaTTaHumanSoundness
+
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaHumanConformance.leaMatchAtoms_output_satisfiable
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaHumanConformance.leaMatch_observational_sound

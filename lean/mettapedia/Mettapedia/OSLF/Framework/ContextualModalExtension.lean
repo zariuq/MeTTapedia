@@ -67,10 +67,12 @@ theorem inputCarrier_mem_requiredCarrierRoots
     object ∈ SelectedNativeTypeFoundation.requiredCarrierRoots typing := by
   rw [ContextualModalSignature.inputCarriers, List.mem_append] at membership
   rcases membership with relyMembership | resultMembership
-  · unfold SelectedNativeTypeFoundation.requiredCarrierRoots
-    apply List.mem_append_right
-    simpa [ContextualModalSignature.relyBindings,
-      DisplayedContextProfile.carrierTypes] using relyMembership
+  · have contextMembership :
+        object ∈ DisplayedContextProfile.carrierTypes typing := by
+      simpa [ContextualModalSignature.relyBindings,
+        DisplayedContextProfile.carrierTypes] using relyMembership
+    simp [SelectedNativeTypeFoundation.requiredCarrierRoots,
+      contextMembership]
   · simp only [List.mem_singleton] at resultMembership
     subst object
     simp [SelectedNativeTypeFoundation.requiredCarrierRoots]

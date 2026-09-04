@@ -99,7 +99,7 @@ def ESOUpperShardModel.SatStructured
     {World : Type u} {Agent : Type u} {Label : Type w}
     (m : ESOUpperShardModel World Agent Label)
     (claim : StructuredEthicalClaim World Agent) : Prop :=
-  match claim.content, claim.presentation with
+  match claim.content, claim.normativeForm with
   | .propositional φ, .axiological tag =>
       m.valueSemantics.morally tag φ m.currentWorld
   | .propositional φ, .deontic tag =>
@@ -213,9 +213,9 @@ def ESOUpperShardModel.Sat
       0 < (m.epistemicUniversalLoveDegree a).val
   | .normative n =>
       match n with
-      | .presentedValue s =>
+      | .valueJudgment s =>
           ValueSemantics.sat m.valueSemantics m.currentWorld s.sentence
-      | .presentedDeontic s =>
+      | .deonticJudgment s =>
           DeonticSemantics.sat m.deonticSemantics m.currentWorld s.sentence
       | .groundedUniversalDuty a d =>
           0 < (m.universalDutyDegree a d).val
@@ -241,7 +241,7 @@ def esoUpperShardSemantics
     {World : Type u} {Agent : Type u} {Label : Type w}
     (m : ESOUpperShardModel World Agent Label)
     (s : LabeledValueJudgmentSentence World Agent Label) :
-    m.Sat (.normative (.presentedValue s)) ↔
+    m.Sat (.normative (.valueJudgment s)) ↔
       ValueSemantics.sat m.valueSemantics m.currentWorld s.sentence := by
   simp [ESOUpperShardModel.Sat]
 
@@ -249,7 +249,7 @@ def esoUpperShardSemantics
     {World : Type u} {Agent : Type u} {Label : Type w}
     (m : ESOUpperShardModel World Agent Label)
     (s : LabeledDeonticSentence World Agent Label) :
-    m.Sat (.normative (.presentedDeontic s)) ↔
+    m.Sat (.normative (.deonticJudgment s)) ↔
       DeonticSemantics.sat m.deonticSemantics m.currentWorld s.sentence := by
   simp [ESOUpperShardModel.Sat]
 

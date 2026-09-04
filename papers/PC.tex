@@ -2241,6 +2241,25 @@ $1{,}128$ and $1{,}175$ A-numbers, only $260$ shared, and $2{,}043$ combined.  T
 supports TGAD as a portfolio-capable structural view; because both arms used
 backpropagation, it supplies no evidence for or against predictive coding.
 
+That control was subsequently extended to a twelve-cell panel over three target
+languages (A--P, PeTTa, MM2), two arms and two seeds, on $4{,}988$ shared OEIS behaviors.
+It sharpened one distinction that matters for how any decoding treatment is scored here.
+The constrained arm's guarantee is \emph{structural completion}---a well-formed ordered
+tree---which is weaker than producing an operational program: conditional conversion from
+complete tree to executing program fell by $1.5$, $2.1$ and $7.2$ points in the three
+languages even as absolute operational output rose, and distinct whole-OEIS coverage was
+flat for A--P while rising $8.7\%$ and $14.9\%$ for PeTTa and MM2.  The cross-language
+gradient is not identified: parameter increment ($1.0\%$, $12.7\%$, $30.2\%$) and median
+target length ($16$, $178$, $680$ actions, the PeTTa and MM2 corpora being compositional
+translations of the A--P programs) are ranked identically to the effect over the same
+three points.  Stratifying by reference-program length within each language separates
+them: the structural gain rises with target length inside every language, where capacity
+and provenance are held constant, so the cross-language gradient is largely a length
+effect.  The panel remains backpropagation-only throughout and therefore still
+speaks to neither side of the predictive-coding question; it is reported here only
+because it fixes the vocabulary in which the retrieval and adapter results above should
+be read.
+
 \paragraph{A local-module pilot, recorded but not evidential.}
 A subsequent pilot applied local predictive coding to a $2{,}115$-parameter recurrent
 adapter---two width-$32$ states, two scalar couplings, four damped iterations---attached to

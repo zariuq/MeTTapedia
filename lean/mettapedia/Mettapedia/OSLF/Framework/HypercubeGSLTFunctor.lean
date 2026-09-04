@@ -63,6 +63,21 @@ theorem langReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
     (activeRules_subset_of_le h)
     hred
 
+/-- Equation-saturated one-step reduction is monotone along the hypercube
+weakness order.  Hypercube vertex presentations have no equation generators,
+so this is the identity-equivalence specialization of the semantic relation. -/
+theorem langSemanticReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
+    {p q : Pattern}
+    (hred : langSemanticReduces (vertexLanguageDef w) p q) :
+    langSemanticReduces (vertexLanguageDef v) p q := by
+  apply langReduces_to_semantic
+  apply langReduces_mono_vertex h
+  have raw :=
+    (langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+      RelationEnv.empty (lang := vertexLanguageDef w) (by rfl) p q).mp
+      (by simpa [langSemanticReduces] using hred)
+  simpa [langReduces] using raw
+
 /-! ## §2: Multi-Step Reduction Transport
 
 Lift the single-step monotonicity to multi-step (reflexive-transitive closure). -/
@@ -75,7 +90,7 @@ theorem langReducesStar_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
   induction hred with
   | refl _ => exact .refl _
   | step h_pq _ ih =>
-    exact .step (langReduces_mono_vertex h h_pq) ih
+    exact .step (langSemanticReduces_mono_vertex h h_pq) ih
 
 /-! ## §3: Forward Morphism
 
@@ -88,8 +103,11 @@ the target language has strictly more rewrite rules. -/
 structure ForwardMorphism (L₁ L₂ : LanguageDef) where
   /-- Maps L₁ terms to L₂ terms -/
   mapTerm : Pattern → Pattern
+  /-- The term map descends to the semantic equation classes. -/
+  map_equiv : ∀ {left right}, (langGSLT L₁).Equiv left right →
+    (langGSLT L₂).Equiv (mapTerm left) (mapTerm right)
   /-- Every L₁ single-step reduction is matched by L₂ multi-step reduction -/
-  forward_sim : ∀ p q, langReduces L₁ p q →
+  forward_sim : ∀ p q, langSemanticReduces L₁ p q →
     ∃ T, LangReducesStar L₂ (mapTerm p) T ∧ T = mapTerm q
 
 /-- Multi-step forward simulation -/
@@ -108,7 +126,15 @@ theorem ForwardMorphism.forward_multi
 def weaknessForwardMorphism {v w : ProbabilityVertex} (h : v ≤ w) :
     ForwardMorphism (vertexLanguageDef w) (vertexLanguageDef v) where
   mapTerm := id
-  forward_sim _ q hred := ⟨q, .single (langReduces_mono_vertex h hred), rfl⟩
+  map_equiv := by
+    intro left right equivalent
+    have equal : left = right :=
+      (langGSLT_equiv_iff_eq_of_equation_free
+        (lang := vertexLanguageDef w) (by rfl) left right).mp equivalent
+    subst right
+    exact (langGSLT (vertexLanguageDef v)).equations.refl _
+  forward_sim _ q hred :=
+    ⟨q, .single (langSemanticReduces_mono_vertex h hred), rfl⟩
 
 /-! ## §4: Forward Fiber over the Hypercube
 
@@ -177,10 +203,13 @@ it is also satisfied at any stronger vertex. -/
     there exists a reduct satisfying φ in the stronger theory. -/
 theorem diamond_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
     {φ : Pattern → Prop} {p : Pattern}
-    (hdiam : ∃ q, langReduces (vertexLanguageDef w) p q ∧ φ q) :
-    ∃ q, langReduces (vertexLanguageDef v) p q ∧ φ q := by
+    (hdiam : langDiamond (vertexLanguageDef w)
+      (equationPredicateOfEquationFree (by rfl) φ) p) :
+    langDiamond (vertexLanguageDef v)
+      (equationPredicateOfEquationFree (by rfl) φ) p := by
+  rw [langDiamond_spec] at hdiam ⊢
   obtain ⟨q, hred, hphi⟩ := hdiam
-  exact ⟨q, langReduces_mono_vertex h hred, hphi⟩
+  exact ⟨q, langSemanticReduces_mono_vertex h hred, hphi⟩
 
 /-! ## §8: Concrete Examples -/
 

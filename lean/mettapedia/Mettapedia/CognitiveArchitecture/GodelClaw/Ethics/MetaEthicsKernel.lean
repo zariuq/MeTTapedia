@@ -142,7 +142,7 @@ theorem ComputableConflictDiscipline.action_admissible_iff
 - and a conflict discipline.
 
 The paradigm set is intentionally pluralistic: the theory may have one primary
-presentation while admitting faithful views in other paradigms. -/
+paradigm while admitting faithful views in other paradigms. -/
 structure MetaEthicalTheory (World : Type u) (Agent : Type u)
     extends ScrutabilityBase World Agent where
   primaryParadigm : EthicalParadigm
@@ -201,13 +201,13 @@ theorem ActionRendering.toPracticalBridge_actionQuery_deontic_toAxiological_ofLe
       rendering.toClaim a =
         ({ subject := subject
            content := .propositional φ
-           presentation := .deontic tag
+           normativeForm := .deontic tag
            ground := ground
            role := role } : StructuredEthicalClaim World Agent)) :
     (rendering.toPracticalBridge (StructuredEthicsQueryEncoder.ofLegacy labeler enc)).actionQuery a =
       ({ subject := subject
          content := .propositional φ
-         presentation := .axiological (deonticToMoralValue tag)
+         normativeForm := .axiological (deonticToMoralValue tag)
          ground := ground
          role := role } : StructuredEthicalClaim World Agent).toQuery
         (StructuredEthicsQueryEncoder.ofLegacy labeler enc) := by

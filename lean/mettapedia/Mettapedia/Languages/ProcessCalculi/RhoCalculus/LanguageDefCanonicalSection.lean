@@ -71,7 +71,7 @@ private theorem rhoDrop_argument_hasSort
 
 /-- Orienting quote/drop cancellation preserves the declaration-derived name
 sort in arbitrary open typing contexts. -/
-private theorem normalizeQuote_hasSort
+theorem normalizeQuote_hasSort
     {free : FreeTypeContext} {bound : List TypeExpr} {process : Pattern}
     (typed : HasSort rhoCalc free bound process "Proc") :
     HasSort rhoCalc free bound (normalizeQuote process) "Name" := by
@@ -99,7 +99,7 @@ private theorem normalizeQuote_hasSort
       simpa [normalizeQuote] using rho_quote_hasSort typed
 
 /-- Inversion of the bare parallel representation at rho's process sort. -/
-private theorem rhoParallel_elementsHaveType
+theorem rhoParallel_elementsHaveType
     {free : FreeTypeContext} {bound : List TypeExpr}
     {elements : List Pattern}
     (typed : HasSort rhoCalc free bound
@@ -139,7 +139,7 @@ private theorem rhoParallel_elementsHaveType
 
 /-- Pointwise characterization of declaration-derived collection-element
 typing. -/
-private theorem elementsHaveType_iff_forall_mem
+theorem elementsHaveType_iff_forall_mem
     {free : FreeTypeContext} {bound : List TypeExpr}
     {elements : List Pattern} {elementType : TypeExpr} :
     ElementsHaveType rhoCalc free bound elements elementType ↔
@@ -166,7 +166,7 @@ private theorem elementsHaveType_iff_forall_mem
 
 /-- Splicing one sorted process into a surrounding parallel presentation
 retains pointwise process sorting. -/
-private theorem bagSplice_elementsHaveType
+theorem bagSplice_elementsHaveType
     {free : FreeTypeContext} {bound : List TypeExpr} {process : Pattern}
     (typed : HasSort rhoCalc free bound process "Proc") :
     ElementsHaveType rhoCalc free bound (bagSplice process) TypeExpr.proc := by
@@ -188,7 +188,7 @@ private theorem bagSplice_elementsHaveType
 
 /-- Flattening nested parallel components preserves pointwise process
 sorting. -/
-private theorem flatMap_bagSplice_elementsHaveType
+theorem flatMap_bagSplice_elementsHaveType
     {free : FreeTypeContext} {bound : List TypeExpr}
     {processes : List Pattern}
     (typed : ElementsHaveType rhoCalc free bound processes TypeExpr.proc) :
@@ -203,7 +203,7 @@ private theorem flatMap_bagSplice_elementsHaveType
       process processMember
 
 /-- Filtering a sorted parallel component list preserves its element sort. -/
-private theorem filter_elementsHaveType
+theorem filter_elementsHaveType
     {free : FreeTypeContext} {bound : List TypeExpr}
     {processes : List Pattern} (keep : Pattern → Bool)
     (typed : ElementsHaveType rhoCalc free bound processes TypeExpr.proc) :
@@ -224,7 +224,7 @@ private theorem sortPatterns_elementsHaveType
   exact typed process (sortPatterns_mem_iff.mp membership)
 
 /-- Parallel normalization preserves the declaration-derived element sort. -/
-private theorem normalizeBagElements_elementsHaveType
+theorem normalizeBagElements_elementsHaveType
     {free : FreeTypeContext} {bound : List TypeExpr}
     {processes : List Pattern}
     (typed : ElementsHaveType rhoCalc free bound processes TypeExpr.proc) :
@@ -236,7 +236,7 @@ private theorem normalizeBagElements_elementsHaveType
 
 /-- Collapsing the representation-only empty or singleton parallel wrapper
 preserves rho's process sort. -/
-private theorem collapseBag_hasSort
+theorem collapseBag_hasSort
     {free : FreeTypeContext} {bound : List TypeExpr}
     {processes : List Pattern}
     (typed : ElementsHaveType rhoCalc free bound processes TypeExpr.proc) :

@@ -24,7 +24,15 @@ namespace Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-! ## Collection Types -/
 
-/-- Collection types supported by MeTTaIL -/
+/-- Collection representations supported by MeTTaIL.
+
+The tag determines the equality and multiplicity discipline of the immediate
+collection payload in a realization: vectors retain order, bags forget order
+but retain counts, and sets forget both order and duplicate occurrences.  It
+does not by itself select a language operator, flatten nested occurrences, or
+name a unit term.  Associativity/flattening and unit equations therefore need
+an explicit algebraic presentation tying a constructor to this collection
+representation; idempotence is appropriate only for the set case. -/
 inductive CollType where
   | vec      : CollType  -- Vec(T): ordered list
   | hashBag  : CollType  -- HashBag(T): multiset (with counts)
@@ -79,6 +87,16 @@ def baseType (name : String) : TypeExpr := .base name
 def proc : TypeExpr := baseType "Proc"
 def name : TypeExpr := baseType "Name"
 def term : TypeExpr := baseType "Term"
+
+/-- Whether a type expression mentions a collection of the given kind at any
+    depth. -/
+def mentionsCollection (kind : CollType) : TypeExpr → Bool
+  | .base _ => false
+  | .arrow domain codomain =>
+      mentionsCollection kind domain || mentionsCollection kind codomain
+  | .multiBinder body => mentionsCollection kind body
+  | .collection collectionType element =>
+      collectionType == kind || mentionsCollection kind element
 def funType (dom cod : TypeExpr) : TypeExpr := .arrow dom cod
 def bag (elem : TypeExpr) : TypeExpr := .collection .hashBag elem
 def vec (elem : TypeExpr) : TypeExpr := .collection .vec elem
@@ -371,15 +389,36 @@ inductive TermEvalPolicy where
   | oracle
 deriving Repr, DecidableEq
 
+/-- Declared algebraic laws of a collection constructor beyond its collection
+    tag.  A bag tag by itself justifies permutation invariance with
+    multiplicity, and a set tag adds idempotence; neither justifies flattening
+    a nested occurrence into the enclosing collection or a unit element,
+    because those laws name the operator and its unit.  This declaration
+    supplies them for the rule it is attached to:
+    - `flatten`: a nested occurrence of the same collection constructor is
+      equivalent to its elements spliced in place, and a singleton collection
+      is equivalent to its element;
+    - `unit`: the named nullary constructor is absorbed inside the collection,
+      and the empty collection is equivalent to it.
+    The laws are generated only for collections sorted at the rule's category,
+    so two bag sorts of one language never exchange laws. -/
+structure CollectionAlgebra where
+  flatten : Bool := true
+  unit : Option String := none
+deriving Repr, DecidableEq
+
 /-- A grammar rule defines a constructor. `syntaxPattern` is the single
     authored syntax authority and may contain both plain tokens/nonterminals and
-    Rust-style metasyntax operators. -/
+    Rust-style metasyntax operators.  `algebra?` declares the flattening and
+    unit laws of a bare collection constructor; it is meaningful only when the
+    rule's single parameter is a collection of the rule's own category. -/
 structure GrammarRule where
   label : String
   category : String
   params : List TermParam
   syntaxPattern : List SyntaxItem
   evalPolicy? : Option TermEvalPolicy := none
+  algebra? : Option CollectionAlgebra := none
 deriving Repr, DecidableEq
 
 /-! ## Patterns (Locally Nameless) -/
@@ -754,6 +793,10 @@ compile paper-style name equality and reflective substitution.  Input and
 output constructors are deliberately absent: they belong to a particular
 process syntax, while canonical matching and substitution also apply to
 derived presentations whose interaction constructors have been retyped.
+The pair `parallelCollection`/`parallelUnitConstructor` is also why a bare
+`CollType` is insufficient to infer monoidal equations: the collection tag
+supplies the immediate payload discipline, while this declaration selects the
+operator whose nested occurrences flatten and the term acting as its unit.
 The `quoteDropEquation` field links the compiler to an equation already
 authored in the same `LanguageDef`; it does not silently add an equation. -/
 structure ReflectivePresentationDecl where
@@ -980,6 +1023,28 @@ def ofCore
     equations
     rewrites }
 
+/-- Whether some authored constructor parameter mentions a collection of the
+    given kind.  A presentation that never declares a bag or set carries none
+    of the tag-derived laws. -/
+def usesCollection (lang : LanguageDef) (kind : CollType) : Bool :=
+  lang.terms.any fun rule => rule.params.any fun parameter =>
+    (TermParam.typeExpr parameter).mentionsCollection kind
+
+/-- Whether any authored constructor carries a collection-algebra
+    declaration. -/
+def hasAlgebraDeclarations (lang : LanguageDef) : Bool :=
+  lang.terms.any fun rule => rule.algebra?.isSome
+
+/-- A presentation generates no static equations: no authored equations, no
+    bag or set collections, and no collection-algebra declarations.  Binder
+    alpha-equivalence is already canonicalized at the semantic carrier
+    boundary and therefore is not an additional generated equation.  This is
+    the exact condition under which the generated equation theory is
+    syntactic equality. -/
+def isEquationFree (lang : LanguageDef) : Bool :=
+  lang.equations.isEmpty && !lang.usesCollection .hashBag &&
+    !lang.usesCollection .hashSet && !lang.hasAlgebraDeclarations
+
 def addType (lang : LanguageDef) (typeName : String) : LanguageDef :=
   { lang with types := lang.types ++ [TypeDecl.plain typeName] }
 
@@ -1182,6 +1247,172 @@ def hasCanonicalBinderMetadataList : List Pattern → Bool
       hasCanonicalBinderMetadata pattern && hasCanonicalBinderMetadataList rest
 
 end
+
+/-! ## Generic alpha quotient
+
+`Pattern` retains binder display names for source-preserving diagnostics, but
+those names are not part of object-language binding.  The generic semantic
+boundary erases them once; de Bruijn indices continue to carry all binding
+information.  Thus alpha-equivalence is equality after this erasure, and the
+canonical locally nameless carrier is a section of the resulting quotient.
+-/
+
+/-- Erase source-only binder display names while preserving the complete term
+shape and every de Bruijn index. -/
+def eraseBinderMetadata : Pattern → Pattern
+  | .bvar index => .bvar index
+  | .fvar name => .fvar name
+  | .apply constructor arguments =>
+      .apply constructor (arguments.map eraseBinderMetadata)
+  | .lambda _ body => .lambda none body.eraseBinderMetadata
+  | .multiLambda arity _ body =>
+      .multiLambda arity [] body.eraseBinderMetadata
+  | .subst body replacement =>
+      .subst body.eraseBinderMetadata replacement.eraseBinderMetadata
+  | .collection kind elements rest =>
+      .collection kind (elements.map eraseBinderMetadata) rest
+
+/-- The Boolean canonical-metadata predicate is pointwise on lists. -/
+theorem hasCanonicalBinderMetadataList_eq_true_iff (patterns : List Pattern) :
+    hasCanonicalBinderMetadataList patterns = true ↔
+      ∀ pattern ∈ patterns, pattern.hasCanonicalBinderMetadata = true := by
+  induction patterns with
+  | nil => simp [hasCanonicalBinderMetadataList]
+  | cons pattern patterns inductionHypothesis =>
+      simp [hasCanonicalBinderMetadataList, inductionHypothesis,
+        or_imp, forall_and]
+
+/-- Erasure always lands in the canonical locally nameless representation. -/
+theorem eraseBinderMetadata_hasCanonicalBinderMetadata (pattern : Pattern) :
+    pattern.eraseBinderMetadata.hasCanonicalBinderMetadata = true := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar index => simp [eraseBinderMetadata, hasCanonicalBinderMetadata]
+  | hfvar name => simp [eraseBinderMetadata, hasCanonicalBinderMetadata]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [eraseBinderMetadata, hasCanonicalBinderMetadata]
+      rw [hasCanonicalBinderMetadataList_eq_true_iff]
+      intro normalized membership
+      rw [List.mem_map] at membership
+      obtain ⟨argument, argumentMember, rfl⟩ := membership
+      exact inductionHypothesis argument argumentMember
+  | hlambda binder body inductionHypothesis =>
+      simpa [eraseBinderMetadata, hasCanonicalBinderMetadata] using
+        inductionHypothesis
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simpa [eraseBinderMetadata, hasCanonicalBinderMetadata] using
+        inductionHypothesis
+  | hsubst body replacement bodyHypothesis replacementHypothesis =>
+      simp [eraseBinderMetadata, hasCanonicalBinderMetadata,
+        bodyHypothesis, replacementHypothesis]
+  | hcollection kind elements rest inductionHypothesis =>
+      simp only [eraseBinderMetadata, hasCanonicalBinderMetadata]
+      rw [hasCanonicalBinderMetadataList_eq_true_iff]
+      intro normalized membership
+      rw [List.mem_map] at membership
+      obtain ⟨element, elementMember, rfl⟩ := membership
+      exact inductionHypothesis element elementMember
+
+/-- Erasing an already canonical pattern changes nothing. -/
+theorem eraseBinderMetadata_eq_self_of_canonical {pattern : Pattern}
+    (canonical : pattern.hasCanonicalBinderMetadata = true) :
+    pattern.eraseBinderMetadata = pattern := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar index => simp [eraseBinderMetadata]
+  | hfvar name => simp [eraseBinderMetadata]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [hasCanonicalBinderMetadata] at canonical
+      simp only [eraseBinderMetadata]
+      apply congrArg (Pattern.apply constructor)
+      simpa only [List.map_id, id_eq] using
+        (List.map_congr_left (l := arguments)
+          (f := eraseBinderMetadata) (g := id) (fun argument membership =>
+            inductionHypothesis argument membership
+              ((hasCanonicalBinderMetadataList_eq_true_iff arguments).mp
+                canonical argument membership)))
+  | hlambda binder body inductionHypothesis =>
+      simp only [hasCanonicalBinderMetadata, Bool.and_eq_true,
+        Option.isNone_iff_eq_none] at canonical
+      obtain ⟨rfl, bodyCanonical⟩ := canonical
+      simp [eraseBinderMetadata, inductionHypothesis bodyCanonical]
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simp only [hasCanonicalBinderMetadata, Bool.and_eq_true,
+        List.isEmpty_iff] at canonical
+      obtain ⟨rfl, bodyCanonical⟩ := canonical
+      simp [eraseBinderMetadata, inductionHypothesis bodyCanonical]
+  | hsubst body replacement bodyHypothesis replacementHypothesis =>
+      simp only [hasCanonicalBinderMetadata, Bool.and_eq_true] at canonical
+      simp [eraseBinderMetadata, bodyHypothesis canonical.1,
+        replacementHypothesis canonical.2]
+  | hcollection kind elements rest inductionHypothesis =>
+      simp only [hasCanonicalBinderMetadata] at canonical
+      simp only [eraseBinderMetadata]
+      apply congrArg (fun normalized => Pattern.collection kind normalized rest)
+      simpa only [List.map_id, id_eq] using
+        (List.map_congr_left (l := elements)
+          (f := eraseBinderMetadata) (g := id) (fun element membership =>
+            inductionHypothesis element membership
+              ((hasCanonicalBinderMetadataList_eq_true_iff elements).mp
+                canonical element membership)))
+
+/-- Binder-metadata erasure is a genuine normalization. -/
+@[simp]
+theorem eraseBinderMetadata_idempotent (pattern : Pattern) :
+    pattern.eraseBinderMetadata.eraseBinderMetadata =
+      pattern.eraseBinderMetadata :=
+  eraseBinderMetadata_eq_self_of_canonical
+    (eraseBinderMetadata_hasCanonicalBinderMetadata pattern)
+
+/-- Generic alpha-equivalence on source-preserving patterns. -/
+def AlphaEquiv (left right : Pattern) : Prop :=
+  left.eraseBinderMetadata = right.eraseBinderMetadata
+
+/-- Alpha-equivalence is the setoid presented by binder-metadata erasure. -/
+def alphaSetoid : Setoid Pattern where
+  r := AlphaEquiv
+  iseqv :=
+    { refl := fun _ => rfl
+      symm := fun equality => equality.symm
+      trans := fun first second => first.trans second }
+
+/-- Canonical patterns have no residual alpha quotient: alpha-equivalence is
+literal equality there. -/
+theorem alphaEquiv_iff_eq_of_canonical {left right : Pattern}
+    (leftCanonical : left.hasCanonicalBinderMetadata = true)
+    (rightCanonical : right.hasCanonicalBinderMetadata = true) :
+    AlphaEquiv left right ↔ left = right := by
+  rw [AlphaEquiv,
+    eraseBinderMetadata_eq_self_of_canonical leftCanonical,
+    eraseBinderMetadata_eq_self_of_canonical rightCanonical]
+
+/-- Select the canonical locally nameless representative of an alpha class. -/
+def alphaRepresentative : Quotient alphaSetoid → Pattern :=
+  Quotient.lift eraseBinderMetadata (fun _ _ equivalent => equivalent)
+
+@[simp]
+theorem alphaRepresentative_mk (pattern : Pattern) :
+    alphaRepresentative (Quotient.mk alphaSetoid pattern) =
+      pattern.eraseBinderMetadata :=
+  rfl
+
+/-- The selected representative belongs to the original alpha class. -/
+theorem alphaRepresentative_spec (equivalenceClass : Quotient alphaSetoid) :
+    Quotient.mk alphaSetoid (alphaRepresentative equivalenceClass) =
+      equivalenceClass := by
+  refine Quotient.inductionOn equivalenceClass ?_
+  intro pattern
+  apply Quotient.sound
+  exact eraseBinderMetadata_idempotent pattern
+
+/-- Positive canary: changing a display name does not change binding. -/
+example (body : Pattern) :
+    AlphaEquiv (.lambda (some "x") body) (.lambda (some "y") body) := by
+  simp [AlphaEquiv, eraseBinderMetadata]
+
+/-- Negative canary: erasure does not confuse binder arity. -/
+example :
+    ¬ AlphaEquiv (.lambda (some "x") (.bvar 0))
+        (.multiLambda 1 ["x"] (.bvar 0)) := by
+  simp [AlphaEquiv, eraseBinderMetadata]
 
 end Pattern
 
@@ -3135,7 +3366,11 @@ def rhoCalc : LanguageDef := {
     -- PPar . ps:HashBag(Proc) |- "{" ps.*sep("|") "}" : Proc
     { label := "PPar", category := "Proc",
       params := [.simple "ps" (TypeExpr.bag TypeExpr.proc)],
-      syntaxPattern := [.terminal "{", .nonTerminal "ps", .separator "|", .terminal "}"] },
+      syntaxPattern := [.terminal "{", .nonTerminal "ps", .separator "|", .terminal "}"],
+      -- Parallel composition is associative (nested bags flatten, a
+      -- singleton bag is its element) with unit `PZero`; commutativity and
+      -- multiplicity already follow from the bag tag.
+      algebra? := some { flatten := true, unit := some "PZero" } },
 
     -- POutput . n:Name, q:Proc |- n "!" "(" q ")" : Proc
     { label := "POutput", category := "Proc",

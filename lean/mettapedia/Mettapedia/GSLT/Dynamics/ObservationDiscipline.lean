@@ -43,8 +43,9 @@ def Total {Event : Type uEvent}
     (collector : WitnessCollector Event) : Prop :=
   forall events, Exists fun result => collector.collect events = some result
 
-/-- Independent collectors retain both witness coordinates.  Acceptance is
-componentwise: failure of either coordinate remains visible. -/
+/-- Synchronized product of two collectors on the same history.  It retains
+both witness coordinates on common success; failure of either coordinate
+produces one joint failure and does not retain which coordinate failed. -/
 def prod {Event : Type uEvent}
     (left : WitnessCollector.{uEvent, uContainer} Event)
     (right : WitnessCollector.{uEvent, uOtherContainer} Event) :
@@ -138,8 +139,9 @@ def mapValue {Event : Type uEvent}
   Value := OtherValue
   readout := translate ∘ discipline.readout
 
-/-- Combine two disciplines without identifying either witness or value
-coordinate. -/
+/-- Synchronized product of two disciplines on the same history.  Witness and
+value coordinates remain distinct on common success, but failure of either
+collection axis produces one joint failure. -/
 def prod {Event : Type uEvent}
     (left : ObservationDiscipline.{uEvent, uContainer, uValue} Event)
     (right : ObservationDiscipline.{uEvent, uOtherContainer, uOtherValue} Event) :

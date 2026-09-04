@@ -1,4 +1,5 @@
 import Mettapedia.OSLF.Formula
+import Mettapedia.GSLT.LanguageDef.CanonicalSection
 import Mettapedia.PLN.Evidence.EvidenceQuantale
 import Mettapedia.PLN.WorldModel.PLNWorldModel
 import Mathlib.Order.ConditionallyCompleteLattice.Finset
@@ -46,6 +47,11 @@ namespace Mettapedia.OSLF.Framework.EvidenceSemantics
 
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.GSLT
+open Mettapedia.GSLT.LanguageDef
+open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.PLN.WorldModel.PLNWorldModel
@@ -56,6 +62,70 @@ open scoped ENNReal
 
 /-- BinaryEvidence-valued atom interpretation: maps atom names and patterns to BinaryEvidence. -/
 abbrev EvidenceAtomSem := String → Pattern → BinaryEvidence
+
+/-! ## Evidence observations on equation classes -/
+
+/-- An evidence-valued observation is semantic when it assigns identical
+evidence to equation-equivalent presentations. -/
+def EvidenceEquationInvariant (theory : GSLT)
+    (observation : theory.Term → BinaryEvidence) : Prop :=
+  ∀ ⦃left right : theory.Term⦄,
+    theory.Equiv left right → observation left = observation right
+
+/-- Evidence-valued predicates on authored terms equipped with the proof that
+they are functions on the GSLT's equation classes. -/
+abbrev EquationEvidencePredicate (theory : GSLT) :=
+  { observation : theory.Term → BinaryEvidence //
+    EvidenceEquationInvariant theory observation }
+
+/-- Equation-respecting evidence interpretations for one `LanguageDef`. -/
+abbrev EquationEvidenceAtomSemUsing (relEnv : RelationEnv)
+    (lang : LanguageDef) :=
+  String → EquationEvidencePredicate (langGSLTUsing relEnv lang)
+
+/-- Default-environment equation-respecting evidence interpretations. -/
+abbrev EquationEvidenceAtomSem (lang : LanguageDef) :=
+  EquationEvidenceAtomSemUsing RelationEnv.empty lang
+
+/-- Turn an authored evidence interpretation into a semantic one by querying
+the computable representative of each equation class.  The section proof is
+what makes this operation exact rather than a hidden choice of syntax. -/
+def canonicalEvidenceAtomSemUsing
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (canonical : ComputableSetoidSection Pattern
+      (langGSLTUsing relEnv lang).equations)
+    (interpretation : EvidenceAtomSem) :
+    EquationEvidenceAtomSemUsing relEnv lang :=
+  fun atom =>
+    ⟨fun term => interpretation atom (canonical.normalize term), by
+      intro left right equivalent
+      exact congrArg (interpretation atom) (canonical.complete equivalent)⟩
+
+/-- Default-environment form of `canonicalEvidenceAtomSemUsing`. -/
+def canonicalEvidenceAtomSem
+    (lang : LanguageDef)
+    (canonical : ComputableSetoidSection Pattern (langGSLT lang).equations)
+    (interpretation : EvidenceAtomSem) : EquationEvidenceAtomSem lang :=
+  canonicalEvidenceAtomSemUsing RelationEnv.empty lang canonical interpretation
+
+/-- Thresholding an equation-respecting evidence interpretation produces the
+atomic predicates accepted by the sole equation-respecting OSLF. -/
+def thresholdEquationAtomSemUsing
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (interpretation : EquationEvidenceAtomSemUsing relEnv lang)
+    (threshold : BinaryEvidence) : EquationAtomSemUsing relEnv lang :=
+  fun atom =>
+    ⟨fun term => threshold ≤ (interpretation atom).1 term, by
+      intro left right equivalent
+      change (threshold ≤ (interpretation atom).1 left) ↔
+        (threshold ≤ (interpretation atom).1 right)
+      rw [(interpretation atom).2 equivalent]⟩
+
+/-- Default-environment form of `thresholdEquationAtomSemUsing`. -/
+def thresholdEquationAtomSem
+    (lang : LanguageDef) (interpretation : EquationEvidenceAtomSem lang)
+    (threshold : BinaryEvidence) : EquationAtomSem lang :=
+  thresholdEquationAtomSemUsing RelationEnv.empty lang interpretation threshold
 
 /-! ## BinaryEvidence-Valued Formula Semantics -/
 
@@ -102,6 +172,131 @@ noncomputable def semE (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem) 
 
 @[simp] theorem semE_box (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem) (φ : OSLFFormula) (p : Pattern) :
     semE R I (.box φ) p = ⨅ (q : {q // R q p}), semE R I φ q.val := rfl
+
+/-! ## Canonical evidence-valued OSLF semantics -/
+
+/-- Evidence-valued interpretation over the equation-saturated operational
+relation.  Atomic evidence has already descended through the language's
+equation theory. -/
+noncomputable def langSemEUsing
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (interpretation : EquationEvidenceAtomSemUsing relEnv lang) :
+    OSLFFormula → Pattern → BinaryEvidence :=
+  semE (langSemanticReducesUsing relEnv lang)
+    (fun atom term => (interpretation atom).1 term)
+
+/-- Default-environment evidence-valued OSLF semantics. -/
+noncomputable def langSemE
+    (lang : LanguageDef) (interpretation : EquationEvidenceAtomSem lang) :
+    OSLFFormula → Pattern → BinaryEvidence :=
+  langSemEUsing RelationEnv.empty lang interpretation
+
+/-- The evidence denotation of every formula is a function on equation
+classes whenever its atomic observations are. -/
+theorem langSemE_equationInvariantUsing
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (interpretation : EquationEvidenceAtomSemUsing relEnv lang)
+    (formula : OSLFFormula) :
+    EvidenceEquationInvariant (langGSLTUsing relEnv lang)
+      (langSemEUsing relEnv lang interpretation formula) := by
+  change EvidenceEquationInvariant (langGSLTUsing relEnv lang)
+    (semE (langSemanticReducesUsing relEnv lang)
+      (fun atom term => (interpretation atom).1 term) formula)
+  induction formula with
+  | top => simp [EvidenceEquationInvariant, semE]
+  | bot => simp [EvidenceEquationInvariant, semE]
+  | atom atom => exact (interpretation atom).2
+  | and first second firstIH secondIH =>
+      intro left right equivalent
+      simp only [semE_and]
+      rw [firstIH equivalent, secondIH equivalent]
+  | or first second firstIH secondIH =>
+      intro left right equivalent
+      simp only [semE_or]
+      rw [firstIH equivalent, secondIH equivalent]
+  | imp first second firstIH secondIH =>
+      intro left right equivalent
+      simp only [semE_imp]
+      rw [firstIH equivalent, secondIH equivalent]
+  | dia body bodyIH =>
+      intro left right equivalent
+      simp only [semE_dia]
+      apply le_antisymm
+      · apply iSup_le
+        intro target
+        obtain ⟨target', step', targetEquivalent⟩ :=
+          (langGSLTUsing relEnv lang).rewrites_resp_left
+            equivalent target.property
+        calc
+          semE (langSemanticReducesUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) body target.val =
+              semE (langSemanticReducesUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) body target' :=
+            bodyIH targetEquivalent
+          _ ≤ ⨆ (candidate :
+                {candidate // langSemanticReducesUsing relEnv lang right candidate}),
+                semE (langSemanticReducesUsing relEnv lang)
+                  (fun atom term => (interpretation atom).1 term) body candidate.val :=
+            le_iSup (fun candidate :
+              {candidate // langSemanticReducesUsing relEnv lang right candidate} =>
+                semE (langSemanticReducesUsing relEnv lang)
+                  (fun atom term => (interpretation atom).1 term) body candidate.val)
+              ⟨target', step'⟩
+      · apply iSup_le
+        intro target
+        obtain ⟨target', step', targetEquivalent⟩ :=
+          (langGSLTUsing relEnv lang).rewrites_resp_left
+            ((langGSLTUsing relEnv lang).equations.iseqv.symm equivalent)
+            target.property
+        calc
+          semE (langSemanticReducesUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) body target.val =
+              semE (langSemanticReducesUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) body target' :=
+            bodyIH targetEquivalent
+          _ ≤ ⨆ (candidate :
+                {candidate // langSemanticReducesUsing relEnv lang left candidate}),
+                semE (langSemanticReducesUsing relEnv lang)
+                  (fun atom term => (interpretation atom).1 term) body candidate.val :=
+            le_iSup (fun candidate :
+              {candidate // langSemanticReducesUsing relEnv lang left candidate} =>
+                semE (langSemanticReducesUsing relEnv lang)
+                  (fun atom term => (interpretation atom).1 term) body candidate.val)
+              ⟨target', step'⟩
+  | box body bodyIH =>
+      intro left right equivalent
+      simp only [semE_box]
+      apply le_antisymm
+      · apply le_iInf
+        intro source
+        have sourceStep : langSemanticReducesUsing relEnv lang source.val left :=
+          (langGSLTUsing relEnv lang).rewrites_resp_right source.property
+            ((langGSLTUsing relEnv lang).equations.iseqv.symm equivalent)
+        exact iInf_le
+          (fun candidate :
+            {candidate // langSemanticReducesUsing relEnv lang candidate left} =>
+              semE (langSemanticReducesUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) body candidate.val)
+          ⟨source.val, sourceStep⟩
+      · apply le_iInf
+        intro source
+        have sourceStep : langSemanticReducesUsing relEnv lang source.val right :=
+          (langGSLTUsing relEnv lang).rewrites_resp_right source.property equivalent
+        exact iInf_le
+          (fun candidate :
+            {candidate // langSemanticReducesUsing relEnv lang candidate right} =>
+              semE (langSemanticReducesUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) body candidate.val)
+          ⟨source.val, sourceStep⟩
+
+/-- Default-environment equation-invariance theorem. -/
+theorem langSemE_equationInvariant
+    (lang : LanguageDef) (interpretation : EquationEvidenceAtomSem lang)
+    (formula : OSLFFormula) :
+    EvidenceEquationInvariant (langGSLT lang)
+      (langSemE lang interpretation formula) := by
+  simpa [langSemE, langGSLT] using
+    langSemE_equationInvariantUsing RelationEnv.empty lang interpretation formula
 
 /-! ## Structural Monotonicity -/
 

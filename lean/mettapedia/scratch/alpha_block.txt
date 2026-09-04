@@ -1,0 +1,191 @@
+/-- Every member of a typed element list is typed at the list's element
+type. -/
+theorem kimi_hasType_of_mem_elements {language : LanguageDef}
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {elements : List Pattern} {elementType : TypeExpr}
+    (typed : WellSorted.ElementsHaveType language free bound elements
+      elementType)
+    {element : Pattern} (membership : element ∈ elements) :
+    WellSorted.HasType language free bound element elementType := by
+  induction elements with
+  | nil => simp at membership
+  | cons head tail inductionHypothesis =>
+      cases typed with
+      | cons headTyped tailTyped =>
+          cases membership with
+          | head => exact headTyped
+          | tail _ membershipTail =>
+              exact inductionHypothesis tailTyped membershipTail
+
+/-- The value chains a typed drop-tower contributor can live at: a leaf
+`Proc` or `Name` colour image, optionally wrapped in hash bags. -/
+inductive RhoTypedChainColour (color : CostStaticColor) : TypeExpr → Prop
+  | nameLeaf : RhoTypedChainColour color
+      (mapTypeExpr (color.symbols rhoCIGSLT) (.base "Name"))
+  | procLeaf : RhoTypedChainColour color
+      (mapTypeExpr (color.symbols rhoCIGSLT) (.base "Proc"))
+  | collection {inner : TypeExpr} :
+      RhoTypedChainColour color inner →
+      RhoTypedChainColour color (.collection .hashBag inner)
+
+/-- A cost declaration's parallel collection is rho's hash bag. -/
+theorem rhoDeclC_parallelCollection_hashBag (color : CostStaticColor) :
+    (costStaticReflectivePresentationDecl rhoCIGSLT color
+      rhoReflectivePresentation.toReflectivePresentationDecl
+      ).parallelCollection = .hashBag := by
+  cases color <;> rfl
+
+/-- The category computed for a colour-static quote wire is a name leaf. -/
+theorem chainColour_quoteCat (color : CostStaticColor) :
+    RhoTypedChainColour color
+      (mapTypeExpr (color.symbols rhoCIGSLT) (.base "Name")) :=
+  .nameLeaf
+
+/-- The category computed for a colour-static drop wire is a proc leaf. -/
+theorem chainColour_dropCat (color : CostStaticColor) :
+    RhoTypedChainColour color
+      (mapTypeExpr (color.symbols rhoCIGSLT) (.base "Proc")) :=
+  .procLeaf
+
+/-- **Self-typing of drop-tower contributors.**  Any typed pattern whose
+canonical form under the current colour is a colour-static drop tower is
+typed at a chain: a colour `Name`/`Proc` image under hash bags. -/
+theorem rho_dropTower_typed_chain
+    (color : CostStaticColor) {targetFree : FreeTypeContext}
+    {targetBound : List TypeExpr} :
+    ∀ (fuel : Nat) {V : TypeExpr} {element : Pattern} {y : Pattern},
+      sizeOf element ≤ fuel →
+      HasType rhoCIGSLT.costWholeLanguage targetFree targetBound
+        element V →
+      canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl) element =
+        .apply
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).dropConstructor [y] →
+      RhoTypedChainColour color V := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro V element y measure typed canonicalElement
+      exact absurd measure (by cases element <;> simp)
+  | succ fuel inductionHypothesis =>
+      intro V element y measure typed canonicalElement
+      cases element with
+      | bvar index =>
+          simp [canonicalize] at canonicalElement
+      | fvar name =>
+          simp [canonicalize] at canonicalElement
+      | lambda binder body =>
+          simp [canonicalize] at canonicalElement
+      | multiLambda arity binders body =>
+          simp [canonicalize] at canonicalElement
+      | subst body replacement =>
+          simp [canonicalize] at canonicalElement
+      | apply wire arguments =>
+          by_cases quoteHead : wire =
+              (costStaticReflectivePresentationDecl rhoCIGSLT color
+                rhoReflectivePresentation.toReflectivePresentationDecl
+                ).quoteConstructor
+          · obtain ⟨rule, ruleMembership, labelEquality, _notBare,
+                typeEquality, _argumentsTyped⟩ :=
+              WellSorted.hasType_apply_inversion typed
+            have categoryForm :=
+              rho_costWhole_rule_category_of_quoteWire color ruleMembership
+                (labelEquality.trans quoteHead)
+            rw [canonicalize_apply_eq_finish,
+              quoteHead] at canonicalElement
+            rcases finishNormalizeReflectiveApply_quote_cases
+                (costStaticReflectivePresentationDecl rhoCIGSLT color
+                  rhoReflectivePresentation.toReflectivePresentationDecl)
+                (arguments.map (canonicalize
+                  (costStaticReflectivePresentationDecl rhoCIGSLT color
+                    rhoReflectivePresentation.toReflectivePresentationDecl)))
+              with ⟨inner, mappedEq, resultEq⟩ | resultEq
+            · rw [typeEquality.trans categoryForm]
+              exact .nameLeaf
+            · rw [resultEq] at canonicalElement
+              exact absurd (Pattern.apply.inj canonicalElement).1 (by
+                intro quoteIsDrop
+                rw [rhoDecl_quoteConstructor, rhoDecl_dropConstructor]
+                  at quoteIsDrop
+                exact absurd (costStaticColor_constructor_inj quoteIsDrop)
+                  (by decide))
+          · rw [canonicalize_apply_of_ne_quote _ quoteHead] at
+              canonicalElement
+            have wireEq := (Pattern.apply.inj canonicalElement).1
+            obtain ⟨rule, ruleMembership, labelEquality, _notBare,
+                typeEquality, _argumentsTyped⟩ :=
+              WellSorted.hasType_apply_inversion typed
+            have categoryForm :=
+              rho_costWhole_rule_category_of_dropWire color ruleMembership
+                (labelEquality.trans wireEq)
+            rw [typeEquality.trans categoryForm]
+            exact .procLeaf
+      | collection collectionType elements rest =>
+          cases rest with
+          | some restName =>
+              rw [canonicalize_collection_rest] at canonicalElement
+              simp at canonicalElement
+          | none =>
+              by_cases parallelType : collectionType =
+                  (costStaticReflectivePresentationDecl rhoCIGSLT color
+                    rhoReflectivePresentation.toReflectivePresentationDecl
+                    ).parallelCollection
+              · rw [parallelType] at canonicalElement
+                have notUnit : .apply
+                      (costStaticReflectivePresentationDecl rhoCIGSLT color
+                        rhoReflectivePresentation.toReflectivePresentationDecl
+                        ).dropConstructor [y] ≠ .apply
+                      (costStaticReflectivePresentationDecl rhoCIGSLT color
+                        rhoReflectivePresentation
+                          .toReflectivePresentationDecl)
+                        .parallelUnitConstructor [] := by
+                  intro unitEq
+                  have wireEq := (Pattern.apply.inj unitEq).1
+                  rw [rhoDecl_dropConstructor, rhoDecl_unitConstructor]
+                    at wireEq
+                  exact absurd (costStaticColor_constructor_inj wireEq)
+                    (by decide)
+                have notParallelResult : ∀ nested, .apply
+                      (costStaticReflectivePresentationDecl rhoCIGSLT color
+                        rhoReflectivePresentation
+                          .toReflectivePresentationDecl).dropConstructor [y] ≠
+                    .collection
+                      (costStaticReflectivePresentationDecl rhoCIGSLT color
+                        rhoReflectivePresentation
+                          .toReflectivePresentationDecl)
+                        .parallelCollection nested none := by
+                  intro nested equality
+                  exact Pattern.noConfusion equality
+                obtain ⟨member, memberMem, memberCanonical⟩ :=
+                  exists_member_of_parallel_collapse _ canonicalElement
+                    notUnit notParallelResult
+                rcases WellSorted.hasType_collection_inversion typed with
+                  ⟨elementTypeInner, typeEquality, elementsTyped⟩ |
+                  ⟨rule, parameterName, elementTypeInner, ruleMembership,
+                    parameterShape, typeEquality, elementsTyped⟩
+                · -- direct collection typing: recurse the contributor
+                  have memberTyped :=
+                    kimi_hasType_of_mem_elements elementsTyped memberMem
+                  have memberChain :=
+                    inductionHypothesis (V := elementTypeInner)
+                      (by
+                        have memberBound := List.sizeOf_lt_of_mem memberMem
+                        have collBound : sizeOf elements <
+                            sizeOf (Pattern.collection collectionType
+                              elements none) := by
+                          simp_wf
+                          omega
+                        omega)
+                      memberTyped memberCanonical
+                  rw [parallelType, rhoDeclC_parallelCollection_hashBag]
+                    at typeEquality
+                  subst typeEquality
+                  exact .collection memberChain
+                · sorry
+              · rw [canonicalize_collection_of_ne_parallel _ parallelType]
+                  at canonicalElement
+                simp at canonicalElement
+

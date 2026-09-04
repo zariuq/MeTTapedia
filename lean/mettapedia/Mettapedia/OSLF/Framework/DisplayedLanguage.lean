@@ -3,7 +3,7 @@ import Mettapedia.OSLF.Framework.DisplayedRewriteSiteTransport
 /-!
 # Validated languages with selected OSLF source sites
 
-A sparse syntactic OSLF construction needs more input than a bare language:
+A sparse source-indexed OSLF construction needs more input than a bare language:
 it needs the finite displayed occurrences requested by the consuming
 translation.  This module packages that input and its morphisms.
 

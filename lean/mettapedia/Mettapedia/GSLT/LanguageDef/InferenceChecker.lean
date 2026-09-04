@@ -87,6 +87,20 @@ def patternsMetavariableOccurrencesAt (depth : Nat) :
 termination_by patterns => sizeOf patterns
 end
 
+/-- Metavariable occurrence extraction preserves list concatenation.  This
+is the structural route used to locate a formal in one premise or in the
+conclusion without normalizing unrelated rule schemas. -/
+theorem patternsMetavariableOccurrencesAt_append (depth : Nat) :
+    ∀ first second : List Pattern,
+      patternsMetavariableOccurrencesAt depth (first ++ second) =
+        patternsMetavariableOccurrencesAt depth first ++
+          patternsMetavariableOccurrencesAt depth second
+  | [], second => by simp [patternsMetavariableOccurrencesAt]
+  | head :: tail, second => by
+      simp only [List.cons_append, patternsMetavariableOccurrencesAt]
+      rw [patternsMetavariableOccurrencesAt_append depth tail second,
+        List.append_assoc]
+
 def RuleSchema.patterns (rule : RuleSchema) : List Pattern :=
   rule.premises ++ [rule.conclusion]
 
@@ -487,6 +501,24 @@ def argumentsValidAt : List (String × Nat) → List Pattern → Bool
   | (_, depth) :: formals, argument :: arguments =>
       argumentValidAt depth argument && argumentsValidAt formals arguments
   | _, _ => false
+
+/-- Successful positional validation consumes exactly one argument for every
+declared formal. -/
+theorem argumentsValidAt_length
+    {formals : List (String × Nat)} {arguments : List Pattern}
+    (valid : argumentsValidAt formals arguments = true) :
+    formals.length = arguments.length := by
+  induction formals generalizing arguments with
+  | nil =>
+      cases arguments with
+      | nil => rfl
+      | cons argument arguments => simp [argumentsValidAt] at valid
+  | cons formal formals inductionHypothesis =>
+      cases arguments with
+      | nil => simp [argumentsValidAt] at valid
+      | cons argument arguments =>
+          simp only [argumentsValidAt, Bool.and_eq_true] at valid
+          simpa using inductionHypothesis valid.2
 
 def RuleInstance.argumentsValidFor (ruleInstance : RuleInstance)
     (formals : List (String × Nat)) : Bool :=

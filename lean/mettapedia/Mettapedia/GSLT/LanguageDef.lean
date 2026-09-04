@@ -4,7 +4,10 @@ import Mettapedia.GSLT.LanguageDef.ValidatedInferenceExtension
 import Mettapedia.GSLT.LanguageDef.ExtensionComposition
 import Mettapedia.GSLT.LanguageDef.ExtensionGluing
 import Mettapedia.GSLT.LanguageDef.InferenceNewJudgmentConservativity
+import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificateExtension
+import Mettapedia.GSLT.LanguageDef.SourcePreservingCalculusCoproduct
 import Mettapedia.GSLT.LanguageDef.ExtendedLanguageDef
+import Mettapedia.GSLT.LanguageDef.BinderAlphaSemantics
 import Mettapedia.GSLT.LanguageDef.TotalGSLT
 import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 import Mettapedia.GSLT.LanguageDef.GradedLanguageDef
@@ -41,6 +44,7 @@ import Mettapedia.GSLT.LanguageDef.WorklistRegionCompilation
 import Mettapedia.GSLT.LanguageDef.ReusableSlotBufferCompilation
 import Mettapedia.GSLT.LanguageDef.EpochStampedSlotCompilation
 import Mettapedia.GSLT.LanguageDef.AuthoritativeSlotTrailCompilation
+import Mettapedia.GSLT.LanguageDef.UnificationEliminationTraceCompilation
 import Mettapedia.GSLT.LanguageDef.ScopedAuthoritativeSlotCompilation
 import Mettapedia.GSLT.LanguageDef.AuthoritativeMAMActivationProtocol
 import Mettapedia.GSLT.LanguageDef.PreparedIndexedValueTableCompilation
@@ -56,11 +60,24 @@ import Mettapedia.GSLT.LanguageDef.TwoPhaseFrameMachinePhysicalRefinement
 import Mettapedia.GSLT.LanguageDef.IndexedCompressedProgramPlanCompilation
 import Mettapedia.GSLT.LanguageDef.CompiledPlanOptimizationPipeline
 import Mettapedia.GSLT.LanguageDef.CompiledPlanOpenActivationViewCompilation
+import Mettapedia.GSLT.LanguageDef.CompiledOpenMatcherPlan
+import Mettapedia.GSLT.LanguageDef.MatchDecisionContract
+import Mettapedia.GSLT.LanguageDef.MatchDecisionPrefixObservationCompilation
+import Mettapedia.GSLT.LanguageDef.CandidateSupersetVerificationAlgebra
+import Mettapedia.GSLT.LanguageDef.MatchDecisionVerificationReceipt
+import Mettapedia.GSLT.LanguageDef.CompiledPlanDelayedBindingObservation
+import Mettapedia.GSLT.LanguageDef.TermObservationCoalgebra
+import Mettapedia.GSLT.LanguageDef.DelayedSourceBindingCompilation
+import Mettapedia.GSLT.LanguageDef.SupportRestrictedSourceViewCompilation
+import Mettapedia.GSLT.LanguageDef.SupportRestrictedSourceFamilyCompilation
+import Mettapedia.GSLT.LanguageDef.StratifiedDelayedCapture
+import Mettapedia.GSLT.LanguageDef.DelayedBindingStoreRefinement
+import Mettapedia.GSLT.LanguageDef.AppendRollbackBuilderProductRefinement
 import Mettapedia.GSLT.LanguageDef.LogicExtension
 import Mettapedia.GSLT.LanguageDef.OracleExtension
 import Mettapedia.GSLT.LanguageDef.ReflectionExtension
 import Mettapedia.GSLT.LanguageDef.RuntimeProfileExtension
-import Mettapedia.GSLT.LanguageDef.AuthoredTransformation
+import Mettapedia.GSLT.LanguageDef.LanguageDefTransformation
 
 /-!
 # Compositional language definitions

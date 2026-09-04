@@ -1,5 +1,6 @@
 import Mettapedia.Languages.Metamath.MM2DataEncoding
 import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveExecution
+import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveSinkBatchRemoval
 
 /-!
 # Incremental compressed Metamath proof execution in MM2
@@ -863,6 +864,51 @@ theorem extract_compressedAssertionRejoinRule_exact :
       some compressedAssertionRejoinDirective := by
   rfl
 
+theorem compressedAssertionRejoinRule_exec_shape :
+    ∃ input output,
+      compressedAssertionRejoinRule =
+        .expression
+          [.symbol "exec",
+           .expression [.symbol "32", .symbol "mm-compressed-assertion-rejoin"],
+           input, output] := by
+  exact ⟨_, _, rfl⟩
+
+/-- Rejoining the compact verifier preserves every normal-stack row already
+present in the execution space.  Those rows are the synchronized view used by
+later normal-assertion handoffs; rejoin consumes only its control, context, and
+temporary label rows. -/
+theorem compressedAssertionRejoin_preserves_normal_stack_row
+    (rows : List Subst) (space : List Atom) (tail : List Atom)
+    (present : .expression (.symbol "mm-stack-cell" :: tail) ∈ space) :
+    .expression (.symbol "mm-stack-cell" :: tail) ∈
+      cApplyReflectiveSinkBatch rows space
+        compressedAssertionRejoinDirective.rule.tmpl.sinks := by
+  change .expression (.symbol "mm-stack-cell" :: tail) ∈
+    cApplyReflectiveSinkBatch rows space compressedAssertionRejoinSinks
+  apply mem_cApplyReflectiveSinkBatch_of_add_or_nonremoving_remove rows
+    (present := present)
+  intro sink member
+  simp only [compressedAssertionRejoinSinks, List.mem_cons, List.not_mem_nil,
+    or_false] at member
+  rcases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · exact Or.inr ⟨_, rfl, fun substitution _ => by
+      unfold compressedAssertionContextTemplate
+      apply instantiateTemplateAtom?_expression_symbol_head_ne
+      decide⟩
+  · exact Or.inr ⟨_, rfl, fun substitution _ => by
+      unfold compressedAssertionReturnedControlTemplate
+      apply instantiateTemplateAtom?_expression_symbol_head_ne
+      decide⟩
+  · exact Or.inr ⟨_, rfl, fun substitution _ => by
+      unfold compressedAssertionNormalLabelRowTemplate
+      apply instantiateTemplateAtom?_expression_symbol_head_ne
+      decide⟩
+  · exact Or.inl ⟨_, rfl⟩
+  · exact Or.inl ⟨_, rfl⟩
+  · exact Or.inl ⟨_, rfl⟩
+  · exact Or.inl ⟨_, rfl⟩
+  · exact Or.inl ⟨_, rfl⟩
+
 private def compressedAssertionLaunchSelf : Atom :=
   .expression
     [.symbol "exec", compressedAssertionLaunchLocation,
@@ -1041,6 +1087,15 @@ theorem extract_compressedProofStepRule_exact :
       some compressedProofStepDirective := by
   rfl
 
+theorem compressedProofStepRule_exec_shape :
+    ∃ input output,
+      compressedProofStepRule =
+        .expression
+          [.symbol "exec",
+           .expression [.symbol "08", .symbol "mm-compressed-proof-step"],
+           input, output] := by
+  exact ⟨_, _, rfl⟩
+
 /-! ## Total compact heap lookup on the generated frontier -/
 
 private def compressedHeapLookupAtEndTemplate : Atom :=
@@ -1090,6 +1145,16 @@ theorem extract_compressedHeapLookupFaultRule_exact :
     extractSupportedSourceExecFact compressedHeapLookupFaultRule =
       some compressedHeapLookupFaultDirective := by
   rfl
+
+theorem compressedHeapLookupFaultRule_exec_shape :
+    ∃ input output,
+      compressedHeapLookupFaultRule =
+        .expression
+          [.symbol "exec",
+           .expression
+             [.symbol "08", .symbol "mm-compressed-heap-lookup-fault"],
+           input, output] := by
+  exact ⟨_, _, rfl⟩
 
 private def compressedHeapLookupProofHandlerTemplate : Atom :=
   .expression
@@ -1162,6 +1227,16 @@ theorem extract_compressedHeapLookupAdvanceRule_exact :
     extractSupportedSourceExecFact compressedHeapLookupAdvanceRule =
       some compressedHeapLookupAdvanceDirective := by
   rfl
+
+theorem compressedHeapLookupAdvanceRule_exec_shape :
+    ∃ input output,
+      compressedHeapLookupAdvanceRule =
+        .expression
+          [.symbol "exec",
+           .expression
+             [.symbol "09", .symbol "mm-compressed-heap-lookup-advance"],
+           input, output] := by
+  exact ⟨_, _, rfl⟩
 
 private def compressedSaveScanTemplate : Atom :=
   .expression
@@ -1826,8 +1901,11 @@ def compressedVerifierStaticRows : List Atom :=
 #print axioms extract_compressedQuestionRule_exact
 #print axioms extract_compressedTerminalRule_exact
 #print axioms extract_compressedProofStepRule_exact
+#print axioms compressedProofStepRule_exec_shape
 #print axioms extract_compressedHeapLookupAdvanceRule_exact
+#print axioms compressedHeapLookupAdvanceRule_exec_shape
 #print axioms extract_compressedHeapLookupFaultRule_exact
+#print axioms compressedHeapLookupFaultRule_exec_shape
 #print axioms extract_compressedSaveRule_exact
 #print axioms extract_compressedSaveFaultRule_exact
 #print axioms extract_compressedWordAdvanceRule_exact
@@ -1835,6 +1913,7 @@ def compressedVerifierStaticRows : List Atom :=
 #print axioms extract_compressedIncompleteRule_exact
 #print axioms extract_compressedAssertionLaunchRule_exact
 #print axioms extract_compressedAssertionRejoinRule_exact
+#print axioms compressedAssertionRejoinRule_exec_shape
 #print axioms extract_compressedAssertionResumeRule_exact
 #print axioms compressedVerifierRules_extract_exact
 

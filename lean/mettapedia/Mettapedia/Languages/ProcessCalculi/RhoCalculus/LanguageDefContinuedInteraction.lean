@@ -26,23 +26,23 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefCanonicalSection
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalSupport
 
 private def rhoContinuationParallelConstructor :
-    AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoParallelConstructor.1, by
     exact rhoParallelConstructor.2⟩
 
 private def rhoContinuationQuoteConstructor :
-    AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoQuoteConstructor.1, by
     exact rhoQuoteConstructor.2⟩
 
 private def rhoContinuationDropConstructor :
-    AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoCalc.terms[1], by
     change rhoCalc.terms[1] ∈ rhoCalc.terms
     exact List.getElem_mem (by simp [rhoCalc])⟩
 
 private def rhoContinuationUnitConstructor :
-    AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoCalc.terms[0], by
     change rhoCalc.terms[0] ∈ rhoCalc.terms
     exact List.getElem_mem (by simp [rhoCalc])⟩
@@ -267,9 +267,9 @@ theorem rhoContinuationRetyping_redexRetypable :
   unfold ContinuationRetypingPlan.RedexRetypable
   change HasType rhoContinuationRetyping.generatedLanguage
     rhoContinuationRetyping.generatedFreeContext []
-    (mapPattern costBasePresentationSymbols rhoCommRewrite.left)
+    (mapPattern costBaseLanguageDefSymbolMap rhoCommRewrite.left)
     (.base (costBaseSortName "Proc"))
-  simp only [rhoCommRewrite, mapPattern, costBasePresentationSymbols]
+  simp only [rhoCommRewrite, mapPattern, costBaseLanguageDefSymbolMap]
   apply HasType.collectionConstructor
       (rule := costBaseConstructor rhoInteractionCut rhoCalc.terms[3])
       (parameterName := "ps")
@@ -346,7 +346,7 @@ theorem rhoContinuationRetyping_equationsRetypable :
   · refine ⟨.base (costBaseSortName "Name"), ?_, ?_⟩
     · simp only [costBaseEquation, Mettapedia.GSLT.LanguageDef.mapEquation,
         mapTypeContext,
-        costBaseStaticSymbols, costBasePresentationSymbols, mapPattern,
+        costBaseStaticSymbols, costBaseLanguageDefSymbolMap, mapPattern,
         List.map]
       change HasType rhoContinuationRetyping.generatedLanguage
         (FreeTypeContext.ofList
@@ -383,7 +383,7 @@ theorem rhoContinuationRetyping_equationsRetypable :
         · exact .nil
     · simp only [costBaseEquation, Mettapedia.GSLT.LanguageDef.mapEquation,
         mapTypeContext,
-        costBaseStaticSymbols, costBasePresentationSymbols, mapPattern,
+        costBaseStaticSymbols, costBaseLanguageDefSymbolMap, mapPattern,
         List.map]
       change HasType rhoContinuationRetyping.generatedLanguage
         (FreeTypeContext.ofList
@@ -486,7 +486,7 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
     · simpa [reflectiveRetypingLanguage,
         costBaseReflectivePresentationDecl, costBaseStaticSymbols,
         costBaseStaticReflectiveSymbols,
-        costBasePresentationSymbols,
+        costBaseLanguageDefSymbolMap,
         Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation, rhoCalc] using
         rhoContinuationRetyping.costBaseConstructor_filter_generated
@@ -496,7 +496,7 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
     · simpa [reflectiveRetypingLanguage,
         costBaseReflectivePresentationDecl, costBaseStaticSymbols,
         costBaseStaticReflectiveSymbols,
-        costBasePresentationSymbols,
+        costBaseLanguageDefSymbolMap,
         Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation, rhoCalc] using
         rhoContinuationRetyping.costBaseConstructor_filter_generated
@@ -506,7 +506,7 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
     · simpa [reflectiveRetypingLanguage,
         costBaseReflectivePresentationDecl, costBaseStaticSymbols,
         costBaseStaticReflectiveSymbols,
-        costBasePresentationSymbols,
+        costBaseLanguageDefSymbolMap,
         Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation, rhoCalc] using
         rhoContinuationRetyping.costBaseConstructor_filter_generated
@@ -517,7 +517,7 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
         rhoInteractivePresentation, rhoValidatedLanguageDef, rhoCalc,
         rhoReflectivePresentation, costBaseReflectivePresentationDecl,
         costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-        costBasePresentationSymbols,
+        costBaseLanguageDefSymbolMap,
         Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         costBaseEquation, costWrappedEquation,
         Mettapedia.GSLT.LanguageDef.mapEquation, costBaseStaticSymbols,
@@ -525,7 +525,7 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
     · left
       constructor <;>
         simp [costBaseEquation, Mettapedia.GSLT.LanguageDef.mapEquation,
-          costBaseStaticSymbols, costBasePresentationSymbols, mapPattern,
+          costBaseStaticSymbols, costBaseLanguageDefSymbolMap, mapPattern,
           rhoCalc, rhoReflectivePresentation,
           costBaseReflectivePresentationDecl,
           costBaseStaticReflectiveSymbols,

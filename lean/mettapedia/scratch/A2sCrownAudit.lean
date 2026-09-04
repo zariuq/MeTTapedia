@@ -1,0 +1,5 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryVariableLeafRoutes
+
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+
+#print axioms rho_collapsingLeafExposureInDomain_allColors

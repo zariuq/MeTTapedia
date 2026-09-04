@@ -96,7 +96,7 @@ theorem not_quoteStatusAgrees_costStatic {source : CIGSLT}
         costBaseReflectivePresentationDecl, mapReflectivePresentation,
         costStaticReflectivePresentationDecl, costWrappedStaticReflectiveSymbols,
         costBaseStaticReflectiveSymbols, costBaseStaticSymbols,
-        costWrappedStaticSymbols, costBasePresentationSymbols] using
+        costWrappedStaticSymbols, costBaseLanguageDefSymbolMap] using
         (costConstructorName_distinct declaration.quoteConstructor).symm
   | wrapped =>
       refine CostStaticAtomKeyCospan.not_quoteStatusAgrees_of_foreignQuote
@@ -105,7 +105,7 @@ theorem not_quoteStatusAgrees_costStatic {source : CIGSLT}
         costBaseReflectivePresentationDecl, mapReflectivePresentation,
         costStaticReflectivePresentationDecl, costWrappedStaticReflectiveSymbols,
         costBaseStaticReflectiveSymbols, costBaseStaticSymbols,
-        costWrappedStaticSymbols, costBasePresentationSymbols] using
+        costWrappedStaticSymbols, costBaseLanguageDefSymbolMap] using
         (costConstructorName_distinct declaration.quoteConstructor)
 
 /-- The profile recognizes **either** colour's quote as a restoration
@@ -139,13 +139,13 @@ theorem costStaticReflectivePresentationDecl_quoteConstructor_ne {source : CIGSL
       costBaseReflectivePresentationDecl, costWrappedReflectivePresentationDecl,
       mapReflectivePresentation, costBaseStaticReflectiveSymbols,
       costWrappedStaticReflectiveSymbols, costBaseStaticSymbols,
-      costWrappedStaticSymbols, costBasePresentationSymbols] using
+      costWrappedStaticSymbols, costBaseLanguageDefSymbolMap] using
       costConstructorName_distinct declaration.quoteConstructor
   · simpa [costStaticReflectivePresentationDecl,
       costBaseReflectivePresentationDecl, costWrappedReflectivePresentationDecl,
       mapReflectivePresentation, costBaseStaticReflectiveSymbols,
       costWrappedStaticReflectiveSymbols, costBaseStaticSymbols,
-      costWrappedStaticSymbols, costBasePresentationSymbols] using
+      costWrappedStaticSymbols, costBaseLanguageDefSymbolMap] using
       (costConstructorName_distinct declaration.quoteConstructor).symm
   · exact absurd rfl distinct
 
@@ -179,11 +179,11 @@ theorem hereditaryConstructorImage_disjoint {source : CIGSLT}
   · exact distinct rfl
   · exact costBaseConstructorName_ne_wrapped leftSource rightSource
       (by simpa [CostStaticColor.symbols, costBaseStaticSymbols,
-        costWrappedStaticSymbols, costBasePresentationSymbols] using
+        costWrappedStaticSymbols, costBaseLanguageDefSymbolMap] using
         leftSpelling.symm.trans rightSpelling)
   · exact costBaseConstructorName_ne_wrapped rightSource leftSource
       (by simpa [CostStaticColor.symbols, costBaseStaticSymbols,
-        costWrappedStaticSymbols, costBasePresentationSymbols] using
+        costWrappedStaticSymbols, costBaseLanguageDefSymbolMap] using
         rightSpelling.symm.trans leftSpelling)
   · exact distinct rfl
 

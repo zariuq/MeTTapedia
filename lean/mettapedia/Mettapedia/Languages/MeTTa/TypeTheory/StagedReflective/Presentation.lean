@@ -2632,7 +2632,7 @@ in the selected presentation is part of every value. -/
 def authoredConstructorAdmissionObject
     (presentation : Mettapedia.GSLT.LanguageDef.ValidatedLanguageDef) :
     Mettapedia.GSLT.LanguageDef.NIKMetalogic.AdmissionObject where
-  Carrier := Mettapedia.GSLT.LanguageDef.StructuralMorphism.AuthoredConstructor
+  Carrier := Mettapedia.GSLT.LanguageDef.StructuralMorphism.DeclaredConstructor
     presentation
   Meaning := fun _ => True
 
@@ -2648,7 +2648,7 @@ def structuralConstructorAdmission
 
 /-- A real constructor value in today's Zero presentation. -/
 def currentZeroEquationConstructor :
-    Mettapedia.GSLT.LanguageDef.StructuralMorphism.AuthoredConstructor
+    Mettapedia.GSLT.LanguageDef.StructuralMorphism.DeclaredConstructor
       Mettapedia.Languages.MeTTa.Prime.LanguageDef.currentZeroPresentation :=
   ⟨Mettapedia.Languages.MeTTa.MeTTaZero.equationConstructor, by
     change List.Mem Mettapedia.Languages.MeTTa.MeTTaZero.equationConstructor
@@ -2681,7 +2681,7 @@ structure LanguageManipulationWitness where
     Mettapedia.Languages.MeTTa.Prime.LanguageDef.currentZeroPresentation ≠
       Mettapedia.Languages.MeTTa.Prime.LanguageDef.currentPrimePresentation
   sourceConstructor :
-    Mettapedia.GSLT.LanguageDef.StructuralMorphism.AuthoredConstructor
+    Mettapedia.GSLT.LanguageDef.StructuralMorphism.DeclaredConstructor
       Mettapedia.Languages.MeTTa.Prime.LanguageDef.currentZeroPresentation
   mapsSourceConstructor :
     ((structuralConstructorAdmission structural).run sourceConstructor).1 =
@@ -2690,7 +2690,7 @@ structure LanguageManipulationWitness where
     ¬ ∃ retraction : Mettapedia.GSLT.LanguageDef.StructuralMorphism
         Mettapedia.Languages.MeTTa.Prime.LanguageDef.currentPrimePresentation
         Mettapedia.Languages.MeTTa.Prime.LanguageDef.currentZeroPresentation,
-      retraction.symbols = Mettapedia.GSLT.LanguageDef.PresentationSymbols.id
+      retraction.symbols = Mettapedia.GSLT.LanguageDef.LanguageDefSymbolMap.id
 
 /-- O13's intrinsic carrier, exact selected Pattern image, nonidentity typed
 operation, and negative reverse witness. -/

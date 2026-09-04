@@ -68,9 +68,9 @@ The selected sort, constructor, and rewrite are subobjects of the sole
 `LanguageDef`; the representation witness only exposes their existing shape. -/
 structure InteractivePresentation where
   presentation : ValidatedLanguageDef
-  interactingSort : AuthoredSort presentation
-  contactConstructor : AuthoredConstructor presentation
-  interactionRewrite : AuthoredRewrite presentation
+  interactingSort : DeclaredSort presentation
+  contactConstructor : DeclaredConstructor presentation
+  interactionRewrite : DeclaredRewrite presentation
   contactRepresentation : ContactRepresentation
   representsContact :
     contactRepresentation?

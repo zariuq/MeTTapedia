@@ -39,7 +39,7 @@ noncomputable def ordinaryMM2Target : MM2Target where
   render := renderProgram?
   render_eq_canonical := fun _ => rfl
 
-/-- A supplied operational embedding cannot smuggle an unrelated surface
+/-- A supplied operational embedding cannot smuggle an unrelated syntax
 artifact through a constant or otherwise lawless renderer.  Text parsing and
 MORK execution adequacy are deliberately separate obligations. -/
 @[simp] theorem MM2Target.render_eq_renderProgram (target : MM2Target)
@@ -52,9 +52,7 @@ renderer that the former lawless field permitted. -/
 theorem MM2Target.renderer_not_constant_empty (target : MM2Target) :
     target.render [.symbol "ok"] ≠ some "" := by
   rw [target.render_eq_renderProgram]
-  simp [renderProgram?, renderAtom?, atomSafe, bareSymbolSafe,
-    hasNoBareDelimiters, isBareSymbolDelimiter, isWhitespace,
-    morkUtf8Bytes, Char.utf8Size]
+  decide +kernel
 
 /-- OSLF is run over the actual target GSLT supplied to the compiler.  On the
 embedded MM2 image, its exact-target native type is equivalent to one ordinary

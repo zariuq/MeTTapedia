@@ -111,7 +111,7 @@ private theorem rhoBreadthBaseQuote_typed (process : Pattern)
     exact .cons (by trivial) rfl typed .nil
 
 private def rhoBreadthDropConstructor :
-    AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoCalc.terms[1], rhoBreadthRule_mem 1 (by omega)⟩
 
 private theorem rhoBreadthDrop_selected :
@@ -408,7 +408,7 @@ def rhoBreadthBaseFvarAPlan (outer : OneHoleContext) :
   .fvar (by
     simp [rhoCutOrderFree, FreeTypeContext.ofList, mapTypeExpr,
       CostStaticColor.symbols, costBaseStaticSymbols,
-      costBasePresentationSymbols])
+      costBaseLanguageDefSymbolMap])
 
 def rhoBreadthBaseDropAPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree

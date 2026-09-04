@@ -12,6 +12,8 @@ namespace Mettapedia.OSLF.Framework.LanguageEqCategory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.LangMorphism
 open Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-- Objects in the Eq-morphism category wrapper. -/
 abbrev Obj := LanguageDef
@@ -76,16 +78,18 @@ theorem comp_assoc
 
 /-- Predicate transport (contravariant pullback) along language morphisms. -/
 def mapPred {L₁ L₂ : Obj} (f : Hom L₁ L₂) :
-    (Pattern → Prop) → (Pattern → Prop) :=
+    EquationPredicate (langGSLT L₂) → EquationPredicate (langGSLT L₁) :=
   predPullback f
 
-@[simp] theorem mapPred_id (L : Obj) (ψ : Pattern → Prop) :
+@[simp] theorem mapPred_id (L : Obj)
+    (ψ : EquationPredicate (langGSLT L)) :
     mapPred (id L) ψ = ψ :=
   predPullback_id L ψ
 
 @[simp] theorem mapPred_comp
     {L₁ L₂ L₃ : Obj}
-    (f : Hom L₁ L₂) (g : Hom L₂ L₃) (ψ : Pattern → Prop) :
+    (f : Hom L₁ L₂) (g : Hom L₂ L₃)
+    (ψ : EquationPredicate (langGSLT L₃)) :
     mapPred (f ≫ g) ψ = mapPred f (mapPred g ψ) :=
   predPullback_comp f g ψ
 
@@ -98,4 +102,3 @@ theorem mapPred_comp_fn
   exact mapPred_comp f g ψ
 
 end Mettapedia.OSLF.Framework.LanguageEqCategory
-

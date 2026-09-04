@@ -107,16 +107,16 @@ theorem canonicalKey_in_normalize_range (theory : CIGSLT)
   ⟨key.1, key.2⟩
 
 /-- Structural action on an optional schema pattern. -/
-def mapOptionalPattern (symbols : PresentationSymbols) :
+def mapOptionalPattern (symbols : LanguageDefSymbolMap) :
     Option Pattern → Option Pattern :=
   Option.map (mapPattern symbols)
 
 @[simp]
 theorem mapOptionalPattern_id (pattern : Option Pattern) :
-    mapOptionalPattern PresentationSymbols.id pattern = pattern := by
+    mapOptionalPattern LanguageDefSymbolMap.id pattern = pattern := by
   cases pattern <;> simp [mapOptionalPattern]
 
-theorem mapOptionalPattern_comp (first second : PresentationSymbols)
+theorem mapOptionalPattern_comp (first second : LanguageDefSymbolMap)
     (pattern : Option Pattern) :
     mapOptionalPattern (first.comp second) pattern =
       mapOptionalPattern second (mapOptionalPattern first pattern) := by
@@ -133,14 +133,14 @@ structure Morphism (source target : CIGSLT) where
   mapsReflectivePresentations : ∀ declaration,
     declaration ∈ source.reflection.1.presentations →
       mapReflectivePresentation
-          { toPresentationSymbols :=
+          { toLanguageDefSymbolMap :=
               underlying.structural.structural.symbols
             reflection := reflectionSymbols }
           declaration ∈ target.reflection.1.presentations
   mapsReflectiveRules : ∀ declaration,
     declaration ∈ source.reflection.1.rules →
       mapReflectiveRule
-          { toPresentationSymbols :=
+          { toLanguageDefSymbolMap :=
               underlying.structural.structural.symbols
             reflection := reflectionSymbols }
           declaration ∈ target.reflection.1.rules
@@ -260,7 +260,7 @@ namespace Morphism
 core and reflection components. -/
 def reflectiveSymbols {source target : CIGSLT}
     (morphism : Morphism source target) : ReflectiveSymbols where
-  toPresentationSymbols := morphism.underlying.structural.structural.symbols
+  toLanguageDefSymbolMap := morphism.underlying.structural.structural.symbols
   reflection := morphism.reflectionSymbols
 
 /-- Map one term in the admitted reflective fibre.  Ordinary structural
@@ -286,7 +286,7 @@ theorem mapsInteractingLangSort {source target : CIGSLT}
         source.theory.presentation.interactingLangSort =
       target.theory.presentation.interactingLangSort := by
   rw [InteractivePresentation.interactingLangSort,
-    WellSorted.mapLangSort_authoredSortToLangSort,
+    WellSorted.mapLangSort_declaredSortToLangSort,
     morphism.underlying.structural.mapsInteractingSort]
   rfl
 
@@ -358,7 +358,7 @@ preservation and reflection of the two principal introductions.  The closure
 therefore carries no independent morphism policy. -/
 theorem mapsWrappedConstructors {source target : CIGSLT}
     (morphism : Morphism source target)
-    (constructor : AuthoredConstructor source.theory.presentation.presentation)
+    (constructor : DeclaredConstructor source.theory.presentation.presentation)
     (membership : constructor ∈
       source.continuationRetyping.wrappedConstructors) :
     morphism.underlying.structural.structural.mapConstructor constructor ∈
@@ -382,7 +382,7 @@ theorem mapsWrappedConstructors {source target : CIGSLT}
 the reflected principal fibers. -/
 theorem reflectsWrappedConstructors {source target : CIGSLT}
     (morphism : Morphism source target)
-    (constructor : AuthoredConstructor source.theory.presentation.presentation)
+    (constructor : DeclaredConstructor source.theory.presentation.presentation)
     (membership :
       morphism.underlying.structural.structural.mapConstructor constructor ∈
         target.continuationRetyping.wrappedConstructors) :
@@ -415,7 +415,7 @@ theorem mapsReflectiveScope_id (theory : CIGSLT) {depth pattern}
     (safe : ReflectiveWellSorted.ReflectiveScopeSafeAt theory.reflection.1
       depth pattern) :
     ReflectiveWellSorted.ReflectiveScopeSafeAt theory.reflection.1 depth
-      (mapPattern PresentationSymbols.id pattern) := by
+      (mapPattern LanguageDefSymbolMap.id pattern) := by
   simpa using safe
 
 /-- Identity continued morphism. -/
@@ -439,10 +439,10 @@ def id (theory : CIGSLT) : Morphism theory theory where
       theory.cut.coreContact.constructor = _
     exact StructuralMorphism.mapConstructor_id _ _
   mapsCorePattern := by
-    change mapPattern PresentationSymbols.id _ = _
+    change mapPattern LanguageDefSymbolMap.id _ = _
     exact mapPattern_id _
   mapsSourceEnvelope := by
-    change mapOneHoleContext PresentationSymbols.id _ = _
+    change mapOneHoleContext LanguageDefSymbolMap.id _ = _
     exact mapOneHoleContext_id _
   reflectsInteractingSort := by
     intro sourceSort equality
@@ -452,12 +452,12 @@ def id (theory : CIGSLT) : Morphism theory theory where
     rfl
   reflectsProgramConstructor := by
     intro constructor equality
-    change mapGrammarRule PresentationSymbols.id constructor = _ at equality
+    change mapGrammarRule LanguageDefSymbolMap.id constructor = _ at equality
     rw [mapGrammarRule_id] at equality
     exact equality
   reflectsEnvironmentConstructor := by
     intro constructor equality
-    change mapGrammarRule PresentationSymbols.id constructor = _ at equality
+    change mapGrammarRule LanguageDefSymbolMap.id constructor = _ at equality
     rw [mapGrammarRule_id] at equality
     exact equality
   mapsProgramConstructor := by
@@ -473,32 +473,32 @@ def id (theory : CIGSLT) : Morphism theory theory where
   mapsProgramKind := rfl
   mapsEnvironmentKind := rfl
   mapsProgramSchema := by
-    change mapPattern PresentationSymbols.id _ = _
+    change mapPattern LanguageDefSymbolMap.id _ = _
     exact mapPattern_id _
   mapsEnvironmentSchema := by
-    change mapPattern PresentationSymbols.id _ = _
+    change mapPattern LanguageDefSymbolMap.id _ = _
     exact mapPattern_id _
   mapsProgramContinuation := by
-    change mapPattern PresentationSymbols.id _ = _
+    change mapPattern LanguageDefSymbolMap.id _ = _
     exact mapPattern_id _
   mapsEnvironmentContinuation := by
-    change mapPattern PresentationSymbols.id _ = _
+    change mapPattern LanguageDefSymbolMap.id _ = _
     exact mapPattern_id _
   mapsProgramSubject := by
-    change mapOptionalPattern PresentationSymbols.id _ = _
+    change mapOptionalPattern LanguageDefSymbolMap.id _ = _
     exact mapOptionalPattern_id _
   mapsEnvironmentSubject := by
-    change mapOptionalPattern PresentationSymbols.id _ = _
+    change mapOptionalPattern LanguageDefSymbolMap.id _ = _
     exact mapOptionalPattern_id _
   mapsOpenCanonical := by
     intro free bound sort term
-    have freeEquality : free = free.map PresentationSymbols.id :=
+    have freeEquality : free = free.map LanguageDefSymbolMap.id :=
       (WellSorted.FreeTypeContext.map_id free).symm
     have boundEquality :
-        bound = bound.map (mapTypeExpr PresentationSymbols.id) := by
+        bound = bound.map (mapTypeExpr LanguageDefSymbolMap.id) := by
       symm
       calc
-        bound.map (mapTypeExpr PresentationSymbols.id) =
+        bound.map (mapTypeExpr LanguageDefSymbolMap.id) =
             bound.map _root_.id := by
           apply List.map_congr_left
           intro type membership
@@ -529,7 +529,7 @@ def id (theory : CIGSLT) : Morphism theory theory where
         (ReflectiveWellSorted.OpenTerm.map
             (StructuralMorphism.id theory.theory.presentation.presentation)
             (mapsReflectiveScope_id theory) term).1 =
-          mapPattern PresentationSymbols.id term.1 := rfl
+          mapPattern LanguageDefSymbolMap.id term.1 := rfl
         _ = term.1 := mapPattern_id term.1
         _ = (term.reindex freeEquality boundEquality sortEquality).1 :=
           (ReflectiveWellSorted.OpenTerm.reindex_pattern _ _ _ _).symm
@@ -543,7 +543,7 @@ def id (theory : CIGSLT) : Morphism theory theory where
           boundEquality sortEquality).1 := rawNaturality
       _ = (theory.openCanonical.normalize term).1 :=
         ReflectiveWellSorted.OpenTerm.reindex_pattern _ _ _ _
-      _ = mapPattern PresentationSymbols.id
+      _ = mapPattern LanguageDefSymbolMap.id
           (theory.openCanonical.normalize term).1 :=
         (mapPattern_id _).symm
       _ = (ReflectiveWellSorted.OpenTerm.map
@@ -554,8 +554,8 @@ def id (theory : CIGSLT) : Morphism theory theory where
     intro left right equality
     apply Subtype.ext
     apply Subtype.ext
-    change mapPattern PresentationSymbols.id left.1.1 =
-      mapPattern PresentationSymbols.id right.1.1 at equality
+    change mapPattern LanguageDefSymbolMap.id left.1.1 =
+      mapPattern LanguageDefSymbolMap.id right.1.1 at equality
     simpa using equality
 
 /-- The canonical-key action of the identity is the identity. -/
@@ -568,7 +568,7 @@ theorem canonicalKeyMap_id (theory : CIGSLT)
   rw [key.2] at naturality
   exact naturality.trans (by
     apply Subtype.ext
-    change mapPattern PresentationSymbols.id key.1.1 = key.1.1
+    change mapPattern LanguageDefSymbolMap.id key.1.1 = key.1.1
     exact mapPattern_id _)
 
 /-- Reflection-scope preservation composes with the underlying structural

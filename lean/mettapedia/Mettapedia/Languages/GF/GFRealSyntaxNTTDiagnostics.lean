@@ -39,6 +39,7 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.ConstructorCategory
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-- Kernel-reducible syntax-only PaperAmbiguity language from the literal function list. -/
@@ -103,11 +104,15 @@ example :
 
 abbrev PaperSyntaxNativeType := langNativeType paperSyntaxLangKR "S"
 
+private def paperEquationPredicate (predicate : Pattern → Prop) :
+    EquationPredicate (langGSLT paperSyntaxLangKR) :=
+  equationPredicateOfEquationFree (by rfl) predicate
+
 def paperPredicateType (sort : String) (φ : Pattern → Prop) : PaperSyntaxNativeType :=
-  { sort := sort, pred := φ }
+  { sort := sort, pred := paperEquationPredicate φ }
 
 theorem paperSatisfiesType (p : Pattern) (nt : PaperSyntaxNativeType) :
-    (langOSLF paperSyntaxLangKR "S").satisfies p nt.pred ↔ nt.pred p :=
+    (langOSLF paperSyntaxLangKR "S").satisfies p nt.pred ↔ nt.pred.1 p :=
   Iff.rfl
 
 theorem paperSyntax_no_reduces {p q : Pattern} :
@@ -117,21 +122,27 @@ theorem paperSyntax_no_reduces {p q : Pattern} :
   rcases h with ⟨_, hstep⟩
   cases hstep with
   | rule ruleMember _ _ _ =>
-      simp [paperSyntaxLangKR, gfSyntaxLanguageDefFromList,
-        gfFunsListToLanguageDef] at ruleMember
+      have rewritesEmpty : paperSyntaxLangKR.rewrites = [] := rfl
+      rw [rewritesEmpty] at ruleMember
+      simp at ruleMember
 
 theorem paperSyntax_no_diamond (φ : Pattern → Prop) (p : Pattern) :
-    ¬ langDiamond paperSyntaxLangKR φ p := by
+    ¬ langDiamond paperSyntaxLangKR (paperEquationPredicate φ) p := by
   intro h
-  rcases (langDiamond_spec (lang := paperSyntaxLangKR) (φ := φ) (p := p)).1 h with
+  rcases (langDiamond_spec (lang := paperSyntaxLangKR)
+      (φ := paperEquationPredicate φ) (p := p)).1 h with
     ⟨q, hred, _⟩
-  exact paperSyntax_no_reduces hred
+  exact paperSyntax_no_reduces
+    ((langSemanticReduces_iff_langReduces_of_equation_free
+      (by rfl) p q).mp hred)
 
 theorem paperSyntax_vacuous_box (φ : Pattern → Prop) (p : Pattern) :
-    langBox paperSyntaxLangKR φ p := by
+    langBox paperSyntaxLangKR (paperEquationPredicate φ) p := by
   rw [langBox_spec]
   intro q hred
-  exact False.elim (paperSyntax_no_reduces hred)
+  exact False.elim (paperSyntax_no_reduces
+    ((langSemanticReduces_iff_langReduces_of_equation_free
+      (by rfl) q p).mp hred))
 
 private def presTempPattern : Pattern :=
   .apply "TTAnt" [.apply "TPres" [], .apply "ASimul" []]
@@ -339,11 +350,15 @@ theorem anna_ambiguity_pipeline_summary :
     by decide⟩
 
 theorem presentSentence_box_self :
-    langBox paperSyntaxLangKR (fun q => q = presentSentencePattern) presentSentencePattern :=
+    langBox paperSyntaxLangKR
+      (paperEquationPredicate fun q => q = presentSentencePattern)
+      presentSentencePattern :=
   paperSyntax_vacuous_box _ _
 
 theorem presentSentence_not_diamond_temporal :
-    ¬ langDiamond paperSyntaxLangKR (fun q => q = temporalPresentPattern) presentSentencePattern :=
+    ¬ langDiamond paperSyntaxLangKR
+      (paperEquationPredicate fun q => q = temporalPresentPattern)
+      presentSentencePattern :=
   paperSyntax_no_diamond _ _
 
 private def ensureBool (label : String) (b : Bool) : IO Unit :=

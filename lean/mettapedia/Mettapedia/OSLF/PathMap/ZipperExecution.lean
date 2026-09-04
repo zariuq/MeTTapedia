@@ -38,6 +38,7 @@ namespace Mettapedia.OSLF.PathMap.ZipperExecution
 
 open Mettapedia.PathMap
 open Mettapedia.OSLF.PathMap (RelationalSpace PathMapSpace toRelationEnv)
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 /-! ## §1: Value Collection via Zipper Iteration
 
@@ -49,7 +50,7 @@ in the trie. We define the collection function and its soundness spec. -/
     Inductively: a value `v` is collected if it appears at some cursor position
     reachable from the initial position by zero or more `toNextVal` steps. -/
 inductive ZipperReachableValue {Z V : Type*}
-    [ZipperMoving Z] [ZipperValues Z V] [ZipperIteration Z] :
+    [ZipperValues Z V] [ZipperIteration Z] :
     Z → V → Prop where
   /-- A value at the current focus is reachable. -/
   | here (z : Z) (v : V) (hv : ZipperValues.valueAt z = some v) :
@@ -75,7 +76,7 @@ exactly the values specified by `allValues`. -/
     via `toNextVal` iteration from a root cursor is in `allValues`, and
     conversely every value in `allValues` is reachable. -/
 class ZipperIterationSound (Z : Type*) (V : Type*)
-    [ZipperMoving Z] [ZipperValues Z V] [ZipperIteration Z]
+    [ZipperValues Z V] [ZipperIteration Z]
     [ZipperStoreValues Z V] : Prop where
   /-- Every reachable value is in the store. -/
   reachable_in_store : ∀ (root : Z) (v : V),
@@ -95,7 +96,7 @@ Connect the zipper-backed store to the `RelationalSpace` typeclass. -/
 /-- A zipper-backed relational space: queries are answered by iterating
     the zipper and filtering the collected values. -/
 structure ZipperSpace (Z V : Type*)
-    [ZipperMoving Z] [ZipperValues Z V] [ZipperIteration Z]
+    [ZipperValues Z V] [ZipperIteration Z]
     [ZipperStoreValues Z V] where
   /-- The root cursor. -/
   root : Z
@@ -107,7 +108,7 @@ structure ZipperSpace (Z V : Type*)
 
 /-- A `ZipperSpace` is a `RelationalSpace`. -/
 instance {Z V : Type*}
-    [ZipperMoving Z] [ZipperValues Z V] [ZipperIteration Z]
+    [ZipperValues Z V] [ZipperIteration Z]
     [ZipperStoreValues Z V] :
     RelationalSpace (ZipperSpace Z V) where
   query zs rel args := zs.queryFn zs.root rel args
@@ -120,7 +121,7 @@ agrees with any flat store that holds the same data. -/
 
 /-- Two stores agree if they hold the same values under the same encoding. -/
 def StoresAgree {Z V : Type*}
-    [ZipperMoving Z] [ZipperValues Z V] [ZipperIteration Z]
+    [ZipperValues Z V] [ZipperIteration Z]
     [ZipperStoreValues Z V]
     (zs : ZipperSpace Z V)
     (flatQuery : String → List Mettapedia.OSLF.MeTTaIL.Syntax.Pattern →
@@ -130,7 +131,7 @@ def StoresAgree {Z V : Type*}
 /-- If a zipper-backed store agrees with a flat query function, then
     the zipper `RelationalSpace` instance agrees with the flat `RelationEnv`. -/
 theorem zipper_flat_agreement {Z V : Type*}
-    [ZipperMoving Z] [ZipperValues Z V] [ZipperIteration Z]
+    [ZipperValues Z V] [ZipperIteration Z]
     [ZipperStoreValues Z V]
     (zs : ZipperSpace Z V)
     (flatEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
@@ -139,28 +140,30 @@ theorem zipper_flat_agreement {Z V : Type*}
       RelationalSpace.query zs rel args = flatEnv.tuples rel args :=
   hagree
 
-/-- **ZAM Soundness for OSLF**: if the zipper store agrees with a flat
-    `RelationEnv`, then the OSLF reduction relation is identical for both. -/
-theorem zam_oslf_sound {Z V : Type*}
-    [ZipperMoving Z] [ZipperValues Z V] [ZipperIteration Z]
+/-- **ZAM semantic-reduction soundness**: if the zipper store agrees with a
+    flat `RelationEnv`, then the equation-saturated relation consumed by OSLF
+    is identical for both. -/
+theorem zam_semantic_reduction_sound {Z V : Type*}
+    [ZipperValues Z V] [ZipperIteration Z]
     [ZipperStoreValues Z V]
     (zs : ZipperSpace Z V)
     (flatEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
     (hagree : StoresAgree zs flatEnv.tuples)
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     (p q : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern) :
-    Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing
+    Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing
       (toRelationEnv zs) lang p q ↔
-    Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing
+    Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing
       flatEnv lang p q := by
   have heq : toRelationEnv zs = flatEnv := by
     apply Mettapedia.OSLF.PathMap.RelationEnv.ext_tuples
     exact funext fun rel => funext fun args => hagree rel args
   rw [heq]
 
-/-- **ZAM Soundness for Diamond**: zipper-backed diamond equals flat-env diamond. -/
+/-- **ZAM soundness for diamond**: zipper-backed and flat-store diamonds agree
+    on the equation saturation of the same authored predicate generator. -/
 theorem zam_diamond_sound {Z V : Type*}
-    [ZipperMoving Z] [ZipperValues Z V] [ZipperIteration Z]
+    [ZipperValues Z V] [ZipperIteration Z]
     [ZipperStoreValues Z V]
     (zs : ZipperSpace Z V)
     (flatEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
@@ -169,17 +172,23 @@ theorem zam_diamond_sound {Z V : Type*}
     (φ : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (p : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern) :
     Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing
-      (toRelationEnv zs) lang φ p ↔
+      (toRelationEnv zs) lang
+        (saturatePredicate
+          (Mettapedia.OSLF.Framework.TypeSynthesis.langGSLTUsing
+            (toRelationEnv zs) lang) φ) p ↔
     Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing
-      flatEnv lang φ p := by
+      flatEnv lang
+        (saturatePredicate
+          (Mettapedia.OSLF.Framework.TypeSynthesis.langGSLTUsing flatEnv lang) φ) p := by
   have heq : toRelationEnv zs = flatEnv := by
     apply Mettapedia.OSLF.PathMap.RelationEnv.ext_tuples
     exact funext fun rel => funext fun args => hagree rel args
   rw [heq]
 
-/-- **ZAM Soundness for Box**: zipper-backed box equals flat-env box. -/
+/-- **ZAM soundness for box**: zipper-backed and flat-store boxes agree on the
+    equation saturation of the same authored predicate generator. -/
 theorem zam_box_sound {Z V : Type*}
-    [ZipperMoving Z] [ZipperValues Z V] [ZipperIteration Z]
+    [ZipperValues Z V] [ZipperIteration Z]
     [ZipperStoreValues Z V]
     (zs : ZipperSpace Z V)
     (flatEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
@@ -188,9 +197,14 @@ theorem zam_box_sound {Z V : Type*}
     (φ : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (p : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern) :
     Mettapedia.OSLF.Framework.TypeSynthesis.langBoxUsing
-      (toRelationEnv zs) lang φ p ↔
+      (toRelationEnv zs) lang
+        (saturatePredicate
+          (Mettapedia.OSLF.Framework.TypeSynthesis.langGSLTUsing
+            (toRelationEnv zs) lang) φ) p ↔
     Mettapedia.OSLF.Framework.TypeSynthesis.langBoxUsing
-      flatEnv lang φ p := by
+      flatEnv lang
+        (saturatePredicate
+          (Mettapedia.OSLF.Framework.TypeSynthesis.langGSLTUsing flatEnv lang) φ) p := by
   have heq : toRelationEnv zs = flatEnv := by
     apply Mettapedia.OSLF.PathMap.RelationEnv.ext_tuples
     exact funext fun rel => funext fun args => hagree rel args
@@ -204,7 +218,8 @@ The ZAM (Zipper Abstract Machine) soundness theorems establish:
 
 1. `ZipperReachableValue` — which values a zipper iteration can reach
 2. `ZipperIterationSound` — typeclass contract: iteration visits all and only stored values
-3. `zam_oslf_sound` — zipper-backed reduction = flat-env reduction
+3. `zam_semantic_reduction_sound` — zipper-backed semantic reduction = flat-env
+   semantic reduction
 4. `zam_diamond_sound` / `zam_box_sound` — modal operators preserved
 
 **Engine contract**: any implementation of the pathmap zipper trait hierarchy

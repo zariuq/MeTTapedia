@@ -275,7 +275,7 @@ of the sole authored rho canonical section: an ordinary contextual equation
 edge has equal rho representatives, after which the reflective stability
 theorem above transports it. -/
 theorem rho_authoredEquationSubstitutionStable :
-    AuthoredEquationSubstitutionStable
+    DeclaredEquationSubstitutionStable
       (profile := rhoReflectionProfile) rhoCalc := by
   intro source target support bound type assignment left right witness
   obtain ⟨context, redex, contractum, equationWitness, leftEquality,

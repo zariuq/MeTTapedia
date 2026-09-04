@@ -30,8 +30,9 @@ about the actual GF→IR→Lean pipeline.
 
 A GF grammar is an operational theory in the hypercube sense:
 term formers = FunDecl, base rewrites = identity eliminations,
-reduction = langReduces. The OSLF framework automatically generates
-a modal type system (◇ ⊣ □) from this operational data.
+reduction = the equation-saturated LanguageDef step relation. The OSLF
+framework automatically generates a modal type system (◇ ⊣ □) from this
+operational data.
 
 ## Pipeline
 
@@ -49,6 +50,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.CategoryBridge
 open GFCore
 open Mettapedia.Languages.GF.SemanticKernelDSL
@@ -538,23 +540,23 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
     Master bridge: GF parse → OSLF semantics. -/
 theorem gfCheckedExpr_checkSat_sound
     {lang : LanguageDef}
-    {I_check : AtomCheck} {I_sem : AtomSem}
-    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {I_check : AtomCheck} {I_sem : EquationAtomSem lang}
+    (h_atoms : ∀ a p, I_check a p = true → (I_sem a).1 p)
     {fuel : Nat} {node : CheckedExpr} {φ : OSLFFormula}
     (h : checkLangUsing .empty lang I_check fuel
            (gfCheckedExprToPattern node) φ = .sat) :
-    sem (langReduces lang) I_sem φ (gfCheckedExprToPattern node) :=
+    langFormulaSem lang I_sem φ (gfCheckedExprToPattern node) :=
   checkLangUsing_sat_sound h_atoms h
 
 /-- If a GF parse tree reduces under a language, the ◇ modality witnesses it. -/
 theorem gfCheckedExpr_diamond_of_reduces
     {lang : LanguageDef}
-    {φ : Pattern → Prop} {node : CheckedExpr} {q : Pattern}
+    {φ : EquationPredicate (langGSLT lang)} {node : CheckedExpr} {q : Pattern}
     (hReduce : langReduces lang (gfCheckedExprToPattern node) q)
-    (hφ : φ q) :
+    (hφ : φ.1 q) :
     langDiamond lang φ (gfCheckedExprToPattern node) := by
   rw [langDiamond_spec]
-  exact ⟨q, hReduce, hφ⟩
+  exact ⟨q, langReduces_to_semantic lang hReduce, hφ⟩
 
 /-- Membership in the bounded contextual compiler for a GF tree implies the
 least authored reduction relation. -/
@@ -571,10 +573,10 @@ theorem gfCheckedExpr_mem_rewriteAt_implies_reduces
     on the result, conclude ◇-satisfaction in the OSLF type system. -/
 theorem gfCheckedExpr_diamond_of_rewriteAt
     {lang : LanguageDef} {contextDepth : Nat}
-    {φ : Pattern → Prop} {node : CheckedExpr} {q : Pattern}
+    {φ : EquationPredicate (langGSLT lang)} {node : CheckedExpr} {q : Pattern}
     (hExec : q ∈ rewriteAt (engineBasePremises RelationEnv.empty) lang contextDepth
       (gfCheckedExprToPattern node))
-    (hφ : φ q) :
+    (hφ : φ.1 q) :
     langDiamond lang φ (gfCheckedExprToPattern node) :=
   gfCheckedExpr_diamond_of_reduces
     (gfCheckedExpr_mem_rewriteAt_implies_reduces hExec) hφ

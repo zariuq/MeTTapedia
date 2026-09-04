@@ -304,7 +304,7 @@ noncomputable def lindenbaumLCModel (T : ClosedTheorySet (WithParams Const))
     HeytingGeneralModel Base (WithParams Const) :=
   Lindenbaum.lindenbaumModelOfAllIntro (Base := Base)
     (T ∪ lcSchema (Base := Base) Const)
-    (fun {σ' φb ω} h => lc_all_intro_of_instances (Base := Base) hT0 h)
+    (fun {_σ' _φb _ω} h => lc_all_intro_of_instances (Base := Base) hT0 h)
 
 /-- The Lindenbaum-LC model is prelinear: prelinearity instances are schema
 members. -/

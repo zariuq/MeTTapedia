@@ -952,7 +952,7 @@ theorem replay_preserves_result
 
 end CachedReceipt
 
-/-! ## Strictly-positive indexed presentation of outcomes -/
+/-! ## Strictly-positive indexed encoding of outcomes -/
 
 namespace OutcomeFamily
 
@@ -1101,7 +1101,7 @@ theorem established_ne_refuted {Judgment : Type u}
 
 end OutcomeFamily
 
-/-! ## Strictly-positive indexed presentation of run results -/
+/-! ## Strictly-positive indexed encoding of run results -/
 
 namespace RunFamily
 

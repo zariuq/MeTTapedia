@@ -623,7 +623,7 @@ theorem guard_definition_admitted : guardDefinition.isAdmitted = true :=
 
 /-- The complete guard language as one GSLT. -/
 def guardTotalTheory : Mettapedia.GSLT.GSLT :=
-  guardDefinition.toGSLTOfNoEquations guard_definition_admitted rfl
+  guardDefinition.toGSLTOfEquationFree guard_definition_admitted rfl
 
 /-- The total carrier contains authored object patterns and proof-obligation
 states. -/

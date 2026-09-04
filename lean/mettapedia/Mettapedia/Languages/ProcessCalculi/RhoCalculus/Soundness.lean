@@ -34,9 +34,10 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.CategoryTheory.LambdaTheories
 
--- Modal operators from operational semantics
-local notation "possibly" => possiblyProp
-local notation "rely" => relyProp
+-- Raw operational transformers used by this direct typing development.
+-- The semantic rho OSLF is generated separately from `rhoReflectiveGSLT`.
+local notation "possibly" => rawStepFuture
+local notation "rely" => rawStepPast
 
 /-! ## Typing Contexts -/
 

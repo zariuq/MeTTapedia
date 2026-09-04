@@ -44,8 +44,8 @@ def coerciveOverrideFormula : Formula TrustTriangleChoiceWorld := fun w => w = t
 /-- Direct structured lowering into the existing trust-triangle WM queries. -/
 def trustTriangleStructuredEncoder :
     StructuredEthicsQueryEncoder TrustTriangleChoiceWorld Nat Nat where
-  propositionalQuery := fun _ presentation ground role _ =>
-    match presentation, ground, role with
+  propositionalQuery := fun _ normativeForm ground role _ =>
+    match normativeForm, ground, role with
     | .deontic .Prohibition, .universalDuty .noHarm, .activeGoal =>
         bodhisattvaNonMaleficenceQuery
     | .deontic .Prohibition, .universalDuty .respectAutonomy, .activeGoal =>
@@ -67,7 +67,7 @@ def trustTriangleStructuredEncoder :
 def avoidHarmfulDisclosureClaim : StructuredEthicalClaim TrustTriangleChoiceWorld Nat where
   subject := 1
   content := .propositional harmfulDisclosureFormula
-  presentation := .deontic .Prohibition
+  normativeForm := .deontic .Prohibition
   ground := .universalDuty .noHarm
   role := .activeGoal
 
@@ -75,7 +75,7 @@ def avoidHarmfulDisclosureClaim : StructuredEthicalClaim TrustTriangleChoiceWorl
 def avoidCoerciveOverrideClaim : StructuredEthicalClaim TrustTriangleChoiceWorld Nat where
   subject := 1
   content := .propositional coerciveOverrideFormula
-  presentation := .deontic .Prohibition
+  normativeForm := .deontic .Prohibition
   ground := .universalDuty .respectAutonomy
   role := .activeGoal
 
@@ -134,10 +134,10 @@ theorem trustTriangleStructuredClaim_supportedOn_coreTriangle
         (p : Sigma fun _ : Nat => Bool).1 ∈ coreTriangle :=
     bodhisattvaReciprocityQuery_supported
   cases claim with
-  | mk subject content presentation ground role =>
+  | mk subject content normativeForm ground role =>
       cases content with
       | propositional φ =>
-          cases presentation with
+          cases normativeForm with
           | deontic attr =>
               cases attr with
               | Obligation =>

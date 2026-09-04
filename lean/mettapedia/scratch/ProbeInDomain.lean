@@ -1,0 +1,7 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderBuilt
+
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+
+#check @RhoAlignedViewsRestorationAlignedInDomain
+#check @rhoAlignedViewsRestorationAligned_of_planStopSourceAligned
+#check @RhoStaticPlanStopSourceAligned

@@ -1,5 +1,5 @@
 import Mettapedia.Computability.PartialEvaluation
-import Mettapedia.GSLT.LanguageDef.AuthoredTransformation
+import Mettapedia.GSLT.LanguageDef.LanguageDefTransformation
 
 /-!
 # Partial evaluation as a presentation-sensitive transformation
@@ -30,7 +30,7 @@ set_option autoImplicit false
 namespace Mettapedia.Computability.PartialEvaluationTransformation
 
 open Mettapedia.Computability.PartialEvaluation
-open Mettapedia.GSLT.LanguageDef.AuthoredTransformation
+open Mettapedia.GSLT.LanguageDef.LanguageDefTransformation
 
 universe uCode
 

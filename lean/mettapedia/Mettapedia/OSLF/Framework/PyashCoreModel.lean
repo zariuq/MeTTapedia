@@ -27,6 +27,7 @@ namespace Mettapedia.OSLF.Framework.PyashCoreInstance
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 /-- Focused, executable core model of Pyash sentence + dispatch semantics. -/
 def pyashCore : LanguageDef := {
@@ -578,7 +579,14 @@ def isPyashState : Pattern → Prop
 /-- Canonical native top type over the `State` sort. -/
 def pyashStateTop : langNativeType pyashCore "State" where
   sort := "State"
-  pred := isPyashState
+  pred := saturatePredicate (langGSLT pyashCore) isPyashState
+
+/-- The generated semantic state predicate is exactly the structural state
+recognizer because this presentation declares no equations. -/
+theorem pyashStateTop_satisfies_iff (term : Pattern) :
+    (langOSLF pyashCore "State").satisfies term pyashStateTop.pred ↔
+      isPyashState term := by
+  exact saturatePredicate_langGSLT_apply_iff_of_equation_free rfl _ _
 
 /-- Render focused Pyash patterns into runtime `C_...` constructor syntax. -/
 partial def renderPyashCtorPattern : Pattern → String

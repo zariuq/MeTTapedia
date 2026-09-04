@@ -22,6 +22,7 @@ open Mettapedia.OSLF.Framework.MATTProvableNow
 open Mettapedia.OSLF.Framework.Mode2SkeletonLaws
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.LangMorphism
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 /-- Conservative status marker for MaTT claims. -/
 inductive MATTClaimStatus where
@@ -85,8 +86,8 @@ theorem matt_canonical_runtime_behavioral_package
     {L₁ L₂ L₃ : LanguageDef}
     (L : LanguageDef)
     (f : Hom L₁ L₂) (g : Hom L₂ L₃)
-    (ψ : Pattern → Prop)
-    {φ : Pattern → Prop} {p : Pattern}
+    (ψ : EquationPredicate (langGSLT L₃))
+    {φ : EquationPredicate (langGSLT L₁)} {p : Pattern}
     (h : langDiamond L₁ φ p) :
     mettaILRuntimeBehavioralDoctrine.galois L = langGalois L ∧
     mettaILRuntimeBehavioralDoctrine.modalAdjunction L =
@@ -96,7 +97,7 @@ theorem matt_canonical_runtime_behavioral_package
       mapPred (comp f g) ψ ∧
     ModeHom.mapPred (ModeHom.runtimeToBehavioral (comp f g)) ψ =
       mapPred (comp f g) ψ ∧
-    (∃ q, langReduces L₁ p q ∧ φ q ∧
+    (∃ q, langSemanticReduces L₁ p q ∧ φ.1 q ∧
       ∃ T, LangReducesStar L₃ ((comp f g).mapTerm p) T ∧
         T = (comp f g).mapTerm q) := by
   refine ⟨doctrine_galois_eq L, doctrine_modalAdjunction_eq L, ?_, ?_, ?_, ?_⟩

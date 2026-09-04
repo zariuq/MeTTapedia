@@ -5,13 +5,18 @@ import Mettapedia.GSLT.LanguageDef.NIKIndexedOperational
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTClone
 
 /-!
-# The metalogic carried by NIK authorities
+# Certificate-facing metalogic and native admission structure for NIK
 
-NIK's primitive judgment retains a certificate accepted by a selected
-authority.  It does not determine hypothetical consequence.  This module
-separates that replay waist from optional consequence and comprehension
-structure, and records the exact bridges that are available when the extra
-laws are supplied.
+The certificate-facing fragment studied here retains evidence accepted by a
+selected external authority.  That fragment does not define NIK: the
+canonical NIK service doctrine also admits direct decision kernels, intrinsic
+native proof kernels, and meaning-preserving native operations.  Those faces
+are assembled in `Mettapedia.GSLT.LanguageDef.NIK`; certificate replay is only
+one boundary capability.
+
+This module separates the certificate-facing waist from optional consequence
+and comprehension structure, and also supplies the certificate-free admission
+algebra and native proof structures used by the broader service doctrine.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.NIKMetalogic

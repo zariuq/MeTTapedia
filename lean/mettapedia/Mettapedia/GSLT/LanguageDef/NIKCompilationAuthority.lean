@@ -4,9 +4,11 @@ import Mettapedia.GSLT.LanguageDef.CertificateGSLTCheckerCapabilities
 /-!
 # Compilation traces as a NIK authority
 
-A checked compilation trace should be replayable by the same NIK authority
-family that checks guest proofs.  This module turns the generic compiler-state
-trace calculus into one exact checker fibre.
+A checked compilation trace should be replayable by the same
+external-certificate authority family that checks the corresponding guest
+proof articles.  This module turns the generic compiler-state trace calculus
+into one exact checker fibre.  It describes a particular NIK boundary service,
+not the native-calculus selection doctrine as a whole.
 
 The exact certificate scope and its semantic projection are deliberately
 different:
@@ -322,7 +324,7 @@ theorem certified_iff_exists_certificateGSLTTraceCertificate
         (⟨claim.source, claim.artifact⟩ :
           CertificateGSLT.TraceClaim compilerChecker.toGSLT))
 
-/-! ## Admission into the default NIK family -/
+/-! ## Admission into the external-certificate profile family -/
 
 /-- The compilation authority as a one-fibre dependent family.  It can be
 combined with guest authorities by the ordinary family-composition boundary;
@@ -420,7 +422,8 @@ theorem acceptedTrace_defaultRun
   simpa [checked] using
     (typedFrontend compilerChecker).run_encode (submission acceptedTrace)
 
-/-- The same accepted request is a genuine execution of the default NIK GSLT. -/
+/-- The same accepted request is a genuine execution of the selected
+external-certificate GSLT. -/
 theorem acceptedTrace_defaultNIKExecution
     {State : Type uState} {Observation : Type uObservation}
     {compilerChecker : CompilationTraceChecker State Observation}
@@ -437,7 +440,7 @@ theorem acceptedTrace_defaultNIKExecution
       (acceptedTrace_defaultRun acceptedTrace)
 
 /-- Guest authorities and compilation authority genuinely coexist in one
-statusful NIK dispatcher. -/
+statusful external-certificate dispatcher. -/
 theorem acceptedTrace_combinedDefaultRun
     {Kind : Type uKind}
     (guest : AuthorityFamily.{uKind, uClaim, uCertificate} Kind)
@@ -471,7 +474,8 @@ theorem acceptedTrace_combinedDefaultRun
         (TypedSubmission.claim (combinedSubmission guest acceptedTrace))
   rw [checked]
 
-/-- The combined default NIK executes a compiler-certificate request without
+/-- The combined external-certificate profile executes a
+compiler-certificate request without
 a privileged compilation evaluator. -/
 theorem acceptedTrace_combinedDefaultNIKExecution
     {Kind : Type uKind}

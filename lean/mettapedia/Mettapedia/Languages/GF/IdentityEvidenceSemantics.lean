@@ -15,6 +15,7 @@ namespace Mettapedia.Languages.GF.IdentityEvidenceSemantics
 
 open Mettapedia.Languages.GF.WorldModelSemantics
 open Mettapedia.Languages.GF.OSLFBridge
+open Mettapedia.Languages.GF.EquationCanonicalSection
 open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.PLN.Evidence.EvidenceQuantale
@@ -48,19 +49,29 @@ noncomputable def transferAtomEvidence
     (cfg.entityOf src) (cfg.entityOf dst)
     (BinaryWorldModel.evidence W (queryOfAtom a src))
 
-/-- Identity-aware evidence atom semantics (self-transport at each queried pattern). -/
+/-- Identity-aware evidence atom semantics.  The identity transport is queried
+at the computable representative of the GF equation class, so this is a
+semantic observation rather than a predicate on a chosen presentation. -/
 noncomputable def gfEvidenceAtomSemFromWM_withIdentity
     (cfg : IdentityLayerConfig Entity)
-    (W : State) : EvidenceAtomSem :=
-  fun a p => transferAtomEvidence cfg W a p p
+    (W : State) : EquationEvidenceAtomSem gfLegacySemanticLanguageDef :=
+  canonicalEvidenceAtomSem gfLegacySemanticLanguageDef gfEquationSection
+    (fun atom term => transferAtomEvidence cfg W atom term term)
 
 /-- Identity-aware Prop atom semantics via thresholding. -/
 noncomputable def gfAtomSemFromWM_withIdentity
     (cfg : IdentityLayerConfig Entity)
     (W : State)
-    (threshold : ℝ≥0∞) : AtomSem :=
-  fun a p =>
-    threshold ≤ BinaryEvidence.toStrength (gfEvidenceAtomSemFromWM_withIdentity cfg W a p)
+    (threshold : ℝ≥0∞) : EquationAtomSem gfLegacySemanticLanguageDef :=
+  fun atom =>
+    ⟨fun term => threshold ≤ BinaryEvidence.toStrength
+        ((gfEvidenceAtomSemFromWM_withIdentity cfg W atom).1 term), by
+      intro left right equivalent
+      change (threshold ≤ BinaryEvidence.toStrength
+          ((gfEvidenceAtomSemFromWM_withIdentity cfg W atom).1 left)) ↔
+        threshold ≤ BinaryEvidence.toStrength
+          ((gfEvidenceAtomSemFromWM_withIdentity cfg W atom).1 right)
+      rw [(gfEvidenceAtomSemFromWM_withIdentity cfg W atom).2 equivalent]⟩
 
 /-- Identity-aware evidence-valued formula semantics. -/
 noncomputable def gfWMFormulaSemE_withIdentity
@@ -68,7 +79,8 @@ noncomputable def gfWMFormulaSemE_withIdentity
     (W : State)
     (φ : OSLFFormula)
     (p : Pattern) : BinaryEvidence :=
-  semE (langReduces gfLegacySemanticLanguageDef) (gfEvidenceAtomSemFromWM_withIdentity cfg W) φ p
+  langSemE gfLegacySemanticLanguageDef
+    (gfEvidenceAtomSemFromWM_withIdentity cfg W) φ p
 
 /-- Identity-aware Prop-valued formula semantics. -/
 noncomputable def gfWMFormulaSem_withIdentity
@@ -77,43 +89,8 @@ noncomputable def gfWMFormulaSem_withIdentity
     (threshold : ℝ≥0∞)
     (φ : OSLFFormula)
     (p : Pattern) : Prop :=
-  sem (langReduces gfLegacySemanticLanguageDef) (gfAtomSemFromWM_withIdentity cfg W threshold) φ p
-
-/-- Pointwise-equivalent atom interpretations induce equivalent formula semantics. -/
-theorem sem_iff_of_atomSem_pointwise
-    {R : Pattern → Pattern → Prop}
-    {I J : AtomSem}
-    (hIJ : ∀ a p, I a p ↔ J a p)
-    (φ : OSLFFormula)
-    (p : Pattern) :
-    sem R I φ p ↔ sem R J φ p := by
-  induction φ generalizing p with
-  | top =>
-      simp [sem]
-  | bot =>
-      simp [sem]
-  | atom a =>
-      simpa [sem] using hIJ a p
-  | and φ ψ ihφ ihψ =>
-      simp [sem, ihφ, ihψ]
-  | or φ ψ ihφ ihψ =>
-      simp [sem, ihφ, ihψ]
-  | imp φ ψ ihφ ihψ =>
-      simp [sem, ihφ, ihψ]
-  | dia φ ih =>
-      constructor
-      · intro h
-        rcases h with ⟨q, hstep, hq⟩
-        exact ⟨q, hstep, (ih q).1 hq⟩
-      · intro h
-        rcases h with ⟨q, hstep, hq⟩
-        exact ⟨q, hstep, (ih q).2 hq⟩
-  | box φ ih =>
-      constructor
-      · intro h q hstep
-        exact (ih q).1 (h q hstep)
-      · intro h q hstep
-        exact (ih q).2 (h q hstep)
+  langFormulaSem gfLegacySemanticLanguageDef
+    (gfAtomSemFromWM_withIdentity cfg W threshold) φ p
 
 theorem transferAtomEvidence_disabled
     (cfg : IdentityLayerConfig Entity)
@@ -130,21 +107,28 @@ theorem gfEvidenceAtomSemFromWM_withIdentity_disabled
     (hdis : cfg.enabled = false)
     (W : State) :
     gfEvidenceAtomSemFromWM_withIdentity cfg W = gfEvidenceAtomSemFromWM W := by
-  funext a p
-  simp [gfEvidenceAtomSemFromWM_withIdentity, gfEvidenceAtomSemFromWM, wmEvidenceAtomSem,
+  funext atom
+  apply Subtype.ext
+  funext term
+  simp [gfEvidenceAtomSemFromWM_withIdentity, gfEvidenceAtomSemFromWM,
+    canonicalEvidenceAtomSem, canonicalEvidenceAtomSemUsing, wmEvidenceAtomSem,
     transferAtomEvidence_disabled, hdis]
 
 theorem gfAtomSemFromWM_withIdentity_disabled
     (cfg : IdentityLayerConfig Entity)
     (hdis : cfg.enabled = false)
     (W : State)
-    (threshold : ℝ≥0∞)
-    (a : String)
-    (p : Pattern) :
-    gfAtomSemFromWM_withIdentity cfg W threshold a p =
-      gfAtomSemFromWM W threshold a p := by
-  simp [gfAtomSemFromWM_withIdentity, gfAtomSemFromWM,
-    gfEvidenceAtomSemFromWM_withIdentity, transferAtomEvidence_disabled, hdis]
+    (threshold : ℝ≥0∞) :
+    gfAtomSemFromWM_withIdentity cfg W threshold =
+      gfEquationAtomSemFromWM W threshold := by
+  funext atom
+  apply Subtype.ext
+  funext term
+  change (threshold ≤ BinaryEvidence.toStrength
+      ((gfEvidenceAtomSemFromWM_withIdentity cfg W atom).1 term)) =
+    (threshold ≤ BinaryEvidence.toStrength
+      ((gfEvidenceAtomSemFromWM W atom).1 term))
+  rw [gfEvidenceAtomSemFromWM_withIdentity_disabled cfg hdis W]
 
 /-- Conservative extension theorem (BinaryEvidence layer):
 identity disabled implies no change to existing evidence semantics. -/
@@ -155,8 +139,8 @@ theorem gfWMFormulaSemE_withIdentity_disabled
     (φ : OSLFFormula)
     (p : Pattern) :
     gfWMFormulaSemE_withIdentity cfg W φ p = gfWMFormulaSemE W φ p := by
-  simp [gfWMFormulaSemE_withIdentity, gfWMFormulaSemE,
-    gfEvidenceAtomSemFromWM_withIdentity_disabled, hdis]
+  rw [gfWMFormulaSemE_withIdentity, gfWMFormulaSemE,
+    gfEvidenceAtomSemFromWM_withIdentity_disabled cfg hdis W]
 
 /-- Conservative extension theorem (Prop layer):
 identity disabled implies no change to existing threshold semantics. -/
@@ -169,21 +153,8 @@ theorem gfWMFormulaSem_withIdentity_disabled
     (p : Pattern) :
     gfWMFormulaSem_withIdentity cfg W threshold φ p ↔
       gfWMFormulaSem W threshold φ p := by
-  refine sem_iff_of_atomSem_pointwise
-    (R := langReduces gfLegacySemanticLanguageDef)
-    (I := gfAtomSemFromWM_withIdentity cfg W threshold)
-    (J := gfAtomSemFromWM W threshold)
-    (hIJ := ?_) φ p
-  intro a' p'
-  exact Iff.intro
-    (fun h =>
-      by
-        simpa [gfAtomSemFromWM_withIdentity_disabled (cfg := cfg) hdis (W := W)
-          (threshold := threshold) (a := a') (p := p')] using h)
-    (fun h =>
-      by
-        simpa [gfAtomSemFromWM_withIdentity_disabled (cfg := cfg) hdis (W := W)
-          (threshold := threshold) (a := a') (p := p')] using h)
+  rw [gfWMFormulaSem_withIdentity, gfWMFormulaSem,
+    gfAtomSemFromWM_withIdentity_disabled cfg hdis W threshold]
 
 /-- Existing checker soundness result remains valid when identity layer is unused. -/
 theorem oslf_sat_implies_wm_semantics_withIdentity_unused
@@ -194,7 +165,7 @@ theorem oslf_sat_implies_wm_semantics_withIdentity_unused
     {I_check : AtomCheck}
     (h_atoms :
       ∀ a p, I_check a p = true →
-        gfAtomSemFromWM_withIdentity cfg W threshold a p)
+        (gfAtomSemFromWM_withIdentity cfg W threshold a).1 p)
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
     (hSat : checkLangUsing .empty gfLegacySemanticLanguageDef I_check fuel p φ = .sat) :
     gfWMFormulaSem_withIdentity cfg W threshold φ p := by
@@ -202,7 +173,11 @@ theorem oslf_sat_implies_wm_semantics_withIdentity_unused
       ∀ a p, I_check a p = true →
         gfAtomSemFromWM W threshold a p := by
     intro a p hc
-    simpa [gfAtomSemFromWM_withIdentity_disabled, hdis] using h_atoms a p hc
+    have atomSemEqual := congrFun
+      (gfAtomSemFromWM_withIdentity_disabled cfg hdis W threshold) a
+    have holds := h_atoms a p hc
+    rw [atomSemEqual] at holds
+    simpa [gfEquationAtomSemFromWM] using holds
   have hbase :
       gfWMFormulaSem W threshold φ p :=
     oslf_sat_implies_wm_semantics (W := W) (threshold := threshold) h_atoms_base hSat

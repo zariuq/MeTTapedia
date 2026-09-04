@@ -6,7 +6,7 @@ import Mettapedia.GSLT.LanguageDef.StructuralCategory
 `StructuralMorphism` carries each authored declaration of a source
 presentation to a declaration of a target.  This module defines the underlying
 whole-presentation symbol action: `mapLanguageDef` applies one
-`PresentationSymbols` action to every declaration list at once.  Identity and
+`LanguageDefSymbolMap` action to every declaration list at once.  Identity and
 composition laws follow from the established per-declaration laws, and the
 membership transport lemmas supply the bridge used when a mapped presentation
 is included into a larger validated target.
@@ -24,7 +24,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-- Apply a symbol action to every declaration list of a presentation.  The
 language name is not a symbol namespace and is retained. -/
-def mapLanguageDef (symbols : PresentationSymbols)
+def mapLanguageDef (symbols : LanguageDefSymbolMap)
     (language : LanguageDef) : LanguageDef :=
   { language with
     types := language.types.map (mapTypeDecl symbols)
@@ -32,26 +32,26 @@ def mapLanguageDef (symbols : PresentationSymbols)
     equations := language.equations.map (mapEquation symbols)
     rewrites := language.rewrites.map (mapRewriteRule symbols) }
 
-@[simp] theorem mapLanguageDef_name (symbols : PresentationSymbols)
+@[simp] theorem mapLanguageDef_name (symbols : LanguageDefSymbolMap)
     (language : LanguageDef) :
     (mapLanguageDef symbols language).name = language.name := rfl
 
-@[simp] theorem mapLanguageDef_types (symbols : PresentationSymbols)
+@[simp] theorem mapLanguageDef_types (symbols : LanguageDefSymbolMap)
     (language : LanguageDef) :
     (mapLanguageDef symbols language).types =
       language.types.map (mapTypeDecl symbols) := rfl
 
-@[simp] theorem mapLanguageDef_terms (symbols : PresentationSymbols)
+@[simp] theorem mapLanguageDef_terms (symbols : LanguageDefSymbolMap)
     (language : LanguageDef) :
     (mapLanguageDef symbols language).terms =
       language.terms.map (mapGrammarRule symbols) := rfl
 
-@[simp] theorem mapLanguageDef_equations (symbols : PresentationSymbols)
+@[simp] theorem mapLanguageDef_equations (symbols : LanguageDefSymbolMap)
     (language : LanguageDef) :
     (mapLanguageDef symbols language).equations =
       language.equations.map (mapEquation symbols) := rfl
 
-@[simp] theorem mapLanguageDef_rewrites (symbols : PresentationSymbols)
+@[simp] theorem mapLanguageDef_rewrites (symbols : LanguageDefSymbolMap)
     (language : LanguageDef) :
     (mapLanguageDef symbols language).rewrites =
       language.rewrites.map (mapRewriteRule symbols) := rfl
@@ -67,14 +67,14 @@ private theorem listMapEqSelf {α : Type} {function : α → α}
 
 /-- The identity symbol action leaves every presentation unchanged. -/
 @[simp] theorem mapLanguageDef_id (language : LanguageDef) :
-    mapLanguageDef PresentationSymbols.id language = language := by
+    mapLanguageDef LanguageDefSymbolMap.id language = language := by
   cases language
   simp [mapLanguageDef, listMapEqSelf mapTypeDecl_id,
     listMapEqSelf mapGrammarRule_id, listMapEqSelf mapEquation_id,
     listMapEqSelf mapRewriteRule_id]
 
 /-- Composite symbol actions act by consecutive application. -/
-theorem mapLanguageDef_comp (first second : PresentationSymbols)
+theorem mapLanguageDef_comp (first second : LanguageDefSymbolMap)
     (language : LanguageDef) :
     mapLanguageDef (first.comp second) language =
       mapLanguageDef second (mapLanguageDef first language) := by
@@ -83,28 +83,28 @@ theorem mapLanguageDef_comp (first second : PresentationSymbols)
 
 /-! ## Membership transport into the image -/
 
-theorem mem_types_mapLanguageDef (symbols : PresentationSymbols)
+theorem mem_types_mapLanguageDef (symbols : LanguageDefSymbolMap)
     {declaration : TypeDecl} {language : LanguageDef}
     (membership : List.Mem declaration language.types) :
     List.Mem (mapTypeDecl symbols declaration)
       (mapLanguageDef symbols language).types :=
   List.mem_map_of_mem membership
 
-theorem mem_terms_mapLanguageDef (symbols : PresentationSymbols)
+theorem mem_terms_mapLanguageDef (symbols : LanguageDefSymbolMap)
     {rule : GrammarRule} {language : LanguageDef}
     (membership : List.Mem rule language.terms) :
     List.Mem (mapGrammarRule symbols rule)
       (mapLanguageDef symbols language).terms :=
   List.mem_map_of_mem membership
 
-theorem mem_equations_mapLanguageDef (symbols : PresentationSymbols)
+theorem mem_equations_mapLanguageDef (symbols : LanguageDefSymbolMap)
     {equation : Equation} {language : LanguageDef}
     (membership : List.Mem equation language.equations) :
     List.Mem (mapEquation symbols equation)
       (mapLanguageDef symbols language).equations :=
   List.mem_map_of_mem membership
 
-theorem mem_rewrites_mapLanguageDef (symbols : PresentationSymbols)
+theorem mem_rewrites_mapLanguageDef (symbols : LanguageDefSymbolMap)
     {rewrite : RewriteRule} {language : LanguageDef}
     (membership : List.Mem rewrite language.rewrites) :
     List.Mem (mapRewriteRule symbols rewrite)
@@ -113,7 +113,7 @@ theorem mem_rewrites_mapLanguageDef (symbols : PresentationSymbols)
 
 /-- Sort-name membership (the `String`-in-`List TypeDecl` sense used by
 `LangSort`) transports along the sort action. -/
-theorem sortName_mem_mapLanguageDef (symbols : PresentationSymbols)
+theorem sortName_mem_mapLanguageDef (symbols : LanguageDefSymbolMap)
     {sortName : String} {language : LanguageDef}
     (membership : sortName ∈ language.types) :
     symbols.sort sortName ∈ (mapLanguageDef symbols language).types := by
@@ -135,11 +135,11 @@ private def twoSortCanary : LanguageDef :=
     equations := []
     rewrites := [] }
 
-private def markSorts : PresentationSymbols :=
-  { PresentationSymbols.id with sort := fun sortName => sortName ++ "!" }
+private def markSorts : LanguageDefSymbolMap :=
+  { LanguageDefSymbolMap.id with sort := fun sortName => sortName ++ "!" }
 
-private def collapseSorts : PresentationSymbols :=
-  { PresentationSymbols.id with sort := fun _ => "Point" }
+private def collapseSorts : LanguageDefSymbolMap :=
+  { LanguageDefSymbolMap.id with sort := fun _ => "Point" }
 
 /-- Positive canary: the image renames each authored sort declaration. -/
 theorem mapLanguageDef_marks_sorts :

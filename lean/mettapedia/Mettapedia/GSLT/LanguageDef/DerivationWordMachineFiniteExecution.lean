@@ -171,7 +171,7 @@ The target frontier is an actual suffix of the source word stream, every
 semantic step is represented by one exact singleton rewrite, and early
 semantic halting produces a shorter trace rather than administrative target
 steps. -/
-theorem runFuel_exact_authored_trace
+theorem runFuel_exact_word_language_trace
     (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
     (fuel : Nat)
     (words : DerivationCheckMachineBinary.WordProgram)
@@ -340,11 +340,11 @@ theorem runFuel_exact_authored_trace
                                       · simpa [runFuel, semanticStep] using
                                           finalEncoded
 
-#print axioms runFuel_exact_authored_trace
+#print axioms runFuel_exact_word_language_trace
 
 /-- Complete bounded semantic execution has an authored target trace from the
 same encoded initial configuration. -/
-theorem execute_exact_authored_trace
+theorem execute_exact_word_language_trace
     (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
     (instructions : List
       (Instruction Formula Rule Evidence Provenance Obligation))
@@ -361,15 +361,15 @@ theorem execute_exact_authored_trace
         EncodesConfig host finalWords
           (execute host.services instructions) target := by
   simpa [execute] using
-    runFuel_exact_authored_trace host (instructions.length + 1) words
+    runFuel_exact_word_language_trace host (instructions.length + 1) words
       (initial host.services instructions) source encoded closed
 
-#print axioms execute_exact_authored_trace
+#print axioms execute_exact_word_language_trace
 
 /-- When a separately proved calculus service accepts the root, the continuous
 authored execution trace ends at a representation of that verified outcome
 and the declared logical objective follows. -/
-theorem execute_verified_authored_trace_sound
+theorem execute_verified_word_language_trace_sound
     (host : Host Formula Rule Evidence Provenance Obligation ServiceState)
     (sound : SoundServices host.services)
     (instructions : List
@@ -391,13 +391,13 @@ theorem execute_verified_authored_trace_sound
         sound.Objective root.obligation := by
   obtain ⟨finalWords, target, length, trace, bound, suffix,
       finalEncoded⟩ :=
-    execute_exact_authored_trace host instructions words source encoded closed
+    execute_exact_word_language_trace host instructions words source encoded closed
   have objective : sound.Objective root.obligation :=
     execute_verified_sound sound instructions root accepted
   rw [accepted] at finalEncoded
   exact ⟨finalWords, target, length, trace, bound, suffix, finalEncoded,
     objective⟩
 
-#print axioms execute_verified_authored_trace_sound
+#print axioms execute_verified_word_language_trace_sound
 
 end Mettapedia.GSLT.LanguageDef.DerivationWordMachineFiniteExecution

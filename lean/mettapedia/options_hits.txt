@@ -1,0 +1,22 @@
+Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/MetaEthicsTrustTriangleExample.lean:69:  options := {
+Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/EthicalDecisionProblemCaseStudies.lean:122:  options := {
+Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/EthicalDecisionProblemCaseStudies.lean:652:  options := {
+Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/EthicalDecisionProblemCaseStudies.lean:953:  options := {observeClaim, warnClaim, lockDownClaim, lethalForceClaim}
+Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/EthicalDecisionProblemCaseStudies.lean:1486:  options := {askHumanClaim, autoContainClaim, ignoreClaim}
+Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/Ontology/ConflictLane.lean:51:  fun φ => ∃ claim, claim ∈ lane.options ∧ claim.content = .propositional φ
+Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/Ontology/ConflictLane.lean:57:      ∃ claim, claim ∈ lane.options ∧ claim.content = .propositional φ := by
+Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/Ontology/ChoicePointTrustTriangleExample.lean:251:  options := {avoidHarmfulDisclosureClaim, avoidCoerciveOverrideClaim}
+Mettapedia/OSLF/MeTTaIL/Syntax.lean:954:inductive OptionClass where
+Mettapedia/OSLF/MeTTaIL/Syntax.lean:962:inductive OptionValue where
+Mettapedia/OSLF/MeTTaIL/Syntax.lean:963:  | bool : Bool → OptionValue
+Mettapedia/OSLF/MeTTaIL/Syntax.lean:964:  | int : Int → OptionValue
+Mettapedia/OSLF/MeTTaIL/Syntax.lean:965:  | float : Float → OptionValue
+Mettapedia/OSLF/MeTTaIL/Syntax.lean:966:  | keyword : String → OptionValue
+Mettapedia/OSLF/MeTTaIL/Syntax.lean:967:  | str : String → OptionValue
+Mettapedia/OSLF/MeTTaIL/Syntax.lean:971:structure LangOption where
+Mettapedia/OSLF/MeTTaIL/Syntax.lean:973:  value : OptionValue
+Mettapedia/OSLF/MeTTaIL/Syntax.lean:974:  class_ : OptionClass := .operational
+Mettapedia/OSLF/MeTTaIL/Syntax.lean:982:  options : List LangOption := []
+Mettapedia/OSLF/MeTTaIL/Canonical.lean:128:    let sortedOpts := lang.options.toArray.qsort (fun a b => a.key < b.key) |>.toList
+Mettapedia/OSLF/MeTTaIL/Canonical.lean:202:    (hopts : lang1.options.toArray.qsort (fun a b => a.key < b.key) =
+Mettapedia/OSLF/MeTTaIL/Canonical.lean:203:             lang2.options.toArray.qsort (fun a b => a.key < b.key))

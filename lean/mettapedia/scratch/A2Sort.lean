@@ -1,0 +1,8 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCollapsingRestoration
+
+open Mettapedia.GSLT.LanguageDef
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
+
+#eval rhoCIGSLT.theory.presentation.interactingSort.1.name
+#check @CostStaticColor.mapTypeExpr_base_eq_wrapped_iff_eq

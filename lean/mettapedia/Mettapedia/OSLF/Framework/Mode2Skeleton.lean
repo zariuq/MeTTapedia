@@ -15,12 +15,20 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.CategoryBridge
 open Mettapedia.OSLF.Framework.LangMorphism
 open Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 /-- Mode objects currently represented in the framework. -/
 inductive ModeObj where
   | pure
   | runtime (lang : LanguageDef)
   | behavioral (lang : LanguageDef)
+
+/-- Predicates carried by each mode. Runtime and behavioral predicates must
+respect the language's authored equations. -/
+def ModePred : ModeObj → Type
+  | .pure => Pattern → Prop
+  | .runtime lang => EquationPredicate (langGSLT lang)
+  | .behavioral lang => EquationPredicate (langGSLT lang)
 
 /-- Currently provable mode morphisms. -/
 inductive ModeHom : ModeObj → ModeObj → Type where
@@ -84,19 +92,19 @@ def termMap : ModeHom X Y → Pattern → Pattern
     {L₁ L₂ : LanguageDef} (m : LanguageEqHom L₁ L₂) (p : Pattern) :
     (ModeHom.runtimeToBehavioral m).termMap p = m.mapTerm p := rfl
 
-/-- Predicate pullback along mode morphisms (runtime/behavioral carriers). -/
-def mapPred : ModeHom X Y → (Pattern → Prop) → (Pattern → Prop)
+/-- Predicate pullback along mode morphisms. -/
+def mapPred : ModeHom X Y → ModePred Y → ModePred X
   | .id => fun ψ => ψ
   | .runtimeMap m => predPullback m
   | .behavioralMap m => predPullback m
   | .runtimeToBehavioral m => predPullback m
 
-@[simp] theorem mapPred_id (X : ModeObj) (ψ : Pattern → Prop) :
+@[simp] theorem mapPred_id (X : ModeObj) (ψ : ModePred X) :
     mapPred (ModeHom.id (X := X)) ψ = ψ := by
   rfl
 
 @[simp] theorem mapPred_comp
-    (f : ModeHom X Y) (g : ModeHom Y Z) (ψ : Pattern → Prop) :
+    (f : ModeHom X Y) (g : ModeHom Y Z) (ψ : ModePred Z) :
     mapPred (f ≫ g) ψ = mapPred f (mapPred g ψ) := by
   cases f <;> cases g <;>
     simp [ModeHom.comp, mapPred, predPullback_comp]
@@ -109,7 +117,7 @@ def mapPred : ModeHom X Y → (Pattern → Prop) → (Pattern → Prop)
 
 @[simp] theorem mapPred_comp_assoc
     (f : ModeHom W X) (g : ModeHom X Y) (h : ModeHom Y Z)
-    (ψ : Pattern → Prop) :
+    (ψ : ModePred Z) :
     mapPred ((f ≫ g) ≫ h) ψ = mapPred (f ≫ (g ≫ h)) ψ := by
   simp [mapPred_comp]
 
@@ -123,9 +131,9 @@ def runtimeToBehavioralCanonical (L : LanguageDef) :
 /-- Runtime→behavioral edge transports diamond witnesses. -/
 theorem runtimeToBehavioral_diamond_witness
     (L : LanguageDef)
-    {φ : Pattern → Prop} {p : Pattern}
+    {φ : EquationPredicate (langGSLT L)} {p : Pattern}
     (h : langDiamond L φ p) :
-    ∃ q, langReduces L p q ∧ φ q ∧
+    ∃ q, langSemanticReduces L p q ∧ φ q ∧
       ∃ T, LangReducesStar L
         ((runtimeToBehavioralCanonical L).termMap p) T ∧
         T = (runtimeToBehavioralCanonical L).termMap q := by

@@ -5,18 +5,22 @@ import Mettapedia.GSLT.Core.IndexedOperational
 import Mettapedia.GSLT.LanguageDef.NIKGSLT
 
 /-!
-# NIK authority diagrams as indexed operational GSLTs
+# External-certificate NIK diagrams as indexed operational GSLTs
 
-An authored NIK authority diagram already contains more than a behavioral
-map between checker machines: Boolean replay commutes, source steps map to
-target steps, and every target step leaving a translated checker state lifts
-to a source step.  These are exactly the obligations of a covered operational
-translation.
+An authored external-certificate authority diagram already contains more than
+a behavioral map between checker machines: Boolean checking commutes, source
+steps map to target steps, and every target step leaving a translated checker
+state lifts to a source step.  These are exactly the obligations of a covered
+operational translation.
 
 This module exposes that fact once.  It gives an authority diagram the same
 indexed operational command semantics and OSLF-generated native types as any
 other covered GSLT diagram; it does not add a second checker relation or infer
 semantic authority from operational replay.
+
+Its scope is deliberately narrower than NIK itself.  Certificate-free native
+decision, proof, construction, inference, and transformation services live in
+the canonical `Mettapedia.GSLT.LanguageDef.NIK` doctrine.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.NIKGSLT.Indexed
@@ -35,9 +39,10 @@ namespace InternalJudgment
 
 variable {Kind : Type uKind} (family : AuthorityFamily Kind)
 
-/-- The primitive NIK metajudgment: authority `kind` accepts certificate
-`certificate` for claim `claim`.  A guest logic may encode a hypothetical
-context inside `claim`, but NIK itself does not add one. -/
+/-- The primitive judgment of the external-certificate subinterface:
+authority `kind` accepts certificate `certificate` for claim `claim`.  A guest
+logic may encode a hypothetical context inside `claim`, but this boundary does
+not add one. -/
 def Checks (kind : Kind) (claim : family.Claim kind)
     (certificate : family.Certificate kind) : Prop :=
   (family.checker kind).check claim certificate = true

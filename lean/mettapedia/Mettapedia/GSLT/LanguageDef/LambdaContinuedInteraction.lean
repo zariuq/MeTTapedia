@@ -27,21 +27,21 @@ def lambdaValidatedLanguageDef : ValidatedLanguageDef :=
   ⟨lambdaCalc, lambdaCalc_validate_eq_nil⟩
 
 /-- The sole lambda sort selected from the authored presentation. -/
-def lambdaTermSort : AuthoredSort lambdaValidatedLanguageDef :=
+def lambdaTermSort : DeclaredSort lambdaValidatedLanguageDef :=
   ⟨lambdaCalc.types[0], List.getElem_mem (by simp [lambdaCalc])⟩
 
 /-- Authored binary application. -/
 def lambdaApplicationConstructor :
-    AuthoredConstructor lambdaValidatedLanguageDef :=
+    DeclaredConstructor lambdaValidatedLanguageDef :=
   ⟨lambdaCalc.terms[0], List.getElem_mem (by simp [lambdaCalc])⟩
 
 /-- Authored abstraction. -/
 def lambdaAbstractionConstructor :
-    AuthoredConstructor lambdaValidatedLanguageDef :=
+    DeclaredConstructor lambdaValidatedLanguageDef :=
   ⟨lambdaCalc.terms[1], List.getElem_mem (by simp [lambdaCalc])⟩
 
 /-- The authored beta rule. -/
-def lambdaBetaRewrite : AuthoredRewrite lambdaValidatedLanguageDef :=
+def lambdaBetaRewrite : DeclaredRewrite lambdaValidatedLanguageDef :=
   ⟨lambdaCalc.rewrites[0], List.getElem_mem (by simp [lambdaCalc])⟩
 
 /-- Application is the exact binary contact of the lambda presentation. -/
@@ -292,7 +292,7 @@ theorem lambdaContinuationRetyping_redexRetypable :
   unfold ContinuationRetypingPlan.RedexRetypable
   simp [lambdaIGSLT, lambdaInteractivePresentation, lambdaBetaRewrite,
     lambdaTermSort, lambdaValidatedLanguageDef, lambdaCalc, mapPattern,
-    costBasePresentationSymbols, TypeDecl.plain]
+    costBaseLanguageDefSymbolMap, TypeDecl.plain]
   apply HasType.constructor
       (rule := costBaseConstructor lambdaInteractionCut lambdaCalc.terms[0])
   · have membership : lambdaCalc.terms[0] ∈

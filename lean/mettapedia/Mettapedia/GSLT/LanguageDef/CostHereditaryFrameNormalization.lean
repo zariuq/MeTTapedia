@@ -328,7 +328,7 @@ theorem reify_mapPattern
     {inventory : CostStaticParameterInventory source color targetFree table
       values root}
     (environment : CostStaticAtomEnvironment source color targetFree inventory)
-    (symbols : PresentationSymbols) (pattern : Pattern) :
+    (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
     environment.reify (mapPattern symbols pattern) =
       mapPattern symbols (environment.reify pattern) := by
   induction pattern using Pattern.inductionOn with

@@ -20,6 +20,8 @@ open CategoryTheory
 open Opposite
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+open Mettapedia.OSLF.Framework.TypeSynthesis
 
 universe u v
 
@@ -33,14 +35,16 @@ theorem topos_internal_language_bridge_package
     (seed : Pattern) (φ ψ : Pattern → Prop)
     (hφ : Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality lang s seed φ)
     (hψ : Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality lang s seed ψ)
+    (hφInvariant : EquationInvariant (langGSLT lang) φ)
     {X : Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)}
     (h : (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s).obj X)
-    (χ : Pattern → Prop) (p : Pattern) :
+    (χ : EquationPredicate (langGSLT lang)) (p : Pattern) :
     (h ∈ (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
         lang s seed φ hφ).obj X
       ↔
       (Mettapedia.OSLF.Framework.TypeSynthesis.langOSLF lang procSort).satisfies
-        (S := s.val) (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang h seed) φ)
+        (S := s.val) (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang h seed)
+        (invariantPredicate (langGSLT lang) φ hφInvariant))
     ∧
     (∃ hAnd hOr,
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_characteristicEquiv
@@ -86,7 +90,7 @@ theorem topos_internal_language_bridge_package
             (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)
             Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty lang).source.app X e).down = p
           ∧
-        χ (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
+        χ.1 (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
           (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)
           Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty lang).target.app X e).down))
     ∧
@@ -100,14 +104,15 @@ theorem topos_internal_language_bridge_package
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
             (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)
             Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty lang).target.app X e).down = p →
-        χ (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
+        χ.1 (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
           (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)
           Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty lang).source.app X e).down)) := by
   refine ⟨?_, ?_, ?_, ?_⟩
-  · simpa using
-      Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_mem_iff_satisfies
-        (lang := lang) (procSort := procSort)
-        (s := s) (seed := seed) (φ := φ) (hNat := hφ) (h := h)
+  · change h ∈ (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred
+        lang s seed φ hφ).obj X ↔
+      φ (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang h seed)
+    exact Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_mem_iff
+      lang s seed φ hφ h
   · exact Mettapedia.OSLF.Framework.CategoryBridge.languageSort_conj_disj_topos_package
       lang s seed φ ψ hφ hψ
   · simpa using
@@ -136,6 +141,7 @@ fiber/graph bridge facts. -/
 theorem topos_internal_language_full_route_family
     (lang : LanguageDef) (procSort : String := "Proc")
     (A : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang)
+    (hAInvariant : EquationInvariant (langGSLT lang) A.pred)
     {B C : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPred lang}
     (f : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang A B)
     (g : Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom lang B C)
@@ -144,7 +150,7 @@ theorem topos_internal_language_full_route_family
       lang A.sort A.seed ψ)
     {X : Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)}
     (h : (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang A.sort).obj X)
-    (χ : Pattern → Prop) (p : Pattern) :
+    (χ : EquationPredicate (langGSLT lang)) (p : Pattern) :
     Mettapedia.OSLF.PresheafNativeType.FullRouteRestrictionEquivalence lang A
     ∧
     (Mettapedia.OSLF.PresheafNativeType.ScopedConstructorPredHom.comp f g).toFullGrothHom =
@@ -155,7 +161,8 @@ theorem topos_internal_language_full_route_family
       lang A.sort A.seed A.pred A.naturality).obj X
       ↔
       (Mettapedia.OSLF.Framework.TypeSynthesis.langOSLF lang procSort).satisfies
-        (S := A.sort.val) (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang h A.seed) A.pred)
+        (S := A.sort.val) (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang h A.seed)
+        (invariantPredicate (langGSLT lang) A.pred hAInvariant))
     ∧
     (∃ hAnd hOr,
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_characteristicEquiv
@@ -201,7 +208,7 @@ theorem topos_internal_language_full_route_family
             (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)
             Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty lang).source.app X e).down = p
           ∧
-        χ (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
+        χ.1 (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
           (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)
           Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty lang).target.app X e).down))
     ∧
@@ -215,7 +222,7 @@ theorem topos_internal_language_full_route_family
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
             (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)
             Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty lang).target.app X e).down = p →
-        χ (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
+        χ.1 (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
           (C := Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)
           Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty lang).source.app X e).down)) := by
   rcases Mettapedia.OSLF.PresheafNativeType.full_route_restriction_equivalence_package
@@ -225,6 +232,7 @@ theorem topos_internal_language_full_route_family
       (s := A.sort) (seed := A.seed)
       (φ := A.pred) (ψ := ψ)
       (hφ := A.naturality) (hψ := hψ)
+      (hφInvariant := hAInvariant)
       (X := X) h χ p with
     ⟨hMem, hConjDisj, hDia, hBox⟩
   exact ⟨hRestr, hComp, hMem, hConjDisj, hDia, hBox⟩
@@ -237,8 +245,8 @@ theorem togl_graph_modal_bridge_package
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
     (C : Type u) [CategoryTheory.Category.{v} C]
     {X : Opposite C}
-    (χ : Pattern → Prop) (p : Pattern) :
-    ((∃ q, Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang p q ∧ χ q)
+    (χ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
+    ((∃ q, Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang p q ∧ χ q)
       ↔
       ∃ e :
         (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
@@ -249,7 +257,7 @@ theorem togl_graph_modal_bridge_package
         χ (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
           (C := C) relEnv lang).target.app X e).down))
     ∧
-    ((∀ q, Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang q p → χ q)
+    ((∀ q, Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang q p → χ q)
       ↔
       ∀ e :
         (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
@@ -282,7 +290,7 @@ theorem togl_internal_graph_correspondence_layer
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
     (C : Type u) [CategoryTheory.Category.{v} C]
     {X : Opposite C}
-    (χ : Pattern → Prop) (p : Pattern) :
+    (χ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
     ((∃ q,
         (((ULift.up (p, q)) :
             (Mettapedia.OSLF.Framework.ToposReduction.pairConstPresheaf (C := C)).obj X) ∈
@@ -322,7 +330,7 @@ theorem togl_internal_graph_correspondence_layer
             (Mettapedia.OSLF.Framework.ToposReduction.reductionSubfunctorUsing
               (C := C) relEnv lang).obj X) ∧ χ q)
         ↔
-      (∃ q, Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang p q ∧ χ q) := by
+      (∃ q, Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang p q ∧ χ q) := by
     exact
       (Mettapedia.OSLF.Framework.ToposReduction.langDiamondUsing_iff_exists_internalStep
         (C := C) (relEnv := relEnv) (lang := lang) (X := X) (φ := χ) (p := p)).symm.trans
@@ -335,7 +343,7 @@ theorem togl_internal_graph_correspondence_layer
               (C := C) relEnv lang).obj X) →
           χ q)
         ↔
-      (∀ q, Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang q p → χ q) := by
+      (∀ q, Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang q p → χ q) := by
     exact
       (Mettapedia.OSLF.Framework.ToposReduction.langBoxUsing_iff_forall_internalStep
         (C := C) (relEnv := relEnv) (lang := lang) (X := X) (φ := χ) (p := p)).symm.trans
@@ -352,7 +360,7 @@ theorem togl_graph_algebra_reductionGraphObj_family
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
     (C : Type u) [CategoryTheory.Category.{v} C]
     {X : Opposite C}
-    (χ : Pattern → Prop) (p q : Pattern) :
+    (χ : EquationPredicate (langGSLTUsing relEnv lang)) (p q : Pattern) :
     ((∃ e :
         (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
           (C := C) relEnv lang).Edge.obj X,
@@ -362,7 +370,7 @@ theorem togl_graph_algebra_reductionGraphObj_family
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
             (C := C) relEnv lang).target.app X e).down = q)
       ↔
-      Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang p q)
+      Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang p q)
     ∧
     (Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing relEnv lang χ p
       ↔
@@ -435,22 +443,22 @@ theorem togl_graph_composition_reductionGraphObj_family
     graphChain2 (lang := lang) (relEnv := relEnv) (C := C) (X := X) p r
       ↔
     ∃ q,
-      Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang p q
+      Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang p q
       ∧
-      Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang q r := by
+      Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang q r := by
   constructor
   · rintro ⟨e₁, e₂, hs₁, hlink, ht₂⟩
     let q : Pattern :=
       ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
         (C := C) relEnv lang).target.app X e₁).down
     have hpq :
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang p q := by
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang p q := by
       exact
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
           (C := C) relEnv lang).edge_endpoints_iff
             (X := X) (p := p) (q := q)).1 ⟨e₁, hs₁, rfl⟩
     have hqr :
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang q r := by
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang q r := by
       exact
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphObjUsing
           (C := C) relEnv lang).edge_endpoints_iff
@@ -474,17 +482,17 @@ theorem togl_graph_composition_diamond_family
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
     (C : Type u) [CategoryTheory.Category.{v} C]
     {X : Opposite C}
-    (χ : Pattern → Prop) (p : Pattern) :
+    (χ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
     Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing
       relEnv lang
-      (fun q => Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing relEnv lang χ q) p
+      (Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing relEnv lang χ) p
       ↔
     ∃ r, graphChain2 (lang := lang) (relEnv := relEnv) (C := C) (X := X) p r ∧ χ r := by
   constructor
   · intro h
     rcases (Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing_spec
       relEnv lang
-      (fun q => Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing relEnv lang χ q)
+      (Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing relEnv lang χ)
       p).1 h with ⟨q, hpq, hDiaQ⟩
     rcases (Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing_spec
       relEnv lang χ q).1 hDiaQ with ⟨r, hqr, hχ⟩
@@ -504,7 +512,7 @@ theorem togl_graph_composition_diamond_family
         relEnv lang χ q).2 ⟨r, hqr, hχ⟩
     exact (Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing_spec
       relEnv lang
-      (fun q => Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing relEnv lang χ q)
+      (Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing relEnv lang χ)
       p).2 ⟨q, hpq, hDiaQ⟩
 
 /-! ## Full Internal Logic Package (NTT Proposition 19)
@@ -537,12 +545,12 @@ theorem topos_full_internal_logic_bridge_package
     -- ⊤ (top predicate always satisfies)
     ((Mettapedia.OSLF.Framework.TypeSynthesis.langOSLF lang procSort).satisfies
         (S := s.val) (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang h seed)
-        (fun _ => True))
+        (⊤ : EquationPredicate (langGSLT lang)))
     ∧
     -- ⊥ (bot predicate never satisfies)
     (¬ (Mettapedia.OSLF.Framework.TypeSynthesis.langOSLF lang procSort).satisfies
         (S := s.val) (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang h seed)
-        (fun _ => False))
+        (⊥ : EquationPredicate (langGSLT lang)))
     ∧
     -- ∧/∨ internalization (from existing conj/disj package)
     (∃ hAnd hOr,
@@ -607,11 +615,11 @@ theorem topos_full_internal_logic_piSigma_rule_package
     (h : (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj lang s).obj X) :
     ((Mettapedia.OSLF.Framework.TypeSynthesis.langOSLF lang procSort).satisfies
         (S := s.val) (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang h seed)
-        (fun _ => True))
+        (⊤ : EquationPredicate (langGSLT lang)))
     ∧
     (¬ (Mettapedia.OSLF.Framework.TypeSynthesis.langOSLF lang procSort).satisfies
         (S := s.val) (Mettapedia.OSLF.Framework.ConstructorCategory.pathSem lang h seed)
-        (fun _ => False))
+        (⊥ : EquationPredicate (langGSLT lang)))
     ∧
     (∃ hAnd hOr,
       (∀ {Y : Opposite (Mettapedia.OSLF.Framework.ConstructorCategory.ConstructorObj lang)}
@@ -873,7 +881,7 @@ def relCompN
     (fun p r => p = r)
     (fun _ ih p r =>
       ∃ q,
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang p q
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang p q
         ∧ ih q r)
     n p r
 
@@ -926,14 +934,14 @@ theorem graphChain2_eq_graphChainN_2
 def diamondIterN
     (lang : LanguageDef)
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
-    (n : Nat) (χ : Pattern → Prop) (p : Pattern) : Prop :=
+    (n : Nat) (χ : EquationPredicate (langGSLTUsing relEnv lang)) :
+      EquationPredicate (langGSLTUsing relEnv lang) :=
   Nat.rec
-    (motive := fun _ => (Pattern → Prop) → Pattern → Prop)
-    (fun χ p => χ p)
-    (fun _ ih χ p =>
-      Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing
-        relEnv lang (ih χ) p)
-    n χ p
+    (motive := fun _ => EquationPredicate (langGSLTUsing relEnv lang))
+    χ
+    (fun _ ih =>
+      Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing relEnv lang ih)
+    n
 
 
 /-- N-fold diamond iteration corresponds to n-step graph chains. -/
@@ -942,10 +950,10 @@ theorem diamondIterN_iff_graphChainN
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
     (C : Type u) [CategoryTheory.Category.{v} C]
     {X : Opposite C}
-    (n : Nat) (χ : Pattern → Prop) (p : Pattern) :
-    diamondIterN lang relEnv n χ p
+    (n : Nat) (χ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
+    (diamondIterN lang relEnv n χ).1 p
       ↔
-    ∃ r, graphChainN (lang := lang) (relEnv := relEnv) (C := C) (X := X) n p r ∧ χ r := by
+    ∃ r, graphChainN (lang := lang) (relEnv := relEnv) (C := C) (X := X) n p r ∧ χ.1 r := by
   induction n generalizing p with
   | zero =>
     simp only [diamondIterN, graphChainN]
@@ -983,22 +991,22 @@ theorem togl_complete_graph_bridge_package
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
     (C : Type u) [CategoryTheory.Category.{v} C]
     {X : Opposite C}
-    (χ : Pattern → Prop) (p : Pattern) :
+    (χ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
     -- 2-step: graphChain2 ↔ relational (existing)
     (∀ r, graphChain2 (lang := lang) (relEnv := relEnv) (C := C) (X := X) p r
       ↔
       ∃ q,
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang p q
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang p q
         ∧
-        Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang q r)
+        Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReducesUsing relEnv lang q r)
     ∧
     -- n-step: graphChainN ↔ relCompN (new)
     (∀ n r, graphChainN (lang := lang) (relEnv := relEnv) (C := C) (X := X) n p r
       ↔ relCompN lang relEnv n p r)
     ∧
     -- Modal iteration: ◇ⁿ ↔ graphChainN (new)
-    (∀ n, diamondIterN lang relEnv n χ p
-      ↔ ∃ r, graphChainN (lang := lang) (relEnv := relEnv) (C := C) (X := X) n p r ∧ χ r) := by
+    (∀ n, (diamondIterN lang relEnv n χ).1 p
+      ↔ ∃ r, graphChainN (lang := lang) (relEnv := relEnv) (C := C) (X := X) n p r ∧ χ.1 r) := by
   refine ⟨?_, ?_, ?_⟩
   · intro r
     exact togl_graph_composition_reductionGraphObj_family

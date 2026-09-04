@@ -767,7 +767,7 @@ private def expandTermDecl : TSyntax `langDefTermDecl → MacroM (TSyntax `term)
       let syns' := synArrays.foldl (init := #[]) (fun acc arr => acc ++ arr)
       let paramsTerm ← mkTermList params'
       let synsTerm ← mkTermList syns'.toList
-      `(GrammarRule.mk $(mkStrTerm label.getId.toString) $(mkStrTerm category.getId.toString) $paramsTerm $synsTerm none)
+      `(GrammarRule.mk $(mkStrTerm label.getId.toString) $(mkStrTerm category.getId.toString) $paramsTerm $synsTerm none none)
   | `(langDefTermDecl| $label:ident . $params:langDefTermParam,* |- $syns:langDefSyntaxAtom* : $category:ident ![ $policy:langDefEvalPolicy ] ; ) => do
       let params' ← params.getElems.toList.mapM expandTermParam
       let synArrays ← syns.toList.mapM expandSyntaxAtom
@@ -776,7 +776,7 @@ private def expandTermDecl : TSyntax `langDefTermDecl → MacroM (TSyntax `term)
       let synsTerm ← mkTermList syns'.toList
       let resolvedPolicy ← resolveEvalPolicyName policy
       let policyTerm := evalPolicyTerm resolvedPolicy
-      `(GrammarRule.mk $(mkStrTerm label.getId.toString) $(mkStrTerm category.getId.toString) $paramsTerm $synsTerm (some $policyTerm))
+      `(GrammarRule.mk $(mkStrTerm label.getId.toString) $(mkStrTerm category.getId.toString) $paramsTerm $synsTerm (some $policyTerm) none)
   | stx => Macro.throwErrorAt stx "unsupported term declaration"
 
 private def mkEquationTerm

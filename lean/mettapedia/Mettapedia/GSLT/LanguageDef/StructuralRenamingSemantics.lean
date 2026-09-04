@@ -19,7 +19,7 @@ open Mettapedia.OSLF.MeTTaIL.Match
 
 /-- Injectivity of the sort action lifts structurally to type expressions. -/
 theorem mapTypeExpr_injective
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (sortInjective : Function.Injective symbols.sort) :
     Function.Injective (mapTypeExpr symbols) := by
   intro first second
@@ -61,16 +61,16 @@ theorem mapTypeExpr_injective
 
 /-- Map the concrete values of a matcher environment while preserving schema
 variable names and their order. -/
-def mapBindings (symbols : PresentationSymbols) : Bindings → Bindings :=
+def mapBindings (symbols : LanguageDefSymbolMap) : Bindings → Bindings :=
   List.map fun entry => (entry.1, mapPattern symbols entry.2)
 
 @[simp]
-theorem mapBindings_nil (symbols : PresentationSymbols) :
+theorem mapBindings_nil (symbols : LanguageDefSymbolMap) :
     mapBindings symbols [] = [] :=
   rfl
 
 @[simp]
-theorem mapBindings_cons (symbols : PresentationSymbols)
+theorem mapBindings_cons (symbols : LanguageDefSymbolMap)
     (name : String) (value : Pattern) (bindings : Bindings) :
     mapBindings symbols ((name, value) :: bindings) =
       (name, mapPattern symbols value) :: mapBindings symbols bindings :=
@@ -79,11 +79,11 @@ theorem mapBindings_cons (symbols : PresentationSymbols)
 /-- Injectivity of the constructor action lifts to the entire shared pattern
 carrier. -/
 theorem mapPattern_injective
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor) :
     Function.Injective (mapPattern symbols) := by
-  let inverseSymbols : PresentationSymbols :=
-    { PresentationSymbols.id with
+  let inverseSymbols : LanguageDefSymbolMap :=
+    { LanguageDefSymbolMap.id with
       constructor := Function.invFun symbols.constructor }
   have leftInverse : ∀ pattern,
       mapPattern inverseSymbols (mapPattern symbols pattern) = pattern := by
@@ -121,7 +121,7 @@ theorem mapPattern_injective
 
 /-- Binding lookup commutes with constructor translation because schema keys
 are unchanged. -/
-theorem find?_mapBindings (symbols : PresentationSymbols)
+theorem find?_mapBindings (symbols : LanguageDefSymbolMap)
     (bindings : Bindings) (name : String) :
     (mapBindings symbols bindings).find? (·.1 == name) =
       (bindings.find? (·.1 == name)).map fun entry =>
@@ -139,7 +139,7 @@ theorem find?_mapBindings (symbols : PresentationSymbols)
 The injectivity premise is load-bearing when repeated metavariables compare
 their previously bound values. -/
 theorem mergeBindings_mapBindings
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (left right : Bindings) :
     (mergeBindings left right).map (mapBindings symbols) =
@@ -174,7 +174,7 @@ theorem mergeBindings_mapBindings
 
 /-- Constructor translation commutes with de Bruijn lifting. -/
 theorem mapPattern_liftBVars
-    (symbols : PresentationSymbols) (cutoff shift : Nat) (pattern : Pattern) :
+    (symbols : LanguageDefSymbolMap) (cutoff shift : Nat) (pattern : Pattern) :
     mapPattern symbols
         (Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars cutoff shift pattern) =
       Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars cutoff shift
@@ -213,7 +213,7 @@ theorem mapPattern_liftBVars
 /-- Structural constructor renaming commutes with locally nameless
 instantiation. -/
 theorem mapPattern_instantiateBVarAt
-    (symbols : PresentationSymbols) (depth : Nat)
+    (symbols : LanguageDefSymbolMap) (depth : Nat)
     (replacement body : Pattern) :
     mapPattern symbols
         (Mettapedia.OSLF.MeTTaIL.Substitution.instantiateBVarAt
@@ -259,7 +259,7 @@ theorem mapPattern_instantiateBVarAt
 
 @[simp]
 theorem mapPattern_instantiateBVar
-    (symbols : PresentationSymbols) (replacement body : Pattern) :
+    (symbols : LanguageDefSymbolMap) (replacement body : Pattern) :
     mapPattern symbols
         (Mettapedia.OSLF.MeTTaIL.Substitution.instantiateBVar replacement body) =
       Mettapedia.OSLF.MeTTaIL.Substitution.instantiateBVar
@@ -270,7 +270,7 @@ theorem mapPattern_instantiateBVar
 schema-key renamings, this requires no coverage side condition because matcher
 variable names are preserved. -/
 theorem applyBindings_mapPattern
-    (symbols : PresentationSymbols) (bindings : Bindings) (pattern : Pattern) :
+    (symbols : LanguageDefSymbolMap) (bindings : Bindings) (pattern : Pattern) :
     applyBindings (mapBindings symbols bindings) (mapPattern symbols pattern) =
       mapPattern symbols (applyBindings bindings pattern) := by
   induction pattern using Pattern.inductionOn with
@@ -375,7 +375,7 @@ theorem applyBindings_mapPattern
                       unresolvedEquality
 
 theorem filterMap_merge_mapBindings
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (left : Bindings) (rights : List Bindings) :
     ((rights.map (mapBindings symbols)).filterMap fun right =>
@@ -390,7 +390,7 @@ theorem filterMap_merge_mapBindings
       cases mergeBindings left right <;> simp [inductionHypothesis]
 
 theorem flatMap_merge_mapBindings
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (lefts rights : List Bindings) :
     (lefts.map (mapBindings symbols)).flatMap (fun left =>
@@ -407,7 +407,7 @@ theorem flatMap_merge_mapBindings
         inductionHypothesis]
 
 theorem filterMap_merge_mappedBindings
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (left : Bindings) (rights : List Bindings) :
     (rights.filterMap fun right =>
@@ -418,7 +418,7 @@ theorem filterMap_merge_mappedBindings
     filterMap_merge_mapBindings symbols constructorInjective left rights
 
 theorem flatMap_merge_mappedBindings
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (lefts rights : List Bindings) :
     (lefts.map (mapBindings symbols)).flatMap (fun left =>
@@ -459,7 +459,7 @@ theorem flatMap_map_transport {alpha beta gamma delta : Type*}
 constructor renaming.  The equalities are list equalities: search order and
 multiplicity are preserved, not merely existence of a matching result. -/
 theorem matcher_equivariance
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor) :
     (∀ patterns terms,
       matchArgs (patterns.map (mapPattern symbols))
@@ -559,7 +559,7 @@ theorem matcher_equivariance
       mapPattern, mapPatternList_eq_map]
 
 theorem matchPattern_equivariance
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (pattern term : Pattern) :
     matchPattern (mapPattern symbols pattern) (mapPattern symbols term) =
@@ -567,7 +567,7 @@ theorem matchPattern_equivariance
   (matcher_equivariance symbols constructorInjective).2.1 pattern term
 
 theorem applyRule_equivariance
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (rule : RewriteRule) (term : Pattern) :
     applyRule (mapRewriteRule symbols rule) (mapPattern symbols term) =

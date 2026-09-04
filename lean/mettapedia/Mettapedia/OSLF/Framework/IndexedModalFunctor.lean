@@ -29,6 +29,7 @@ open scoped CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTQuotientCoherence
 open Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
 
 universe uTerm uIndex vIndex
@@ -169,9 +170,22 @@ def pullbackLax
     (translation : OperationalTranslation source target) :
     ForwardModalPredicateTheory.Hom
       ⟨oslfModalObject target⟩ ⟨oslfModalObject source⟩ where
-  mapPred := CompleteLatticeHom.setPreimage translation.mapTerm
-  map_diamond_lax := preimage_diamond_le translation
-  map_box_lax := preimage_box_le translation
+  mapPred := CompleteLatticeHom.setPreimage
+    translation.onSemanticTheories.mapTerm
+  map_diamond_lax := by
+    intro predicate
+    change gsltDiamond (semanticTheory source)
+        (Set.preimage translation.onSemanticTheories.mapTerm predicate) ≤
+      Set.preimage translation.onSemanticTheories.mapTerm
+        (gsltDiamond (semanticTheory target) predicate)
+    exact preimage_diamond_le translation.onSemanticTheories predicate
+  map_box_lax := by
+    intro predicate
+    change Set.preimage translation.onSemanticTheories.mapTerm
+        (gsltBox (semanticTheory target) predicate) ≤
+      gsltBox (semanticTheory source)
+        (Set.preimage translation.onSemanticTheories.mapTerm predicate)
+    exact preimage_box_le translation.onSemanticTheories predicate
 
 end OperationalTranslation
 
@@ -189,10 +203,18 @@ def oslfForwardModalFunctor :
   map translation := OperationalTranslation.pullbackLax translation.unop
   map_id object := by
     apply ForwardModalPredicateTheory.Hom.ext
-    rfl
+    apply CompleteLatticeHom.ext
+    intro predicate
+    ext term
+    induction term using Quotient.inductionOn with
+    | _ representative => rfl
   map_comp earlier later := by
     apply ForwardModalPredicateTheory.Hom.ext
-    rfl
+    apply CompleteLatticeHom.ext
+    intro predicate
+    ext term
+    induction term using Quotient.inductionOn with
+    | _ representative => rfl
 
 /-! ## Exact maps embed in the lax category -/
 
@@ -259,10 +281,20 @@ def forwardIndexedOSLFFunctor
       oslfForwardModalFunctor
   map_id diagram := by
     ext stage
-    rfl
+    apply ForwardModalPredicateTheory.Hom.ext
+    apply CompleteLatticeHom.ext
+    intro predicate
+    ext term
+    induction term using Quotient.inductionOn with
+    | _ representative => rfl
   map_comp first second := by
     ext stage
-    rfl
+    apply ForwardModalPredicateTheory.Hom.ext
+    apply CompleteLatticeHom.ext
+    intro predicate
+    ext term
+    induction term using Quotient.inductionOn with
+    | _ representative => rfl
 
 /-- Exact indexed OSLF as a functor on diagrams whose stage maps have both
 outgoing and incoming local coverage. -/
@@ -278,10 +310,20 @@ def exactIndexedOSLFFunctor
       oslfModalFunctor
   map_id diagram := by
     ext stage
-    rfl
+    apply ModalPredicateTheory.Hom.ext
+    apply CompleteLatticeHom.ext
+    intro predicate
+    ext term
+    induction term using Quotient.inductionOn with
+    | _ representative => rfl
   map_comp first second := by
     ext stage
-    rfl
+    apply ModalPredicateTheory.Hom.ext
+    apply CompleteLatticeHom.ext
+    intro predicate
+    ext term
+    induction term using Quotient.inductionOn with
+    | _ representative => rfl
 
 /-! ## Exactness canaries -/
 
@@ -290,23 +332,27 @@ equality. -/
 theorem modal_pullback_diamond_exact
     {source target : GSLT.{uTerm}}
     (translation : ModalTranslation source target)
-    (predicate : Set target.Term) :
-    gsltDiamond source (Set.preimage translation.mapTerm predicate) =
-      Set.preimage translation.mapTerm (gsltDiamond target predicate) := by
+    (predicate : Set (SemanticTerm target)) :
+    equationQuotientDiamond source
+        (Set.preimage translation.toOperational.mapSemantic predicate) =
+      Set.preimage translation.toOperational.mapSemantic
+        (equationQuotientDiamond target predicate) := by
   exact
     (Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor.CoveredTranslation.preimage_diamond
-      translation.toCoveredTranslation predicate).symm
+      translation.onSemanticTheories.toCoveredTranslation predicate).symm
 
 /-- Positive: a bounded operational map's lax box law is actually an
 equality. -/
 theorem modal_pullback_box_exact
     {source target : GSLT.{uTerm}}
     (translation : ModalTranslation source target)
-    (predicate : Set target.Term) :
-    Set.preimage translation.mapTerm (gsltBox target predicate) =
-      gsltBox source (Set.preimage translation.mapTerm predicate) :=
+    (predicate : Set (SemanticTerm target)) :
+    Set.preimage translation.toOperational.mapSemantic
+        (equationQuotientBox target predicate) =
+      equationQuotientBox source
+        (Set.preimage translation.toOperational.mapSemantic predicate) :=
   Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor.ModalTranslation.preimage_box
-    translation predicate
+    translation.onSemanticTheories predicate
 
 section AxiomAudit
 

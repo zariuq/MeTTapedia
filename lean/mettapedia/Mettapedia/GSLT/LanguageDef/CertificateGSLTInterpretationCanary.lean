@@ -18,9 +18,9 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 
-private def judgmentA : Pattern := .apply "CertificateGSLT-A" []
-private def judgmentB : Pattern := .apply "CertificateGSLT-B" []
-private def judgmentC : Pattern := .apply "CertificateGSLT-C" []
+def judgmentA : Pattern := .apply "CertificateGSLT-A" []
+def judgmentB : Pattern := .apply "CertificateGSLT-B" []
+def judgmentC : Pattern := .apply "CertificateGSLT-C" []
 
 private def sourceRule : RuleSchema :=
   { id := ⟨"certificate-gslt-a-c"⟩
@@ -47,51 +47,38 @@ private def targetRuleShare : RuleSchema :=
     conclusion := judgmentC }
 
 private def sourcePresentation : CalculusLanguageDef :=
-  { language := LanguageDef.empty "certificate-gslt-source"
-    calculus :=
-      { judgments :=
-          [{ head := "CertificateGSLT-A", arity := 0 },
-           { head := "CertificateGSLT-C", arity := 0 }]
-        rules := [sourceRule] } }
+  CalculusLanguageDef.extend
+    (LanguageDef.empty "certificate-gslt-source")
+    { judgments :=
+        [{ head := "CertificateGSLT-A", arity := 0 },
+         { head := "CertificateGSLT-C", arity := 0 }]
+      rules := [sourceRule] }
 
 private def targetPresentation : CalculusLanguageDef :=
-  { language := LanguageDef.empty "certificate-gslt-target"
-    calculus :=
-      { judgments :=
-          [{ head := "CertificateGSLT-A", arity := 0 },
-           { head := "CertificateGSLT-B", arity := 0 },
-           { head := "CertificateGSLT-C", arity := 0 }]
-        rules := [targetRuleAB, targetRuleBC, targetRuleShare] } }
+  CalculusLanguageDef.extend
+    (LanguageDef.empty "certificate-gslt-target")
+    { judgments :=
+        [{ head := "CertificateGSLT-A", arity := 0 },
+         { head := "CertificateGSLT-B", arity := 0 },
+         { head := "CertificateGSLT-C", arity := 0 }]
+      rules := [targetRuleAB, targetRuleBC, targetRuleShare] }
 
 private theorem emptyLanguage_validate (name : String) :
     (LanguageDef.empty name).validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
     simp [LanguageDef.empty, LanguageDef.typeNames]
 
-private theorem sourcePresentation_valid :
-    sourceCalculusLanguageDef.isValid = true := by
-  simp [sourcePresentation, CalculusLanguageDef.isValid,
-    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
-    CalculusLanguageDef.hasValidLocalRules, CalculusLanguageDef.ruleIds, emptyLanguage_validate,
-    sourceRule, judgmentA, judgmentC, RuleSchema.isValidIn,
-    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
-    fixedConstructorListsValid, RuleSchema.isLocallyValid,
-    RuleSchema.metavariableNames, RuleSchema.occurrences, RuleSchema.patterns,
-    patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
-    patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
-    Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-    Pattern.hasCanonicalBinderMetadata,
-    Pattern.hasCanonicalBinderMetadataList]
-  decide
+private theorem emptyLanguage_terms (name : String) :
+    (LanguageDef.empty name).terms = [] :=
+  rfl
 
-private theorem targetPresentation_valid :
-    targetCalculusLanguageDef.isValid = true := by
-  simp [targetPresentation, CalculusLanguageDef.isValid,
-    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
-    CalculusLanguageDef.hasValidLocalRules, CalculusLanguageDef.ruleIds, emptyLanguage_validate,
-    targetRuleAB, targetRuleBC, targetRuleShare,
-    judgmentA, judgmentB, judgmentC,
+private theorem sourcePresentation_valid :
+    sourcePresentation.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
+  simp [sourcePresentation, emptyLanguage_validate, emptyLanguage_terms,
+    sourceRule, judgmentA, judgmentC,
+    CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.ruleIds,
     RuleSchema.isValidIn, CalculusLanguageDef.judgmentSchemaValid,
     CalculusLanguageDef.lookupJudgment?, fixedConstructorListsValid,
     RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
@@ -99,9 +86,31 @@ private theorem targetPresentation_valid :
     patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
     patternHasNoCollectionRest, patternsHaveNoCollectionRest,
     Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
-    Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-    Pattern.hasCanonicalBinderMetadata,
-    Pattern.hasCanonicalBinderMetadataList]
+    Pattern.isWellScoped, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
+    Pattern.hasCanonicalBinderMetadataList,
+    CalculusLanguageDef.conversionDeclarationValid]
+  decide
+
+private theorem targetPresentation_valid :
+    targetPresentation.isValid = true := by
+  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
+  simp [targetPresentation, emptyLanguage_validate, emptyLanguage_terms,
+    targetRuleAB, targetRuleBC, targetRuleShare,
+    judgmentA, judgmentB, judgmentC,
+    CalculusLanguageDef.judgmentSignatureValid,
+    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.ruleIds,
+    RuleSchema.isValidIn, CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, fixedConstructorListsValid,
+    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
+    RuleSchema.occurrences, RuleSchema.patterns,
+    patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
+    patternHasNoCollectionRest, patternsHaveNoCollectionRest,
+    Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
+    Pattern.isWellScoped, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
+    Pattern.hasCanonicalBinderMetadataList,
+    CalculusLanguageDef.conversionDeclarationValid]
   decide
 
 private def sourceValidated : ValidatedCalculusLanguageDef :=
@@ -110,8 +119,8 @@ private def sourceValidated : ValidatedCalculusLanguageDef :=
 private def targetValidated : ValidatedCalculusLanguageDef :=
   ⟨targetPresentation, targetPresentation_valid⟩
 
-private def sourceObject : Object := ⟨sourceValidated⟩
-private def targetObject : Object := ⟨targetValidated⟩
+def sourceObject : Object := ⟨sourceValidated⟩
+def targetObject : Object := ⟨targetValidated⟩
 
 private def sourceInstance : RuleInstance :=
   ⟨⟨"certificate-gslt-a-c"⟩, []⟩
@@ -200,6 +209,71 @@ private theorem source_application_shape
             instantiateRule?_eq_some_iff_application.mp source_instantiates
           have outputs := reconstructed.outputs_unique canonical
           exact ⟨rfl, outputs.1, outputs.2⟩
+
+private theorem target_application_conclusion
+    (ruleInstance : RuleInstance) {premises : List Pattern}
+    {conclusion : Pattern}
+    (application : RuleApplication targetValidated ruleInstance
+      premises conclusion) :
+    conclusion = judgmentB ∨ conclusion = judgmentC := by
+  cases application with
+  | intro rule lookup argumentsValid sideConditions premisesInstantiate
+      conclusionInstantiates =>
+      simp [targetValidated, targetPresentation, targetRuleAB, targetRuleBC,
+        targetRuleShare, CalculusLanguageDef.lookupRule?] at lookup
+      rcases lookup with ⟨_, rfl⟩ | ⟨_, remaining⟩
+      · cases conclusionInstantiates with
+        | apply items =>
+            cases items
+            exact Or.inl rfl
+      · rcases remaining with ⟨_, rfl⟩ | ⟨_, _, rfl⟩
+        · cases conclusionInstantiates with
+          | apply items =>
+              cases items
+              exact Or.inr rfl
+        · cases conclusionInstantiates with
+          | apply items =>
+              cases items
+              exact Or.inr rfl
+
+/-! ## An independent two-valued model of the fixture -/
+
+/-- The model makes `B` and `C` true and `A` false.  It is defined directly
+on judgments, independently of generated derivability. -/
+def semanticMeaning (claim : Pattern) : Prop :=
+  claim = judgmentB ∨ claim = judgmentC
+
+/-- The source rule preserves the independent model. -/
+theorem source_rules_preserve_semanticMeaning :
+    ∀ ruleInstance premises conclusion,
+      RuleApplication sourceObject.definition ruleInstance premises
+          conclusion →
+        (∀ premise, premise ∈ premises → semanticMeaning premise) →
+          semanticMeaning conclusion := by
+  intro ruleInstance premises conclusion application _premisesMeaning
+  change RuleApplication sourceValidated ruleInstance premises conclusion at application
+  have shape := source_application_shape ruleInstance application
+  rw [shape.2.2]
+  exact Or.inr rfl
+
+/-- Every target rule also preserves the same independent model. -/
+theorem target_rules_preserve_semanticMeaning :
+    ∀ ruleInstance premises conclusion,
+      RuleApplication targetObject.definition ruleInstance premises
+          conclusion →
+        (∀ premise, premise ∈ premises → semanticMeaning premise) →
+          semanticMeaning conclusion := by
+  intro ruleInstance premises conclusion application _premisesMeaning
+  change RuleApplication targetValidated ruleInstance premises conclusion at application
+  exact target_application_conclusion ruleInstance application
+
+/-- Positive semantic control: `B` is true in the independent model. -/
+theorem judgmentB_has_semanticMeaning : semanticMeaning judgmentB :=
+  Or.inl rfl
+
+/-- Negative semantic control: `A` is false in the independent model. -/
+theorem judgmentA_lacks_semanticMeaning : ¬ semanticMeaning judgmentA := by
+  simp [semanticMeaning, judgmentA, judgmentB, judgmentC]
 
 /-- Interpret the sole source rule by one chosen target implementation.  The
 decidable shape test keeps the interpretation computable on concrete rule

@@ -90,9 +90,9 @@ argument congruence, equation matching) are welded to a reflectable
 small-step rule table whose rule-removal tests prove the engine
 genuinely depends on the declared rules.
 Three further pillars extend the architecture: parsers
-\emph{generated from the authored grammars themselves} (per-language
+\emph{generated from the source grammars themselves} (per-language
 LanguageDefs compiled to native readers with differential, mutation, and
-purity gates --- the pipeline caught two defects in the authored grammars
+purity gates --- the pipeline caught two defects in the source grammars
 before execution); \code{--lang zero}, a query-first occurrence-bag kernel
 whose semantics is carried through OSLF to native spatial/behavioral types,
 checked CertificateGSLT articles, MeTTa inference-kernel (MIK) authority, and
@@ -132,6 +132,13 @@ quadratic mutation/index-rebuild loop, and adds dialect-honest
 \PeTTa{}--SWI comparisons.  On the audited HexLife conjunction,
 \PathMap{} is slightly faster than native space in Prime and at parity in
 \PeTTa{}, while exact answer bags agree throughout.
+An initial \code{lib\_tptp} vertical now exercises the same specification
+discipline on a large standard language: a versioned all-family TPTP grammar
+generates the native ParserPack and admitted AST/document carriers, while a
+Lean development composes source-defined FOF-to-CNF transformations and carries one
+status-indexed ground TSTP refutation through a compact derivation-word GSLT
+to an independently proved unsatisfiability result.  Calculus-specific proof
+search remains example code rather than being built into TPTP or \CeTTa{}.
 \end{abstract}
 
 %% ────────────────────────────────────────────────────────────────────
@@ -193,16 +200,17 @@ Three implementations exist:
   effect is the restored tilepuzzle capacity row---the full
   181{,}440-state search completes in 8.80\,s at 233\,MiB, versus
   unbounded arena growth before (Section~\ref{sec:tilepuzzle-gc}).
-\item A characterization of the semantic boundary between \HE{} and
-  \PeTTa{}: the shared fragment (85\% of programs) runs identically; the
-  divergence is in free-variable scoping across non-deterministic branches.
-\item A specification gap analysis of non-determinism plus mutable state,
-  with 8~concrete examples showing that sequential-per-iteration semantics
-  (CeTTa's default) is correct in 6/8~cases, while \HE{}'s interleaved
-  side-effect evaluation loses atoms in real code (the pattern miner).
-\item \code{with-space-snapshot}: a CeTTa extension for branch-isolated
-  mutation, enabling semi-naive forward chaining and speculative search
-  without the side-effect hazards of shared mutable state.
+\item An executable characterization of the semantic boundary between
+  \HE{} and \PeTTa{} on a named pure fragment, together with explicit
+  counterexamples at the free-variable, state, and effect boundaries; no
+  corpus percentage is promoted to a language theorem.
+\item An observer-factored account of non-determinism and mutable state:
+  complete-bag observers preserve contents and multiplicity without making
+  incidental traversal order semantic; effects remain permissive; and
+  \PeTTa{} Hyperpose composes translation-stage callability with a frozen
+  definition-occurrence view for each entered call.  \code{with\_mutex},
+  \code{transaction}, and \code{with-space-snapshot} provide explicit local
+  strengthening rather than a global ban on effectful branches.
 \item A witness-free, axiom-clean Lean characterization of the \RhoCalc{}
   reaction machine's eval-at-\textsc{comm} semantics: the quiescent run of the
   canonical payload-evaluation process equals its
@@ -218,7 +226,7 @@ Three implementations exist:
 \item A counted-\PathMap{} query realization whose Rust-backed occurrence
   store remains authoritative while a synchronized native discrimination
   view supplies derived candidate coordinates.  Logical-update snapshots,
-  authored order, and multiplicity remain observable; append-only index
+  declared order, and multiplicity remain observable; append-only index
   maintenance removes the former rebuild-per-write behavior.
 \item A fail-closed, tool-isolated MM2-to-MeTTa prototype plus a curated
   corpus gate.  The corpus records 43 programs (40 status agreements,
@@ -879,7 +887,7 @@ schema), while claims are \emph{evidence about} that content.
 Upgrading a rule's certification therefore must not---and verifiably
 does not---move the semantic object: the digest
 (\code{fnv1a64:12eec5b655a75904} at the time of writing) stayed fixed
-across every claim flip.  The pack is, by design, a hand-authored
+across every claim flip.  The pack is, by design, a hand-maintained
 object kept honest by the removal lane and the digest; we deliberately
 parked an earlier plan to generate specialized C from the rule source,
 because the weld's value lies in the named semantic object and its
@@ -1359,11 +1367,11 @@ budgeted run yields an occurrence-bearing runtime path, a declarative funded
 trace, and a rewrite path in the pure GSLT mechanically derived from
 \code{rhoCalc}, with exactly one pure step per runtime firing.
 
-The pure-rho boundary is theorem-backed as well.  The authored rho
-\code{LanguageDef} supplies the strict syntax and primitive COMM presentation;
+The pure-rho boundary is theorem-backed as well.  The source rho
+\code{LanguageDef} supplies the strict syntax and primitive COMM definition;
 its compiled matcher, normalization, substitution, and supported COMM contracta
 are proved to agree with the independently established semantic development.
-The pure GSLT used for erasure is itself derived from that authored declaration;
+The pure GSLT used for erasure is itself derived from that source declaration;
 full equivalence of its complete contextual relation with the independently
 established relation remains a named theorem obligation.  On the derived
 binder-safe fragment, initialization and funded reduction preserve scope; each
@@ -1412,12 +1420,12 @@ runtime-model wave-to-matching square under the occurrence-claim postcondition;
 the compiled-C correspondence remains the bounded differential, receipt-replay,
 and sanitizer evidence stated above rather than a universal theorem about C.
 
-\paragraph{A strict source presentation and the corrected algebra.} The profile implements
+\paragraph{A strict source LanguageDef and the corrected algebra.} The profile implements
 funded rho and no Datalog architecture.  Its strict syntax and primitive \textsc{comm}
-presentation come from the authored \code{LanguageDef}; the compiled artifacts are
+definition come from the source \code{LanguageDef}; the compiled artifacts are
 proved to agree with the established pure semantics on supported COMM contracta,
 while the GSLT used for the cost-erasure theorem is mechanically derived from
-that authored declaration.  Other implementations are bounded encoding
+that source declaration.  Other implementations are bounded encoding
 references, and their executable free-Drop rule is not part of this profile.
 
 The formalization also identifies why the original ordinary-monad faithfulness claim cannot
@@ -1439,7 +1447,7 @@ development, the Lean side
 \href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/GSLT/LanguageDef/Cost/Construction.lean}{\code{Cost/Construction.lean}})
 treats Cost not as a one-off wrapping of rho but
 as a construction on \emph{continued interactive GSLTs}: a language
-mechanically derived from one authored \code{LanguageDef}, equipped with
+mechanically derived from one source \code{LanguageDef}, equipped with
 one ordered interaction cut (a contact constructor plus program and
 environment operands with selected continuation positions), a computable
 canonical section of every typed open fiber, and a
@@ -1470,7 +1478,7 @@ of \emph{Cost-canonical} objects, which, ordered by collision-free
 structural canonical keys, is the honest domain of strict
 $\mathrm{Cost}_1$.  The theory paper develops all of this precisely
 ~\cite{rhocost-companion}; the engine consequence is concrete: the same
-authored declaration that generates this profile's grammar and its single
+source declaration that generates this profile's grammar and its single
 funded rewrite is the object the endofunctor consumes, so iterated
 cost-accounting is a construction on the specification, never a second
 hand-written engine.  The public API is
@@ -1745,9 +1753,9 @@ The current audit does \emph{not} reuse the older cross-engine mining
 speed table as benchmark evidence, and no current in-tree driver
 re-emits the earlier specialization-core atom count, so we do not carry
 that number forward.  We keep the pattern miner as a methodological
-workload.  Its portability boundary in this revision is HE's stateful
-use of \code{superpose}: a remove/add pattern that mutates a shared
-space in the middle of a \code{superpose} branch:
+workload because it contains stateful \code{superpose}: a remove/add
+pattern that mutates a shared space in the middle of a non-deterministic
+branch family:
 \begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
 (superpose ((remove-atom $specspace $spec1)
             (add-atom    $specspace $spec1)
@@ -1756,12 +1764,15 @@ space in the middle of a \code{superpose} branch:
             (remove-atom $specspace $spec3)
             (add-atom    $specspace $spec3)))
 \end{lstlisting}
-Current \CeTTa{} preserves all three atoms produced by this pattern,
-while current \HE{}'s interleaved side-effect evaluation drops the
-third---the same atom-loss hazard analyzed in
-Section~\ref{sec:nondet-state} (the pattern miner).  So we keep the
-miner as a portability/debugging result, not as a fresh cross-engine
-speed table.
+The earlier paper classified one observed traversal as correct and another
+as atom loss.  Without a current driver and an explicit effect-order
+contract, that conclusion is not retained.  The case instead motivates the
+factorization in Section~\ref{sec:nondet-state}: compare complete result bags
+and multiplicity where the observer is a bag, record effect traces where
+effects are observable, and require an explicit mutex, transaction, snapshot,
+or sequence policy when the program needs a stronger order.  The miner
+therefore remains a portability and stress workload, not a fresh cross-engine
+speed or scheduler-correctness table.
 
 \subsection{Backward Chaining over Mined Patterns}
 
@@ -1889,7 +1900,7 @@ benchmark rows shown here are only those rerun directly in that audit.
 \subsection{Cross-Engine Chaining Suite}
 \label{sec:chaining-suite}
 
-To ground the inference-side comparison on community-authored code
+To ground the inference-side comparison on community-written code
 rather than bespoke benchmarks, we assembled a cross-engine chaining
 suite that builds matched cross-engine rows from the same chainer
 families on \CeTTa{} (\code{--lang he}) and \PeTTa{}, with a per-row
@@ -2230,7 +2241,7 @@ forcing Prime to materialize an entire answer bag merely to protect a reader
 from its own writes.
 
 \paragraph{Dialect-honest \PeTTa{} comparison.}
-Table~\ref{tab:petta-swi-current} runs the same authored source in \CeTTa{}'s
+Table~\ref{tab:petta-swi-current} runs the same declared source in \CeTTa{}'s
 \PeTTa{} lane and SWI-\PeTTa{}.  HE, Prime, and MM2 cells are deliberately
 absent: on these programs they are different language routes, not alternative
 implementations of the same dialect contract.
@@ -2535,7 +2546,7 @@ the Rust bridge's MORK \code{Space} container.  That counted store is the
 occurrence authority.  A synchronized native AtomId array and discrimination
 trie are a \emph{derived candidate accelerator}, not an independently
 writable space: private candidate order may differ, but public iteration,
-authored order where the dialect observes it, multiplicity, removal, and
+declared order where the dialect observes it, multiplicity, removal, and
 destructive replacement are answered at the authority boundary.  \PeTTa{}
 captures candidate coordinates at match entry, giving a logical-update view;
 new assertions extend the derived indexes incrementally for subsequent
@@ -2684,7 +2695,7 @@ byte-order refinements for arbitrary locations.  Finally, the generic OSLF
 construction maps each profile to predicate-valued native types, and exact
 target inhabitation is proved equivalent to one step of that same profile.
 The corresponding native claim is already in the generic CertificateGSLT authority
-form.  A concrete MM2 wire presentation and native checker lowering remain
+form.  A concrete MM2 wire encoding and native checker lowering remain
 realization obligations, not a second semantics.
 
 \paragraph{Fail-closed hosted translation (work in progress).}
@@ -2716,14 +2727,19 @@ new unnamespaced standard-library builtins.
 
 \subsection{Shared Fragment}
 
-85\% of MeTTa programs use only shared constructs (\code{let},
-\code{let*}, \code{match}, \code{if}, \code{case}, \code{bind!},
-\code{add-atom}, \code{new-space}).  These run identically on all three
-runtimes without translation.  The Metamath proof search benchmark is
-dialect-agnostic.  This shared fragment is essentially the core of the
+A substantial common surface uses \code{let}, \code{let*}, \code{match},
+\code{if}, \code{case}, \code{bind!}, \code{add-atom}, and
+\code{new-space}.  It includes dialect-agnostic workloads such as the
+Metamath proof-search kernel, but the paper does not attach an unmeasured
+percentage to it or claim that every effectful program is identical across
+engines.  The executable translator and its Lean correspondence theorem
+cover the explicitly named pure fragment; state, free-variable scope,
+observation, imports, and profile-specific operators are tested and reported
+as separate boundaries.  This scoped surface is the common core of the
 upstream MeTTa
 \href{https://trueagi-io.github.io/hyperon-experimental/metta/}{specification},
-of which \HE{}, \PeTTa{}, and \CeTTa{} are three implementations.
+with \HE{}, \PeTTa{}, and \CeTTa{} providing distinct realizations and, in
+places, distinct dialects.
 
 \subsection{Translated Constructs}
 
@@ -2792,102 +2808,253 @@ formalizing the monotonic constraint-store semantics of \HE{}'s
 \code{match~\&self}---a natural target for Phase~3 of the Lean proof.
 
 %% ────────────────────────────────────────────────────────────────────
-\section{Non-determinism and Mutable State}
+\section{Observation, Non-determinism, and Shared State}
 \label{sec:nondet-state}
 
-A fundamental specification gap in MeTTa concerns the interaction of
-non-deterministic evaluation with mutable space operations.  When
-\code{let~\$x~(match~\&db~...)~(add-atom~\&result~(stored~\$x))}
-executes with multiple match results, what happens to the shared
-\code{\&result} space?
+An earlier version of this paper ranked sequential, interleaved, forked, and
+illegal execution as four global alternatives and promoted an unreceipted
+``6/8 cases'' result.  That framing was too coarse.  A traversal policy, a
+result observer, a shared-state trace, and definition visibility are distinct
+semantic coordinates.  Collapsing them into one scheduler order would both
+over-specify pure MeTTa and under-specify effectful MeTTa.
 
-\subsection{The Problem}
-
-Consider:
-\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
-!(bind! &db (new-space))
-!(add-atom &db (item A))
-!(add-atom &db (item B))
-!(bind! &result (new-space))
-!(let $x (match &db (item $y) $y)
-   (superpose ((remove-atom &result (stored $x))
-               (add-atom &result (stored $x)))))
-!(get-atoms &result)
-\end{lstlisting}
-
-\HE{} returns \code{[]}---all atoms lost.  \CeTTa{} returns
-\code{[(stored~A)~(stored~B)]}---correct.  The root cause:
-\HE{} interleaves side effects from different non-deterministic
-branches, so \code{remove-atom} from one iteration cancels
-\code{add-atom} from another.  \CeTTa{} evaluates each iteration's
-body to completion before starting the next.  This is the exact
-pattern used by the Hyperon pattern miner's
-\code{build-specialization}, explaining why the miner produces
-empty results on \HE{}.
-
-\subsection{Four Possible Semantics}
-
-We analyzed four options across eight representative examples
-(accumulation, logging, constraint checking, search with
-backtracking, speculative execution, order-dependent processing,
-accidental non-determinism, and the real miner code):
+\subsection{Four Separate Contracts}
 
 \begin{center}
-\begin{tabular}{lcccc}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.18\textwidth}
+                >{\raggedright\arraybackslash}p{0.37\textwidth}
+                >{\raggedright\arraybackslash}p{0.34\textwidth}}
 \toprule
-Option & Wins & Loses & Character \\
+Coordinate & Promised & Deliberately not promised \\
 \midrule
-Sequential (CeTTa)  & 6/8 & 1/8 & accumulation-friendly \\
-Interleaved (HE)    & 0/8 & 4/8 & always worse than sequential \\
-Forked (copy-on-write) & 1/8 & 4/8 & search-friendly \\
-Illegal (UB)        & 1/8 & 5/8 & safest, least ergonomic \\
+Complete result observation & Visible occurrences and exact multiplicity &
+  Incidental engine traversal order \\
+Explicit sequence observation & The sequence selected by the named policy &
+  Equality with a different policy's sequence \\
+Shared effects & A memory-safe realization and a trace permitted by the
+  operator/profile & Serializability, fairness, or freedom from logical
+  races unless requested \\
+\PeTTa{} definition calls & Translation-stage callability and one stable
+  occurrence view per entered call & One frozen view for an entire
+  Hyperpose episode, or an unrestricted live rescan during backtracking \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Sequential evaluation loses only on \emph{search with backtracking},
-where each branch needs isolated state.  Interleaved evaluation
-is strictly dominated---it provides no advantage over sequential
-while introducing race conditions on shared mutable state.
+\subsection{Bags Do Not Owe an Order}
 
-\subsection{\code{with-space-snapshot}: The Escape Hatch}
+Complete materializing observers such as \code{collapse}, \code{collect},
+and the corresponding \PeTTa{} collectors expose a finite occurrence bag.
+The concrete result is necessarily printed as a sequence, but the language
+contract preserves its contents and multiplicity rather than the incidental
+order in which an engine found them.  A conformance gate therefore compares
+canonicalized bags without deduplicating them.  Reversing one engine's result
+only to imitate another engine's traversal would add work and remove valid
+scheduling freedom.
 
-For the one case where sequential semantics is wrong (search with
-mutable state), \CeTTa{} provides \code{with-space-snapshot}:
-\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
-(= (fs-add-to-ss $rb $ss)
-   (with-space-snapshot $ss0 $ss
-     (match $ss0 (: $x1 $a1)
-       (match $ss0 (: $x2 $a2)
-         (match $rb (: $f (-> $a1 $a2 $b))
-           (add-atom $ss (: ($f $x1 $x2) $b)))))))
-\end{lstlisting}
+An order-sensitive fold is different: the fold itself is a sequence observer.
+Its result follows the selected engine or explicit search policy, so the
+sequence is observable for that run without becoming a cross-policy ordering
+theorem.  Likewise, \code{once} observes one permitted witness rather than
+the complete bag.  These distinctions are represented explicitly in the
+Prime observer algebra instead of being inferred from list layout.
 
-This pattern, from Geisweiller's propositional forward chainer,
-reads from a frozen snapshot \code{\$ss0} while writing to the
-live space \code{\$ss}---the standard \emph{semi-naive} discipline
-for stratified forward inference.  This is a \CeTTa{} extension;
-\HE{} does not currently implement it.
+\subsection{Effects Remain Permissive}
 
-\subsection{Proposed Spec Clarification}
+Bag equality does not erase effects.  Two executions can return the same
+occurrence bag while publishing different lawful interleavings to a shared
+space.  Sequential execution does not make this issue disappear: two
+sequential branches that edit the same space can still have an
+order-dependent outcome.  Consequently, neither ``always sequential'' nor
+``effects forbidden under non-determinism'' is an adequate language law.
 
-The MeTTa spec~\cite{metta} uses sequential Python pseudocode
-(line~368: a list comprehension over results) that implies
-sequential side-effect ordering, but does not explicitly require
-it.  We propose:
+The \PeTTa{} compatibility policy is permissive.  A program may issue
+concurrent or order-sensitive edits and accepts responsibility for its
+logical races, including lost updates.  The runtime remains responsible for
+representation integrity: no user-level race licenses a torn index, stale
+pointer, use-after-free, or memory corruption.  Conversely, the possibility
+of writing a racy program is not a reason to reject a safe effectful one.
+Users can request stronger local contracts with \code{with\_mutex} and
+\code{transaction}.  In the HE-extended family,
+\code{with-space-snapshot} remains an orthogonal read-from-frozen,
+write-to-live interface useful for semi-naive forward inference; it is not a
+mandatory wrapper around all stateful search.
 
-\begin{quote}
-\emph{When a non-deterministic expression produces multiple results
-and those results are bound via \code{let}/\code{chain}/equation
-dispatch, the body for each result is evaluated to completion---including
-all side effects---before the body for the next result begins.
-To evaluate branches with isolated state, use \code{collapse}
-first, then iterate explicitly.}
-\end{quote}
+\subsection{\PeTTa{} Hyperpose: Stage Then Call Snapshot}
 
-A future \code{snapshot-space} primitive would provide clean
-copy-on-write semantics for search/backtracking without baking
-merge semantics into the language core.
+The \PeTTa{} translator and SWI-Prolog's logical update view compose two
+boundaries.  A literal Hyperpose branch list is translated before parallel
+execution begins, so that translation event fixes which heads are calls and
+which remain data.  A computed branch list invokes \code{eval} in its worker,
+and therefore receives a later translation event.  Once a translated dynamic
+call is entered, its visible equation occurrences are frozen at that call's
+generation.  Adds and removals do not change the alternatives of the entered
+call, while a later call may observe them.  SWI-Prolog realizes this rule with
+clause create/erase generations and a generation tag on each goal
+\cite{swi-update-view}.
+
+\begin{center}
+\begin{tabular}{c}
+translation event $\longrightarrow$ call-versus-data classification \\
+$\downarrow$ \\
+call entry $\longrightarrow$ ordered stable-occurrence lease at revision $r$ \\
+$\downarrow$ \\
+later mutation leaves that lease unchanged; a later call enters at $r'$
+\end{tabular}
+\end{center}
+
+This contract is neither a whole-episode clone nor an unrestricted live
+database.  Branch-local continuations, bindings, scratch arenas, and newly
+allocated transient values remain private.  Published space identities and
+their user-visible effects are shared.  Equal equation payloads remain
+distinct occurrences, so multiplicity survives both snapshots and parallel
+collection.
+
+\subsection{Revision-Derived Realization and Its Evidence Boundary}
+
+The current qualified development realization places the ordered equation
+occurrences behind an exact-key revision authority.  Acquiring the same
+space/revision key reuses an owned immutable view; replacing the cache drops
+only the cache's ownership, so an earlier call lease continues to denote its
+frozen view.  A reusable worker authority removes repeated operating-system
+thread creation while leaving queues, tasks, arenas, cancellation, and result
+lifetime episode-local.  Nested, busy, or over-capacity episodes take a total
+one-shot fallback rather than making a legal computation unavailable.
+
+\paragraph{Dependency algebra.}
+Let $A$ be a live Space authority, $\ell(A)$ its process-local lifetime,
+$\pi_E(A)$ its ordered equation-occurrence projection, and $e(A)$ the
+revision of that projection.  For an overlay, $b(A)$ additionally summarizes
+the actual base chain whose visible prefix it reads.  The equation-view key is
+therefore
+\[
+  D_E(A) = \bigl(\ell(A),e(A),b(A)\bigr).
+\]
+A match-decision plan reads more than the equation view: its key extends
+$D_E$ with the host callability authority $h$ and semantic configuration
+$\sigma$,
+\[
+  D_M(A,h,\sigma)=\bigl(D_E(A),h,\sigma\bigr).
+\]
+The cache law is consumer-relative.  If a stored view denotes
+$\pi_E(A)$ and the complete dependency tuple for consumer $C$ is unchanged,
+then reusing the view must give the same $C$-observation as rebuilding from
+the current projection.  If any coordinate differs, equality is not licensed
+and the implementation rebuilds or takes its complete generic fallback.
+Data-only publication carries a witness that $\pi_E$ is unchanged and hence
+preserves $e$; equation-relevant and opaque publication advance $e$
+conservatively.  A changed host-callability authority invalidates a
+match-decision even when $e$ is unchanged.
+
+This factorization is important operationally.  It adds two 64-bit fields to
+each Space (16 bytes) but no equation record and no second search index.  The
+existing head index still selects candidates; the new token only states when
+a derived view of that index may be reused.  Runtime receipts are checked by
+closed equations such as
+\[
+  \mathit{attempts}=\mathit{reuses}+\mathit{stale},
+\]
+not by fixing a particular number of cache hits, threads, scans, or
+allocations into language conformance.
+
+This is a standard incremental-computation shape rather than a
+Prolog-specific trick.  Salsa tracks the inputs read by a memoized
+computation~\cite{salsa-red-green}; rustc stores a query DAG and can mark a
+recomputed query green when its result fingerprint is unchanged
+~\cite{rustc-red-green}.  The verifying traces of
+\emph{Build Systems \`a la Carte} record dependency hashes and separate the
+rebuilding strategy from scheduling~\cite{build-systems-carte}.  Adapton's
+demanded computation graph separates inner incremental computations from
+their observers~\cite{adapton}.  Differential Dataflow arrangements maintain
+and share indexed \code{(data,time,diff)} batches across consumers rather than
+asking each operator to rebuild an index
+~\cite{differential-arrangements}.  \CeTTa{}'s present token is deliberately
+coarser than these general systems: it does not discover dependencies
+automatically, fingerprint equal rebuilt projections, or transport deltas.
+It adds the MeTTa-specific obligations of stable occurrence identity, exact
+multiplicity, translation stages, and a total generic evaluator whenever a
+compiled representation cannot be transported lawfully.
+
+\paragraph{Measured development boundary.}
+A September 2026 audit compared the complete development tree with
+the frozen staged checkpoint, the exact repository head, its parent, and
+SWI--PeTTa.  Every engine produced the same output on all six rows below.
+Entries are medians of three interleaved runs; time is process CPU seconds and
+memory is peak resident MiB.
+
+\begin{center}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+& \multicolumn{2}{c}{Development tree}
+& \multicolumn{2}{c}{Exact head}
+& \multicolumn{2}{c}{SWI--PeTTa} \\
+Workload & Time & RSS & Time & RSS & Time & RSS \\
+\midrule
+\code{scale}          & 5.69 & 318.0 & 5.99 & 322.6 & 0.81 & 398.5 \\
+\code{tilepuzzle}     & 10.90 & 148.2 & 10.95 & 147.9 & 1.34 & 121.2 \\
+\code{matespacefast} & 14.92 & 761.5 & 15.21 & 766.3 & 4.01 & 3340.6 \\
+\code{matespace2}    & 5.60 & 20.1 & 5.45 & 24.7 & 5.52 & 562.9 \\
+\code{permutations}  & 1.67 & 14.6 & 1.60 & 19.5 & 0.61 & 143.3 \\
+\code{peano}         & 2.20 & 16.6 & 2.22 & 21.0 & 1.58 & 22.7 \\
+\bottomrule
+\end{tabular}
+\normalsize
+\end{center}
+
+Across these deliberately hard rows, the geometric-mean CPU ratios are
+0.994 against the staged checkpoint, 0.998 against exact head, and 1.001
+against its parent: the development tree is cost-neutral at this resolution.
+Its geometric-mean RSS ratio against exact head is 0.883.  SWI--PeTTa remains
+3.06 times faster in geometric-mean CPU, while memory is workload-dependent:
+\CeTTa{} uses far less on \code{matespacefast} but more on
+\code{tilepuzzle}.  An independently seeded sample of eleven ordinary example
+programs was also output-exact on all five engines.  Those programs finish in
+under ten milliseconds on \CeTTa{}, so their timings are treated as a startup
+and timer-resolution control rather than as a speed claim; their median peak
+RSS fell from 19.1~MiB at exact head to 14.5~MiB in the development tree.
+
+A direct token-consumer control gives the narrower ruling.  Paired token-on
+and token-off executables agreed exactly on \code{peano}, \code{matespace2},
+\code{scale}, and \code{permutations}; their medians differed by at most
+1.2\% in either direction.  This control disables reuse by the consumer but
+does not remove the token fields or mutation classification, so it establishes
+neither a whole-token cost nor a speedup.  The token remains a sound dependency
+coordinate with a live consumer, not an admitted performance result.
+
+The orthogonal integer-discrimination map does have a measured consumer.  It
+replaces linear search among rigid integer edges by a finite key-to-subtree
+map, leaving wildcard selection, occurrence order, and multiplicity
+unchanged.  On 100,000 numeric clauses it reduced process CPU from 1.39 to
+0.36 seconds relative to the recent \CeTTa{} realizations, with essentially
+unchanged peak RSS.  A 20,000-clause instruction profile fell from
+1.647 billion to 651 million retired instructions.  A 10,000-clause control
+completed on all five engines with the same answer; SWI--PeTTa did not complete
+the 100,000-clause run within the audit boundary, so no cross-engine speed
+ratio is claimed there.  The generic finite-index and rigid-coordinate Lean
+developments justify the representation refinement; the runtime controls
+check its concrete ordering and multiplicity obligations.
+
+Two profiling-directed repairs were required before making these comparisons.
+A context-local direct-mapped cache removed repeated linear string-policy
+search from builtin admission, reducing the \code{peano} instruction count
+from 1.379 to 1.064 billion, close to the staged checkpoint's 1.042 billion.
+The foreign-runtime capability token now reads the already-maintained atomic
+revision instead of acquiring the global adapter mutex for every validity
+query.  Neither representation is named by a language test: conformance
+observes answers and effects, runtime receipts obey conservation equations,
+and performance tests compare interchangeable realizations.  The full normal
+suite, focused AddressSanitizer/UndefinedBehaviorSanitizer gates, and the
+cross-engine rows above all pass.  Per-head generations, fingerprint
+backdating, and delta transport remain possible refinements, but each requires
+its own measured false-invalidation consumer and semantic controls.
+
+For Prime, the same semantic waist supports a more structured design:
+declared effect footprints, affine fuel leases, explicit observers, and
+transactional or disjoint-effect realizations can justify stronger
+parallelism.  Unknown footprints still select a complete conservative
+realization; failure to prove commutation is an optimization decline, not a
+language-level refusal.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{HE$'$: Dependent Telescope Extension}
@@ -3072,11 +3239,11 @@ computed codomains whose truth values still contain free variables.
 \label{sec:gslt2parse}
 
 A 2026-07 tranche (branch-local at the time of writing) replaces
-hand-maintained readers with parsers \emph{generated from the authored
+hand-maintained readers with parsers \emph{generated from the source
 grammars themselves}.  Each language's concrete syntax is written as a
-LanguageDef presentation (grammar productions, lexical scalar classes, and
+\code{LanguageDef} (grammar productions, lexical scalar classes, and
 an atom-projection profile); a validating compiler normalizes the
-presentation into a parser intermediate form, classifies it into an
+\code{LanguageDef} into a parser intermediate form, classifies it into an
 admissible deterministic fragment, and emits native C readers linked into
 \CeTTa{}.  General GLL/GLR engines are retained as differential validators
 and as fallbacks for grammars outside the deterministic fragment.
@@ -3090,7 +3257,7 @@ and as fallbacks for grammars outside the deterministic fragment.
   language's grammar.
 \item \textbf{The specification catches its own bugs.}  The
   source-faithfulness classifier rejected two genuine defects \emph{in the
-  authored grammars} before execution: a token-start class that wrongly
+  source grammars} before execution: a token-start class that wrongly
   admitted \code{@} (making \code{@doc} both a quotation and an ordinary
   word), and a derivation ambiguity in which \code{*(e)} parsed both as a
   bare \code{*} followed by an expression and as one unquote atom.  Both
@@ -3119,7 +3286,7 @@ that grammar-as-authority and native performance are not in tension.
 The engine tranche above is the executable half of a formal programme we
 call \emph{GSLT2Parse}, whose thesis is compositional: a language's
 \emph{syntax} is itself a generated syntactic labelled transition system,
-and a parser is that syntax-GSLT's evaluator.  One authored
+and a parser is that syntax-GSLT's evaluator.  One root
 \code{LanguageDef} is therefore the single root from which the evaluator,
 the parser, and (through the Cost construction of
 Section~\ref{sec:rho-cost}) the resource semantics are all mechanically
@@ -3130,9 +3297,10 @@ agreement obligations between them:
 \begin{tikzpicture}[
   box/.style={draw, rounded corners, align=center, inner sep=4pt,
     font=\small}]
-\node[box] (root) {authored \code{LanguageDef}\\
+\node[box] (root) {root \code{LanguageDef}\\
   {\scriptsize grammar $+$ lexical classes $+$ projection profile}\\
-  {\scriptsize (the only artifact a human writes)}};
+  {\scriptsize (possibly composed; root of this}\\
+  {\scriptsize derivation graph)}};
 \node[box, below left=8mm and 8mm of root] (parser)
   {\textbf{parser}\\{\scriptsize the syntax-GSLT's evaluator}};
 \node[box, below=10mm of root] (eval)
@@ -3164,11 +3332,11 @@ the Metamath instance:
 \begin{tikzpicture}[node distance=3.2mm,
   box/.style={draw, rounded corners, align=center, inner sep=4pt,
     font=\small}]
-\node[box] (root) {authored syntax root
+\node[box] (root) {root syntax \code{LanguageDef}
   \href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLT.lean}{\code{SourceGSLT.sourceGrammar}}
   \; (pure: no semantic imports)};
 \node[box, below=of root] (ir) {generated structural parser IR / scannerless
-  presentation\\ (preservation $+$ reflection:
+  definition\\ (preservation $+$ reflection:
   \code{compileRules\_derivation\_iff})};
 \node[box, below=of ir] (cert) {\code{CheckedParserOutput}: checked DAG,
   lexical validity,\\ exact ordered ledger, typed \code{feedToken} replay};
@@ -3226,7 +3394,7 @@ actions retain the independently decoded terminal/child skeleton, so a rule
 cannot silently drop, duplicate, or reorder children
 (\code{compileRules\_action\_shape}); and --- the load-bearing result ---
 derivability in the generated structural intermediate form is
-\emph{equivalent} to derivability in the authored grammar at the
+\emph{equivalent} to derivability in the source grammar at the
 ordered-token boundary (\code{compileRules\_derivation\_iff}: preservation
 \emph{and} reflection, a genuine second relation rather than equality by
 definition; kernel axioms exactly \code{propext},
@@ -3272,7 +3440,7 @@ Metamath itself, is why the Metamath instance below is a template.
 
 \paragraph{The Metamath vertical slice: a parser-to-provability crown.}
 The first full instance runs from raw Metamath bytes to formal
-provability.  The authored Metamath syntax root is a \emph{pure} grammar
+provability.  The root Metamath syntax \code{LanguageDef} is a \emph{pure} grammar
 --- a semantic firewall: it imports only the generic grammar-inference
 layer, and the generic compiler contains no Metamath-specific names.  On
 top of it, \code{CheckedParserOutput} demands an independently checked
@@ -3317,11 +3485,11 @@ byte-identical regeneration of both generated Metamath artifacts from the
 Lean root.
 
 \paragraph{From parser-GSLT to checker-GSLT: source-owned inference.}
-Since the vertical slice above was sealed, the same authored root has
+Since the vertical slice above was sealed, the same root \code{LanguageDef} has
 grown a second semantic derivation: Metamath \emph{checking} itself as a
 source-owned GSLT.
 \href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLTOperations.lean}{\code{SourceGSLTOperations.lean}}
-is the single authored bridge from the source grammar to the streaming
+is the single declared bridge from the source grammar to the streaming
 fold and indexed-checker operations: node contracts are \emph{computed}
 from the parameter sorts of the source productions, and lexical references
 resolve through the same literal tables that generate the parser.
@@ -3347,7 +3515,7 @@ regenerate both engine-facing artifacts from the root, and a native
 inference-staging consumer (\code{lib\_parse\_inference\_native}, with its
 benchmark harness) carries the operations export into the engine.  The
 Metamath instance is thereby the template the programme intends to
-replicate: \emph{one} authored root from which the parser, the checker
+replicate: \emph{one} root \code{LanguageDef} from which the parser, the checker
 operations, and their adequacy theorems are all derived, ready to be
 instantiated across a curriculum of further language definitions.
 
@@ -3370,7 +3538,7 @@ classified stream supplies its lexical evidence
 (\code{runSource\_selfLexicalized\_derives}), so neither the frame nor the
 token boundary is ever assumed.  A deliberate honesty distinction
 structures the remaining work: results proved from one accepted source run
-and one checked byte presentation are kept as \emph{parallel} certificates
+and one checked byte representation are kept as \emph{parallel} certificates
 until the classified stream is bound to the exact bytes the verified reader
 consumed, each \code{\$p} obligation's normal or compressed proof is
 discharged from the reader's own chronology (with verified and
@@ -3395,9 +3563,184 @@ slice, not the full corpus; raw byte-to-token completeness is secured per
 accepted certificate by exact typed reader replay, with a universal
 raw-byte characterization theorem remaining future work; and the
 declaration-level co-evolution above becomes a single bidirectional
-statement only once the same-presentation binding, per-\code{\$p}
+statement only once the same-\code{LanguageDef} binding, per-\code{\$p}
 discharge, and prefix simulation land, as itemized in the preceding
 paragraph.
+
+\subsection{\code{lib\_tptp}: standard formats around pluggable calculi}
+\label{sec:lib-tptp}
+
+TPTP is a family of standard problem and derivation formats, not a theorem
+prover or a mandate for one proof-search strategy
+\cite{tptp-language,tstp-derivations}.  This distinction determines the
+library boundary.  \code{lib\_tptp} owns parsing, admitted semantic carriers,
+format transformations, and derivation-DAG verification plumbing.  A
+resolution or superposition searcher belongs in an example or an explicitly
+named prover package; a TSTP rule belongs to a declared calculus service whose
+soundness is checked independently.
+
+\paragraph{The current native input boundary.}
+The checked-in versioned TPTP \code{LanguageDef} generates a native ParserPack for
+the official syntax family and a source-defined syntax-tree-to-abstract-syntax
+projection.  The maintained MeTTa API exposes four useful stages:
+
+\begin{itemize}
+\item \code{tptp:file->syntax-tree};
+\item \code{tptp:file->abstract-syntax};
+\item \code{tptp:file->first-order-document};
+\item \code{tptp:cnf-file->clause-data}.
+\end{itemize}
+
+Each returns an explicit stage value or stage fault, and each published value
+is admitted against its own \code{LanguageDef}; no result is recast as a
+legacy \code{ATPInput}.  The syntax gate includes representative TPI, THF,
+NHF, TFF, NXF, TCF, FOF, CNF, include, annotation, numeric, Unicode, and
+source-span cases.  For example:
+
+\begin{lstlisting}[language={},caption={Representative inputs accepted by the versioned TPTP grammar}]
+thf(identity,axiom,![P:$o]:(P=>P)).
+tff(typed,axiom,![X:$i]:q(X)).
+fof(first_order,axiom,![X]:(p(X)=>?[Y]:q(Y))).
+cnf(clause,axiom,p(X)|~q(X)).
+include('Axioms/SET003+0.ax',[first_order]).
+\end{lstlisting}
+
+\noindent
+Parsing all of these families is not a claim that all of their semantics are
+already implemented.  The deeper admitted transformation surface is
+currently first-order FOF/CNF.  The four-profile executable gate checks the
+public examples under Prime, PeTTa, HE-extended, and HE-prime; the umbrella
+target also checks artifact-digest closure and mutations that remove or alter
+load-bearing generated rules.
+
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=5mm,
+  box/.style={draw, rounded corners, align=center, inner sep=4pt,
+    font=\small},
+  proof/.style={draw, rounded corners, align=center, inner sep=4pt,
+    font=\small, fill=gray!8}]
+\node[box] (bytes) {TPTP \code{.p} bytes};
+\node[box, right=7mm of bytes] (pack) {generated ParserPack};
+\node[box, right=7mm of pack] (tree) {admitted syntax tree};
+\node[box, right=7mm of tree] (ast) {official AST};
+\node[box, below=7mm of ast] (data) {first-order document / CNF ClauseData};
+\draw[-{Stealth}] (bytes) -- (pack);
+\draw[-{Stealth}] (pack) -- (tree);
+\draw[-{Stealth}] (tree) -- (ast);
+\draw[-{Stealth}] (ast) -- (data);
+
+\node[proof, below=11mm of tree] (fof) {source-defined FOF transformations\\
+  {\scriptsize resolve binders $\to$ NNF $\to$ prenex $\to$ Skolem
+   $\to$ CNF}};
+\node[proof, right=7mm of fof] (cnfast) {official CNF AST};
+\draw[-{Stealth}] (ast.south west) -- (fof.north east)
+  node[midway,left,font=\scriptsize]{Lean theorem lane};
+\draw[-{Stealth}] (fof) -- (cnfast);
+
+\node[fit=(bytes)(pack)(tree)(ast)(data), draw, dashed, rounded corners,
+  inner sep=5pt, label={[font=\scriptsize]above:current \CeTTa{} input/API lane}] {};
+\node[fit=(fof)(cnfast), draw, dotted, rounded corners,
+  inner sep=5pt, label={[font=\scriptsize]below:proved transformation lane;
+  native export still open}] {};
+\end{tikzpicture}%
+}
+\end{center}
+
+\paragraph{FOF-to-CNF as a compositional pipeline.}
+On the theorem side, official FOF elaborates into named FOF, resolves to a
+locally nameless binder representation, normalizes to NNF and prenex form,
+Skolemizes with explicit generated-symbol evidence, introduces definitional
+names, creates source-indexed clause batches, allocates collision-free TPTP
+names, and serializes to the official CNF AST.  Each arrow is a declared
+GSLT with an independent recursive semantics and exact agreement/no-invention
+theorems.  The composed \code{endToEndExact\_exists} theorem obtains a
+serializer result for every evidence-bearing admitted batch.  It does
+\emph{not} yet produce concrete text; canonical printing and the
+parser/printer round trip remain the next format boundary.
+
+The shadowing fixture
+
+\begin{lstlisting}[language={}]
+fof(shadowing,axiom,![X]:(p(X)=>?[X]:q(X))).
+\end{lstlisting}
+
+\noindent
+is the capture-avoidance canary: \code{q(X)} resolves to the inner binder.
+Malformed numeric applications, unallocated variables, duplicate lexical
+keys, and generated/original symbol collisions are rejected by negative
+theorems rather than repaired by the serializer.
+
+\paragraph{TSTP verification through a compact word language.}
+The first logically closed profile accepts this ordinary ground-resolution
+derivation:
+
+\begin{lstlisting}[language={},caption={The ground TSTP canary}]
+cnf(p_or_q,axiom,p|q).
+cnf(not_p,axiom,~p).
+cnf(not_q,axiom,~q).
+cnf(q,plain,q,inference(resolution,[status(thm)],[p_or_q,not_p])).
+cnf(empty,plain,$false,
+    inference(resolution,[status(thm)],[q,not_q])).
+\end{lstlisting}
+
+\noindent
+Admission retains node identity, roles, source annotations, parent order,
+and \code{status(thm)}.  A status-indexed projection produces the semantic
+program.  A generic compiler replaces formulas, rules, evidence, provenance,
+obligations, and the finite service state with proof-local arena references
+and seven compact records.  Decoding those words recovers the exact semantic
+program.  A shared execution invariant then supplies a continuous trace in
+the actual derivation-word \code{LanguageDef}, and the selected
+ground-resolution service's independent soundness theorem turns its verified
+empty root into unsatisfiability.
+
+\begin{center}
+\begin{tikzpicture}[node distance=5mm,
+  box/.style={draw, rounded corners, align=center, inner sep=4pt,
+    font=\small},
+  service/.style={draw, dashed, rounded corners, align=center,
+    inner sep=4pt, font=\small}]
+\node[box] (dag) {official TSTP DAG};
+\node[box, below=of dag] (status) {status/provenance machine};
+\node[box, below=of status] (word) {finite word artifact};
+\node[box, below=of word] (gslt) {derivation-word GSLT trace};
+\node[box, below=of gslt] (root) {verified root $\Rightarrow$
+  unsatisfiable};
+\node[service, right=12mm of status] (calculus)
+  {declared calculus plugin\\
+   {\scriptsize step checker $+$ soundness}};
+\draw[-{Stealth}] (dag) -- (status);
+\draw[-{Stealth}] (status) -- (word)
+  node[midway,right,font=\scriptsize]{compile exactly};
+\draw[-{Stealth}] (word) -- (gslt)
+  node[midway,right,font=\scriptsize]{simulate exactly};
+\draw[-{Stealth}] (gslt) -- (root);
+\draw[-{Stealth},dashed] (calculus) -- (status);
+\draw[-{Stealth},dashed] (calculus) -- (root);
+\end{tikzpicture}
+\end{center}
+
+This design follows a maximal-native-calculus principle without hardcoding
+resolution into \CeTTa{}: the graph/word machinery is calculus-neutral, while
+each calculus supplies its most direct checker and semantic theorem.  The
+current MeTTa resolution example deliberately begins only after
+\code{lib\_tptp} has produced admitted ClauseData.  Its unification, bounded
+search, trace object, and independent trace checker live together under
+\code{examples/atp/tptp\_resolution}; neither search nor its local
+\code{fo-proof} representation is a public TPTP API.
+
+\paragraph{What remains before this is a native general TSTP verifier.}
+The current closed theorem covers one ground \code{status(thm)} resolution
+profile.  General TSTP support requires status-sensitive composition for
+\code{thm}, \code{cth}, and \code{esa}; a registry of independently sound
+calculus services; finite arenas for evolving service state; include-DAG
+resolution; canonical concrete printing; E/Vampire ingestion and
+reconstruction; and typed TFF/TCF/THF/NHF semantic carriers.  The word
+checker must then be lowered by a source-defined transformation to StructuredC
+with a commuting/reflection theorem.  Until that final step, the compact word
+model is the proved native target shape, not a claim that the production C
+implementation has been derived from it.
 
 \subsection{MeTTa Zero: a two-operation kernel with native proof evidence}
 \label{sec:zero-oslf-nik}
@@ -3469,7 +3812,7 @@ The resulting information has three distinct, proved uses.
 \item \textbf{Compilation analysis.}  Constructor/arity head signatures
   select the query or evaluation production without inspecting every rule.
   Unsupported forms take the complete rule-table fallback.  The selected
-  plan is proved equal both to the generic executor and to the authored
+  plan is proved equal both to the generic executor and to the source
   Zero interpreter under the exact occurrence-bag observer
   (\code{executeAuthoredNativePlanned\_eq},
   \code{nativePlanned\_eq\_authored}).  Thus the analysis establishes a
@@ -3495,7 +3838,7 @@ CertificateGSLT's open derivations now carry an ordered context of explicit
 premises, with a generic semantic-induction theorem: if every local rule
 application preserves meaning and every open premise has its declared
 meaning, the derived conclusion has its meaning.  Zero instantiates this
-interface with one admitted eight-rule presentation: six spatial rules and
+interface with one admitted eight-rule \code{LanguageDef}: six spatial rules and
 two behavioral liveness rules.  A liveness rule cannot mint an answer edge
 by itself; it requires a query-row or evaluation-row premise tied to an
 actual occurrence in the interpreted Zero relation.
@@ -3515,7 +3858,7 @@ The executable Zero compiler separately emits a deterministic, hash-linked
 build certificate for
 
 \begin{center}
-$\text{authored sources}\longrightarrow
+$\text{source LanguageDefs}\longrightarrow
   \text{admitted rules}\longrightarrow
   \text{CGP1 plan}\longrightarrow
   \text{generated C/H bytes}$.
@@ -3528,7 +3871,7 @@ artifacts; tampering and nondeterministic regeneration are gated.  This
 checker is not linked into the ordinary \CeTTa{} executable, so normal
 execution pays no certificate-parsing or trace-retention cost.  The claim is
 nevertheless bounded: the certificate proves structural chain of custody,
-not yet that executing CGP1 or the generated C realizes all authored Zero
+not yet that executing CGP1 or the generated C realizes all declared Zero
 observations.  The open row premises above are not yet closed by
 authenticated C execution receipts, and the C checker is not yet generated
 from the single CertificateGSLT acceptance predicate.  These are the remaining
@@ -3621,8 +3964,8 @@ ordinary evidence-bearing checking boundary rather than being silently accepted
 or converted into an empty answer.
 
 Two source-grounded Hopper slices exercise this boundary.  The fold slice has
-sixteen authored cases (eight positive and eight negative), with all positive
-derivations reconstructed natively.  The branching slice has twelve authored
+sixteen declared cases (eight positive and eight negative), with all positive
+derivations reconstructed natively.  The branching slice has twelve declared
 \code{member}/\code{find-dup} cases (seven positive and five negative).  A
 separate repeated-member canary produces three ordered occurrences with three
 distinct native proof paths, showing that endpoint equality does not collapse
@@ -3702,8 +4045,10 @@ oracle-verified correctness across a 535-test MeTTa regression suite and a
 The sorry-free Lean proof of \HE{}$\leftrightarrow$\PeTTa{} semantic
 correspondence (5{,}400+ lines, 0~sorries), including import
 commutativity and operational bridges for state and space allocation,
-establishes that MeTTa's three runtimes are semantically compatible
-on the shared fragment.  The compiled \code{.act} space format via
+establishes translator correspondence on its explicitly defined fragment;
+\CeTTa{}'s runtime correspondence remains a separate executable conformance
+claim rather than a blanket theorem about every profile and effect.  The
+compiled \code{.act} space format via
 MORK enables zero-copy indexed loading, demonstrated at the 100k-atom
 scale, with the large-scale attach path still under repair.
 On the process-calculus side, the \RhoCalc{} reaction machine's
@@ -3711,6 +4056,17 @@ eval-at-\textsc{comm} semantics now has a witness-free, axiom-clean Lean
 characterization (Section~\ref{sec:rho-lean}): the quiescent run of the
 canonical payload-evaluation process is exactly its structurally observable
 outcome set, with no certification witness in the carrier.
+
+The mutable-state account is now observer-factored rather than
+scheduler-prescriptive.  Complete result observations preserve exact
+occurrence multiplicity without promising traversal order; effect traces may
+remain permissive; and \PeTTa{} Hyperpose combines translation-stage
+callability with a generation-stable view for each entered definition call.
+Memory safety and index integrity are runtime obligations even when a user
+chooses racy effects.  Mutexes, transactions, and snapshots strengthen local
+regions explicitly, while Prime's footprint and fuel structure can justify
+more aggressive parallel realizations without narrowing the \PeTTa{}
+compatibility language.
 
 Beyond raw performance, \CeTTa{} now treats its own semantics as a
 first-class object.  The profile family makes \code{he-compat} (literal
@@ -3795,13 +4151,22 @@ hidden---not global, ambient, or user-visible.}
   activation environments and shared continuations, and remove Prime's
   retained per-result Need/receipt state on large materialized bags.  Keep
   tilepuzzle and the same-source SWI portfolio as answer-first gates.
+\item \textbf{Qualify shared \PeTTa{} Hyperpose end to end:} retain the
+  translation-stage/per-call-snapshot contract while reviewing the
+  revision-bound equation authority and reusable worker lifecycle; select a
+  snapshot carrier by allocation and work receipts; recover compiled-plan
+  reuse only through an explicit representation morphism; then rerun paired
+  ECAN and PeTTaChainer distributions, separating completion, exact bags,
+  multiplicity, assertion behavior, median, and tail.
 \item \textbf{Versioned heterogeneous realization:} implement the open
   $\mathsf{snapshot}\times\mathsf{operator\ plan}\to
   \mathsf{delta}\times\mathsf{receipt}$ boundary with exact occurrence
   evidence, stale-receipt rejection, backend-specific parallel admission,
-  and mandatory serialization fallback.  OS-thread lowering follows
-  semantic commutation \emph{and} backend resource compatibility; neither
-  native nor \PathMap{} physics becomes language semantics.
+  and a total conservative fallback.  Prime may use proved commutation and
+  backend resource compatibility to choose a stronger parallel realization;
+  \PeTTa{} continues to permit user-managed effect races while the substrate
+  protects representation integrity.  Neither native nor \PathMap{} physics
+  becomes language semantics.
 \item \textbf{Indexed shared-space engine:} replace the synchronized native
   candidate view, where admitted, with direct \PathMap{} descent and product
   cursors; add leapfrog triejoin, grouped aggregation, and persistent
@@ -3844,8 +4209,11 @@ hidden---not global, ambient, or user-visible.}
   eval-at-\textsc{comm} characterization (Section~\ref{sec:rho-lean}) from the
   single-reaction bag fragment to concurrent and persistent reactions, and
   relax the hash-set-free channel side condition.
-\item Full pattern miner on \CeTTa{} end-to-end
-  ($\sim$12$\times$ speedup over \PeTTa{}).
+\item \textbf{Real-project stateful workloads:} restore an end-to-end pattern
+  miner driver and keep the official ECAN programs as paired conformance and
+  performance portfolios.  Record result bags, multiplicity, effect/assertion
+  behavior, completion rate, and tail distributions before making any speed
+  claim.
 \end{itemize}
 
 \appendix
@@ -4208,7 +4576,7 @@ without pretending that one universal machine has been completed:
   shared bindings/scratch save-and-rollback protocol.
 \item[Revision-pinned candidate programs.]
   \code{MatchDecision} compiles sparse weak-head clause discrimination and
-  callable caches under language, profile, presentation, compiler, and space
+  callable caches under language, profile, language definition, compiler, and space
   identity.  It may omit only structurally impossible clauses and returns a
   candidate superset; selected open equations are standardized apart under a
   fresh epoch and rechecked by the authoritative matcher.  Indexing therefore
@@ -4402,7 +4770,7 @@ exhaustion and cancellation retain a resumable frontier.  \code{delay},
   certified frontier nodes and can neither create nor destroy answers;
   pruning is explicit.  Exhaustive policy invariance is proved;
   finite-budget fairness is a recorded obligation, not assumed.
-\item The authored Prime LanguageDef as executable syntax authority
+\item The source Prime LanguageDef as executable syntax authority
   through the generated reader (Section~\ref{sec:gslt2parse}).
 \item An equality vocabulary pin: directional rewriting, computed
   equality, unreduced syntactic comparison, alpha-equivalence, and
@@ -4414,7 +4782,7 @@ exhaustion and cancellation retain a resumable frontier.  \code{delay},
 
 The public suspension-observation API (constraints and invariants
 selected; the concrete observed form is a narrowed choice); the worlds
-carrier presentation (event structures lead); registered-equality
+carrier representation (event structures lead); registered-equality
 concrete syntax; the other-owner forcing protocol; cyclic graph
 persistence; typed-laziness coherence as a mechanized refinement; the
 cell-causal native contender behind its confidence gate; and
@@ -4434,7 +4802,7 @@ refinement of these project-wide commitments.
 \textbf{Checking-first.}  Producers --- search procedures, elaborators,
 learned models, external provers, the runtime itself --- are untrusted
 proposers; theoremhood is conferred only when a generic checker replays an
-explicit certificate against an admitted presentation.  Corollaries:
+explicit certificate against an admitted \code{LanguageDef}.  Corollaries:
 authority flows through replayable proof objects, never execution traces
 of another engine; certificates carry their substitutions (the checker
 applies and compares, never unifies) and name their exact subject; a
@@ -4467,7 +4835,7 @@ hosted language has exactly one mathematical root; the engine supplies
 generic mechanism only.  The genericity gate: hosting language $N{+}1$
 must be a zero-line diff in generic code --- only new data.  Roots change
 by governed correction (impossibility witness plus sign-off), never by
-silent drift; hand-authored artifacts styled as generated are forbidden.
+silent drift; hand-maintained artifacts styled as generated are forbidden.
 Generated artifacts pass falsifier ladders (acceptance, AST differentials
 against an independent reference, near-miss rejection, print-parse
 stabilization, per-production coverage), and failures repair the
@@ -4914,7 +5282,7 @@ compiled-view work; no super-linear behaviour is currently known on the
 covered workload families.
 
 
-\begin{thebibliography}{9}
+\begin{thebibliography}{99}
 \bibitem{metta}
   B.~Goertzel et al.,
   ``MeTTa: A Reflective Language for AGI,''
@@ -4979,6 +5347,51 @@ covered workload families.
   K.~H.~Knuth and J.~Skilling,
   ``Foundations of Inference,''
   \emph{Axioms}, vol.~1, no.~1, pp.~38--73, 2012.
+
+\bibitem{swi-update-view}
+  SWI-Prolog Project,
+  ``Update View,'' SWI-Prolog Reference Manual,
+  \url{https://www.swi-prolog.org/pldoc/man?section=update}.
+
+\bibitem{salsa-red-green}
+  Salsa Project,
+  ``The Red--Green Algorithm,'' Salsa Reference,
+  \url{https://salsa-rs.github.io/salsa/reference/algorithm.html}.
+
+\bibitem{rustc-red-green}
+  Rust Project Developers,
+  ``Incremental Compilation,'' \emph{Rust Compiler Development Guide},
+  \url{https://rustc-dev-guide.rust-lang.org/queries/incremental-compilation.html}.
+
+\bibitem{build-systems-carte}
+  A.~Mokhov, N.~Mitchell, and S.~Peyton Jones,
+  ``Build Systems \`a la Carte,''
+  \emph{Proceedings of the ACM on Programming Languages}, vol.~2,
+  ICFP, Article~79, 2018.  \url{https://doi.org/10.1145/3236774}.
+
+\bibitem{adapton}
+  M.~A.~Hammer, Khoo Yit Phang, M.~Hicks, and J.~S.~Foster,
+  ``Adapton: Composable, Demand-Driven Incremental Computation,''
+  in \emph{Proc. PLDI}, pp.~156--166, 2014.
+  \url{https://doi.org/10.1145/2594291.2594324}.
+
+\bibitem{differential-arrangements}
+  F.~McSherry, D.~G.~Murray, R.~Isaacs, and M.~Isard,
+  ``Differential Dataflow,'' in \emph{Proc. CIDR}, 2013;
+  see also ``Arrangements,'' Differential Dataflow Book,
+  \url{https://timelydataflow.github.io/differential-dataflow/chapter_5/chapter_5.html}.
+
+\bibitem{tptp-language}
+  G.~Sutcliffe,
+  ``The TPTP Language and Syntax BNF,''
+  TPTP World user documentation,
+  \url{https://tptp.org/UserDocs/TPTPLanguage/TPTPLanguage.shtml}.
+
+\bibitem{tstp-derivations}
+  G.~Sutcliffe,
+  ``The TPTP Format for Derivations,''
+  TPTP World quick guide,
+  \url{https://tptp.org/UserDocs/QuickGuide/Derivations.html}.
 \end{thebibliography}
 
 \end{document}

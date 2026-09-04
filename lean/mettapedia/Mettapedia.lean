@@ -23,9 +23,12 @@ inspired by Wikipedia's breadth and Metamath's rigor.
 
 -/
 
--- Graph Theory (whole basic layer; the classical Hamiltonicity / matching /
--- planarity declarations carry pre-existing in-place `sorry`s).
+-- Graph Theory: Mathlib-facing declarative foundations and proved
+-- Hamiltonicity degree conditions.
 import Mettapedia.GraphTheory.Basic
+import Mettapedia.GraphTheory.Hamiltonicity
+import Mettapedia.GraphTheory.Representation
+import Mettapedia.GraphTheory.Walk
 
 -- Probability Theory
 import Mettapedia.ProbabilityTheory.Basic
@@ -386,6 +389,8 @@ import Mettapedia.GSLT.Dynamics.KnotDecomposition
 import Mettapedia.GSLT.Dynamics.UnfoldingTraversal
 import Mettapedia.GSLT.Dynamics.SemiringTraversal
 import Mettapedia.GSLT.Dynamics.CollapseAlgebra
+import Mettapedia.GSLT.Dynamics.CollapseObservationContract
+import Mettapedia.GSLT.LanguageDef.GSLTILCollapseObservationContract
 import Mettapedia.GSLT.Dynamics.ProvenanceInterpretation
 import Mettapedia.GSLT.Dynamics.SpaceQueryAlgebra
 import Mettapedia.GSLT.Dynamics.StoreReachability

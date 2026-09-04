@@ -14,6 +14,8 @@ namespace Mettapedia.OSLF.Framework.Mode2PureBoundary
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.Mode2Skeleton
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.Languages.MeTTa.Pure.Core
 
 theorem no_pure_to_runtime (L : LanguageDef) :
@@ -83,9 +85,10 @@ def mettaPureRuntimeToBehavioral :
 /-- Current skeleton already transports a diamond witness for `mettaPure`
 along runtime→behavioral canonical edge. -/
 theorem mettaPure_runtime_behavioral_diamond_transport
-    {φ : Pattern → Prop} {p : Pattern}
+    {φ : EquationPredicate (langGSLT mettaPure)} {p : Pattern}
     (h : Mettapedia.OSLF.Framework.TypeSynthesis.langDiamond mettaPure φ p) :
-    ∃ q, Mettapedia.OSLF.Framework.TypeSynthesis.langReduces mettaPure p q ∧ φ q ∧
+    ∃ q, Mettapedia.OSLF.Framework.TypeSynthesis.langSemanticReduces
+        mettaPure p q ∧ φ q ∧
       ∃ T, Mettapedia.OSLF.Framework.LangMorphism.LangReducesStar mettaPure
         (mettaPureRuntimeToBehavioral.termMap p) T ∧
         T = mettaPureRuntimeToBehavioral.termMap q := by

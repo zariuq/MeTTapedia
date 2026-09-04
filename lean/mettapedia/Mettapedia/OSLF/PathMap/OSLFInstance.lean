@@ -179,6 +179,19 @@ def pathMapLang : LanguageDef := {
   ]
 }
 
+/-- In the equation-free PathMap presentation, every authored observation is
+already a predicate of the sole equation-respecting OSLF. -/
+private abbrev pathMapPredicate (relEnv : RelationEnv) (φ : Pattern → Prop) :
+    Mettapedia.OSLF.Framework.GSLTTypeSynthesis.EquationPredicate
+      (langGSLTUsing relEnv pathMapLang) :=
+  equationPredicateUsingOfEquationFree relEnv (by rfl) φ
+
+@[simp]
+private theorem pathMapPredicate_apply (relEnv : RelationEnv)
+    (φ : Pattern → Prop) (term : Pattern) :
+    pathMapPredicate relEnv φ term ↔ φ term :=
+  Iff.rfl
+
 /-- Every PathMap rewrite has only host-supplied relation-query premises.
 Contextual closure therefore contributes no additional PathMap steps. -/
 private theorem pathMapLang_rules_noncontextual :
@@ -194,7 +207,7 @@ private theorem pathMapLang_rules_noncontextual :
     | exact .relationQuery (.relationQuery (.relationQuery .nil))
 
 /-- Introduce a PathMap step directly from one authored root rule.  Since the
-language has no reflective presentation declarations, rule matching and
+language has no reflective signature declarations, rule matching and
 substitution are the ordinary syntactic operations. -/
 private theorem pathMap_rootStep
     {relEnv : RelationEnv} {source target : Pattern}
@@ -490,11 +503,17 @@ private abbrev condNSubBANSubAB (relEnv : RelationEnv) (a b : String) : Prop :=
     - `condNSubBANSubAB ∧ φ(PUnion(a,b))`: neither, result = a∪b (Element)
     - No branch: diamond = False                                  (None — impossible for pjoin) -/
 theorem pathMap_pjoin_complete (relEnv : RelationEnv) (a b : String) (φ : Pattern → Prop) :
-    langDiamondUsing relEnv pathMapLang φ (.apply "PJoin" [.fvar a, .fvar b]) ↔
+    langDiamondUsing relEnv pathMapLang (pathMapPredicate relEnv φ)
+        (.apply "PJoin" [.fvar a, .fvar b]) ↔
     (condSubBA relEnv a b ∧ φ (.fvar a)) ∨
     (condSubAB relEnv a b ∧ φ (.fvar b)) ∨
     (condNSubBANSubAB relEnv a b ∧ φ (.apply "PUnion" [.fvar a, .fvar b])) := by
   rw [langDiamondUsing_spec]
+  change (∃ q : Pattern,
+      langSemanticReducesUsing relEnv pathMapLang
+        (.apply "PJoin" [.fvar a, .fvar b]) q ∧ φ q) ↔ _
+  simp_rw [langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+    (lang := pathMapLang) relEnv (by rfl)]
   constructor
   · -- Forward: if some reduct q satisfies φ, extract which rule fired
     rintro ⟨q, hq_red, hq_φ⟩
@@ -606,11 +625,17 @@ theorem pathMap_pjoin_complete (relEnv : RelationEnv) (a b : String) (φ : Patte
     - `condNDisjNSubABNSubBA ∧ φ(PIntersect(a,b))`: non-disjoint & neither → result = a∩b
     - No branch (disjoint case): diamond = False  (None — explicit absence of firing) -/
 theorem pathMap_pmeet_complete (relEnv : RelationEnv) (a b : String) (φ : Pattern → Prop) :
-    langDiamondUsing relEnv pathMapLang φ (.apply "PMeet" [.fvar a, .fvar b]) ↔
+    langDiamondUsing relEnv pathMapLang (pathMapPredicate relEnv φ)
+        (.apply "PMeet" [.fvar a, .fvar b]) ↔
     (condNDisjSubAB relEnv a b ∧ φ (.fvar a)) ∨
     (condNDisjSubBA relEnv a b ∧ φ (.fvar b)) ∨
     (condNDisjNSubABNSubBA relEnv a b ∧ φ (.apply "PIntersect" [.fvar a, .fvar b])) := by
   rw [langDiamondUsing_spec]
+  change (∃ q : Pattern,
+      langSemanticReducesUsing relEnv pathMapLang
+        (.apply "PMeet" [.fvar a, .fvar b]) q ∧ φ q) ↔ _
+  simp_rw [langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+    (lang := pathMapLang) relEnv (by rfl)]
   constructor
   · rintro ⟨q, hq_red, hq_φ⟩
     rw [langReducesUsing,
@@ -717,10 +742,16 @@ theorem pathMap_pmeet_complete (relEnv : RelationEnv) (a b : String) (φ : Patte
     - `condNSubABndisj ∧ φ(PDiff(a,b))`: overlap → result = a∖b (Element)
     - No branch (a⊆b): diamond = False                  (None)         -/
 theorem pathMap_psubtract_complete (relEnv : RelationEnv) (a b : String) (φ : Pattern → Prop) :
-    langDiamondUsing relEnv pathMapLang φ (.apply "PSubtract" [.fvar a, .fvar b]) ↔
+    langDiamondUsing relEnv pathMapLang (pathMapPredicate relEnv φ)
+        (.apply "PSubtract" [.fvar a, .fvar b]) ↔
     (condDisj relEnv a b ∧ φ (.fvar a)) ∨
     (condNSubABndisj relEnv a b ∧ φ (.apply "PDiff" [.fvar a, .fvar b])) := by
   rw [langDiamondUsing_spec]
+  change (∃ q : Pattern,
+      langSemanticReducesUsing relEnv pathMapLang
+        (.apply "PSubtract" [.fvar a, .fvar b]) q ∧ φ q) ↔ _
+  simp_rw [langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+    (lang := pathMapLang) relEnv (by rfl)]
   constructor
   · rintro ⟨q, hq_red, hq_φ⟩
     rw [langReducesUsing,
@@ -810,10 +841,16 @@ theorem pathMap_psubtract_complete (relEnv : RelationEnv) (a b : String) (φ : P
     - `condNSubABndisj ∧ φ(PFilter(a,b))`: overlap → result = a∩b (Element)
     - No branch (¬(a⊆b) ∧ disjoint): diamond = False    (None)         -/
 theorem pathMap_prestrict_complete (relEnv : RelationEnv) (a b : String) (φ : Pattern → Prop) :
-    langDiamondUsing relEnv pathMapLang φ (.apply "PRestrict" [.fvar a, .fvar b]) ↔
+    langDiamondUsing relEnv pathMapLang (pathMapPredicate relEnv φ)
+        (.apply "PRestrict" [.fvar a, .fvar b]) ↔
     (condSubAB relEnv a b ∧ φ (.fvar a)) ∨
     (condNSubABndisj relEnv a b ∧ φ (.apply "PFilter" [.fvar a, .fvar b])) := by
   rw [langDiamondUsing_spec]
+  change (∃ q : Pattern,
+      langSemanticReducesUsing relEnv pathMapLang
+        (.apply "PRestrict" [.fvar a, .fvar b]) q ∧ φ q) ↔ _
+  simp_rw [langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+    (lang := pathMapLang) relEnv (by rfl)]
   constructor
   · rintro ⟨q, hq_red, hq_φ⟩
     rw [langReducesUsing,

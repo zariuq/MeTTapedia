@@ -66,7 +66,7 @@ Ordinary `EquationInstance` lives in `Prop`, so Lean correctly erases which
 equation, orientation, bindings, and fuel produced it. This `Type`-valued
 witness retains exactly those authored choices and has a forgetful map back to
 the ordinary semantics. -/
-inductive AuthoredEquationInstanceWitness
+inductive DeclaredEquationInstanceWitness
     (base : BasePremiseEvaluator) (language : LanguageDef) :
     Pattern → Pattern → Type where
   | forward {sourcePattern targetPattern : Pattern}
@@ -77,7 +77,7 @@ inductive AuthoredEquationInstanceWitness
       (premises : PremisesAt base language fuel initialBindings
         equation.1.premises finalBindings)
       (target_eq : applyBindings finalBindings equation.1.right = targetPattern) :
-      AuthoredEquationInstanceWitness base language sourcePattern targetPattern
+      DeclaredEquationInstanceWitness base language sourcePattern targetPattern
   | reverse {sourcePattern targetPattern : Pattern}
       (fuel : Nat)
       (equation : { equation : Equation // equation ∈ language.equations })
@@ -86,15 +86,15 @@ inductive AuthoredEquationInstanceWitness
       (premises : PremisesAt base language fuel initialBindings
         equation.1.premises finalBindings)
       (target_eq : applyBindings finalBindings equation.1.left = targetPattern) :
-      AuthoredEquationInstanceWitness base language sourcePattern targetPattern
+      DeclaredEquationInstanceWitness base language sourcePattern targetPattern
 
-namespace AuthoredEquationInstanceWitness
+namespace DeclaredEquationInstanceWitness
 
 /-- Forget occurrence identity and recover the ordinary proposition-valued
 equation instance. -/
 def erase {base : BasePremiseEvaluator} {language : LanguageDef}
     {sourcePattern targetPattern : Pattern} :
-    AuthoredEquationInstanceWitness base language sourcePattern targetPattern →
+    DeclaredEquationInstanceWitness base language sourcePattern targetPattern →
       EquationInstance base language sourcePattern targetPattern
   | .forward fuel equation _initialBindings _finalBindings matched premises
       target_eq =>
@@ -110,7 +110,7 @@ theorem exists_erasing_to {base : BasePremiseEvaluator} {language : LanguageDef}
     {sourcePattern targetPattern : Pattern}
     (instanceWitness : EquationInstance base language
       sourcePattern targetPattern) :
-    ∃ occurrence : AuthoredEquationInstanceWitness base language sourcePattern
+    ∃ occurrence : DeclaredEquationInstanceWitness base language sourcePattern
         targetPattern,
       occurrence.erase = instanceWitness := by
   rcases instanceWitness with ⟨fuel, instanceAt⟩
@@ -130,7 +130,7 @@ theorem exists_erasing_to {base : BasePremiseEvaluator} {language : LanguageDef}
 equation semantics. -/
 def orientation {base : BasePremiseEvaluator} {language : LanguageDef}
     {sourcePattern targetPattern : Pattern} :
-    AuthoredEquationInstanceWitness base language sourcePattern targetPattern →
+    DeclaredEquationInstanceWitness base language sourcePattern targetPattern →
       EquationOrientation
   | .forward .. => .forward
   | .reverse .. => .reverse
@@ -138,7 +138,7 @@ def orientation {base : BasePremiseEvaluator} {language : LanguageDef}
 /-- Final bindings used to instantiate the selected target schema. -/
 def finalBindings {base : BasePremiseEvaluator} {language : LanguageDef}
     {sourcePattern targetPattern : Pattern} :
-    AuthoredEquationInstanceWitness base language sourcePattern targetPattern →
+    DeclaredEquationInstanceWitness base language sourcePattern targetPattern →
       Bindings
   | .forward _ _ _ finalBindings _ _ _ => finalBindings
   | .reverse _ _ _ finalBindings _ _ _ => finalBindings
@@ -146,7 +146,7 @@ def finalBindings {base : BasePremiseEvaluator} {language : LanguageDef}
 /-- The authored schema instantiated to produce the target endpoint. -/
 def targetSchema {base : BasePremiseEvaluator} {language : LanguageDef}
     {sourcePattern targetPattern : Pattern} :
-    AuthoredEquationInstanceWitness base language sourcePattern targetPattern →
+    DeclaredEquationInstanceWitness base language sourcePattern targetPattern →
       Pattern
   | .forward _ equation _ _ _ _ _ => equation.1.right
   | .reverse _ equation _ _ _ _ _ => equation.1.left
@@ -156,7 +156,7 @@ endpoint. -/
 theorem applyBindings_targetSchema {base : BasePremiseEvaluator}
     {language : LanguageDef}
     {sourcePattern targetPattern : Pattern}
-    (witness : AuthoredEquationInstanceWitness base language sourcePattern
+    (witness : DeclaredEquationInstanceWitness base language sourcePattern
       targetPattern) :
     applyBindings witness.finalBindings witness.targetSchema = targetPattern := by
   cases witness <;> assumption
@@ -167,7 +167,7 @@ metavariable binding is not a template occurrence. -/
 def TargetApplicationTemplate {base : BasePremiseEvaluator}
     {language : LanguageDef}
     {sourcePattern targetPattern : Pattern}
-    (witness : AuthoredEquationInstanceWitness base language sourcePattern
+    (witness : DeclaredEquationInstanceWitness base language sourcePattern
       targetPattern)
     (instantiatedContext : OneHoleContext) (sourceLabel : String)
     (arguments : List Pattern) : Prop :=
@@ -182,7 +182,7 @@ def TargetApplicationTemplate {base : BasePremiseEvaluator}
 theorem TargetApplicationTemplate.selects {base : BasePremiseEvaluator}
     {language : LanguageDef}
     {sourcePattern targetPattern : Pattern}
-    {witness : AuthoredEquationInstanceWitness base language sourcePattern
+    {witness : DeclaredEquationInstanceWitness base language sourcePattern
       targetPattern}
     {context : OneHoleContext} {sourceLabel : String}
     {arguments : List Pattern}
@@ -205,7 +205,7 @@ theorem TargetApplicationTemplate.selects {base : BasePremiseEvaluator}
   rw [← filled]
   exact Selects.of_fill context (.apply sourceLabel arguments)
 
-end AuthoredEquationInstanceWitness
+end DeclaredEquationInstanceWitness
 
 /-- A proof-relevant authored contextual generator.
 
@@ -217,7 +217,7 @@ inductive AuthoredGeneratorWitness
     (base : BasePremiseEvaluator) (language : LanguageDef) :
     Pattern → Pattern → Type where
   | equation (context : OneHoleContext) {redex contractum : Pattern}
-      (instanceWitness : AuthoredEquationInstanceWitness base language redex
+      (instanceWitness : DeclaredEquationInstanceWitness base language redex
         contractum) :
       AuthoredGeneratorWitness base language (context.fill redex)
         (context.fill contractum)
@@ -244,7 +244,7 @@ theorem exists_erasing_to {base : BasePremiseEvaluator}
   cases step with
   | inContext context instanceWitness =>
       obtain ⟨instanceOccurrence, erases⟩ :=
-        AuthoredEquationInstanceWitness.exists_erasing_to instanceWitness
+        DeclaredEquationInstanceWitness.exists_erasing_to instanceWitness
       refine ⟨.equation context instanceOccurrence, ?_⟩
       exact Subsingleton.elim _ _
 

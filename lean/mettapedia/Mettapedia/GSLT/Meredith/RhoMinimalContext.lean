@@ -1,26 +1,27 @@
 import Mettapedia.GSLT.Meredith.RhoExample
 import Mettapedia.GSLT.Logic.MinimalContext
-import Mettapedia.GSLT.Logic.ContextHML
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Context
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 
 /-!
-# Concrete Minimal Contexts for the ρ-Calculus
+# Rho evaluation contexts are candidate labels, not proved minimal contexts
 
-This file instantiates the abstract `HasMinimalContexts` interface for the
-concrete rho-calculus GSLT from `RhoExample.lean`.
+The rho syntax supplies a useful grammar of one-hole evaluation contexts and a
+labeled transition relation.  It does **not** by itself prove that those
+contexts are least enablers in the Milner--Sewell--Leifer sense.  Least
+enabling contexts require the factorization universal property formalized by
+`MinimalEnablingContext.ContextualRules.IsLeastEnabler`, normally obtained
+from a redex-relative pushout construction.
 
-The key choice is simple and explicit:
+This module therefore records only the facts the syntax actually establishes:
 
-* the certified one-hole/reactive/minimal contexts are exactly the evaluation
-  contexts already formalized in `RhoCalculus/Context.lean`,
 * plugging is `fillEvalContext`,
-* GSLT context steps coincide with rho labeled transitions.
+* a labeled transition is exactly a reduction after plugging, and
+* the two communication partners give concrete positive examples.
 
-This gives the first concrete bridge from the abstract HML layer back to an
-actual process calculus. It is intentionally modest: we certify the current
-rho context grammar, not the full universal minimality theorem of the
-Milner-Sewell-Leifer construction.
+No `HasMinimalContexts rhoGSLT` instance is manufactured here.  Consequently
+these candidates cannot silently enter a context-HML adequacy theorem as if
+the missing universal property had been proved.
 -/
 
 namespace Mettapedia.GSLT.Meredith.RhoExample
@@ -45,86 +46,56 @@ theorem isEvalGenerated_ofEvalContext (K : EvalContext) :
     IsEvalGenerated (ofEvalContext K) :=
   ⟨K, fun _ => rfl⟩
 
-/-- The rho-calculus context grammar supplies the concrete minimal-context
-interface for `rhoGSLT`. -/
-instance : HasMinimalContexts rhoGSLT where
-  IsOneHole := IsEvalGenerated
-  IsReactive := IsEvalGenerated
-  IsMinimal := IsEvalGenerated
-  id_oneHole := ⟨EvalContext.hole, fun p => by simp [GSLTContext.id, fillEvalContext]⟩
-  id_reactive := ⟨EvalContext.hole, fun p => by simp [GSLTContext.id, fillEvalContext]⟩
-  id_minimal := ⟨EvalContext.hole, fun p => by simp [GSLTContext.id, fillEvalContext]⟩
-  minimal_reactive := id
-  minimal_oneHole := id
+/-- Candidate-context action: plug the source into an evaluation context and
+take one equation-respecting rho step.  This is a valid labeled transition
+family, but it carries no least-enabler claim. -/
+def evalContextStep (K : EvalContext) (p q : Pattern) : Prop :=
+  rhoGSLT.Step (fillEvalContext K p) q
 
-/-- The concrete minimal context packaged from a rho evaluation context. -/
-def minimalOfEvalContext (K : EvalContext) : MinimalContext rhoGSLT :=
-  ⟨ofEvalContext K, isEvalGenerated_ofEvalContext K⟩
+theorem evalContextStep_iff_reduces (K : EvalContext) (p q : Pattern) :
+    evalContextStep K p q ↔ Nonempty (Reduces (fillEvalContext K p) q) :=
+  Iff.rfl
 
-@[simp] theorem minimalOfEvalContext_plug (K : EvalContext) (p : Pattern) :
-    (minimalOfEvalContext K).plug p = fillEvalContext K p := rfl
-
-/-- On rho-generated contexts, GSLT context steps are exactly filled rho
-reductions. -/
-theorem contextStep_iff_reduces (K : EvalContext) (p q : Pattern) :
-    GSLT.contextStep rhoGSLT p (minimalOfEvalContext K) q ↔ Nonempty (Reduces (fillEvalContext K p) q) := by
-  rfl
-
-/-- Every rho labeled transition yields a GSLT context step through the concrete
-minimal-context instance. -/
-theorem contextStep_of_labeledTransition {K : EvalContext} {p q : Pattern}
+/-- Every rho labeled transition yields the corresponding candidate-context
+step. -/
+theorem evalContextStep_of_labeledTransition {K : EvalContext} {p q : Pattern}
     (h : Nonempty (p ⇝[K] q)) :
-    GSLT.contextStep rhoGSLT p (minimalOfEvalContext K) q :=
+    evalContextStep K p q :=
   labeled_implies_reduces h
 
-/-- Every rho GSLT context step gives a rho labeled transition, via the generic
-`from_reduction` constructor. -/
-theorem labeledTransition_of_contextStep {K : EvalContext} {p q : Pattern}
-    (h : GSLT.contextStep rhoGSLT p (minimalOfEvalContext K) q) :
+/-- Every candidate-context step gives a rho labeled transition through the
+generic `from_reduction` constructor. -/
+theorem labeledTransition_of_evalContextStep {K : EvalContext} {p q : Pattern}
+    (h : evalContextStep K p q) :
     Nonempty (p ⇝[K] q) :=
   ⟨LabeledTransition.from_reduction h⟩
 
-/-- Hence the concrete rho minimal-context steps are equivalent to rho labeled
-transitions. -/
-theorem contextStep_iff_labeledTransition {K : EvalContext} {p q : Pattern} :
-    GSLT.contextStep rhoGSLT p (minimalOfEvalContext K) q ↔ Nonempty (p ⇝[K] q) := by
+/-- The syntax-level labeled transition and candidate-context action coincide.
+This theorem deliberately says nothing about minimality. -/
+theorem evalContextStep_iff_labeledTransition {K : EvalContext} {p q : Pattern} :
+    evalContextStep K p q ↔ Nonempty (p ⇝[K] q) := by
   constructor
-  · exact labeledTransition_of_contextStep
-  · exact contextStep_of_labeledTransition
+  · exact labeledTransition_of_evalContextStep
+  · exact evalContextStep_of_labeledTransition
 
-/-- The COMM interaction appears as a concrete GSLT context step for an input
-process placed in its matching output context. -/
-theorem comm_input_contextStep (x q p : Pattern) :
-    GSLT.contextStep rhoGSLT
+/-- The COMM interaction appears under the matching output candidate. -/
+theorem comm_input_evalContextStep (x q p : Pattern) :
+    evalContextStep
+      (.par (.apply "POutput" [x, q]) .hole)
       (.apply "PInput" [x, .lambda none p])
-      (minimalOfEvalContext (.par (.apply "POutput" [x, q]) .hole))
       (semanticCommSubst p q) := by
-  exact contextStep_of_labeledTransition ⟨LabeledTransition.comm_input⟩
+  exact evalContextStep_of_labeledTransition ⟨LabeledTransition.comm_input⟩
 
-/-- Dually, the output process steps in the matching input context. -/
-theorem comm_output_contextStep (x q p : Pattern) :
-    GSLT.contextStep rhoGSLT
+/-- Dually, the output process steps under the matching input candidate. -/
+theorem comm_output_evalContextStep (x q p : Pattern) :
+    evalContextStep
+      (.par (.apply "PInput" [x, .lambda none p]) .hole)
       (.apply "POutput" [x, q])
-      (minimalOfEvalContext (.par (.apply "PInput" [x, .lambda none p]) .hole))
       (semanticCommSubst p q) := by
-  exact contextStep_of_labeledTransition ⟨LabeledTransition.comm_output⟩
+  exact evalContextStep_of_labeledTransition ⟨LabeledTransition.comm_output⟩
 
-/-- The rho input process satisfies the corresponding HML diamond formula for a
-matching output environment. -/
-theorem comm_input_satisfies_diamond (x q p : Pattern) :
-    HMLFormula.satisfies rhoGSLT
-      (.apply "PInput" [x, .lambda none p])
-      (.diamond (minimalOfEvalContext (.par (.apply "POutput" [x, q]) .hole)) .top) := by
-  refine ⟨semanticCommSubst p q, comm_input_contextStep x q p, ?_⟩
-  simp [HMLFormula.satisfies]
-
-/-- Dually, the rho output process satisfies the corresponding HML diamond
-formula for a matching input environment. -/
-theorem comm_output_satisfies_diamond (x q p : Pattern) :
-    HMLFormula.satisfies rhoGSLT
-      (.apply "POutput" [x, q])
-      (.diamond (minimalOfEvalContext (.par (.apply "PInput" [x, .lambda none p]) .hole)) .top) := by
-  refine ⟨semanticCommSubst p q, comm_output_contextStep x q p, ?_⟩
-  simp [HMLFormula.satisfies]
+#print axioms evalContextStep_iff_labeledTransition
+#print axioms comm_input_evalContextStep
+#print axioms comm_output_evalContextStep
 
 end Mettapedia.GSLT.Meredith.RhoExample

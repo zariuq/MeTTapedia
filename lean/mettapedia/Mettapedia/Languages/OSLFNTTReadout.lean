@@ -23,7 +23,9 @@ Negative example:
 
 namespace Mettapedia.Languages.OSLFNTTReadout
 
+open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.Languages.GF.GFCoreNTTDiagnostics
 open Mettapedia.Languages.GF.GeneratedBridgeConformance
@@ -31,11 +33,20 @@ open Mettapedia.Languages.GF.GFCoreOSLFBridge
 open Mettapedia.Languages.Metamath.NTTDiagnostics
 open Mettapedia.Languages.Metamath.LanguageDefDSL
 
+private def gfEquationPredicate (predicate : Pattern → Prop) :
+    EquationPredicate (langGSLT paperLangKR) :=
+  equationPredicateOfEquationFree (by rfl) predicate
+
+private def metamathEquationPredicate (predicate : Pattern → Prop) :
+    EquationPredicate (langGSLT metamathCore) :=
+  equationPredicateOfEquationFree (by rfl) predicate
+
 abbrev GFRealNTTReadout : Prop :=
     GaloisConnection (langDiamond paperLangKR) (langBox paperLangKR) ∧
       (("UseN", "N", "CN") ∈ unaryCrossings paperLangKR) ∧
       ¬ langDiamond paperLangKR
-          (fun q => q = Mettapedia.Languages.GF.GFCoreNTTDiagnostics.temporalPresentPattern)
+          (gfEquationPredicate fun q =>
+            q = Mettapedia.Languages.GF.GFCoreNTTDiagnostics.temporalPresentPattern)
           Mettapedia.Languages.GF.GFCoreNTTDiagnostics.presentSentencePattern ∧
       paperSId ∈
         paperPresentSentenceOrbitFiber.obj
@@ -50,7 +61,9 @@ abbrev MetamathNTTReadout : Prop :=
     GaloisConnection (langDiamond metamathCore) (langBox metamathCore) ∧
       (("CompileAfterLower", "LowerState", "CompileState") ∈
         unaryCrossings metamathCore) ∧
-      langDiamond metamathCore (fun q => q = minimalCompileAfterLower) minimalCompileStart ∧
+      langDiamond metamathCore
+        (metamathEquationPredicate fun q => q = minimalCompileAfterLower)
+        minimalCompileStart ∧
       dbOneArrow.toPath ∈
         stmtDatabaseOrbitFiber.obj
           (Opposite.op (ConstructorObj.mk mmStmtSort))

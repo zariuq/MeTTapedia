@@ -94,13 +94,13 @@ theorem CostRegionTree.StaticRootView.sourceSort_eq_of_color_ne
   cases leftColor <;> cases rightColor
   · exact absurd rfl different
   · simp only [CostStaticColor.symbols, costBaseStaticSymbols,
-      costBasePresentationSymbols, costWrappedStaticSymbols] at nameEq
+      costBaseLanguageDefSymbolMap, costWrappedStaticSymbols] at nameEq
     split_ifs at nameEq with interacting
     · exact absurd nameEq (costBaseSortName_ne_wrapped _)
     · have sortEq := costBaseSortName_injective nameEq
       exact ⟨sortEq, by rw [sortEq]; exact interacting⟩
   · simp only [CostStaticColor.symbols, costBaseStaticSymbols,
-      costBasePresentationSymbols, costWrappedStaticSymbols] at nameEq
+      costBaseLanguageDefSymbolMap, costWrappedStaticSymbols] at nameEq
     split_ifs at nameEq with interacting
     · exact absurd nameEq.symm (costBaseSortName_ne_wrapped _)
     · have sortEq := costBaseSortName_injective nameEq

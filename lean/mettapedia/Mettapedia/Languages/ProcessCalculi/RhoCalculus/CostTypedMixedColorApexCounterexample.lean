@@ -360,7 +360,7 @@ def typedApexSelectedQuoteDrop : Pattern :=
 private def nameType : TypeExpr := .base (costBaseSortName "Name")
 
 private def typedApexDropConstructor :
-    StructuralMorphism.AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    StructuralMorphism.DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoCalc.terms[1], List.getElem_mem _⟩
 
 private theorem typedApexDrop_selected :
@@ -371,7 +371,7 @@ private theorem typedApexDrop_selected :
   constructor <;> decide
 
 private def typedApexQuoteConstructor :
-    StructuralMorphism.AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    StructuralMorphism.DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoCalc.terms[2], List.getElem_mem _⟩
 
 private theorem typedApexQuote_selected :

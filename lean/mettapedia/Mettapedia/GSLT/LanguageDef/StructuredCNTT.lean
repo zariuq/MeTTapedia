@@ -117,8 +117,14 @@ theorem assignment_inhabits_derived_native_type :
         (run nilStatements environmentOne receiptZero) :=
     (langReducesUsing_iff_execUsing valueRelationEnv language _ _).2
       ⟨1, executable⟩
+  have semanticReduction :
+      langSemanticReducesUsing valueRelationEnv language
+        (run statementList environmentZero receiptZero)
+        (run nilStatements environmentOne receiptZero) :=
+    langReducesUsing_to_semantic valueRelationEnv language reduction
   refine ⟨⟨((run statementList environmentZero receiptZero),
-      (run nilStatements environmentOne receiptZero)), reduction⟩, rfl, ?_⟩
+      (run nilStatements environmentOne receiptZero)), semanticReduction⟩,
+    rfl, ?_⟩
   refine ⟨[nilStatements, environmentOne, receiptZero], rfl, ?_⟩
   refine ⟨⟨[], rfl, trivial⟩, ?_⟩
   constructor

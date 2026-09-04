@@ -1,0 +1,5 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryDescent
+
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.rhoDescend
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.plan_abstract_iterDropUnit_of_iterDropUnit
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.proPair_outside_singleColour_premise

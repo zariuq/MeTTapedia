@@ -463,9 +463,11 @@ theorem valueMapNTT_comp (earlier : Source → Target)
   apply CompleteLatticeHom.ext
   intro predicate
   ext state
-  change predicate ((state.map earlier).map later) ↔
-    predicate (state.map (later ∘ earlier))
-  rw [State.map_comp]
+  induction state using Quotient.inductionOn with
+  | _ state =>
+      change predicate (Quotient.mk _ ((state.map earlier).map later)) ↔
+        predicate (Quotient.mk _ (state.map (later ∘ earlier)))
+      rw [State.map_comp]
 
 /-- Exact local reflection for opaque-value transport in the abstract
 finite-inventory loader.  This is separate from the linked representation so
@@ -545,10 +547,15 @@ theorem finiteValueMapNTT_comp (earlier : Source → Target)
   apply CompleteLatticeHom.ext
   intro predicate
   ext state
-  change predicate
-      ((FiniteInventoryLoader.State.map earlier state).map later) ↔
-    predicate (FiniteInventoryLoader.State.map (later ∘ earlier) state)
-  rw [FiniteInventoryLoader.State.map_comp]
+  induction state using Quotient.inductionOn with
+  | _ state =>
+      change predicate
+          (Quotient.mk _
+            ((FiniteInventoryLoader.State.map earlier state).map later)) ↔
+        predicate
+          (Quotient.mk _
+            (FiniteInventoryLoader.State.map (later ∘ earlier) state))
+      rw [FiniteInventoryLoader.State.map_comp]
 
 /-- Map a proof-relevant linked-row path without erasing its occurrence
 identity or administrative cursor states. -/
@@ -721,9 +728,13 @@ theorem loweringNTT_valueMap_naturality (translation : Source → Target) :
   apply CompleteLatticeHom.ext
   intro predicate
   ext state
-  change predicate ((lowerState state).map translation) ↔
-    predicate (lowerState (FiniteInventoryLoader.State.map translation state))
-  rw [map_lowerState]
+  induction state using Quotient.inductionOn with
+  | _ state =>
+      change predicate (Quotient.mk _ ((lowerState state).map translation)) ↔
+        predicate
+          (Quotient.mk _
+            (lowerState (FiniteInventoryLoader.State.map translation state)))
+      rw [map_lowerState]
 
 /-- Lower a complete proof-relevant abstract path without erasing its
 intermediate occurrence states. -/

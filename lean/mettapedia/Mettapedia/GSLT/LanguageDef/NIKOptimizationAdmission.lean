@@ -26,19 +26,19 @@ open Mettapedia.GSLT.Dynamics.ExecutionPathObservation
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.NIKObservedRefinement
 
-universe uCandidate uAuthority uShape uObservation uCost
+universe uCandidate uAuthority uShape uObservation uTerm uCost
 
 /-- A family of proposed compiled realizations.  Both authority and shape
 evidence are indexed by the exact source candidate, and the target language
 may depend on both witnesses. -/
 structure OptimizationFamily
     (Candidate : Type uCandidate) (Observation : Type uObservation) where
-  source : Candidate → ObservedOperationalObject Observation
+  source : Candidate → ObservedOperationalObject.{uObservation, uTerm} Observation
   ExactAuthority : Candidate → Type uAuthority
   ShapeEvidence : Candidate → Type uShape
   recognize : ∀ candidate, Option (ShapeEvidence candidate)
   target : ∀ candidate, ExactAuthority candidate → ShapeEvidence candidate →
-    ObservedOperationalObject Observation
+    ObservedOperationalObject.{uObservation, uTerm} Observation
   refinement : ∀ candidate authority shape,
     ObservedRefinement (source candidate) (target candidate authority shape)
 

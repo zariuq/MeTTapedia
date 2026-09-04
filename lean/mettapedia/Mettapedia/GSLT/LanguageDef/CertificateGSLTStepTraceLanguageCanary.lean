@@ -9,6 +9,7 @@ The fixture language has one ground rewrite `a → b` and constructors `f`,
 
 * the generated definition is admitted by the generic checker with no
   authored inference rules, and derives the authored step `a → b`;
+* equation-bearing presentations are rejected rather than having `E` erased;
 * congruence is **not** free: the language's declarative reduction has no
   step `f a → f b`, because MeTTaIL grants contextual authority only
   through authored congruence premises.  This counterexample is what
@@ -95,6 +96,38 @@ private def unsupportedLanguage : LanguageDef :=
 constructed; they are never silently erased into a stronger rule. -/
 theorem relation_premise_language_rejected :
     DirectTraceLanguage.ofLanguage? unsupportedLanguage = none := by
+  apply DirectTraceLanguage.ofLanguage?_eq_none_of_unsupported
+  rfl
+
+private def equationAB : Equation where
+  name := "ab-equation"
+  typeContext := []
+  premises := []
+  left := termA
+  right := termB
+
+private def equationLanguage : LanguageDef :=
+  { genLanguage with equations := [equationAB] }
+
+/-- An authored equation may expose a rewrite redex, so the equation-free
+trace generator refuses the presentation instead of silently clearing `E`. -/
+theorem authored_equation_language_rejected :
+    DirectTraceLanguage.ofLanguage? equationLanguage = none := by
+  apply DirectTraceLanguage.ofLanguage?_eq_none_of_unsupported
+  rfl
+
+private def genBag : GrammarRule :=
+  { label := "gen-bag", category := "GP"
+    params := [.simple "items" (.collection .hashBag (.base "GP"))]
+    syntaxPattern := [] }
+
+private def derivedEquationLanguage : LanguageDef :=
+  { genLanguage with terms := genLanguage.terms ++ [genBag] }
+
+/-- A bag declaration generates permutation equations even when the authored
+equation list is empty, so presentation-derived `E` is fail-closed too. -/
+theorem derived_equation_language_rejected :
+    DirectTraceLanguage.ofLanguage? derivedEquationLanguage = none := by
   apply DirectTraceLanguage.ofLanguage?_eq_none_of_unsupported
   rfl
 

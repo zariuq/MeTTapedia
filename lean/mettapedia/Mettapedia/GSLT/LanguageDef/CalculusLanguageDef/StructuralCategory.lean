@@ -26,7 +26,7 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 /-- Symbol actions for every namespace of a flat calculus language. -/
 @[ext]
-structure CalculusLanguageSymbols extends PresentationSymbols where
+structure CalculusLanguageSymbols extends LanguageDefSymbolMap where
   /-- Outer heads of judgments. -/
   judgment : String → String
   /-- Stable identifiers of inference rules. -/
@@ -36,25 +36,25 @@ namespace CalculusLanguageSymbols
 
 /-- Identity action on every calculus-language namespace. -/
 def id : CalculusLanguageSymbols where
-  toPresentationSymbols := PresentationSymbols.id
+  toLanguageDefSymbolMap := LanguageDefSymbolMap.id
   judgment := _root_.id
   rule := _root_.id
 
 @[simp] theorem id_language :
-    id.toPresentationSymbols = PresentationSymbols.id :=
+    id.toLanguageDefSymbolMap = LanguageDefSymbolMap.id :=
   rfl
 
 /-- Consecutive symbol actions. -/
 def comp (first second : CalculusLanguageSymbols) :
     CalculusLanguageSymbols where
-  toPresentationSymbols := first.toPresentationSymbols.comp
-    second.toPresentationSymbols
+  toLanguageDefSymbolMap := first.toLanguageDefSymbolMap.comp
+    second.toLanguageDefSymbolMap
   judgment := second.judgment ∘ first.judgment
   rule := second.rule ∘ first.rule
 
 @[simp] theorem comp_language (first second : CalculusLanguageSymbols) :
-    (first.comp second).toPresentationSymbols =
-      first.toPresentationSymbols.comp second.toPresentationSymbols :=
+    (first.comp second).toLanguageDefSymbolMap =
+      first.toLanguageDefSymbolMap.comp second.toLanguageDefSymbolMap :=
   rfl
 
 @[simp] theorem id_comp (symbols : CalculusLanguageSymbols) :
@@ -84,8 +84,8 @@ structurally, so this operation is total before validation. -/
 def mapJudgmentPattern (symbols : CalculusLanguageSymbols) : Pattern → Pattern
   | .apply head arguments =>
       .apply (symbols.judgment head)
-        (arguments.map (mapPattern symbols.toPresentationSymbols))
-  | pattern => mapPattern symbols.toPresentationSymbols pattern
+        (arguments.map (mapPattern symbols.toLanguageDefSymbolMap))
+  | pattern => mapPattern symbols.toLanguageDefSymbolMap pattern
 
 /-- Map an inference-rule schema without changing its local metavariable or
 side-condition coordinates. -/
@@ -206,19 +206,19 @@ structure CalculusStructuralMorphism
   symbols : CalculusLanguageSymbols
   mapsTypes : ∀ declaration,
     List.Mem declaration source.1.types →
-      List.Mem (mapTypeDecl symbols.toPresentationSymbols declaration)
+      List.Mem (mapTypeDecl symbols.toLanguageDefSymbolMap declaration)
         target.1.types
   mapsTerms : ∀ declaration,
     List.Mem declaration source.1.terms →
-      List.Mem (mapGrammarRule symbols.toPresentationSymbols declaration)
+      List.Mem (mapGrammarRule symbols.toLanguageDefSymbolMap declaration)
         target.1.terms
   mapsEquations : ∀ declaration,
     List.Mem declaration source.1.equations →
-      List.Mem (mapEquation symbols.toPresentationSymbols declaration)
+      List.Mem (mapEquation symbols.toLanguageDefSymbolMap declaration)
         target.1.equations
   mapsRewrites : ∀ declaration,
     List.Mem declaration source.1.rewrites →
-      List.Mem (mapRewriteRule symbols.toPresentationSymbols declaration)
+      List.Mem (mapRewriteRule symbols.toLanguageDefSymbolMap declaration)
         target.1.rewrites
   mapsJudgments : ∀ declaration,
     List.Mem declaration source.1.judgments →
@@ -239,7 +239,7 @@ def toLanguageDefMorphism
     (morphism : CalculusStructuralMorphism source target) :
     StructuralMorphism source.toValidatedLanguageDef
       target.toValidatedLanguageDef where
-  symbols := morphism.symbols.toPresentationSymbols
+  symbols := morphism.symbols.toLanguageDefSymbolMap
   mapsTypes := morphism.mapsTypes
   mapsTerms := morphism.mapsTerms
   mapsEquations := morphism.mapsEquations
@@ -288,29 +288,29 @@ def comp {first second third : ValidatedCalculusLanguageDef}
   mapsTypes declaration membership := by
     change List.Mem
       (mapTypeDecl
-        (earlier.symbols.toPresentationSymbols.comp
-          later.symbols.toPresentationSymbols) declaration) third.1.types
+        (earlier.symbols.toLanguageDefSymbolMap.comp
+          later.symbols.toLanguageDefSymbolMap) declaration) third.1.types
     rw [mapTypeDecl_comp]
     exact later.mapsTypes _ (earlier.mapsTypes declaration membership)
   mapsTerms declaration membership := by
     change List.Mem
       (mapGrammarRule
-        (earlier.symbols.toPresentationSymbols.comp
-          later.symbols.toPresentationSymbols) declaration) third.1.terms
+        (earlier.symbols.toLanguageDefSymbolMap.comp
+          later.symbols.toLanguageDefSymbolMap) declaration) third.1.terms
     rw [mapGrammarRule_comp]
     exact later.mapsTerms _ (earlier.mapsTerms declaration membership)
   mapsEquations declaration membership := by
     change List.Mem
       (mapEquation
-        (earlier.symbols.toPresentationSymbols.comp
-          later.symbols.toPresentationSymbols) declaration) third.1.equations
+        (earlier.symbols.toLanguageDefSymbolMap.comp
+          later.symbols.toLanguageDefSymbolMap) declaration) third.1.equations
     rw [mapEquation_comp]
     exact later.mapsEquations _ (earlier.mapsEquations declaration membership)
   mapsRewrites declaration membership := by
     change List.Mem
       (mapRewriteRule
-        (earlier.symbols.toPresentationSymbols.comp
-          later.symbols.toPresentationSymbols) declaration) third.1.rewrites
+        (earlier.symbols.toLanguageDefSymbolMap.comp
+          later.symbols.toLanguageDefSymbolMap) declaration) third.1.rewrites
     rw [mapRewriteRule_comp]
     exact later.mapsRewrites _ (earlier.mapsRewrites declaration membership)
   mapsJudgments declaration membership := by

@@ -66,7 +66,7 @@ namespace WireCell
 
 /-- Exact authored generators have canonical wire cells. -/
 def ofEvent {program : Program} {source target : Pattern}
-    (event : AuthoredEvent program source target) :
+    (event : ProgramEvent program source target) :
     WireCell program source target :=
   match event with
   | .inSpace rule member =>
@@ -112,18 +112,18 @@ def ofEvent {program : Program} {source target : Pattern}
 authored event over those same endpoints. -/
 theorem toEvent {program : Program} {source target : Pattern}
     (cell : WireCell program source target) :
-    Nonempty (AuthoredEvent program source target) := by
+    Nonempty (ProgramEvent program source target) := by
   obtain ⟨reached, sourceStep, reachedElaboration⟩ :=
     step_reflected program cell.sourceElaboration cell.wire
   have reachedEq : reached = target :=
     elaborates_reflects_source program reachedElaboration
       cell.targetElaboration
   subst reached
-  exact AuthoredEvent.ofStep sourceStep
+  exact ProgramEvent.ofStep sourceStep
 
 theorem nonempty_iff_event {program : Program} {source target : Pattern} :
     Nonempty (WireCell program source target) ↔
-      Nonempty (AuthoredEvent program source target) := by
+      Nonempty (ProgramEvent program source target) := by
   constructor
   · rintro ⟨cell⟩
     exact cell.toEvent
@@ -138,14 +138,14 @@ abbrev WireCellPath (program : Program) := Route (WireCell program)
 
 namespace WireCellPath
 
-def ofAuthoredPath {program : Program} {source target : Pattern} :
-    AuthoredPath program source target → WireCellPath program source target
+def ofProgramPath {program : Program} {source target : Pattern} :
+    ProgramPath program source target → WireCellPath program source target
   | .refl object => .refl object
-  | .cons event rest => .cons (WireCell.ofEvent event) (ofAuthoredPath rest)
+  | .cons event rest => .cons (WireCell.ofEvent event) (ofProgramPath rest)
 
-theorem toAuthoredPath {program : Program} {source target : Pattern}
+theorem toProgramPath {program : Program} {source target : Pattern}
     (path : WireCellPath program source target) :
-    Nonempty (AuthoredPath program source target) := by
+    Nonempty (ProgramPath program source target) := by
   induction path with
   | refl object => exact ⟨.refl object⟩
   | cons cell rest inductionHypothesis =>
@@ -153,30 +153,30 @@ theorem toAuthoredPath {program : Program} {source target : Pattern}
       obtain ⟨path⟩ := inductionHypothesis
       exact ⟨.cons event path⟩
 
-theorem nonempty_iff_authoredPath
+theorem nonempty_iff_programPath
     {program : Program} {source target : Pattern} :
     Nonempty (WireCellPath program source target) ↔
-      Nonempty (AuthoredPath program source target) := by
+      Nonempty (ProgramPath program source target) := by
   constructor
   · rintro ⟨path⟩
-    exact path.toAuthoredPath
+    exact path.toProgramPath
   · rintro ⟨path⟩
-    exact ⟨ofAuthoredPath path⟩
+    exact ⟨ofProgramPath path⟩
 
-theorem ofAuthoredPath_append {program : Program}
+theorem ofProgramPath_append {program : Program}
     {source middle target : Pattern}
-    (earlier : AuthoredPath program source middle)
-    (later : AuthoredPath program middle target) :
-    ofAuthoredPath (earlier.append later) =
-      (ofAuthoredPath earlier).append (ofAuthoredPath later) := by
+    (earlier : ProgramPath program source middle)
+    (later : ProgramPath program middle target) :
+    ofProgramPath (earlier.append later) =
+      (ofProgramPath earlier).append (ofProgramPath later) := by
   induction earlier with
   | refl => rfl
   | cons event rest inductionHypothesis =>
       change
         Route.cons (WireCell.ofEvent event)
-            (ofAuthoredPath (rest.append later)) =
+            (ofProgramPath (rest.append later)) =
           Route.cons (WireCell.ofEvent event)
-            ((ofAuthoredPath rest).append (ofAuthoredPath later))
+            ((ofProgramPath rest).append (ofProgramPath later))
       rw [inductionHypothesis]
 
 end WireCellPath
@@ -223,15 +223,15 @@ private def program : Program :=
     routes := [routeA, routeB]
     routeRules := [transportRule] }
 
-private def firstEvent : AuthoredEvent program
+private def firstEvent : ProgramEvent program
     (routeCall "shared" input) (routeCall "shared" middle) :=
   .underRoute routeA localRule (by simp [program]) (by simp [program]) rfl
 
-private def secondEvent : AuthoredEvent program
+private def secondEvent : ProgramEvent program
     (routeCall "shared" middle) (inSpace targetB output) :=
   .applyRoute routeB transportRule (by simp [program]) (by simp [program]) rfl
 
-def authoredPath : AuthoredPath program
+def programPath : ProgramPath program
     (routeCall "shared" input) (inSpace targetB output) :=
   .cons firstEvent (.cons secondEvent (.refl _))
 
@@ -279,8 +279,8 @@ theorem exists_program_without_global_functional_elaboration :
 
 #print axioms elaborates_reflects_source
 #print axioms WireCell.nonempty_iff_event
-#print axioms WireCellPath.nonempty_iff_authoredPath
-#print axioms WireCellPath.ofAuthoredPath_append
+#print axioms WireCellPath.nonempty_iff_programPath
+#print axioms WireCellPath.ofProgramPath_append
 #print axioms AmbiguousIntermediateCanary.canonical_cells_do_not_strictly_join
 #print axioms AmbiguousIntermediateCanary.no_function_represents_all_elaborations
 #print axioms exists_program_without_global_functional_elaboration

@@ -135,7 +135,7 @@ theorem rhoParallelFront_sound
 partners and the unmatched parallel residue.  This lemma is deliberately
 about matcher evidence; it does not assume that successful execution is its
 own semantic justification. -/
-private theorem rhoComm_match_shape
+theorem rhoComm_match_shape
     {source : Pattern} {bindings : Bindings}
     (matched : bindings ∈ matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite source) :
     ∃ (elements : List Pattern) (termRest : Option String)
@@ -211,7 +211,7 @@ private theorem rhoComm_match_shape
 /-- The binding order produced by the relational matcher on a direct COMM
 redex. Lookup is order-insensitive, but recording the actual order lets the
 introduction theorem consume matcher evidence directly. -/
-private def rhoCommMatchedBindings
+def rhoCommMatchedBindings
     (channel body payload : Pattern) (rest : List Pattern) : Bindings :=
   [("q", payload),
    ("rest", .collection .hashBag rest none),
@@ -220,7 +220,7 @@ private def rhoCommMatchedBindings
 
 /-- A direct COMM redex is accepted by the matcher compiled from the authored
 rule. -/
-private theorem rhoComm_match_exact
+theorem rhoComm_match_exact
     (channel body payload : Pattern) (rest : List Pattern) :
     rhoCommMatchedBindings channel body payload rest ∈
       matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite
@@ -252,7 +252,7 @@ private theorem rhoComm_match_exact
 
 /-- The matcher's concrete binding order has the same compiled contractum as
 the presentation-facing binding package. -/
-private theorem rhoComm_apply_exact
+theorem rhoComm_apply_exact
     (channel body payload : Pattern) (rest : List Pattern) :
     applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommMatchedBindings channel body payload rest) =
@@ -296,7 +296,7 @@ private theorem output_channel_congr
       exact StructuralCongruence.refl payload
 
 /-- Inversion of the derived rho process judgment at an input constructor. -/
-private theorem rho_input_wellSorted_inv
+theorem rho_input_wellSorted_inv
     {free : FreeSortContext} {bound : List String}
     {channel body : Pattern} {binder : Option String}
     (typed : ProcWellSorted rhoReflectivePresentation free bound
@@ -313,7 +313,7 @@ private theorem rho_input_wellSorted_inv
   exact ⟨rfl, channelTyped, bodyTyped⟩
 
 /-- Inversion of the derived rho process judgment at an output constructor. -/
-private theorem rho_output_wellSorted_inv
+theorem rho_output_wellSorted_inv
     {free : FreeSortContext} {bound : List String}
     {channel payload : Pattern}
     (typed : ProcWellSorted rhoReflectivePresentation free bound
@@ -448,11 +448,11 @@ theorem RhoStep.comm
 
 /-! ## Shape and meaning of an authored `ParCong` application -/
 
-private theorem rhoParCong_no_matchingPresentation :
+theorem rhoParCong_no_matchingPresentation :
     matchingPresentationForRule? rhoReflectionProfile rhoParCongRewrite = none := by
   decide +kernel
 
-private theorem rhoParCong_no_substitutionPresentation :
+theorem rhoParCong_no_substitutionPresentation :
     substitutionPresentationForRule? rhoReflectionProfile rhoParCongRewrite = none := by
   decide +kernel
 
@@ -484,7 +484,7 @@ private theorem rhoParCong_match_shape
 
 /-- The front-position instance of `ParCong` is accepted by its ordinary
 structural matcher. -/
-private theorem rhoParCong_match_exact (process : Pattern) (rest : List Pattern) :
+theorem rhoParCong_match_exact (process : Pattern) (rest : List Pattern) :
     [("rest", .collection .hashBag rest none), ("S", process)] ∈
       matchPatternForRuleUsing rhoReflectionProfile rhoParCongRewrite
         (.collection .hashBag (process :: rest) none) := by
@@ -935,7 +935,7 @@ private theorem rhoParCong_no_match_underSet :
     matchPatternForRuleUsing rhoReflectionProfile rhoParCongRewrite commUnderSet = [] := by
   decide +kernel
 
-private theorem rhoCalc_rewrites :
+theorem rhoCalc_rewrites :
     rhoCalc.rewrites = [rhoCommRewrite, rhoParCongRewrite] := rfl
 
 /-- Free Drop is inert at every contextual depth. -/

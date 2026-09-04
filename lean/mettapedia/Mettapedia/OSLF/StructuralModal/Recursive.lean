@@ -37,7 +37,7 @@ structure BranchDescription (Index : Type uIndex) where
 deriving Repr
 
 /-- A recursive spatial signature whose branches are witnessed constructors
-of one supplied language presentation. -/
+of one supplied language specification. -/
 structure Signature (Index : Type uIndex) where
   language : LanguageDef
   Branch : Type uBranch

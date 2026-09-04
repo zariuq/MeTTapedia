@@ -42,6 +42,7 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.HypercubeGSLTFunctor
 open Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
 open Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance
@@ -53,6 +54,7 @@ open Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance
 def pettaIdMorphism (s : PeTTaSpace) :
     ForwardMorphism (pettaSpaceToLangDef s) (pettaSpaceToLangDef s) where
   mapTerm := id
+  map_equiv := fun equivalent => equivalent
   forward_sim _ q hred := ⟨q, .single hred, rfl⟩
 
 /-! ## §2 Unit-Indexed Forward Fiber -/
@@ -70,16 +72,20 @@ theorem pettaForwardFiber_oslf (s : PeTTaSpace) :
     pettaOSLF s = langOSLF (pettaSpaceToLangDef s) "Expr" := rfl
 
 /-- ◇ in the PeTTa fiber = existence of a one-step successor. -/
-theorem pettaForwardFiber_diamond (s : PeTTaSpace) (φ : Pattern → Prop) (p : Pattern) :
+theorem pettaForwardFiber_diamond (s : PeTTaSpace)
+    (φ : EquationPredicate (langGSLT (pettaSpaceToLangDef s)))
+    (p : Pattern) :
     langDiamond (pettaSpaceToLangDef s) φ p ↔
-    ∃ q, langReduces (pettaSpaceToLangDef s) p q ∧ φ q :=
-  langDiamond_spec (pettaSpaceToLangDef s) φ p
+    ∃ q, langSemanticReduces (pettaSpaceToLangDef s) p q ∧ φ.1 q :=
+  pettaDiamond_spec s φ p
 
 /-- □ in the PeTTa fiber = all predecessors satisfy φ. -/
-theorem pettaForwardFiber_box (s : PeTTaSpace) (φ : Pattern → Prop) (p : Pattern) :
+theorem pettaForwardFiber_box (s : PeTTaSpace)
+    (φ : EquationPredicate (langGSLT (pettaSpaceToLangDef s)))
+    (p : Pattern) :
     langBox (pettaSpaceToLangDef s) φ p ↔
-    ∀ q, langReduces (pettaSpaceToLangDef s) q p → φ q :=
-  langBox_spec (pettaSpaceToLangDef s) φ p
+    ∀ q, langSemanticReduces (pettaSpaceToLangDef s) q p → φ.1 q :=
+  pettaBox_spec s φ p
 
 /-- The identity morphism maps terms to themselves. -/
 @[simp]

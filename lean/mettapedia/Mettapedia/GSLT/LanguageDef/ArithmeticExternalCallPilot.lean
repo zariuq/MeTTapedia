@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.ArithmeticExtension
-import Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting
+import Mettapedia.GSLT.LanguageDef.GSLTHosting
 
 /-!
 # Arithmetic GSLT to external-call-machine pilot
@@ -53,7 +53,7 @@ open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.Ultrainfinite
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.NIKObservedRefinement
-open Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting
+open Mettapedia.GSLT.LanguageDef.GSLTHosting
 open Mettapedia.GSLT.LanguageDef.ArithmeticExtension.ExactInteger
 
 /-! ## Shared-core fingerprints

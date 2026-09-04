@@ -1,0 +1,6 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryAlignedPlanStopApex
+
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+
+#print axioms rho_alignedViewsPlanStopApexInDomain
+#print axioms rho_alignedViewsPlanStopApexInDomain_allColors

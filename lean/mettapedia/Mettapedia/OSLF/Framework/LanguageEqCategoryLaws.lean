@@ -10,6 +10,8 @@ namespace Mettapedia.OSLF.Framework.LanguageEqCategoryLaws
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.LanguageEqCategory
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-- Category laws bundled over `HomEq`. -/
 structure EqCategoryLaws where
@@ -24,12 +26,12 @@ structure EqCategoryLaws where
       (f : Hom L₁ L₂) (g : Hom L₂ L₃) (h : Hom L₃ L₄),
       HomEq (comp (comp f g) h) (comp f (comp g h))
   mapPred_id :
-    ∀ (L : Obj) (ψ : Pattern → Prop),
+    ∀ (L : Obj) (ψ : EquationPredicate (langGSLT L)),
       mapPred (id L) ψ = ψ
   mapPred_comp :
     ∀ {L₁ L₂ L₃ : Obj}
       (f : Hom L₁ L₂) (g : Hom L₂ L₃)
-      (ψ : Pattern → Prop),
+      (ψ : EquationPredicate (langGSLT L₃)),
       mapPred (comp f g) ψ = mapPred f (mapPred g ψ)
 
 /-- Canonical bundled laws for `LanguageEqCategory`. -/
@@ -71,7 +73,7 @@ theorem assoc_holds
 
 /-- Access theorem: identity law for predicate pullback. -/
 theorem mapPred_id_holds
-    (L : Obj) (ψ : Pattern → Prop) :
+    (L : Obj) (ψ : EquationPredicate (langGSLT L)) :
     mapPred (id L) ψ = ψ :=
   languageEqCategoryLaws.mapPred_id L ψ
 
@@ -79,7 +81,7 @@ theorem mapPred_id_holds
 theorem mapPred_comp_holds
     {L₁ L₂ L₃ : Obj}
     (f : Hom L₁ L₂) (g : Hom L₂ L₃)
-    (ψ : Pattern → Prop) :
+    (ψ : EquationPredicate (langGSLT L₃)) :
     mapPred (comp f g) ψ = mapPred f (mapPred g ψ) :=
   languageEqCategoryLaws.mapPred_comp f g ψ
 

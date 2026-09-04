@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.HE.BindingComposition
+import Mettapedia.Languages.MeTTa.HE.DeclMatchSpec
 import Mettapedia.Languages.ProcessCalculi.MORK.Space
 
 /-!
@@ -28,6 +29,8 @@ namespace Mettapedia.Languages.MeTTa.HE.NativeGroundFastPath
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 open Mettapedia.Languages.MeTTa.HE (Bindings simpleMatch matchAtoms)
+open Mettapedia.Languages.MeTTa.HE.DeclMatchSpec
+  (MatchRel MatchListAccRel matchAtoms_sound matchAtoms_complete)
 open Mettapedia.Languages.ProcessCalculi.MORK (isGroundAtom)
 
 /-! ## §1: Ground-Ground Matching = Equality (Leaf Cases)
@@ -334,6 +337,146 @@ theorem mergeBindings_empty_empty (n : Nat) :
     mergeBindings Bindings.empty Bindings.empty (n + 1) = [Bindings.empty] := by
   simp [mergeBindings, Bindings.empty]
 
+/-! ## §3a: Shared ground occurrence law
+
+The native shortcut does not claim that pointer identity is structural
+equality for open terms.  Its semantic premise is narrower: a shared
+variable-free occurrence denotes the same ground atom on both sides.  The
+faithful declarative matcher therefore has an empty-binding witness; the
+operational completeness theorem then supplies a finite executable run.
+-/
+
+private theorem sizeOf_mem_lt_expression
+    (a : Atom) (es : List Atom) (ha : a ∈ es) :
+    sizeOf a < sizeOf (Atom.expression es) := by
+  rw [Atom.expression.sizeOf_spec]
+  exact Nat.lt_of_lt_of_le
+    (List.sizeOf_lt_of_mem ha) (Nat.le_add_left _ _)
+
+/-- A ground atom has an empty-binding self-match in the faithful HE relation.
+    This is the semantic law behind shared-occurrence reflexivity; allocation
+    identity is only a constant-time certificate that both inputs are this
+    same atom. -/
+private noncomputable def groundMatchRelSelfAux :
+    (a : Atom) → isGroundAtom a = true →
+      MatchRel a a Bindings.empty :=
+  WellFounded.fix (measure (sizeOf (α := Atom))).wf fun a ih hg => by
+    match a with
+    | .var _ =>
+        simp [isGroundAtom] at hg
+    | .symbol s =>
+        exact MatchRel.symSym s
+    | .grounded g =>
+        exact MatchRel.grounded g
+    | .expression es =>
+        apply MatchRel.expr
+        have hlist : ∀ (xs : List Atom),
+            (∀ x, x ∈ xs → x ∈ es) →
+            MatchListAccRel xs xs Bindings.empty Bindings.empty := by
+          intro xs
+          induction xs with
+          | nil =>
+              intro _
+              exact MatchListAccRel.nil
+          | cons x xs ihxs =>
+              intro hsub
+              have hxmem : x ∈ es := hsub x (by simp)
+              have hxground : isGroundAtom x = true :=
+                isGroundList_mem es hg x hxmem
+              have hxrel : MatchRel x x Bindings.empty :=
+                ih x (sizeOf_mem_lt_expression x es hxmem) hxground
+              have hmerge : Bindings.empty ∈
+                  mergeBindings Bindings.empty Bindings.empty 1 := by
+                simp [mergeBindings, Bindings.empty]
+              exact MatchListAccRel.cons hxrel hmerge
+                (ihxs (fun y hy => hsub y (by simp [hy])))
+        exact hlist es (fun _ h => h)
+
+theorem ground_matchRel_self (a : Atom)
+    (hg : isGroundAtom a = true) :
+    MatchRel a a Bindings.empty :=
+  groundMatchRelSelfAux a hg
+
+/-- Ground self-matching cannot manufacture a binding: every faithful
+    relational witness is empty. -/
+private noncomputable def groundMatchRelSelfUniqueAux :
+    (a : Atom) → isGroundAtom a = true →
+      ∀ {b}, MatchRel a a b → b = Bindings.empty :=
+  WellFounded.fix (measure (sizeOf (α := Atom))).wf fun a ih hg => by
+    match a with
+    | .var _ =>
+        simp [isGroundAtom] at hg
+    | .symbol _ =>
+        intro b h
+        cases h
+        rfl
+    | .grounded _ =>
+        intro b h
+        cases h
+        rfl
+    | .expression es =>
+        intro b h
+        cases h with
+        | expr hlist =>
+            have hlistUnique : ∀ (xs : List Atom),
+                (∀ x, x ∈ xs → x ∈ es) →
+                ∀ {out},
+                  MatchListAccRel xs xs Bindings.empty out →
+                  out = Bindings.empty := by
+              intro xs
+              induction xs with
+              | nil =>
+                  intro _ out hnil
+                  cases hnil
+                  rfl
+              | cons x xs ihxs =>
+                  intro hsub out hcons
+                  cases hcons with
+                  | @cons _ _ _ _ _ bHead bNext _ fuel hHead hMerge hTail =>
+                      have hxmem : x ∈ es := hsub x (by simp)
+                      have hxground : isGroundAtom x = true :=
+                        isGroundList_mem es hg x hxmem
+                      have hbHead : bHead = Bindings.empty :=
+                        ih x (sizeOf_mem_lt_expression x es hxmem)
+                          hxground hHead
+                      subst bHead
+                      have hbNext : bNext = Bindings.empty := by
+                        cases fuel with
+                        | zero => simp [mergeBindings] at hMerge
+                        | succ n =>
+                            simpa [mergeBindings_empty_empty] using hMerge
+                      subst bNext
+                      exact ihxs
+                        (fun y hy => hsub y (by simp [hy])) hTail
+            exact hlistUnique es (fun _ hmem => hmem) hlist
+
+theorem ground_matchRel_self_unique (a : Atom)
+    (hg : isGroundAtom a = true) {b : Bindings}
+    (h : MatchRel a a b) :
+    b = Bindings.empty :=
+  groundMatchRelSelfUniqueAux a hg h
+
+/-- Every executable result of a ground self-match is empty.  This is the
+    no-binding/no-extra-answer half of the shortcut contract. -/
+theorem ground_matchAtoms_self_only_empty (a : Atom)
+    (hg : isGroundAtom a = true) {fuel : Nat} {b : Bindings}
+    (h : b ∈ matchAtoms a a fuel) :
+    b = Bindings.empty :=
+  ground_matchRel_self_unique a hg (matchAtoms_sound h)
+
+/-- The executable HE matcher realizes the same empty-binding ground
+    self-match at some finite fuel. -/
+theorem ground_matchAtoms_self_complete (a : Atom)
+    (hg : isGroundAtom a = true) :
+    ∃ fuel, Bindings.empty ∈ matchAtoms a a fuel :=
+  matchAtoms_complete (ground_matchRel_self a hg)
+
+/-- Negative boundary: an expression containing a variable is not admitted by
+    the shared-ground law. -/
+theorem open_expression_not_ground (v : String) :
+    isGroundAtom (.expression [.var v]) = false := by
+  simp [isGroundAtom, isGroundAtom.isGroundList]
+
 /-- **matchAtoms on two equal ground LEAF atoms returns [Bindings.empty].**
     Symbols and grounded values: matchAtoms succeeds with empty bindings. -/
 theorem matchAtoms_ground_leaf_self (a : Atom) (n : Nat)
@@ -370,11 +513,10 @@ theorem matchAtomsList_ground_self
     exact ihps (fun q hq => hgs q (List.mem_cons_of_mem _ hq)) (fuel - 1)
       (by simp [List.length] at hfuel; omega)
 
--- matchAtoms_ground_self_step is trivially `ih (n+1) a hg` given the
--- universal ih. The real work is in matchAtomsList_ground_self above,
--- which proves the expression recursion case. Together with the
--- leaf self-match theorems, these give the FULL ground self-match result
--- at sufficient fuel — what a reviewer needs to see.
+-- `matchAtomsList_ground_self` isolates the expression recursion needed by a
+-- future fixed-fuel exactness theorem.  The relation/completeness result above
+-- currently establishes a finite successful run, not uniqueness of the
+-- executable result list at a specified fuel.
 
 /-! ## §4: Open-Open Separation
 
@@ -478,6 +620,11 @@ theorem dispatch3_open_open (pattern target : Atom) (b : Bindings) (fuel : Nat)
 | `open_ground_matchAtoms_symbol` | matchAtoms = simpleMatch for symbol vs ground | leaf dispatch |
 | `open_ground_matchAtoms_var_succeeds` | Variable vs ground → simpleMatch succeeds | leaf dispatch |
 | `open_ground_matchAtoms_grounded` | matchAtoms = simpleMatch for grounded vs ground | leaf dispatch |
+| `ground_matchRel_self` | Ground self-match has an empty-binding relational witness | faithful relation |
+| `ground_matchRel_self_unique` | Every ground self-match witness is empty | no binding invention |
+| `ground_matchAtoms_self_only_empty` | Every executable result is empty | operational soundness |
+| `ground_matchAtoms_self_complete` | Some finite executable run realizes that witness | executable completeness |
+| `open_expression_not_ground` | Variable-bearing expressions are excluded | negative boundary |
 | `open_open_simpleMatch_ne_matchAtoms` | assign ≠ equality: must use matchAtoms | full path |
 | `ground_not_var` | Ground atoms can't loop | skip loop check |
 | `dispatch3_ground_symbol` | Dispatch agrees for ground symbols | dispatch tree |
@@ -485,6 +632,13 @@ theorem dispatch3_open_open (pattern target : Atom) (b : Bindings) (fuel : Nat)
 | `dispatch3_open_open` | Dispatch = matchAtoms for open+open | dispatch tree |
 
 **Honest gaps:**
+- Soundness proves every executable ground-self result is empty, and
+  completeness supplies such a result at some fuel.  This does not yet state
+  the least sufficient fuel or an exact result list at every larger fuel.
+- The Lean atom model does not prove CeTTa's allocation representation.  The C
+  shortcut separately requires immutable, arena-closed hash-cons publication;
+  local cycles, open terms, and distinct non-reflexive grounded values remain
+  runtime refinement canaries.
 - matchAtoms/simpleMatch equivalence proved for LEAF cases (symbol, grounded, var)
   but NOT for the expression case (needs matchAtomsList vs simpleMatchList structural theorem).
 - `groundDispatch3` open-open branch drops the seed `b` (real C merges via `bindings_clone_merge`).

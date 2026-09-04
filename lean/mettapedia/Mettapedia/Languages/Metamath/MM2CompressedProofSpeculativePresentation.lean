@@ -102,6 +102,33 @@ theorem transformCompressedVerifierPresentation?_sourceRules
             compressedSpeculativeLookupProfile compressedSpeculativeLookupSelection
             sourceRules selected selectedBuilt
 
+/-- The transformed presentation's remembered opaque rule is the exact source
+occurrence selected by the authenticated positional compiler. -/
+theorem transformCompressedVerifierPresentation?_sourceOpaqueRule
+    {sourceRules sourceStaticRows : List Atom}
+    {output : CompiledPresentation}
+    (built : transformCompressedVerifierPresentation?
+      sourceRules sourceStaticRows = some output) :
+    sourceRules[compressedSpeculativeLookupSelection.opaquePosition]? =
+      some output.selected.artifact.sourceOpaqueRule := by
+  rw [transformCompressedVerifierPresentation?] at built
+  obtain ⟨selected, selectedBuilt, built⟩ :=
+    Option.bind_eq_some_iff.mp built
+  dsimp only at built
+  split at built
+  · simp at built
+  · split at built
+    · simp at built
+    · split at built
+      · simp at built
+      · obtain ⟨retainedRows, _rowsBuilt, built⟩ :=
+          Option.bind_eq_some_iff.mp built
+        cases built
+        exact
+          Mettapedia.Languages.ProcessCalculi.MORK.SpeculativeLookupRuleSurface.buildSelectedStrict?_sourceOpaqueRule
+            compressedSpeculativeLookupProfile compressedSpeculativeLookupSelection
+            sourceRules selected selectedBuilt
+
 /-- A successful presentation transform preserves the supplied rule
 occurrences and adds exactly the two derived direct-handler occurrences. -/
 theorem transformCompressedVerifierPresentation?_targetRules_length
@@ -231,6 +258,7 @@ theorem missing_terminal_capture_is_rejected :
 
 #print axioms baseCompiledPresentation_sourceRules
 #print axioms transformCompressedVerifierPresentation?_sourceRules
+#print axioms transformCompressedVerifierPresentation?_sourceOpaqueRule
 #print axioms transformCompressedVerifierPresentation?_targetRules_length
 #print axioms transformCompressedVerifierPresentation?_base_exact
 #print axioms baseCompiledPresentation_targetRules

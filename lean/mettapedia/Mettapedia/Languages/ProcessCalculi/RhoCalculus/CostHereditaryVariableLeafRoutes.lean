@@ -78,14 +78,14 @@ theorem rho_costWhole_rule_category_of_unitWire
             (CostStaticColor.symbols rhoCIGSLT .base).constructor "PZero" := by
         simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
           rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
-          costBasePresentationSymbols]
+          costBaseLanguageDefSymbolMap]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
       simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
         rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
-        costBasePresentationSymbols]
+        costBaseLanguageDefSymbolMap]
   | wrapped =>
       have labelRendered :
           (rhoCIGSLT.materializeDeclaredCostConstructor

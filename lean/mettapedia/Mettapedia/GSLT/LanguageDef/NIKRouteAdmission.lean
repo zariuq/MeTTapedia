@@ -34,19 +34,20 @@ open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.LanguageDef.GSLTIL.RouteEquipment
 
-universe uRevision uDependency uValue uCost
+universe uTerm uRevision uDependency uValue uCost
 
 /-! ## Semantic operational refinements -/
 
 /-- A GSLT together with the semantic fibre relevant to one admission
 judgment. -/
 structure OperationalObject where
-  theory : GSLT
+  theory : GSLT.{uTerm}
   Meaning : theory.Term → Prop
 
 namespace OperationalObject
 
-def toAdmissionObject (object : OperationalObject) : AdmissionObject where
+def toAdmissionObject (object : OperationalObject.{uTerm}) :
+    AdmissionObject.{uTerm} where
   Carrier := object.theory.Term
   Meaning := object.Meaning
 
@@ -54,7 +55,8 @@ end OperationalObject
 
 /-- A direct realization that preserves equations, steps, and the selected
 semantic fibre.  It carries no checker or emitted certificate. -/
-structure Refinement (source target : OperationalObject) where
+structure Refinement
+    (source target : OperationalObject.{uTerm}) where
   realization : OperationalRealization source.theory target.theory
   preservesMeaning : ∀ value, source.Meaning value →
     target.Meaning (realization.mapTerm value)
@@ -62,12 +64,12 @@ structure Refinement (source target : OperationalObject) where
 namespace Refinement
 
 /-- Identity is admitted without changing execution or meaning. -/
-def id (object : OperationalObject) : Refinement object object where
+def id (object : OperationalObject.{uTerm}) : Refinement object object where
   realization := OperationalRealization.id object.theory
   preservesMeaning := fun _ meaningful => meaningful
 
 /-- Refinements compose in execution order. -/
-def comp {first middle last : OperationalObject}
+def comp {first middle last : OperationalObject.{uTerm}}
     (earlier : Refinement first middle) (later : Refinement middle last) :
     Refinement first last where
   realization := OperationalRealization.comp earlier.realization
@@ -77,23 +79,25 @@ def comp {first middle last : OperationalObject}
 
 /-- Forget operational structure only after constructing the common NIK
 admission arrow. -/
-def toAdmissionHom {source target : OperationalObject}
+def toAdmissionHom {source target : OperationalObject.{uTerm}}
     (refinement : Refinement source target) :
     AdmissionHom source.toAdmissionObject target.toAdmissionObject where
   run := refinement.realization.mapTerm
   preserves := refinement.preservesMeaning
 
-@[simp] theorem toAdmissionHom_run {source target : OperationalObject}
+@[simp] theorem toAdmissionHom_run
+    {source target : OperationalObject.{uTerm}}
     (refinement : Refinement source target) (value : source.theory.Term) :
     refinement.toAdmissionHom.run value = refinement.realization.mapTerm value :=
   rfl
 
-@[simp] theorem toAdmissionHom_id (object : OperationalObject) :
+@[simp] theorem toAdmissionHom_id (object : OperationalObject.{uTerm}) :
     (id object).toAdmissionHom = AdmissionHom.id object.toAdmissionObject := by
   ext
   rfl
 
-@[simp] theorem toAdmissionHom_comp {first middle last : OperationalObject}
+@[simp] theorem toAdmissionHom_comp
+    {first middle last : OperationalObject.{uTerm}}
     (earlier : Refinement first middle) (later : Refinement middle last) :
     (comp earlier later).toAdmissionHom =
       AdmissionHom.comp earlier.toAdmissionHom later.toAdmissionHom := by
@@ -102,7 +106,7 @@ def toAdmissionHom {source target : OperationalObject}
 
 /-- An exactly represented GSLT-IL route supplies a direct operational
 refinement once its selected meaning fibre is also preserved. -/
-def ofRepresentedRoute {source target : OperationalObject}
+def ofRepresentedRoute {source target : OperationalObject.{uTerm}}
     (route : RepresentedOperationalRoute source.theory target.theory)
     (preservesMeaning : ∀ value, source.Meaning value →
       target.Meaning (route.representation.map value)) :
@@ -159,21 +163,22 @@ end DependencySystem
 stored object contains the retained proof, not a checker invocation. -/
 structure AdmittedAt (dependencies : DependencySystem)
     (revision : dependencies.Revision)
-    (source target : OperationalObject) where
+    (source target : OperationalObject.{uTerm}) where
   refinement : Refinement source target
 
 namespace AdmittedAt
 
 /-- Identity admission at any revision. -/
 def id (dependencies : DependencySystem)
-    (revision : dependencies.Revision) (object : OperationalObject) :
+    (revision : dependencies.Revision)
+    (object : OperationalObject.{uTerm}) :
     AdmittedAt dependencies revision object object where
   refinement := Refinement.id object
 
 /-- Admissions at the same dependency revision compose. -/
 def comp {dependencies : DependencySystem}
     {revision : dependencies.Revision}
-    {first middle last : OperationalObject}
+    {first middle last : OperationalObject.{uTerm}}
     (earlier : AdmittedAt dependencies revision first middle)
     (later : AdmittedAt dependencies revision middle last) :
     AdmittedAt dependencies revision first last where
@@ -184,7 +189,7 @@ agreement of the selected dependency view, while the proof is absent from
 the execution function below. -/
 structure Active {dependencies : DependencySystem}
     {admittedRevision : dependencies.Revision}
-    {source target : OperationalObject}
+    {source target : OperationalObject.{uTerm}}
     (admission : AdmittedAt dependencies admittedRevision source target)
     (currentRevision : dependencies.Revision) : Prop where
   current : dependencies.SameDependencies admittedRevision currentRevision
@@ -192,7 +197,7 @@ structure Active {dependencies : DependencySystem}
 /-- Activate stored admission after proving exact dependency currentness. -/
 def activate {dependencies : DependencySystem}
     {admittedRevision currentRevision : dependencies.Revision}
-    {source target : OperationalObject}
+    {source target : OperationalObject.{uTerm}}
     (admission : AdmittedAt dependencies admittedRevision source target)
     (current : dependencies.SameDependencies admittedRevision currentRevision) :
     admission.Active currentRevision :=
@@ -202,7 +207,7 @@ def activate {dependencies : DependencySystem}
 artifact; the hot operation is only the retained direct function. -/
 def Active.run {dependencies : DependencySystem}
     {admittedRevision currentRevision : dependencies.Revision}
-    {source target : OperationalObject}
+    {source target : OperationalObject.{uTerm}}
     {admission : AdmittedAt dependencies admittedRevision source target}
     (_active : admission.Active currentRevision) :
     source.theory.Term → target.theory.Term :=
@@ -211,7 +216,7 @@ def Active.run {dependencies : DependencySystem}
 @[simp] theorem Active.run_eq_refinement
     {dependencies : DependencySystem}
     {admittedRevision currentRevision : dependencies.Revision}
-    {source target : OperationalObject}
+    {source target : OperationalObject.{uTerm}}
     {admission : AdmittedAt dependencies admittedRevision source target}
     (active : admission.Active currentRevision) :
     active.run = admission.refinement.realization.mapTerm :=
@@ -222,7 +227,7 @@ new preservation proof is generated during activation. -/
 def Active.toAdmissionHom
     {dependencies : DependencySystem}
     {admittedRevision currentRevision : dependencies.Revision}
-    {source target : OperationalObject}
+    {source target : OperationalObject.{uTerm}}
     {admission : AdmittedAt dependencies admittedRevision source target}
     (_active : admission.Active currentRevision) :
     AdmissionHom source.toAdmissionObject target.toAdmissionObject :=
@@ -233,7 +238,7 @@ property of the retained refinement; `run` itself remains only the direct map. -
 theorem Active.preservesMeaning
     {dependencies : DependencySystem}
     {admittedRevision currentRevision : dependencies.Revision}
-    {source target : OperationalObject}
+    {source target : OperationalObject.{uTerm}}
     {admission : AdmittedAt dependencies admittedRevision source target}
     (active : admission.Active currentRevision)
     (value : source.theory.Term) (meaningful : source.Meaning value) :
@@ -250,7 +255,7 @@ construct one. -/
 structure ProfitabilityReceipt
     {dependencies : DependencySystem}
     {revision : dependencies.Revision}
-    {source target : OperationalObject}
+    {source target : OperationalObject.{uTerm}}
     (admission : AdmittedAt dependencies revision source target)
     (Cost : Type uCost) [Preorder Cost]
     (sourceCost : source.theory.Term → Cost)
@@ -359,6 +364,37 @@ theorem no_negation_refinement :
 
 end Canary
 
+/-! ## Universe-polymorphic controls -/
+
+namespace UniverseCanary
+
+/-- A nontrivial semantic fibre whose operational terms live strictly above
+universe zero. -/
+def liftedTrueObject : OperationalObject.{1} where
+  theory := GSLT.discrete (ULift.{1, 0} Bool)
+  Meaning := fun value => value.down = true
+
+/-- Identity refinement is available at the higher universe. -/
+def liftedIdentity : Refinement liftedTrueObject liftedTrueObject :=
+  Refinement.id liftedTrueObject
+
+theorem lifted_identity_runs_true :
+    liftedIdentity.realization.mapTerm (ULift.up true) = ULift.up true :=
+  rfl
+
+/-- The higher-universe generalization retains semantic rejection; it is not
+merely a vacuous inhabitant. -/
+theorem no_lifted_negation_refinement :
+    ¬ ∃ refinement : Refinement liftedTrueObject liftedTrueObject,
+      refinement.realization.mapTerm =
+        (fun value : ULift.{1, 0} Bool => ULift.up (!value.down)) := by
+  rintro ⟨refinement, mapEqual⟩
+  have preserved := refinement.preservesMeaning (ULift.up true) rfl
+  rw [mapEqual] at preserved
+  simp [liftedTrueObject] at preserved
+
+end UniverseCanary
+
 #print axioms Refinement.toAdmissionHom_comp
 #print axioms DependencySystem.sameDependencies_trans
 #print axioms AdmittedAt.Active.run_eq_refinement
@@ -367,5 +403,7 @@ end Canary
 #print axioms Canary.admitted_but_not_profitable_for_growth
 #print axioms Canary.no_activation_after_relevant_change
 #print axioms Canary.no_negation_refinement
+#print axioms UniverseCanary.lifted_identity_runs_true
+#print axioms UniverseCanary.no_lifted_negation_refinement
 
 end Mettapedia.GSLT.LanguageDef.NIKRouteAdmission

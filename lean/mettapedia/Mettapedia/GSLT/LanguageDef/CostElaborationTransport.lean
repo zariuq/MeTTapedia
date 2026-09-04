@@ -19,7 +19,7 @@ open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.ConstructorCategory
 
-namespace EquationSemantics.AuthoredEquationInstanceWitness
+namespace EquationSemantics.DeclaredEquationInstanceWitness
 
 /-- Map one exact authored equation occurrence into either generated static
 Cost copy.  The selected source declaration, orientation, and bindings remain
@@ -27,9 +27,9 @@ computational data; this is stronger than merely proving that some generated
 equation instance exists between the mapped endpoints. -/
 def mapCostStatic (source : CIGSLT) (color : CostStaticColor)
     {input output : Pattern}
-    (witness : AuthoredEquationInstanceWitness defaultBasePremises
+    (witness : DeclaredEquationInstanceWitness defaultBasePremises
       source.theory.presentation.presentation.language input output) :
-    AuthoredEquationInstanceWitness defaultBasePremises
+    DeclaredEquationInstanceWitness defaultBasePremises
       source.costWholeLanguage
       (mapPattern (color.symbols source) input)
       (mapPattern (color.symbols source) output) := by
@@ -133,13 +133,13 @@ def mapCostStatic (source : CIGSLT) (color : CostStaticColor)
 proposition-valued Cost embedding of the same source occurrence. -/
 theorem erase_mapCostStatic (source : CIGSLT) (color : CostStaticColor)
     {input output : Pattern}
-    (witness : AuthoredEquationInstanceWitness defaultBasePremises
+    (witness : DeclaredEquationInstanceWitness defaultBasePremises
       source.theory.presentation.presentation.language input output) :
     (witness.mapCostStatic source color).erase =
       equationInstance_mapCostStatic source color witness.erase :=
   Subsingleton.elim _ _
 
-end EquationSemantics.AuthoredEquationInstanceWitness
+end EquationSemantics.DeclaredEquationInstanceWitness
 
 namespace ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
 
@@ -1043,14 +1043,14 @@ inductive IntroducedByGenerator {source : CIGSLT} :
           source.theory.presentation.presentation.language left right →
         CostStaticChoiceOccurrence source → Prop where
   | equation (context : OneHoleContext) {redex contractum : Pattern}
-      (instanceWitness : EquationSemantics.AuthoredEquationInstanceWitness
+      (instanceWitness : EquationSemantics.DeclaredEquationInstanceWitness
         defaultBasePremises source.theory.presentation.presentation.language
         redex contractum)
       {relative : OneHoleContext} {sourceLabel : String}
       {arguments : List Pattern}
       {constructor : source.DeclaredCostConstructor}
       (template :
-        EquationSemantics.AuthoredEquationInstanceWitness.TargetApplicationTemplate
+        EquationSemantics.DeclaredEquationInstanceWitness.TargetApplicationTemplate
         instanceWitness relative sourceLabel arguments) :
       IntroducedByGenerator
         (.core (EquationSemantics.AuthoredGeneratorWitness.equation context

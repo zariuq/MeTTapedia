@@ -30,7 +30,7 @@ def rhoCoverageZeroFvarPlan :
   .fvar (by
     simp [rhoCutOrderFree, FreeTypeContext.ofList, mapTypeExpr,
       CostStaticColor.symbols, costBaseStaticSymbols,
-      costBasePresentationSymbols])
+      costBaseLanguageDefSymbolMap])
 
 /-- The zero name as a base static region. -/
 def rhoCoverageZeroNameFvarPlan (outer : OneHoleContext) :
@@ -41,7 +41,7 @@ def rhoCoverageZeroNameFvarPlan (outer : OneHoleContext) :
   .fvar (by
     simp [rhoCutOrderFree, FreeTypeContext.ofList, mapTypeExpr,
       CostStaticColor.symbols, costBaseStaticSymbols,
-      costBasePresentationSymbols])
+      costBaseLanguageDefSymbolMap])
 
 /-- Base drop cell over the zero name. -/
 def rhoCoverageZeroDropPlan (outer : OneHoleContext) :

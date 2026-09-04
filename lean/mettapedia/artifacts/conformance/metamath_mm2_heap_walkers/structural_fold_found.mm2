@@ -1,0 +1,50 @@
+; A structural fold consumes one unary query constructor and one heap cell at
+; each step.  The heap remains a single nested value rather than a row set.
+(exec (00 fold-hit)
+  (, (fold-lookup $owner Z (H (cell $kind $value) $tail)))
+  (O (- (fold-lookup $owner Z (H (cell $kind $value) $tail)))
+     (+ (heap-result fold found $owner Z $kind $value))))
+
+(exec (01 fold-missing)
+  (, (fold-lookup $owner $query E))
+  (O (- (fold-lookup $owner $query E))
+     (+ (heap-result fold missing $owner $query E))))
+
+(exec (02 fold-step)
+  (, (fold-lookup $owner (S $query) (H $cell $tail))
+     (fold-handler hit $hit-rule)
+     (fold-handler missing $missing-rule)
+     (fold-handler step $step-rule))
+  (O (- (fold-lookup $owner (S $query) (H $cell $tail)))
+     (+ (fold-lookup $owner $query $tail))
+     (+ $hit-rule)
+     (+ $missing-rule)
+     (+ $step-rule)))
+
+(fold-handler hit
+  (exec (00 fold-hit)
+    (, (fold-lookup $owner Z (H (cell $kind $value) $tail)))
+    (O (- (fold-lookup $owner Z (H (cell $kind $value) $tail)))
+       (+ (heap-result fold found $owner Z $kind $value)))))
+
+(fold-handler missing
+  (exec (01 fold-missing)
+    (, (fold-lookup $owner $query E))
+    (O (- (fold-lookup $owner $query E))
+       (+ (heap-result fold missing $owner $query E)))))
+
+(fold-handler step
+  (exec (02 fold-step)
+    (, (fold-lookup $owner (S $query) (H $cell $tail))
+       (fold-handler hit $hit-rule)
+       (fold-handler missing $missing-rule)
+       (fold-handler step $step-rule))
+    (O (- (fold-lookup $owner (S $query) (H $cell $tail)))
+       (+ (fold-lookup $owner $query $tail))
+       (+ $hit-rule)
+       (+ $missing-rule)
+       (+ $step-rule))))
+
+(fold-lookup heap-A (S Z)
+  (H (cell proof node-0)
+     (H (cell assertion ax-1) E)))

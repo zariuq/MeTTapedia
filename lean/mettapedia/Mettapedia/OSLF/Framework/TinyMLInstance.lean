@@ -83,6 +83,7 @@ open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Framework.ConstructorFibration
 open Mettapedia.OSLF.Framework.ModalEquivalence
@@ -311,13 +312,13 @@ theorem inject_is_reflecting :
 
 /-- Thunk typing action = ◇ (diamond).
     When `e : (Expr, φ)`, the typing rule gives `thunk(e) : (Val, ◇φ)`. -/
-theorem thunk_action_eq_diamond (φ : Pattern → Prop) :
+theorem thunk_action_eq_diamond (φ : EquationPredicate (langGSLT tinyML)) :
     typingAction tinyML "Expr" thunkArrow φ = langDiamond tinyML φ := by
   simp [typingAction, thunk_is_quoting, roleAction]
 
 /-- Inject typing action = □ (box).
     When `v : (Val, α)`, the typing rule gives `inject(v) : (Expr, □α)`. -/
-theorem inject_action_eq_box (α : Pattern → Prop) :
+theorem inject_action_eq_box (α : EquationPredicate (langGSLT tinyML)) :
     typingAction tinyML "Expr" injectArrow α = langBox tinyML α := by
   simp [typingAction, inject_is_reflecting, roleAction]
 
@@ -529,8 +530,8 @@ lift, using the package form of path-semantics witness transport.
 -/
 theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph
     {relEnv : RelationEnv}
-    {I_check : AtomCheck} {I_sem : AtomSem}
-    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {I_check : AtomCheck} {I_sem : EquationAtomSemUsing relEnv tinyML}
+    (h_atoms : ∀ a p, I_check a p = true → (I_sem a).1 p)
     {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
     (hSat : checkLangUsing relEnv tinyML I_check fuel p φf = .sat)
     (seed q : Pattern)
@@ -540,7 +541,7 @@ theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph
     (hNat :
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         tinyML tinyExpr seed
-        (sem (langReducesUsing relEnv tinyML) I_sem φf))
+        (langFormulaSemUsing relEnv tinyML I_sem φf).1)
     {P B D : CategoryTheory.Functor (Opposite (ConstructorObj tinyML)) (Type _)}
     (pi1 : P ⟶
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
@@ -557,10 +558,10 @@ theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
         tinyML tinyExpr).obj X)
     (hp : pathSem tinyML hArrow seed = p) :
-    let ψ := sem (langReducesUsing relEnv tinyML) I_sem φf
-    (langOSLF tinyML "Expr").satisfies (S := "Expr")
+    let ψ := langFormulaSemUsing relEnv tinyML I_sem φf
+    (langOSLFUsing relEnv tinyML "Expr").satisfies (S := "Expr")
       (pathSem tinyML hArrow seed) ψ
-    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ
+    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1
         (pathSem tinyML hArrow seed)
     ∧
       ((CategoryTheory.Subobject.map pi2).obj
@@ -568,22 +569,23 @@ theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               tinyML tinyExpr seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                tinyML tinyExpr seed q ψ hPkg)))
+                tinyML tinyExpr seed q ψ.1 hPkg)))
         =
       (CategoryTheory.Subobject.pullback g).obj
           ((CategoryTheory.Subobject.map f).obj
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               tinyML tinyExpr seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                tinyML tinyExpr seed q ψ hPkg))))
+                tinyML tinyExpr seed q ψ.1 hPkg))))
     ∧
       (langDiamondUsing relEnv tinyML
-        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ)) p ↔
+        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree
+          relEnv tinyML (by rfl) q
+          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1)) p ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj tinyML) relEnv tinyML).Edge.obj X,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -592,17 +594,18 @@ theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph
             Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u q =
               ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
                 (C := ConstructorObj tinyML) relEnv tinyML).target.app X e).down ∧
-            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ u) := by
-  let ψ : Pattern → Prop := sem (langReducesUsing relEnv tinyML) I_sem φf
+            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1 u) := by
+  let ψ : EquationPredicate (langGSLTUsing relEnv tinyML) :=
+    langFormulaSemUsing relEnv tinyML I_sem φf
   have hSatFiber :
-      (langOSLF tinyML "Expr").satisfies (S := "Expr")
+      (langOSLFUsing relEnv tinyML "Expr").satisfies (S := "Expr")
         (pathSem tinyML hArrow seed) ψ :=
     checkLangUsing_sat_sound_sort_fiber_mem_iff
       (relEnv := relEnv) (lang := tinyML) (procSort := "Expr")
       (I_check := I_check) (I_sem := I_sem)
       h_atoms hSat tinyExpr seed hNat hArrow hp
   have hClosedBase :
-      Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ
+      Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1
         (pathSem tinyML hArrow seed) :=
     Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred.base hSatFiber
   have hBCGraph :
@@ -611,22 +614,23 @@ theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               tinyML tinyExpr seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                tinyML tinyExpr seed q ψ hPkg)))
+                tinyML tinyExpr seed q ψ.1 hPkg)))
         =
       (CategoryTheory.Subobject.pullback g).obj
           ((CategoryTheory.Subobject.map f).obj
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               tinyML tinyExpr seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                tinyML tinyExpr seed q ψ hPkg))))
+                tinyML tinyExpr seed q ψ.1 hPkg))))
       ∧
       (langDiamondUsing relEnv tinyML
-        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ)) p ↔
+        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree
+          relEnv tinyML (by rfl) q
+          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1)) p ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj tinyML) relEnv tinyML).Edge.obj X,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -635,13 +639,17 @@ theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph
             Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u q =
               ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
                 (C := ConstructorObj tinyML) relEnv tinyML).target.app X e).down ∧
-            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ u) :=
-    Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
-      (lang := tinyML) (s := tinyExpr) (seed := seed) (q := q) (φ := ψ)
+            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1 u) := by
+    simpa [Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree] using
+      (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
+      (lang := tinyML) (s := tinyExpr) (seed := seed) (q := q) (φ := ψ.1)
       (hPkg := hPkg)
       (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
       (hpb := hpb) (hf := hf) (hpi2 := hpi2)
-      (relEnv := relEnv) (X := X) (p := p)
+      (relEnv := relEnv)
+      (hInvariant := equationInvariant_langGSLTUsing_of_equation_free
+        relEnv (by rfl) _)
+      (X := X) (p := p))
   exact ⟨hSatFiber, hClosedBase, hBCGraph.1, hBCGraph.2⟩
 
 /-- TinyML concrete package constructor from a named `liftEq` theorem. -/
@@ -663,8 +671,8 @@ theorem tinyML_commDiPathSemLiftPkg_of_liftEq
 /-- No-`hPkg` wrapper: consumes a named TinyML `liftEq` law directly. -/
 theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
     {relEnv : RelationEnv}
-    {I_check : AtomCheck} {I_sem : AtomSem}
-    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {I_check : AtomCheck} {I_sem : EquationAtomSemUsing relEnv tinyML}
+    (h_atoms : ∀ a p, I_check a p = true → (I_sem a).1 p)
     {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
     (hSat : checkLangUsing relEnv tinyML I_check fuel p φf = .sat)
     (seed q : Pattern)
@@ -678,7 +686,7 @@ theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
     (hNat :
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         tinyML tinyExpr seed
-        (sem (langReducesUsing relEnv tinyML) I_sem φf))
+        (langFormulaSemUsing relEnv tinyML I_sem φf).1)
     {P B D : CategoryTheory.Functor (Opposite (ConstructorObj tinyML)) (Type _)}
     (pi1 : P ⟶
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
@@ -695,10 +703,10 @@ theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
         tinyML tinyExpr).obj X)
     (hp : pathSem tinyML hArrow seed = p) :
-    let ψ := sem (langReducesUsing relEnv tinyML) I_sem φf
-    (langOSLF tinyML "Expr").satisfies (S := "Expr")
+    let ψ := langFormulaSemUsing relEnv tinyML I_sem φf
+    (langOSLFUsing relEnv tinyML "Expr").satisfies (S := "Expr")
       (pathSem tinyML hArrow seed) ψ
-    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ
+    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1
         (pathSem tinyML hArrow seed)
     ∧
       ((CategoryTheory.Subobject.map pi2).obj
@@ -706,9 +714,9 @@ theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               tinyML tinyExpr seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                tinyML tinyExpr seed q ψ
+                tinyML tinyExpr seed q ψ.1
                 (tinyML_commDiPathSemLiftPkg_of_liftEq seed q hLiftEq))))
         =
       (CategoryTheory.Subobject.pullback g).obj
@@ -716,14 +724,15 @@ theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               tinyML tinyExpr seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                tinyML tinyExpr seed q ψ
+                tinyML tinyExpr seed q ψ.1
                 (tinyML_commDiPathSemLiftPkg_of_liftEq seed q hLiftEq)))))
     ∧
       (langDiamondUsing relEnv tinyML
-        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ)) p ↔
+        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree
+          relEnv tinyML (by rfl) q
+          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1)) p ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj tinyML) relEnv tinyML).Edge.obj X,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -732,7 +741,7 @@ theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
             Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u q =
               ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
                 (C := ConstructorObj tinyML) relEnv tinyML).target.app X e).down ∧
-            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ u) := by
+            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred tinyML ψ.1 u) := by
   let hPkg :
       Mettapedia.OSLF.Framework.CategoryBridge.CommDiPathSemLiftPkg
         tinyML tinyExpr seed q :=

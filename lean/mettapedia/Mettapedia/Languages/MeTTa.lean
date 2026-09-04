@@ -7,6 +7,7 @@ import Mettapedia.Languages.MeTTa.MeTTaZeroUV
 import Mettapedia.Languages.MeTTa.MeTTaInteraction
 import Mettapedia.Languages.MeTTa.MeTTaInteractionBind
 import Mettapedia.Languages.MeTTa.MeTTaRevisionedQueryBindEval
+import Mettapedia.Languages.MeTTa.MeTTaRevisionedQueryBindEvalCollapse
 import Mettapedia.Languages.MeTTa.StigmergicSpace
 import Mettapedia.Languages.MeTTa.MatchAllContract
 import Mettapedia.Languages.MeTTa.MeTTaSupportIndexedABTWire
@@ -92,6 +93,17 @@ import Mettapedia.Languages.MeTTa.Prime.LanguageDefAdequacy
 import Mettapedia.Languages.MeTTa.Prime.UniversalName
 import Mettapedia.Languages.MeTTa.TypeTheory.StagedReflective.SuperpositionOccurrencePressure
 import Mettapedia.Languages.MeTTa.TypeTheory.MetalogicCriteria
+import Mettapedia.Languages.MeTTa.PrimePluralNIKSetCoreWaist
+import Mettapedia.Languages.MeTTa.PrimePluralNIKDependentPiWaist
+import Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist
+import Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist
+import Mettapedia.Languages.MeTTa.PrimePluralNIKGenerativeAtomlessGrounding
+import Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGroundAtlas
+import Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGrounding
+import Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist
+import Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGroundAtlas
+import Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGrounding
+import Mettapedia.Languages.MeTTa.PrimePluralNIKSetTypeUltrainfiniteWaist
 import Mettapedia.Languages.MeTTa.TypeTheory.ScopedIdentityStatus
 import Mettapedia.Languages.MeTTa.TypeTheory.ScopedIdentityAdmission
 import Mettapedia.Languages.MeTTa.TypeTheory.TypeTheoryGSLTBoundary
@@ -117,6 +129,10 @@ import Mettapedia.Languages.MeTTa.PrimeCellCausalNativeRefinement
 import Mettapedia.Languages.MeTTa.PrimeNativeContextRefinement
 import Mettapedia.Languages.MeTTa.PrimeScopedIntroduction
 import Mettapedia.Languages.MeTTa.FrontierAlgebra
+import Mettapedia.Languages.MeTTa.SubstitutionAlgebra
+import Mettapedia.Languages.MeTTa.BindingVersions
+import Mettapedia.Languages.MeTTa.SearchStateStack
+import Mettapedia.Languages.MeTTa.TermView
 import Mettapedia.Languages.MeTTa.SpaceExtensionality
 import Mettapedia.Languages.MeTTa.UltrainfiniteRetractionInstance
 import Mettapedia.Languages.MeTTa.UniversalObservers

@@ -40,7 +40,7 @@ namespace InteractivePresentation
 interacting-sort declaration. -/
 def interactingLangSort (presentation : InteractivePresentation) :
     LangSort presentation.presentation.language :=
-  authoredSortToLangSort presentation.presentation
+  declaredSortToLangSort presentation.presentation
     presentation.interactingSort
 
 /-- Closed semantic terms in the selected interacting fiber. -/
@@ -78,7 +78,7 @@ def presentedEquationSetoid
 setoid on the closed interacting fiber is exactly equality. -/
 theorem presentedEquationSetoid_iff_eq_of_no_generators
     (base : BasePremiseEvaluator) (presentation : InteractivePresentation)
-    (equationsEmpty : presentation.presentation.language.equations = [])
+    (equationFree : presentation.presentation.language.isEquationFree = true)
     (left right : presentation.Term) :
     (presentedEquationSetoid base presentation).r left right ↔
       left = right := by
@@ -88,7 +88,7 @@ theorem presentedEquationSetoid_iff_eq_of_no_generators
     | rel left right step =>
         apply Subtype.ext
         exact (EquationSemantics.equationEquiv_iff_eq_of_no_generators
-          equationsEmpty left.1 right.1).mp
+          equationFree left.1 right.1).mp
             (Relation.EqvGen.rel _ _ step)
     | refl term => rfl
     | symm left right relation inductionHypothesis =>

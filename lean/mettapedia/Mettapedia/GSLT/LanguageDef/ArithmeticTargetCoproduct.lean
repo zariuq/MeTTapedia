@@ -2,7 +2,7 @@ import Mettapedia.GSLT.LanguageDef.ExternalCallMachine
 import Mettapedia.GSLT.LanguageDef.RadixDigitLanguageDef
 import Mettapedia.GSLT.LanguageDef.CanonicalWire
 import Mettapedia.GSLT.LanguageDef.StructuralCoproductTyping
-import Mettapedia.GSLT.LanguageDef.StructuralPresentationCategory
+import Mettapedia.GSLT.LanguageDef.StructuralLanguageDefCategory
 import Mettapedia.GSLT.LanguageDef.StructuralCoproductOperational
 
 /-!
@@ -39,14 +39,14 @@ private theorem external_radix_disjoint :
   have listEquality := congrArg String.toList equality
   simp [tag] at listEquality
 
-def externalSymbols : PresentationSymbols where
+def externalSymbols : LanguageDefSymbolMap where
   sort := tag "E:"
   constructor := tag "E:"
   relation := tag "E:"
   equation := tag "E:"
   rewrite := tag "E:"
 
-def radixSymbols : PresentationSymbols where
+def radixSymbols : LanguageDefSymbolMap where
   sort := tag "R:"
   constructor := tag "R:"
   relation := tag "R:"
@@ -503,15 +503,16 @@ def compatibility :
     exact List.mem_append_right _
       (List.mem_map.mpr ⟨rewrite, membership, rfl⟩)
 
-def presentation : ValidatedLanguageDef := compatibility.presentation
+def validatedCombinedLanguage : ValidatedLanguageDef :=
+  compatibility.combinedLanguage
 
 set_option maxRecDepth 100000 in
 theorem wire_isSome :
-    (CanonicalWire.renderLanguage? presentation.language).isSome := by
+    (CanonicalWire.renderLanguage? validatedCombinedLanguage.language).isSome := by
   decide +kernel
 
 def wire : String :=
-  (CanonicalWire.renderLanguage? presentation.language).getD ""
+  (CanonicalWire.renderLanguage? validatedCombinedLanguage.language).getD ""
 
 theorem wire_nonempty : wire != "" := by decide +kernel
 
@@ -519,14 +520,15 @@ theorem wire_nonempty : wire != "" := by decide +kernel
 premise-aware contextual theorem is `Compatibility.left_rewriteAt_exact`; its
 inhabited arithmetic-target instances live in `ArithmeticTargetCoproductNTT`. -/
 theorem external_premiseFreeStep_exact (term : Pattern) :
-    rewriteStep presentation.language (mapPattern externalSymbols term) =
+    rewriteStep validatedCombinedLanguage.language
+        (mapPattern externalSymbols term) =
       (rewriteStep externalValidated.language term).map
         (mapPattern externalSymbols) :=
   compatibility.left_rewriteStep_exact term
 
 /-- Symmetric exact transport for the premise-free root executor. -/
 theorem radix_premiseFreeStep_exact (term : Pattern) :
-    rewriteStep presentation.language (mapPattern radixSymbols term) =
+    rewriteStep validatedCombinedLanguage.language (mapPattern radixSymbols term) =
       (rewriteStep radixValidated.language term).map
         (mapPattern radixSymbols) :=
   compatibility.right_rewriteStep_exact term
@@ -534,7 +536,8 @@ theorem radix_premiseFreeStep_exact (term : Pattern) :
 theorem external_typing_exact
     (free : WellSorted.FreeTypeContext) (bound : List TypeExpr)
     (term : Pattern) (expected : TypeExpr) :
-    WellSorted.checkHasType presentation.language (free.map externalSymbols)
+    WellSorted.checkHasType validatedCombinedLanguage.language
+        (free.map externalSymbols)
         (bound.map (mapTypeExpr externalSymbols))
         (mapPattern externalSymbols term) (mapTypeExpr externalSymbols expected) =
       WellSorted.checkHasType externalValidated.language free bound term expected :=
@@ -544,7 +547,8 @@ theorem external_typing_exact
 theorem radix_typing_exact
     (free : WellSorted.FreeTypeContext) (bound : List TypeExpr)
     (term : Pattern) (expected : TypeExpr) :
-    WellSorted.checkHasType presentation.language (free.map radixSymbols)
+    WellSorted.checkHasType validatedCombinedLanguage.language
+        (free.map radixSymbols)
         (bound.map (mapTypeExpr radixSymbols))
         (mapPattern radixSymbols term) (mapTypeExpr radixSymbols expected) =
       WellSorted.checkHasType radixValidated.language free bound term expected :=
@@ -552,7 +556,7 @@ theorem radix_typing_exact
     free bound term expected
 
 noncomputable def categoricalCoproduct :=
-  StructuralPresentationCategory.Coproduct.isColimit compatibility
+  StructuralLanguageDefCategory.Coproduct.isColimit compatibility
 
 #print axioms combinedLanguage_validate
 #print axioms wire_isSome

@@ -375,7 +375,7 @@ private theorem emptyParallel_typed
     · exact nextBaseParallelRule_params configuration
     · exact .nil [] _
   simpa [sourceSort, CostStaticColor.symbols, costBaseStaticSymbols,
-    costBasePresentationSymbols, costBaseConstructor] using typed
+    costBaseLanguageDefSymbolMap, costBaseConstructor] using typed
 
 private def emptyParallel
     (configuration : RhoCostLayerConfiguration) :
@@ -758,7 +758,7 @@ private theorem rhoBaseEmptyElaborationAt_normalizedHereditary_pattern
           CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
             emptyNode.thinning targetBoundEq]
         simp [rhoReflectivePresentation, CostStaticColor.symbols,
-          costBaseStaticSymbols, costBasePresentationSymbols, mapPattern,
+          costBaseStaticSymbols, costBaseLanguageDefSymbolMap, mapPattern,
           ReflectiveContextSupport.substituteAt]
   unfold CostRegionTree.normalizeHereditary
   calc
@@ -885,7 +885,7 @@ theorem rhoCostNormalizeOpenHereditary_baseEmptyRepresentative :
       rw [CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
         rhoBaseEmptyNode.thinning rfl]
       simp [rhoReflectivePresentation, CostStaticColor.symbols,
-        costBaseStaticSymbols, costBasePresentationSymbols, mapPattern,
+        costBaseStaticSymbols, costBaseLanguageDefSymbolMap, mapPattern,
         ReflectiveContextSupport.substituteAt]
 
 /-- A lawful selected first-layer executor has the required representative

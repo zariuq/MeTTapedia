@@ -171,7 +171,7 @@ noncomputable instance : CategoryTheory.Category FoundationRequest where
     · apply StructuralMorphism.ext
       simp [FoundationMorphism.comp, FoundationMorphism.id,
         StructuralMorphism.comp, StructuralMorphism.id,
-        PresentationSymbols.comp, PresentationSymbols.id]
+        LanguageDefSymbolMap.comp, LanguageDefSymbolMap.id]
     · apply Demand.ext
       simp [FoundationMorphism.comp, FoundationMorphism.id,
         Demand.map, Demand.append]
@@ -180,7 +180,7 @@ noncomputable instance : CategoryTheory.Category FoundationRequest where
     · apply StructuralMorphism.ext
       simp [FoundationMorphism.comp, FoundationMorphism.id,
         StructuralMorphism.comp, StructuralMorphism.id,
-        PresentationSymbols.comp, PresentationSymbols.id]
+        LanguageDefSymbolMap.comp, LanguageDefSymbolMap.id]
     · simp only [FoundationMorphism.comp, FoundationMorphism.id]
       rw [Demand.map_id, Demand.append_empty]
   assoc first second third := by
@@ -264,7 +264,7 @@ private def sourceDefinition : ValidatedLanguageDef :=
 private def targetDefinition : ValidatedLanguageDef :=
   ⟨targetLanguage, targetLanguage_valid⟩
 
-private def collapseSymbols : PresentationSymbols where
+private def collapseSymbols : LanguageDefSymbolMap where
   sort := fun _ => "selected-native-request:Merged"
   constructor := _root_.id
   relation := _root_.id

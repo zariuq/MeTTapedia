@@ -88,9 +88,10 @@ theorem request_step_completed_iff_pettaCmd
 /-- The exact completion reached by a run, represented as an OSLF native
 behavioral type. -/
 def completionPredicate (initial : EvalState) (request : Pattern)
-    (final : EvalState) (answers : Answers) : CoreOperationalTerm → Prop :=
-  gsltDiamond CoreOperationalGSLT
-    (fun candidate => candidate = .completed initial request final answers)
+    (final : EvalState) (answers : Answers) :
+    EquationPredicate CoreOperationalGSLT :=
+  (exactTargetNativeType (evaluationGSLT coreSource)
+    (.completed initial request final answers : CoreOperationalTerm)).pred
 
 /-- Package the exact-completion predicate with the sole operational sort. -/
 def completionNativeType (initial : EvalState) (request : Pattern)
@@ -105,8 +106,20 @@ theorem satisfies_completionNativeType_iff_coreDecl
     completionPredicate initial request final answers
         (.request initial request) ↔
       CoreDecl initial request final answers := by
-  rw [completionPredicate, gsltDiamond_singleton_iff_step,
-    request_step_completed_iff_coreDecl]
+  let sourceTerm : (evaluationGSLT coreSource).Term :=
+    .request initial request
+  let targetTerm : (evaluationGSLT coreSource).Term :=
+    .completed initial request final answers
+  have generated := satisfies_exactTargetNativeType_iff_step
+    (evaluationGSLT coreSource) sourceTerm targetTerm
+  have operational :
+      (evaluationGSLT coreSource).Step sourceTerm targetTerm ↔
+        CoreDecl initial request final answers := by
+    simpa [sourceTerm, targetTerm] using
+      (request_step_completed_iff_coreDecl initial request final answers)
+  change (gsltOSLF (evaluationGSLT coreSource)).satisfies sourceTerm
+      (exactTargetNativeType (evaluationGSLT coreSource) targetTerm).pred ↔ _
+  exact generated.trans operational
 
 /-- The command-semantics formulation of the same generated native type. -/
 theorem satisfies_completionNativeType_iff_pettaCmd

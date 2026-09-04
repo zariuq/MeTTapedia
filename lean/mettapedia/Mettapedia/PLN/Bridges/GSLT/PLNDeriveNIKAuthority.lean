@@ -331,8 +331,9 @@ theorem decideStep_iff_ntt (source target : Machine) :
     stepDecision.decideStep source target = true ↔
       (gsltOSLF deriveGSLT).satisfies source
         (exactTargetNativeType deriveGSLT target).pred := by
-  rw [stepDecision.correct,
-    satisfies_exactTargetNativeType_iff_step]
+  rw [stepDecision.correct]
+  exact (satisfies_exactTargetNativeType_iff_step
+    deriveGSLT source target).symm
 
 /-- Every declarative article trace becomes a finite path in the operational
 GSLT. -/

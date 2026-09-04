@@ -1,0 +1,16 @@
+import Mathlib
+#check Nat.le_mul_of_pos_right
+#check Nat.le_mul_of_pos_left
+#check Nat.mul_le_mul_left
+#check Nat.one_le_pow
+#check Nat.dvd_pow_self
+#check Nat.dvd_pow
+#check lt_asymm
+#check Nat.pos_of_dvd_of_pos
+#check Nat.pos_of_dvd_of_pos
+#check Nat.mem_properDivisors
+#check List.prod_toFinset
+#check List.Nodup.filter
+#check Nat.mul_div_left
+#check Nat.mul_div_right
+#check Nat.dvd_mul_right

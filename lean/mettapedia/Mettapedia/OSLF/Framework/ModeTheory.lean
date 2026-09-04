@@ -12,7 +12,7 @@ It intentionally states only what is already proven in the codebase:
 - per-language Galois connection `langGalois`
 - categorical lift `langModalAdjunction`
 - presheaf-primary fiber agreement `langOSLFFibrationUsing_presheafAgreement`
-- morphism-level diamond preservation `LanguageMorphism.preserves_diamond`
+- semantic morphism-level diamond preservation
 
 This is the strongest current foundation for an "MTT/MaTT-style" claim
 without over-claiming a full mode-2-category theorem.
@@ -23,14 +23,17 @@ namespace Mettapedia.OSLF.Framework.ModeTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.CategoryBridge
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.LangMorphism
 
 /-- Runtime/behavioral indexed doctrine induced by `LanguageDef`. -/
 structure RuntimeBehavioralIndexedDoctrine where
   /-- Runtime transition modality. -/
-  Diamond : LanguageDef → (Pattern → Prop) → (Pattern → Prop)
+  Diamond : ∀ lang : LanguageDef,
+    EquationPredicate (langGSLT lang) → EquationPredicate (langGSLT lang)
   /-- Runtime predecessor modality. -/
-  Box : LanguageDef → (Pattern → Prop) → (Pattern → Prop)
+  Box : ∀ lang : LanguageDef,
+    EquationPredicate (langGSLT lang) → EquationPredicate (langGSLT lang)
   /-- Per-language modal Galois connection. -/
   galois : ∀ lang, GaloisConnection (Diamond lang) (Box lang)
   /-- Per-language categorical adjunction induced from `galois`. -/
@@ -66,20 +69,20 @@ noncomputable def doctrine_fiberAgreement (lang : LanguageDef) (procSort : Strin
       (C := CategoryTheory.Discrete String)
       (instC := inferInstance)).Sub
       (sortFamilyPresheaf (langRewriteSystem lang procSort)
-        (fun s => (langRewriteSystem lang procSort).Term s))
+        (fun _ => Quotient (langGSLT lang).equations))
       ≃
     (∀ s : String,
       mettaILRuntimeBehavioralDoctrine.fiberFamily lang procSort s) := by
   simpa [mettaILRuntimeBehavioralDoctrine] using
     (langOSLFFibrationUsing_presheafAgreement (lang := lang) (procSort := procSort))
 
-/-- Morphisms preserve the doctrine's diamond modality (forward direction). -/
+/-- Morphisms preserve the doctrine's equation-respecting diamond modality. -/
 theorem doctrine_morphism_preserves_diamond
     {L₁ L₂ : LanguageDef} {sc : Pattern → Pattern → Prop}
     (m : LanguageMorphism L₁ L₂ sc)
-    {φ : Pattern → Prop} {p : Pattern}
+    {φ : EquationPredicate (langGSLT L₁)} {p : Pattern}
     (h : mettaILRuntimeBehavioralDoctrine.Diamond L₁ φ p) :
-    ∃ q, langReduces L₁ p q ∧ φ q ∧
+    ∃ q, langSemanticReduces L₁ p q ∧ φ.1 q ∧
       ∃ T, LangReducesStar L₂ (m.mapTerm p) T ∧ sc T (m.mapTerm q) := by
   simpa [mettaILRuntimeBehavioralDoctrine] using
     (LanguageMorphism.preserves_diamond (m := m) (φ := φ) (p := p) h)

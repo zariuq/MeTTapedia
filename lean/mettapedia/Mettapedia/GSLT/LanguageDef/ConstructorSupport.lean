@@ -774,7 +774,7 @@ mutual
   sends every allowed source label into the target fragment. -/
   theorem constructorsWithin_mapPattern
       {sourceAllowed targetAllowed : String → Prop}
-      (symbols : PresentationSymbols)
+      (symbols : LanguageDefSymbolMap)
       (mapsAllowed : ∀ constructor,
         sourceAllowed constructor →
           targetAllowed (symbols.constructor constructor))
@@ -803,7 +803,7 @@ mutual
   /-- List companion to `constructorsWithin_mapPattern`. -/
   theorem constructorListWithin_mapPattern
       {sourceAllowed targetAllowed : String → Prop}
-      (symbols : PresentationSymbols)
+      (symbols : LanguageDefSymbolMap)
       {patterns : List Pattern}
       (supported : ConstructorListWithin sourceAllowed patterns)
       (inductionHypothesis : ∀ pattern ∈ patterns,

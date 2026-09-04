@@ -50,25 +50,25 @@ theorem ext {first second : CodeContext}
 
 /-- A presentation-symbol action transports the types in an open context but
 does not rename either free names or de Bruijn positions. -/
-def map (symbols : PresentationSymbols) (context : CodeContext) : CodeContext where
+def map (symbols : LanguageDefSymbolMap) (context : CodeContext) : CodeContext where
   free := context.free.map symbols
   bound := context.bound.map (mapTypeExpr symbols)
 
 @[simp]
 theorem map_id (context : CodeContext) :
-    context.map PresentationSymbols.id = context := by
+    context.map LanguageDefSymbolMap.id = context := by
   apply ext
   · exact FreeTypeContext.map_id context.free
-  · change context.bound.map (mapTypeExpr PresentationSymbols.id) =
+  · change context.bound.map (mapTypeExpr LanguageDefSymbolMap.id) =
       context.bound
-    have mapIdentity : mapTypeExpr PresentationSymbols.id = _root_.id := by
+    have mapIdentity : mapTypeExpr LanguageDefSymbolMap.id = _root_.id := by
       funext type
       exact mapTypeExpr_id type
     rw [mapIdentity, List.map_id]
 
 @[simp]
 theorem map_comp (context : CodeContext)
-    (earlier later : PresentationSymbols) :
+    (earlier later : LanguageDefSymbolMap) :
     context.map (earlier.comp later) =
       (context.map earlier).map later := by
   apply ext
@@ -139,10 +139,10 @@ instance : CategoryTheory.Category ContextualLanguage where
 /-- The contextual fibre at a language/context pair.  A base inhabitant is a
 well-sorted open object term in exactly that context. -/
 def fibre (code : ContextualLanguage) : Fibre where
-  BaseType := StructuralMorphism.AuthoredSort code.language
+  BaseType := StructuralMorphism.DeclaredSort code.language
   BaseEl := fun sort =>
     OpenTerm code.language.language code.context.free code.context.bound
-      (authoredSortToLangSort code.language sort)
+      (declaredSortToLangSort code.language sort)
   Stamp := Bool
 
 /-- Transport open held syntax along a contextual language morphism. -/
@@ -155,14 +155,14 @@ def translation {source target : ContextualLanguage}
     exact mapped.reindex
       (congrArg CodeContext.free morphism.mapsContext)
       (congrArg CodeContext.bound morphism.mapsContext)
-      (mapLangSort_authoredSortToLangSort morphism.route type)
+      (mapLangSort_declaredSortToLangSort morphism.route type)
   mapStamp := _root_.id
 
 @[simp]
 theorem translation_mapBaseEl_pattern
     {source target : ContextualLanguage}
     (morphism : ContextualMorphism source target)
-    {sort : StructuralMorphism.AuthoredSort source.language}
+    {sort : StructuralMorphism.DeclaredSort source.language}
     (term : (fibre source).BaseEl sort) :
     ((translation morphism).mapBaseEl term).1 =
       mapPattern morphism.route.symbols term.1 := by
@@ -269,14 +269,14 @@ abbrev DataAt (code : ContextualLanguage) (type : TypeOf code) :=
 /-- Quote one already checked open term.  Raw syntax cannot enter this
 constructor without its authored typing, object-shape, and scope evidence. -/
 def quoteOpenTerm (code : ContextualLanguage)
-    (sort : StructuralMorphism.AuthoredSort code.language)
+    (sort : StructuralMorphism.DeclaredSort code.language)
     (term : (fibre code).BaseEl sort) (stamp : Bool) :
     DataAt code (DataType.base sort) :=
   (stamp, term)
 
 @[simp]
 theorem eval_quoteOpenTerm (code : ContextualLanguage)
-    (sort : StructuralMorphism.AuthoredSort code.language)
+    (sort : StructuralMorphism.DeclaredSort code.language)
     (term : (fibre code).BaseEl sort) (stamp : Bool) :
     eval (quoteOpenTerm code sort term stamp) = term :=
   rfl
@@ -295,7 +295,7 @@ def oneAtomContext : CodeContext where
   bound := []
 
 def currentZeroAtomSort :
-    StructuralMorphism.AuthoredSort currentZeroPresentation :=
+    StructuralMorphism.DeclaredSort currentZeroPresentation :=
   ⟨atomType, by
     change List.Mem atomType [atomType, spaceType, processType, alternativesType]
     exact List.mem_cons_self⟩
@@ -319,7 +319,7 @@ def zeroOpenVariable :
   refine ⟨.fvar "x", ?_⟩
   refine ⟨HasType.fvar ?_, rfl, rfl, rfl⟩
   simp [zeroOpenCode, oneAtomContext, oneAtomFree, currentZeroAtomSort,
-    atomType, TypeDecl.plain, authoredSortToLangSort]
+    atomType, TypeDecl.plain, declaredSortToLangSort]
 
 /-- Cross-language transport retains the free name while transporting its
 type and carrier sort into Prime. -/
@@ -334,7 +334,7 @@ Data.  Quotation therefore cannot turn an escaping variable into held code. -/
 theorem escaping_bvar_not_open_data :
     ¬ OpenTermWellSorted currentZeroPresentation.language
       FreeTypeContext.empty [(.base "Atom")]
-      (authoredSortToLangSort currentZeroPresentation currentZeroAtomSort)
+      (declaredSortToLangSort currentZeroPresentation currentZeroAtomSort)
       (.bvar 1) := by
   rintro ⟨typed, _canonical, _object, _scope⟩
   cases typed with

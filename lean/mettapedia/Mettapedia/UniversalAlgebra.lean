@@ -1,0 +1,49 @@
+import Mettapedia.UniversalAlgebra.Signature
+import Mettapedia.UniversalAlgebra.Model
+import Mettapedia.UniversalAlgebra.ModelHom
+import Mettapedia.UniversalAlgebra.EquationSystem
+import Mettapedia.UniversalAlgebra.EquationalLogic
+import Mettapedia.UniversalAlgebra.ConservativeExtension
+import Mettapedia.UniversalAlgebra.ConsequenceEquivalence
+import Mettapedia.UniversalAlgebra.FreeModel
+import Mettapedia.UniversalAlgebra.FreeModelInvariance
+import Mettapedia.UniversalAlgebra.SyntacticCategory
+import Mettapedia.UniversalAlgebra.SyntacticFiniteProducts
+import Mettapedia.UniversalAlgebra.SyntacticCategoryInvariance
+import Mettapedia.UniversalAlgebra.SyntacticFunctor
+import Mettapedia.UniversalAlgebra.SyntacticModel
+import Mettapedia.UniversalAlgebra.BoundedTerm
+import Mettapedia.UniversalAlgebra.Interpretation
+import Mettapedia.UniversalAlgebra.EquationSystemInterpretation
+import Mettapedia.UniversalAlgebra.InterpretabilityOrder
+import Mettapedia.UniversalAlgebra.Certificate
+import Mettapedia.UniversalAlgebra.CertificateSubstitution
+import Mettapedia.UniversalAlgebra.Mathlib.FirstOrder
+import Mettapedia.UniversalAlgebra.Ultrapower
+import Mettapedia.UniversalAlgebra.GSLT.ContextualRewriting
+import Mettapedia.UniversalAlgebra.OSLF.ModalSemantics
+import Mettapedia.UniversalAlgebra.NIK.Authority
+import Mettapedia.UniversalAlgebra.NIK.RejectedCertificate
+import Mettapedia.UniversalAlgebra.NIK.ConsequenceInvariance
+import Mettapedia.UniversalAlgebra.NIK.Simulation
+import Mettapedia.UniversalAlgebra.NIK.TheoryEquivalence
+import Mettapedia.UniversalAlgebra.NIK.ClassicalAuthorityTranslation
+import Mettapedia.UniversalAlgebra.NIK.ConstructiveAuthorityTranslation
+import Mettapedia.UniversalAlgebra.NIK.Interpretation
+import Mettapedia.UniversalAlgebra.Instances.Monoid
+import Mettapedia.UniversalAlgebra.Instances.MonoidConservativeExtension
+import Mettapedia.UniversalAlgebra.Instances.MonoidCertificateTranslation
+import Mettapedia.UniversalAlgebra.Instances.MonoidConsequenceInvariance
+import Mettapedia.UniversalAlgebra.Instances.MonoidInterpretation
+import Mettapedia.UniversalAlgebra.Instances.MonoidSyntacticCategory
+import Mettapedia.UniversalAlgebra.Instances.MonoidSyntacticFunctor
+import Mettapedia.UniversalAlgebra.Instances.MonoidUltrapower
+
+/-!
+# Universal algebra
+
+Finitary one-sorted signatures, occurrence-bearing equation systems, their
+models and equational consequence, conservative extension, exact Mathlib
+correspondence, ultrapower invariance, oriented contextual rewriting, OSLF
+modal semantics, and NIK replay authorities.
+-/

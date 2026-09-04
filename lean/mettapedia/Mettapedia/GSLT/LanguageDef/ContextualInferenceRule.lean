@@ -178,6 +178,60 @@ theorem decodeContext?_encodeContext (context : ContextSchema) :
       simp [encodeContext, decodeContext?, extendContextTerm,
         inductionHypothesis]
 
+/-- Successful decoding recognizes only the canonical context wire; it cannot
+silently canonicalize a foreign or malformed representation. -/
+theorem encodeContext_of_decodeContext?_eq_some
+    {wire : Pattern} {context : ContextSchema}
+    (decoded : decodeContext? wire = some context) :
+    encodeContext context = wire := by
+  induction wire using Pattern.inductionOn generalizing context with
+  | hbvar index => simp [decodeContext?] at decoded
+  | hfvar name =>
+      simp [decodeContext?] at decoded
+      cases decoded
+      rfl
+  | happly head arguments inductionHypothesis =>
+      cases arguments with
+      | nil =>
+          simp only [decodeContext?] at decoded
+          split at decoded
+          next equal =>
+            cases decoded
+            subst head
+            rfl
+          next different => simp at decoded
+      | cons first rest =>
+          cases rest with
+          | nil => simp [decodeContext?] at decoded
+          | cons second tail =>
+              cases tail with
+              | nil =>
+                  simp only [decodeContext?] at decoded
+                  split at decoded
+                  next equal =>
+                    have secondIH : ∀ {context : ContextSchema},
+                        decodeContext? second = some context →
+                          encodeContext context = second :=
+                      inductionHypothesis second (by simp)
+                    cases secondDecode : decodeContext? second with
+                    | none => simp [secondDecode] at decoded
+                    | some tailContext =>
+                        simp only [secondDecode, Option.map_some] at decoded
+                        cases decoded
+                        subst head
+                        simp only [encodeContext]
+                        rw [secondIH secondDecode]
+                  next different => simp at decoded
+              | cons third more => simp [decodeContext?] at decoded
+  | hlambda name body inductionHypothesis =>
+      simp [decodeContext?] at decoded
+  | hmultiLambda arity names body inductionHypothesis =>
+      simp [decodeContext?] at decoded
+  | hsubst body replacement bodyIH replacementIH =>
+      simp [decodeContext?] at decoded
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp [decodeContext?] at decoded
+
 /-- The explicit context code retains order and occurrence multiplicity. -/
 theorem encodeContext_injective : Function.Injective encodeContext := by
   intro first second equality
@@ -218,6 +272,48 @@ theorem decodeSequent?_lowerSequent (sequent : Sequent) :
   cases sequent
   simp [lowerSequent, decodeSequent?, contextualJudgment,
     decodeContext?_encodeContext]
+
+/-- Successful sequent decoding reconstructs both ordered contexts and the
+conclusion exactly.  In particular, decoding never repairs a malformed
+context code behind the caller's back. -/
+theorem lowerSequent_of_decodeSequent?_eq_some
+    {wire : Pattern} {sequent : Sequent}
+    (decoded : decodeSequent? wire = some sequent) :
+    lowerSequent sequent = wire := by
+  cases wire with
+  | apply head arguments =>
+      cases arguments with
+      | nil => simp [decodeSequent?] at decoded
+      | cons variableCode rest =>
+          cases rest with
+          | nil => simp [decodeSequent?] at decoded
+          | cons relationCode rest =>
+              cases rest with
+              | nil => simp [decodeSequent?] at decoded
+              | cons conclusion tail =>
+                  cases tail with
+                  | cons extra more => simp [decodeSequent?] at decoded
+                  | nil =>
+                      by_cases headEq : head = contextualJudgment.head
+                      · simp only [decodeSequent?, headEq, ↓reduceIte] at decoded
+                        cases variableDecode : decodeContext? variableCode with
+                        | none => simp [variableDecode] at decoded
+                        | some variableContext =>
+                            cases relationDecode :
+                                decodeContext? relationCode with
+                            | none => simp [variableDecode, relationDecode] at decoded
+                            | some relationContext =>
+                                simp only [variableDecode, relationDecode] at decoded
+                                cases decoded
+                                subst head
+                                simp only [lowerSequent]
+                                rw [
+                                  encodeContext_of_decodeContext?_eq_some
+                                    variableDecode,
+                                  encodeContext_of_decodeContext?_eq_some
+                                    relationDecode]
+                      · simp [decodeSequent?, headEq] at decoded
+  | _ => simp [decodeSequent?] at decoded
 
 /-- Explicit lowering is faithful to the complete hypothetical sequent. -/
 theorem lowerSequent_injective : Function.Injective lowerSequent := by
@@ -365,9 +461,11 @@ theorem lowered_bare_ne_assumed :
 
 #print axioms definition_valid
 #print axioms decodeContext?_encodeContext
+#print axioms encodeContext_of_decodeContext?_eq_some
 #print axioms encodeContext_injective
 #print axioms encode_extend_hole
 #print axioms decodeSequent?_lowerSequent
+#print axioms lowerSequent_of_decodeSequent?_eq_some
 #print axioms lowerSequent_injective
 #print axioms lowerRule_injective
 #print axioms lowerRules_append

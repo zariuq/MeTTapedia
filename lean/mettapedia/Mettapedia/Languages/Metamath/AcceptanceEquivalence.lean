@@ -233,7 +233,7 @@ Positive example: a token can refine to a singleton identical engine label.
 Negative example: a non-authored token may refine to an empty segment (it is
 not forced to appear as an engine rewrite label). -/
 def RuntimeTokenRefinesEngineSegment (tok : String) (seg : List String) : Prop :=
-  seg = [tok] ∨ (¬ AuthoredRewriteLabel tok ∧ seg = [])
+  seg = [tok] ∨ (¬ DeclaredRewriteLabel tok ∧ seg = [])
 
 /-- Runtime proof-token trace refines an engine-label trace via a list of
 per-token segments whose concatenation is the engine trace. -/
@@ -315,7 +315,7 @@ def EngineRefinedAlignmentComplete
 any checker token that genuinely resolves to a hypothesis/assertion object is
 not itself the name of an authored Metamath rewrite rule. -/
 def RuntimeProvenanceDisjointFromAuthored (bytes : ByteArray) : Prop :=
-  ∀ step, RuntimeLabelProvenance (checkBytesDB bytes) step → ¬ AuthoredRewriteLabel step
+  ∀ step, RuntimeLabelProvenance (checkBytesDB bytes) step → ¬ DeclaredRewriteLabel step
 
 /-- Honest weaker witness: a successful runtime proof-checking trace together
 with some declarative engine acceptance path, without identifying proof tokens
@@ -399,14 +399,14 @@ private theorem emptySegments_flatten
 
 private theorem tokenEmptyRefines
     (xs : List String)
-    (hNoAuth : ∀ step ∈ xs, ¬ AuthoredRewriteLabel step) :
+    (hNoAuth : ∀ step ∈ xs, ¬ DeclaredRewriteLabel step) :
     List.Forall₂ RuntimeTokenRefinesEngineSegment xs (xs.map (fun _ => ([] : List String))) := by
   induction xs with
   | nil =>
       simp
   | cons x xs ih =>
-      have hx : ¬ AuthoredRewriteLabel x := hNoAuth x (by simp)
-      have hxs : ∀ step ∈ xs, ¬ AuthoredRewriteLabel step := by
+      have hx : ¬ DeclaredRewriteLabel x := hNoAuth x (by simp)
+      have hxs : ∀ step ∈ xs, ¬ DeclaredRewriteLabel step := by
         intro step hMem
         exact hNoAuth step (by simp [hMem])
       have hhead : RuntimeTokenRefinesEngineSegment x ([] : List String) :=
@@ -430,7 +430,7 @@ private theorem runtimeTraceRefines_of_strictLabelAlignment
 
 private theorem runtimeTraceRefines_all_empty_of_nonAuthored
     {proofLabels : List String}
-    (hNoAuth : ∀ step ∈ proofLabels, ¬ AuthoredRewriteLabel step) :
+    (hNoAuth : ∀ step ∈ proofLabels, ¬ DeclaredRewriteLabel step) :
     RuntimeTraceRefinesEngineLabels proofLabels [] := by
   refine ⟨proofLabels.map (fun _ => ([] : List String)), tokenEmptyRefines proofLabels hNoAuth, ?_⟩
   exact emptySegments_flatten proofLabels
@@ -468,7 +468,7 @@ theorem runtimeProvenanceDisjoint_to_engineRefinedAlignmentComplete
   have hTraceAuth : TraceLabelsAuthored bytes proof :=
     authoredTraceCompleteness_from_runtime bytes label f
       proof prFinal f' hFold hSize hTop hExpr
-  have hNoAuth : ∀ step ∈ proof.toList, ¬ AuthoredRewriteLabel step := by
+  have hNoAuth : ∀ step ∈ proof.toList, ¬ DeclaredRewriteLabel step := by
     intro step hMem
     exact hDisjoint step (hTraceAuth step hMem)
   exact ⟨trivialEnginePattern, trivialEnginePattern, trivialLabeledEngineTraceWitness,
@@ -725,7 +725,7 @@ condition, not generic parser completeness. -/
 theorem engineAlignedTraceWitness_proof_labels_are_rewrite_names
     (bytes : ByteArray) (label : String) (f : Metamath.Verify.Formula)
     (hTrace : EngineAlignedTraceWitness bytes label f) :
-    ∃ proof : Array String, ∀ step ∈ proof.toList, AuthoredRewriteLabel step := by
+    ∃ proof : Array String, ∀ step ∈ proof.toList, DeclaredRewriteLabel step := by
   rcases hTrace with
     ⟨proof, _prFinal, _f', _start, _finish, _hNoErr, _hAuthored,
       hAligned, _hFold, _hSize, _hTop, _hExpr⟩
@@ -733,7 +733,7 @@ theorem engineAlignedTraceWitness_proof_labels_are_rewrite_names
   refine ⟨proof, ?_⟩
   intro step hMem
   have hAuthoredTrace :
-      ∀ label ∈ engTrace.labels, AuthoredRewriteLabel label :=
+      ∀ label ∈ engTrace.labels, DeclaredRewriteLabel label :=
     labeledLanguageDefEngineTraceWitness_labels_authored engTrace
   have hMemTrace : step ∈ engTrace.labels := by
     have hTransport :
@@ -1137,14 +1137,14 @@ theorem recommended_usage_engineAccepts_of_specAccepts
   exact specAccepts_to_exists_engineAccepts_of_acceptanceComplete
     bytes label f hSuccess hComplete hSpec
 
-theorem ax1_not_authoredRewriteLabel : ¬ AuthoredRewriteLabel "ax1" := by
+theorem ax1_not_authoredRewriteLabel : ¬ DeclaredRewriteLabel "ax1" := by
   intro h
   have hTrue : hasRewriteByName "ax1" = true :=
     (authoredRewriteLabel_iff_hasRewriteByName_true "ax1").1 h
   have hFalse : hasRewriteByName "ax1" = false := by native_decide
   exact Bool.false_ne_true (hFalse.trans hTrue)
 
-theorem wph_not_authoredRewriteLabel : ¬ AuthoredRewriteLabel "wph" := by
+theorem wph_not_authoredRewriteLabel : ¬ DeclaredRewriteLabel "wph" := by
   intro h
   have hTrue : hasRewriteByName "wph" = true :=
     (authoredRewriteLabel_iff_hasRewriteByName_true "wph").1 h
@@ -1242,18 +1242,18 @@ theorem minimalAxiom_ax1_not_engineAlignmentComplete :
   rcases hComplete minimalAxiom_ax1Trace prFinal f' hRun hSz hTop hExpr with
     ⟨_start, _finish, engTrace, hRel⟩
   have hAuthTrace :
-      ∀ lbl ∈ engTrace.labels, AuthoredRewriteLabel lbl :=
+      ∀ lbl ∈ engTrace.labels, DeclaredRewriteLabel lbl :=
     labeledLanguageDefEngineTraceWitness_labels_authored engTrace
   have hAx1InTrace : "ax1" ∈ engTrace.labels := by
     have hAx1InProof : "ax1" ∈ minimalAxiom_ax1Trace.toList := by
       simp [minimalAxiom_ax1Trace]
     exact token_mem_of_forall2 hRel hAx1InProof
-  have hAx1Auth : AuthoredRewriteLabel "ax1" :=
+  have hAx1Auth : DeclaredRewriteLabel "ax1" :=
     hAuthTrace "ax1" hAx1InTrace
   exact ax1_not_authoredRewriteLabel hAx1Auth
 
 private theorem minimalAxiom_ax1Trace_nonAuthored :
-    ∀ step ∈ minimalAxiom_ax1Trace.toList, ¬ AuthoredRewriteLabel step := by
+    ∀ step ∈ minimalAxiom_ax1Trace.toList, ¬ DeclaredRewriteLabel step := by
   intro step hMem
   have hCases : step = "wph" ∨ step = "ax1" := by
     simpa [minimalAxiom_ax1Trace] using hMem

@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.KernelAuthority
-import Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+import Mettapedia.OSLF.Framework.GSLTQuotientCoherence
 import Mettapedia.OSLF.StructuralModal.Formula
 
 /-!
@@ -12,8 +12,11 @@ The positive native fragment (`top`, conjunction, disjunction, spatial
 heads, and diamond) has finite proof-relevant certificates, sound and
 complete on its declared fragment.  Box is a universal predecessor
 obligation and deliberately has no constructor in that certificate language.
-Moreover, the modalities generated from an abstract GSLT inspect its rewrite
-relation, not the separately authored structural equations.
+The canonical OSLF retains both coordinates of a GSLT: modalities act through
+its equation-compatible step relation, while the predicate carrier consists
+of equation-invariant observations.  The modal maps considered in isolation
+do not determine the equation theory; the full generated type system does not
+discard it.
 
 These are capability boundaries, not a total ordering of logics.
 -/
@@ -25,6 +28,8 @@ open Mettapedia.GSLT.LanguageDef.KernelAuthority
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.DerivedModalities
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTQuotientCoherence
+open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.OSLF.StructuralModal
 
 /-! ## Exact positive native certificates -/
@@ -79,9 +84,11 @@ def discreteNoRewriteGSLT : GSLT where
     intro _ _ _ step _
     exact step.elim
 
-/-- The two theories generate the same diamond and box observations because
-their rewrite graphs are equal. -/
-theorem equationOnly_modalities_match_discrete :
+/-- The two theories have the same underlying diamond and box maps on raw
+predicates because their rewrite graphs are equal.  This is not an equality
+of their generated OSLF type systems: those have different semantic predicate
+carriers. -/
+theorem equationOnly_underlying_modal_maps_match_discrete :
     (∀ predicate source,
       gsltDiamond equationOnlyGSLT predicate source <->
         gsltDiamond discreteNoRewriteGSLT predicate source) /\
@@ -106,9 +113,9 @@ theorem equationOnly_equations_differ_from_discrete :
     (sameEquations false true).mp equationOnlyGSLT_false_true_equivalent
   exact Bool.false_ne_true discreteEquivalent
 
-/-- OSLF modalities generated from the rewrite span do not determine the
-GSLT's independently authored structural equations. -/
-theorem oslf_modalities_do_not_determine_structural_equations :
+/-- Underlying modal maps, considered without the semantic predicate carrier,
+do not determine a GSLT's structural equations. -/
+theorem underlying_modal_maps_do_not_determine_structural_equations :
     (∀ predicate source,
       gsltDiamond equationOnlyGSLT predicate source <->
         gsltDiamond discreteNoRewriteGSLT predicate source) /\
@@ -118,8 +125,42 @@ theorem oslf_modalities_do_not_determine_structural_equations :
     ¬ ∀ source target,
       equationOnlyGSLT.Equiv source target <->
         discreteNoRewriteGSLT.Equiv source target :=
-  ⟨equationOnly_modalities_match_discrete.1,
-    equationOnly_modalities_match_discrete.2,
+  ⟨equationOnly_underlying_modal_maps_match_discrete.1,
+    equationOnly_underlying_modal_maps_match_discrete.2,
     equationOnly_equations_differ_from_discrete⟩
+
+/-! ## Canonical semantic terms retain the missing distinction -/
+
+/-- The equation-only theory identifies its two authored Boolean
+presentations at the semantic-term boundary. -/
+theorem equationOnly_semanticTerms_identify_false_true :
+    (Quotient.mk equationOnlyGSLT.equations false :
+        SemanticTerm equationOnlyGSLT) =
+      Quotient.mk equationOnlyGSLT.equations true :=
+  Quotient.sound equationOnlyGSLT_false_true_equivalent
+
+/-- The discrete theory retains the two Boolean presentations as distinct
+semantic terms. -/
+theorem discrete_semanticTerms_separate_false_true :
+    (Quotient.mk discreteNoRewriteGSLT.equations false :
+        SemanticTerm discreteNoRewriteGSLT) ≠
+      Quotient.mk discreteNoRewriteGSLT.equations true := by
+  intro equalClasses
+  exact Bool.false_ne_true (Quotient.exact equalClasses)
+
+/-- The semantic carrier retains information absent from the underlying modal
+maps: identical step graphs can have different semantic term carriers exactly
+when their equations differ. -/
+theorem semantic_carriers_retain_equation_difference :
+    (Quotient.mk equationOnlyGSLT.equations false :
+        SemanticTerm equationOnlyGSLT) =
+        Quotient.mk equationOnlyGSLT.equations true /\
+      (Quotient.mk discreteNoRewriteGSLT.equations false :
+        SemanticTerm discreteNoRewriteGSLT) ≠
+        Quotient.mk discreteNoRewriteGSLT.equations true :=
+  ⟨equationOnly_semanticTerms_identify_false_true,
+    discrete_semanticTerms_separate_false_true⟩
+
+#print axioms semantic_carriers_retain_equation_difference
 
 end Mettapedia.GSLT.LanguageDef.OSLFCheckerCapabilities

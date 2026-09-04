@@ -1,5 +1,6 @@
 import Foundation.FirstOrder.Basic
 import Mettapedia.GSLT.LanguageDef.TptpOfficialPrincipalSymbols
+import Mettapedia.GSLT.LanguageDef.TptpFofSymbolIdentity
 
 /-!
 # Binder-resolved FOF normalization semantics
@@ -30,18 +31,21 @@ namespace Mettapedia.GSLT.LanguageDef.TptpFofNormalizationSemantics
 open LO FirstOrder
 open Mettapedia.GSLT.LanguageDef.TptpOfficialDerivationSyntax
 open Mettapedia.GSLT.LanguageDef.TptpOfficialPrincipalSymbols
+open Mettapedia.GSLT.LanguageDef.TptpFofSymbolIdentity
 
 /-! ## Arity-indexed first-order signature -/
 
 /-- A user function symbol at one fixed arity. -/
 structure FunctionSymbol (arity : Nat) where
   name : String
+  kind : FunctionKind := .plain
   deriving DecidableEq, Repr
 
 /-- A user predicate symbol at one fixed arity.  Equality is deliberately not
 a user predicate: it has its own source constructor and fixed semantics. -/
 structure PredicateSymbol (arity : Nat) where
   name : String
+  kind : PredicateKind := .plain
   deriving DecidableEq, Repr
 
 /-- A user predicate at one fixed arity, together with FOF equality. -/
@@ -63,13 +67,18 @@ abbrev Term (depth : Nat) :=
 /-- The principal-symbol identity used by official `new_symbols` metadata.
 Arity remains available in `FunctionSymbol`; the official metadata identity
 itself consists of kind and name. -/
-def FunctionSymbol.principalId {arity : Nat}
-    (symbol : FunctionSymbol arity) : PrincipalSymbolId :=
-  { kind := .functor, name := symbol.name }
+def FunctionSymbol.principalId? {arity : Nat}
+    (symbol : FunctionSymbol arity) : Option PrincipalSymbolId :=
+  match symbol.kind with
+  | .plain => some { kind := .functor, name := symbol.name }
+  | _ => none
 
 def RelationSymbol.principalId? {arity : Nat} :
     RelationSymbol arity -> Option PrincipalSymbolId
-  | .predicate symbol => some { kind := .functor, name := symbol.name }
+  | .predicate symbol =>
+      match symbol.kind with
+      | .plain => some { kind := .functor, name := symbol.name }
+      | _ => none
   | .equality => none
 
 /-! ## Binder-resolved source formulas -/
@@ -291,9 +300,11 @@ def termPrincipalSymbols {depth : Nat} : Term depth -> Finset PrincipalSymbolId
   | .bvar _ => ∅
   | .fvar impossible => nomatch impossible
   | .func symbol arguments =>
-      insert symbol.principalId
-        (Finset.univ.biUnion fun index =>
-          termPrincipalSymbols (arguments index))
+      let argumentsSymbols := Finset.univ.biUnion fun index =>
+        termPrincipalSymbols (arguments index)
+      match symbol.principalId? with
+      | some principal => insert principal argumentsSymbols
+      | none => argumentsSymbols
 
 def formulaPrincipalSymbols {depth : Nat} :
     Formula depth -> Finset PrincipalSymbolId
@@ -301,7 +312,9 @@ def formulaPrincipalSymbols {depth : Nat} :
   | .predicate predicate arguments =>
       let argumentsSymbols := Finset.univ.biUnion fun index =>
         termPrincipalSymbols (arguments index)
-      insert { kind := .functor, name := predicate.name } argumentsSymbols
+      match (RelationSymbol.predicate predicate).principalId? with
+      | some principal => insert principal argumentsSymbols
+      | none => argumentsSymbols
   | .equal left right =>
       termPrincipalSymbols left ∪ termPrincipalSymbols right
   | .not body => formulaPrincipalSymbols body
@@ -415,8 +428,8 @@ def normalizeWithEvidence {depth : Nat} (source : Formula depth) :
 
 namespace Canary
 
-def p : PredicateSymbol 0 := ⟨"p"⟩
-def q : PredicateSymbol 0 := ⟨"q"⟩
+def p : PredicateSymbol 0 := ⟨"p", .plain⟩
+def q : PredicateSymbol 0 := ⟨"q", .plain⟩
 
 def atom (predicate : PredicateSymbol 0) : Formula 0 :=
   .predicate predicate ![]

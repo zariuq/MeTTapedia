@@ -8,16 +8,16 @@ import Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
 import Mettapedia.GSLT.LanguageDef.CanonicalWire
 
 /-!
-# Generated typed abstract syntax for TPTP v9.2.0.0
+# Static abstract-syntax migration snapshot for TPTP v9.2.0.0
 
-This inert carrier is generated from the regular productions of the official
-TPTP `SyntaxBNF`.  It preserves production alternatives, token categories and
-lexemes, and typed repetitions.  It is not yet the semantic refinement layer:
-the `:==` rows remain explicit later validators rather than parser rules.
+This inert carrier records a table previously generated from regular TPTP
+`SyntaxBNF` productions.  No theorem in this module establishes that
+external-source correspondence.  The declarations and validation proofs
+below are therefore conditional facts about this static table, not evidence
+for a native TPTP parser-generation pipeline.
 
-Immediate left recursion is represented directly in the abstract syntax even
-though the ParserPack regularizes it.  The parenthesized CNF-literal constructor
-is the explicitly identified corpus-conformance extension.
+Immediate left recursion is represented directly in the snapshot.  The
+parenthesized CNF-literal constructor records a corpus-conformance extension.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.TptpOfficialAbstractSyntax
@@ -1254,6 +1254,14 @@ def language : LanguageDef :=
   IndexedConstructorSignature.language
     "TptpOfficialAbstractSyntaxV9200" types constructors
 
+/-- Every indexed constructor contributes its exact grammar rule to the
+official abstract-syntax language.  Downstream typed transformations use this
+generic membership theorem instead of rescanning the generated table. -/
+theorem constructorRule_mem_language
+    (index : Fin constructors.length) :
+    (constructors.get index).toGrammarRule ∈ language.terms := by
+  exact List.mem_map_of_mem (List.get_mem constructors index)
+
 private def integerTypeIndex : Fin types.length :=
   ⟨0, by decide⟩
 
@@ -1267,6 +1275,129 @@ theorem integerTypeDeclaration_shape :
 theorem integerTypeDeclaration_mem_language :
     List.Mem integerTypeDeclaration language.types := by
   exact List.get_mem types integerTypeIndex
+
+private def stringTypeIndex : Fin types.length :=
+  ⟨1, by decide⟩
+
+def stringTypeDeclaration : TypeDecl := types.get stringTypeIndex
+
+theorem stringTypeDeclaration_shape :
+    stringTypeDeclaration =
+      { name := "String", carrier := .builtinString } := by
+  rfl
+
+theorem stringTypeDeclaration_mem_language :
+    List.Mem stringTypeDeclaration language.types := by
+  exact List.get_mem types stringTypeIndex
+
+/-! The following named rules are the small official-AST fragment used by
+semantic serializers.  Naming them here keeps downstream proofs tied to the
+generated constructor table without repeatedly normalizing that entire table. -/
+
+private def atomicWordQuotedConstructorIndex : Fin constructors.length :=
+  ⟨16, by decide⟩
+
+def atomicWordQuotedRule : GrammarRule :=
+  (constructors.get atomicWordQuotedConstructorIndex).toGrammarRule
+
+theorem atomicWordQuotedRule_shape : atomicWordQuotedRule = {
+    label := "tptp92-ast:atomic-word:alt-2"
+    category := "Tptp92Ast:atomic-word"
+    params := [.simple "single-quoted"
+      (.base "Tptp92AstToken:single-quoted")]
+    syntaxPattern := []
+    evalPolicy? := none } := by
+  rfl
+
+theorem atomicWordQuotedRule_mem_language :
+    atomicWordQuotedRule ∈ language.terms :=
+  constructorRule_mem_language atomicWordQuotedConstructorIndex
+
+private def functorConstructorIndex : Fin constructors.length :=
+  ⟨120, by decide⟩
+
+def functorRule : GrammarRule :=
+  (constructors.get functorConstructorIndex).toGrammarRule
+
+theorem functorRule_shape : functorRule = {
+    label := "tptp92-ast:functor:alt-1"
+    category := "Tptp92Ast:functor"
+    params := [.simple "atomic-word" (.base "Tptp92Ast:atomic-word")]
+    syntaxPattern := []
+    evalPolicy? := none } := by
+  rfl
+
+theorem functorRule_mem_language : functorRule ∈ language.terms :=
+  constructorRule_mem_language functorConstructorIndex
+
+private def nameConstructorIndex : Fin constructors.length :=
+  ⟨160, by decide⟩
+
+def nameRule : GrammarRule :=
+  (constructors.get nameConstructorIndex).toGrammarRule
+
+theorem nameRule_shape : nameRule = {
+    label := "tptp92-ast:name:alt-1"
+    category := "Tptp92Ast:name"
+    params := [.simple "atomic-word" (.base "Tptp92Ast:atomic-word")]
+    syntaxPattern := []
+    evalPolicy? := none } := by
+  rfl
+
+theorem nameRule_mem_language : nameRule ∈ language.terms :=
+  constructorRule_mem_language nameConstructorIndex
+
+private def singleQuotedConstructorIndex : Fin constructors.length :=
+  ⟨435, by decide⟩
+
+def singleQuotedRule : GrammarRule :=
+  (constructors.get singleQuotedConstructorIndex).toGrammarRule
+
+theorem singleQuotedRule_shape : singleQuotedRule = {
+    label := "tptp92-ast:token:single-quoted"
+    category := "Tptp92AstToken:single-quoted"
+    params := [.simple "lexeme" (.base "String")]
+    syntaxPattern := []
+    evalPolicy? := none } := by
+  rfl
+
+theorem singleQuotedRule_mem_language :
+    singleQuotedRule ∈ language.terms :=
+  constructorRule_mem_language singleQuotedConstructorIndex
+
+private def upperWordConstructorIndex : Fin constructors.length :=
+  ⟨436, by decide⟩
+
+def upperWordRule : GrammarRule :=
+  (constructors.get upperWordConstructorIndex).toGrammarRule
+
+theorem upperWordRule_shape : upperWordRule = {
+    label := "tptp92-ast:token:upper-word"
+    category := "Tptp92AstToken:upper-word"
+    params := [.simple "lexeme" (.base "String")]
+    syntaxPattern := []
+    evalPolicy? := none } := by
+  rfl
+
+theorem upperWordRule_mem_language : upperWordRule ∈ language.terms :=
+  constructorRule_mem_language upperWordConstructorIndex
+
+private def variableConstructorIndex : Fin constructors.length :=
+  ⟨466, by decide⟩
+
+def variableRule : GrammarRule :=
+  (constructors.get variableConstructorIndex).toGrammarRule
+
+theorem variableRule_shape : variableRule = {
+    label := "tptp92-ast:variable:alt-1"
+    category := "Tptp92Ast:variable"
+    params := [.simple "upper-word" (.base "Tptp92AstToken:upper-word")]
+    syntaxPattern := []
+    evalPolicy? := none } := by
+  rfl
+
+theorem variableRule_mem_language : variableRule ∈ language.terms :=
+  constructorRule_mem_language variableConstructorIndex
 
 private def sourceSpanConstructorIndex : Fin constructors.length :=
   ⟨201, by decide⟩
@@ -1403,6 +1534,23 @@ theorem language_validate : language.validate = [] := by
     "TptpOfficialAbstractSyntaxV9200" types constructors
     typesNodup constructorsNodup
 
+/-- The generated carrier has exactly the two builtin sorts plus sorts in the
+official TPTP AST namespaces.  Signature extensions reuse this boundary rather
+than repeatedly unfolding the generated 251-row sort table. -/
+theorem typeNames_namespaced :
+    language.typeNames.all (fun name =>
+      name == "Integer" || name == "String" ||
+        name.startsWith "Tptp92Ast") = true := by
+  decide +kernel
+
+/-- Every constructor in the generated official abstract syntax remains in
+the namespace assigned by the concrete-syntax projection.  Signature gluing
+uses this reusable boundary instead of rescanning all 467 rows. -/
+theorem constructorLabels_namespaced :
+    (language.terms.map (fun term => term.label)).all
+      (fun label => label.startsWith "tptp92-ast:") = true := by
+  decide +kernel
+
 theorem language_inventory :
     language.types.length = 251 ∧
       language.terms.length = 467 ∧
@@ -1450,12 +1598,13 @@ theorem root_list_sort_is_present :
 
 def theory : Mettapedia.GSLT.GSLT :=
   languageGSLT language
-    (ReductionRespectsEquations.of_no_equations rfl)
+    (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem theory_no_step (source target : Pattern) :
     ¬ theory.Step source target := by
   intro reduction
-  change langReducesUsing RelationEnv.empty language source target at reduction
+  unfold theory at reduction
+  rw [languageGSLT_step] at reduction
   unfold langReducesUsing at reduction
   rcases reduction with ⟨_, step⟩
   cases step with
@@ -1490,6 +1639,7 @@ def writeWire (path : System.FilePath) : IO Unit :=
   IO.FS.writeFile path wire
 
 #print axioms language_validate
+#print axioms constructorLabels_namespaced
 #print axioms integerTypeDeclaration_mem_language
 #print axioms sourceSpanRule_shape
 #print axioms sourceSpanRule_mem_language

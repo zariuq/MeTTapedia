@@ -111,14 +111,15 @@ theorem modalAsRepresentedRoute_comp
 
 /-! ## The logical action uses the same tight map -/
 
-/-- OSLF predicate transport is inverse image along the selected tight term
-map; no second translation is hidden in the logical layer. -/
+/-- OSLF predicate transport is inverse image along the selected tight map
+after that map descends to equation classes; no second translation is hidden
+in the logical layer. -/
 theorem oslf_pullback_uses_tight_map
     {source target : GSLT.{uTerm}}
     (translation : ModalTranslation source target)
-    (predicate : Set target.Term) :
+    (predicate : Set (SemanticTerm target)) :
     (ModalTranslation.pullback translation).mapPred predicate =
-      Set.preimage translation.mapTerm predicate :=
+      Set.preimage translation.onSemanticTheories.mapTerm predicate :=
   rfl
 
 /-- The exact attachment criterion: a forward tight arrow supports both OSLF

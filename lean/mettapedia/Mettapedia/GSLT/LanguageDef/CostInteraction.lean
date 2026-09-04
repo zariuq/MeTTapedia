@@ -437,7 +437,7 @@ theorem mapPatternSchemaNames_constructorRefs
 disjoint parts of a pattern, hence commute exactly. -/
 @[simp]
 theorem mapPattern_mapPatternSchemaNames
-    (symbols : PresentationSymbols) (mapName : String → String)
+    (symbols : LanguageDefSymbolMap) (mapName : String → String)
     (pattern : Pattern) :
     mapPattern symbols (mapPatternSchemaNames mapName pattern) =
       mapPatternSchemaNames mapName (mapPattern symbols pattern) := by
@@ -448,7 +448,7 @@ theorem mapPattern_mapPatternSchemaNames
 /-- The same commuting square holds pointwise for pattern lists. -/
 @[simp]
 theorem mapPatternList_mapPatternListSchemaNames
-    (symbols : PresentationSymbols) (mapName : String → String)
+    (symbols : LanguageDefSymbolMap) (mapName : String → String)
     (patterns : List Pattern) :
     mapPatternListSchemaNames mapName
         (patterns.map (mapPattern symbols)) =
@@ -464,7 +464,7 @@ authored premises.  Declared relation symbols move only structurally; local
 quantifier and freshness names move only by alpha-renaming. -/
 @[simp]
 theorem mapPremise_mapPremiseSchemaNames
-    (symbols : PresentationSymbols) (mapName : String → String)
+    (symbols : LanguageDefSymbolMap) (mapName : String → String)
     (premise : Premise) :
     mapPremise symbols (mapPremiseSchemaNames mapName premise) =
       mapPremiseSchemaNames mapName (mapPremise symbols premise) := by
@@ -484,7 +484,7 @@ theorem mapPremise_mapPremiseSchemaNames
 a schema context. -/
 @[simp]
 theorem mapTypeContext_mapTypeContextSchemaNames
-    (symbols : PresentationSymbols) (mapName : String → String)
+    (symbols : LanguageDefSymbolMap) (mapName : String → String)
     (context : List (String × TypeExpr)) :
     mapTypeContext symbols (mapTypeContextSchemaNames mapName context) =
       mapTypeContextSchemaNames mapName (mapTypeContext symbols context) := by
@@ -495,7 +495,7 @@ theorem mapTypeContext_mapTypeContextSchemaNames
 schema names. -/
 @[simp]
 theorem mapEquation_mapEquationSchemaNames
-    (symbols : PresentationSymbols) (mapName : String → String)
+    (symbols : LanguageDefSymbolMap) (mapName : String → String)
     (equation : Equation) :
     mapEquation symbols (mapEquationSchemaNames mapName equation) =
       mapEquationSchemaNames mapName (mapEquation symbols equation) := by
@@ -517,7 +517,7 @@ theorem mapReflectivePresentation_costBase {source target : CIGSLT}
   cases declaration
   simp [costBaseReflectivePresentationDecl, mapReflectivePresentation,
     costBaseStaticReflectiveSymbols, costBaseStaticSymbols,
-    costBasePresentationSymbols, costReflectiveSymbols, reflectiveSymbols]
+    costBaseLanguageDefSymbolMap, costReflectiveSymbols, reflectiveSymbols]
 
 /-- Wrapped reflective presentations are natural because continued maps
 preserve and reflect the distinguished interacting sort. -/
@@ -556,7 +556,7 @@ theorem mapEquation_costBaseEquationDecl {source target : CIGSLT}
     (morphism : source.Morphism target) (equation : Equation)
     (premisesEmpty : equation.premises = []) :
     mapEquation
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         (costBaseEquationDecl equation) =
       costBaseEquationDecl
@@ -572,7 +572,7 @@ theorem mapEquation_costWrappedEquationDecl {source target : CIGSLT}
     (morphism : source.Morphism target) (equation : Equation)
     (premisesEmpty : equation.premises = []) :
     mapEquation
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         (costWrappedEquationDecl source.theory equation) =
       costWrappedEquationDecl target.theory
@@ -591,7 +591,7 @@ theorem mapsCostStaticEquations {source target : CIGSLT}
     (morphism : source.Morphism target) (equation : Equation)
     (membership : equation ∈ source.costStaticEquations) :
     mapEquation
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         equation ∈ target.costStaticEquations := by
   rw [CIGSLT.costStaticEquations] at membership ⊢
@@ -847,7 +847,7 @@ theorem mapOneHoleContextSchemaNames_fill (mapName : String → String)
 one-hole contexts, just as they do on the patterns stored in each frame. -/
 @[simp]
 theorem mapOneHoleContext_mapOneHoleContextSchemaNames
-    (symbols : PresentationSymbols) (mapName : String → String)
+    (symbols : LanguageDefSymbolMap) (mapName : String → String)
     (context : OneHoleContext) :
     CIGSLT.mapOneHoleContext symbols
         (mapOneHoleContextSchemaNames mapName context) =
@@ -1169,12 +1169,12 @@ def costWholeRedexTypeContext (source : CIGSLT) :
 /-- The exact ordered interaction core in the tagged base namespace. -/
 def costBaseInteractionCore (source : CIGSLT) : Pattern :=
   mapPatternSchemaNames costSourceSchemaName
-    (mapPattern costBasePresentationSymbols source.cut.sourceShape.core)
+    (mapPattern costBaseLanguageDefSymbolMap source.cut.sourceShape.core)
 
 /-- The source cut's pre-existing envelope, transported to the base copy. -/
 def costBaseSourceEnvelope (source : CIGSLT) : OneHoleContext :=
   mapOneHoleContextSchemaNames costSourceSchemaName
-    (mapOneHoleContext costBasePresentationSymbols
+    (mapOneHoleContext costBaseLanguageDefSymbolMap
       source.cut.sourceShape.envelope)
 
 /-- The wrapped contractum with all source schema names transported into the
@@ -1225,7 +1225,7 @@ def costWholeRedexRewrite (source : CIGSLT) : RewriteRule where
 theorem costBaseSourceEnvelope_fill (source : CIGSLT) :
     source.costBaseSourceEnvelope.fill source.costBaseInteractionCore =
       mapPatternSchemaNames costSourceSchemaName
-        (mapPattern costBasePresentationSymbols
+        (mapPattern costBaseLanguageDefSymbolMap
           source.theory.presentation.interactionRewrite.1.left) := by
   rw [costBaseSourceEnvelope, costBaseInteractionCore,
     mapOneHoleContextSchemaNames_fill, mapOneHoleContext_fill,
@@ -1238,7 +1238,7 @@ theorem costWholeRedexSource_eq (source : CIGSLT) :
       .apply costContactConstructorName
         [.apply costSignedConstructorName
           [mapPatternSchemaNames costSourceSchemaName
-            (mapPattern costBasePresentationSymbols
+            (mapPattern costBaseLanguageDefSymbolMap
               source.theory.presentation.interactionRewrite.1.left),
             .fvar source.costSignatureVariable],
           .apply costFundingConstructorName
@@ -1266,7 +1266,7 @@ the collision-free Cost base namespace. -/
 theorem map_costBaseInteractionCore {source target : CIGSLT}
     (morphism : source.Morphism target) :
     mapPattern
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costBaseInteractionCore =
       target.costBaseInteractionCore := by
@@ -1280,7 +1280,7 @@ embedding and the collision-free schema-name action. -/
 theorem map_costBaseSourceEnvelope {source target : CIGSLT}
     (morphism : source.Morphism target) :
     mapOneHoleContext
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costBaseSourceEnvelope =
       target.costBaseSourceEnvelope := by
@@ -1294,7 +1294,7 @@ constructors and administrative variables. -/
 theorem map_costFundingEnvelope {source target : CIGSLT}
     (morphism : source.Morphism target) :
     mapOneHoleContext
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costFundingEnvelope =
       target.costFundingEnvelope := by
@@ -1308,7 +1308,7 @@ the fixed administrative envelope and the transported source envelope. -/
 theorem map_costWholeRedexEnvelope {source target : CIGSLT}
     (morphism : source.Morphism target) :
     mapOneHoleContext
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costWholeRedexEnvelope =
       target.costWholeRedexEnvelope := by
@@ -1323,7 +1323,7 @@ their types follow the wrapped/base type naturality squares. -/
 theorem map_costRetypedSourceContext {source target : CIGSLT}
     (morphism : source.Morphism target) :
     mapTypeContext
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costRetypedSourceContext =
       target.costRetypedSourceContext := by
@@ -1351,7 +1351,7 @@ renaming, is natural in continued theory maps. -/
 theorem map_costMappedContractum {source target : CIGSLT}
     (morphism : source.Morphism target) :
     mapPattern
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costMappedContractum =
       target.costMappedContractum := by
@@ -1364,24 +1364,24 @@ administrative variables, is natural in continued theory maps. -/
 theorem map_costWholeRedexTypeContext {source target : CIGSLT}
     (morphism : source.Morphism target) :
     mapTypeContext
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costWholeRedexTypeContext =
       target.costWholeRedexTypeContext := by
   rw [costWholeRedexTypeContext, costWholeRedexTypeContext]
   rw [show
     mapTypeContext
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         (source.costRetypedSourceContext ++
           [(source.costSignatureVariable, .base costSignatureSortName),
             (source.costStackTailVariable, .base costTokenStackSortName)]) =
       mapTypeContext
-          (costPresentationSymbols
+          (costLanguageDefSymbolMap
             morphism.underlying.structural.structural.symbols)
           source.costRetypedSourceContext ++
         mapTypeContext
-          (costPresentationSymbols
+          (costLanguageDefSymbolMap
             morphism.underlying.structural.structural.symbols)
           [(source.costSignatureVariable, .base costSignatureSortName),
             (source.costStackTailVariable, .base costTokenStackSortName)] by
@@ -1396,7 +1396,7 @@ is the exact mapped source interaction rewrite. -/
 theorem map_costWholeRedexSource {source target : CIGSLT}
     (morphism : source.Morphism target) :
     mapPattern
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costWholeRedexSource =
       target.costWholeRedexSource := by
@@ -1412,7 +1412,7 @@ the hereditary contractum follows `mapContractum_natural`. -/
 theorem map_costWholeRedexTarget {source target : CIGSLT}
     (morphism : source.Morphism target) :
     mapPattern
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costWholeRedexTarget =
       target.costWholeRedexTarget := by
@@ -1424,7 +1424,7 @@ theorem map_costWholeRedexTarget {source target : CIGSLT}
 theorem map_costWholeRedexRewrite {source target : CIGSLT}
     (morphism : source.Morphism target) :
     mapRewriteRule
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         source.costWholeRedexRewrite =
       target.costWholeRedexRewrite := by

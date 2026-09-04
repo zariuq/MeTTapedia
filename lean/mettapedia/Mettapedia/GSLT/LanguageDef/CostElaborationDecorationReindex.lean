@@ -149,19 +149,19 @@ end
 @[simp]
 theorem CIGSLT.Morphism.sourceSymbols_id (source : CIGSLT) :
     (CIGSLT.Morphism.id source).underlying.structural.structural.symbols =
-      PresentationSymbols.id :=
+      LanguageDefSymbolMap.id :=
   rfl
 
 @[simp]
 theorem CIGSLT.Morphism.costWholeSymbols_id (source : CIGSLT) :
     (CIGSLT.Morphism.id source).costWholeStructural.symbols =
-      PresentationSymbols.id := by
-  change costPresentationSymbols PresentationSymbols.id = _
-  exact costPresentationSymbols_id
+      LanguageDefSymbolMap.id := by
+  change costLanguageDefSymbolMap LanguageDefSymbolMap.id = _
+  exact costLanguageDefSymbolMap_id
 
 @[simp]
 private theorem mapTypeExprList_id (types : List TypeExpr) :
-    types.map (mapTypeExpr PresentationSymbols.id) = types := by
+    types.map (mapTypeExpr LanguageDefSymbolMap.id) = types := by
   induction types <;> simp_all
 
 @[simp]
@@ -203,7 +203,7 @@ mutual
         CostRegionBoundary.map_id]
     | .application sourceLabel constructor children => by
       simp only [CostStaticPlanDecorationNode.map,
-        CIGSLT.Morphism.sourceSymbols_id, PresentationSymbols.id,
+        CIGSLT.Morphism.sourceSymbols_id, LanguageDefSymbolMap.id,
         id_eq,
         CIGSLT.Morphism.mapDeclaredCostConstructor_id,
         mapCostStaticPlanDecorations_id]
@@ -264,7 +264,7 @@ mutual
       simp only [CostTreeDecorationNode.map]
     | .static color sourceSort plan boundaries => by
       simp only [CostTreeDecorationNode.map,
-        CIGSLT.Morphism.sourceSymbols_id, PresentationSymbols.id,
+        CIGSLT.Morphism.sourceSymbols_id, LanguageDefSymbolMap.id,
         id_eq,
         CostStaticPlanDecoration.map_id, mapCostBoundaryDecorations_id]
     | .neutralApplication kind constructor arguments => by
@@ -325,12 +325,12 @@ theorem CIGSLT.Morphism.costWholeSymbols_comp
     (CIGSLT.Morphism.comp left right).costWholeStructural.symbols =
       left.costWholeStructural.symbols.comp
         right.costWholeStructural.symbols := by
-  exact costPresentationSymbols_comp
+  exact costLanguageDefSymbolMap_comp
     left.underlying.structural.structural.symbols
     right.underlying.structural.structural.symbols
 
 private theorem mapTypeExprList_comp
-    (first second : PresentationSymbols) (types : List TypeExpr) :
+    (first second : LanguageDefSymbolMap) (types : List TypeExpr) :
     types.map (mapTypeExpr (first.comp second)) =
       (types.map (mapTypeExpr first)).map (mapTypeExpr second) := by
   rw [List.map_map]
@@ -385,7 +385,7 @@ mutual
         CostRegionBoundary.map_comp]
     | .application sourceLabel constructor children => by
       simp only [CostStaticPlanDecorationNode.map,
-        CIGSLT.Morphism.sourceSymbols_comp, PresentationSymbols.comp,
+        CIGSLT.Morphism.sourceSymbols_comp, LanguageDefSymbolMap.comp,
         Function.comp_apply,
         CIGSLT.Morphism.mapDeclaredCostConstructor_comp,
         mapCostStaticPlanDecorations_comp]
@@ -455,7 +455,7 @@ mutual
       simp only [CostTreeDecorationNode.map]
     | .static color sourceSort plan boundaries => by
       simp only [CostTreeDecorationNode.map,
-        CIGSLT.Morphism.sourceSymbols_comp, PresentationSymbols.comp,
+        CIGSLT.Morphism.sourceSymbols_comp, LanguageDefSymbolMap.comp,
         Function.comp_apply, CostStaticPlanDecoration.map_comp,
         mapCostBoundaryDecorations_comp]
     | .neutralApplication kind constructor arguments => by

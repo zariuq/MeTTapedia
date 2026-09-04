@@ -172,16 +172,16 @@ noncomputable instance : CategoryTheory.Category SelectedNativeTypeRequest where
     apply Morphism.ext
     · apply StructuralMorphism.ext
       simp [Morphism.comp, Morphism.id, StructuralMorphism.comp,
-        StructuralMorphism.id, PresentationSymbols.comp,
-        PresentationSymbols.id]
+        StructuralMorphism.id, LanguageDefSymbolMap.comp,
+        LanguageDefSymbolMap.id]
     · simp [Morphism.comp, Morphism.id,
         SelectedNativeTypeDemand.empty_append]
   comp_id morphism := by
     apply Morphism.ext
     · apply StructuralMorphism.ext
       simp [Morphism.comp, Morphism.id, StructuralMorphism.comp,
-        StructuralMorphism.id, PresentationSymbols.comp,
-        PresentationSymbols.id]
+        StructuralMorphism.id, LanguageDefSymbolMap.comp,
+        LanguageDefSymbolMap.id]
     · simp [Morphism.comp, Morphism.id,
         SelectedNativeTypeDemand.append_empty]
   assoc first second third := by

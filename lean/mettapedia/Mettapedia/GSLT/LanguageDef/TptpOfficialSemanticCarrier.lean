@@ -230,6 +230,26 @@ theorem language_validate : language.validate = [] := by
   · exact added_term_labels_disjoint
   · exact added_terms_valid
 
+def constructorLabelNamespaced (label : String) : Bool :=
+  label.startsWith "tptp92-ast:" || label.startsWith "tptp-semantic:"
+
+/-- The source-preserving semantic extension retains the official AST
+namespace and uses a disjoint semantic namespace for its own rows. -/
+theorem constructorLabels_namespaced :
+    (language.terms.map (fun term => term.label)).all
+      constructorLabelNamespaced = true := by
+  change ((TptpOfficialAbstractSyntax.language.terms ++ addedTerms).map
+    (fun term => term.label)).all constructorLabelNamespaced = true
+  simp only [List.map_append, List.all_append, Bool.and_eq_true]
+  constructor
+  · have source :=
+      TptpOfficialAbstractSyntax.constructorLabels_namespaced
+    rw [List.all_eq_true] at source ⊢
+    intro label membership
+    have astNamespace := source label membership
+    simp [constructorLabelNamespaced, astNamespace]
+  · decide +kernel
+
 theorem language_inventory :
     language.types.length = 259 ∧ language.terms.length = 483 ∧
       language.rewrites.length = 0 := by
@@ -767,12 +787,13 @@ theorem document_and_derivation_constructors_distinct :
 
 def theory : Mettapedia.GSLT.GSLT :=
   languageGSLT language
-    (ReductionRespectsEquations.of_no_equations rfl)
+    (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem theory_no_step (source target : Pattern) :
     ¬ theory.Step source target := by
   intro reduction
-  change langReducesUsing RelationEnv.empty language source target at reduction
+  unfold theory at reduction
+  rw [languageGSLT_step] at reduction
   unfold langReducesUsing at reduction
   rcases reduction with ⟨_, step⟩
   cases step with
@@ -810,6 +831,7 @@ def writeWire (path : System.FilePath) : IO Unit :=
 #print axioms official_types_exact_prefix
 #print axioms official_terms_exact_prefix
 #print axioms language_validate
+#print axioms constructorLabels_namespaced
 #print axioms family_input_constructors_present
 #print axioms no_unchecked_derivation_constructor
 #print axioms decode_encode

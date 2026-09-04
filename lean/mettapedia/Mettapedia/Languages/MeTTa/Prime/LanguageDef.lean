@@ -437,7 +437,7 @@ Prime.  This states preservation at the level of all five fields, not merely
 at the level of names or observed examples. -/
 def currentZeroToPrimePresentation :
     StructuralMorphism currentZeroPresentation currentPrimePresentation where
-  symbols := PresentationSymbols.id
+  symbols := LanguageDefSymbolMap.id
   mapsTypes declaration membership := by
     rw [mapTypeDecl_id]
     change List.Mem declaration MeTTaZero.language.types at membership
@@ -473,7 +473,7 @@ there is no identity-symbol structural map erasing Prime back to Zero. -/
 theorem no_identity_symbol_retraction :
     ¬ ∃ retraction :
         StructuralMorphism currentPrimePresentation currentZeroPresentation,
-      retraction.symbols = PresentationSymbols.id := by
+      retraction.symbols = LanguageDefSymbolMap.id := by
   rintro ⟨retraction, symbols⟩
   have quoteMember : List.Mem quoteConstructor language.terms := by
     change List.Mem quoteConstructor

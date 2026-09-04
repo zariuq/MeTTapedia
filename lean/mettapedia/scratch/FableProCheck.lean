@@ -1,0 +1,3 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostCanonicalLaws
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostCanonicalLaws.rho_unambiguousStaticDecomposition
+#print axioms Mettapedia.GSLT.LanguageDef.CostStaticRegionNode.CostRegionTree.normalize_pattern_eq_of_unambiguous

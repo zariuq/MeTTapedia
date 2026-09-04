@@ -63,21 +63,21 @@ structure SelectedUniversalStructure where
     ∀ (program : Program)
       (interpretation : EventInterpretation.{uObject, uEdge} program)
       (candidate : {source target : Pattern} →
-        AuthoredPath program source target →
+        ProgramPath program source target →
           Route interpretation.Edge (interpretation.onObject source)
             (interpretation.onObject target)),
       (∀ object, candidate (.refl object) =
         .refl (interpretation.onObject object)) →
       (∀ {source middle target}
-        (event : AuthoredEvent program source middle)
-        (rest : AuthoredPath program middle target),
+        (event : ProgramEvent program source middle)
+        (rest : ProgramPath program middle target),
         candidate (.cons event rest) =
           .cons (interpretation.onEvent event) (candidate rest)) →
-      ∀ {source target} (path : AuthoredPath program source target),
+      ∀ {source target} (path : ProgramPath program source target),
         candidate path = interpretation.mapPath path
   coherentDoubleCells :
     ∀ {program : Program} {source target : Pattern}
-      {path : AuthoredPath program source target},
+      {path : ProgramPath program source target},
       Nonempty (OccurrenceCompilation path) ↔ Certificate.Compilable path
   typedElaborationSelectionCriterion :
     ∀ {program : Program} (profile : Profile program),
@@ -98,7 +98,7 @@ structure SelectedUniversalStructure where
     ∀ {program : Program}
       (_selection : ExactSelection (Profile.raw program))
       {source target : Pattern}
-      (path : AuthoredPath program source target),
+      (path : ProgramPath program source target),
       Certificate.Compilable path
   typedRepresentationCriterion :
     ∀ {program : Program} {route : RouteDecl}
@@ -220,9 +220,9 @@ def selected : SelectedUniversalStructure where
   rawExactSelectionNoncollapse :=
     exists_program_without_global_exact_selection
   proofHistoryNoncollapse :=
-    EvidenceWorlds.exists_authored_occurrence_history_nonrepresentable
+    EvidenceWorlds.exists_program_occurrence_history_nonrepresentable
   multiworldObservationNoncollapse :=
-    exists_authored_multiworld_observation_boundary
+    exists_program_multiworld_observation_boundary
   wireOccurrenceQuotientNonfaithful :=
     OccurrenceCells.DuplicateOccurrenceCanary.exists_distinct_cells_with_equal_wire_steps
 
@@ -231,7 +231,7 @@ def selected : SelectedUniversalStructure where
 /-- Occurrence-bearing authored paths are genuinely free on their authored
 events: for every target edge family and generator interpretation, the type
 of identity- and generator-preserving extensions is contractible. -/
-theorem authored_free_path_initial
+theorem program_free_path_initial
     (program : Program)
     (interpretation : EventInterpretation.{uObject, uEdge} program) :
     Nonempty (EventInterpretation.PathExtension interpretation) ∧
@@ -270,18 +270,18 @@ theorem visible_outcome_determinacy_does_not_erase_history :
         ¬ Nonempty
           (Representation
             (EvidenceWorlds.occurrenceProfile program source target).related) :=
-  EvidenceWorlds.exists_authored_occurrence_history_nonrepresentable
+  EvidenceWorlds.exists_program_occurrence_history_nonrepresentable
 
 /-- An authored ambiguous elaboration supports a faithful observer of complete
 outcome/history worlds and, over the same retained container, a deliberately
 lossy observer of visible outcomes.  The interlingua therefore exposes
 ambiguity to capability-indexed observers instead of resolving it globally. -/
-theorem authored_multiworld_observation_noncollapse :
+theorem program_multiworld_observation_noncollapse :
     ∃ (program : Program) (profile : EvidenceWorlds.Profile program)
       (command : profile.Command),
       (worlds profile command).Faithful ∧
         (outcomes profile command).Lossy :=
-  exists_authored_multiworld_observation_boundary
+  exists_program_multiworld_observation_boundary
 
 /-- On a licensed typed route, the compiled result has the strongest true
 extensional reflection: it is equal to a target exactly when the original
@@ -337,11 +337,11 @@ def observedRefinementOfRepresentedRoute
   route.observedImageRefinement sourceMeaning targetDiscipline
 
 #print axioms selected
-#print axioms authored_free_path_initial
+#print axioms program_free_path_initial
 #print axioms typed_elaboration_strongest_reflection
 #print axioms typed_evidence_representation_criterion
 #print axioms visible_outcome_determinacy_does_not_erase_history
-#print axioms authored_multiworld_observation_noncollapse
+#print axioms program_multiworld_observation_noncollapse
 #print axioms typed_route_strongest_extensional_reflection
 #print axioms represented_execution_unique
 #print axioms represented_capability_domain_universal

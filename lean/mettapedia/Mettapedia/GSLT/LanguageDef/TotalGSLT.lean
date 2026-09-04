@@ -11,11 +11,12 @@ admitted proof calculus supplies a second GSLT whose terms are proof-obligation
 lists and whose rewrites are backward rule applications.  This module combines
 those two theories with the canonical `GSLT.disjointSum` construction.
 
-The object-language half is not allowed to forget authored equations.  A
+The object-language half is not allowed to forget generated equations.  A
 `ReductionRespectsEquations` witness states the two compatibility laws required
-by `GSLT`; `of_no_equations` derives the witness for the common exact-syntax
-case.  Languages with nonempty equations must prove the real compatibility
-law rather than silently receiving syntactic equality.
+by `GSLT`; `of_equation_free` derives the witness only when the presentation
+generates no authored, collection-derived, or algebra-derived equations.
+Every other language must prove the real compatibility law rather than
+silently receiving syntactic equality.
 
 The result has one carrier, one equation relation, and one rewrite relation.
 Each summand embeds faithfully and no reduction crosses between them.  This is
@@ -55,21 +56,21 @@ structure ReductionRespectsEquationsUsing
 
 namespace ReductionRespectsEquationsUsing
 
-/-- With no authored equations, reduction compatibility follows because the
-generated equation relation is exactly syntactic equality. -/
-def of_no_equations (relations : RelationEnv) {language : LanguageDef}
-    (empty : language.equations = []) :
+/-- For an equation-free presentation, reduction compatibility follows because
+the generated equation relation is exactly syntactic equality. -/
+def of_equation_free (relations : RelationEnv) {language : LanguageDef}
+    (free : language.isEquationFree = true) :
     ReductionRespectsEquationsUsing relations language where
   source := by
     intro term term' result equivalent reduction
     have equal :=
-      (equationEquiv_iff_eq_of_no_generators empty term term').mp equivalent
+      (equationEquiv_iff_eq_of_no_generators free term term').mp equivalent
     subst term'
     exact ⟨result, reduction, Relation.EqvGen.refl result⟩
   target := by
     intro term result result' reduction equivalent
     have equal :=
-      (equationEquiv_iff_eq_of_no_generators empty result result').mp equivalent
+      (equationEquiv_iff_eq_of_no_generators free result result').mp equivalent
     subst result'
     exact reduction
 
@@ -81,31 +82,53 @@ abbrev ReductionRespectsEquations (language : LanguageDef) :=
 
 namespace ReductionRespectsEquations
 
-/-- Empty-equation compatibility for the closed relation environment. -/
-def of_no_equations {language : LanguageDef}
-    (empty : language.equations = []) : ReductionRespectsEquations language :=
-  ReductionRespectsEquationsUsing.of_no_equations RelationEnv.empty empty
+/-- Equation-free compatibility for the closed relation environment. -/
+def of_equation_free {language : LanguageDef}
+    (free : language.isEquationFree = true) : ReductionRespectsEquations language :=
+  ReductionRespectsEquationsUsing.of_equation_free RelationEnv.empty free
 
 end ReductionRespectsEquations
 
+/-- If the authored rewrite relation already respects the generated equation
+theory, the canonical equation-saturated relation adds no new steps. -/
+theorem equationSaturatedStep_iff_langReducesUsing_of_respects
+    (relations : RelationEnv) (language : LanguageDef)
+    (laws : ReductionRespectsEquationsUsing relations language)
+    (source target : Pattern) :
+    EquationSaturatedStep (engineBasePremises relations) language source target ↔
+      langReducesUsing relations language source target := by
+  constructor
+  · rintro ⟨redex, contractum, sourceEquivalent, primitive,
+      targetEquivalent⟩
+    obtain ⟨middle, sourceStep, contractumEquivalent⟩ :=
+      laws.source
+        ((equationSetoid (engineBasePremises relations) language).iseqv.symm
+          sourceEquivalent)
+        primitive
+    apply laws.target sourceStep
+    exact
+      (equationSetoid (engineBasePremises relations) language).iseqv.trans
+        ((equationSetoid (engineBasePremises relations) language).iseqv.symm
+          contractumEquivalent)
+        targetEquivalent
+  · exact step_to_equationSaturatedStep
+
 /-- The GSLT denoted by a five-field language in a specific relation
-environment.  This is required for languages whose rewrite premises query
-authored logic declarations. -/
+environment.  It is the canonical equation-saturated LanguageDef GSLT.  The
+compatibility witness proves that this one construction has exactly the
+authored rewrite steps; it does not select a second operational semantics. -/
 def languageGSLTUsing (relations : RelationEnv) (language : LanguageDef)
-    (laws : ReductionRespectsEquationsUsing relations language) : GSLT where
-  Term := Pattern
-  equations := equationSetoid (engineBasePremises relations) language
-  rewrites := langReducesUsing relations language
-  rewrites_resp_left := laws.source
-  rewrites_resp_right := laws.target
+    (_laws : ReductionRespectsEquationsUsing relations language) : GSLT :=
+  equationSaturatedGSLT (engineBasePremises relations) language
 
 @[simp] theorem languageGSLTUsing_step (relations : RelationEnv)
     (language : LanguageDef)
     (laws : ReductionRespectsEquationsUsing relations language)
     (source target : Pattern) :
     (languageGSLTUsing relations language laws).Step source target ↔
-      langReducesUsing relations language source target :=
-  Iff.rfl
+      langReducesUsing relations language source target := by
+  exact equationSaturatedStep_iff_langReducesUsing_of_respects
+    relations language laws source target
 
 @[simp] theorem languageGSLTUsing_equiv (relations : RelationEnv)
     (language : LanguageDef)
@@ -124,8 +147,8 @@ def languageGSLT (language : LanguageDef)
 @[simp] theorem languageGSLT_step (language : LanguageDef)
     (laws : ReductionRespectsEquations language) (source target : Pattern) :
     (languageGSLT language laws).Step source target ↔
-      langReducesUsing RelationEnv.empty language source target :=
-  Iff.rfl
+      langReducesUsing RelationEnv.empty language source target := by
+  exact languageGSLTUsing_step RelationEnv.empty language laws source target
 
 @[simp] theorem languageGSLT_equiv (language : LanguageDef)
     (laws : ReductionRespectsEquations language) (source target : Pattern) :
@@ -133,15 +156,15 @@ def languageGSLT (language : LanguageDef)
       EquationEquiv (engineBasePremises RelationEnv.empty) language source target :=
   Iff.rfl
 
-/-- In the empty-equation case, the GSLT equivalence is exactly syntactic
+/-- In the equation-free case, the GSLT equivalence is exactly syntactic
 equality. -/
-theorem languageGSLT_equiv_iff_eq_of_no_equations
-    {language : LanguageDef} (empty : language.equations = [])
+theorem languageGSLT_equiv_iff_eq_of_equation_free
+    {language : LanguageDef} (free : language.isEquationFree = true)
     (source target : Pattern) :
     (languageGSLT language
-        (ReductionRespectsEquations.of_no_equations empty)).Equiv source target ↔
+        (ReductionRespectsEquations.of_equation_free free)).Equiv source target ↔
       source = target :=
-  equationEquiv_iff_eq_of_no_generators empty source target
+  equationEquiv_iff_eq_of_no_generators free source target
 
 /-! ## Canonical conservative combination -/
 
@@ -184,6 +207,60 @@ theorem no_right_to_left (languageTheory calculusTheory : GSLT)
         (inCalculus source) (inLanguage target) := by
   intro step
   cases step
+
+private theorem multiStep_stays_left {languageTheory calculusTheory : GSLT}
+    {source target : (GSLT.disjointSum languageTheory calculusTheory).Term}
+    (steps :
+      (GSLT.disjointSum languageTheory calculusTheory).MultiStep source target)
+    (start : languageTheory.Term) (shape : source = inLanguage start) :
+    ∃ finish : languageTheory.Term,
+      target = inLanguage finish ∧ languageTheory.MultiStep start finish := by
+  let motive : ∀ (first second :
+      (GSLT.disjointSum languageTheory calculusTheory).Term),
+      (GSLT.disjointSum languageTheory calculusTheory).MultiStep
+        first second → Prop :=
+    fun first second _ => ∀ initial : languageTheory.Term,
+      first = inLanguage initial →
+        ∃ finish : languageTheory.Term,
+          second = inLanguage finish ∧
+            languageTheory.MultiStep initial finish
+  refine GSLT.MultiStep.rec (motive := motive) ?_ ?_ steps start shape
+  · intro term initial equal
+    subst equal
+    exact ⟨initial, rfl, .refl initial⟩
+  · intro first _ _ head _ inductionHypothesis initial equal
+    subst equal
+    cases head with
+    | left reduction =>
+        obtain ⟨finish, finishShape, rest⟩ := inductionHypothesis _ rfl
+        exact ⟨finish, finishShape, .step reduction rest⟩
+
+private theorem left_multiStep_of {languageTheory calculusTheory : GSLT}
+    {source target : languageTheory.Term}
+    (steps : languageTheory.MultiStep source target) :
+    (GSLT.disjointSum languageTheory calculusTheory).MultiStep
+      (inLanguage source) (inLanguage target) := by
+  induction steps with
+  | refl term => exact .refl (inLanguage term)
+  | step reduction _ inductionHypothesis =>
+      exact .step (.left reduction) inductionHypothesis
+
+/-- Finite execution in the object summand is exactly finite execution of
+the object theory.  In particular, proof search cannot be entered and later
+hidden by returning to an object endpoint. -/
+@[simp] theorem disjointSum_left_multiStep
+    (languageTheory calculusTheory : GSLT)
+    (source target : languageTheory.Term) :
+    (GSLT.disjointSum languageTheory calculusTheory).MultiStep
+        (inLanguage source) (inLanguage target) ↔
+      languageTheory.MultiStep source target := by
+  constructor
+  · intro steps
+    obtain ⟨finish, shape, componentSteps⟩ :=
+      multiStep_stays_left steps source rfl
+    cases shape
+    exact componentSteps
+  · exact left_multiStep_of
 
 private theorem multiStep_stays_right {languageTheory calculusTheory : GSLT}
     {source target : (GSLT.disjointSum languageTheory calculusTheory).Term}
@@ -234,13 +311,156 @@ private theorem right_multiStep_of {languageTheory calculusTheory : GSLT}
     exact componentSteps
   · exact right_multiStep_of
 
+/-- A finite path cannot leave the left summand. -/
+theorem no_left_multiStep_to_right (languageTheory calculusTheory : GSLT)
+    (source : languageTheory.Term) (target : calculusTheory.Term) :
+    ¬ (GSLT.disjointSum languageTheory calculusTheory).MultiStep
+        (inLanguage source) (inCalculus target) := by
+  intro steps
+  obtain ⟨_, shape, _⟩ := multiStep_stays_left steps source rfl
+  cases shape
+
+/-- A finite path cannot leave the right summand. -/
+theorem no_right_multiStep_to_left (languageTheory calculusTheory : GSLT)
+    (source : calculusTheory.Term) (target : languageTheory.Term) :
+    ¬ (GSLT.disjointSum languageTheory calculusTheory).MultiStep
+        (inCalculus source) (inLanguage target) := by
+  intro steps
+  obtain ⟨_, shape, _⟩ := multiStep_stays_right steps source rfl
+  cases shape
+
 /-! ## A validated language/calculus definition as one GSLT -/
 
-/-- A validated language and calculus, conservatively combined as one GSLT. -/
+/-- A validated language and calculus, conservatively combined in an explicit
+relation environment.  The relation environment belongs only to the object
+summand: proof search remains the generic checker over the admitted calculus. -/
+def combinedGSLTUsing (relations : RelationEnv)
+    (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquationsUsing relations
+      checked.1.toLanguageDef) : GSLT :=
+  GSLT.disjointSum
+    (languageGSLTUsing relations checked.1.toLanguageDef laws)
+    (proofSearchGSLT checked)
+
+@[simp] theorem combinedGSLTUsing_language_step (relations : RelationEnv)
+    (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquationsUsing relations
+      checked.1.toLanguageDef)
+    (source target : Pattern) :
+    (combinedGSLTUsing relations checked laws).Step
+        (inLanguage source) (inLanguage target) ↔
+      langReducesUsing relations checked.1.toLanguageDef source target := by
+  exact (disjointSum_left_step
+    (languageGSLTUsing relations checked.1.toLanguageDef laws)
+    (proofSearchGSLT checked) source target).trans
+      (languageGSLTUsing_step relations checked.1.toLanguageDef laws
+        source target)
+
+/-- Complete object paths in a combined theory are exactly paths in its
+relation-aware language summand.  Proof search cannot occur as a hidden
+intermediate phase of an object path. -/
+@[simp] theorem combinedGSLTUsing_language_multiStep (relations : RelationEnv)
+    (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquationsUsing relations
+      checked.1.toLanguageDef)
+    (source target : Pattern) :
+    (combinedGSLTUsing relations checked laws).MultiStep
+        (inLanguage source) (inLanguage target) ↔
+      (languageGSLTUsing relations checked.1.toLanguageDef laws).MultiStep
+        source target := by
+  unfold combinedGSLTUsing
+  exact disjointSum_left_multiStep
+    (languageGSLTUsing relations checked.1.toLanguageDef laws)
+    (proofSearchGSLT checked) source target
+
+/-- An object term is normal in the combined theory exactly when it is normal
+in the relation-aware language summand.  A proof-search successor cannot be a
+hidden reason for object non-normality. -/
+@[simp] theorem combinedGSLTUsing_language_normalForm (relations : RelationEnv)
+    (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquationsUsing relations
+      checked.1.toLanguageDef)
+    (source : Pattern) :
+    (combinedGSLTUsing relations checked laws).IsNormalForm
+        (inLanguage source) ↔
+      (languageGSLTUsing relations checked.1.toLanguageDef laws).IsNormalForm
+        source := by
+  constructor
+  · intro normal ⟨target, step⟩
+    exact normal ⟨inLanguage target,
+      (combinedGSLTUsing_language_step relations checked laws
+        source target).2
+        ((languageGSLTUsing_step relations checked.1.toLanguageDef laws
+          source target).1 step)⟩
+  · intro normal ⟨target, step⟩
+    cases target with
+    | inl target =>
+        exact normal ⟨target,
+          (languageGSLTUsing_step relations checked.1.toLanguageDef laws
+            source target).2
+            ((combinedGSLTUsing_language_step relations checked laws
+              source target).1 step)⟩
+    | inr target =>
+        unfold combinedGSLTUsing at step
+        cases step
+
+@[simp] theorem combinedGSLTUsing_calculus_step (relations : RelationEnv)
+    (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquationsUsing relations
+      checked.1.toLanguageDef)
+    (source target : GoalState) :
+    (combinedGSLTUsing relations checked laws).Step
+        (inCalculus source) (inCalculus target) ↔
+      (proofSearchGSLT checked).Step source target := by
+  unfold combinedGSLTUsing
+  exact disjointSum_right_step
+    (languageGSLTUsing relations checked.1.toLanguageDef laws)
+    (proofSearchGSLT checked) source target
+
+theorem combinedGSLTUsing_no_crossing (relations : RelationEnv)
+    (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquationsUsing relations
+      checked.1.toLanguageDef)
+    (pattern : Pattern) (state : GoalState) :
+    ¬ (combinedGSLTUsing relations checked laws).Step
+        (inLanguage pattern) (inCalculus state) ∧
+      ¬ (combinedGSLTUsing relations checked laws).Step
+        (inCalculus state) (inLanguage pattern) := by
+  unfold combinedGSLTUsing
+  exact ⟨no_left_to_right
+      (languageGSLTUsing relations checked.1.toLanguageDef laws)
+      (proofSearchGSLT checked) pattern state,
+    no_right_to_left
+      (languageGSLTUsing relations checked.1.toLanguageDef laws)
+      (proofSearchGSLT checked) state pattern⟩
+
+/-- Derivability is reduction to the empty obligation state in the right
+summand, independently of the object language's relation environment. -/
+theorem derivability_iff_combinedGSLTUsing (relations : RelationEnv)
+    (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquationsUsing relations
+      checked.1.toLanguageDef)
+    (goals : GoalState) :
+    Nonempty (DerivationList checked goals) ↔
+      (combinedGSLTUsing relations checked laws).MultiStep
+        (inCalculus goals) (inCalculus []) := by
+  unfold combinedGSLTUsing
+  rw [disjointSum_right_multiStep]
+  exact derivationList_nonempty_iff_proofSearch checked goals
+
+/-- The historical closed-world totalizer is the empty-environment
+specialization of `combinedGSLTUsing`. -/
 def combinedGSLT (checked : ValidatedCalculusLanguageDef)
     (laws : ReductionRespectsEquations checked.1.toLanguageDef) : GSLT :=
   GSLT.disjointSum (languageGSLT checked.1.toLanguageDef laws)
     (proofSearchGSLT checked)
+
+theorem combinedGSLT_eq_combinedGSLTUsing_empty
+    (checked : ValidatedCalculusLanguageDef)
+    (laws : ReductionRespectsEquations checked.1.toLanguageDef) :
+    combinedGSLT checked laws =
+      combinedGSLTUsing RelationEnv.empty checked laws :=
+  rfl
 
 @[simp] theorem combinedGSLT_language_step (checked : ValidatedCalculusLanguageDef)
     (laws : ReductionRespectsEquations checked.1.toLanguageDef)
@@ -248,9 +468,8 @@ def combinedGSLT (checked : ValidatedCalculusLanguageDef)
     (combinedGSLT checked laws).Step
         (inLanguage source) (inLanguage target) ↔
       langReducesUsing RelationEnv.empty checked.1.toLanguageDef source target := by
-  exact (disjointSum_left_step
-    (languageGSLT checked.1.toLanguageDef laws) (proofSearchGSLT checked)
-    source target).trans (languageGSLT_step _ _ _ _)
+  exact combinedGSLTUsing_language_step RelationEnv.empty checked laws
+    source target
 
 @[simp] theorem combinedGSLT_calculus_step (checked : ValidatedCalculusLanguageDef)
     (laws : ReductionRespectsEquations checked.1.toLanguageDef)
@@ -258,9 +477,7 @@ def combinedGSLT (checked : ValidatedCalculusLanguageDef)
     (combinedGSLT checked laws).Step
         (inCalculus source) (inCalculus target) ↔
       (proofSearchGSLT checked).Step source target := by
-  unfold combinedGSLT
-  exact disjointSum_right_step
-    (languageGSLT checked.1.toLanguageDef laws) (proofSearchGSLT checked)
+  exact combinedGSLTUsing_calculus_step RelationEnv.empty checked laws
     source target
 
 theorem combinedGSLT_no_crossing (checked : ValidatedCalculusLanguageDef)
@@ -270,13 +487,8 @@ theorem combinedGSLT_no_crossing (checked : ValidatedCalculusLanguageDef)
         (inLanguage pattern) (inCalculus state) ∧
       ¬ (combinedGSLT checked laws).Step
         (inCalculus state) (inLanguage pattern) := by
-  unfold combinedGSLT
-  exact ⟨no_left_to_right
-      (languageGSLT checked.1.toLanguageDef laws) (proofSearchGSLT checked)
-      pattern state,
-    no_right_to_left
-      (languageGSLT checked.1.toLanguageDef laws) (proofSearchGSLT checked)
-      state pattern⟩
+  exact combinedGSLTUsing_no_crossing RelationEnv.empty checked laws
+    pattern state
 
 /-- Derivability is reduction to the empty obligation state inside the
 combined GSLT. -/
@@ -286,8 +498,6 @@ theorem derivability_iff_combinedGSLT (checked : ValidatedCalculusLanguageDef)
     Nonempty (DerivationList checked goals) ↔
       (combinedGSLT checked laws).MultiStep
         (inCalculus goals) (inCalculus []) := by
-  unfold combinedGSLT
-  rw [disjointSum_right_multiStep]
-  exact derivationList_nonempty_iff_proofSearch checked goals
+  exact derivability_iff_combinedGSLTUsing RelationEnv.empty checked laws goals
 
 end Mettapedia.GSLT.LanguageDef.TotalGSLT

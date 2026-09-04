@@ -23,12 +23,12 @@ open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.Dynamics.ExecutionPathObservation
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 
-universe uObservation
+universe uObservation uTerm
 
 /-- An operational object equipped with one explicitly named observation of
 complete executions. -/
 structure ObservedOperationalObject (Value : Type uObservation) where
-  operational : OperationalObject
+  operational : OperationalObject.{uTerm}
   observe : PathObservation operational.theory Value
 
 /-- A compiler-correctness square: direct operational realization, preserved

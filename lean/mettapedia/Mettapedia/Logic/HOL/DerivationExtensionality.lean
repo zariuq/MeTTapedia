@@ -11,9 +11,8 @@ variable {Const : Ty Base → Type v} {Const' : Ty Base → Type w}
 /--
 An extensional overlay of the small HOL derivation core.
 
-This keeps the original calculus in
-`/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Logic/HOL/Derivation.lean`
-intact, while adding the missing argument-congruence strength needed by standard
+This keeps the original calculus in `Mettapedia.Logic.HOL.Derivation` intact,
+while adding the missing argument-congruence strength needed by standard
 extensional HOL equality.
 -/
 inductive ExtDerivation (Const : Ty Base → Type v) :

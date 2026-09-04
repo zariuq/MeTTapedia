@@ -30,27 +30,28 @@ open Mettapedia.GSLT.LanguageDef.CarrierWellSorted
 
 /-- The structural native type at one authored carrier sort.  Both its sort
 and its predicate are generated from the supplied `LanguageDef`. -/
-def carrierNativeType (language : LanguageDef) (sort : String) :
+def carrierNativeType (language : LanguageDef)
+    (equationsEmpty : language.equations = []) (sort : String) :
     langNativeType language sort where
   sort := sort
-  pred := fun term =>
+  pred := equationPredicateOfEquationFree equationsEmpty (fun term =>
     checkHasType language WellSorted.FreeTypeContext.empty [] term
-      (.base sort) = true
+      (.base sort) = true)
 
 def syntaxTreeNativeType :=
-  carrierNativeType TptpFofCnfSyntaxTree.language "SyntaxTree"
+  carrierNativeType TptpFofCnfSyntaxTree.language rfl "SyntaxTree"
 
 def documentNativeType :=
-  carrierNativeType TptpFirstOrderDocument.language "Document"
+  carrierNativeType TptpFirstOrderDocument.language rfl "Document"
 
 def clauseProblemNativeType :=
-  carrierNativeType FirstOrderClauseData.language "Problem"
+  carrierNativeType FirstOrderClauseData.language rfl "Problem"
 
 def resolutionProblemNativeType :=
-  carrierNativeType FirstOrderResolutionInput.language "Problem"
+  carrierNativeType FirstOrderResolutionInput.language rfl "Problem"
 
 def derivationNativeType :=
-  carrierNativeType TptpFirstOrderDerivation.language "Derivation"
+  carrierNativeType TptpFirstOrderDerivation.language rfl "Derivation"
 
 private def a (label : String) (arguments : List Pattern := []) : Pattern :=
   .apply label arguments
@@ -83,31 +84,31 @@ def derivation : Pattern :=
     [documentSource, a "tstp:derivation-nodes-nil"]
 
 theorem syntax_nil_inhabits_native_type :
-    syntaxTreeNativeType.pred syntaxNil := by
+    syntaxTreeNativeType.pred.1 syntaxNil := by
   change checkHasType TptpFofCnfSyntaxTree.language
       WellSorted.FreeTypeContext.empty [] syntaxNil (.base "SyntaxTree") = true
   decide +kernel
 
 theorem document_inhabits_native_type :
-    documentNativeType.pred document := by
+    documentNativeType.pred.1 document := by
   change checkHasType TptpFirstOrderDocument.language
       WellSorted.FreeTypeContext.empty [] document (.base "Document") = true
   decide +kernel
 
 theorem clause_problem_inhabits_native_type :
-    clauseProblemNativeType.pred clauseProblem := by
+    clauseProblemNativeType.pred.1 clauseProblem := by
   change checkHasType FirstOrderClauseData.language
       WellSorted.FreeTypeContext.empty [] clauseProblem (.base "Problem") = true
   decide +kernel
 
 theorem resolution_problem_inhabits_native_type :
-    resolutionProblemNativeType.pred resolutionProblem := by
+    resolutionProblemNativeType.pred.1 resolutionProblem := by
   change checkHasType FirstOrderResolutionInput.language
       WellSorted.FreeTypeContext.empty [] resolutionProblem (.base "Problem") = true
   decide +kernel
 
 theorem derivation_inhabits_native_type :
-    derivationNativeType.pred derivation := by
+    derivationNativeType.pred.1 derivation := by
   change checkHasType TptpFirstOrderDerivation.language
       WellSorted.FreeTypeContext.empty [] derivation (.base "Derivation") = true
   decide +kernel
@@ -115,7 +116,7 @@ theorem derivation_inhabits_native_type :
 /-- A term admitted by the semantic Document language is not silently
 accepted as a syntax tree. -/
 theorem document_not_syntax_tree :
-    ¬ syntaxTreeNativeType.pred document := by
+    ¬ syntaxTreeNativeType.pred.1 document := by
   change ¬ (checkHasType TptpFofCnfSyntaxTree.language
       WellSorted.FreeTypeContext.empty [] document (.base "SyntaxTree") = true)
   decide +kernel
@@ -123,7 +124,7 @@ theorem document_not_syntax_tree :
 /-- The source-preserving ClauseData carrier and the normalized resolution
 carrier have distinct constructors even though both expose a `Problem` sort. -/
 theorem clause_problem_not_resolution_problem :
-    ¬ resolutionProblemNativeType.pred clauseProblem := by
+    ¬ resolutionProblemNativeType.pred.1 clauseProblem := by
   change ¬ (checkHasType FirstOrderResolutionInput.language
       WellSorted.FreeTypeContext.empty [] clauseProblem (.base "Problem") = true)
   decide +kernel
@@ -132,7 +133,7 @@ theorem clause_problem_not_resolution_problem :
 TSTP derivation merely because the latter conservatively extends its
 constructor vocabulary. -/
 theorem document_not_derivation :
-    ¬ derivationNativeType.pred document := by
+    ¬ derivationNativeType.pred.1 document := by
   change ¬ (checkHasType TptpFirstOrderDerivation.language
       WellSorted.FreeTypeContext.empty [] document (.base "Derivation") = true)
   decide +kernel
@@ -141,36 +142,46 @@ theorem syntax_exact_target_native_type_empty
     (source target : Pattern) :
     ¬ (gsltOSLF TptpFofCnfSyntaxTree.theory).satisfies source
         (exactTargetNativeType TptpFofCnfSyntaxTree.theory target).pred := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  intro holds
   exact TptpFofCnfSyntaxTree.theory_no_step source target
+    ((satisfies_exactTargetNativeType_iff_step
+      TptpFofCnfSyntaxTree.theory source target).mp holds)
 
 theorem document_exact_target_native_type_empty
     (source target : Pattern) :
     ¬ (gsltOSLF TptpFirstOrderDocument.theory).satisfies source
         (exactTargetNativeType TptpFirstOrderDocument.theory target).pred := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  intro holds
   exact TptpFirstOrderDocument.theory_no_step source target
+    ((satisfies_exactTargetNativeType_iff_step
+      TptpFirstOrderDocument.theory source target).mp holds)
 
 theorem clause_exact_target_native_type_empty
     (source target : Pattern) :
     ¬ (gsltOSLF FirstOrderClauseData.theory).satisfies source
         (exactTargetNativeType FirstOrderClauseData.theory target).pred := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  intro holds
   exact FirstOrderClauseData.theory_no_step source target
+    ((satisfies_exactTargetNativeType_iff_step
+      FirstOrderClauseData.theory source target).mp holds)
 
 theorem resolution_exact_target_native_type_empty
     (source target : Pattern) :
     ¬ (gsltOSLF FirstOrderResolutionInput.theory).satisfies source
         (exactTargetNativeType FirstOrderResolutionInput.theory target).pred := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  intro holds
   exact FirstOrderResolutionInput.theory_no_step source target
+    ((satisfies_exactTargetNativeType_iff_step
+      FirstOrderResolutionInput.theory source target).mp holds)
 
 theorem derivation_exact_target_native_type_empty
     (source target : Pattern) :
     ¬ (gsltOSLF TptpFirstOrderDerivation.theory).satisfies source
         (exactTargetNativeType TptpFirstOrderDerivation.theory target).pred := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  intro holds
   exact TptpFirstOrderDerivation.theory_no_step source target
+    ((satisfies_exactTargetNativeType_iff_step
+      TptpFirstOrderDerivation.theory source target).mp holds)
 
 #print axioms syntax_nil_inhabits_native_type
 #print axioms document_inhabits_native_type

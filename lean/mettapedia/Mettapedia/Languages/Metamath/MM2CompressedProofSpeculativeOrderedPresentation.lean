@@ -52,6 +52,21 @@ theorem decoratedSpeculativeBody_source_exact :
   exact transformCompressedVerifierPresentation?_sourceRules
     decoratedSpeculativeBody_build_exact
 
+/-- The decorated compiler's remembered opaque occurrence is exactly the
+normal-bridge assertion launcher at the selected source position. -/
+theorem decoratedSpeculativeBody_sourceOpaque_exact :
+    decoratedSpeculativeBody.selected.artifact.sourceOpaqueRule =
+      compressedAssertionLaunchRuleWithNormalBridge := by
+  have selected := transformCompressedVerifierPresentation?_sourceOpaqueRule
+    decoratedSpeculativeBody_build_exact
+  change
+    compressedBodyRulesWithNormalBridgeAndSourceVerdictAndFaultReject[7]? =
+      some decoratedSpeculativeBody.selected.artifact.sourceOpaqueRule at selected
+  rw [
+    compressedBodyRulesWithNormalBridgeAndSourceVerdictAndFaultReject_assertion_at]
+    at selected
+  exact (Option.some.inj selected).symm
+
 /-- Header rules remain a distinct unchanged prefix while the target body is
 the result of the input-sensitive speculative transformation. -/
 def compressedSpeculativeVerifierRulePresentation :
@@ -138,6 +153,7 @@ theorem compressedSpeculativeOrderedVerifierExtensionProgram_exact :
 
 #print axioms decoratedSpeculativeBody_build_exact
 #print axioms decoratedSpeculativeBody_source_exact
+#print axioms decoratedSpeculativeBody_sourceOpaque_exact
 #print axioms compressedSpeculativeVerifier_header_exact
 #print axioms compressedSpeculativeVerifier_body_exact
 #print axioms compressedSpeculativeVerifier_target_length

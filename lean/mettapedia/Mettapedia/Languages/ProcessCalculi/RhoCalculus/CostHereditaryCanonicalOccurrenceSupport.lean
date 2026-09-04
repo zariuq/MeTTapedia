@@ -3209,7 +3209,7 @@ theorem rhoCanonicalOccurrence_atomSafeAt_targetAvailable
           cases color <;>
             simp [declaration, costStaticReflectivePresentationDecl_eq_map,
               mapReflectivePresentation, CostStaticColor.symbols,
-              costBaseStaticSymbols, costBasePresentationSymbols,
+              costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               costWrappedStaticSymbols, rhoReflectivePresentation]
     exact
       WellSorted.HasType.ReflectiveSupportSafeAt.nameResult_of_nil
@@ -4343,7 +4343,7 @@ mutual
   /-- Static symbol mapping changes labels and sorts but introduces no binder
   syntax. -/
   theorem rhoStaticFrameBinderFree_mapPattern
-      (symbols : PresentationSymbols) : ∀ pattern,
+      (symbols : LanguageDefSymbolMap) : ∀ pattern,
       rhoStaticFrameBinderFree (mapPattern symbols pattern) =
         rhoStaticFrameBinderFree pattern
     | .bvar _ => rfl
@@ -4361,7 +4361,7 @@ mutual
 
   /-- List companion to binder-freedom under static symbol mapping. -/
   theorem rhoStaticFrameListBinderFree_mapPatternList
-      (symbols : PresentationSymbols) : ∀ patterns,
+      (symbols : LanguageDefSymbolMap) : ∀ patterns,
       rhoStaticFrameListBinderFree (mapPatternList symbols patterns) =
         rhoStaticFrameListBinderFree patterns
     | [] => rfl

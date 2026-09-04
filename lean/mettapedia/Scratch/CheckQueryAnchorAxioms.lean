@@ -1,0 +1,8 @@
+import Mettapedia.Languages.MeTTa.HE.LeaTTaQueryObservationalAnchor
+
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaBridge.instantiate_semantically_inert
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaBridge.queryOp_hit_observational_anchor
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaBridge.queryOp_hit_exists_of_human
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaBridge.anchored_observable_inert
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaBridge.queryOp_hit_observational_sound_of_satisfiable
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaBridge.queryOp_hit_observational_sound_empty_incoming

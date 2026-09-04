@@ -191,14 +191,12 @@ structure ProcEquiv where
   /-- Transitivity -/
   trans : rel.isTrans
 
-/-! ## Modal Operators from Rewrites
+/-! ## Predicate carriers
 
-**NOTE:** The real modal operators `possiblyProp` and `relyProp` are defined in
-Reduction.lean, where they have access to the reduction relation. They form a
-proven Galois connection.
-
-This file defines only the static predicate structure. Modal operators derived
-from operational semantics belong in Reduction.lean, not here.
+This file defines the raw predicate carriers used by the direct rho typing
+development. The semantic modal operators and native predicate frame are
+generated from the equation-quotiented GSLT in
+`OSLF/Framework/RhoInstance.lean`.
 -/
 
 /-! ## Summary
@@ -210,9 +208,8 @@ This file establishes the type-theoretic foundations for the ρ-calculus:
 4. ✅ **Barbs**: Observable communication capabilities
 5. ✅ **BarbedRelation**: Relations for bisimulation
 
-**Modal operators** (`possiblyProp`, `relyProp`) and the **Galois connection** are in
-Reduction.lean, where they have access to the reduction relation. See Reduction.lean
-for the proven Galois connection theorem.
+Raw step queries used by the direct typing development are in
+`Reduction.lean`; they are not an alternative OSLF predicate semantics.
 
 This file provides the static predicate structure. Operational semantics belongs in
 Reduction.lean.

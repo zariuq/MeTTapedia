@@ -1,0 +1,57 @@
+; A fused link carries the cell and its successor together.  No independent
+; reserved successor can make a non-cell position look live.
+(exec (00 fused-hit)
+  (, (fused-walk $owner $query $query)
+     (heap-link $owner $query $next $kind $value))
+  (O (- (fused-walk $owner $query $query))
+     (+ (heap-result fused found $owner $query $kind $value))))
+
+(exec (01 fused-frontier-fault)
+  (, (fused-walk $owner $query $frontier)
+     (heap-frontier $owner $frontier))
+  (O (- (fused-walk $owner $query $frontier))
+     (+ (heap-result fused missing $owner $query $frontier))))
+
+(exec (02 fused-advance)
+  (, (fused-walk $owner $query $cursor)
+     (heap-link $owner $cursor $next $kind $value)
+     (fused-handler hit $hit-rule)
+     (fused-handler fault $fault-rule)
+     (fused-handler advance $advance-rule))
+  (O (- (fused-walk $owner $query $cursor))
+     (+ (fused-walk $owner $query $next))
+     (+ $hit-rule)
+     (+ $fault-rule)
+     (+ $advance-rule)))
+
+(fused-handler hit
+  (exec (00 fused-hit)
+    (, (fused-walk $owner $query $query)
+       (heap-link $owner $query $next $kind $value))
+    (O (- (fused-walk $owner $query $query))
+       (+ (heap-result fused found $owner $query $kind $value)))))
+
+(fused-handler fault
+  (exec (01 fused-frontier-fault)
+    (, (fused-walk $owner $query $frontier)
+       (heap-frontier $owner $frontier))
+    (O (- (fused-walk $owner $query $frontier))
+       (+ (heap-result fused missing $owner $query $frontier)))))
+
+(fused-handler advance
+  (exec (02 fused-advance)
+    (, (fused-walk $owner $query $cursor)
+       (heap-link $owner $cursor $next $kind $value)
+       (fused-handler hit $hit-rule)
+       (fused-handler fault $fault-rule)
+       (fused-handler advance $advance-rule))
+    (O (- (fused-walk $owner $query $cursor))
+       (+ (fused-walk $owner $query $next))
+       (+ $hit-rule)
+       (+ $fault-rule)
+       (+ $advance-rule))))
+
+(heap-link heap-A 0 1 proof node-0)
+(heap-link heap-A 1 2 assertion ax-1)
+(heap-frontier heap-A 2)
+(fused-walk heap-A 1 0)

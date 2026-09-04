@@ -64,13 +64,13 @@ def rewriteDeclsToLanguageDef
   rewriteDeclsToLanguageDefWithTerms langName [] rws
 
 def mettaNullaryTermRule (label : String) : LDGrammarRule :=
-  Mettapedia.OSLF.MeTTaIL.Syntax.GrammarRule.mk label "MTerm" [] [] none
+  Mettapedia.OSLF.MeTTaIL.Syntax.GrammarRule.mk label "MTerm" [] [] none none
 
 def mettaUnaryTermRule (label argName : String) : LDGrammarRule :=
   Mettapedia.OSLF.MeTTaIL.Syntax.GrammarRule.mk label "MTerm"
     [Mettapedia.OSLF.MeTTaIL.Syntax.TermParam.simple argName
       (.base "MTerm")]
-    [] none
+    [] none none
 
 def peanoCorpusTermRules : List LDGrammarRule :=
   [mettaNullaryTermRule "Z", mettaUnaryTermRule "S" "n"]

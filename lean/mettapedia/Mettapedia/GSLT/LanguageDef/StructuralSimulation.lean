@@ -57,7 +57,7 @@ symbol action: every result produced by `base` at a source presentation is
 produced, in mapped form, by `base'` at the image presentation.  Unlike the
 exact equality law of the coproduct module, this is a one-directional
 membership law, so the target evaluator may produce additional results. -/
-def MapsBasePremiseResults (symbols : PresentationSymbols)
+def MapsBasePremiseResults (symbols : LanguageDefSymbolMap)
     (base base' : BasePremiseEvaluator) : Prop :=
   ∀ (language : LanguageDef) (bindings : Bindings) (premise : Premise)
     (result : Bindings),
@@ -74,7 +74,7 @@ fuel.  This is the simultaneous induction over `StepAt`, `PremisesAt`, and
 `PremiseAt`: the congruence case recurses through the step relation at the
 same fuel index, so the fuel induction carries all three statements. -/
 theorem stepAt_mapLanguageDef
-    {symbols : PresentationSymbols} {base base' : BasePremiseEvaluator}
+    {symbols : LanguageDefSymbolMap} {base base' : BasePremiseEvaluator}
     {language : LanguageDef}
     (constructorInjective : Function.Injective symbols.constructor)
     (mapsBaseResults : MapsBasePremiseResults symbols base base')
@@ -151,7 +151,7 @@ theorem stepAt_mapLanguageDef
 /-- Unbounded form: the least contextual relation maps into the least
 contextual relation of the image presentation. -/
 theorem step_mapLanguageDef
-    {symbols : PresentationSymbols} {base base' : BasePremiseEvaluator}
+    {symbols : LanguageDefSymbolMap} {base base' : BasePremiseEvaluator}
     {language : LanguageDef}
     (constructorInjective : Function.Injective symbols.constructor)
     (mapsBaseResults : MapsBasePremiseResults symbols base base')
@@ -251,14 +251,14 @@ variable names; a `relationQuery` premise can only produce results through
 the builtin `"eq"` relation, which survives exactly when the symbol action
 fixes that name. -/
 
-private theorem lookup_mapBindings (symbols : PresentationSymbols)
+private theorem lookup_mapBindings (symbols : LanguageDefSymbolMap)
     (bindings : Bindings) (name : String) :
     (mapBindings symbols bindings).lookup name =
       (bindings.lookup name).map (mapPattern symbols) := by
   simp only [Bindings.lookup, find?_mapBindings, Option.map_map]
   rfl
 
-private theorem freeVars_mapPattern (symbols : PresentationSymbols)
+private theorem freeVars_mapPattern (symbols : LanguageDefSymbolMap)
     (pattern : Pattern) :
     freeVars (mapPattern symbols pattern) = freeVars pattern := by
   induction pattern using Pattern.inductionOn with
@@ -277,7 +277,7 @@ private theorem freeVars_mapPattern (symbols : PresentationSymbols)
       simp only [mapPattern, mapPatternList_eq_map, freeVars, List.flatMap_map]
       exact List.flatMap_congr inductionHypothesis
 
-private theorem checkFreshness_mapPattern (symbols : PresentationSymbols)
+private theorem checkFreshness_mapPattern (symbols : LanguageDefSymbolMap)
     (varName : String) (term : Pattern) :
     checkFreshness ⟨varName, mapPattern symbols term⟩ =
       checkFreshness ⟨varName, term⟩ := by
@@ -304,7 +304,7 @@ private theorem premiseStepWithEnv_freshness_eq
           else []
       | none => [] := rfl
 
-private theorem resolveFreshName_mapBindings (symbols : PresentationSymbols)
+private theorem resolveFreshName_mapBindings (symbols : LanguageDefSymbolMap)
     (bindings : Bindings) (varName : String) :
     resolveFreshName (mapBindings symbols bindings) varName =
       resolveFreshName bindings varName := by
@@ -314,7 +314,7 @@ private theorem resolveFreshName_mapBindings (symbols : PresentationSymbols)
   | none => rfl
   | some value => cases value <;> simp [mapPattern]
 
-private theorem mapPattern_eq_fvar {symbols : PresentationSymbols}
+private theorem mapPattern_eq_fvar {symbols : LanguageDefSymbolMap}
     {pattern : Pattern} {name : String}
     (equal : mapPattern symbols pattern = .fvar name) :
     pattern = .fvar name := by
@@ -330,7 +330,7 @@ private theorem matchRelationArgument_not_fvar
     | exact absurd rfl (notFvar _)
 
 private theorem matchRelationArgument_equivariance
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (seed : Bindings) (argument value : Pattern) :
     matchRelationArgument (mapBindings symbols seed)
@@ -361,7 +361,7 @@ private theorem matchRelationArgument_equivariance
       matchPattern_equivariance symbols constructorInjective]
 
 private theorem matchRelationArgs_equivariance
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (arguments : List Pattern) :
     ∀ (seed : Bindings) (values : List Pattern),
@@ -397,7 +397,7 @@ private theorem matchRelationArgs_equivariance
                 headBindings (matchRelationArgs extended arguments values)
 
 private theorem builtinRelationTuples_map
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (relationFixesEq : symbols.relation "eq" = "eq")
     (sourceLanguage targetLanguage : LanguageDef)
     (relation : String) (argumentPatterns : List Pattern)
@@ -418,7 +418,7 @@ private theorem builtinRelationTuples_map
   · cases member
 
 private theorem relationQueryStep_empty_map
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (relationFixesEq : symbols.relation "eq" = "eq")
     (sourceLanguage targetLanguage : LanguageDef)
@@ -455,7 +455,7 @@ injective constructor part that fixes the builtin relation name `"eq"`.  The
 naming condition is required: see
 `engineBasePremises_empty_mapping_requires_eq_name`. -/
 theorem engineBasePremises_empty_maps_results
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (relationFixesEq : symbols.relation "eq" = "eq") :
     MapsBasePremiseResults symbols (engineBasePremises RelationEnv.empty)
@@ -511,7 +511,7 @@ theorem engineBasePremises_language_agnostic
   cases premise <;> rfl
 
 /-- **Corollary at the derived-semantics level.**  The default reduction
-relation `langReduces` of the OSLF synthesis layer is preserved along any
+authored one-step relation `langReduces` is preserved along any
 structural presentation morphism whose symbol action has an injective
 constructor part and fixes the builtin relation name `"eq"`. -/
 theorem langReduces_map_of_structuralMorphism
@@ -582,7 +582,7 @@ private def simulationTargetLanguage : LanguageDef :=
 
 /-- Prefix-tagging symbol action on constructors; every other namespace is
 untouched, so the builtin relation name `"eq"` is fixed. -/
-private def taggingSymbols : PresentationSymbols where
+private def taggingSymbols : LanguageDefSymbolMap where
   sort := _root_.id
   constructor := fun name => "sim:" ++ name
   relation := _root_.id
@@ -742,8 +742,8 @@ theorem simulation_is_one_way :
 /-- Constructor injectivity is load-bearing for matcher equivariance: a
 collapsing action makes distinct constructors match after mapping, so the
 mapped match set strictly exceeds the image of the source match set. -/
-private def collapseConstructors : PresentationSymbols :=
-  { PresentationSymbols.id with constructor := fun _ => "collapsed" }
+private def collapseConstructors : LanguageDefSymbolMap :=
+  { LanguageDefSymbolMap.id with constructor := fun _ => "collapsed" }
 
 theorem matchPattern_equivariance_requires_injectivity :
     matchPattern (mapPattern collapseConstructors (.apply "left" []))
@@ -751,13 +751,13 @@ theorem matchPattern_equivariance_requires_injectivity :
       (matchPattern (.apply "left" []) (.apply "right" [])).map
         (mapBindings collapseConstructors) := by
   simp +decide [mapPattern, mapPatternList, collapseConstructors,
-    PresentationSymbols.id, matchPattern, matchArgs]
+    LanguageDefSymbolMap.id, matchPattern, matchArgs]
 
 /-- The `"eq"`-naming condition on `engineBasePremises_empty_maps_results` is
 required: an action that renames the builtin relation name silences the
 builtin equality tuples in the image, losing a source result. -/
-private def renameEqSymbols : PresentationSymbols :=
-  { PresentationSymbols.id with
+private def renameEqSymbols : LanguageDefSymbolMap :=
+  { LanguageDefSymbolMap.id with
     relation := fun name => if name = "eq" then "builtin-eq" else name }
 
 theorem engineBasePremises_empty_mapping_requires_eq_name :

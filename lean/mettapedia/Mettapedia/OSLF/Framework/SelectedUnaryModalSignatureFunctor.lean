@@ -156,7 +156,7 @@ theorem mapConstructorName_comp
 def symbols
     {source target : DisplayedOccurrenceLanguage}
     (morphism : DisplayedOccurrenceMorphism source target) :
-    PresentationSymbols where
+    LanguageDefSymbolMap where
   sort := id
   constructor := mapConstructorName morphism
   relation := id
@@ -165,8 +165,8 @@ def symbols
 
 @[simp]
 theorem symbols_id (object : DisplayedOccurrenceLanguage) :
-    symbols (DisplayedOccurrenceMorphism.id object) = PresentationSymbols.id := by
-  ext name <;> simp [symbols, PresentationSymbols.id]
+    symbols (DisplayedOccurrenceMorphism.id object) = LanguageDefSymbolMap.id := by
+  ext name <;> simp [symbols, LanguageDefSymbolMap.id]
 
 @[simp]
 theorem symbols_comp
@@ -174,8 +174,8 @@ theorem symbols_comp
     (earlier : DisplayedOccurrenceMorphism first second)
     (later : DisplayedOccurrenceMorphism second third) :
     symbols (DisplayedOccurrenceMorphism.comp earlier later) =
-      PresentationSymbols.comp (symbols earlier) (symbols later) := by
-  ext name <;> simp [symbols, PresentationSymbols.comp]
+      LanguageDefSymbolMap.comp (symbols earlier) (symbols later) := by
+  ext name <;> simp [symbols, LanguageDefSymbolMap.comp]
 
 theorem extendPosition_lt
     {source target : DisplayedOccurrenceLanguage}

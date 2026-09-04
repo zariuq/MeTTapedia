@@ -1,0 +1,9 @@
+import Mettapedia.GSLT.LanguageDef.CostElaborationDecoration
+#check List.map_id
+#check List.map_id_fun
+#check List.map_eq_self
+#check List.map_map
+#check id_eq
+#print Mettapedia.GSLT.LanguageDef.mapCostStaticPlanDecorations
+#check Mettapedia.GSLT.LanguageDef.mapCostStaticPlanDecorations.eq_1
+#check Mettapedia.GSLT.LanguageDef.mapCostStaticPlanDecorations.eq_2

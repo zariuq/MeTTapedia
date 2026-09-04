@@ -10,8 +10,9 @@ the BinaryWorldModel typeclass properties from the PLN book.
 
 ## Architecture — Two Layers
 
-**Layer 1 (Syntactic):** Define predicates on Pattern terms (`isCombined`,
-`isDecomposable`, `isCommuted`, `isReassociated`) and prove ◇ theorems
+**Layer 1 (Presented):** Define observations on authored Pattern terms
+(`isCombined`, `isDecomposable`, `isCommuted`, `isReassociated`), prove their
+equation invariance, and prove ◇ theorems
 by composing `langDiamond_spec` with existing step lemmas from
 `WMCalculusLanguageDef.lean`.
 
@@ -76,6 +77,32 @@ def isFixpoint (p : Pattern) : Prop :=
 def isZeroEvidence (p : Pattern) : Prop :=
   p = pEvidenceZero
 
+/-! ## Semantic predicate packaging
+
+The current WM presentations declare no structural equations.  Consequently
+every authored observation descends to their equation classes.  These
+constructors expose that theorem explicitly: if a WM presentation later gains
+an equation, the `rfl` witness disappears and every affected observation must
+be revalidated. -/
+
+/-- Equation-respecting observation at a six-axis WM vertex. -/
+def wmExtPredicate (v : WMExtVertex) (predicate : Pattern → Prop) :
+    GSLTTypeSynthesis.EquationPredicate (langGSLT (wmExtVertexLanguageDef v)) :=
+  equationPredicateOfEquationFree (by rfl) predicate
+
+/-- Equation-respecting observation at a full WM vertex. -/
+def wmFullPredicate (v : WMFullVertex) (predicate : Pattern → Prop) :
+    GSLTTypeSynthesis.EquationPredicate (langGSLT (wmFullVertexLanguageDef v)) :=
+  equationPredicateOfEquationFree (by rfl) predicate
+
+/-- Equation-respecting observation for a guarded six-axis WM vertex. -/
+def wmExtGuardedPredicateUsing
+    (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv) (v : WMExtVertex)
+    (predicate : Pattern → Prop) :
+    GSLTTypeSynthesis.EquationPredicate
+      (langGSLTUsing relEnv (wmExtVertexLanguageDefGuarded v)) :=
+  equationPredicateUsingOfEquationFree relEnv (by rfl) predicate
+
 /-! ## Section 2: Diamond Theorems (Layer 1)
 
 Each ◇ theorem composes `langDiamond_spec` with a step lemma to prove that
@@ -87,33 +114,34 @@ Curry-Howard reading of the step-future modality. -/
     Witness: the evidence-add step lemma. -/
 theorem diamond_isCombined_at_decomposable (v : WMExtVertex)
     (pw₁ pw₂ pq : Pattern) :
-    langDiamond (wmExtVertexLanguageDef v) isCombined
+    langDiamond (wmExtVertexLanguageDef v) (wmExtPredicate v isCombined)
       (pExtract (pRevise pw₁ pw₂) pq) := by
   rw [langDiamond_spec]
   exact ⟨pCombine (pExtract pw₁ pq) (pExtract pw₂ pq),
-         wmLangReduces_evidenceAdd v pw₁ pw₂ pq,
+         langReduces_to_semantic _ (wmLangReduces_evidenceAdd v pw₁ pw₂ pq),
          ⟨_, _, rfl⟩⟩
 
 /-- ◇(isRevision) holds at any `Revise(W₁,W₂)` — the commuted form is reachable.
     Witness: the revision-commutativity step lemma. -/
 theorem diamond_isCommuted (v : WMExtVertex)
     (pw₁ pw₂ : Pattern) :
-    langDiamond (wmExtVertexLanguageDef v) isRevision
+    langDiamond (wmExtVertexLanguageDef v) (wmExtPredicate v isRevision)
       (pRevise pw₁ pw₂) := by
   rw [langDiamond_spec]
   exact ⟨pRevise pw₂ pw₁,
-         wmLangReduces_revisionComm v pw₁ pw₂,
+         langReduces_to_semantic _ (wmLangReduces_revisionComm v pw₁ pw₂),
          ⟨_, _, rfl⟩⟩
 
 /-- ◇(isRightAssocRevision) holds at any `Revise(Revise(W₁,W₂), W₃)`.
     Witness: the revision-associativity step lemma. -/
 theorem diamond_isReassociated (v : WMExtVertex)
     (pw₁ pw₂ pw₃ : Pattern) :
-    langDiamond (wmExtVertexLanguageDef v) isRightAssocRevision
+    langDiamond (wmExtVertexLanguageDef v)
+      (wmExtPredicate v isRightAssocRevision)
       (pRevise (pRevise pw₁ pw₂) pw₃) := by
   rw [langDiamond_spec]
   exact ⟨pRevise pw₁ (pRevise pw₂ pw₃),
-         wmLangReduces_revisionAssoc v pw₁ pw₂ pw₃,
+         langReduces_to_semantic _ (wmLangReduces_revisionAssoc v pw₁ pw₂ pw₃),
          ⟨_, _, _, rfl⟩⟩
 
 /-- ◇(isCombined) at a decomposable pattern implies the conclusion of `evidence_add`:
@@ -121,9 +149,11 @@ theorem diamond_isReassociated (v : WMExtVertex)
     is extracted from a single source. -/
 theorem diamond_isCombined_yields_per_source (v : WMExtVertex)
     (pw₁ pw₂ pq : Pattern) :
-    ∃ q, langReduces (wmExtVertexLanguageDef v) (pExtract (pRevise pw₁ pw₂) pq) q ∧
+    ∃ q, langSemanticReduces (wmExtVertexLanguageDef v)
+      (pExtract (pRevise pw₁ pw₂) pq) q ∧
          q = pCombine (pExtract pw₁ pq) (pExtract pw₂ pq) := by
-  exact ⟨_, wmLangReduces_evidenceAdd v pw₁ pw₂ pq, rfl⟩
+  exact ⟨_, langReduces_to_semantic _
+    (wmLangReduces_evidenceAdd v pw₁ pw₂ pq), rfl⟩
 
 /-! ## Section 3: Galois Connection Instantiation
 
@@ -151,21 +181,33 @@ theorem wmFullCalc_galois (v : WMFullVertex) :
 
     This is the adjunction `◇(isCombined) ≤ ψ ↔ isCombined ≤ □ψ`
     specialized to the WM calculus. -/
-theorem wmCalc_decomposability_safety (v : WMExtVertex) (ψ : Pattern → Prop) :
-    (∀ p, langDiamond (wmExtVertexLanguageDef v) isCombined p → ψ p) ↔
-    (∀ p, isCombined p → langBox (wmExtVertexLanguageDef v) ψ p) :=
+theorem wmCalc_decomposability_safety (v : WMExtVertex)
+    (ψ : GSLTTypeSynthesis.EquationPredicate
+      (langGSLT (wmExtVertexLanguageDef v))) :
+    (∀ p, langDiamond (wmExtVertexLanguageDef v)
+      (wmExtPredicate v isCombined) p → ψ p) ↔
+    (∀ p, isCombined p → langBox (wmExtVertexLanguageDef v)
+      ψ p) :=
   (wmCalc_galois v).le_iff_le
 
 /-- Commutativity adjunction: ◇(isRevision) ≤ ψ ↔ isRevision ≤ □ψ. -/
-theorem wmCalc_commutativity_safety (v : WMExtVertex) (ψ : Pattern → Prop) :
-    (∀ p, langDiamond (wmExtVertexLanguageDef v) isRevision p → ψ p) ↔
-    (∀ p, isRevision p → langBox (wmExtVertexLanguageDef v) ψ p) :=
+theorem wmCalc_commutativity_safety (v : WMExtVertex)
+    (ψ : GSLTTypeSynthesis.EquationPredicate
+      (langGSLT (wmExtVertexLanguageDef v))) :
+    (∀ p, langDiamond (wmExtVertexLanguageDef v)
+      (wmExtPredicate v isRevision) p → ψ p) ↔
+    (∀ p, isRevision p → langBox (wmExtVertexLanguageDef v)
+      ψ p) :=
   (wmCalc_galois v).le_iff_le
 
 /-- Associativity adjunction: ◇(isRightAssocRevision) ≤ ψ ↔ isRightAssocRevision ≤ □ψ. -/
-theorem wmCalc_associativity_safety (v : WMExtVertex) (ψ : Pattern → Prop) :
-    (∀ p, langDiamond (wmExtVertexLanguageDef v) isRightAssocRevision p → ψ p) ↔
-    (∀ p, isRightAssocRevision p → langBox (wmExtVertexLanguageDef v) ψ p) :=
+theorem wmCalc_associativity_safety (v : WMExtVertex)
+    (ψ : GSLTTypeSynthesis.EquationPredicate
+      (langGSLT (wmExtVertexLanguageDef v))) :
+    (∀ p, langDiamond (wmExtVertexLanguageDef v)
+      (wmExtPredicate v isRightAssocRevision) p → ψ p) ↔
+    (∀ p, isRightAssocRevision p → langBox (wmExtVertexLanguageDef v)
+      ψ p) :=
   (wmCalc_galois v).le_iff_le
 
 /-! ## Section 4: WMTerm Inductive (Layer 2)
@@ -231,11 +273,11 @@ theorem wm_evidence_add_sound (v : WMExtVertex)
     {pw₁ pw₂ pq : Pattern} {tw₁ tw₂ : WMTerm .state} {tq : WMTerm .query}
     (hw₁ : WMTermEncodes pw₁ tw₁) (hw₂ : WMTermEncodes pw₂ tw₂)
     (hq : WMTermEncodes pq tq) :
-    ∃ q, langReduces (wmExtVertexLanguageDef v)
+    ∃ q, langSemanticReduces (wmExtVertexLanguageDef v)
       (pExtract (pRevise pw₁ pw₂) pq) q ∧
       WMTermEncodes q (.combine (.extract tw₁ tq) (.extract tw₂ tq)) :=
   ⟨pCombine (pExtract pw₁ pq) (pExtract pw₂ pq),
-   wmLangReduces_evidenceAdd v pw₁ pw₂ pq,
+   langReduces_to_semantic _ (wmLangReduces_evidenceAdd v pw₁ pw₂ pq),
    WMTermEncodes.combine
      (WMTermEncodes.extract hw₁ hq)
      (WMTermEncodes.extract hw₂ hq)⟩
@@ -245,11 +287,11 @@ theorem wm_evidence_add_sound (v : WMExtVertex)
 theorem wm_revision_comm_sound (v : WMExtVertex)
     {pw₁ pw₂ : Pattern} {tw₁ tw₂ : WMTerm .state}
     (hw₁ : WMTermEncodes pw₁ tw₁) (hw₂ : WMTermEncodes pw₂ tw₂) :
-    ∃ q, langReduces (wmExtVertexLanguageDef v)
+    ∃ q, langSemanticReduces (wmExtVertexLanguageDef v)
       (pRevise pw₁ pw₂) q ∧
       WMTermEncodes q (.revise tw₂ tw₁) :=
   ⟨pRevise pw₂ pw₁,
-   wmLangReduces_revisionComm v pw₁ pw₂,
+   langReduces_to_semantic _ (wmLangReduces_revisionComm v pw₁ pw₂),
    WMTermEncodes.revise hw₂ hw₁⟩
 
 /-- Revision-associativity soundness: reduction fires and result encodes
@@ -258,11 +300,11 @@ theorem wm_revision_assoc_sound (v : WMExtVertex)
     {pw₁ pw₂ pw₃ : Pattern} {tw₁ tw₂ tw₃ : WMTerm .state}
     (hw₁ : WMTermEncodes pw₁ tw₁) (hw₂ : WMTermEncodes pw₂ tw₂)
     (hw₃ : WMTermEncodes pw₃ tw₃) :
-    ∃ q, langReduces (wmExtVertexLanguageDef v)
+    ∃ q, langSemanticReduces (wmExtVertexLanguageDef v)
       (pRevise (pRevise pw₁ pw₂) pw₃) q ∧
       WMTermEncodes q (.revise tw₁ (.revise tw₂ tw₃)) :=
   ⟨pRevise pw₁ (pRevise pw₂ pw₃),
-   wmLangReduces_revisionAssoc v pw₁ pw₂ pw₃,
+   langReduces_to_semantic _ (wmLangReduces_revisionAssoc v pw₁ pw₂ pw₃),
    WMTermEncodes.revise hw₁ (WMTermEncodes.revise hw₂ hw₃)⟩
 
 /-! ## Section 7: Bridge Composition
@@ -275,7 +317,7 @@ theorem diamond_isCombined_of_encoded (v : WMExtVertex)
     {pw₁ pw₂ pq : Pattern} {tw₁ tw₂ : WMTerm .state} {tq : WMTerm .query}
     (_hw₁ : WMTermEncodes pw₁ tw₁) (_hw₂ : WMTermEncodes pw₂ tw₂)
     (_hq : WMTermEncodes pq tq) :
-    langDiamond (wmExtVertexLanguageDef v) isCombined
+    langDiamond (wmExtVertexLanguageDef v) (wmExtPredicate v isCombined)
       (pExtract (pRevise pw₁ pw₂) pq) :=
   diamond_isCombined_at_decomposable v pw₁ pw₂ pq
 
@@ -283,7 +325,7 @@ theorem diamond_isCombined_of_encoded (v : WMExtVertex)
 theorem diamond_isCommuted_of_encoded (v : WMExtVertex)
     {pw₁ pw₂ : Pattern} {tw₁ tw₂ : WMTerm .state}
     (_hw₁ : WMTermEncodes pw₁ tw₁) (_hw₂ : WMTermEncodes pw₂ tw₂) :
-    langDiamond (wmExtVertexLanguageDef v) isRevision
+    langDiamond (wmExtVertexLanguageDef v) (wmExtPredicate v isRevision)
       (pRevise pw₁ pw₂) :=
   diamond_isCommuted v pw₁ pw₂
 
@@ -292,8 +334,10 @@ theorem diamond_isCombined_transport
     {v w : WMFullVertex}
     (heq : wmFullVertexLanguageDef v = wmFullVertexLanguageDef w)
     {p : Pattern}
-    (h : langDiamond (wmFullVertexLanguageDef v) isCombined p) :
-    langDiamond (wmFullVertexLanguageDef w) isCombined p := by
+    (h : langDiamond (wmFullVertexLanguageDef v)
+      (wmFullPredicate v isCombined) p) :
+    langDiamond (wmFullVertexLanguageDef w)
+      (wmFullPredicate w isCombined) p := by
   rw [langDiamond_spec] at h ⊢
   obtain ⟨q, hred, hcomb⟩ := h
   exact ⟨q, heq ▸ hred, hcomb⟩
@@ -308,13 +352,16 @@ If vertex `v` is weaker than `w` (fewer rules), then ◇ at `w` implies ◇ at `
     in terms of modal logic. -/
 theorem diamond_monotone_of_rules_subset
     {L₁ L₂ : LanguageDef}
-    (hsub : ∀ p q, langReduces L₁ p q → langReduces L₂ p q)
-    {φ : Pattern → Prop} {p : Pattern}
-    (h : langDiamond L₁ φ p) :
-    langDiamond L₂ φ p := by
+    (hsub : ∀ p q, langSemanticReduces L₁ p q →
+      langSemanticReduces L₂ p q)
+    {φ₁ : GSLTTypeSynthesis.EquationPredicate (langGSLT L₁)}
+    {φ₂ : GSLTTypeSynthesis.EquationPredicate (langGSLT L₂)}
+    (predicate_mono : ∀ q, φ₁ q → φ₂ q) {p : Pattern}
+    (h : langDiamond L₁ φ₁ p) :
+    langDiamond L₂ φ₂ p := by
   rw [langDiamond_spec] at h ⊢
   obtain ⟨q, hred, hφ⟩ := h
-  exact ⟨q, hsub p q hred, hφ⟩
+  exact ⟨q, hsub p q hred, predicate_mono q hφ⟩
 
 /-! ## Section 9: Full-Vertex Diamond Theorems
 
@@ -323,24 +370,28 @@ Each axiom fires only when the corresponding axis is enabled. -/
 
 /-- ◇(isCombined) at any full vertex (core evidence-add). -/
 theorem full_diamond_isCombined (v : WMFullVertex) (pw₁ pw₂ pq : Pattern) :
-    langDiamond (wmFullVertexLanguageDef v) isCombined
+    langDiamond (wmFullVertexLanguageDef v) (wmFullPredicate v isCombined)
       (pExtract (pRevise pw₁ pw₂) pq) := by
   rw [langDiamond_spec]
-  exact ⟨_, wmFullLangReduces_evidenceAdd v pw₁ pw₂ pq, ⟨_, _, rfl⟩⟩
+  exact ⟨_, langReduces_to_semantic _
+    (wmFullLangReduces_evidenceAdd v pw₁ pw₂ pq), ⟨_, _, rfl⟩⟩
 
 /-- ◇(isRevision) at any full vertex (core commutativity). -/
 theorem full_diamond_isCommuted (v : WMFullVertex) (pw₁ pw₂ : Pattern) :
-    langDiamond (wmFullVertexLanguageDef v) isRevision
+    langDiamond (wmFullVertexLanguageDef v) (wmFullPredicate v isRevision)
       (pRevise pw₁ pw₂) := by
   rw [langDiamond_spec]
-  exact ⟨_, wmFullLangReduces_revisionComm v pw₁ pw₂, ⟨_, _, rfl⟩⟩
+  exact ⟨_, langReduces_to_semantic _
+    (wmFullLangReduces_revisionComm v pw₁ pw₂), ⟨_, _, rfl⟩⟩
 
 /-- ◇(isRightAssocRevision) at any full vertex (core associativity). -/
 theorem full_diamond_isReassociated (v : WMFullVertex) (pw₁ pw₂ pw₃ : Pattern) :
-    langDiamond (wmFullVertexLanguageDef v) isRightAssocRevision
+    langDiamond (wmFullVertexLanguageDef v)
+      (wmFullPredicate v isRightAssocRevision)
       (pRevise (pRevise pw₁ pw₂) pw₃) := by
   rw [langDiamond_spec]
-  exact ⟨_, wmFullLangReduces_revisionAssoc v pw₁ pw₂ pw₃, ⟨_, _, _, rfl⟩⟩
+  exact ⟨_, langReduces_to_semantic _
+    (wmFullLangReduces_revisionAssoc v pw₁ pw₂ pw₃), ⟨_, _, _, rfl⟩⟩
 
 /-- "The pattern is an `OverlapCorrect(...)` term." -/
 def isOverlapCorrected (p : Pattern) : Prop :=
@@ -349,52 +400,60 @@ def isOverlapCorrected (p : Pattern) : Prop :=
 /-- ◇(isOverlapCorrected) at overlap-aware vertices. -/
 theorem full_diamond_overlapCorrected (v : WMFullVertex)
     (hov : v.overlap = .overlapAware) (pw₁ pw₂ pq : Pattern) :
-    langDiamond (wmFullVertexLanguageDef v) isOverlapCorrected
+    langDiamond (wmFullVertexLanguageDef v)
+      (wmFullPredicate v isOverlapCorrected)
       (pExtract (pOverlapMerge pw₁ pw₂) pq) := by
   rw [langDiamond_spec]
-  exact ⟨_, wmFullLangReduces_overlapExtract v hov pw₁ pw₂ pq, ⟨_, _, _, rfl⟩⟩
+  exact ⟨_, langReduces_to_semantic _
+    (wmFullLangReduces_overlapExtract v hov pw₁ pw₂ pq), ⟨_, _, _, rfl⟩⟩
 
 /-- ◇(isFixpoint) at fixpoint-enabled vertices: the closure absorbs one step. -/
 theorem full_diamond_closureFixpoint (v : WMFullVertex)
     (hfp : v.fixpoint = .closureOnly ∨ v.fixpoint = .policyDriven ∨ v.fixpoint = .cascade)
     (pR pw pseed : Pattern) :
-    langDiamond (wmFullVertexLanguageDef v) isFixpoint
+    langDiamond (wmFullVertexLanguageDef v) (wmFullPredicate v isFixpoint)
       (pImmediateStep pR pw pseed (pLeastClosure pR pw pseed)) := by
   rw [langDiamond_spec]
-  exact ⟨_, wmFullLangReduces_closureFixpoint v hfp pR pw pseed, ⟨_, _, _, rfl⟩⟩
+  exact ⟨_, langReduces_to_semantic _
+    (wmFullLangReduces_closureFixpoint v hfp pR pw pseed), ⟨_, _, _, rfl⟩⟩
 
 /-- ◇(isZeroEvidence) at conserving vertices: anti-hallucination. -/
 theorem full_diamond_antiHallucination (v : WMFullVertex)
     (hcons : v.conservation = .conserving) (pD pq : Pattern) :
-    langDiamond (wmFullVertexLanguageDef v) isZeroEvidence
+    langDiamond (wmFullVertexLanguageDef v)
+      (wmFullPredicate v isZeroEvidence)
       (pExtract pD pq) := by
   rw [langDiamond_spec]
-  exact ⟨_, wmFullLangReduces_antiHallucination v hcons pD pq, rfl⟩
+  exact ⟨_, langReduces_to_semantic _
+    (wmFullLangReduces_antiHallucination v hcons pD pq), rfl⟩
 
 /-- ◇(isCombined) for experiment evidence at experiment-enabled vertices. -/
 theorem full_diamond_experimentDecomposable (v : WMFullVertex)
     (hexp : v.experiment = .deterministic ∨ v.experiment = .stochastic)
     (pw₁ pw₂ pq : Pattern) :
-    langDiamond (wmFullVertexLanguageDef v) isCombined
+    langDiamond (wmFullVertexLanguageDef v) (wmFullPredicate v isCombined)
       (pExperimentEvidence (pRevise pw₁ pw₂) pq) := by
   rw [langDiamond_spec]
-  exact ⟨_, wmFullLangReduces_experimentEvidenceAdd v hexp pw₁ pw₂ pq, ⟨_, _, rfl⟩⟩
+  exact ⟨_, langReduces_to_semantic _
+    (wmFullLangReduces_experimentEvidenceAdd v hexp pw₁ pw₂ pq), ⟨_, _, rfl⟩⟩
 
 /-- ◇(isCombined) for Kripke evidence at Kripke-enabled vertices. -/
 theorem full_diamond_kripkeDecomposable (v : WMFullVertex)
     (hkr : v.kripke = .pointedKripke) (pw₁ pw₂ pphi : Pattern) :
-    langDiamond (wmFullVertexLanguageDef v) isCombined
+    langDiamond (wmFullVertexLanguageDef v) (wmFullPredicate v isCombined)
       (pKripkeEvidence (pRevise pw₁ pw₂) pphi) := by
   rw [langDiamond_spec]
-  exact ⟨_, wmFullLangReduces_kripkeEvidenceAdd v hkr pw₁ pw₂ pphi, ⟨_, _, rfl⟩⟩
+  exact ⟨_, langReduces_to_semantic _
+    (wmFullLangReduces_kripkeEvidenceAdd v hkr pw₁ pw₂ pphi), ⟨_, _, rfl⟩⟩
 
 /-- ◇(isCombined) for generic evidence at generic-carrier vertices. -/
 theorem full_diamond_genericDecomposable (v : WMFullVertex)
     (hca : v.carrier = .generic) (pw₁ pw₂ pq : Pattern) :
-    langDiamond (wmFullVertexLanguageDef v) isCombined
+    langDiamond (wmFullVertexLanguageDef v) (wmFullPredicate v isCombined)
       (pGenericEvidence (pRevise pw₁ pw₂) pq) := by
   rw [langDiamond_spec]
-  exact ⟨_, wmFullLangReduces_genericEvidenceAdd v hca pw₁ pw₂ pq, ⟨_, _, rfl⟩⟩
+  exact ⟨_, langReduces_to_semantic _
+    (wmFullLangReduces_genericEvidenceAdd v hca pw₁ pw₂ pq), ⟨_, _, rfl⟩⟩
 
 /-! ## Section 10: Diamond Chaining (Multi-Step)
 
@@ -421,7 +480,8 @@ theorem chain_evidence_add_nested (v : WMExtVertex) (pw₁ pw₂ pw₃ pq : Patt
     LangReducesStar (wmExtVertexLanguageDef v)
       (pExtract (pRevise (pRevise pw₁ pw₂) pw₃) pq)
       (pCombine (pExtract (pRevise pw₁ pw₂) pq) (pExtract pw₃ pq)) :=
-  LangReducesStar.single (wmLangReduces_evidenceAdd v (pRevise pw₁ pw₂) pw₃ pq)
+  LangReducesStar.single (langReduces_to_semantic _
+    (wmLangReduces_evidenceAdd v (pRevise pw₁ pw₂) pw₃ pq))
 
 /-- Two-step revision chain: `Revise(Revise(W₁,W₂),W₃)` can be reassociated
     then the inner revision can be commuted, reaching
@@ -430,14 +490,16 @@ theorem chain_assoc_then_comm (v : WMExtVertex) (pw₁ pw₂ pw₃ : Pattern) :
     LangReducesStar (wmExtVertexLanguageDef v)
       (pRevise (pRevise pw₁ pw₂) pw₃)
       (pRevise pw₁ (pRevise pw₂ pw₃)) :=
-  LangReducesStar.single (wmLangReduces_revisionAssoc v pw₁ pw₂ pw₃)
+  LangReducesStar.single (langReduces_to_semantic _
+    (wmLangReduces_revisionAssoc v pw₁ pw₂ pw₃))
 
 /-- Full-vertex version of two-step evidence-add chain. -/
 theorem full_chain_evidence_add_nested (v : WMFullVertex) (pw₁ pw₂ pw₃ pq : Pattern) :
     LangReducesStar (wmFullVertexLanguageDef v)
       (pExtract (pRevise (pRevise pw₁ pw₂) pw₃) pq)
       (pCombine (pExtract (pRevise pw₁ pw₂) pq) (pExtract pw₃ pq)) :=
-  LangReducesStar.single (wmFullLangReduces_evidenceAdd v (pRevise pw₁ pw₂) pw₃ pq)
+  LangReducesStar.single (langReduces_to_semantic _
+    (wmFullLangReduces_evidenceAdd v (pRevise pw₁ pw₂) pw₃ pq))
 
 /-! ## Section 10b: Fully Nested Chain via Context Closure
 
@@ -507,9 +569,11 @@ theorem chain_evidence_add_fully_nested (v : WMExtVertex) (pw₁ pw₂ pw₃ pq 
       (pExtract (pRevise (pRevise pw₁ pw₂) pw₃) pq)
       (pCombine (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) (pExtract pw₃ pq)) :=
   LangReducesStar.step
-    (wmCongLangReduces_evidenceAdd v (pRevise pw₁ pw₂) pw₃ pq)
+    (langReduces_to_semantic _
+      (wmCongLangReduces_evidenceAdd v (pRevise pw₁ pw₂) pw₃ pq))
     (LangReducesStar.single
-      (wmLangReduces_combineCongLeft_evidenceAdd v pw₁ pw₂ pw₃ pq))
+      (langReduces_to_semantic _
+        (wmLangReduces_combineCongLeft_evidenceAdd v pw₁ pw₂ pw₃ pq)))
 
 /-- Full-vertex: evidence-add in cong-extended calculus. -/
 theorem wmCongFullLangReduces_evidenceAdd (v : WMFullVertex) (pw₁ pw₂ pq : Pattern) :
@@ -557,9 +621,11 @@ theorem full_chain_evidence_add_fully_nested (v : WMFullVertex) (pw₁ pw₂ pw�
       (pExtract (pRevise (pRevise pw₁ pw₂) pw₃) pq)
       (pCombine (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) (pExtract pw₃ pq)) :=
   LangReducesStar.step
-    (wmCongFullLangReduces_evidenceAdd v (pRevise pw₁ pw₂) pw₃ pq)
+    (langReduces_to_semantic _
+      (wmCongFullLangReduces_evidenceAdd v (pRevise pw₁ pw₂) pw₃ pq))
     (LangReducesStar.single
-      (wmFullLangReduces_combineCongLeft_evidenceAdd v pw₁ pw₂ pw₃ pq))
+      (langReduces_to_semantic _
+        (wmFullLangReduces_combineCongLeft_evidenceAdd v pw₁ pw₂ pw₃ pq)))
 
 /-- Guarded+cong: evidence-add fires (core rule, premises = []). -/
 theorem wmGuardedCongLangReduces_evidenceAdd (relEnv : RelationEnv)
@@ -627,9 +693,13 @@ theorem guarded_chain_evidence_add_fully_nested
       (pExtract (pRevise (pRevise pw₁ pw₂) pw₃) pq)
       (pCombine (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) (pExtract pw₃ pq)) :=
   LangReducesStar.step
-    (wmGuardedCongLangReduces_evidenceAdd RelationEnv.empty v (pRevise pw₁ pw₂) pw₃ pq)
+    (langReducesUsing_to_semantic RelationEnv.empty _
+      (wmGuardedCongLangReduces_evidenceAdd
+        RelationEnv.empty v (pRevise pw₁ pw₂) pw₃ pq))
     (LangReducesStar.single
-      (wmGuardedCongLangReduces_combineCongLeft_evidenceAdd RelationEnv.empty v pw₁ pw₂ pw₃ pq))
+      (langReducesUsing_to_semantic RelationEnv.empty _
+        (wmGuardedCongLangReduces_combineCongLeft_evidenceAdd
+          RelationEnv.empty v pw₁ pw₂ pw₃ pq)))
 
 /-! ## Section 11: WM Barbs (Process-Algebraic Observables)
 
@@ -640,7 +710,7 @@ when `Extract(W, q)` can reduce to a non-zero combined result. -/
 /-- A WM state exhibits evidence for query `q` when it can be extracted
     and combined into non-zero evidence. -/
 def wmHasEvidenceBarb (lang : LanguageDef) (p : Pattern) (q : Pattern) : Prop :=
-  ∃ e, langReduces lang (pExtract p q) e ∧ ¬ isZeroEvidence e
+  ∃ e, langSemanticReduces lang (pExtract p q) e ∧ ¬ isZeroEvidence e
 
 /-- Weak evidence barb: reachable via multi-step reduction. -/
 def wmHasWeakEvidenceBarb (lang : LanguageDef) (p : Pattern) (q : Pattern) : Prop :=
@@ -653,7 +723,7 @@ theorem wmRevisedState_evidenceBarb (v : WMExtVertex) (pw₁ pw₂ pq : Pattern)
     (hne : ¬ isZeroEvidence (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq))) :
     wmHasEvidenceBarb (wmExtVertexLanguageDef v) (pRevise pw₁ pw₂) pq :=
   ⟨pCombine (pExtract pw₁ pq) (pExtract pw₂ pq),
-   wmLangReduces_evidenceAdd v pw₁ pw₂ pq, hne⟩
+   langReduces_to_semantic _ (wmLangReduces_evidenceAdd v pw₁ pw₂ pq), hne⟩
 
 /-! ## Section 12: Full-Vertex Galois Adjunction Corollaries
 
@@ -662,33 +732,49 @@ extension-specific predicates. -/
 
 /-- Overlap adjunction at overlap-aware vertices. -/
 theorem wmFullCalc_overlap_safety (v : WMFullVertex)
-    (_hov : v.overlap = .overlapAware) (ψ : Pattern → Prop) :
-    (∀ p, langDiamond (wmFullVertexLanguageDef v) isOverlapCorrected p → ψ p) ↔
-    (∀ p, isOverlapCorrected p → langBox (wmFullVertexLanguageDef v) ψ p) :=
+    (_hov : v.overlap = .overlapAware)
+    (ψ : GSLTTypeSynthesis.EquationPredicate
+      (langGSLT (wmFullVertexLanguageDef v))) :
+    (∀ p, langDiamond (wmFullVertexLanguageDef v)
+      (wmFullPredicate v isOverlapCorrected) p → ψ p) ↔
+    (∀ p, isOverlapCorrected p → langBox (wmFullVertexLanguageDef v)
+      ψ p) :=
   (wmFullCalc_galois v).le_iff_le
 
 /-- Fixpoint adjunction at fixpoint-enabled vertices. -/
-theorem wmFullCalc_fixpoint_safety (v : WMFullVertex) (ψ : Pattern → Prop) :
-    (∀ p, langDiamond (wmFullVertexLanguageDef v) isFixpoint p → ψ p) ↔
-    (∀ p, isFixpoint p → langBox (wmFullVertexLanguageDef v) ψ p) :=
+theorem wmFullCalc_fixpoint_safety (v : WMFullVertex)
+    (ψ : GSLTTypeSynthesis.EquationPredicate
+      (langGSLT (wmFullVertexLanguageDef v))) :
+    (∀ p, langDiamond (wmFullVertexLanguageDef v)
+      (wmFullPredicate v isFixpoint) p → ψ p) ↔
+    (∀ p, isFixpoint p → langBox (wmFullVertexLanguageDef v)
+      ψ p) :=
   (wmFullCalc_galois v).le_iff_le
 
 /-- Anti-hallucination adjunction at conserving vertices. -/
-theorem wmFullCalc_conservation_safety (v : WMFullVertex) (ψ : Pattern → Prop) :
-    (∀ p, langDiamond (wmFullVertexLanguageDef v) isZeroEvidence p → ψ p) ↔
-    (∀ p, isZeroEvidence p → langBox (wmFullVertexLanguageDef v) ψ p) :=
+theorem wmFullCalc_conservation_safety (v : WMFullVertex)
+    (ψ : GSLTTypeSynthesis.EquationPredicate
+      (langGSLT (wmFullVertexLanguageDef v))) :
+    (∀ p, langDiamond (wmFullVertexLanguageDef v)
+      (wmFullPredicate v isZeroEvidence) p → ψ p) ↔
+    (∀ p, isZeroEvidence p → langBox (wmFullVertexLanguageDef v)
+      ψ p) :=
   (wmFullCalc_galois v).le_iff_le
 
 /-- Full decomposability adjunction. -/
-theorem wmFullCalc_decomposability_safety (v : WMFullVertex) (ψ : Pattern → Prop) :
-    (∀ p, langDiamond (wmFullVertexLanguageDef v) isCombined p → ψ p) ↔
-    (∀ p, isCombined p → langBox (wmFullVertexLanguageDef v) ψ p) :=
+theorem wmFullCalc_decomposability_safety (v : WMFullVertex)
+    (ψ : GSLTTypeSynthesis.EquationPredicate
+      (langGSLT (wmFullVertexLanguageDef v))) :
+    (∀ p, langDiamond (wmFullVertexLanguageDef v)
+      (wmFullPredicate v isCombined) p → ψ p) ↔
+    (∀ p, isCombined p → langBox (wmFullVertexLanguageDef v)
+      ψ p) :=
   (wmFullCalc_galois v).le_iff_le
 
 /-! ## Section 13: Guarded Calculus — Galois Connections
 
-The guarded calculus uses `langReducesUsing relEnv` instead of `langReduces`
-(which is `langReducesUsing RelationEnv.empty`). The Galois connection
+The guarded calculus uses the equation-saturated semantic relation generated
+from `langReducesUsing relEnv`. The Galois connection
 ◇ ⊣ □ holds automatically at any RelationEnv via `langGaloisUsing`. -/
 
 open Mettapedia.OSLF.MeTTaIL.Engine
@@ -740,9 +826,13 @@ theorem wmGuardedLangReduces_evidenceAdd (relEnv : RelationEnv)
 
 /-- Guarded decomposability adjunction. -/
 theorem wmGuardedCalc_decomposability_safety (relEnv : RelationEnv)
-    (v : WMExtVertex) (ψ : Pattern → Prop) :
-    (∀ p, langDiamondUsing relEnv (wmExtVertexLanguageDefGuarded v) isCombined p → ψ p) ↔
-    (∀ p, isCombined p → langBoxUsing relEnv (wmExtVertexLanguageDefGuarded v) ψ p) :=
+    (v : WMExtVertex)
+    (ψ : GSLTTypeSynthesis.EquationPredicate
+      (langGSLTUsing relEnv (wmExtVertexLanguageDefGuarded v))) :
+    (∀ p, langDiamondUsing relEnv (wmExtVertexLanguageDefGuarded v)
+      (wmExtGuardedPredicateUsing relEnv v isCombined) p → ψ p) ↔
+    (∀ p, isCombined p → langBoxUsing relEnv (wmExtVertexLanguageDefGuarded v)
+      ψ p) :=
   (wmGuardedCalc_galois relEnv v).le_iff_le
 
 end Mettapedia.OSLF.Framework.WMCalculusOSLFBridge

@@ -25,12 +25,12 @@ structure ModeHomLaws where
       (f : ModeHom W X) (g : ModeHom X Y) (h : ModeHom Y Z),
       (f ≫ g) ≫ h = f ≫ (g ≫ h)
   mapPred_id :
-    ∀ (X : ModeObj) (ψ : Pattern → Prop),
+    ∀ (X : ModeObj) (ψ : ModePred X),
       ModeHom.mapPred (ModeHom.id (X := X)) ψ = ψ
   mapPred_comp :
     ∀ {X Y Z : ModeObj}
       (f : ModeHom X Y) (g : ModeHom Y Z)
-      (ψ : Pattern → Prop),
+      (ψ : ModePred Z),
       ModeHom.mapPred (f ≫ g) ψ =
         ModeHom.mapPred f (ModeHom.mapPred g ψ)
 
@@ -73,7 +73,7 @@ theorem assoc_holds
 
 /-- Access theorem: identity law for predicate pullback. -/
 theorem mapPred_id_holds
-    (X : ModeObj) (ψ : Pattern → Prop) :
+    (X : ModeObj) (ψ : ModePred X) :
     ModeHom.mapPred (ModeHom.id (X := X)) ψ = ψ :=
   mode2SkeletonLaws.mapPred_id X ψ
 
@@ -81,10 +81,9 @@ theorem mapPred_id_holds
 theorem mapPred_comp_holds
     {X Y Z : ModeObj}
     (f : ModeHom X Y) (g : ModeHom Y Z)
-    (ψ : Pattern → Prop) :
+    (ψ : ModePred Z) :
     ModeHom.mapPred (f ≫ g) ψ =
       ModeHom.mapPred f (ModeHom.mapPred g ψ) :=
   mode2SkeletonLaws.mapPred_comp f g ψ
 
 end Mettapedia.OSLF.Framework.Mode2SkeletonLaws
-

@@ -1,0 +1,23 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryLeafDichotomyProbe
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryLeafDichotomyProbe
+-- emptiness lemma (the crux)
+#check @isStaticRoot_or_bvar_of_rhoProcess_canonicalize_eq_bvar
+#check @isStaticRoot_or_fvar_of_rhoProcess_canonicalize_eq_fvar
+#check @isStaticRoot_of_rhoProcess_collection
+#check @boundaryHead_canonicalize_ne_bvar
+#check @boundaryHead_canonicalize_ne_fvar
+#check @not_collapsingRoot_of_boundaryHead
+#check @isStaticRoot_of_canonicalize_eq_bvar
+#check @isStaticRoot_of_canonicalize_eq_fvar
+-- counterexample
+#check @not_rhoCollapsingApplyLeafBoundary
+#check @not_rhoCollapsingApplyLeafBoundary_of_entries_eq_nil
+#check @not_rhoCollapsingLeafClassifications
+#check @rhoEmptyParallelView
+-- sort facts
+#check @rhoName_shared_across_colors
+#check @rhoProc_not_shared_across_colors
+#print axioms isStaticRoot_or_bvar_of_rhoProcess_canonicalize_eq_bvar
+#print axioms isStaticRoot_or_fvar_of_rhoProcess_canonicalize_eq_fvar
+#print axioms not_rhoCollapsingApplyLeafBoundary
+#print axioms not_rhoCollapsingLeafClassifications

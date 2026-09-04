@@ -1,0 +1,8 @@
+import Mettapedia.Languages.MeTTa.HE.Conformance
+
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaHumanConformance.humanMatch_observational_complete
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaHumanConformance.leaMatchAtoms_output_satisfiable
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaHumanConformance.leaMatch_observational_sound
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaHumanConformance.humanLeaMatch_observational_conformance
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaBridge.queryOp_hit_observational_sound_of_satisfiable
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaBridge.queryOp_hit_observational_sound_empty_incoming

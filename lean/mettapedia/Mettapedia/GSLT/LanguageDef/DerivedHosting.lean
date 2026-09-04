@@ -22,6 +22,7 @@ open Mettapedia.GSLT.LanguageDef.LF (Srt Term)
 open Mettapedia.GSLT.LanguageDef.LFTyping (Decl Sig)
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.ConstructorCategory
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
 open Mettapedia.OSLF.MeTTaIL.Syntax
@@ -67,10 +68,12 @@ def lfLanguageDef : LanguageDef :=
 def lfOSLF : OSLFTypeSystem (langRewriteSystem lfLanguageDef "LFTerm") :=
   langOSLF lfLanguageDef "LFTerm"
 
-abbrev lfDiamond : (Pattern → Prop) → Pattern → Prop :=
+abbrev lfPredicate := EquationPredicate (langGSLT lfLanguageDef)
+
+abbrev lfDiamond : lfPredicate → lfPredicate :=
   langDiamond lfLanguageDef
 
-abbrev lfBox : (Pattern → Prop) → Pattern → Prop :=
+abbrev lfBox : lfPredicate → lfPredicate :=
   langBox lfLanguageDef
 
 theorem lfGalois :
@@ -133,10 +136,12 @@ def holLanguageDef : LanguageDef :=
 def holOSLF : OSLFTypeSystem (langRewriteSystem holLanguageDef "HolTerm") :=
   langOSLF holLanguageDef "HolTerm"
 
-abbrev holDiamond : (Pattern → Prop) → Pattern → Prop :=
+abbrev holPredicate := EquationPredicate (langGSLT holLanguageDef)
+
+abbrev holDiamond : holPredicate → holPredicate :=
   langDiamond holLanguageDef
 
-abbrev holBox : (Pattern → Prop) → Pattern → Prop :=
+abbrev holBox : holPredicate → holPredicate :=
   langBox holLanguageDef
 
 theorem holGalois :

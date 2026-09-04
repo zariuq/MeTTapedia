@@ -7,7 +7,9 @@ Two observers may consume different event types and retain genuinely different
 witness containers.  Their parallel composition does not require a distributive
 law that merges those containers into one collection monad.  Instead, a joint
 history is an interleaving of the two event types, each observer receives its
-own projection, and the composite retains the product of both observations.
+own projection, and the composite retains both observations on common
+collection success.  Its outer partiality is synchronized: retaining
+unilateral failure as data requires the separate independent product.
 
 This is the minimal positive construction behind a composite learner with
 separate observational capabilities.  It proves that each total component is

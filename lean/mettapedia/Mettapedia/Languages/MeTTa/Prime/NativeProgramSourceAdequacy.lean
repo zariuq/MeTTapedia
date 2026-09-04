@@ -61,7 +61,7 @@ theorem compiled_after_plan_erasure {package : ProgramPlan}
 core. -/
 def theory {package : ProgramPlan} (compiled : CompiledProgram package) : GSLT :=
   languageGSLT compiled.language
-    (ReductionRespectsEquations.of_no_equations
+    (ReductionRespectsEquations.of_equation_free
       (sourceLanguage?_equations_empty compiled.compiled))
 
 /-- Source semantics for the supported program is the established

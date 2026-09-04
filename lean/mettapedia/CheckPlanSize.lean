@@ -1,0 +1,6 @@
+import Mettapedia.GSLT.LanguageDef.CostElaborationConservative
+namespace Mettapedia.GSLT.LanguageDef
+#print CostStaticRegionPlan.sizeOf_spec
+#print CostStaticArgumentPlan.sizeOf_spec
+#print CostStaticElementPlan.sizeOf_spec
+end Mettapedia.GSLT.LanguageDef

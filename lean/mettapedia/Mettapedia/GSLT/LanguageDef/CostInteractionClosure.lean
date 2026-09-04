@@ -228,7 +228,7 @@ namespace StructuralMorphism
 
 /-- Structural presentation maps preserve rule-local metavariable names. -/
 @[simp]
-theorem mapPattern_freeFvarNames (symbols : PresentationSymbols)
+theorem mapPattern_freeFvarNames (symbols : LanguageDefSymbolMap)
     (pattern : Pattern) :
     (mapPattern symbols pattern).freeFvarNames = pattern.freeFvarNames := by
   induction pattern using Pattern.inductionOn with
@@ -248,7 +248,7 @@ theorem mapPattern_freeFvarNames (symbols : PresentationSymbols)
 
 /-- Structural presentation maps preserve binder metadata. -/
 @[simp]
-theorem mapPattern_patternBinderNames (symbols : PresentationSymbols)
+theorem mapPattern_patternBinderNames (symbols : LanguageDefSymbolMap)
     (pattern : Pattern) :
     LanguageDef.patternBinderNames (mapPattern symbols pattern) =
       LanguageDef.patternBinderNames pattern := by
@@ -652,7 +652,7 @@ theorem costBaseConstructor_mem_costWhole (source : CIGSLT)
 /-- Every constructor in the cut-derived non-principal fragment has its
 uniform wrapped copy in the complete Cost language. -/
 theorem costWrappedConstructor_mem_costWhole (source : CIGSLT)
-    (constructor : AuthoredConstructor
+    (constructor : DeclaredConstructor
       source.theory.presentation.presentation)
     (membership : constructor ∈
       source.continuationRetyping.wrappedConstructors) :
@@ -1145,7 +1145,7 @@ wildcard/scope component of validation.  The proof uses the source equation's
 validated binding flow; generated constructor names play no role in deciding
 which metavariables are bound. -/
 theorem costMappedEquation_validateRulePatterns
-    (source : CIGSLT) (symbols : PresentationSymbols)
+    (source : CIGSLT) (symbols : LanguageDefSymbolMap)
     (equation : Equation)
     (equationMembership : equation ∈
       source.theory.presentation.presentation.language.equations)
@@ -1327,7 +1327,7 @@ private theorem generatedTerms_mem_costCore (source : CIGSLT)
 theorem costMappedRedex_hasType (source : CIGSLT) :
     HasSort source.costCoreLanguage source.costWholeRedexFreeContext []
       (mapPatternSchemaNames costSourceSchemaName
-        (mapPattern costBasePresentationSymbols
+        (mapPattern costBaseLanguageDefSymbolMap
           source.theory.presentation.interactionRewrite.1.left))
       (costBaseSortName
         source.theory.presentation.interactingSort.1.name) := by
@@ -2008,33 +2008,33 @@ def costWholeStructural {source target : CIGSLT}
     (morphism : source.Morphism target) :
     StructuralMorphism source.costWholePresentation
       target.costWholePresentation where
-  symbols := costPresentationSymbols
+  symbols := costLanguageDefSymbolMap
     morphism.underlying.structural.structural.symbols
   mapsTypes declaration membership := by
     change List.Mem declaration source.costCoreLanguage.types at membership
     change List.Mem (mapTypeDecl
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         declaration) target.costCoreLanguage.types
     exact morphism.costCoreStructural.mapsTypes declaration membership
   mapsTerms constructor membership := by
     change List.Mem constructor source.costCoreLanguage.terms at membership
     change List.Mem (mapGrammarRule
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         constructor) target.costCoreLanguage.terms
     exact morphism.costCoreStructural.mapsTerms constructor membership
   mapsEquations equation membership := by
     change List.Mem equation source.costStaticEquations at membership
     change List.Mem (mapEquation
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         equation) target.costStaticEquations
     exact morphism.mapsCostStaticEquations equation membership
   mapsRewrites rewrite membership := by
     change List.Mem rewrite [source.costWholeRedexRewrite] at membership
     change List.Mem (mapRewriteRule
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols)
         rewrite) [target.costWholeRedexRewrite]
     cases membership with
@@ -2052,10 +2052,10 @@ def costWholeFunctor : CategoryTheory.Functor CIGSLT ValidatedLanguageDef where
   map morphism := morphism.costWholeStructural
   map_id source := by
     apply StructuralMorphism.ext
-    exact costPresentationSymbols_id
+    exact costLanguageDefSymbolMap_id
   map_comp first second := by
     apply StructuralMorphism.ext
-    exact costPresentationSymbols_comp
+    exact costLanguageDefSymbolMap_comp
       first.underlying.structural.structural.symbols
       second.underlying.structural.structural.symbols
 

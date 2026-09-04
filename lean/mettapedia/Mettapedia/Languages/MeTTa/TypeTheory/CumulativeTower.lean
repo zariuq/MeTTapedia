@@ -1,6 +1,8 @@
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.TypedSubstitution
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.TypedBetaSubjectReduction
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationCompatibility
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SyntacticContextualCategory
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ContextualLadderBridge
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SyntacticNaturalModel
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SyntacticJudgmentalPi
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SyntacticConversionEnrichment
@@ -21,16 +23,23 @@ import Mettapedia.GSLT.LanguageDef.InferenceCheckedNativeWaist
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareStructuralTyping
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareFormedTyping
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareTypedConversion
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareSubstitutionBoundary
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareSubstitutionAdapter
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceBetaExperiment
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareErasureNaturality
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentSubstitutionEmbedding
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceDependentPiExperiment
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareOSLFSemantics
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareComputationalTrinityCalibration
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareConversionOSLFBoundary
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredDeclarationSignature
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationHostedJudgments
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredConstantIngress
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredConstantInference
-import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredEquationInference
-import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredEquationStructuralAdmission
-import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredFactsOSLFSemantics
-import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredEquationConversionBoundary
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclaredEquationInference
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclaredEquationStructuralAdmission
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SourceFactsOSLFSemantics
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclaredEquationConversionBoundary
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ReductionChoiceNormalFormBoundary
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ReductionViewIndexedModalities
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SpaceOperationalViewBoundary
@@ -49,7 +58,7 @@ import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILCheckedNativeLis
 import Mettapedia.GSLT.LanguageDef.InferenceSemanticExtension
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedFamilies
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedFamilySource
-import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredEquationNativeIngress
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclaredEquationNativeIngress
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationHostedCheckedNativeWaist
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AuthoredIndexedFamilyGSLTIL
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SyntacticJudgmentalIdentityEliminator
@@ -106,6 +115,19 @@ The development exposes:
 * disjoint sealed-Legacy and cumulative-Tower presentations;
 * the exact sealed conservativity frontier and its raw-syntax counterexample;
 * structural and typed substitution, including context-comprehension laws;
+* generic dependent beta subject reduction derived from typed simultaneous
+  substitution, together with a representation boundary showing that the
+  binder-exposing LF encoding commutes with generic binder instantiation while
+  canonical declaration-aware Prime data does not; both encodings remain
+  lossless and conserve exact distinctions, so a checked adapter must preserve
+  operational binder structure in addition to syntax; the exact zero-trace
+  decode--substitute--reencode adapter reflects every successful result to
+  intrinsic substitution, preserves typing, and rejects malformed bodies,
+  while remaining explicitly short of an authored inference presentation;
+* calibrated four-face beta experiments connecting native typing, authored
+  GSLT checking, independent function semantics, and set-valued graphs: the
+  dependent cell retains a formed `B, g, a` telescope and requires separate
+  exact certificates for the contractum `g a` and its opened type `B a`;
 * one declaration-aware typing spine, with proof-carrying signatures,
   monotone extension, exact empty-signature recovery, and a proved
   correspondence to the former declaration calculus;

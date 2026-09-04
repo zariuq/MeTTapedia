@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.RFC8259ParserProfileNTT
+import Mettapedia.GSLT.Parsing.ParserProfileWire
 
 /-!
 # RFC 8259 parser-profile wire projection
@@ -9,36 +10,10 @@ lexical profile whose classes and structural schema are analyzed in Lean.
 
 namespace Mettapedia.GSLT.LanguageDef.RFC8259ParserProfileWire
 
-open Mettapedia.GSLT.Parsing.ParserProfileSemantics
 open Mettapedia.GSLT.LanguageDef.RFC8259ParserProfileNTT
 
-private def quote (text : String) : String :=
-  "\"" ++ (text.replace "\\" "\\\\").replace "\"" "\\\"" ++ "\""
-
-private def renderList (entries : List String) : String :=
-  entries.foldr (fun entry rest => s!"(LCons {entry} {rest})") "LNil"
-
-private def renderCodepoints (codepoints : List Nat) : String :=
-  renderList (codepoints.map toString)
-
-private def renderClass (declaration : LexicalClassDecl) : String :=
-  match declaration.kind with
-  | .points codepoints =>
-      s!"(LexicalClassPoints {quote declaration.name} {renderCodepoints codepoints})"
-  | .except excluded =>
-      s!"(LexicalClassExcept {quote declaration.name} {renderCodepoints excluded})"
-
-private def renderState (state : LexicalStateDecl) : String :=
-  s!"(LexicalState {quote state.resultSort} {quote state.className} " ++
-    s!"{quote state.ruleLabel})"
-
 /-- Canonical wire rendering of a parser-profile layer. -/
-def renderProfile (profile : ParserProfileLayer) : String :=
-  "(GSLTParserProfileLayerV1\n" ++
-    s!"  {quote profile.name}\n" ++
-    s!"  {quote profile.startSort}\n" ++
-    s!"  {renderList (profile.classes.map renderClass)}\n" ++
-    s!"  {renderList (profile.states.map renderState)})\n"
+abbrev renderProfile := Mettapedia.GSLT.Parsing.ParserProfileWire.render
 
 /-- Canonical generated wire text for the authored RFC 8259 parser profile. -/
 def wire : String := renderProfile rfc8259ParserProfile

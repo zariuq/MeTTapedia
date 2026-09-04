@@ -53,7 +53,119 @@ def appendCapturedRuleSink? (captureRow capturedRule rule : Atom) : Option Atom 
             .expression
               (.symbol "O" :: sinks ++
                 [.expression [.symbol "+", capturedRule]])])
+  | .var _,
+      .expression [.symbol "exec", location,
+        .expression (.symbol "I" :: factors),
+        .expression (.symbol "O" :: sinks)] =>
+      some
+        (.expression
+          [.symbol "exec", location,
+            .expression
+              (.symbol "I" :: factors ++
+                [.expression [.symbol "BTM", captureRow]]),
+            .expression
+              (.symbol "O" :: sinks ++
+                [.expression [.symbol "+", capturedRule]])])
   | _, _ => none
+
+/-- Capturing one rule in a comma-input executable preserves its outer
+location exactly.  The transformed input and output are exposed only as
+existential rows so clients need not normalize either rule body. -/
+theorem appendCapturedRuleSink?_preserves_comma_exec_location
+    {captureRow source target location : Atom} {capturedName : String}
+    {inputs sinks : List Atom}
+    (sourceExact : source =
+      .expression
+        [.symbol "exec", location,
+         .expression (.symbol "," :: inputs),
+         .expression (.symbol "O" :: sinks)])
+    (built : appendCapturedRuleSink? captureRow (.var capturedName) source =
+      some target) :
+    ∃ input output,
+      target = .expression [.symbol "exec", location, input, output] := by
+  subst source
+  simp only [appendCapturedRuleSink?, Option.some.injEq] at built
+  subst target
+  exact ⟨_, _, rfl⟩
+
+/-- Add correlated positive premises and consume one row selected by them.
+For a comma input the premises are appended directly; for an explicit input
+they become positive `BTM` factors.  Unsupported executable shells fail
+closed. -/
+def appendPositivePremisesAndRemoveSink?
+    (premises : List Atom) (removed rule : Atom) : Option Atom :=
+  let removal := .expression [.symbol "-", removed]
+  match rule with
+  | .expression [.symbol "exec", location,
+      .expression (.symbol "," :: inputs),
+      .expression (.symbol "O" :: sinks)] =>
+      some
+        (.expression
+          [.symbol "exec", location,
+            .expression (.symbol "," :: inputs ++ premises),
+            .expression (.symbol "O" :: sinks ++ [removal])])
+  | .expression [.symbol "exec", location,
+      .expression (.symbol "I" :: factors),
+      .expression (.symbol "O" :: sinks)] =>
+      some
+        (.expression
+          [.symbol "exec", location,
+            .expression
+              (.symbol "I" :: factors ++ premises.map fun premise =>
+                .expression [.symbol "BTM", premise]),
+            .expression (.symbol "O" :: sinks ++ [removal])])
+  | _ => none
+
+/-- Recognize whether a strict executable rule adds a value with the selected
+head.  The input representation is retained opaquely: this observation is
+about the output syntax alone. -/
+def outputAddsHead? (head : String) : Atom → Option Bool
+  | .expression [.symbol "exec", _, _, .expression (.symbol "O" :: sinks)] =>
+      some (sinks.any fun sink =>
+        match sink with
+        | .expression [.symbol "+", .expression (.symbol actual :: _)] =>
+            actual == head
+        | _ => false)
+  | _ => none
+
+/-- Remove every add sink whose payload has the selected head from one strict
+executable rule.  The Boolean records whether the rule actually changed. -/
+def removeAddedOutputHead? (head : String) : Atom → Option (Bool × Atom)
+  | .expression [.symbol "exec", location, input,
+      .expression (.symbol "O" :: sinks)] =>
+      let selected := fun sink =>
+        match sink with
+        | .expression [.symbol "+", .expression (.symbol actual :: _)] =>
+            actual == head
+        | _ => false
+      some
+        (sinks.any selected,
+          .expression
+            [.symbol "exec", location, input,
+              .expression
+                (.symbol "O" :: sinks.filter (fun sink => !selected sink))])
+  | _ => none
+
+/-- Traverse a finite executable inventory, rejecting malformed members and
+recording whether any selected add sink was removed. -/
+def removeAddedOutputHeadLoop? (head : String) :
+    List Atom → Option (Bool × List Atom)
+  | [] => some (false, [])
+  | rule :: remaining => do
+      let (changedRule, translatedRule) ← removeAddedOutputHead? head rule
+      let (changedRemaining, translatedRemaining) ←
+        removeAddedOutputHeadLoop? head remaining
+      pure (changedRule || changedRemaining,
+        translatedRule :: translatedRemaining)
+
+/-- Fail-closed finite-inventory form of `removeAddedOutputHead?`.  A
+successful result certifies that at least one selected capability was present
+and removed; an absent selection is not silently treated as a transformation. -/
+def removeAddedOutputHeadFromRules? (head : String) (rules : List Atom) :
+    Option (List Atom) :=
+  match removeAddedOutputHeadLoop? head rules with
+  | some (true, translated) => some translated
+  | _ => none
 
 /-- Extend a strict executable rule with an explicit rearm request and an
 opaque verifier-owned continuation.  The continuation is captured from a
@@ -311,6 +423,51 @@ private def rearmedCanaryRule : Atom :=
         .expression [.symbol "+", canaryReload],
         .expression [.symbol "+", canaryRearmCode]]]
 
+private def guardedCanaryRule : Atom :=
+  .expression
+    [.symbol "exec", .expression [.symbol "04", .symbol "guarded-canary"],
+      .expression
+        [.symbol "I",
+          .expression
+            [.symbol "BTM", .expression [.symbol "ready", .var "owner"]],
+          .expression
+            [.symbol "!=", .expression [.symbol "candidate", .var "left"],
+              .expression [.symbol "candidate", .var "right"]]],
+      .expression [.symbol "O",
+        .expression [.symbol "+", .expression [.symbol "fault", .var "owner"]]]]
+
+private def capturedGuardedCanaryRule : Atom :=
+  .expression
+    [.symbol "exec", .expression [.symbol "04", .symbol "guarded-canary"],
+      .expression
+        [.symbol "I",
+          .expression
+            [.symbol "BTM", .expression [.symbol "ready", .var "owner"]],
+          .expression
+            [.symbol "!=", .expression [.symbol "candidate", .var "left"],
+              .expression [.symbol "candidate", .var "right"]],
+          .expression [.symbol "BTM", canaryCaptureRow]],
+      .expression [.symbol "O",
+        .expression [.symbol "+", .expression [.symbol "fault", .var "owner"]],
+        .expression [.symbol "+", .var "captured"]]]
+
+private def canaryMirrorRow : Atom :=
+  .expression [.symbol "mirror", .var "owner", .var "value"]
+
+private def canaryMirrorEvidence : Atom :=
+  .expression [.symbol "evidence", .var "value"]
+
+private def consumingCanaryRule : Atom :=
+  .expression
+    [.symbol "exec", .expression [.symbol "03", .symbol "canary"],
+      .expression [.symbol ",",
+        .expression [.symbol "ready", .var "owner"],
+        canaryMirrorRow, canaryMirrorEvidence],
+      .expression [.symbol "O",
+        .expression [.symbol "-", .expression [.symbol "ready", .var "owner"]],
+        .expression [.symbol "+", .expression [.symbol "done", .var "owner"]],
+        .expression [.symbol "-", canaryMirrorRow]]]
+
 /-- Positive surface canary: decoration changes only the output inventory by
 the requested explicit reload sink. -/
 theorem canary_decorates_exactly :
@@ -322,6 +479,48 @@ premise and reinstalls the opaque captured value as code. -/
 theorem canary_captures_rule_exactly :
     appendCapturedRuleSink? canaryCaptureRow (.var "captured") canaryRule =
       some captureDecoratedCanaryRule := by
+  rfl
+
+/-- A guarded input captures verifier-owned code as one additional positive
+factor while retaining every authored guard and output occurrence. -/
+theorem guarded_canary_captures_rule_exactly :
+    appendCapturedRuleSink? canaryCaptureRow (.var "captured")
+      guardedCanaryRule = some capturedGuardedCanaryRule := by
+  rfl
+
+/-- Correlated premises can bind an exact companion row and add its removal
+without changing the source rule's earlier input or output occurrences. -/
+theorem canary_appends_correlated_consumption_exactly :
+    appendPositivePremisesAndRemoveSink?
+      [canaryMirrorRow, canaryMirrorEvidence] canaryMirrorRow canaryRule =
+        some consumingCanaryRule := by
+  rfl
+
+/-- Correlated consumption rejects non-executable input instead of silently
+dropping the required premises or removal. -/
+theorem correlated_consumption_rejects_nonexec :
+    appendPositivePremisesAndRemoveSink?
+      [canaryMirrorRow] canaryMirrorRow (.symbol "not-an-exec") = none := by
+  rfl
+
+/-- Removing an added output capability is exact and leaves unrelated rules
+byte-for-byte unchanged. -/
+theorem remove_added_head_canary_exact :
+    removeAddedOutputHeadFromRules? "reload"
+      [decoratedCanaryRule, guardedCanaryRule] =
+        some [canaryRule, guardedCanaryRule] := by
+  rfl
+
+/-- A requested capability which is absent from the finite inventory is
+rejected rather than reported as a successful identity transform. -/
+theorem remove_missing_added_head_rejected :
+    removeAddedOutputHeadFromRules? "missing" [canaryRule] = none := by
+  rfl
+
+/-- A malformed inventory member makes the whole removal transform fail. -/
+theorem remove_added_head_malformed_inventory_rejected :
+    removeAddedOutputHeadFromRules? "reload"
+      [decoratedCanaryRule, .symbol "not-an-exec"] = none := by
   rfl
 
 /-- Positive rearm canary: a successful rule requests the next dispatch round
@@ -341,6 +540,15 @@ theorem rearmAll_nonexec_rejected :
 theorem capture_requires_variable :
     appendCapturedRuleSink? canaryCaptureRow (.symbol "not-a-variable")
       canaryRule = none := by
+  rfl
+
+/-- An executable shell with an unsupported input form remains outside the
+capture transformation instead of being accepted without the new premise. -/
+theorem capture_rejects_unsupported_input :
+    appendCapturedRuleSink? canaryCaptureRow (.var "captured")
+      (.expression
+        [.symbol "exec", .symbol "location", .symbol "unsupported-input",
+          .expression [.symbol "O"]]) = none := by
   rfl
 
 /-- A mixed inventory fails as a whole; malformed members cannot evade the
@@ -427,6 +635,14 @@ theorem buildRearm?_mixed_inventory_rejected :
 
 #print axioms canary_decorates_exactly
 #print axioms canary_captures_rule_exactly
+#print axioms appendCapturedRuleSink?_preserves_comma_exec_location
+#print axioms guarded_canary_captures_rule_exactly
+#print axioms canary_appends_correlated_consumption_exactly
+#print axioms correlated_consumption_rejects_nonexec
+#print axioms remove_added_head_canary_exact
+#print axioms remove_missing_added_head_rejected
+#print axioms remove_added_head_malformed_inventory_rejected
+#print axioms capture_rejects_unsupported_input
 #print axioms canary_rearms_exactly
 #print axioms rearmAll_nonexec_rejected
 #print axioms capture_requires_variable

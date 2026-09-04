@@ -581,7 +581,7 @@ private theorem decodeSourceEventRowsFrom_encoded (owner : Atom)
         decodeSourceEventRowsFrom, decodeSourceEventRow_linkedRow]
       rw [show offset + (statement :: statements).length =
           (offset + 1) + statements.length by
-            simp [Nat.add_comm, Nat.add_left_comm]]
+            simp [Nat.add_comm]]
       simp [induction]
 
 /-- Canonically transformed source events survive exact untrusted-input
@@ -623,14 +623,24 @@ def isVerifierOwnedInternalRowShape : Atom → Bool
         tag == "mm-normal-final-formula-candidate"
   | _ => false
 
+/-- Recognize the two normal-proof cursor families whose final field is later
+republished as a continuation.  They are dynamic verifier state, not source
+event input, even though their outer form is inert MM2 data. -/
+@[simp] def isNormalBodyCarrierShape : Atom → Bool
+  | .expression (.symbol tag :: _) =>
+      tag == "mm-body-match" || tag == "mm-body-prefix"
+  | _ => false
+
 /-- Initial verifier data is passive when it is neither a scheduler-visible
-`exec` shell, a terminal verdict, nor an inert carrier of verifier code.  This
-is an entry-boundary property, not an assertion that all later verifier-owned
-control and stack rows are public input. -/
+`exec` shell, a terminal verdict, an inert carrier of verifier code, nor a
+dynamic body cursor that can republish a continuation.  This is an
+entry-boundary property, not an assertion that later verifier-owned control
+and stack rows are public input. -/
 def isProofNeutralInitialAtom (atom : Atom) : Bool :=
   ((Mettapedia.Languages.ProcessCalculi.MORK.extractRawExecFact atom).isNone &&
     !(isVerifierTerminalObservation atom)) &&
-    !(isVerifierOwnedInternalRowShape atom)
+    (!(isVerifierOwnedInternalRowShape atom) &&
+      !(isNormalBodyCarrierShape atom))
 
 /-- A verifier-owned inert carrier is never admissible as passive initial
 data, independently of the rest of its payload. -/
@@ -639,6 +649,15 @@ theorem verifier_owned_internal_row_not_proofNeutral
     isProofNeutralInitialAtom atom = false := by
   unfold isProofNeutralInitialAtom
   rw [owned]
+  simp
+
+/-- A directly authored body cursor cannot enter through the passive source
+event channel, because its captured continuation becomes operational later. -/
+theorem normal_body_carrier_not_proofNeutral
+    (atom : Atom) (carrier : isNormalBodyCarrierShape atom = true) :
+    isProofNeutralInitialAtom atom = false := by
+  unfold isProofNeutralInitialAtom
+  rw [carrier]
   simp
 
 /-- A directly authored inert dispatch row is rejected at the same boundary
@@ -865,12 +884,16 @@ theorem sourceEventArtifact_rows_have_no_terminal_observation
     isVerifierTerminalObservation]
   all_goals aesop
 
-private theorem sourceDerivedProofRowsFrom_all_proofNeutral
-    (owner : Atom) (position : Nat) (state : SourceState)
+private theorem sourceDerivedProofRowsFrom_all_of
+    (owner : Atom) (property : Atom → Bool)
+    (prepared : ∀ position nextPosition statement state obligation,
+      (sourcePreparedTheoremRows owner position nextPosition statement state
+        obligation).all property = true)
+    (position : Nat) (state : SourceState)
     (statements : List RawStatement) (rows : List Atom)
     (derived :
       sourceDerivedProofRowsFrom owner position state statements = .ok rows) :
-    rows.all isProofNeutralInitialAtom = true := by
+    rows.all property = true := by
   induction statements generalizing position state rows with
   | nil =>
       simp [sourceDerivedProofRowsFrom] at derived
@@ -897,19 +920,32 @@ private theorem sourceDerivedProofRowsFrom_all_proofNeutral
                   cases tail with
                   | nil =>
                       obtain rfl := FoldResult.ok.inj derived
-                      simp [restSafe]
+                      simp [prepared, restSafe]
                   | cons nextObligation tail =>
                       obtain rfl := FoldResult.ok.inj derived
                       exact restSafe
+
+/-- A row-local invariant on every prepared theorem packet lifts through the
+same ordered source fold to the complete recomputed proof-row artifact. -/
+theorem sourceDerivedProofRows_all_of
+    (owner : Atom) (property : Atom → Bool)
+    (prepared : ∀ position nextPosition statement state obligation,
+      (sourcePreparedTheoremRows owner position nextPosition statement state
+        obligation).all property = true)
+    (statements : List RawStatement) (rows : List Atom)
+    (derived : sourceDerivedProofRows owner statements = .ok rows) :
+    rows.all property = true :=
+  sourceDerivedProofRowsFrom_all_of owner property prepared 0 initialState
+    statements rows derived
 
 /-- Proof rows recomputed from an admitted source stream cannot smuggle an
 executable rule or a terminal observation into the initial space. -/
 theorem sourceDerivedProofRows_all_proofNeutral
     (owner : Atom) (statements : List RawStatement) (rows : List Atom)
     (derived : sourceDerivedProofRows owner statements = .ok rows) :
-    rows.all isProofNeutralInitialAtom = true :=
-  sourceDerivedProofRowsFrom_all_proofNeutral owner 0 initialState statements
-    rows derived
+    rows.all isProofNeutralInitialAtom = true := by
+  exact sourceDerivedProofRows_all_of owner isProofNeutralInitialAtom
+    (sourcePreparedTheoremRows_all_proofNeutral owner) statements rows derived
 
 /-- The canonical public event envelope contains only inert source rows. -/
 @[simp] theorem canonicalSourceEventRows_all_proofNeutral
@@ -1200,7 +1236,19 @@ theorem AdmittedSourceEventInput.initialRows_no_verifier_internal
   have safe := allRows row member
   simp only [isProofNeutralInitialAtom, Bool.and_eq_true,
     Option.isNone_iff_eq_none, Bool.not_eq_true'] at safe
-  exact safe.2
+  exact safe.2.1
+
+/-- Canonicalized source input cannot supply a normal-proof body cursor whose
+captured continuation could later be republished by the verifier. -/
+theorem AdmittedSourceEventInput.initialRows_no_normal_body_carrier
+    {owner : Atom} (input : AdmittedSourceEventInput owner)
+    (row : Atom) (member : row ∈ input.initialRows) :
+    isNormalBodyCarrierShape row = false := by
+  have allRows := List.all_eq_true.mp input.initialRows_all_proofNeutral
+  have safe := allRows row member
+  simp only [isProofNeutralInitialAtom, Bool.and_eq_true,
+    Option.isNone_iff_eq_none, Bool.not_eq_true'] at safe
+  exact safe.2.2
 
 /-- Total admission for transformed or directly authored source-event rows. -/
 def admitSourceEventInput (owner : Atom) (rows : List Atom) :
@@ -1431,11 +1479,13 @@ example (site labelSpan typeSpan bodySpan proofSpan separator terminator :
 #print axioms applyStatement_provable_eq_ok_iff
 #print axioms applyStatement_provable_success_transport
 #print axioms sourceDerivedProofRows_ok_of_foldStatements_ok
+#print axioms sourceDerivedProofRows_all_of
 #print axioms sourceDerivedProofRows_all_proofNeutral
 #print axioms canonicalSourceEventRows_all_proofNeutral
 #print axioms validateSourceEventInput_of_transformSegmentedSource_ok
 #print axioms AdmittedSourceEventInput.initialRows_no_exec_or_terminal
 #print axioms AdmittedSourceEventInput.initialRows_no_verifier_internal
+#print axioms AdmittedSourceEventInput.initialRows_no_normal_body_carrier
 #print axioms verifier_owned_dispatch_row_not_proofNeutral
 #print axioms admitSourceEventInput_of_transformSegmentedSource_ok
 #print axioms constant_event_inhabits_source_native_type

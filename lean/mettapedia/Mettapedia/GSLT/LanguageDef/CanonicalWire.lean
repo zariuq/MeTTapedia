@@ -4,9 +4,9 @@ import Mettapedia.OSLF.MeTTaIL.Syntax
 # Canonical five-field LanguageDef wire projection
 
 This renderer is deliberately partial.  It accepts the first-order constructor,
-free-variable, application, and relation-query profile used by the
-Walters--Zantema and radix-digit-machine presentations, and rejects
-unsupported syntax rather than erasing it.
+free-variable, application, relation-query, and recursive-congruence profile
+used by the executable language presentations, and rejects unsupported syntax
+rather than erasing it.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.CanonicalWire
@@ -54,12 +54,23 @@ private def renderEvalPolicy : Option TermEvalPolicy → String
   | some .fold => "(EvalSome EvalFold)"
   | some .oracle => "(EvalSome EvalOracle)"
 
+/-- A collection-algebra declaration is rendered only when present, so wires
+of undeclared rules are unchanged. -/
+private def renderCollectionAlgebra : Option CollectionAlgebra → String
+  | none => ""
+  | some algebra =>
+      let flatten := if algebra.flatten then "FlattenTrue" else "FlattenFalse"
+      let unit := match algebra.unit with
+        | none => "UnitNone"
+        | some name => s!"(UnitSome {quote name})"
+      s!" (AlgebraSome {flatten} {unit})"
+
 def renderGrammarRule? (rule : GrammarRule) : Option String := do
   let parameters ← rule.params.mapM renderTermParam?
   let renderedSyntax ← rule.syntaxPattern.mapM renderSyntaxItem?
   pure (s!"(GrammarRule {quote rule.label} {quote rule.category} " ++
     s!"{renderList parameters} {renderList renderedSyntax} " ++
-    s!"{renderEvalPolicy rule.evalPolicy?})")
+    s!"{renderEvalPolicy rule.evalPolicy?}{renderCollectionAlgebra rule.algebra?})")
 
 def renderPattern? : Pattern → Option String
   | .fvar name => some s!"(FVar {quote name})"
@@ -75,6 +86,10 @@ decreasing_by
     omega
 
 def renderPremise? : Premise → Option String
+  | .congruence source target => do
+      let renderedSource ← renderPattern? source
+      let renderedTarget ← renderPattern? target
+      pure s!"(Congruence {renderedSource} {renderedTarget})"
   | .relationQuery relation arguments => do
       let renderedArguments ← arguments.mapM renderPattern?
       pure s!"(RelationQuery {quote relation} {renderList renderedArguments})"
@@ -139,6 +154,8 @@ end
 
 /-- Structural premise fragment represented by the canonical wire. -/
 def premiseSupported : Premise → Bool
+  | .congruence source target =>
+      patternSupported source && patternSupported target
   | .relationQuery _ arguments => patternListSupported arguments
   | _ => false
 
@@ -240,7 +257,14 @@ theorem renderPremise?_isSome_eq_supported (premise : Premise) :
     (renderPremise? premise).isSome = premiseSupported premise := by
   cases premise with
   | freshness => rfl
-  | congruence => rfl
+  | congruence source target =>
+      have sourceSupported := renderPattern?_isSome_eq_supported source
+      have targetSupported := renderPattern?_isSome_eq_supported target
+      cases renderedSource : renderPattern? source <;>
+        cases renderedTarget : renderPattern? target <;>
+        simp [renderPremise?, premiseSupported, renderedSource, renderedTarget]
+          at sourceSupported targetSupported ⊢ <;>
+        simp_all
   | relationQuery relation arguments =>
       have rendered := mapM_isSome_eq_all renderPattern? arguments
       have supported :
@@ -336,5 +360,28 @@ theorem renderLanguage?_isSome_eq_supported (language : LanguageDef) :
     simp [renderLanguage?, languageSupported, equations, terms, rewrites]
       at renderedTerms renderedRewrites ⊢ <;>
     simp_all
+
+namespace Canary
+
+def supportedCongruence : Premise :=
+  .congruence
+    (.apply "wire-canary:source" [.fvar "input"])
+    (.apply "wire-canary:target" [.fvar "output"])
+
+theorem supportedCongruence_renders :
+    (renderPremise? supportedCongruence).isSome := by
+  simp [supportedCongruence, renderPremise?, renderPattern?]
+
+def unsupportedCongruence : Premise :=
+  .congruence (.bvar 0) (.fvar "output")
+
+theorem unsupportedCongruence_rejected :
+    renderPremise? unsupportedCongruence = none := by
+  simp [unsupportedCongruence, renderPremise?, renderPattern?]
+
+#print axioms supportedCongruence_renders
+#print axioms unsupportedCongruence_rejected
+
+end Canary
 
 end Mettapedia.GSLT.LanguageDef.CanonicalWire

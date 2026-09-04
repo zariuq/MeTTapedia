@@ -169,14 +169,14 @@ def occurrenceCellOfWorld
 /-- There is an authored GSLT-IL profile whose full world observer is faithful
 while its visible-outcome observer is lossy because two distinct occurrence
 histories justify the same internal command. -/
-theorem exists_authored_multiworld_observation_boundary :
+theorem exists_program_multiworld_observation_boundary :
     ∃ (program : Program) (profile : EvidenceWorlds.Profile program)
       (command : profile.Command),
       (worlds profile command).Faithful ∧
         (outcomes profile command).Lossy := by
   obtain ⟨program, source, target, first, second, distinct, _sameWire,
       _covered, _outcomeDeterminate, _notRepresentable⟩ :=
-    exists_authored_occurrence_history_nonrepresentable
+    exists_program_occurrence_history_nonrepresentable
   let profile := occurrenceProfile program source target
   let firstWorld : profile.World () :=
     ⟨source.2, OccurrenceHistory.ofCell first⟩
@@ -197,6 +197,6 @@ theorem exists_authored_multiworld_observation_boundary :
 #print axioms cardinality_lossy_of_distinct_worlds
 #print axioms history_sensitive_policy_not_supported
 #print axioms outcomes_faithful_of_representation
-#print axioms exists_authored_multiworld_observation_boundary
+#print axioms exists_program_multiworld_observation_boundary
 
 end Mettapedia.GSLT.LanguageDef.GSLTIL.MultiworldObservation

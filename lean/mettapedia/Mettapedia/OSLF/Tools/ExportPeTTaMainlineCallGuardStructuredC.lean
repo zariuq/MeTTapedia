@@ -1,14 +1,14 @@
-import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardToStructuredC
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileStructuredCProgram
 import Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
 
 namespace Mettapedia.OSLF.Tools.ExportPeTTaMainlineCallGuardStructuredC
 
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
-open Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardToStructuredC
+open Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileStructuredCProgram
 
 /-- Canonical structural Pattern wire consumed by the StructuredC emitter. -/
-def programWire : String := renderPattern loweredProgram ++ "\n"
+def programWire : String := renderPattern generatedColdProgram ++ "\n"
 
 def main (arguments : List String) : IO UInt32 := do
   match arguments with

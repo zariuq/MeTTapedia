@@ -2,13 +2,15 @@ import Mettapedia.GSLT.LanguageDef.NIKCertifiedCompilation
 import Mettapedia.GSLT.LanguageDef.NIKDefaultProfile
 
 /-!
-# Certified compilation of the statusful default NIK
+# Certified compilation of the statusful external-certificate profile
 
-The default NIK frontend includes parsing, authority resolution, and all four
-logical outcomes.  A native Prime implementation may refine that reference
-function through an arbitrary multi-stage GSLT.  Separately, its compiler may
-emit an article proving that authored source reached the generated artifact
-while preserving a named machine observation.
+The historically named `NIKDefaultProfile` frontend is an
+external-certificate protocol containing parsing, authority resolution, and
+all four logical outcomes.  It is not a default calculus for NIK as a whole.
+A native Prime implementation may refine that reference function through an
+arbitrary multi-stage GSLT.  Separately, its compiler may emit an article
+proving that authored source reached the generated artifact while preserving
+a named machine observation.
 
 This module composes those obligations without conflating their evidence:
 

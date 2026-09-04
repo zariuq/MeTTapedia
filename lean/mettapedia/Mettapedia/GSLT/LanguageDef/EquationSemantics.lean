@@ -1,3 +1,5 @@
+import Mettapedia.GSLT.Core.GSLT
+import Mettapedia.GSLT.LanguageDef.WellSorted
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
@@ -6,13 +8,30 @@ import Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
 `LanguageDef.equations` contains bidirectional schemas, whereas
 `LanguageDef.rewrites` contains executable directed rules.  This module keeps
-the two roles distinct.  It instantiates authored equations, closes them under
-the structural one-hole contexts of `Pattern`, and finally takes the least
-equivalence closure.
+the two roles distinct.  It instantiates authored equations, adds the laws the
+presentation itself derives, closes both under the structural one-hole
+contexts of `Pattern`, and finally takes the least equivalence closure.
 
-Equation premises use the same independently relational premise semantics as
-the authored rewrite system.  A `congruence` premise therefore asks for an
-actual finite rewrite derivation; it does not turn an equation into a rewrite.
+Two kinds of generator feed the theory.
+
+* Authored equations, instantiated by matching.  Equation premises use the
+  same independently relational premise semantics as the authored rewrite
+  system.  A `congruence` premise therefore asks for an actual finite rewrite
+  derivation; it does not turn an equation into a rewrite.
+* Presentation-derived laws.  A declared, sorted bag carrier is
+  permutation-invariant while retaining multiplicity; a declared, sorted set
+  carrier additionally makes sets idempotent; a vector carries no law.  A
+  collection-algebra declaration on a bare collection constructor supplies
+  flattening of nested occurrences, the singleton collapse, absorption of the
+  declared unit, and identification of the empty collection with that unit,
+  each restricted to collections sorted at the declaring rule's category.
+  Binder display names are removed by the generic locally nameless alpha
+  section before semantic admission.  They therefore require no equation
+  generator here: alpha-equivalence is literal equality on the admitted
+  carrier.
+
+Equations remain undirected: nothing in this module orients a law into a
+rewrite.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.EquationSemantics
@@ -52,7 +71,131 @@ def EquationInstance
     (source target : Pattern) : Prop :=
   ∃ fuel, EquationInstanceAt base language fuel source target
 
-/-- One equation instance placed in one arbitrary syntactic context.  Static
+/-! ## Presentation-derived laws -/
+
+/-- A pattern is sorted at a category by the authored grammar under some free
+and bound typing contexts.  This is the sort premise of every declared
+collection law: it ties a bare collection to the rule that declares the law,
+so two bag sorts of one language never exchange laws. -/
+def SortedAt (language : LanguageDef) (pattern : Pattern) (category : String) :
+    Prop :=
+  ∃ (free : WellSorted.FreeTypeContext) (bound : List TypeExpr),
+    WellSorted.HasSort language free bound pattern category
+
+/-- A grammar rule declares a bare collection carrier of the given kind.
+The element type is existential because the representation law concerns the
+collection discipline, while `SortedAt` below pins each concrete value to the
+rule's result category. -/
+structure CollectionCarrierRule (language : LanguageDef) (rule : GrammarRule)
+    (kind : CollType) : Prop where
+  authored : rule ∈ language.terms
+  selfSorted : ∃ parameterName elementType,
+    rule.params = [.simple parameterName (.collection kind elementType)]
+
+/-- A declared collection carrier is visible to the presentation's decidable
+collection inventory. -/
+theorem usesCollection_eq_true_of_collectionCarrierRule
+    {language : LanguageDef} {rule : GrammarRule} {kind : CollType}
+    (declaration : CollectionCarrierRule language rule kind) :
+    language.usesCollection kind = true := by
+  unfold LanguageDef.usesCollection
+  apply List.any_eq_true.mpr
+  refine ⟨rule, declaration.authored, ?_⟩
+  obtain ⟨parameterName, elementType, parameters⟩ := declaration.selfSorted
+  rw [parameters]
+  simp [TermParam.typeExpr, TypeExpr.mentionsCollection]
+
+/-- A rule is a declared collection algebra of the given kind: it is authored,
+it carries the declaration, its single parameter is a collection of that kind
+over the rule's own category, and any declared unit is an authored nullary
+constructor of that category. -/
+structure AlgebraRule (language : LanguageDef) (rule : GrammarRule)
+    (kind : CollType) (algebra : CollectionAlgebra) : Prop where
+  authored : rule ∈ language.terms
+  declared : rule.algebra? = some algebra
+  selfSorted : ∃ parameterName,
+    rule.params = [.simple parameterName (.collection kind (.base rule.category))]
+  unitAuthored : ∀ unit, algebra.unit = some unit →
+    ∃ unitRule ∈ language.terms,
+      unitRule.label = unit ∧ unitRule.category = rule.category ∧
+        unitRule.params = []
+
+/-- The laws a presentation derives from its collection carriers and its
+collection-algebra declarations.  Every law carries the declaration and sort
+evidence for its concrete closed value.  A collection carrying a rest variable
+is a rule pattern, not a term, and receives no law. -/
+inductive DerivedInstance (language : LanguageDef) :
+    Pattern → Pattern → Prop where
+  | bagPerm {rule : GrammarRule} {elements elements' : List Pattern} :
+      CollectionCarrierRule language rule .hashBag →
+      SortedAt language (.collection .hashBag elements none) rule.category →
+      List.Perm elements elements' →
+      DerivedInstance language
+        (.collection .hashBag elements none) (.collection .hashBag elements' none)
+  | setPerm {rule : GrammarRule} {elements elements' : List Pattern} :
+      CollectionCarrierRule language rule .hashSet →
+      SortedAt language (.collection .hashSet elements none) rule.category →
+      List.Perm elements elements' →
+      DerivedInstance language
+        (.collection .hashSet elements none) (.collection .hashSet elements' none)
+  | setDedup {rule : GrammarRule} {element : Pattern} {elements : List Pattern} :
+      CollectionCarrierRule language rule .hashSet →
+      SortedAt language
+        (.collection .hashSet (element :: element :: elements) none)
+        rule.category →
+      DerivedInstance language
+        (.collection .hashSet (element :: element :: elements) none)
+        (.collection .hashSet (element :: elements) none)
+  | flatten {rule : GrammarRule} {kind : CollType} {algebra : CollectionAlgebra}
+      {pre inner post : List Pattern} :
+      AlgebraRule language rule kind algebra →
+      algebra.flatten = true →
+      SortedAt language
+        (.collection kind (pre ++ (.collection kind inner none) :: post) none)
+        rule.category →
+      DerivedInstance language
+        (.collection kind (pre ++ (.collection kind inner none) :: post) none)
+        (.collection kind (pre ++ inner ++ post) none)
+  | singleton {rule : GrammarRule} {kind : CollType} {algebra : CollectionAlgebra}
+      {element : Pattern} :
+      AlgebraRule language rule kind algebra →
+      algebra.flatten = true →
+      SortedAt language (.collection kind [element] none) rule.category →
+      DerivedInstance language (.collection kind [element] none) element
+  | unitElim {rule : GrammarRule} {kind : CollType} {algebra : CollectionAlgebra}
+      {unit : String} {pre post : List Pattern} :
+      AlgebraRule language rule kind algebra →
+      algebra.unit = some unit →
+      SortedAt language
+        (.collection kind (pre ++ (.apply unit []) :: post) none) rule.category →
+      DerivedInstance language
+        (.collection kind (pre ++ (.apply unit []) :: post) none)
+        (.collection kind (pre ++ post) none)
+  | emptyUnit {rule : GrammarRule} {kind : CollType} {algebra : CollectionAlgebra}
+      {unit : String} :
+      AlgebraRule language rule kind algebra →
+      algebra.unit = some unit →
+      SortedAt language (.collection kind [] none) rule.category →
+      DerivedInstance language (.collection kind [] none) (.apply unit [])
+
+/-- Open collection tails are schema variables rather than carrier values, so
+no presentation-derived equation can use one as its source. -/
+theorem no_derivedInstance_of_open_collection_source
+    (language : LanguageDef) (kind : CollType) (elements : List Pattern)
+    (rest : String) (target : Pattern) :
+    ¬ DerivedInstance language (.collection kind elements (some rest)) target := by
+  intro derived
+  cases derived
+
+/-- One generator of the equation theory: an authored equation instance or a
+presentation-derived law. -/
+def EquationGenerator
+    (base : BasePremiseEvaluator) (language : LanguageDef)
+    (source target : Pattern) : Prop :=
+  EquationInstance base language source target ∨
+    DerivedInstance language source target
+
+/-- One generator placed in one arbitrary syntactic context.  Static
 equations are congruences for the whole term grammar; this is intentionally
 different from reduction contexts, which require authored contextual rewrite
 schemas. -/
@@ -60,7 +203,7 @@ inductive EquationContextStep
     (base : BasePremiseEvaluator) (language : LanguageDef) :
     Pattern → Pattern → Prop where
   | inContext (context : OneHoleContext) {redex contractum : Pattern} :
-      EquationInstance base language redex contractum →
+      EquationGenerator base language redex contractum →
       EquationContextStep base language
         (context.fill redex) (context.fill contractum)
 
@@ -91,6 +234,71 @@ def equationSetoid
       fun relation => Relation.EqvGen.symm _ _ relation,
       fun first second => Relation.EqvGen.trans _ _ _ first second⟩
 
+/-! ## Canonical equation-saturated operational theory -/
+
+/-- The operational relation presented by a `LanguageDef`: one authored
+rewrite, with arbitrary equation changes of representative at both ends.
+Equations remain undirected; they expose redexes without being oriented into
+additional rewrite rules. -/
+def EquationSaturatedStep
+    (base : BasePremiseEvaluator) (language : LanguageDef)
+    (source target : Pattern) : Prop :=
+  ∃ redex contractum : Pattern,
+    EquationEquiv base language source redex ∧
+      Step base language redex contractum ∧
+        EquationEquiv base language contractum target
+
+/-- Equation saturation makes a change of source representative admissible. -/
+theorem equationSaturatedStep_resp_left
+    (base : BasePremiseEvaluator) (language : LanguageDef) :
+    ∀ {source source' target : Pattern},
+      EquationEquiv base language source source' →
+      EquationSaturatedStep base language source target →
+      ∃ target', EquationSaturatedStep base language source' target' ∧
+        EquationEquiv base language target target' := by
+  intro source source' target sourceEquivalent
+  rintro ⟨redex, contractum, redexEquivalent, primitive, targetEquivalent⟩
+  refine ⟨target, ⟨redex, contractum, ?_, primitive, targetEquivalent⟩, ?_⟩
+  · exact (equationSetoid base language).iseqv.trans
+      ((equationSetoid base language).iseqv.symm sourceEquivalent)
+      redexEquivalent
+  · exact (equationSetoid base language).iseqv.refl target
+
+/-- Equation saturation makes a change of target representative admissible. -/
+theorem equationSaturatedStep_resp_right
+    (base : BasePremiseEvaluator) (language : LanguageDef) :
+    ∀ {source target target' : Pattern},
+      EquationSaturatedStep base language source target →
+      EquationEquiv base language target target' →
+      EquationSaturatedStep base language source target' := by
+  intro source target target'
+  rintro ⟨redex, contractum, redexEquivalent, primitive, targetEquivalent⟩
+    equivalent
+  exact ⟨redex, contractum, redexEquivalent, primitive,
+    (equationSetoid base language).iseqv.trans targetEquivalent equivalent⟩
+
+/-- The canonical GSLT generated from a `LanguageDef` and one explicit premise
+boundary.  This is the single equation-respecting operational input to OSLF. -/
+def equationSaturatedGSLT
+    (base : BasePremiseEvaluator) (language : LanguageDef) :
+    Mettapedia.GSLT.GSLT where
+  Term := Pattern
+  equations := equationSetoid base language
+  rewrites := EquationSaturatedStep base language
+  rewrites_resp_left := equationSaturatedStep_resp_left base language
+  rewrites_resp_right := equationSaturatedStep_resp_right base language
+
+/-- Every authored primitive reduction embeds in the saturated relation. -/
+theorem step_to_equationSaturatedStep
+    {base : BasePremiseEvaluator} {language : LanguageDef}
+    {source target : Pattern}
+    (step : Step base language source target) :
+    EquationSaturatedStep base language source target :=
+  ⟨source, target,
+    (equationSetoid base language).iseqv.refl source,
+    step,
+    (equationSetoid base language).iseqv.refl target⟩
+
 /-- Every instantiated equation is included at the root context. -/
 theorem equationInstance_equivalent
     {base : BasePremiseEvaluator} {language : LanguageDef}
@@ -98,7 +306,7 @@ theorem equationInstance_equivalent
     (equationWitness : EquationInstance base language source target) :
     EquationEquiv base language source target := by
   exact Relation.EqvGen.rel _ _
-    (EquationContextStep.inContext .hole equationWitness)
+    (EquationContextStep.inContext .hole (Or.inl equationWitness))
 
 /-- Every instantiated equation remains equivalent inside any structural
 one-hole context. -/
@@ -109,7 +317,58 @@ theorem equationInstance_fill_equivalent
     (equationWitness : EquationInstance base language source target) :
     EquationEquiv base language (context.fill source) (context.fill target) := by
   exact Relation.EqvGen.rel _ _
-    (EquationContextStep.inContext context equationWitness)
+    (EquationContextStep.inContext context (Or.inl equationWitness))
+
+/-- Every presentation-derived law is included at the root context. -/
+theorem derivedInstance_equivalent
+    {base : BasePremiseEvaluator} {language : LanguageDef}
+    {source target : Pattern}
+    (derivedWitness : DerivedInstance language source target) :
+    EquationEquiv base language source target := by
+  exact Relation.EqvGen.rel _ _
+    (EquationContextStep.inContext .hole (Or.inr derivedWitness))
+
+/-- Every presentation-derived law remains equivalent inside any structural
+one-hole context. -/
+theorem derivedInstance_fill_equivalent
+    {base : BasePremiseEvaluator} {language : LanguageDef}
+    {source target : Pattern}
+    (context : OneHoleContext)
+    (derivedWitness : DerivedInstance language source target) :
+    EquationEquiv base language (context.fill source) (context.fill target) := by
+  exact Relation.EqvGen.rel _ _
+    (EquationContextStep.inContext context (Or.inr derivedWitness))
+
+/-- Values of a declared, sorted bag carrier are permutation-invariant with
+multiplicity retained. -/
+theorem equationEquiv_bag_perm
+    {base : BasePremiseEvaluator} {language : LanguageDef}
+    {rule : GrammarRule}
+    (declaration : CollectionCarrierRule language rule .hashBag)
+    {elements elements' : List Pattern}
+    (sorted : SortedAt language
+      (.collection .hashBag elements none) rule.category)
+    (permutation : List.Perm elements elements') :
+    EquationEquiv base language
+      (.collection .hashBag elements none) (.collection .hashBag elements' none) :=
+  derivedInstance_equivalent
+    (DerivedInstance.bagPerm declaration sorted permutation)
+
+/-- Values of a declared, sorted set carrier are idempotent. -/
+theorem equationEquiv_set_dedup
+    {base : BasePremiseEvaluator} {language : LanguageDef}
+    {rule : GrammarRule}
+    (declaration : CollectionCarrierRule language rule .hashSet)
+    (element : Pattern) (elements : List Pattern) :
+    SortedAt language
+        (.collection .hashSet (element :: element :: elements) none)
+        rule.category →
+    EquationEquiv base language
+      (.collection .hashSet (element :: element :: elements) none)
+      (.collection .hashSet (element :: elements) none) := by
+  intro sorted
+  exact derivedInstance_equivalent
+    (DerivedInstance.setDedup declaration sorted)
 
 /-- Contextual equation equivalence remains an equivalence after insertion
 into any structural one-hole context.  This is derived from composition of
@@ -230,23 +489,152 @@ theorem no_equationInstance_of_equations_eq_nil
       rw [empty] at membership
       cases membership
 
-/-- With no authored equations, the core-generated equivalence is exactly
-syntactic equality.  This is the negative control against silently importing
-representation-wide equations. -/
+/-- An equation-free presentation has no authored equations. -/
+theorem equations_eq_nil_of_isEquationFree
+    {language : LanguageDef} (free : language.isEquationFree = true) :
+    language.equations = [] := by
+  simp only [LanguageDef.isEquationFree, Bool.and_eq_true, List.isEmpty_iff]
+    at free
+  exact free.1.1.1
+
+/-- An equation-free presentation declares no bags. -/
+theorem usesCollection_hashBag_eq_false_of_isEquationFree
+    {language : LanguageDef} (free : language.isEquationFree = true) :
+    language.usesCollection .hashBag = false := by
+  simp only [LanguageDef.isEquationFree, Bool.and_eq_true, Bool.not_eq_true']
+    at free
+  exact free.1.1.2
+
+/-- An equation-free presentation declares no sets. -/
+theorem usesCollection_hashSet_eq_false_of_isEquationFree
+    {language : LanguageDef} (free : language.isEquationFree = true) :
+    language.usesCollection .hashSet = false := by
+  simp only [LanguageDef.isEquationFree, Bool.and_eq_true, Bool.not_eq_true']
+    at free
+  exact free.1.2
+
+/-- An equation-free presentation declares no collection algebra. -/
+theorem hasAlgebraDeclarations_eq_false_of_isEquationFree
+    {language : LanguageDef} (free : language.isEquationFree = true) :
+    language.hasAlgebraDeclarations = false := by
+  simp only [LanguageDef.isEquationFree, Bool.and_eq_true, Bool.not_eq_true']
+    at free
+  exact free.2
+
+/-- A rule carrying a declaration contradicts the absence of declarations. -/
+theorem no_algebraRule_of_hasAlgebraDeclarations_eq_false
+    {language : LanguageDef} {rule : GrammarRule} {kind : CollType}
+    {algebra : CollectionAlgebra}
+    (noDeclarations : language.hasAlgebraDeclarations = false)
+    (algebraRule : AlgebraRule language rule kind algebra) : False := by
+  have anyFalse := noDeclarations
+  simp only [LanguageDef.hasAlgebraDeclarations, List.any_eq_false] at anyFalse
+  have := anyFalse rule algebraRule.authored
+  rw [algebraRule.declared] at this
+  simp at this
+
+/-- No presentation-derived law fires when the presentation declares no bag,
+no set, and no collection algebra, whatever its authored equations. -/
+theorem no_derivedInstance_of_no_derived_laws
+    {language : LanguageDef}
+    (noBags : language.usesCollection .hashBag = false)
+    (noSets : language.usesCollection .hashSet = false)
+    (noDeclarations : language.hasAlgebraDeclarations = false)
+    (source target : Pattern) :
+    ¬ DerivedInstance language source target := by
+  intro derived
+  cases derived with
+  | bagPerm declaration _ _ =>
+      have usesBags :=
+        usesCollection_eq_true_of_collectionCarrierRule declaration
+      rw [noBags] at usesBags
+      cases usesBags
+  | setPerm declaration _ _ =>
+      have usesSets :=
+        usesCollection_eq_true_of_collectionCarrierRule declaration
+      rw [noSets] at usesSets
+      cases usesSets
+  | setDedup declaration _ =>
+      have usesSets :=
+        usesCollection_eq_true_of_collectionCarrierRule declaration
+      rw [noSets] at usesSets
+      cases usesSets
+  | flatten algebraRule _ _ =>
+      exact no_algebraRule_of_hasAlgebraDeclarations_eq_false noDeclarations
+        algebraRule
+  | singleton algebraRule _ _ =>
+      exact no_algebraRule_of_hasAlgebraDeclarations_eq_false noDeclarations
+        algebraRule
+  | unitElim algebraRule _ _ =>
+      exact no_algebraRule_of_hasAlgebraDeclarations_eq_false noDeclarations
+        algebraRule
+  | emptyUnit algebraRule _ _ =>
+      exact no_algebraRule_of_hasAlgebraDeclarations_eq_false noDeclarations
+        algebraRule
+
+/-- No presentation-derived law fires when the presentation is equation
+free. -/
+theorem no_derivedInstance_of_isEquationFree
+    {language : LanguageDef} (free : language.isEquationFree = true)
+    (source target : Pattern) :
+    ¬ DerivedInstance language source target := by
+  intro derived
+  have noBags := usesCollection_hashBag_eq_false_of_isEquationFree free
+  have noSets := usesCollection_hashSet_eq_false_of_isEquationFree free
+  have noDeclarations := hasAlgebraDeclarations_eq_false_of_isEquationFree free
+  cases derived with
+  | bagPerm declaration _ _ =>
+      have usesBags :=
+        usesCollection_eq_true_of_collectionCarrierRule declaration
+      rw [noBags] at usesBags
+      cases usesBags
+  | setPerm declaration _ _ =>
+      have usesSets :=
+        usesCollection_eq_true_of_collectionCarrierRule declaration
+      rw [noSets] at usesSets
+      cases usesSets
+  | setDedup declaration _ =>
+      have usesSets :=
+        usesCollection_eq_true_of_collectionCarrierRule declaration
+      rw [noSets] at usesSets
+      cases usesSets
+  | flatten algebraRule _ _ =>
+      exact no_algebraRule_of_hasAlgebraDeclarations_eq_false noDeclarations
+        algebraRule
+  | singleton algebraRule _ _ =>
+      exact no_algebraRule_of_hasAlgebraDeclarations_eq_false noDeclarations
+        algebraRule
+  | unitElim algebraRule _ _ =>
+      exact no_algebraRule_of_hasAlgebraDeclarations_eq_false noDeclarations
+        algebraRule
+  | emptyUnit algebraRule _ _ =>
+      exact no_algebraRule_of_hasAlgebraDeclarations_eq_false noDeclarations
+        algebraRule
+
+/-- With no generators at all, the generated equivalence is exactly syntactic
+equality.  This is the negative control against silently importing
+representation-wide equations: a presentation that declares no equations, no
+bags, no sets, and no collection algebra carries none. -/
 theorem equationEquiv_iff_eq_of_no_generators
     {base : BasePremiseEvaluator} {language : LanguageDef}
-    (equationsEmpty : language.equations = [])
+    (free : language.isEquationFree = true)
     (source target : Pattern) :
     EquationEquiv base language source target ↔ source = target := by
+  have equationsEmpty := equations_eq_nil_of_isEquationFree free
   constructor
   · intro equivalent
     induction equivalent with
     | rel left right step =>
         cases step with
-        | inContext context equationWitness =>
-            exact False.elim
-              (no_equationInstance_of_equations_eq_nil
-                equationsEmpty _ _ equationWitness)
+        | inContext context generator =>
+            cases generator with
+            | inl equationWitness =>
+                exact False.elim
+                  (no_equationInstance_of_equations_eq_nil
+                    equationsEmpty _ _ equationWitness)
+            | inr derivedWitness =>
+                exact False.elim
+                  (no_derivedInstance_of_isEquationFree free _ _ derivedWitness)
     | refl pattern => rfl
     | symm left right relation inductionHypothesis =>
         exact inductionHypothesis.symm
@@ -254,5 +642,39 @@ theorem equationEquiv_iff_eq_of_no_generators
         exact firstIH.trans secondIH
   · rintro rfl
     exact Relation.EqvGen.refl source
+
+/-- An equation-free presentation is not a second operational semantics: its
+canonical saturated step is exactly its authored one-step relation. -/
+theorem equationSaturatedStep_iff_step_of_no_generators
+    {base : BasePremiseEvaluator} {language : LanguageDef}
+    (free : language.isEquationFree = true)
+    (source target : Pattern) :
+    EquationSaturatedStep base language source target ↔
+      Step base language source target := by
+  constructor
+  · rintro ⟨redex, contractum, sourceEquivalent, primitive,
+      targetEquivalent⟩
+    have sourceEq : source = redex :=
+      (equationEquiv_iff_eq_of_no_generators free source redex).mp
+        sourceEquivalent
+    have targetEq : contractum = target :=
+      (equationEquiv_iff_eq_of_no_generators free contractum target).mp
+        targetEquivalent
+    simpa [sourceEq, targetEq] using primitive
+  · exact step_to_equationSaturatedStep
+
+/-- Consequently, the generated GSLT carries ordinary equality when the
+presentation is equation free. -/
+theorem equationSaturatedGSLT_equiv_iff_eq_of_no_generators
+    {base : BasePremiseEvaluator} {language : LanguageDef}
+    (free : language.isEquationFree = true)
+    (source target : Pattern) :
+    (equationSaturatedGSLT base language).Equiv source target ↔
+      source = target :=
+  equationEquiv_iff_eq_of_no_generators free source target
+
+#print axioms equationSaturatedGSLT
+#print axioms equationSaturatedStep_iff_step_of_no_generators
+#print axioms equationSaturatedGSLT_equiv_iff_eq_of_no_generators
 
 end Mettapedia.GSLT.LanguageDef.EquationSemantics

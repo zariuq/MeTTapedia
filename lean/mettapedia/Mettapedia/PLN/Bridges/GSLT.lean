@@ -6,6 +6,7 @@ import Mettapedia.PLN.Bridges.GSLT.AlgorithmicCompressionGuidance
 import Mettapedia.PLN.Bridges.GSLT.NeighborhoodProofAuthority
 import Mettapedia.PLN.Bridges.GSLT.ObservationDiscipline
 import Mettapedia.PLN.Bridges.GSLT.PLNDeriveNIKAuthority
+import Mettapedia.PLN.Bridges.GSLT.RevisionPinnedEvidenceExecution
 import Mettapedia.Logic.Bridges.FoundationCertificateGSLT
 
 /-!

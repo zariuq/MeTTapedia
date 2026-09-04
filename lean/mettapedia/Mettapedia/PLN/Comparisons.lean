@@ -1,3 +1,4 @@
+import Mettapedia.PLN.Comparisons.ChainLoss
 import Mettapedia.PLN.Comparisons.ErrorCharacterization
 import Mettapedia.PLN.Comparisons.OptimalityTheorems
 import Mettapedia.PLN.Comparisons.PeTTa

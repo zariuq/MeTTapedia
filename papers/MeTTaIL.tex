@@ -14,6 +14,8 @@
 \usepackage{booktabs}
 \usepackage{listings}
 \usepackage{amssymb}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit}
 \lstset{
   basicstyle=\ttfamily\small,
   breaklines=true,
@@ -41,7 +43,10 @@ and an automatic derivation of an OSLF behavioral type system for any
 formalization: the MeTTaIL and MeTTaCore Lean libraries, the MeTTaMinimal and
 MeTTaFull instance endpoints, the Rust execution bridge, and a machine-checked
 formalization of MQ-calculus (Stay \& Meredith 2026) as a concrete verification
-target exercising the full stack.
+target exercising the full stack.  A TPTP/TSTP case study additionally shows
+how official syntax, binder-resolving FOF-to-CNF transformations, pluggable
+calculus services, finite word compilation, and a source operational GSLT
+compose without turning a standard proof format into a hardcoded prover.
 \end{abstract}
 
 \section{Current Coverage}
@@ -87,7 +92,7 @@ inductive Pattern where
   | bvar : Nat -> Pattern
   | fvar : String -> Pattern
   | apply : String -> List Pattern -> Pattern
-  | lambda : Option String -> Pattern -> Pattern      -- authored binder name
+  | lambda : Option String -> Pattern -> Pattern      -- declared binder spelling
   | multiLambda : Nat -> List String -> Pattern -> Pattern
   | subst : Pattern -> Pattern -> Pattern
   | collection : CollType -> List Pattern -> Option String -> Pattern
@@ -122,13 +127,13 @@ Key design choices:
   Metamath concrete syntax requires raw lexical carriers (\code{![raw] as Sym},
   \code{![label] as Label}). Rust already supports these via
   \code{LangType.carrier\_kind}; Lean now matches.
-\item \textbf{Authored binder names} (\code{Pattern.lambda : Option String}):
+\item \textbf{Preserved binder spellings} (\code{Pattern.lambda : Option String}):
   The human-facing name is preserved for export and diagnostics.
   The locally nameless core uses \code{none}; proofs are unaffected.
 \item \textbf{Syntax operators} (\code{SyntaxPatternOp}):
   Rust's \code{*sep}, \code{*zip}, \code{*map}, \code{*opt} are first-class
-  authored data, not flattened to terminal/nonTerminal strings.
-\item \textbf{Authored contextual closure} (\code{Premise.congruence}):
+  declared data, not flattened to terminal/nonTerminal strings.
+\item \textbf{Explicit contextual closure} (\code{Premise.congruence}):
   a rewrite rule explicitly states each context in which reduction may recur.
   Collection representation alone grants no reduction authority.
 \item \textbf{Quantified premises} (\code{Premise.forAll}):
@@ -141,7 +146,7 @@ Key design choices:
   unknown relations, and arity mismatches---all at definition time.
 \end{itemize}
 
-\subsection{The \code{languageDef!} Authored Notation}
+\subsection{The \code{languageDef!} Source Notation}
 
 The Rust side uses a \code{language!} procedural macro to let humans author
 language definitions in a single readable block.  Lean now has a matching
@@ -194,7 +199,7 @@ The Rust and Lean term-declaration notations are intentionally identical:
 \end{tabular}
 \end{center}
 
-Three additional layers support the authored notation:
+Three additional layers support the source notation:
 \begin{enumerate}
 \item \textbf{Validation.}
   \code{LanguageDef.validate} checks types, constructors, relations,
@@ -205,7 +210,7 @@ Three additional layers support the authored notation:
   and rejects unsupported features (e.g.\ \code{forAll} premises,
   non-AST carriers, syntax metasyntax) rather than silently erasing them.
 \item \textbf{Faithful export.}
-  \code{Export.renderLanguageWithUserSyntax} preserves authored binder names,
+  \code{Export.renderLanguageWithUserSyntax} preserves declared binder names,
   \code{...rest} collection remainders, and syntax operators---no invented
   \code{C\_} prefixes or synthetic binder names.
 \end{enumerate}
@@ -215,7 +220,7 @@ The overall architecture is a single pipeline with two host languages:
 
 \begin{center}
 \begin{tabular}{c}
-\textbf{Human-Authored Source} \\
+\textbf{Language-Definition Source} \\
 Rust \code{language!} / Lean \code{languageDef!} \\[4pt]
 $\downarrow$ \\[4pt]
 \textbf{ONE \code{LanguageDef}} \\
@@ -243,7 +248,7 @@ Rust definition in \codepath{hyperon/mettail-rust/languages/src/rhocalc.rs}
 (${\sim}380$ lines) covers the full process calculus including native arithmetic,
 string operations, and fold terms.
 
-Lean now has a directly authored process fragment
+Lean now has a directly specified process fragment
 (\codepath{Languages/ProcessCalculi/RhoCalculus/LanguageDefDSL.lean})
 covering the pure process kernel:
 
@@ -283,7 +288,7 @@ returns \code{[]} (proved by \code{native\_decide}), and export substring
 checks confirm that the Lean-rendered text matches the Rust syntax.
 
 \paragraph{Honest boundary.}
-Two Rust rules cannot yet be authored in Lean:
+Two Rust rules cannot yet be expressed in Lean:
 \begin{itemize}
 \item \textbf{Comm} requires \code{*zip(ns,qs).*map(...)} in \emph{pattern}
   position (not just syntax-pattern position) and a direct \code{(eval cont ...)}
@@ -293,20 +298,20 @@ Two Rust rules cannot yet be authored in Lean:
 \end{itemize}
 These are the next DSL extensions needed for full parity.
 
-\subsection{Authored Contextual Semantics and Compiler Equivalence}
+\subsection{Explicit Contextual Semantics and Compiler Equivalence}
 
 The biconditional between the declarative relation and the executable engine
 is the central correctness guarantee of MeTTaIL: it means the engine can be
 used for computation while the declarative relation is used for reasoning,
 and the two are interchangeable by theorem.
-The least one-step relation generated by authored rewrite rules is
+The least one-step relation generated by declared rewrite rules is
 \code{ContextualStep.Step} in
 \codepath{Mettapedia/OSLF/MeTTaIL/ContextualStep.lean}.  A
 \code{Premise.congruence} recursively invokes that same relation; collection
 representation carries no independent reduction authority.  Its executable
 compiler is indexed by an explicit contextual-depth bound and is proved exact.
 
-\begin{lstlisting}[language={},caption={Least authored contextual semantics and exact compiler}]
+\begin{lstlisting}[language={},caption={Least explicit contextual semantics and exact compiler}]
 inductive StepAt (base : BasePremiseEvaluator) (lang : LanguageDef) :
     Nat -> Pattern -> Pattern -> Prop where
   | rule : rule in lang.rewrites ->
@@ -783,7 +788,7 @@ are connected through \code{LanguageDef}:
 \begin{center}
 \begin{tabular}{c}
 \code{LanguageDefDSL.lean} \\
-(\code{languageDef!} presentation) \\[4pt]
+(\code{languageDef!} definition) \\[4pt]
 $\swarrow$ \hspace{6em} $\searrow$ \\[4pt]
 \begin{tabular}{c}
 \code{SourceGSLT.lean} \\
@@ -800,7 +805,7 @@ $\searrow$ \hspace{6em} $\swarrow$ \\[4pt]
 \end{tabular}
 \end{center}
 
-The \code{languageDef!} presentation \code{metamathCore} defines the full
+The \code{languageDef!} value \code{metamathCore} defines the full
 Metamath statement syntax---\code{Database}, \code{Stmt}, \code{MathString},
 \code{ProofString}, normal and compressed proofs, blocks, and includes---with
 carrier-aware type declarations (\code{![label] as Label}, \code{![raw] as
@@ -814,7 +819,7 @@ in the same language object, and the definition renders back to the
 text.  (A Rust \code{metamath.rs} twin existed historically; the rendered
 text is now checked directly, with no in-tree Rust consumer.)
 
-A second, elaborated-record presentation \code{sourceGrammar} carries the
+A second, elaborated-record \code{LanguageDef} \code{sourceGrammar} carries the
 proof-facing tower: it is validated by the generic well-formation checker
 (\code{sourceGrammar\_valid}), declares its five lexical token classes with
 byte charsets, and every accepted run of the composed
@@ -849,7 +854,7 @@ The types correspond across all three artifacts:
 \end{center}
 
 \paragraph{What is proved and what remains.}
-The conformance chain between the source presentation and \code{mm-lean4} is
+The conformance chain between the source \code{LanguageDef} and \code{mm-lean4} is
 now proved at the declaration level: every accepted source transition
 (\code{\$c}, \code{\$v}, \code{\$d}, \code{\$f}, \code{\$e}, \code{\$a},
 \code{\$p} insertion, scope push/pop/completion) is matched by the shipped
@@ -859,7 +864,7 @@ premises (\code{default\_initial\_applyPayloads}).  This includes identifying
 the implementation's mandatory-frame computation with the specification's
 mandatory frame (\code{trimFrame'\_eq\_mandatory}).  Three joints remain
 before the chain is a single bidirectional theorem: binding the composed
-pipeline's classified stream to the exact byte presentation the verified
+pipeline's classified stream to the exact byte representation the verified
 reader consumes; discharging each \code{\$p} obligation's normal or compressed
 proof from the reader's own chronology, with verified and
 incomplete~(\code{?}) outcomes kept distinct; and the prefix-wise simulation
@@ -1007,7 +1012,7 @@ The reviewer anchor in
 \codepath{Mettapedia/OSLF/SpecIndex.lean}:265 is labelled
 ``Conservative MaTT Claim Map (No Overclaim)''.
 
-\section{The CertificateGSLT Layer: Generic Proof Checking over Presentations}
+\section{The CertificateGSLT Layer: Generic Proof Checking over LanguageDefs}
 \label{sec:certificategslt}
 
 Beyond rewriting, a \code{LanguageDef} may declare \emph{judgment forms} and
@@ -1024,7 +1029,7 @@ The CertificateGSLT modules
 (\codepath{Mettapedia/GSLT/LanguageDef/}, canonical import
 \code{CertificateGSLTFramework}, compiled fixtures in
 \code{CertificateGSLTInterpretationCanary}) develop the categorical theory of
-these validated presentations:
+these validated \code{LanguageDef}s:
 
 \begin{itemize}
 \item a strict rule-retaining preorder whose arrows transport derivations,
@@ -1055,12 +1060,165 @@ these validated presentations:
 
 The standalone treatment, with the full theorem inventory and verification
 statement, is \code{CertificateGSLT.tex}.  For this companion the operative point
-is that any validated presentation whose \code{LanguageDef} declares
+is that any validated \code{LanguageDef} that declares
 judgment forms and inference rules is already a CertificateGSLT object: the proof
 calculus, interpretation category, models, and both checked evidence formats
 come from the framework with no per-language authorship.  The
 \code{languageDef!} macro does not yet author the proof-calculus fields;
 extending it is a natural seam alongside the next steps below.
+
+\section{TPTP and TSTP as Composed GSLTs}
+\label{sec:tptp-gslt}
+
+The TPTP language family is a useful stress test for the preceding claims.
+It combines a large versioned concrete grammar, binder-sensitive logical
+syntax, semantics-changing transformations such as Skolemization, and TSTP
+derivation DAGs whose inference annotations name many different calculi
+\cite{tptp-language,tstp-derivations}.  The key architectural separation is:
+
+\begin{quote}
+TPTP owns the standard syntax, formula roles, source annotations, and
+derivation graph.  It does not own one privileged proof-search strategy or
+one universal inference calculus.
+\end{quote}
+
+Accordingly, \code{lib\_tptp} is a format, transformation, and verification
+library.  Resolution search remains an ordinary MeTTa program in the
+examples tree.  A TSTP inference is accepted only by an explicitly selected
+calculus service carrying its own semantic soundness theorem.
+
+\subsection{FOF to official CNF: transformations are languages}
+
+The current first-order pipeline is not one opaque clausifier.  Every
+intermediate object is a typed carrier, and every computational arrow is an
+source \code{LanguageDef} connected to an independent recursive semantics
+by exact agreement and no-invention theorems:
+
+\begin{center}
+\begin{tikzpicture}[node distance=3.8mm,
+  box/.style={draw, rounded corners, align=center, inner sep=4pt,
+    font=\small}]
+\node[box] (ast) {official TPTP FOF AST};
+\node[box, below=of ast] (named) {named FOF};
+\node[box, below=of named] (resolved) {binder-resolved FOF\\
+  {\scriptsize nearest binder; free variables rejected}};
+\node[box, below=of resolved] (normal) {NNF $\to$ prenex $\to$ Skolem form\\
+  {\scriptsize semantic preservation/equisatisfiability at each seam}};
+\node[box, below=of normal] (cnf) {definitional CNF batches\\
+  {\scriptsize source identity and polarity retained}};
+\node[box, below=of cnf] (allocated) {collision-free lexical allocation};
+\node[box, below=of allocated] (official) {official TPTP CNF AST};
+\draw[-{Stealth}] (ast) -- (named)
+  node[midway,right,font=\scriptsize]{exact elaboration};
+\draw[-{Stealth}] (named) -- (resolved)
+  node[midway,right,font=\scriptsize]{capture avoidance};
+\draw[-{Stealth}] (resolved) -- (normal)
+  node[midway,right,font=\scriptsize]{LanguageDef transformations};
+\draw[-{Stealth}] (normal) -- (cnf)
+  node[midway,right,font=\scriptsize]{named definitions};
+\draw[-{Stealth}] (cnf) -- (allocated)
+  node[midway,right,font=\scriptsize]{finite plan};
+\draw[-{Stealth}] (allocated) -- (official)
+  node[midway,right,font=\scriptsize]{42-rule serializer};
+\end{tikzpicture}
+\end{center}
+
+For example, the concrete source fixture
+
+\begin{lstlisting}[language={},caption={Nested shadowing at the official FOF boundary}]
+fof(shadowing,axiom,![X]:(p(X)=>?[X]:q(X))).
+\end{lstlisting}
+
+\noindent
+is elaborated to named FOF and then to a locally nameless formula in which
+the occurrence in \code{q(X)} resolves to the inner existential binder,
+not the outer universal binder.  The composed theorem
+\code{endToEndExact\_exists} then obtains an exact official-CNF-AST
+serialization result for every evidence-bearing admitted batch.  Its proof
+passes source-readiness obligations through binder resolution, NNF,
+de~Bruijn shifting, prenexing, Skolemization, definitional naming, and
+lexical allocation.  Numeric terms with arguments and nullary defined
+predicates are negative controls: they are proved outside the serialization
+domain rather than silently rendered.
+
+This endpoint is deliberately an \emph{official abstract syntax tree}.
+A canonical AST-to-concrete-text printer and parser/printer round trip are
+still separate obligations; the theorem does not call an AST ``a \code{.p}
+file.''
+
+\subsection{TSTP derivations: graph format outside, calculus inside}
+
+The first closed verification witness is ground resolution.  The admitted
+fixture uses ordinary TSTP inference annotations:
+
+\begin{lstlisting}[language={},caption={A small status-carrying TSTP refutation}]
+cnf(p_or_q,axiom,p|q).
+cnf(not_p,axiom,~p).
+cnf(not_q,axiom,~q).
+cnf(q,plain,q,inference(resolution,[status(thm)],[p_or_q,not_p])).
+cnf(empty,plain,$false,
+    inference(resolution,[status(thm)],[q,not_q])).
+\end{lstlisting}
+
+\noindent
+The verification architecture keeps the TSTP status and calculus meanings
+distinct:
+
+\begin{center}
+\begin{tikzpicture}[node distance=5mm,
+  box/.style={draw, rounded corners, align=center, inner sep=4pt,
+    font=\small},
+  service/.style={draw, dashed, rounded corners, align=center,
+    inner sep=4pt, font=\small}]
+\node[box] (dag) {admitted official TSTP DAG\\
+  {\scriptsize names, roles, sources, statuses, parents}};
+\node[box, below=of dag] (status) {status/provenance-indexed semantic program};
+\node[box, below=of status] (words) {compiler-returned finite word artifact\\
+  {\scriptsize proof-local arenas and compact records}};
+\node[box, below=of words] (trace) {exact derivation-word GSLT trace};
+\node[box, below=of trace] (meaning) {verified empty root $\Rightarrow$
+  problem unsatisfiable};
+\node[service, right=12mm of status] (service)
+  {selected calculus service\\
+   {\scriptsize inference check $+$ soundness theorem}};
+\draw[-{Stealth}] (dag) -- (status);
+\draw[-{Stealth}] (status) -- (words)
+  node[midway,right,font=\scriptsize]{compile/decode exactness};
+\draw[-{Stealth}] (words) -- (trace)
+  node[midway,right,font=\scriptsize]{step simulation};
+\draw[-{Stealth}] (trace) -- (meaning)
+  node[midway,right,font=\scriptsize]{semantic consequence};
+\draw[-{Stealth},dashed] (service) -- (status);
+\draw[-{Stealth},dashed] (service) -- (meaning);
+\end{tikzpicture}
+\end{center}
+
+The generic finite compiler allocates arenas for formulas, rules, evidence,
+provenance, obligations, and service state, then emits seven compact records
+for this canary.  \code{wordArtifact\_decodes} recovers the exact semantic
+program.  A program-local state-stability theorem supplies the dynamic arena
+obligation.  The shared execution invariant proves a continuous exact
+rewrite trace in the actual derivation-word \code{LanguageDef};
+\code{wordTrace\_unsatisfiable} derives unsatisfiability from the
+calculus service's independent soundness invariant.  Out-of-arena formula
+references, malformed parent counts, and unknown opcodes are rejected.
+
+The binary layer is thus a compact representation of a derivation checker,
+not another handwritten logical authority.  It also exposes the intended
+native compilation shape: a compiler-returned artifact is retained and
+reused, rather than rebuilding finite arenas by normalization in every
+client theorem.
+
+\paragraph{Current boundary.}
+The closed semantic result covers this official ground-resolution profile.
+It does not yet verify arbitrary TSTP rule names, \code{status(cth)}, or
+\code{status(esa)}.  General TSTP verification requires a registry of
+declared calculus services and a status-sensitive composition law; typed
+TFF/TCF/THF/NHF carriers, include-DAG resolution, external E/Vampire proof
+reconstruction, concrete printing, and generated StructuredC execution
+remain separate work.  Whole-language validation also needs compositional
+per-row certificates so unchanged \code{LanguageDef}s are not repeatedly
+renormalized.
 
 \section{What This Companion Covers and Does Not Cover}
 
@@ -1068,7 +1226,7 @@ extending it is a natural seam alongside the next steps below.
 \begin{itemize}
 \item MeTTaIL syntax + declarative/executable semantics bridge (sound and complete).
 \item \code{languageDef!} macro with block-syntax parsing, carrier-aware types,
-  authored binder preservation, syntax metasyntax operators, semantic validation,
+  declared binder preservation, syntax metasyntax operators, semantic validation,
   fail-fast core bridge, and faithful export.
 \item RhoCalc and Metamath as acceptance-test \code{LanguageDef} instances
   (process fragment and core-step fragment, respectively).
@@ -1087,6 +1245,11 @@ extending it is a natural seam alongside the next steps below.
   with the CertificateGSLT categorical layer (strict refinement, open derivations,
   non-thin interpretations, models, exact DAG evidence);
   Section~\ref{sec:certificategslt} and the standalone \code{CertificateGSLT.tex}.
+\item TPTP FOF elaboration through binder resolution, NNF, prenexing,
+  Skolemization, definitional CNF, collision-free allocation, and exact
+  official-CNF-AST serialization; plus one status-indexed official ground
+  TSTP refutation compiled to and executed by the derivation-word
+  GSLT (Section~\ref{sec:tptp-gslt}).
 \end{itemize}
 
 \textbf{Not yet full end-to-end by construction:}
@@ -1101,6 +1264,10 @@ extending it is a natural seam alongside the next steps below.
 \item Full HE test suite validation against the Rust MeTTaHE backend.
 \item Full Hyperon atomspace/runtime integration (beyond encoded relation
   environment subset).
+\item General TSTP calculus-service coverage, typed TFF/TCF/THF/NHF
+  semantics, concrete TPTP printing and round trips, E/Vampire proof
+  reconstruction, and generated native execution of the derivation-word
+  checker.
 \end{itemize}
 
 \section{Immediate Next Steps}
@@ -1116,6 +1283,12 @@ extending it is a natural seam alongside the next steps below.
   replacing the current MeTTaFullState delegation.
 \item Fix the \code{language!} proc macro to use hygienic variable names
   in generated parser code, preventing field-name collisions.
+\item Replace whole-language validation normalization in the derivation
+  machines with compositional per-row certificates and transport.
+\item Generalize the TSTP word compiler to finite evolving service-state
+  arenas, then instantiate further status-sensitive calculus services.
+\item Complete concrete TPTP printing and E/Vampire TSTP reconstruction
+  before extending the semantic pipeline through TFF and THF.
 \item Tie this note into \code{leanOSLF.tex} as a companion reference once stable.
 \end{enumerate}
 
@@ -1180,7 +1353,7 @@ MeTTaIL already provides:
 \begin{itemize}
   \item locally nameless binder representation with cofinite quantification;
   \item proved substitution lemmas (\code{subst\_open}, \code{subst\_lc}, etc.);
-  \item least authored contextual relation \code{ContextualStep.Step}, with an
+  \item least explicit contextual relation \code{ContextualStep.Step}, with an
         exact fuel-indexed compiler and no representation-wide descent rule;
   \item OSLF \code{langOSLF} synthesis from any \code{LanguageDef}.
 \end{itemize}
@@ -1443,13 +1616,25 @@ theorem paper_mork_mq_branching_equiv (i : Nat) (p q : Process) :
     (forall (fold : MORK.FoldStep) (_ : fold.isBinary), ...)
 \end{lstlisting}
 
-\begin{thebibliography}{9}
+\begin{thebibliography}{99}
 
 \bibitem{gratzer2020multimodal}
 D.~Gratzer, G.~A. Kavvos, A.~Nordvall Forsberg, and L.~Birkedal.
 \newblock Multimodal dependent type theory.
 \newblock In \emph{Proceedings of the 35th Annual ACM/IEEE Symposium on
   Logic in Computer Science (LICS 2020)}, pages 492--506. ACM, 2020.
+
+\bibitem{tptp-language}
+G.~Sutcliffe.
+\newblock The TPTP language and syntax BNF.
+\newblock TPTP World user documentation,
+  \url{https://tptp.org/UserDocs/TPTPLanguage/TPTPLanguage.shtml}.
+
+\bibitem{tstp-derivations}
+G.~Sutcliffe.
+\newblock The TPTP format for derivations.
+\newblock TPTP World quick guide,
+  \url{https://tptp.org/UserDocs/QuickGuide/Derivations.html}.
 
 \end{thebibliography}
 

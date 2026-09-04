@@ -1,0 +1,23 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryForeignBoundaryWitness
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryForeignBoundaryWitness
+#check @foreignQuoteDropContent_not_wellSorted
+#check @selectedQuoteDropContent_not_wellSorted
+#check @foreignQuoteDropContent_core_wellSorted
+#check @binderSafeAt_body_of_reflectiveScopeSafeAt
+#check @rhoDecl_mem_profile
+#check @rhoDecl_drop_ne_quote
+#check @not_reflectivelyWellSorted_quoteDropBVar
+#check @certifyCostRegionBoundary?_quoteDropBVar_eq_none
+#check @foreignQuoteDropContent_not_certified
+#print axioms foreignQuoteDropContent_not_wellSorted
+#print axioms selectedQuoteDropContent_not_wellSorted
+#print axioms foreignQuoteDropContent_core_wellSorted
+#print axioms not_reflectivelyWellSorted_quoteDropBVar
+#print axioms certifyCostRegionBoundary?_quoteDropBVar_eq_none
+#print axioms foreignQuoteDropContent_not_certified
+#check @witnessLeft_not_wellSorted
+#check @witnessRight_wellSorted
+#check @witnessLeftClosedQuote_wellSorted
+#print axioms witnessLeft_not_wellSorted
+#print axioms witnessRight_wellSorted
+#print axioms witnessLeftClosedQuote_wellSorted

@@ -35,7 +35,7 @@ def costWrappedSortName : String := "$cost:wrapped-term"
 
 /-- Embed source sorts and constructors into their reserved base namespaces.
 Rule-local metavariable names remain unchanged. -/
-def costBasePresentationSymbols : PresentationSymbols where
+def costBaseLanguageDefSymbolMap : LanguageDefSymbolMap where
   sort := costBaseSortName
   constructor := costBaseConstructorName
   relation := id
@@ -43,12 +43,12 @@ def costBasePresentationSymbols : PresentationSymbols where
   rewrite := id
 
 @[simp]
-theorem costBasePresentationSymbols_sort (name : String) :
-    costBasePresentationSymbols.sort name = costBaseSortName name := rfl
+theorem costBaseLanguageDefSymbolMap_sort (name : String) :
+    costBaseLanguageDefSymbolMap.sort name = costBaseSortName name := rfl
 
 @[simp]
-theorem costBasePresentationSymbols_constructor (name : String) :
-    costBasePresentationSymbols.constructor name =
+theorem costBaseLanguageDefSymbolMap_constructor (name : String) :
+    costBaseLanguageDefSymbolMap.constructor name =
       costBaseConstructorName name := rfl
 
 theorem costBaseSortName_injective : Function.Injective costBaseSortName := by
@@ -427,7 +427,7 @@ Principal interaction constructors are excluded from the wrapped closure:
 otherwise the transformed contractum could expose a fresh unguarded redex. -/
 def ResidualCovered {theory : IGSLT}
     (wrappedConstructors :
-      List (AuthoredConstructor theory.presentation.presentation))
+      List (DeclaredConstructor theory.presentation.presentation))
     {contractum : Pattern} :
     ResidualRepresentation
       (presentation := theory.presentation.presentation) contractum → Prop
@@ -439,7 +439,7 @@ every authored constructor except its two introductions receives a wrapped
 copy.  It is declaration-derived data, not a configurable traversal policy. -/
 def continuationConstructors {theory : IGSLT}
     (cut : InteractionCutPresentation theory) :
-    List (AuthoredConstructor theory.presentation.presentation) :=
+    List (DeclaredConstructor theory.presentation.presentation) :=
   theory.presentation.presentation.language.terms.attach.filter fun constructor =>
     decide (constructor ≠ cut.program.constructor ∧
       constructor ≠ cut.environment.constructor)
@@ -456,7 +456,7 @@ namespace ContinuationRetypingPlan
 @[simp]
 theorem mem_continuationConstructors_iff {theory : IGSLT}
     (cut : InteractionCutPresentation theory)
-    (constructor : AuthoredConstructor theory.presentation.presentation) :
+    (constructor : DeclaredConstructor theory.presentation.presentation) :
     constructor ∈ continuationConstructors cut ↔
       constructor ≠ cut.program.constructor ∧
         constructor ≠ cut.environment.constructor := by
@@ -473,14 +473,14 @@ theorem mem_continuationConstructors_iff {theory : IGSLT}
 def wrappedConstructors {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
     (_plan : ContinuationRetypingPlan cut) :
-    List (AuthoredConstructor theory.presentation.presentation) :=
+    List (DeclaredConstructor theory.presentation.presentation) :=
   continuationConstructors cut
 
 @[simp]
 theorem mem_wrappedConstructors_iff {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
     (plan : ContinuationRetypingPlan cut)
-    (constructor : AuthoredConstructor theory.presentation.presentation) :
+    (constructor : DeclaredConstructor theory.presentation.presentation) :
     constructor ∈ plan.wrappedConstructors ↔
       constructor ≠ cut.program.constructor ∧
         constructor ≠ cut.environment.constructor := by
@@ -553,7 +553,7 @@ def SourceEnvelopeRetypable {theory : IGSLT}
   SignatureContext plan.generatedLanguage
     (costBaseSortName cut.coreContact.sort.1.name)
     (costBaseSortName theory.presentation.interactingSort.1.name)
-    (CIGSLT.mapOneHoleContext costBasePresentationSymbols
+    (CIGSLT.mapOneHoleContext costBaseLanguageDefSymbolMap
       cut.sourceShape.envelope)
 
 @[simp]
@@ -589,7 +589,7 @@ theorem generatedTypeNames_nodup {theory : IGSLT}
 theorem authoredConstructorLabel_injective
     (presentation : ValidatedLanguageDef) :
     Function.Injective
-      (fun constructor : AuthoredConstructor presentation =>
+      (fun constructor : DeclaredConstructor presentation =>
         constructor.1.label) := by
   intro left right equality
   apply Subtype.ext
@@ -604,7 +604,7 @@ this projection loses no identity information. -/
 theorem mem_wrappedLabels_iff {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
     (plan : ContinuationRetypingPlan cut)
-    (constructor : AuthoredConstructor theory.presentation.presentation) :
+    (constructor : DeclaredConstructor theory.presentation.presentation) :
     constructor.1.label ∈ plan.wrappedLabels ↔
       constructor ∈ plan.wrappedConstructors := by
   constructor
@@ -736,7 +736,7 @@ private theorem costBaseConstructor_parameter_baseName_mem
 private theorem costWrappedConstructor_parameter_baseName_mem
     {theory : IGSLT} {cut : InteractionCutPresentation theory}
     (plan : ContinuationRetypingPlan cut)
-    (source : AuthoredConstructor theory.presentation.presentation)
+    (source : DeclaredConstructor theory.presentation.presentation)
     (parameter : TermParam)
     (parameterMembership : parameter ∈
       (costWrappedConstructor (theory := theory) source.1).params)
@@ -838,7 +838,7 @@ copy in the generated continuation signature. -/
 theorem costWrappedConstructor_mem_generated {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
     (plan : ContinuationRetypingPlan cut)
-    (constructor : AuthoredConstructor theory.presentation.presentation)
+    (constructor : DeclaredConstructor theory.presentation.presentation)
     (membership : constructor ∈ plan.wrappedConstructors) :
     costWrappedConstructor (theory := theory) constructor.1 ∈
       plan.generatedLanguage.terms :=
@@ -887,7 +887,7 @@ generated continuation signature. -/
 theorem costWrappedConstructor_filter_generated {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
     (plan : ContinuationRetypingPlan cut)
-    (constructor : AuthoredConstructor theory.presentation.presentation)
+    (constructor : DeclaredConstructor theory.presentation.presentation)
     (membership : constructor ∈ plan.wrappedConstructors) :
     plan.generatedLanguage.terms.filter
         (fun candidate => candidate.label ==
@@ -920,7 +920,7 @@ theorem retype {theory : IGSLT}
     (stable : ContinuationStableContext cut source target context) :
     SignatureContext plan.generatedLanguage
       (costBaseSortName source) (costBaseSortName target)
-      (CIGSLT.mapOneHoleContext costBasePresentationSymbols context) := by
+      (CIGSLT.mapOneHoleContext costBaseLanguageDefSymbolMap context) := by
   induction stable with
   | hole => exact .hole _
   | @simpleArg parameter rule parameterName beforeParams afterParams
@@ -969,7 +969,7 @@ theorem retype {theory : IGSLT}
           costBaseConstructor_params_length, parameters]
         simp only [List.length_append, List.length_cons]
         omega
-      · simpa [CIGSLT.mapOneHoleContext, costBasePresentationSymbols] using
+      · simpa [CIGSLT.mapOneHoleContext, costBaseLanguageDefSymbolMap] using
           inductionHypothesis
   | @abstractionArg binderSort bodySort rule declaredBinderName
       actualBinderName bodyName beforeParams afterParams before after inner
@@ -1024,7 +1024,7 @@ theorem retype {theory : IGSLT}
           costBaseConstructor_params_length, parameters]
         simp only [List.length_append, List.length_cons]
         omega
-      · simpa [CIGSLT.mapOneHoleContext, costBasePresentationSymbols] using
+      · simpa [CIGSLT.mapOneHoleContext, costBaseLanguageDefSymbolMap] using
           inductionHypothesis
   | @collectionElement elementSort rule parameterName collectionType
       before after rest inner ruleMembership parameters notSelected
@@ -1036,7 +1036,7 @@ theorem retype {theory : IGSLT}
       · exact plan.costBaseConstructor_mem_generated rule ruleMembership
       · simp [costBaseConstructor, parameters, costBaseParameter, notSelected,
           mapParameterType, costBaseTypeExpr]
-      · simpa [CIGSLT.mapOneHoleContext, costBasePresentationSymbols] using
+      · simpa [CIGSLT.mapOneHoleContext, costBaseLanguageDefSymbolMap] using
           inductionHypothesis
 
 /-- Transport a continuation-stable context into any target cut containing
@@ -1061,7 +1061,7 @@ theorem mapCostBase {sourceTheory targetTheory : IGSLT}
     (stable : ContinuationStableContext sourceCut source target context) :
     ContinuationStableContext targetCut
       (costBaseSortName source) (costBaseSortName target)
-      (CIGSLT.mapOneHoleContext costBasePresentationSymbols context) := by
+      (CIGSLT.mapOneHoleContext costBaseLanguageDefSymbolMap context) := by
   induction stable with
   | hole => exact .hole _
   | @simpleArg parameter rule parameterName beforeParams afterParams
@@ -1118,7 +1118,7 @@ theorem mapCostBase {sourceTheory targetTheory : IGSLT}
           simp [Nat.min_eq_left (Nat.le_of_lt sourceInBounds)]
         rw [targetBeforeLength,
           selection rule ruleMembership beforeParams.length, notSelected]
-      · simpa [CIGSLT.mapOneHoleContext, costBasePresentationSymbols] using
+      · simpa [CIGSLT.mapOneHoleContext, costBaseLanguageDefSymbolMap] using
           inductionHypothesis
   | @abstractionArg binderSort bodySort rule declaredBinderName
       actualBinderName bodyName beforeParams afterParams before after inner
@@ -1181,7 +1181,7 @@ theorem mapCostBase {sourceTheory targetTheory : IGSLT}
           simp [Nat.min_eq_left (Nat.le_of_lt sourceInBounds)]
         rw [targetBeforeLength,
           selection rule ruleMembership beforeParams.length, notSelected]
-      · simpa [CIGSLT.mapOneHoleContext, costBasePresentationSymbols] using
+      · simpa [CIGSLT.mapOneHoleContext, costBaseLanguageDefSymbolMap] using
           inductionHypothesis
   | @collectionElement elementSort rule parameterName collectionType
       before after rest inner ruleMembership parameters notSelected
@@ -1194,7 +1194,7 @@ theorem mapCostBase {sourceTheory targetTheory : IGSLT}
       · simp [costBaseConstructor, parameters, costBaseParameter, notSelected,
           mapParameterType, costBaseTypeExpr]
       · rw [selection rule ruleMembership 0, notSelected]
-      · simpa [CIGSLT.mapOneHoleContext, costBasePresentationSymbols] using
+      · simpa [CIGSLT.mapOneHoleContext, costBaseLanguageDefSymbolMap] using
           inductionHypothesis
 
 end ContinuationStableContext
@@ -1276,7 +1276,7 @@ def RedexRetypable {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
     (plan : ContinuationRetypingPlan cut) : Prop :=
   HasSort plan.generatedLanguage plan.generatedFreeContext []
-    (mapPattern costBasePresentationSymbols
+    (mapPattern costBaseLanguageDefSymbolMap
       theory.presentation.interactionRewrite.1.left)
     (costBaseSortName theory.presentation.interactingSort.1.name)
 

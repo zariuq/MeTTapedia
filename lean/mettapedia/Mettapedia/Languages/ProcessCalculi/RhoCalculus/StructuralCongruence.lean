@@ -10,18 +10,20 @@ following Meredith & Radestock (2005), "A Reflective Higher-order Calculus", pag
 > "The structural congruence of processes, noted ≡, is the least congruence,
 > **containing α-equivalence, ≡α**"
 
-## Locally Nameless Simplification
+## Locally Nameless semantic boundary
 
-In locally nameless representation, α-equivalence is **syntactic equality**.
-Patterns that differ only in bound variable names are literally the same object
-(de Bruijn indices have no names). This eliminates:
+Source patterns retain binder display names for diagnostics.  The generic
+`LanguageDef` semantic boundary erases that metadata while de Bruijn indices
+carry binding, so α-equivalence is **syntactic equality on admitted terms**.
+This eliminates:
 - `alphaRename` function (not needed)
 - `allVars` / `isGloballyFresh` (not needed)
 - Variable capture bugs (impossible by construction)
 
 ## Key Properties
 
-1. **α-equivalence** (≡α): Syntactic equality in locally nameless
+1. **α-equivalence** (≡α): equality after generic binder-metadata erasure;
+   syntactic equality on the admitted locally nameless carrier
 2. **Structural congruence** (≡): Equality + parallel composition laws
 3. **Quote respects structural equivalence** (page 7, STRUCT-EQUIV rule)
 
@@ -39,16 +41,15 @@ open Mettapedia.OSLF.MeTTaIL.Substitution
 
 /-! ## α-Equivalence
 
-In locally nameless representation, α-equivalence is syntactic equality.
-Bound variables use de Bruijn indices (no names), so patterns that differ
-only in bound variable names are literally identical.
+Bound variables use de Bruijn indices.  Raw patterns may retain source display
+names, so generic α-equivalence compares their canonical erasures; admitted
+semantic patterns already are those erasures.
 -/
 
 /-- α-equivalence for ρ-calculus processes.
 
-In locally nameless, this is just `Eq`. Kept as an abbreviation for
-documentation and compatibility with the paper's notation. -/
-abbrev AlphaEquiv (p q : Pattern) : Prop := p = q
+This is the language-independent locally nameless alpha relation. -/
+abbrev AlphaEquiv (p q : Pattern) : Prop := Pattern.AlphaEquiv p q
 
 notation:50 p " ≡α " q => AlphaEquiv p q
 
@@ -70,8 +71,10 @@ In our MeTTaIL representation, parallel composition is:
 
 /-- Structural congruence for ρ-calculus processes.
 
-This is the least congruence containing α-equivalence (2005 paper, page 4).
-In locally nameless, α-equivalence is Eq, so the `alpha` constructor takes `p = q`.
+This is the least congruence containing semantic α-equivalence (2005 paper,
+page 4).  Its carrier is the canonical locally nameless representation, where
+the generic alpha relation is equality; the `alpha` constructor therefore
+takes `p = q`.
 -/
 inductive StructuralCongruence : Pattern → Pattern → Prop where
   | alpha (p q : Pattern) :
@@ -275,10 +278,22 @@ theorem structuralCongruence_equivalence : Equivalence StructuralCongruence wher
   symm := @StructuralCongruence.symm
   trans := @StructuralCongruence.trans
 
-/-- α-equivalence (= Eq in LN) implies structural congruence -/
-theorem alpha_implies_struct {p q : Pattern} :
-    p = q → StructuralCongruence p q :=
-  fun h => StructuralCongruence.alpha p q h
+/-- Generic alpha-equivalence implies structural congruence once both terms
+have crossed the canonical semantic boundary. -/
+theorem alpha_implies_struct {p q : Pattern}
+    (pCanonical : p.hasCanonicalBinderMetadata = true)
+    (qCanonical : q.hasCanonicalBinderMetadata = true) :
+    (p ≡α q) → StructuralCongruence p q :=
+  fun equivalent => StructuralCongruence.alpha p q
+    ((Pattern.alphaEquiv_iff_eq_of_canonical pCanonical qCanonical).mp
+      equivalent)
+
+/-- Surface alpha-equivalence becomes structural congruence after selecting
+the generic canonical representatives. -/
+theorem alpha_implies_struct_after_erasure {p q : Pattern} :
+    (p ≡α q) →
+      StructuralCongruence p.eraseBinderMetadata q.eraseBinderMetadata :=
+  fun equivalent => StructuralCongruence.alpha _ _ equivalent
 
 /-- Quote respects structural congruence.
 
@@ -288,9 +303,12 @@ theorem quote_respects_structural {p q : Pattern} :
     StructuralCongruence p q → NameEquiv (.apply "NQuote" [p]) (.apply "NQuote" [q]) :=
   NameEquiv.struct_equiv p q
 
-/-- Quote respects α-equivalence (trivial in LN since α-equiv = Eq) -/
-theorem quote_respects_alpha {p q : Pattern} :
-    p = q → NameEquiv (.apply "NQuote" [p]) (.apply "NQuote" [q]) :=
-  fun h => quote_respects_structural (alpha_implies_struct h)
+/-- Quote respects α-equivalence on admitted canonical terms. -/
+theorem quote_respects_alpha {p q : Pattern}
+    (pCanonical : p.hasCanonicalBinderMetadata = true)
+    (qCanonical : q.hasCanonicalBinderMetadata = true) :
+    (p ≡α q) → NameEquiv (.apply "NQuote" [p]) (.apply "NQuote" [q]) :=
+  fun equivalent => quote_respects_structural
+    (alpha_implies_struct pCanonical qCanonical equivalent)
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

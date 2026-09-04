@@ -1,0 +1,326 @@
+Mettapedia/GSLT/LanguageDef/LogicExtension.lean:30:inductive LogicDeclaration where
+Mettapedia/GSLT/LanguageDef/LogicExtension.lean:35:abbrev LogicProgram := List LogicDeclaration
+Mettapedia/GSLT/LanguageDef/LogicExtension.lean:43:def encodeLogic : LogicDeclaration → LogicSyntax
+Mettapedia/GSLT/LanguageDef/LogicExtension.lean:47:def decodeLogic : LogicSyntax → LogicDeclaration
+Mettapedia/GSLT/LanguageDef/LogicExtension.lean:51:@[simp] theorem decodeLogic_encodeLogic (declaration : LogicDeclaration) :
+Mettapedia/GSLT/LanguageDef/LogicExtension.lean:59:def logicCodec : ExactDeclarationCodec LogicSyntax LogicDeclaration where
+Mettapedia/GSLT/LanguageDef/LogicExtension.lean:171:private def edgeSignature : LogicDeclaration :=
+Mettapedia/GSLT/LanguageDef/LogicExtension.lean:174:private def edgeFact : LogicDeclaration :=
+Mettapedia/GSLT/LanguageDef/ValidatedInferenceExtension.lean:81:  judgments := fun _ member => member
+Mettapedia/GSLT/LanguageDef/ValidatedInferenceExtension.lean:90:  judgments := fun declaration member =>
+Mettapedia/GSLT/LanguageDef/InferenceExtension.lean:49:        { judgments := first.judgments ++ second.judgments
+Mettapedia/GSLT/LanguageDef/InferenceExtension.lean:381:  | .judgment declaration => { judgments := [decodeJudgment declaration] }
+Mettapedia/GSLT/LanguageDef/InferenceExtension.lean:426:        { rest with judgments := judgments ++ rest.judgments } := by
+Mettapedia/GSLT/LanguageDef/InferenceExtension.lean:482:                  { judgments := []
+Mettapedia/GSLT/LanguageDef/InferenceExtension.lean:500:                  { judgments := []
+Mettapedia/GSLT/LanguageDef/InferenceExtension.lean:560:  layer.attach canaryLanguage { judgments := [canaryJudgment] }
+Mettapedia/GSLT/LanguageDef/ProofGSLTAmbient.lean:107:  { judgments := [{ head := "AJ", arity := 1 }]
+Mettapedia/GSLT/LanguageDef/ProofGSLTRelationalInterpretationCanary.lean:42:      { judgments := [{ head := "rel-canary-A", arity := 0 }]
+Mettapedia/GSLT/LanguageDef/ProofGSLTRelationalInterpretationCanary.lean:48:      { judgments := [{ head := "rel-canary-B", arity := 0 }]
+Mettapedia/GSLT/LanguageDef/ProofGSLTCyclic.lean:149:  { judgments := cyclicJudgments
+Mettapedia/GSLT/LanguageDef/ProofGSLTConversionElimination.lean:120:  { judgments := sharedJudgments
+Mettapedia/GSLT/LanguageDef/ProofGSLTConversionElimination.lean:132:  { judgments := sharedJudgments
+Mettapedia/GSLT/LanguageDef/SemanticCategory.lean:85:      presentation.presentation.language.reflectivePresentations = [])
+Mettapedia/GSLT/LanguageDef/ProofGSLTWireFormatCanary.lean:70:  { judgments := [⟨"WJ", 1⟩, ⟨"WK", 1⟩, ⟨"WL", 2⟩]
+Mettapedia/GSLT/LanguageDef/HOLSourceKernel.lean:31:private def rel (name : String) (arguments : List String) : LogicDeclaration :=
+Mettapedia/GSLT/LanguageDef/ProofGSLTStepAdequacyGeneralCanary.lean:106:    pairLanguage.reflectivePresentations = [] := rfl
+Mettapedia/GSLT/LanguageDef/ProofGSLTStepAdequacyGeneralCanary.lean:109:    directCanary.language.reflectivePresentations = [] := rfl
+Mettapedia/GSLT/LanguageDef/ProofGSLTStepAdequacyGeneralCanary.lean:370:    orphanLanguage.reflectivePresentations = [] := rfl
+Mettapedia/GSLT/LanguageDef/ProofGSLTStepAdequacyGeneralCanary.lean:484:    substLanguage.reflectivePresentations = [] := rfl
+Mettapedia/GSLT/LanguageDef/ProofGSLTStepAdequacyGeneralCanary.lean:581:    bagLanguage.reflectivePresentations = [] := rfl
+Mettapedia/GSLT/LanguageDef/HOLNativeGSLTSlice.lean:284:    calculus := { judgments := [{ head := "", arity := 0 }] } }
+Mettapedia/GSLT/LanguageDef/InferenceExtraction.lean:327:        { judgments :=
+Mettapedia/GSLT/LanguageDef/InferenceExtraction.lean:342:        { judgments :=
+Mettapedia/GSLT/LanguageDef/InferenceExtraction.lean:352:      rawPresentationStructural? profile language logic := by
+Mettapedia/GSLT/LanguageDef/ProofGSLTStepAdequacyGeneral.lean:216:    language.reflectivePresentations.isEmpty &&
+Mettapedia/GSLT/LanguageDef/ProofGSLTStepAdequacyGeneral.lean:227:    language.reflectivePresentations = [] := by
+Mettapedia/GSLT/LanguageDef/ProofGSLTConstructibleDualityCanary.lean:60:  { judgments :=
+Mettapedia/GSLT/LanguageDef/MIEvalHosting.lean:199:@[simp] theorem addDeclsLanguageDef_reflectivePresentations :
+Mettapedia/GSLT/LanguageDef/MIEvalHosting.lean:200:    addDeclsLanguageDef.reflectivePresentations = [] := by
+Mettapedia/GSLT/LanguageDef/MIEvalHosting.lean:203:@[simp] theorem revDeclsLanguageDef_reflectivePresentations :
+Mettapedia/GSLT/LanguageDef/MIEvalHosting.lean:204:    revDeclsLanguageDef.reflectivePresentations = [] := by
+Mettapedia/GSLT/LanguageDef/ConversionCertificate.lean:211:      { judgments := [{ head := "Converts", arity := 2 }]
+Mettapedia/GSLT/LanguageDef/InferenceChecker.lean:1775:      { judgments :=
+Mettapedia/GSLT/LanguageDef/InferenceChecker.lean:2194:      { judgments := [judgmentDecl "Holds" 1]
+Mettapedia/GSLT/LanguageDef/InferenceChecker.lean:2256:      { judgments := [judgmentDecl "Scoped" 1]
+Mettapedia/GSLT/LanguageDef/InferenceChecker.lean:2282:    calculus := { judgments := [judgmentDecl "Pair" 2] } }
+Mettapedia/GSLT/LanguageDef/InferenceChecker.lean:2293:      { judgments :=
+Mettapedia/GSLT/LanguageDef/HOLKernelProfiles.lean:44:private def rel (name : String) (args : List String) : LogicDeclaration :=
+Mettapedia/GSLT/LanguageDef/HOLKernelProfiles.lean:51:    (body : List DatalogAtom) : LogicDeclaration :=
+Mettapedia/GSLT/LanguageDef/HOLKernelProfiles.lean:58:    (args : List String) : LogicDeclaration :=
+Mettapedia/GSLT/LanguageDef/HOLSourceInferenceMeTTaExport.lean:17:  let judgments := renderList renderJudgment presentation.judgments
+Mettapedia/GSLT/LanguageDef/ProofGSLTStepAdequacy.lean:97:private theorem noReflective : stepLanguage.reflectivePresentations = [] := rfl
+Mettapedia/GSLT/LanguageDef/CheckedSource.lean:239:      { judgments := [{ head := "Holds", arity := 0 }]
+Mettapedia/GSLT/LanguageDef/InferenceCheckerDAG.lean:579:      { judgments :=
+Mettapedia/GSLT/LanguageDef/ProofGSLTStepPresentationCanary.lean:192:      { judgments := [{ head := "Truth", arity := 0 }]
+Mettapedia/GSLT/LanguageDef/ProofGSLTStepPresentation.lean:137:      { judgments :=
+Mettapedia/GSLT/LanguageDef/ProofGSLTStepPresentabilityCanary.lean:140:      { judgments :=
+Mettapedia/GSLT/LanguageDef/ProofGSLTDAGSubstitutionCanary.lean:49:      { judgments :=
+Mettapedia/GSLT/LanguageDef/GrammarInferenceExtraction.lean:312:      { judgments :=
+Mettapedia/GSLT/LanguageDef/GrammarInferenceExtraction.lean:1575:      { judgments :=
+Mettapedia/GSLT/LanguageDef/GrammarInferenceExtraction.lean:2442:      { judgments :=
+Mettapedia/GSLT/LanguageDef/DependentTypingCanary.lean:137:  { judgments := [{ head := "Ty", arity := 3 }, { head := "Converts", arity := 2 }]
+Mettapedia/GSLT/LanguageDef/ProofGSLTInterpretationCanary.lean:52:      { judgments :=
+Mettapedia/GSLT/LanguageDef/ProofGSLTInterpretationCanary.lean:60:      { judgments :=
+Mettapedia/OSLF/PathMap/Trie/ZamContracts.lean:115:    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+Mettapedia/OSLF/PathMap/Trie/ZamContracts.lean:116:    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
+Mettapedia/OSLF/PathMap/Trie/ZamContracts.lean:127:    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+Mettapedia/OSLF/PathMap/Trie/ZamContracts.lean:128:    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
+Mettapedia/OSLF/PathMap/Trie/ZamContracts.lean:139:    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+Mettapedia/OSLF/PathMap/Trie/ZamContracts.lean:140:    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
+Mettapedia/GSLT/LanguageDef/InferencePresentationExtension.lean:51:        judgments := base.judgments ++ extension.newJudgments
+Mettapedia/GSLT/LanguageDef/CostCanonicalReachablePairAlignment.lean:107:      (∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalReachablePairAlignment.lean:110:      (∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalReachablePairAlignment.lean:174:                  source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalReachablePairAlignment.lean:182:                  source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalReachablePairAlignment.lean:606:      source.theory.presentation.presentation.language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/LF/FirstOrderContextualConversion.lean:460:  { judgments :=
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:51:      source.theory.presentation.presentation.language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:59:      (source.reflectivePresentationsRetypable declaration membership
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:341:      (∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:344:      (∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:405:                  source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:413:                  source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:466:      (∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:469:      (∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:523:                  source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:531:                  source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:921:                      source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:928:                      source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostCanonicalPairAlignment.lean:973:      source.theory.presentation.presentation.language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/CostReflectiveRootClassification.lean:33:      source.theory.presentation.presentation.language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/CostReflectiveRootClassification.lean:45:      (source.reflectivePresentationsRetypable declaration membership
+Mettapedia/GSLT/LanguageDef/CostReflectiveRootClassification.lean:74:      source.theory.presentation.presentation.language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/CostStaticRootInversion.lean:312:    simpa only [source.costWholeLanguage_reflectivePresentations] using
+Mettapedia/GSLT/LanguageDef/CostStaticRootInversion.lean:319:    (source.reflectivePresentationsRetypable sourceDeclaration
+Mettapedia/GSLT/LanguageDef/LF/RootedBetaEtaConversion.lean:169:  { judgments := [{ head := conversionDeclaration.judgmentHead, arity := 2 }]
+Mettapedia/OSLF/MeTTaIL/LanguageDefDSLTests.lean:45:  ⟨[LogicDeclaration.relation smokeRelation], by decide⟩
+Mettapedia/OSLF/MeTTaIL/LogicSemantics.lean:17:LogicProgram : List LogicDeclaration
+Mettapedia/OSLF/MeTTaIL/LogicSemantics.lean:211:typed `LanguageDef.logic` declarations to that engine path: function-free
+Mettapedia/OSLF/MeTTaIL/LogicSemantics.lean:246:/-- Ground fact tuples authored in `LanguageDef.logic`. -/
+Mettapedia/OSLF/MeTTaIL/LogicSemantics.lean:251:    `LanguageDef.logic`. The query arguments are matched later by the engine's
+Mettapedia/OSLF/MeTTaIL/LogicSemantics.lean:1517:    `LanguageDef.logic`. The query arguments are matched later by the engine's
+Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/Ontology/ConflictLane.lean:51:  fun φ => ∃ claim, claim ∈ lane.options ∧ claim.content = .propositional φ
+Mettapedia/CognitiveArchitecture/GodelClaw/Ethics/Ontology/ConflictLane.lean:57:      ∃ claim, claim ∈ lane.options ∧ claim.content = .propositional φ := by
+Mettapedia/GSLT/LanguageDef/LambdaContinuedInteraction.lean:333:theorem lambdaContinuationRetyping_reflectivePresentationsRetypable :
+Mettapedia/GSLT/LanguageDef/LambdaContinuedInteraction.lean:351:  reflectivePresentationsRetypable :=
+Mettapedia/GSLT/LanguageDef/LambdaContinuedInteraction.lean:352:    lambdaContinuationRetyping_reflectivePresentationsRetypable
+Mettapedia/GSLT/LanguageDef/CostGeneratedOccurrence.lean:37:    source.theory.presentation.presentation.language.reflectivePresentations
+Mettapedia/GSLT/LanguageDef/CostGeneratedOccurrence.lean:58:      source.costWholeLanguage.reflectivePresentations) :
+Mettapedia/GSLT/LanguageDef/CostGeneratedOccurrence.lean:62:    simpa only [CIGSLT.costWholeLanguage_reflectivePresentations] using
+Mettapedia/GSLT/LanguageDef/ContinuedCategory.lean:62:  reflectivePresentationsRetypable :
+Mettapedia/GSLT/LanguageDef/CostEndofunctor.lean:1703:      (source.reflectivePresentationsRetypable sourceDeclaration
+Mettapedia/GSLT/LanguageDef/CostEndofunctor.lean:1715:      (source.reflectivePresentationsRetypable sourceDeclaration
+Mettapedia/GSLT/LanguageDef/CostEndofunctor.lean:1974:  reflectivePresentationsRetypable :=
+Mettapedia/GSLT/LanguageDef/CanonicalSection.lean:403:      theory.presentation.presentation.language.reflectivePresentations = [])
+Mettapedia/GSLT/LanguageDef/CostHereditaryFrameNormalization.lean:1920:      source.costWholeLanguage.reflectivePresentations) :
+Mettapedia/GSLT/LanguageDef/CostInteraction.lean:220:  source.theory.presentation.presentation.language.reflectivePresentations.map
+Mettapedia/GSLT/LanguageDef/CostInteraction.lean:222:    source.theory.presentation.presentation.language.reflectivePresentations.map
+Mettapedia/GSLT/LanguageDef/CostInteraction.lean:242:  (source.theory.presentation.presentation.language.reflectiveRules.filter
+Mettapedia/GSLT/LanguageDef/CostInteraction.lean:679:      target.theory.presentation.presentation.language.reflectiveRules :=
+Mettapedia/GSLT/LanguageDef/CostInteraction.lean:690:      target.theory.presentation.presentation.language.reflectiveRules.filter
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:589:    reflectivePresentations := source.costStaticReflectivePresentations
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:590:    reflectiveRules := source.costInteractionReflectiveRules }
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:609:theorem costWholeLanguage_reflectivePresentations (source : CIGSLT) :
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:610:    source.costWholeLanguage.reflectivePresentations =
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:614:theorem costWholeLanguage_reflectiveRules (source : CIGSLT) :
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:615:    source.costWholeLanguage.reflectiveRules =
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:735:      ((source.theory.presentation.presentation.language.reflectiveRules.filter
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:901:      (source.reflectivePresentationsRetypable sourceDeclaration
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:907:      (source.reflectivePresentationsRetypable sourceDeclaration
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:929:      source.theory.presentation.presentation.language.reflectivePresentations.filter
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:939:      source.theory.presentation.presentation.language.reflectivePresentations.filter
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:965:      (source.costWholeLanguage.reflectivePresentations.map (·.name)).Nodup := by
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:966:    simpa only [costWholeLanguage_reflectivePresentations] using
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:969:      source.costWholeLanguage.reflectivePresentations.filter
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:975:      source.costWholeLanguage.reflectivePresentations basePresentation
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:977:      (by simpa only [costWholeLanguage_reflectivePresentations] using
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:983:      source.costWholeLanguage.reflectivePresentations.filter
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:989:      source.costWholeLanguage.reflectivePresentations wrappedPresentation
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:991:      (by simpa only [costWholeLanguage_reflectivePresentations] using
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:1971:      (by simpa only [costWholeLanguage_reflectivePresentations] using
+Mettapedia/GSLT/LanguageDef/CostInteractionClosure.lean:1975:      (by simpa only [costWholeLanguage_reflectiveRules] using membership)
+Mettapedia/GSLT/LanguageDef/CostStaticTyping.lean:357:  rw [CIGSLT.costWholeLanguage_reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostStaticTyping.lean:426:  rw [CIGSLT.costWholeLanguage_reflectivePresentations]
+Mettapedia/OSLF/MeTTaIL/ReflectiveSubstitution.lean:335:@[simp] theorem applyBindingsForRule_eq_syntactic_of_no_reflectiveRules
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:146:      declaration ∈ language.reflectivePresentations →
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:196:      declaration ∈ language.reflectivePresentations →
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:243:      declaration ∈ language.reflectivePresentations →
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:418:    declaration ∈ language.reflectivePresentations →
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:434:    declaration ∈ language.reflectivePresentations →
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:448:    declaration ∈ language.reflectivePresentations →
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:483:    (declarationMembership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:559:    (declarationMembership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:648:    (declarationMembership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:724:    (declarationMembership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:816:    (declarationMembership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:884:    (declarationMembership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:912:    (declarationMembership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:968:    (declarationMembership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:997:    (declarationMembership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1046:    (membership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1058:    (membership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1070:    (membership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1084:    (membership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1097:    (membership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1117:    (membership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1146:    (membership : targetDeclaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1190:    (membership : targetDeclaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1240:    (membership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1256:    (membership : targetDeclaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1300:    (membership : targetDeclaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1625:    (membership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:1697:    (declarationMembership : declaration ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:2146:    declaration ∈ language.reflectivePresentations →
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:2160:    (empty : language.reflectivePresentations = []) :
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:2713:    declaration ∈ language.reflectivePresentations →
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:2732:      declaration ∈ language.reflectivePresentations →
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:3710:  reflectiveScope : ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:3726:    (scope : ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:3741:    (scope : ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:4255:  reflectiveScope : ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:4270:    (scope : ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:4285:    (scope : ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:5083:                language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:5136:                language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:5425:      (scope : ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:5472:        have tailScope : ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:5546:      (scope : ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitution.lean:5595:        have tailScope : ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticSoundness.lean:193:    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticSoundness.lean:210:    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticSoundness.lean:231:    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticSoundness.lean:246:    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticSoundness.lean:266:    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticSoundness.lean:283:    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticSoundness.lean:304:    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticSoundness.lean:319:    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/ContextSupport.lean:76:  language.reflectivePresentations.any
+Mettapedia/GSLT/LanguageDef/ContextSupport.lean:1284:      (membership : presentation ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/ContextSupport.lean:1466:      (membership : presentation ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/ContextSupport.lean:1491:      (membership : presentation ∈ language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/ContextSupport.lean:2258:    ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/ContextSupport.lean:2293:    ∀ presentation ∈ language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransport.lean:1101:      source.theory.presentation.presentation.language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/CostSemanticErasure.lean:285:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticErasure.lean:308:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticErasure.lean:542:          source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticErasure.lean:891:              source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticErasure.lean:965:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostSemanticErasure.lean:1040:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:202:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:221:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:243:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:259:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:280:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:298:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:320:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:336:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:672:            source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:858:                source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:1176:          source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:1228:            source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:1289:          source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionNormalization.lean:1340:            source.costWholeLanguage.reflectivePresentations,
+Mettapedia/OSLF/MeTTaIL/ReflectiveCanonical.lean:1240:@[simp] theorem matchPatternForRule_eq_syntactic_of_no_reflectiveRules
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:186:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:193:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:222:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:229:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:351:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:370:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:1021:            source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:1028:            source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:1185:      source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:1198:      source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:1347:      source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostElaborationTransportSound.lean:1360:      source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationOccurrence.lean:225:        declaration ∈ language.reflectivePresentations })
+Mettapedia/OSLF/MeTTaIL/Export.lean:304:private def renderLogicDeclaration : LogicDeclaration → String
+Mettapedia/OSLF/MeTTaIL/Export.lean:312:  renderSection "logic" (program.map renderLogicDeclaration)
+Mettapedia/GSLT/LanguageDef/CostCanonicalSection.lean:733:      source.theory.presentation.presentation.language.reflectivePresentations) :
+Mettapedia/GSLT/LanguageDef/CostCanonicalSection.lean:751:        sourceDeclaration ∈ source.theory.presentation.presentation.language.reflectivePresentations ∧
+Mettapedia/GSLT/LanguageDef/CostCanonicalSection.lean:1587:      source.theory.presentation.presentation.language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/CostCanonicalSection.lean:1834:      source.theory.presentation.presentation.language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/CostCanonicalSection.lean:1871:      · rw [CIGSLT.costWholeLanguage_reflectivePresentations]
+Mettapedia/GSLT/LanguageDef/CostCanonicalSection.lean:1900:      source.theory.presentation.presentation.language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/CostCanonicalSection.lean:1919:      source.theory.presentation.presentation.language.reflectivePresentations)
+Mettapedia/GSLT/LanguageDef/CostStatic.lean:253:    reflectivePresentations :=
+Mettapedia/GSLT/LanguageDef/CostStatic.lean:254:      theory.presentation.presentation.language.reflectivePresentations.map
+Mettapedia/GSLT/LanguageDef/CostStatic.lean:256:        theory.presentation.presentation.language.reflectivePresentations.map
+Mettapedia/GSLT/LanguageDef/CostStatic.lean:467:      theory.presentation.presentation.language.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/EquationSubstitutionCounterexamples.lean:82:  reflectivePresentations := [presentation]
+Mettapedia/GSLT/LanguageDef/EquationSubstitutionCounterexamples.lean:83:  reflectiveRules := []
+Mettapedia/GSLT/LanguageDef/EquationSubstitutionCounterexamples.lean:553:      binderOccurrenceLanguage.reflectivePresentations := by
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:8312:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:8371:                        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:8643:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:8677:                source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:8766:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:10047:        source.theory.presentation.presentation.language.reflectivePresentations) :
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:10074:        source.theory.presentation.presentation.language.reflectivePresentations) :
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:15098:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:15127:                source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:15176:        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:15203:                source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:16113:                        source.costWholeLanguage.reflectivePresentations,
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:16907:    presentation ∈ source.costWholeLanguage.reflectivePresentations →
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:16994:    presentation ∈ source.costWholeLanguage.reflectivePresentations →
+Mettapedia/GSLT/LanguageDef/CostRegionTree.lean:17015:    presentation ∈ source.costWholeLanguage.reflectivePresentations →
+Mettapedia/OSLF/Framework/NTTClaimTracker.lean:94:      "Finite Datalog closure over LanguageDef.logic is lowered generically to RelationEnv tuples, has step support and trace theorems, preserves nullary-constructor tuple shape through derived closure rows, proves successful atom matches and whole satisfied body premises ground to matched tuple constants at the arity-preserving LP GroundAtom level, proves recursive executable-closure soundness into the arity-preserving LP least model, and is consumed by HOL profile relationQuery premises",
+Mettapedia/OSLF/Framework/NTTClaimTracker.lean:114:      "Generic compilation of LanguageDef.logic declarations into a proof checker consumed by langOSLF/langRewriteSystem",
+Mettapedia/OSLF/Framework/WMProbabilityEmbedding.lean:241:      have hLogic : v .logic = w .logic := by
+Mettapedia/OSLF/Framework/WMProbabilityEmbedding.lean:262:      have hLogic : v .logic = w .logic := by
+Mettapedia/OSLF/Framework/WMProbabilityEmbedding.lean:283:      have hLogic : v .logic = w .logic := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostEquationEndpointShape.lean:124:  rw [CIGSLT.costWholeLanguage_reflectivePresentations] at isQuote
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryRigidLeafCanary.lean:103:        rhoCIGSLT.theory.presentation.presentation.language.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryRigidLeafCanary.lean:107:      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryRigidLeafCanary.lean:108:    simpa only [CIGSLT.costWholeLanguage_reflectivePresentations,
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryStaticStructuralClosure.lean:41:      rhoCIGSLT.costWholeLanguage.reflectivePresentations)
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryStaticStructuralClosure.lean:60:      rhoCIGSLT.costWholeLanguage.reflectivePresentations)
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryStaticStructuralClosure.lean:124:          rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostStaticPlanPairCanary.lean:54:      (rhoCIGSLT.theory.presentation.presentation.language).reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryRouteBreadthCanary.lean:212:      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryRouteBreadthCanary.lean:682:      rhoCIGSLT.costWholeLanguage.reflectivePresentations,
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostGeneratedOccurrenceAbsorption.lean:40:    declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations }
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/LanguageDefAdequacy.lean:90:        reflectiveRules :=
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostGeneratedOccurrence.lean:57:      rhoCIGSLT.costWholeLanguage.reflectivePresentations) :
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/LanguageDefContinuedInteraction.lean:458:theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/LanguageDefContinuedInteraction.lean:461:  change declaration ∈ rhoCalc.reflectivePresentations at membership
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/LanguageDefContinuedInteraction.lean:724:  reflectivePresentationsRetypable :=
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/LanguageDefContinuedInteraction.lean:725:    rhoContinuationRetyping_reflectivePresentationsRetypable
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostGeneratorInvariantCounterexample.lean:216:      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/LanguageDefCanonicalSection.lean:826:          rhoCalc.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/LanguageDefCanonicalSection.lean:875:          rhoCalc.reflectivePresentations := by
+Mettapedia/Languages/Metamath/SourceInferenceProjectionValidation.lean:34:      { judgments := judgmentDecls ++ [provesDecl]
+Mettapedia/Languages/Metamath/SourceInferenceProjectionValidation.lean:47:      { judgments := judgmentDecls ++ [provesDecl]
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/LanguageDefSemanticAgreement.lean:175:        rhoCalc.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:101:        · simpa only [rhoCIGSLT.costWholeLanguage_reflectivePresentations]
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:139:        · simpa only [rhoCIGSLT.costWholeLanguage_reflectivePresentations]
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:185:      rhoCIGSLT.costWholeLanguage.reflectivePresentations)
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:255:      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:354:      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:398:      declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:444:      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:474:      declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:604:      declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:700:      declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:824:        rhoCalc.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:1550:        rhoCalc.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:1553:      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:2163:    ∃ declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations,
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean:2446:      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/EquationSubstitution.lean:157:        rhoCalc.reflectivePresentations := by
+Mettapedia/Languages/Metamath/InferenceProjection.lean:636:        { judgments := judgmentDecls ++ [provesDecl]
+Mettapedia/Languages/Metamath/InferenceSideConditions.lean:60:Judgments are deliberately not placed in `LanguageDef.logic`; V2 gives them a
+Mettapedia/Languages/Metamath/InferenceSideConditions.lean:390:  { judgments := judgmentDecls
+Mettapedia/Languages/Metamath/SourceInferenceProjection.lean:332:        { judgments := judgmentDecls ++ [provesDecl]
+Mettapedia/Languages/Metamath/NativeSourceCalculus.lean:198:      { judgments :=
+Mettapedia/Languages/MeTTa/Prime/ClosedFormationGSLT.lean:172:  { judgments :=
+Mettapedia/Languages/MeTTa/Prime/PeTTaChainerDAGReplayV1.lean:90:  { judgments := [{ head := "ppd.Derives", arity := 1 }]
+Mettapedia/Languages/MeTTa/Prime/PackageIdentityV1.lean:107:  { judgments := [
+Mettapedia/Languages/MeTTa/Prime/PackageIdentityV1.lean:144:  { cache with calculus := { cache.calculus with judgments := [] } }
+Mettapedia/Languages/MeTTa/Prime/FragmentAdequacyV1.lean:262:  { judgments := [
+Mettapedia/Languages/MeTTa/PeTTa/TypeSystemGSLTGuard.lean:522:    judgments := corePresentation.judgments ++ newJudgments
+Mettapedia/Languages/MeTTa/PeTTa/TypeSystemGSLT.lean:322:  { judgments :=
+Mettapedia/Languages/MeTTa/PeTTa/TypeSystemGSLTDeterminism.lean:535:  { judgments :=

@@ -27,7 +27,9 @@ open Mettapedia.OSLF.Framework.HypercubeGSLTFunctor
 /-- A backward simulation morphism between two languages. -/
 structure BackwardMorphism (L₁ L₂ : LanguageDef) where
   mapTerm : Pattern → Pattern
-  backward_sim : ∀ p q, langReduces L₂ (mapTerm p) q →
+  map_equiv : ∀ {left right}, (langGSLT L₁).Equiv left right →
+    (langGSLT L₂).Equiv (mapTerm left) (mapTerm right)
+  backward_sim : ∀ p q, langSemanticReduces L₂ (mapTerm p) q →
     ∃ p', LangReducesStar L₁ p p' ∧ q = mapTerm p'
 
 /-! ## Bisimulation Morphism -/
@@ -36,21 +38,25 @@ structure BackwardMorphism (L₁ L₂ : LanguageDef) where
     The strict (`Eq`-based) variant of `LanguageMorphism`. -/
 structure BisimulationMorphism (L₁ L₂ : LanguageDef) where
   mapTerm : Pattern → Pattern
-  forward_sim : ∀ p q, langReduces L₁ p q →
+  map_equiv : ∀ {left right}, (langGSLT L₁).Equiv left right →
+    (langGSLT L₂).Equiv (mapTerm left) (mapTerm right)
+  forward_sim : ∀ p q, langSemanticReduces L₁ p q →
     ∃ T, LangReducesStar L₂ (mapTerm p) T ∧ T = mapTerm q
-  backward_sim : ∀ p q, langReduces L₂ (mapTerm p) q →
+  backward_sim : ∀ p q, langSemanticReduces L₂ (mapTerm p) q →
     ∃ p', LangReducesStar L₁ p p' ∧ q = mapTerm p'
 
 /-- Extract the forward half. -/
 def BisimulationMorphism.toForward (m : BisimulationMorphism L₁ L₂) :
     ForwardMorphism L₁ L₂ where
   mapTerm := m.mapTerm
+  map_equiv := m.map_equiv
   forward_sim := m.forward_sim
 
 /-- Extract the backward half. -/
 def BisimulationMorphism.toBackward (m : BisimulationMorphism L₁ L₂) :
     BackwardMorphism L₁ L₂ where
   mapTerm := m.mapTerm
+  map_equiv := m.map_equiv
   backward_sim := m.backward_sim
 
 /-- Multi-step forward simulation. -/
@@ -80,6 +86,7 @@ theorem BisimulationMorphism.backward_multi
 def BisimulationMorphism.idMorph (L : LanguageDef) :
     BisimulationMorphism L L where
   mapTerm := fun x => x
+  map_equiv := fun equivalent => equivalent
   forward_sim _ q h := ⟨q, .single h, rfl⟩
   backward_sim _ q h := ⟨q, .single h, rfl⟩
 

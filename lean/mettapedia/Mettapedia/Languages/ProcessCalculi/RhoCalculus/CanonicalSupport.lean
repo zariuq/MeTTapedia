@@ -108,7 +108,8 @@ private theorem parallel_supportSafe
       category := "Proc"
       params := [.simple "ps" (TypeExpr.bag TypeExpr.proc)]
       syntaxPattern :=
-        [.terminal "{", .nonTerminal "ps", .separator "|", .terminal "}"] }
+        [.terminal "{", .nonTerminal "ps", .separator "|", .terminal "}"]
+      algebra? := some { flatten := true, unit := some "PZero" } }
   have membership : rule ∈ rhoCalc.terms := by
     simp [rule, rhoCalc]
   have parameterShape : rule.params =

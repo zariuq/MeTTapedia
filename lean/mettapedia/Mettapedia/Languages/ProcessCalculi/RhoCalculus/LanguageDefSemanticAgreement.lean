@@ -1,8 +1,10 @@
 import Mettapedia.GSLT.LanguageDef.SemanticCategory
 import Mettapedia.GSLT.LanguageDef.ReflectiveSemanticCategory
+import Mettapedia.GSLT.Core.StructuralIsomorphism
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ClosedCarrierAgreement
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
+import Mettapedia.OSLF.Framework.GSLTQuotientCoherence
 
 /-!
 # Agreement of generic LanguageDef semantics with established rho semantics
@@ -36,13 +38,19 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.ClosedCarrierAgreement
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefRewriteSystem
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
-/-- Rho's behavioral semantics with its separately admitted reflection
-profile interpreted explicitly. -/
+/-- The exact rho presentation paired with the separately admitted semantic
+interpretation of reflective matching and substitution. -/
+def rhoInterpretedPresentation :
+    Mettapedia.GSLT.LanguageDef.ReflectiveSemanticCategory.InterpretedPresentation where
+  presentation := rhoInteractivePresentation
+  interpretation := rhoCalcValidatedReflective.admittedReflection
+
+/-- Rho's behavioral semantics is obtained only from its explicitly
+interpreted presentation. -/
 def rhoReflectiveGSLT : GSLT :=
-  Mettapedia.GSLT.LanguageDef.ReflectiveSemanticCategory.presentedGSLT
-    defaultBasePremises rhoInteractivePresentation
-      rhoCalcValidatedReflective.admittedReflection
+  rhoInterpretedPresentation.toGSLTUsing defaultBasePremises
 
 /-- The generic and established closed process carriers coincide without
 changing their underlying raw patterns. -/
@@ -117,6 +125,97 @@ private theorem rhoEquationInstanceAt_canonicalize_eq
       simp [applyBindings, Canonical.canonicalize, Canonical.canonicalizeList,
         Canonical.normalizeQuote]
 
+/-- Rho declares exactly one collection algebra: the parallel bag with unit
+`PZero`, flattening on. -/
+private theorem rhoAlgebraRule_shape
+    {rule : GrammarRule} {kind : CollType} {algebra : CollectionAlgebra}
+    (algebraRule : AlgebraRule rhoCalc rule kind algebra) :
+    kind = .hashBag ∧ algebra.flatten = true ∧ algebra.unit = some "PZero" := by
+  have authored := algebraRule.authored
+  have declared := algebraRule.declared
+  obtain ⟨parameterName, paramsEq⟩ := algebraRule.selfSorted
+  simp only [rhoCalc, List.mem_cons, List.not_mem_nil, or_false] at authored
+  rcases authored with rfl | rfl | rfl | rfl | rfl | rfl <;>
+    simp [TypeExpr.bag, TypeExpr.proc, TypeExpr.baseType] at declared paramsEq
+  obtain ⟨_, rfl⟩ := paramsEq
+  subst declared
+  exact ⟨rfl, rfl, rfl⟩
+
+/-- Permutation of a closed parallel bag preserves the canonical
+representative. -/
+private theorem canonicalize_bag_perm {elements elements' : List Pattern}
+    (permutation : List.Perm elements elements') :
+    Canonical.canonicalize (.collection .hashBag elements none) =
+      Canonical.canonicalize (.collection .hashBag elements' none) := by
+  change Canonical.collapseBag
+      (Canonical.normalizeBagElements (Canonical.canonicalizeList elements)) =
+    Canonical.collapseBag
+      (Canonical.normalizeBagElements (Canonical.canonicalizeList elements'))
+  rw [Canonical.normalizeBagElements_eq_of_perm
+    (Canonical.canonicalizeList_perm permutation)]
+
+/-- A leading unit element of a closed parallel bag is absorbed by the
+canonical representative. -/
+private theorem canonicalize_bag_zero_cons (rest : List Pattern) :
+    Canonical.canonicalize
+        (.collection .hashBag (.apply "PZero" [] :: rest) none) =
+      Canonical.canonicalize (.collection .hashBag rest none) := by
+  change Canonical.collapseBag
+      (Canonical.normalizeBagElements
+        (Canonical.canonicalizeList (.apply "PZero" [] :: rest))) =
+    Canonical.collapseBag
+      (Canonical.normalizeBagElements (Canonical.canonicalizeList rest))
+  have head : Canonical.canonicalizeList (.apply "PZero" [] :: rest) =
+      .apply "PZero" [] :: Canonical.canonicalizeList rest := by
+    simp [Canonical.canonicalizeList, Canonical.canonicalize]
+  rw [head, Canonical.normalizeBagElements_zero_cons]
+
+/-- Each presentation-derived law of the generic rho equation relation
+preserves the established canonical representative.  Rho declares no sets, so
+the set laws cannot fire; the bag laws are the canonicalizer's own
+normalization steps. -/
+private theorem rhoDerivedInstance_canonicalize_eq
+    {source target : Pattern}
+    (derived : DerivedInstance rhoCalc source target) :
+    Canonical.canonicalize source = Canonical.canonicalize target := by
+  cases derived with
+  | bagPerm _ _ permutation =>
+      exact canonicalize_bag_perm permutation
+  | setPerm declaration _ _ =>
+      have usesSets :=
+        usesCollection_eq_true_of_collectionCarrierRule declaration
+      exact absurd usesSets (by decide)
+  | setDedup declaration _ =>
+      have usesSets :=
+        usesCollection_eq_true_of_collectionCarrierRule declaration
+      exact absurd usesSets (by decide)
+  | @flatten rule kind algebra pre inner post algebraRule _ _ =>
+      obtain ⟨rfl, _, _⟩ := rhoAlgebraRule_shape algebraRule
+      have toEnd : List.Perm (pre ++ (.collection .hashBag inner none) :: post)
+          ((pre ++ post) ++ [.collection .hashBag inner none]) :=
+        List.perm_middle.trans (List.perm_append_singleton _ _).symm
+      have fromEnd : List.Perm ((pre ++ post) ++ inner) (pre ++ inner ++ post) := by
+        rw [List.append_assoc, List.append_assoc]
+        exact List.Perm.append_left pre List.perm_append_comm
+      rw [canonicalize_bag_perm toEnd, Canonical.canonicalize_parallel_flatten,
+        canonicalize_bag_perm fromEnd]
+  | singleton algebraRule _ _ =>
+      obtain ⟨rfl, _, _⟩ := rhoAlgebraRule_shape algebraRule
+      exact Canonical.canonicalize_parallel_singleton _
+  | @unitElim rule kind algebra unit pre post algebraRule unitEq _ =>
+      obtain ⟨rfl, _, unitShape⟩ := rhoAlgebraRule_shape algebraRule
+      rw [unitShape] at unitEq
+      cases unitEq
+      have toFront : List.Perm (pre ++ (.apply "PZero" []) :: post)
+          (.apply "PZero" [] :: (pre ++ post)) := List.perm_middle
+      rw [canonicalize_bag_perm toFront, canonicalize_bag_zero_cons]
+  | @emptyUnit rule kind algebra unit algebraRule unitEq _ =>
+      obtain ⟨rfl, _, unitShape⟩ := rhoAlgebraRule_shape algebraRule
+      rw [unitShape] at unitEq
+      cases unitEq
+      rw [Canonical.canonicalize_parallel_empty]
+      simp [Canonical.canonicalize, Canonical.canonicalizeList]
+
 /-- Each raw generator of the generic rho equation relation preserves the
 established canonical representative.  The semantic setoid uses this theorem
 only with closed, well-sorted endpoints. -/
@@ -129,8 +228,11 @@ theorem rhoEquationContextStep_canonicalize_eq
   | core coreGenerator =>
     cases coreGenerator with
     | @inContext context redex contractum equationWitness =>
-      obtain ⟨fuel, bounded⟩ := equationWitness
-      have rootCanonical := rhoEquationInstanceAt_canonicalize_eq bounded
+      have rootCanonical :
+          Canonical.canonicalize redex = Canonical.canonicalize contractum := by
+        rcases equationWitness with ⟨fuel, bounded⟩ | derived
+        · exact rhoEquationInstanceAt_canonicalize_eq bounded
+        · exact rhoDerivedInstance_canonicalize_eq derived
       have rootReflective :
           canonicalize rhoReflectivePresentation redex =
             canonicalize rhoReflectivePresentation contractum := by
@@ -416,6 +518,20 @@ theorem establishedRhoBisimilar_to_presented
       (presentedRhoProcessEquiv.symm source)
       (presentedRhoProcessEquiv.symm target)).symm
 
+/-- The interpreted presentation and the established rho semantics are
+structurally isomorphic: the carrier bijection preserves and reflects static
+equations and one-step behavior separately.  This stronger boundary is what
+permits executable semantic structure to transport between the two views. -/
+def rhoStructuralIsomorphism :
+    GSLT.StructuralIsomorphism rhoReflectiveGSLT rhoLanguageDefGSLT where
+  termEquiv := presentedRhoProcessEquiv
+  equiv_iff := by
+    intro left right
+    exact (presentedRhoEquations_iff left right).symm
+  step_iff := by
+    intro source target
+    exact (presentedRhoStep_iff source target).symm
+
 /-- The behavioral GSLT derived generically from `rhoCalc` is isomorphic to
 the established sorted rho GSLT. -/
 def rhoSemanticIso : rhoReflectiveGSLT ≅ rhoLanguageDefGSLT where
@@ -433,5 +549,102 @@ def rhoSemanticIso : rhoReflectiveGSLT ≅ rhoLanguageDefGSLT where
     apply GSLT.Morphism.ext
     funext term
     exact presentedRhoProcessEquiv.right_inv term
+
+/-! ## OSLF equation-quotient canaries
+
+These examples exercise the sole OSLF construction on the rho calculus.  The
+negative example is intentionally a syntax predicate rather than an alternate
+OSLF: it demonstrates why an equation-sensitive predicate is rejected at the
+semantic boundary. -/
+
+/-- The closed inert process transported into the generic LanguageDef-derived
+rho carrier. -/
+def presentedClosedNil : rhoReflectiveGSLT.Term :=
+  presentedRhoProcessEquiv.symm closedNil
+
+/-- The singleton parallel contractum and the inert process are genuinely
+different authored presentations. -/
+theorem presentedClosedCommTarget_ne_presentedClosedNil :
+    presentedClosedCommTarget ≠ presentedClosedNil := by
+  intro equal
+  have mapped := congrArg presentedRhoProcessEquiv equal
+  rw [presentedClosedCommTarget, presentedClosedNil] at mapped
+  simp only [Equiv.apply_symm_apply] at mapped
+  have patternEqual := congrArg Subtype.val mapped
+  simp [closedCommTarget, closedNil] at patternEqual
+
+/-- The two distinct presentations belong to the same rho equation class. -/
+theorem presentedClosedCommTarget_equivalent_presentedClosedNil :
+    rhoReflectiveGSLT.Equiv presentedClosedCommTarget presentedClosedNil := by
+  apply presentedRhoEquations_complete
+  simpa [presentedClosedCommTarget, presentedClosedNil] using
+    closedParallelSingleton_equivalent_nil
+
+/-- A presentation-sensitive singleton observation used only as a rejection
+canary. -/
+def rawCommTargetSingleton : rhoReflectiveGSLT.Term → Prop :=
+  fun term => term = presentedClosedCommTarget
+
+/-- The syntax predicate distinguishes two presentations of one process. -/
+theorem rawSyntaxPredicate_distinguishes_equivalent_presentations :
+    rawCommTargetSingleton presentedClosedCommTarget ∧
+      ¬rawCommTargetSingleton presentedClosedNil := by
+  constructor
+  · rfl
+  · intro equal
+    exact presentedClosedCommTarget_ne_presentedClosedNil equal.symm
+
+/-- The presentation-sensitive singleton cannot enter OSLF's semantic
+predicate carrier. -/
+theorem rawCommTargetSingleton_not_equationInvariant :
+    ¬EquationInvariant rhoReflectiveGSLT rawCommTargetSingleton := by
+  intro invariant
+  have transported :=
+    (invariant presentedClosedCommTarget_equivalent_presentedClosedNil).mp rfl
+  exact presentedClosedCommTarget_ne_presentedClosedNil transported.symm
+
+/-- Every predicate admitted by OSLF gives the same answer on equivalent rho
+presentations. -/
+theorem gsltOSLF_cannot_distinguish_presentations
+    (predicate : EquationPredicate rhoReflectiveGSLT) :
+    (gsltOSLF rhoReflectiveGSLT).satisfies (S := ())
+        presentedClosedCommTarget predicate ↔
+      (gsltOSLF rhoReflectiveGSLT).satisfies (S := ())
+        presentedClosedNil predicate :=
+  predicate.2 presentedClosedCommTarget_equivalent_presentedClosedNil
+
+/-- Positive operational canary: authored communication remains a diamond
+step in rho's equation-respecting OSLF. -/
+theorem gsltOSLF_sees_communication :
+    (gsltOSLF rhoReflectiveGSLT).satisfies (S := ())
+      presentedClosedCommSource
+      (exactTargetNativeType rhoReflectiveGSLT
+        presentedClosedCommTarget).pred :=
+  (satisfies_exactTargetNativeType_iff_step rhoReflectiveGSLT _ _).2
+    presentedClosedCommSource_step
+
+/-- Negative operational canary: equation saturation does not invent a
+rewrite from a free `Drop`. -/
+theorem gsltOSLF_keeps_freeDrop_inert :
+    ¬(gsltOSLF rhoReflectiveGSLT).satisfies (S := ())
+      presentedClosedFreeDrop
+      (semanticDiamond rhoReflectiveGSLT
+        (saturatePredicate rhoReflectiveGSLT (fun _ => True))) := by
+  intro possible
+  change gsltDiamond rhoReflectiveGSLT
+    (saturatePredicate rhoReflectiveGSLT (fun _ => True)).1
+    presentedClosedFreeDrop at possible
+  obtain ⟨target, step, _⟩ :=
+    (gsltDiamond_spec rhoReflectiveGSLT _ _).mp possible
+  exact presentedClosedFreeDrop_irreducible target step
+
+#print axioms presentedClosedCommTarget_ne_presentedClosedNil
+#print axioms presentedClosedCommTarget_equivalent_presentedClosedNil
+#print axioms rawSyntaxPredicate_distinguishes_equivalent_presentations
+#print axioms rawCommTargetSingleton_not_equationInvariant
+#print axioms gsltOSLF_cannot_distinguish_presentations
+#print axioms gsltOSLF_sees_communication
+#print axioms gsltOSLF_keeps_freeDrop_inert
+#print axioms rhoStructuralIsomorphism
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefSemanticAgreement

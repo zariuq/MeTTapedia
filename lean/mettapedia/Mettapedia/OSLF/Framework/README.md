@@ -1,8 +1,7 @@
 # OSLF Framework
 
 Core construction and applications of **OSLF** (Operational Semantics as
-a Logical Framework). **74 files, ~33,800 lines. Zero sorry. Zero
-custom axioms.**
+a Logical Framework).
 
 Paper: `../../../../../papers/leanOSLF.pdf` — "Verified Operational Semantics in
 Logical Form: A Lean 4 Formalization of the OSLF Algorithm"
@@ -14,23 +13,33 @@ OSLF is an algorithm that takes an operational rewrite system and
 mechanically produces a modal type system:
 
 ```
-Input:  LanguageDef  (sorts, terms, rewrite rules, premise queries)
-          ↓
-        RelationEnv  (executable premise evaluation)
-          ↓
-Output: langOSLF     (◇, □, Galois connection ◇ ⊣ □,
+Input:  LanguageDef  (terms T, equations E, rewrites R, premise queries)
+          │
+          ├── RelationEnv  (explicit premise interpretation)
+          ▼
+        GSLT          (E-setoid and E ; R ; E operational relation)
+          ▼
+Output: langOSLF     (predicates on T/E, ◇, □, ◇ ⊣ □,
                        formula semantics, sound executable checker)
 ```
 
-1. `langRewriteSystemUsing` defines a one-step reduction relation
-   matching the executable engine.
-2. `langDiamondUsing` / `langBoxUsing` derive modal operators:
+1. `langGSLTUsing` generates the sole semantic operational theory. Its
+   one-step relation is an authored rewrite with arbitrary changes of
+   equation representative at either endpoint.
+2. `langDiamondUsing` / `langBoxUsing` act only on predicates invariant
+   under the generated equation setoid:
    - **◇** (diamond) = "there exists a rewrite step reaching a state
      satisfying φ"
    - **□** (box) = "every rewrite step leads to a state satisfying φ"
-3. `langGaloisUsing` proves **◇ ⊣ □** (adjunction).
+3. `langGaloisUsing` proves **◇ ⊣ □** (adjunction) on that semantic
+   predicate frame.
 4. `checkLangUsing` provides an executable formula checker with a
    proven soundness theorem (`checkLangUsing_sat_sound`).
+
+There is no separate equation-blind OSLF. A presentation with `E = ∅`
+recovers ordinary syntactic equality by theorem, as the identity-equivalence
+special case of the same construction. Raw observation generators enter the
+OSLF only through equation saturation or an explicit invariance proof.
 
 The modal operators are **definitional** — grounded in operational
 reduction via definitional equality, not ad-hoc axioms.
@@ -54,7 +63,9 @@ fully proven Galois connection:
 
 | File | Contents |
 |------|----------|
-| `TypeSynthesis.lean` | `langOSLF`, `langDiamond`, `langBox`, `langGalois` — the main pipeline |
+| `GSLTTypeSynthesis.lean` | The sole abstract GSLT → equation-respecting OSLF construction |
+| `TypeSynthesis.lean` | LanguageDef → equation-saturated GSLT → `langOSLF` |
+| `GSLTQuotientCoherence.lean` | Equivalence with the presentation on explicit equation classes |
 | `RewriteSystem.lean` | Core rewrite system abstraction |
 | `DerivedModalities.lean` | Derived diamond/box operators via Galois connections |
 | `DerivedTyping.lean` | Derived typing rules and fiber semantics |
@@ -112,7 +123,7 @@ Sentence-first operational dispatch semantics with mood system
 |------|----------|
 | `WMProbabilityEmbedding.lean` | World model probability embedding |
 | `PLNWMHypercubeBasis.lean` | PLN world model hypercube basis |
-| `SynthesisBridge.lean` | Formula → WM evidence synthesis |
+| `OSLFNTTWMCanonicalClosure.lean` | Formula → WM evidence synthesis |
 | `HypercubeGSLTFunctor.lean` | Hypercube GSLT functor (PLN categoricals) |
 | `HypercubeTemporalGSLTFunctor.lean` | Temporal extension |
 | `LanguageMorphism.lean` | Language morphism / semantic transfer |

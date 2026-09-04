@@ -19,6 +19,17 @@ import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveGSLTNativeTypes
 import Mettapedia.Languages.ProcessCalculi.MORK.GSLTNativeTypes
 import Mettapedia.Languages.ProcessCalculi.MORK.ProofRelevantGSLT
 import Mettapedia.Languages.ProcessCalculi.MORK.MM2Surface
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2SyntaxSemantics
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2SyntaxUTF8
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2SyntaxWire
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2ParserProfileWire
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2ExecutionProfileWire
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2MaximalTokenUTF8
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2MaximalTokenExecution
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2MaximalTokenElaborationPlanWire
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2RuleScopedExecution
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2MaximalTokenRuleScopedExecution
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2RuleScopedReloadCanary
 import Mettapedia.Languages.ProcessCalculi.MORK.ProviderExtension
 import Mettapedia.Languages.ProcessCalculi.MORK.MeTTaZeroBoundary
 import Mettapedia.Languages.ProcessCalculi.MORK.OccurrenceSeam

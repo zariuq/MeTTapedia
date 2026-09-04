@@ -1,0 +1,16 @@
+; An equal index under another owner is not a lookup result.
+(exec (00 direct-hit)
+  (, (direct-request $owner $index)
+     (heap-cell $owner $index $kind $value))
+  (O (- (direct-request $owner $index))
+     (+ (heap-result direct found $owner $index $kind $value))))
+
+(exec (01 direct-frontier-fault)
+  (, (direct-request $owner $index)
+     (heap-frontier $owner $index))
+  (O (- (direct-request $owner $index))
+     (+ (heap-result direct missing $owner $index $index))))
+
+(heap-cell heap-B 1 proof node-1)
+(heap-frontier heap-B 2)
+(direct-request heap-A 1)

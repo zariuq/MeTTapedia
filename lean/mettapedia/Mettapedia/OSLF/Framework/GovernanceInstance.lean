@@ -14,7 +14,7 @@ import Mettapedia.Logic.GovernanceReasoning.Core
 ```
 PyashCore LanguageDef (operational engine)
     │
-    │  av v v' := langReduces pyashCore v v'     (one-step dispatch)
+    │  av v v' := langSemanticReduces pyashCore v v' (semantic one-step)
     │  pv v v' := LangReducesStar pyashCore v v' (multi-step futures)
     │
     ├──→ OSLF pipeline: langOSLF pyashCore "State"  (pyashCoreOSLF)
@@ -59,6 +59,13 @@ open Mettapedia.Logic.DDLPlus.Theorems
 open Mettapedia.Logic.DDLPlus.DTSBridge
 open Mettapedia.Logic.GovernanceReasoning.Core
 
+/-- Every authored PyashCore predicate is semantic because this presentation
+declares the identity equation theory.  Keeping the emptiness proof at this
+boundary makes adding equations a proof-breaking semantic change. -/
+private def pyashPredicate (predicate : Pattern → Prop) :
+    GSLTTypeSynthesis.EquationPredicate (langGSLT pyashCore) :=
+  equationPredicateOfEquationFree (by rfl) predicate
+
 /-! ## §1 PyashCore OSLF (re-export)
 
 `pyashCoreOSLF` and `pyashCoreGalois` are already proven in PyashCoreModel. -/
@@ -82,7 +89,7 @@ theorem pyashCore_pv_reflexive (p : Pattern) :
 
 /-- av ⊆ pv: one-step ⊆ multi-step — satisfies DDLPlus sem_4a. -/
 theorem pyashCore_av_subset_pv {p q : Pattern}
-    (h : langReduces pyashCore p q) :
+    (h : langSemanticReduces pyashCore p q) :
     LangReducesStar pyashCore p q :=
   .single h
 
@@ -90,21 +97,23 @@ theorem pyashCore_av_subset_pv {p q : Pattern}
 
 The OSLF modal operators have an important polarity distinction from DDLPlus:
 
-- `langDiamond` (◇) = step-FUTURE: `∃ q, langReduces p q ∧ φ q`
-  This matches DDLPlus `dia_a` when `av = langReduces`.
-- `langBox` (□)    = step-PAST:   `∀ q, langReduces q p → φ q`
+- `langDiamond` (◇) = step-FUTURE over the equation-saturated semantic step.
+  This matches DDLPlus `dia_a` when `av = langSemanticReduces`.
+- `langBox` (□) = step-PAST over the same semantic step.
   This is NOT DDLPlus `box_a` (which is future). It is the left-adjoint
   to ◇ in the Galois connection ◇ ⊣ □. -/
 
-/-- ◇ₐφ (DDLPlus, av = langReduces) = langDiamond pyashCore φ (step-future). -/
+/-- ◇ₐφ for PyashCore's semantic step is its OSLF step-future modality. -/
 theorem diaa_eq_langDiamond (φ : Pattern → Prop) (p : Pattern) :
-    (∃ q, langReduces pyashCore p q ∧ φ q) ↔ langDiamond pyashCore φ p :=
-  (langDiamond_spec pyashCore φ p).symm
+    (∃ q, langSemanticReduces pyashCore p q ∧ φ q) ↔
+      langDiamond pyashCore (pyashPredicate φ) p :=
+  (langDiamond_spec pyashCore (pyashPredicate φ) p).symm
 
 /-- OSLF langBox is the step-past operator: all predecessors satisfy φ. -/
 theorem langBox_is_past (φ : Pattern → Prop) (p : Pattern) :
-    langBox pyashCore φ p ↔ ∀ q, langReduces pyashCore q p → φ q :=
-  langBox_spec pyashCore φ p
+    langBox pyashCore (pyashPredicate φ) p ↔
+      ∀ q, langSemanticReduces pyashCore q p → φ q :=
+  langBox_spec pyashCore (pyashPredicate φ) p
 
 /-! ## §4 Seriality and Axiom D
 
@@ -119,9 +128,9 @@ theorem govAxiomD_pv (φ : Pattern → Prop) (p : Pattern)
 
 /-- Axiom D for av holds on reducible states. -/
 theorem govAxiomD_av (φ : Pattern → Prop) (p : Pattern)
-    (hred : ∃ q, langReduces pyashCore p q)
-    (h : ∀ q, langReduces pyashCore p q → φ q) :
-    ∃ q, langReduces pyashCore p q ∧ φ q :=
+    (hred : ∃ q, langSemanticReduces pyashCore p q)
+    (h : ∀ q, langSemanticReduces pyashCore p q → φ q) :
+    ∃ q, langSemanticReduces pyashCore p q ∧ φ q :=
   let ⟨q, hq⟩ := hred; ⟨q, hq, h q hq⟩
 
 /-! ## §6 Parameterized Governance DDLPlus Frame
@@ -151,12 +160,13 @@ structure GovFrame (w : Type*) where
 
 `ClosedGovAccessibility` is parameterized by an abstract one-step relation `step`
 so that any reactive process language — not just PyashCore — can provide a valid
-governance accessibility context.  For PyashCore, set `step := langReduces pyashCore`.
+governance accessibility context.  For PyashCore, set
+`step := langSemanticReduces pyashCore`.
 For the `GovNormCycle` reactive loop language, `step` is the deliberate ↔ enact cycle. -/
 
 /-- A closed governance accessibility context: live is closed under successors.
 
-    The `step` relation is abstract — it can be `langReduces pyashCore`, a norm-cycle
+    The `step` relation is abstract — it can be PyashCore's semantic step, a norm-cycle
     relation, or any other one-step process relation.  The DDLPlus `av` is `step` and
     `pv` is the reflexive-transitive closure of `step`. -/
 structure ClosedGovAccessibility where

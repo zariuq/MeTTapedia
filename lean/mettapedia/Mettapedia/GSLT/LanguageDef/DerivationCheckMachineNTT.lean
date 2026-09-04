@@ -44,12 +44,12 @@ theorem no_formula_outcome_crossing :
 
 def configNativeType : langNativeType language "Config" where
   sort := "Config"
-  pred := fun term =>
+  pred := equationPredicateOfEquationFree rfl (fun term =>
     checkHasType language WellSorted.FreeTypeContext.empty [] term
-      (.base "Config") = true
+      (.base "Config") = true)
 
 theorem missing_start_inhabits_config :
-    configNativeType.pred missingFinishStart := by
+    configNativeType.pred.1 missingFinishStart := by
   change checkHasType language WellSorted.FreeTypeContext.empty []
     missingFinishStart (.base "Config") = true
   exact missingFinishStart_has_type

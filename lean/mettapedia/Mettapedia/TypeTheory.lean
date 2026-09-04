@@ -1,0 +1,105 @@
+import Mettapedia.TypeTheory.Authority
+import Mettapedia.TypeTheory.ApplicationExtensionalCollapse
+import Mettapedia.TypeTheory.CategoryIndexedFamilyCwf
+import Mettapedia.TypeTheory.CategoryIndexedFamilyTypeFormers
+import Mettapedia.TypeTheory.CategoryIndexedFamilyThinDescentTypeFormers
+import Mettapedia.TypeTheory.ContextualCode
+import Mettapedia.TypeTheory.ContextualCodeObserverFactorization
+import Mettapedia.TypeTheory.ContextualCodeReflection
+import Mettapedia.TypeTheory.ContextualComputationKleisli
+import Mettapedia.TypeTheory.ContextualIdentityTypes
+import Mettapedia.TypeTheory.ContextualModalCapabilities
+import Mettapedia.TypeTheory.ContextualModalLawCapabilities
+import Mettapedia.TypeTheory.ContextualProductComparison
+import Mettapedia.TypeTheory.ContextualSumComparison
+import Mettapedia.TypeTheory.ContextualTarskiUniverseFamilies
+import Mettapedia.TypeTheory.CwfTarskiUniverse
+import Mettapedia.TypeTheory.DependencyExtensionalityOrthogonality
+import Mettapedia.TypeTheory.DependencyExtensionalityReadoutSquare
+import Mettapedia.TypeTheory.DecidableIdentityRouteStructure
+import Mettapedia.TypeTheory.DependentFunctionComparison
+import Mettapedia.TypeTheory.DependentFamilyObserverFactorization
+import Mettapedia.TypeTheory.DependentProductCapabilities
+import Mettapedia.TypeTheory.CategoryIndexedFamilyTwoCellAction
+import Mettapedia.TypeTheory.DependentExactCodeCommonModel
+import Mettapedia.TypeTheory.DisplayedPresheafTransport
+import Mettapedia.TypeTheory.RouteSensitiveDisplayedFamily
+import Mettapedia.TypeTheory.DisplayedFamilyObservation
+import Mettapedia.TypeTheory.SetFamilyComprehensionMap
+import Mettapedia.TypeTheory.DisplayedEvidence
+import Mettapedia.TypeTheory.DisplayedEvidenceComputation
+import Mettapedia.TypeTheory.EffectfulFamilyObserverFactorization
+import Mettapedia.TypeTheory.ExactCodeModalityModel
+import Mettapedia.TypeTheory.EqualityFamilyObserverFactorization
+import Mettapedia.TypeTheory.ExtensionalReadout
+import Mettapedia.TypeTheory.FibrewiseFullyFaithfulCwfMorphism
+import Mettapedia.TypeTheory.FreeConversion
+import Mettapedia.TypeTheory.FreeWhiskeredCell
+import Mettapedia.TypeTheory.FreeWhiskeredCellCoherenceObservation
+import Mettapedia.TypeTheory.FreeWhiskeredCellReflection
+import Mettapedia.TypeTheory.FreeWhiskeredCellTransport
+import Mettapedia.TypeTheory.FreeWhiskeredCellTransportComposition
+import Mettapedia.TypeTheory.GuardedTimeModeTheory
+import Mettapedia.TypeTheory.SelectedModalIntroduction
+import Mettapedia.TypeTheory.IdentityEliminationCapabilities
+import Mettapedia.TypeTheory.IdentityRouteCapabilities
+import Mettapedia.TypeTheory.IndexedContainer
+import Mettapedia.TypeTheory.IndexedPolynomial
+import Mettapedia.TypeTheory.JudgmentalComputation
+import Mettapedia.TypeTheory.JudgmentalEquality
+import Mettapedia.TypeTheory.LocallyThinCellReflection
+import Mettapedia.TypeTheory.LocallyThinWhiskeredCellBicategory
+import Mettapedia.TypeTheory.LocallyThinWhiskeredCellMappingOut
+import Mettapedia.TypeTheory.ModalCwF
+import Mettapedia.TypeTheory.ModalCwfFibre
+import Mettapedia.TypeTheory.ModeTheoryProducts
+import Mettapedia.TypeTheory.ModeIndexedFamilyDoctrine
+import Mettapedia.TypeTheory.ModeIndexedFamilyTermsAndComprehension
+import Mettapedia.TypeTheory.NativeFamilyCapabilitySeparation
+import Mettapedia.TypeTheory.OperationalConversionFamilyBoundary
+import Mettapedia.TypeTheory.OperationalIntensionalExtensionalCellThinness
+import Mettapedia.TypeTheory.OperationalIntensionalExtensionalDependentCellBoundary
+import Mettapedia.TypeTheory.OperationalIntensionalExtensionalLocallyThinModeTheory
+import Mettapedia.TypeTheory.OperationalIntensionalExtensionalSemanticThinness
+import Mettapedia.TypeTheory.OperationalIntensionalExtensionalModes
+import Mettapedia.TypeTheory.OperationalIntensionalExtensionalTwoComputad
+import Mettapedia.TypeTheory.OperationalPathIdentityComparison
+import Mettapedia.TypeTheory.ProofRelevantRouteFamilyBridge
+import Mettapedia.TypeTheory.RevisionHorizonObserverFactorization
+import Mettapedia.TypeTheory.ReflectiveFunctionObserverBoundary
+import Mettapedia.TypeTheory.ResponseIndexedResultFamily
+import Mettapedia.TypeTheory.RouteFamilyTypeFormers
+import Mettapedia.TypeTheory.RouteQuotientComprehension
+import Mettapedia.TypeTheory.RouteQuotientTermPreservation
+import Mettapedia.TypeTheory.ScopedIdentity
+import Mettapedia.TypeTheory.SplitReadoutMorphism
+import Mettapedia.TypeTheory.SetFamilyTypeOverEssentialImage
+import Mettapedia.TypeTheory.TarskiCodeFamilyObserverFactorization
+import Mettapedia.TypeTheory.TarskiUniverseCapabilities
+import Mettapedia.TypeTheory.UnityIsNotUIP
+import Mettapedia.TypeTheory.WitnessRetainingDependentSequencing
+import Mettapedia.TypeTheory.WriterSetFamilyDependentExtension
+
+/-!
+# Type-theoretic comparison library
+
+This umbrella collects semantic structures and comparison theorems for
+contextual, simply typed, dependent, modal, guarded, and effectful type
+theories.  The modules characterize capabilities and incompatibilities without
+selecting a product language.
+
+The principal axes remain explicit:
+
+* contexts, substitutions, and comprehension;
+* constant versus genuinely varying type families;
+* intensional routes versus extensional equality observations;
+* products, sums, functions, identity elimination, and universes;
+* modalities, guarded time, and independent mode products;
+* free conversion and judgmental computation;
+* effectful Kleisli arrows and dependent result sequencing; and
+* displayed exact evidence, gradual precision, and computation-level
+  evidence erasure.
+
+Keeping these axes separate permits later language designs to be compared by
+proved property bundles rather than by names or implementation lineage.
+-/

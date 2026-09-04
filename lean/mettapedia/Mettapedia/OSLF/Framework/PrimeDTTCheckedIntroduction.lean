@@ -48,8 +48,11 @@ theorem need_exactTarget_satisfaction_iff_occurrence
           (.answer space subject (needKey model space subject) occurrence result)).pred ↔
       occurrence < Multiset.count result
         (model.base.source.occurrences space subject) := by
-  rw [satisfies_exactTargetNativeType_iff_step]
-  exact needGSLT_step_iff model space subject result occurrence
+  exact (satisfies_exactTargetNativeType_iff_step
+    (needGSLT model)
+    (.request space subject)
+    (.answer space subject (needKey model space subject) occurrence result)).trans
+      (needGSLT_step_iff model space subject result occurrence)
 
 /-- Positive witness: an actual answer occurrence inhabits its generated
 exact-target behavioral type. -/
@@ -74,8 +77,9 @@ theorem need_answer_inhabits_no_exactTarget
     ¬ (gsltOSLF (needGSLT model)).satisfies
         (.answer space subject key occurrence result)
         (exactTargetNativeType (needGSLT model) target).pred := by
-  rw [satisfies_exactTargetNativeType_iff_step]
-  intro step
+  intro holds
+  have step := (satisfies_exactTargetNativeType_iff_step
+    (needGSLT model) (.answer space subject key occurrence result) target).mp holds
   cases step
 
 end OperationalOSLFReference

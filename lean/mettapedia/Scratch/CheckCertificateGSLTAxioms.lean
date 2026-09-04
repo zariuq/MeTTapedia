@@ -1,0 +1,14 @@
+import Mettapedia.GSLT.LanguageDef.ProofGSLTFramework
+import Mettapedia.GSLT.LanguageDef.ProofGSLTInterpretationCanary
+
+#print axioms Mettapedia.GSLT.LanguageDef.ProofGSLT.OpenDerivation.bind_assoc
+#print axioms Mettapedia.GSLT.LanguageDef.ProofGSLT.Interpretation.comp_mapOpen
+#print axioms Mettapedia.GSLT.LanguageDef.ProofGSLT.Model.denoteOpen_bind
+#print axioms Mettapedia.GSLT.LanguageDef.ProofGSLT.Model.denote_mapDerivation
+#print axioms Mettapedia.GSLT.LanguageDef.ProofGSLT.bind_natural
+#print axioms Mettapedia.GSLT.LanguageDef.ProofGSLT.checkOpenRaw_exact_derivation
+#print axioms Mettapedia.GSLT.LanguageDef.ProofGSLT.checkOpenDAGBlocks_exact_derivation
+#print axioms Mettapedia.GSLT.LanguageDef.ProofGSLT.checkOpenDAGBlocks_true_of_ruleLookupRefines
+#print axioms Mettapedia.GSLT.LanguageDef.ProofGSLT.RuleRetaining.CheckedDAG.transportMeaning
+#print axioms Mettapedia.GSLT.LanguageDef.ProofGSLT.InterpretationCanary.strict_rule_retaining_interpretation_is_empty
+#print axioms Mettapedia.GSLT.LanguageDef.ProofGSLT.InterpretationCanary.sharing_changes_rule_occurrence_count

@@ -94,6 +94,9 @@ private def pairLanguage : LanguageDef :=
 private theorem pairAdequate :
     languageDirectTraceAdequate pairLanguage = true := by
   simp [languageDirectTraceAdequate, pairLanguage, mkRule, pairCongRule,
+    LanguageDef.isEquationFree, LanguageDef.usesCollection,
+    LanguageDef.hasAlgebraDeclarations, genUnit, genThunk, genPair,
+    TermParam.typeExpr, TypeExpr.mentionsCollection,
     rewriteDirectTraceAdequate, tracePremisesModed, patternHoleSkeleton,
     patternsHoleSkeleton, patternClosedSkeleton,
     patternOccurrenceNames, patternMetavariableOccurrencesAt,

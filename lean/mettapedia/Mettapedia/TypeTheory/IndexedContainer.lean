@@ -85,7 +85,7 @@ def listFinitary : Finitary list where
     change Fintype (Fin length)
     infer_instance
 
-/-- The container extension is exactly the usual shape/tuple presentation of
+/-- The container extension is exactly the usual shape/tuple encoding of
 lists. -/
 def listExtensionEquiv (Element : Type uElement) :
     List Element ≃ list.Extension Element () :=

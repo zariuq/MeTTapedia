@@ -265,7 +265,7 @@ def richRoute :
   mapInternal := _root_.id
   mapInternal_structural := by
     intro value
-    change value = mapPattern PresentationSymbols.id value
+    change value = mapPattern LanguageDefSymbolMap.id value
     exact (mapPattern_id value).symm
   surface_natural := fun _ => rfl
   mapEvidence := _root_.id
@@ -300,7 +300,7 @@ def collapseRoute :
   mapInternal := _root_.id
   mapInternal_structural := by
     intro value
-    change value = mapPattern PresentationSymbols.id value
+    change value = mapPattern LanguageDefSymbolMap.id value
     exact (mapPattern_id value).symm
   surface_natural := fun _ => rfl
   mapEvidence := by

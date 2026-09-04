@@ -1,5 +1,5 @@
 import Batteries.Data.Array.Lemmas
-import Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting
+import Mettapedia.GSLT.LanguageDef.GSLTHosting
 
 /-!
 # Finite-sequence hosting by a bounded C-like array slice
@@ -27,7 +27,7 @@ open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.Ultrainfinite
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.NIKObservedRefinement
-open Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting
+open Mettapedia.GSLT.LanguageDef.GSLTHosting
 
 /-! ## Neutral finite-sequence source -/
 

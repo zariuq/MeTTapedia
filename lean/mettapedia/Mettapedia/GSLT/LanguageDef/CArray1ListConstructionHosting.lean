@@ -22,7 +22,7 @@ open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.Ultrainfinite
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.NIKObservedRefinement
-open Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting
+open Mettapedia.GSLT.LanguageDef.GSLTHosting
 open Mettapedia.GSLT.LanguageDef.CArray0SequenceHosting
 
 /-! ## Authored finite-list construction -/

@@ -38,6 +38,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.LogicSemantics
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.Languages.GF.GFCoreNTTDiagnostics
 
 -- ═══════════════════════════════════════════════════════════════════
@@ -58,16 +59,16 @@ theorem modal_logic_galois (relEnv : RelationEnv) (lang : LanguageDef) :
 
 /-- Diamond specification with logic: ◇ accounts for premise-aware reductions. -/
 theorem modal_logic_diamond_spec (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p : Pattern) :
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
     langDiamondUsing relEnv lang φ p ↔
-    ∃ q, langReducesUsing relEnv lang p q ∧ φ q :=
+    ∃ q, langSemanticReducesUsing relEnv lang p q ∧ φ.1 q :=
   langDiamondUsing_spec relEnv lang φ p
 
 /-- Box specification with logic: □ accounts for premise-aware predecessors. -/
 theorem modal_logic_box_spec (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p : Pattern) :
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
     langBoxUsing relEnv lang φ p ↔
-    ∀ q, langReducesUsing relEnv lang q p → φ q :=
+    ∀ q, langSemanticReducesUsing relEnv lang q p → φ.1 q :=
   langBoxUsing_spec relEnv lang φ p
 
 -- ═══════════════════════════════════════════════════════════════════
@@ -86,13 +87,13 @@ theorem modal_logic_box_mono (relEnv : RelationEnv) (lang : LanguageDef) :
 
 /-- The Galois unit: φ ≤ □_logic(◇_logic(φ)). -/
 theorem modal_logic_unit (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) :
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) :
     φ ≤ langBoxUsing relEnv lang (langDiamondUsing relEnv lang φ) :=
   (modal_logic_galois relEnv lang).le_u_l φ
 
 /-- The Galois counit: ◇_logic(□_logic(φ)) ≤ φ. -/
 theorem modal_logic_counit (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) :
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) :
     langDiamondUsing relEnv lang (langBoxUsing relEnv lang φ) ≤ φ :=
   (modal_logic_galois relEnv lang).l_u_le φ
 
@@ -103,7 +104,8 @@ theorem modal_logic_counit (relEnv : RelationEnv) (lang : LanguageDef)
 /-- Scope ordering is preserved by the logic-aware ◇.
     Same as `diamond_scope_composition` but parameterized by relEnv. -/
 theorem modal_logic_scope_composition (relEnv : RelationEnv) (lang : LanguageDef)
-    (scopeInverse sourceOrderScope : Pattern → Prop)
+    (scopeInverse sourceOrderScope :
+      EquationPredicate (langGSLTUsing relEnv lang))
     (h : scopeInverse ≤ sourceOrderScope) :
     langDiamondUsing relEnv lang scopeInverse ≤
     langDiamondUsing relEnv lang sourceOrderScope :=

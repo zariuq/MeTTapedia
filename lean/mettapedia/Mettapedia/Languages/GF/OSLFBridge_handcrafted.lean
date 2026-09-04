@@ -45,6 +45,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.CategoryBridge
 
 /-! ## Phase 1: GF Grammar → LanguageDef
@@ -498,14 +499,14 @@ noncomputable def gfGrammarPresheafLambdaTheory
 
 /-! ## Phase 6: English GF → OSLF
 
-English uses the same abstract syntax as Czech (GF RGL is language-independent
-at the abstract level). The English LanguageDef is identical to Czech's —
-the differentiation happens at the concrete linearization level.
+English uses the same abstract syntax and operational semantics as Czech (GF
+RGL is language-independent at the abstract level).  Concrete-language names
+belong to the linearization presentation; they must not create distinct
+dependent OSLF predicate types for one shared abstract calculus.
 -/
 
-/-- English GF grammar — same abstract syntax, named for English. -/
-def englishGFLanguageDef : LanguageDef :=
-  { gfLegacySemanticLanguageDef with name := "EnglishGF" }
+/-- English GF uses the one shared RGL semantic presentation. -/
+def englishGFLanguageDef : LanguageDef := gfLegacySemanticLanguageDef
 
 /-- The rewrite system generated from English GF grammar. -/
 def englishGFRewriteSystem : RewriteSystem :=
@@ -556,7 +557,7 @@ Pipeline:
 ```
 AbstractNode →[gfAbstractToPattern]→ Pattern
   →[checkLangUsing gfLegacySemanticLanguageDef]→ CheckResult
-  →[checkLangUsing_sat_sound]→ sem (langReduces gfLegacySemanticLanguageDef) I φ p
+  →[checkLangUsing_sat_sound]→ equation-invariant formula semantics
   →[langDiamond_spec]→ ◇/□ modal satisfaction
 ```
 -/
@@ -574,8 +575,14 @@ theorem gfAbstract_checkSat_sound
     {fuel : Nat} {node : AbstractNode} {φ : OSLFFormula}
     (h : checkLangUsing .empty lang I_check fuel
            (gfAbstractToPattern node) φ = .sat) :
-    sem (langReduces lang) I_sem φ (gfAbstractToPattern node) := by
-  exact checkLangUsing_sat_sound h_atoms h
+    langFormulaSem lang
+      (saturateAtomSemUsing .empty lang I_sem) φ
+      (gfAbstractToPattern node) := by
+  apply checkLangUsing_sat_sound (I_sem := saturateAtomSemUsing .empty lang I_sem)
+  · intro atom term checked
+    exact holds_saturateAtomSemUsing .empty lang I_sem atom term
+      (h_atoms atom term checked)
+  · exact h
 
 /-- If a GF abstract tree reduces under the RGL language, then the
     OSLF diamond modality witnesses that reduction.
@@ -583,8 +590,9 @@ theorem gfAbstract_checkSat_sound
     ◇(φ)(tree) holds when tree ⇝ q and φ(q). -/
 theorem gfAbstract_diamond_of_reduces
     {lang : LanguageDef}
-    {φ : Pattern → Prop} {node : AbstractNode} {q : Pattern}
-    (hReduce : langReduces lang (gfAbstractToPattern node) q)
+    {φ : EquationPredicate (langGSLT lang)}
+    {node : AbstractNode} {q : Pattern}
+    (hReduce : langSemanticReduces lang (gfAbstractToPattern node) q)
     (hφ : φ q) :
     langDiamond lang φ (gfAbstractToPattern node) := by
   rw [langDiamond_spec]
@@ -599,9 +607,9 @@ theorem gfAbstract_exec_implies_reduces
     (h : q ∈ Mettapedia.OSLF.MeTTaIL.ContextualStep.rewriteAt
       (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises .empty)
       lang contextFuel (gfAbstractToPattern node)) :
-    langReduces lang (gfAbstractToPattern node) q := by
-  exact exec_to_langReducesUsing .empty lang
-    ⟨contextFuel, h⟩
+    langSemanticReduces lang (gfAbstractToPattern node) q := by
+  exact langReducesUsing_to_semantic .empty lang
+    (exec_to_langReducesUsing .empty lang ⟨contextFuel, h⟩)
 
 /-- Combining exec + diamond: if the engine reduces a GF tree to q,
     and φ(q) holds, then ◇(φ)(tree) holds in the OSLF type system.
@@ -610,7 +618,8 @@ theorem gfAbstract_exec_implies_reduces
     check a predicate on it, conclude ◇-satisfaction. -/
 theorem gfAbstract_diamond_of_exec
     {lang : LanguageDef}
-    {φ : Pattern → Prop} {node : AbstractNode} {q : Pattern} {contextFuel : Nat}
+    {φ : EquationPredicate (langGSLT lang)}
+    {node : AbstractNode} {q : Pattern} {contextFuel : Nat}
     (hExec : q ∈ Mettapedia.OSLF.MeTTaIL.ContextualStep.rewriteAt
       (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises .empty)
       lang contextFuel (gfAbstractToPattern node))

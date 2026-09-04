@@ -1,0 +1,6 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderExposure
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+#check @RhoCollapsingLeafExposure.normalize_eq
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoCollapsingLeafExposure.normalize_eq
+#check @rho_normalize_eq_of_collapsingLeafExposureInDomain
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.rho_normalize_eq_of_collapsingLeafExposureInDomain

@@ -1,0 +1,5 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryExposureBridge
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.rho_collapsingLeafExposureInDomain_of_classifications
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.rho_collapsingLeafExposureBVarRoute_of_staticNormal
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.rho_collapsingLeafExposureFVarRoute_of_sourceVariable

@@ -1034,12 +1034,13 @@ rewrite rules.  This is not a parser kernel; parser execution belongs to the
 separate ParserPack presentation. -/
 def rfc8259SyntaxTheory : Mettapedia.GSLT.GSLT :=
   languageGSLT rfc8259Syntax
-    (ReductionRespectsEquations.of_no_equations rfl)
+    (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem rfc8259SyntaxTheory_no_step (source target : Pattern) :
     ¬ rfc8259SyntaxTheory.Step source target := by
   intro reduction
-  change langReducesUsing RelationEnv.empty rfc8259Syntax source target at reduction
+  unfold rfc8259SyntaxTheory at reduction
+  rw [languageGSLT_step] at reduction
   unfold langReducesUsing at reduction
   rcases reduction with ⟨_, step⟩
   cases step with

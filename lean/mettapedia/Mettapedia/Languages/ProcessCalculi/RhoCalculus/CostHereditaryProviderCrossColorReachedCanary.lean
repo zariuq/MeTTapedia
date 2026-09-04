@@ -81,7 +81,7 @@ private theorem rule_mem (index : Nat) (inBounds : index < 6) :
   List.getElem_mem _
 
 private def wrappedQuoteConstructor :
-    AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoCalc.terms[2], rule_mem 2 (by omega)⟩
 
 private theorem wrappedQuote_selected :

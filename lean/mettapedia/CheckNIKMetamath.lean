@@ -1,0 +1,15 @@
+import Mettapedia.GSLT.LanguageDef.CompletenessSpectrumSAT
+import Mettapedia.GSLT.LanguageDef.NIKGSLT
+import Mettapedia.Languages.Metamath.NIKAuthority
+import Mettapedia.Languages.TPTP.ProblemAuthority
+
+#print axioms Mettapedia.GSLT.LanguageDef.CompletenessSpectrum.semanticAuthority_of_replay_and_calculus
+#print axioms Mettapedia.GSLT.LanguageDef.CompletenessSpectrum.SAT.truthTableChecker_authority
+#print axioms Mettapedia.GSLT.LanguageDef.NIKGSLT.Refinement.authority_correspondence
+#print axioms Mettapedia.GSLT.LanguageDef.NIKGSLT.Indexed.CheckerTranslation.step_map
+#print axioms Mettapedia.GSLT.LanguageDef.NIKGSLT.Indexed.AuthorityDiagram.toGSLTFunctor
+#print axioms Mettapedia.Languages.Metamath.NIKAuthority.derivable_iff_meaning
+#print axioms Mettapedia.Languages.Metamath.NIKAuthority.proofArticleChecker_semanticAuthority
+#print axioms Mettapedia.Languages.TPTP.NIKAuthority.proofChecker_authority
+#print axioms Mettapedia.Languages.TPTP.ProblemAuthority.TheoremDAG.discharge
+#print axioms Mettapedia.Languages.TPTP.ProblemAuthority.ObjectiveBridge.acceptance_implies_objective

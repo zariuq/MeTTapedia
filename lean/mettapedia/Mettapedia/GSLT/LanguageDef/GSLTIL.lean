@@ -264,7 +264,7 @@ def relationEnv (catalog : Catalog) : RelationEnv where
 /-- The GSLT denoted by the authored command language at one finite catalog. -/
 def totalTheory (catalog : Catalog) : GSLT :=
   languageGSLTUsing (relationEnv catalog) language
-    (ReductionRespectsEquationsUsing.of_no_equations _ rfl)
+    (ReductionRespectsEquationsUsing.of_equation_free _ rfl)
 
 private theorem rules_noncontextual :
     ∀ rule, rule ∈ language.rewrites →
@@ -291,7 +291,8 @@ theorem totalTheory_step_iff_mem_executor (catalog : Catalog)
     (totalTheory catalog).Step source target ↔
       target ∈ rewriteStepWithPremisesUsing
         (relationEnv catalog) language source := by
-  change langReducesUsing (relationEnv catalog) language source target ↔ _
+  unfold totalTheory
+  rw [languageGSLTUsing_step]
   unfold langReducesUsing
   rw [step_iff_rootStep_of_noncontextualRules rules_noncontextual]
   exact rootStep_iff_mem_executor catalog source target

@@ -51,6 +51,58 @@ def instantiateTemplateAtom? (substitution : Subst) (template : Atom) :
   else
     none
 
+/-- Instantiating a bare output variable succeeds exactly when the matcher
+environment contains the value that will be republished. -/
+theorem instantiateTemplateAtom?_var_eq_some_iff
+    (substitution : Subst) (name : String) (atom : Atom) :
+    instantiateTemplateAtom? substitution (.var name) = some atom ↔
+      Subst.lookup substitution name = some atom := by
+  cases lookup : Subst.lookup substitution name with
+  | none => simp [instantiateTemplateAtom?, templateCovered, lookup]
+  | some value =>
+      simp [instantiateTemplateAtom?, templateCovered, applySubst, lookup]
+
+/-- Coverage of an output template reconstructs a binding for every variable
+authored in that template.  The bound value remains intentionally opaque and
+need not itself be ground: expression-local variables inside a captured
+continuation are not variables of the outer template. -/
+theorem templateCovered_lookup_of_mem_freeVars
+    : ∀ (substitution : Subst) (template : Atom),
+    templateCovered substitution template = true →
+    ∀ (name : String), name ∈ atomFreeVars template →
+    ∃ value, Subst.lookup substitution name = some value := by
+  intro substitution template covered name occurs
+  match template with
+  | .var variableName =>
+      simp only [atomFreeVars, List.mem_cons, List.mem_nil_iff,
+        or_false] at occurs
+      subst name
+      cases lookup : Subst.lookup substitution variableName with
+      | none => simp [templateCovered, lookup] at covered
+      | some value => exact ⟨value, rfl⟩
+  | .symbol _ => simp [atomFreeVars] at occurs
+  | .grounded _ => simp [atomFreeVars] at occurs
+  | .expression children =>
+      exact templatesCovered_lookup_of_mem_freeVars substitution children
+        covered name occurs
+where
+  templatesCovered_lookup_of_mem_freeVars
+      (substitution : Subst) :
+      ∀ (templates : List Atom),
+      templatesCovered substitution templates = true →
+      ∀ (name : String),
+      name ∈ atomFreeVars.atomFreeVarsList templates →
+      ∃ value, Subst.lookup substitution name = some value
+    | [], _, name, occurs => by simp [atomFreeVars.atomFreeVarsList] at occurs
+    | head :: tail, covered, name, occurs => by
+        simp only [templatesCovered, Bool.and_eq_true] at covered
+        simp only [atomFreeVars.atomFreeVarsList, List.mem_append] at occurs
+        rcases occurs with headOccurs | tailOccurs
+        · exact templateCovered_lookup_of_mem_freeVars substitution head
+            covered.1 name headOccurs
+        · exact templatesCovered_lookup_of_mem_freeVars substitution tail
+            covered.2 name tailOccurs
+
 /-- On the shared well-bound, structurally ground image, reflective
 instantiation is exactly the earlier ground-output instantiation. -/
 theorem instantiateTemplateAtom_of_covered
@@ -697,6 +749,55 @@ artifact. -/
 def RawExecFactsWithin (allowed : List RawExecFact)
     (space : List Atom) : Prop :=
   ∀ raw ∈ cRawExecFacts space, raw ∈ allowed
+
+/-- One atom carries executable authority only from the declared artifact.
+Non-executable atoms satisfy the property without acquiring authority. -/
+def RawExecAtomWithin (allowed : List RawExecFact) (atom : Atom) : Prop :=
+  ∀ raw, extractRawExecFact atom = some raw → raw ∈ allowed
+
+/-- An atom-local property holds of every opaque value exposed by a capture
+relation inside the carrier.  This is the representation boundary used when
+data rows may later republish their payloads. -/
+def CapturedAtomsWithin (property : Atom → Prop)
+    (captures : Atom → Atom → Prop) (space : List Atom) : Prop :=
+  ∀ carrier ∈ space, ∀ payload,
+    captures carrier payload → property payload
+
+/-- Specialization of `CapturedAtomsWithin` to executable authority from a
+declared rule inventory. -/
+def CapturedRawExecWithin (allowed : List RawExecFact)
+    (captures : Atom → Atom → Prop) (space : List Atom) : Prop :=
+  CapturedAtomsWithin (RawExecAtomWithin allowed) captures space
+
+/-- One reflective firing preserves authority carried inside data rows when
+every newly added carrier satisfies the same capture-local invariant.  This
+is the generic closure seam for generated machines that propagate opaque
+continuations without interpreting them. -/
+theorem cFireReflectiveSourceExecFact_capturedAtomsWithin
+    (property : Atom → Prop) (captures : Atom → Atom → Prop)
+    (space : List Atom) (directive : SourceExecFact)
+    (supported : ReflectiveSupportSetTemplate directive.rule.tmpl)
+    (sourceWithin : CapturedAtomsWithin property captures space)
+    (addedWithin : ReflectiveAddedAtomsWithin
+      (fun carrier => ∀ payload, captures carrier payload → property payload)
+      ((Conformance.Computable.cmatchInputSpec []
+        (directive.atom :: space.erase directive.atom)
+        directive.rule.input).map Prod.fst)
+      directive.rule.tmpl) :
+    CapturedAtomsWithin property captures
+      (cFireReflectiveSourceExecFact space directive) := by
+  exact cFireReflectiveSourceExecFact_atomsWithin
+    (fun carrier => ∀ payload, captures carrier payload → property payload)
+    space directive supported sourceWithin addedWithin
+
+/-- Top-level executable containment implies the corresponding atom-local
+authority statement for every atom already present in the carrier. -/
+theorem RawExecFactsWithin.atom
+    {allowed : List RawExecFact} {space : List Atom}
+    (within : RawExecFactsWithin allowed space) {atom : Atom}
+    (member : atom ∈ space) : RawExecAtomWithin allowed atom := by
+  intro raw extracted
+  exact within raw (List.mem_filterMap.mpr ⟨atom, member, extracted⟩)
 
 /-- Every executable atom newly produced by an add sink belongs to the
 declared target artifact. -/
@@ -1390,6 +1491,8 @@ theorem unbound_output_variable_rejected :
   decide +kernel
 
 #print axioms captured_exec_is_covered
+#print axioms instantiateTemplateAtom?_var_eq_some_iff
+#print axioms templateCovered_lookup_of_mem_freeVars
 #print axioms captured_exec_is_not_structurally_ground
 #print axioms captured_exec_instantiates
 #print axioms captured_exec_sink_stages_exactly
@@ -1405,6 +1508,8 @@ theorem unbound_output_variable_rejected :
 #print axioms mem_cApplyReflectiveTemplate_of_supportSet
 #print axioms cApplyReflectiveTemplate_atomsWithin
 #print axioms cFireReflectiveSourceExecFact_atomsWithin
+#print axioms cFireReflectiveSourceExecFact_capturedAtomsWithin
+#print axioms RawExecFactsWithin.atom
 #print axioms supportedSourceExecFactsWithin_of_rawExecFactsWithin
 #print axioms reflectiveWorkQueueInvariant_of_ruleInventory
 #print axioms cFireReflectiveSourceExecFact_rawExecFactsWithin

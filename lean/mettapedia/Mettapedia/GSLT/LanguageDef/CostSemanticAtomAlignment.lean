@@ -869,7 +869,7 @@ theorem reifyWith_mapPattern
     (cospan : CostStaticAtomKeyCospan leftKey rightKey)
     (resolve : String -> Option (Fin endpointCount))
     (leg : Fin endpointCount -> Fin cospan.commonKeys.length)
-    (symbols : PresentationSymbols) (pattern : Pattern) :
+    (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
     cospan.reifyWith resolve leg (mapPattern symbols pattern) =
       mapPattern symbols (cospan.reifyWith resolve leg pattern) := by
   induction pattern using Pattern.inductionOn with

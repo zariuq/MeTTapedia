@@ -19,7 +19,7 @@ mutual
   /-- Mapping constructors on both endpoints preserves a semantic-leaf
   alignment when the selected leaf relation is transported pointwise. -/
   def PatternLeafAligned.mapPattern
-      (symbols : PresentationSymbols)
+      (symbols : LanguageDefSymbolMap)
       {relation mappedRelation : Pattern → Pattern → Prop}
       (mapLeaf : ∀ {left right}, relation left right →
         mappedRelation (Mettapedia.GSLT.LanguageDef.mapPattern symbols left)
@@ -47,7 +47,7 @@ mutual
 
   /-- Listwise companion of `PatternLeafAligned.mapPattern`. -/
   def PatternLeafAlignedList.mapPattern
-      (symbols : PresentationSymbols)
+      (symbols : LanguageDefSymbolMap)
       {relation mappedRelation : Pattern → Pattern → Prop}
       (mapLeaf : ∀ {left right}, relation left right →
         mappedRelation (Mettapedia.GSLT.LanguageDef.mapPattern symbols left)

@@ -32,6 +32,8 @@ import Mettapedia.OSLF.Framework.SelectedNativeTypeProfileRetention
 import Mettapedia.OSLF.Framework.ContextualModalExtension
 import Mettapedia.OSLF.Framework.ContextualModalSignatureCompiler
 import Mettapedia.OSLF.Framework.SelectedNativeTypeContextualCalculus
+import Mettapedia.OSLF.Framework.SelectedNativeTypeSemanticDecoding
+import Mettapedia.OSLF.Framework.SelectedNativeTypeEliminationFreshnessBoundary
 import Mettapedia.OSLF.Framework.SelectedNativeTypeCalculusCompiler
 import Mettapedia.OSLF.Framework.ContextualModalProfileObservability
 import Mettapedia.OSLF.Framework.ContextualModalConstructionProvenance

@@ -732,10 +732,10 @@ open Mettapedia.GSLT.LanguageDef.CalculusAsLanguage
 open Mettapedia.GSLT.LanguageDef.EquationSemantics
 open Mettapedia.GSLT.LanguageDef.TotalGSLT
 
-/-- Compatibility is derived from the authored empty equation list, rather
-than assumed by the total theory. -/
+/-- Compatibility is derived from the full equation-free presentation
+certificate, rather than assumed by the total theory. -/
 abbrev reductionRespectsEquations : ReductionRespectsEquations language :=
-  ReductionRespectsEquations.of_no_equations rfl
+  ReductionRespectsEquations.of_equation_free rfl
 
 /-- **The PeTTa type system as one GSLT.**  Object terms and proof obligations
 under a single carrier, equation relation, and reduction relation. -/

@@ -1,0 +1,13 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderLeftCollapsing
+
+namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus
+open Mettapedia.GSLT.LanguageDef
+open Mettapedia.GSLT.LanguageDef.WellSorted
+open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
+open CostStaticRegionNode
+
+#check @RhoCollapsingLeafExposureInDomain
+#check @nonempty_rhoCanonicalStaticPairSemanticCut_leftCollapsing_of_restorationRoutes
+end Mettapedia.Languages.ProcessCalculi.RhoCalculus

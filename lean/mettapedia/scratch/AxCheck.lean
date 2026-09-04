@@ -1,0 +1,2 @@
+import Mettapedia.GSLT.LanguageDef.Cost
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.rhoHereditaryCostOneDomainObject_ofRestorationAligned

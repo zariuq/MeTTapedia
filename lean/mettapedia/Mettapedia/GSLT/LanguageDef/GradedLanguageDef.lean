@@ -243,21 +243,21 @@ def toBase {relations : RelationEnv} {language : LanguageDef}
     exact (step_iff_exists_rootRuleStep _ language term result').mpr
       ⟨rule, laws.target rule root equivalent⟩
 
-/-- With no authored equations the generated equivalence is syntactic
+/-- For an equation-free presentation the generated equivalence is syntactic
 equality, so rule-stable respect is free. -/
-def of_no_equations (relations : RelationEnv) {language : LanguageDef}
-    (empty : language.equations = []) :
+def of_equation_free (relations : RelationEnv) {language : LanguageDef}
+    (free : language.isEquationFree = true) :
     GradedReductionRespectsEquationsUsing relations language where
   source := by
     intro rule term term' result equivalent root
     have equal :=
-      (equationEquiv_iff_eq_of_no_generators empty term term').mp equivalent
+      (equationEquiv_iff_eq_of_no_generators free term term').mp equivalent
     subst term'
     exact ⟨result, root, Relation.EqvGen.refl result⟩
   target := by
     intro rule term result result' root equivalent
     have equal :=
-      (equationEquiv_iff_eq_of_no_generators empty result result').mp
+      (equationEquiv_iff_eq_of_no_generators free result result').mp
         equivalent
     subst result'
     exact root
@@ -270,11 +270,11 @@ abbrev GradedReductionRespectsEquations (language : LanguageDef) :=
 
 namespace GradedReductionRespectsEquations
 
-def of_no_equations {language : LanguageDef}
-    (empty : language.equations = []) :
+def of_equation_free {language : LanguageDef}
+    (free : language.isEquationFree = true) :
     GradedReductionRespectsEquations language :=
-  GradedReductionRespectsEquationsUsing.of_no_equations RelationEnv.empty
-    empty
+  GradedReductionRespectsEquationsUsing.of_equation_free RelationEnv.empty
+    free
 
 end GradedReductionRespectsEquations
 
@@ -289,6 +289,11 @@ variable (laws : GradedReductionRespectsEquations graded.toLanguageDef)
 constructed from. -/
 def baseGSLT : GSLT := languageGSLT graded.toLanguageDef laws.toBase
 
+@[simp] theorem baseGSLT_step_iff (source target : Pattern) :
+    (graded.baseGSLT laws).Step source target ↔
+      langReducesUsing RelationEnv.empty graded.toLanguageDef source target :=
+  languageGSLT_step graded.toLanguageDef laws.toBase source target
+
 /-- The *inert* grading: a step is graded only through a rule the table
 mentions, at exactly the authored grade.  Deliberately partial. -/
 def inertSpend : GSLT.StepSpend (graded.baseGSLT laws) V where
@@ -299,6 +304,7 @@ def inertSpend : GSLT.StepSpend (graded.baseGSLT laws) V where
       graded.ruleGrade? rule = some grade
   sound := by
     rintro source target grade ⟨rule, root, _⟩
+    apply (graded.baseGSLT_step_iff laws source target).2
     exact (step_iff_exists_rootRuleStep _ _ _ _).mpr ⟨rule, root⟩
   resp_left := by
     rintro source source' target grade equivalent ⟨rule, root, gradeEq⟩
@@ -318,6 +324,7 @@ def freeSpend [One V] : GSLT.StepSpend (graded.baseGSLT laws) V where
       grade = graded.freeRuleGrade rule
   sound := by
     rintro source target grade ⟨rule, root, _⟩
+    apply (graded.baseGSLT_step_iff laws source target).2
     exact (step_iff_exists_rootRuleStep _ _ _ _).mpr ⟨rule, root⟩
   resp_left := by
     rintro source source' target grade equivalent ⟨rule, root, gradeEq⟩
@@ -329,14 +336,18 @@ def freeSpend [One V] : GSLT.StepSpend (graded.baseGSLT laws) V where
 
 theorem freeGrading_total [One V] : (graded.freeSpend laws).Total := by
   intro source target step
-  obtain ⟨rule, root⟩ := (step_iff_exists_rootRuleStep _ _ _ _).mp step
+  have authored := (graded.baseGSLT_step_iff laws source target).1 step
+  obtain ⟨rule, root⟩ :=
+    (step_iff_exists_rootRuleStep _ _ _ _).mp authored
   exact ⟨graded.freeRuleGrade rule, rule, root, rfl⟩
 
 /-- Coverage discharges totality for the inert grading: the gated policy. -/
 theorem inertGrading_total_of_covers (covers : graded.Covers) :
     (graded.inertSpend laws).Total := by
   intro source target step
-  obtain ⟨rule, root⟩ := (step_iff_exists_rootRuleStep _ _ _ _).mp step
+  have authored := (graded.baseGSLT_step_iff laws source target).1 step
+  obtain ⟨rule, root⟩ :=
+    (step_iff_exists_rootRuleStep _ _ _ _).mp authored
   obtain ⟨grade, gradeEq⟩ :=
     Option.isSome_iff_exists.mp (covers rule root.rule_mem)
   exact ⟨grade, rule, root, gradeEq⟩
@@ -397,13 +408,15 @@ theorem toFreeGSLT_erase_step {source target : Pattern × V}
     (step : (graded.toFreeGSLT laws).Step source target) :
     langReducesUsing RelationEnv.empty graded.toLanguageDef source.1
       target.1 :=
-  GSLT.spendLift_erase_step _ step
+  (graded.baseGSLT_step_iff laws source.1 target.1).1
+    (GSLT.spendLift_erase_step _ step)
 
 theorem toInertGSLT_erase_step {source target : Pattern × V}
     (step : (graded.toInertGSLT laws).Step source target) :
     langReducesUsing RelationEnv.empty graded.toLanguageDef source.1
       target.1 :=
-  GSLT.spendLift_erase_step _ step
+  (graded.baseGSLT_step_iff laws source.1 target.1).1
+    (GSLT.spendLift_erase_step _ step)
 
 /-- Erasure reflects for the free policy, unconditionally. -/
 theorem toFreeGSLT_lift_step {source target : Pattern}
@@ -411,7 +424,8 @@ theorem toFreeGSLT_lift_step {source target : Pattern}
       target) (accumulator : V) :
     ∃ value,
       (graded.toFreeGSLT laws).Step (source, accumulator) (target, value) :=
-  GSLT.spendLift_lift_step _ (graded.freeGrading_total laws) step
+  GSLT.spendLift_lift_step _ (graded.freeGrading_total laws)
+    ((graded.baseGSLT_step_iff laws source target).2 step)
     accumulator
 
 /-- Erasure reflects for the inert policy exactly under coverage: the
@@ -424,7 +438,8 @@ theorem toInertGSLT_lift_step (covers : graded.Covers)
       (graded.toInertGSLT laws).Step (source, accumulator)
         (target, value) :=
   GSLT.spendLift_lift_step _
-    (graded.inertGrading_total_of_covers laws covers) step accumulator
+    (graded.inertGrading_total_of_covers laws covers)
+    ((graded.baseGSLT_step_iff laws source target).2 step) accumulator
 
 /-- An ungraded firing has no inert step: no grade, no authority. -/
 theorem toInertGSLT_not_step_of_ungraded {source target : Pattern}
@@ -773,7 +788,7 @@ private def coveredExample : GradedLanguageDef.Covered ℕ where
         { LanguageDef.empty "covered" with rewrites := [exampleRule] }
       weights := [⟨"communicate", 3⟩] }
   respectsEquations :=
-    GradedReductionRespectsEquations.of_no_equations rfl
+    GradedReductionRespectsEquations.of_equation_free rfl
   coverage := by
     intro rule membership
     simp only [List.mem_singleton] at membership

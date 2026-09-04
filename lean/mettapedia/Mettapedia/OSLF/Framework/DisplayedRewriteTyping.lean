@@ -10,7 +10,7 @@ whether the containing rewrite or the focused occurrence is well sorted.
 `LanguageDef.validate` deliberately checks only the structural wire format;
 it does not supply this typing evidence.
 
-`DisplayedRewriteTyping` is the typed input boundary for syntactic OSLF
+`DisplayedRewriteTyping` is the typed input boundary for source-indexed OSLF
 generation.  It retains:
 
 * a common type for the two endpoints of the authored rewrite;
@@ -180,7 +180,7 @@ theorem map_id (definition : ValidatedLanguageDef)
   · exact DisplayedRewriteSite.map_id definition typing.site
   · exact mapTypeExpr_id typing.rewriteType
   · change typing.focusBoundPrefix.map
-      (mapTypeExpr PresentationSymbols.id) = typing.focusBoundPrefix
+      (mapTypeExpr LanguageDefSymbolMap.id) = typing.focusBoundPrefix
     induction typing.focusBoundPrefix with
     | nil => rfl
     | cons head tail inductionHypothesis =>

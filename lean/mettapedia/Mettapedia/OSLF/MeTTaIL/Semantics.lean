@@ -13,7 +13,7 @@ objects, constructors, pattern interpretation, and well-formedness.
 The actual categorical semantics (type systems, modal operators, Galois connections)
 are constructed in:
 - `Framework/RewriteSystem.lean` — abstract OSLF algorithm
-- `Framework/RhoInstance.lean` — concrete ρ-calculus instance (0 sorries)
+- `Framework/RhoInstance.lean` — canonical equation-respecting rho specialization
 
 ## References
 

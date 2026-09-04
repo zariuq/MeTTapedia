@@ -4,7 +4,7 @@ import Mettapedia.OSLF.PresheafNativeType.InternalLanguage
 /-!
 # Presheaf Native Type Theory
 
-Williams--Stay Native Type Theory has two inseparable presentations:
+Williams--Stay Native Type Theory has two inseparable semantic faces:
 
 * `PresheafSemantics` constructs context-indexed sets, predicates, and their
   Grothendieck organization over a language; and

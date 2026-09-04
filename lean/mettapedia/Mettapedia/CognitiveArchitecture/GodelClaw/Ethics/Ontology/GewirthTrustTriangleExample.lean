@@ -113,7 +113,7 @@ theorem trustTriangleUpperShardClaim_supportedOn_coreTriangle
             EthicalAnchor.supportedOn, trustTriangleUpperShardEncoder, coreTriangle]
   | normative n =>
       cases n with
-      | presentedValue s =>
+      | valueJudgment s =>
           cases s with
           | mk agent label sentence =>
               cases label <;>
@@ -121,7 +121,7 @@ theorem trustTriangleUpperShardClaim_supportedOn_coreTriangle
                   NormativeClaim.toAnchor, EthicalAnchor.supportedOn,
                   LabeledValueJudgmentSentence.toAnchor,
                   trustTriangleUpperShardEncoder, coreTriangle]
-      | presentedDeontic s =>
+      | deonticJudgment s =>
           cases s with
           | mk agent label sentence =>
               cases label <;>

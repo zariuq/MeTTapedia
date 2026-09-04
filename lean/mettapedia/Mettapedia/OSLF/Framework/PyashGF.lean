@@ -16,7 +16,15 @@ open Mettapedia.Languages.GF.HandCrafted.Abstract
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.PyashCoreInstance
+
+/-- Package a Pyash predicate for the sole equation-respecting OSLF.  Pyash's
+current presentation has no authored equation generators, so invariance is a
+proved specialization of the general quotient semantics. -/
+private def pyashGFEquationPredicate (predicate : Pattern → Prop) :
+    EquationPredicate (langGSLT pyashCore) :=
+  equationPredicateOfEquationFree (by rfl) predicate
 
 /-- Bridge claim 1 (OSLF): GF read/do clause reaches the PyashCore read dispatch stage. -/
 theorem pyashGF_read_clause_dispatch_bridge :
@@ -108,10 +116,12 @@ theorem pyashGF_mind_clause_dispatch_bridge :
 
 /-- Bridge claim 2b (OSLF modal): GF mind/do clause has the expected one-step witness. -/
 theorem pyashGF_mind_clause_diamond_bridge :
-    langDiamond pyashCore (fun q => q = pyashStateMindDispatched)
+    langDiamond pyashCore
+      (pyashGFEquationPredicate (fun q => q = pyashStateMindDispatched))
       (pyashGFInputOf pyashGFMindDoClause) := by
   rw [langDiamond_spec]
-  exact ⟨pyashStateMindDispatched, pyashGF_mind_clause_dispatch_bridge, rfl⟩
+  exact ⟨pyashStateMindDispatched,
+    langReduces_to_semantic pyashCore pyashGF_mind_clause_dispatch_bridge, rfl⟩
 
 /-- Bridge claim 3 (OSLF, negative): unsupported GF `then` clause hits dispatch error path. -/
 theorem pyashGF_read_then_negative_bridge :
@@ -1791,19 +1801,22 @@ theorem pyashGF_pipeline_refinery_err_terminal_closure :
 /-- Native-type bridge: GF read/do bridge output inhabits a native state type. -/
 def pyashGFReadInputNativeType : langNativeType pyashCore "State" where
   sort := "State"
-  pred := fun p => p = pyashStateReadDerive
+  pred := pyashGFEquationPredicate (fun p => p = pyashStateReadDerive)
 
 theorem pyashGF_read_clause_native_bridge :
-    pyashGFReadInputNativeType.pred (pyashGFInputOf pyashGFReadDoClause) := by
+    pyashGFReadInputNativeType.pred.1 (pyashGFInputOf pyashGFReadDoClause) := by
   unfold pyashGFReadInputNativeType pyashGFInputOf
-  simp [pyashGF_read_clause_maps]
+  simp [pyashGFEquationPredicate, equationPredicateOfEquationFree,
+    invariantPredicate, pyashGF_read_clause_maps]
 
 /-- OSLF modal corollary: the GF read/do bridge has the expected one-step witness. -/
 theorem pyashGF_read_clause_diamond_bridge :
-    langDiamond pyashCore (fun q => q = pyashStateReadDispatched)
+    langDiamond pyashCore
+      (pyashGFEquationPredicate (fun q => q = pyashStateReadDispatched))
       (pyashGFInputOf pyashGFReadDoClause) := by
   rw [langDiamond_spec]
-  exact ⟨pyashStateReadDispatched, pyashGF_read_clause_dispatch_bridge, rfl⟩
+  exact ⟨pyashStateReadDispatched,
+    langReduces_to_semantic pyashCore pyashGF_read_clause_dispatch_bridge, rfl⟩
 
 /-- Constructor-grounded GF canary patterns (single source of truth = Lean `Pattern` states). -/
 def pyashGFCanaryCasePatterns : List (String × Pattern × Pattern) :=

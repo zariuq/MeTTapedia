@@ -1,5 +1,10 @@
 import Mettapedia.Logic.HOL.Syntax.Type
 import Mettapedia.Logic.HOL.Syntax.Term
+import Mettapedia.Logic.HOL.Embedding.SimpleSliceOfDependent
+import Mettapedia.Logic.HOL.Embedding.ConversionPrice
+import Mettapedia.Logic.HOL.Embedding.ConversionEvidenceBridge
+import Mettapedia.Logic.HOL.Embedding.ContextualStructure
+import Mettapedia.Logic.HOL.Embedding.ContextualHenkinSemantics
 import Mettapedia.Logic.HOL.Syntax.Subst
 import Mettapedia.Logic.HOL.Syntax.Closed
 import Mettapedia.Logic.HOL.Syntax.ConstMap
@@ -20,6 +25,9 @@ import Mettapedia.Logic.HOL.WorldEquality
 import Mettapedia.Logic.HOL.ClassicalExcludedMiddle
 import Mettapedia.Logic.HOL.ClassicalWorld
 import Mettapedia.Logic.HOL.Semantics.Satisfaction
+import Mettapedia.Logic.HOL.Semantics.ModelProperties
+import Mettapedia.Logic.HOL.Semantics.ModelPropertySoundness
+import Mettapedia.Logic.HOL.StandardAxiomProperties
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkin
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinGeneral
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCanonical

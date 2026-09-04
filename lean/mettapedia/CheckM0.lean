@@ -1,0 +1,11 @@
+import Mettapedia.GSLT.LanguageDef.M0GCIdentifierMatcherAdequacy
+#check List.getElem?_append
+#check List.getElem?_append_left
+#check List.getElem?_append_right
+#check List.getElem?_eq_getElem
+#check List.getElem?_eq_some_iff
+#check Array.getElem?_push
+#check Array.getElem?_eq_some_iff
+#check List.getElem?_eq_some_iff
+#check List.getElem?_eq_some
+#check List.getElem?_append

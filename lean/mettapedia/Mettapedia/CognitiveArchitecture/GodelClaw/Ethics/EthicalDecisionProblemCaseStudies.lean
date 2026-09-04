@@ -33,11 +33,11 @@ open Mettapedia.Logic.MarkovLogicAbstract
 private def mkActiveGoalClaim
     {World : Type} (φ : Formula World)
     (ground : EthicalGround Nat := .asserted)
-    (presentation : EthicalPresentation := .unmodalized) :
+    (normativeForm : NormativeForm := .unmodalized) :
     StructuredEthicalClaim World Nat where
   subject := 1
   content := .propositional φ
-  presentation := presentation
+  normativeForm := normativeForm
   ground := ground
   role := .activeGoal
 
@@ -418,25 +418,25 @@ def privacyDisclosureActionRendering :
     | .keepPrivate =>
         { subject := 1
           content := .propositional keepPrivateFormula
-          presentation := .deontic .Permission
+          normativeForm := .deontic .Permission
           ground := .asserted
           role := .activeGoal }
     | .askConsent =>
         { subject := 1
           content := .propositional askConsentFormula
-          presentation := .deontic .Obligation
+          normativeForm := .deontic .Obligation
           ground := .universalDuty .respectAutonomy
           role := .activeGoal }
     | .alertTrustedContact =>
         { subject := 1
           content := .propositional trustedContactFormula
-          presentation := .deontic .Obligation
+          normativeForm := .deontic .Obligation
           ground := .careRelation 1 2 .trust
           role := .activeGoal }
     | .broadcastWidely =>
         { subject := 1
           content := .propositional broadcastWidelyFormula
-          presentation := .deontic .Prohibition
+          normativeForm := .deontic .Prohibition
           ground := .asserted
           role := .activeGoal }
 
@@ -445,7 +445,7 @@ def privacyDisclosureAskConsentObligationClaim :
   privacyDisclosureActionRendering.toClaim .askConsent
 
 /-- Label policy for staging privacy-disclosure claims through the legacy
-encoder.  It depends on content/ground and intentionally ignores presentation
+encoder. It depends on content/ground and intentionally ignores normative form
 so aligned deontic/value views keep the same label. -/
 def privacyDisclosureStructuredLabeler :
     StructuredClaimLabeler PrivacyDisclosureWorld Nat PrivacyDisclosureUpperShardLabel where
@@ -475,7 +475,7 @@ theorem privacyDisclosureLegacyPracticalBridge_askConsent_query_eq_axiological :
     privacyDisclosureLegacyPracticalBridge.actionQuery .askConsent =
       ({ subject := 1
          content := .propositional askConsentFormula
-         presentation := .axiological (deonticToMoralValue .Obligation)
+         normativeForm := .axiological (deonticToMoralValue .Obligation)
          ground := .universalDuty .respectAutonomy
          role := .activeGoal } : StructuredEthicalClaim PrivacyDisclosureWorld Nat).toQuery
         (StructuredEthicsQueryEncoder.ofLegacy
@@ -537,8 +537,8 @@ theorem privacyDisclosureStructuredESOModel_regionSupportAdequate :
       privacyDisclosureAutonomyRegion := by
   intro claim hsat
   cases claim with
-  | mk subject content presentation ground role =>
-      cases content <;> cases presentation <;>
+  | mk subject content normativeForm ground role =>
+      cases content <;> cases normativeForm <;>
         simp [privacyDisclosureStructuredESOModel, ESOUpperShardModel.SatStructured,
           StructuredEthicalClaim.supportedOn, StructuredEthicalClaim.toQuery,
           privacyDisclosureStructuredEncoder, privacyDisclosureAutonomyRegion,
@@ -1228,7 +1228,7 @@ theorem forceEscalationUpperShardEncoder_aligned :
   cases l <;> rfl
 
 /-- Top-down rendering of the force-escalation actions into structured ethical
-claims.  The `lockDown` option is presented as a consequentialist obligation so
+claims.  The `lockDown` option is expressed as a consequentialist obligation so
 its lowering can exercise both the practical seam and the new candidate-local
 ground witness. -/
 def forceEscalationActionRendering :
@@ -1237,25 +1237,25 @@ def forceEscalationActionRendering :
     | .observe =>
         { subject := 1
           content := .propositional observeFormula
-          presentation := .deontic .Permission
+          normativeForm := .deontic .Permission
           ground := .asserted
           role := .activeGoal }
     | .warn =>
         { subject := 1
           content := .propositional warnFormula
-          presentation := .deontic .Obligation
+          normativeForm := .deontic .Obligation
           ground := .universalDuty .noHarm
           role := .activeGoal }
     | .lockDown =>
         { subject := 1
           content := .propositional lockDownFormula
-          presentation := .deontic .Obligation
+          normativeForm := .deontic .Obligation
           ground := .consequentialist
           role := .activeGoal }
     | .lethalForce =>
         { subject := 1
           content := .propositional lethalForceFormula
-          presentation := .deontic .Prohibition
+          normativeForm := .deontic .Prohibition
           ground := .asserted
           role := .activeGoal }
 
@@ -1264,7 +1264,7 @@ def forceEscalationLockDownObligationClaim :
   forceEscalationActionRendering.toClaim .lockDown
 
 /-- Label policy for staging force-escalation claims through the legacy
-encoder.  It is presentation-insensitive, so aligned deontic/value views keep
+encoder. It is normative-form-insensitive, so aligned deontic/value views keep
 the same label. -/
 def forceEscalationStructuredLabeler :
     StructuredClaimLabeler ForceEscalationWorld Nat ForceEscalationUpperShardLabel where
@@ -1294,7 +1294,7 @@ theorem forceEscalationLegacyPracticalBridge_lockDown_query_eq_axiological :
     forceEscalationLegacyPracticalBridge.actionQuery .lockDown =
       ({ subject := 1
          content := .propositional lockDownFormula
-         presentation := .axiological (deonticToMoralValue .Obligation)
+         normativeForm := .axiological (deonticToMoralValue .Obligation)
          ground := .consequentialist
          role := .activeGoal } : StructuredEthicalClaim ForceEscalationWorld Nat).toQuery
         (StructuredEthicsQueryEncoder.ofLegacy
@@ -1353,8 +1353,8 @@ theorem forceEscalationStructuredESOModel_regionSupportAdequate :
       forceEscalationProtectionRegion := by
   intro claim hsat
   cases claim with
-  | mk subject content presentation ground role =>
-      cases content <;> cases presentation <;>
+  | mk subject content normativeForm ground role =>
+      cases content <;> cases normativeForm <;>
         simp [forceEscalationStructuredESOModel, ESOUpperShardModel.SatStructured,
           StructuredEthicalClaim.supportedOn, StructuredEthicalClaim.toQuery,
           forceEscalationStructuredEncoder, forceEscalationProtectionRegion,

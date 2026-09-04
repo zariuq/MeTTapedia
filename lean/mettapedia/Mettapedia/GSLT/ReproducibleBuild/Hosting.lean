@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.Core.ReproducibleBuild
-import Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting
+import Mettapedia.GSLT.LanguageDef.GSLTHosting
 
 /-!
 # Reproducible execution builds transported through two-sided hosting
@@ -22,7 +22,7 @@ set_option autoImplicit false
 namespace Mettapedia.GSLT.ReproducibleBuild.Hosting
 
 open Mettapedia.GSLT.Core.ReproducibleBuild
-open Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting
+open Mettapedia.GSLT.LanguageDef.GSLTHosting
 open Mettapedia.GSLT.LanguageDef.NIKObservedRefinement
 
 universe uDeclared uObserved
@@ -190,11 +190,11 @@ theorem id_reproducible_iff
     (observation : ArtifactObservation.{0, uObserved} Value) :
     Reproducible
         (hostedExecutionBuild
-          (Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting.BehavioralHosting.id
+          (Mettapedia.GSLT.LanguageDef.GSLTHosting.BehavioralHosting.id
             object)) observation <->
       Reproducible (executionBuild object) observation :=
   reproducible_iff
-    (Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting.BehavioralHosting.id
+    (Mettapedia.GSLT.LanguageDef.GSLTHosting.BehavioralHosting.id
       object) observation
 
 /-- Composition of hosting certificates transports reproducibility in one
@@ -252,7 +252,7 @@ end ProofRelevantHosting
 
 namespace Canary
 
-open Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting.FusionCanary
+open Mettapedia.GSLT.LanguageDef.GSLTHosting.FusionCanary
 open Mettapedia.GSLT.LanguageDef.NIKObservedRefinement.FusionCanary
 
 /-- The existing fusion is valid result-level hosting while its actual forward
@@ -273,16 +273,16 @@ theorem behavioral_result_exact_but_forward_fibre_not_injective :
 namespace ExtraBehavior
 
 private abbrev extraSourceObserved :=
-  Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting.ExtraBehaviorCanary.sourceObserved
+  Mettapedia.GSLT.LanguageDef.GSLTHosting.ExtraBehaviorCanary.sourceObserved
 private abbrev extraTargetObserved :=
-  Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting.ExtraBehaviorCanary.targetObserved
+  Mettapedia.GSLT.LanguageDef.GSLTHosting.ExtraBehaviorCanary.targetObserved
 
 /-- Target executions pulled back through the one-way compiler in the
 extra-behavior canary. -/
 def pulledTargetBuild : RelationalBuild Unit Bool :=
   fun initial value =>
     ObservationFibre extraTargetObserved
-      (Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting.ExtraBehaviorCanary.forward.refinement.realization.mapTerm initial) value
+      (Mettapedia.GSLT.LanguageDef.GSLTHosting.ExtraBehaviorCanary.forward.refinement.realization.mapTerm initial) value
 
 theorem source_exact_reproducible :
     Reproducible (executionBuild extraSourceObserved)
@@ -305,7 +305,7 @@ theorem pulledTarget_not_exact_reproducible :
     ⟨false, ⟨.refl false, rfl⟩⟩
   have trueWitness : pulledTargetBuild () true :=
     ⟨true,
-      ⟨Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting.ExtraBehaviorCanary.extraPath,
+      ⟨Mettapedia.GSLT.LanguageDef.GSLTHosting.ExtraBehaviorCanary.extraPath,
         rfl⟩⟩
   have falseEqTrue := reproducible.2 () falseWitness trueWitness
   exact Bool.false_ne_true falseEqTrue
@@ -319,7 +319,7 @@ theorem forward_preservation_does_not_transport_reproducibility :
         (ArtifactObservation.identity Bool) /\
       Not (Reproducible pulledTargetBuild
         (ArtifactObservation.identity Bool)) :=
-  ⟨⟨Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting.ExtraBehaviorCanary.forward⟩,
+  ⟨⟨Mettapedia.GSLT.LanguageDef.GSLTHosting.ExtraBehaviorCanary.forward⟩,
     source_exact_reproducible,
     pulledTarget_not_exact_reproducible⟩
 

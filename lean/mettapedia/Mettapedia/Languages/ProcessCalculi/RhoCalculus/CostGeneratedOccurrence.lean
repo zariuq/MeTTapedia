@@ -71,7 +71,7 @@ theorem nonempty_rhoCostReflectiveDeclarationOrigin_of_mem
 /-- Exact rho declaration selected by a proof-relevant generated equation
 instance.  Orientation and bindings remain in the indexed witness. -/
 def RhoCostEquationInstanceOrigin {redex contractum : Pattern}
-    (witness : EquationSemantics.AuthoredEquationInstanceWitness
+    (witness : EquationSemantics.DeclaredEquationInstanceWitness
       defaultBasePremises rhoCIGSLT.costWholeLanguage redex contractum) :
     Type :=
   match witness with
@@ -84,7 +84,7 @@ def RhoCostEquationInstanceOrigin {redex contractum : Pattern}
 rho equation instance. -/
 def RhoCostEquationInstanceOrigin.color
     {redex contractum : Pattern}
-    {witness : EquationSemantics.AuthoredEquationInstanceWitness
+    {witness : EquationSemantics.DeclaredEquationInstanceWitness
       defaultBasePremises rhoCIGSLT.costWholeLanguage redex contractum} :
     RhoCostEquationInstanceOrigin witness → CostStaticColor :=
   match witness with
@@ -97,7 +97,7 @@ def RhoCostEquationInstanceOrigin.color
 of the base or wrapped QuoteDrop declarations. -/
 theorem nonempty_rhoCostEquationInstanceOrigin
     {redex contractum : Pattern}
-    (witness : EquationSemantics.AuthoredEquationInstanceWitness
+    (witness : EquationSemantics.DeclaredEquationInstanceWitness
       defaultBasePremises rhoCIGSLT.costWholeLanguage redex contractum) :
     Nonempty (RhoCostEquationInstanceOrigin witness) := by
   cases witness with

@@ -1,0 +1,11 @@
+import CheckCostFrame
+namespace Mettapedia.GSLT.LanguageDef
+#check CostStaticFrameState.ext
+#check CostStaticFrameState.mk.injEq
+#check TypedCostRegionBoundaryTable.Values.cons.injEq
+#print CostSemanticTree.normalize
+#print CostSemanticTree.rec
+#check CostSemanticTree.normalize.eq_def
+#check CostSemanticArgumentTrees.normalize.eq_def
+#check CostSemanticBoundaryTrees.normalize.eq_def
+end Mettapedia.GSLT.LanguageDef

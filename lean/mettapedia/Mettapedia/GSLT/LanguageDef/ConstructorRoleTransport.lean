@@ -41,11 +41,11 @@ open Mettapedia.OSLF.Framework.DerivedTyping
 
 /-- A sort of a presentation transports to a sort of its image under any
 symbol action. -/
-def mapLangSort (symbols : PresentationSymbols) {language : LanguageDef}
+def mapLangSort (symbols : LanguageDefSymbolMap) {language : LanguageDef}
     (sort : LangSort language) : LangSort (mapLanguageDef symbols language) :=
   ⟨symbols.sort sort.val, sortName_mem_mapLanguageDef symbols sort.property⟩
 
-@[simp] theorem mapLangSort_val (symbols : PresentationSymbols)
+@[simp] theorem mapLangSort_val (symbols : LanguageDefSymbolMap)
     {language : LanguageDef} (sort : LangSort language) :
     (mapLangSort symbols sort).val = symbols.sort sort.val := rfl
 
@@ -69,7 +69,7 @@ private theorem unaryCrossings_eq_filterMap (language : LanguageDef) :
 /-- One rule of the crossing computation, transported.  Injectivity of the
 sort action is exactly what keeps a genuine crossing (`domSort ≠ category`)
 from being collapsed in the image. -/
-private theorem crossingOf_mapGrammarRule (symbols : PresentationSymbols)
+private theorem crossingOf_mapGrammarRule (symbols : LanguageDefSymbolMap)
     (sortInjective : Function.Injective symbols.sort) (rule : GrammarRule) :
     crossingOf (mapGrammarRule symbols rule) =
       (crossingOf rule).map (fun entry =>
@@ -105,7 +105,7 @@ sort-crossing table of the image presentation is the entrywise image of the
 source table: each crossing `(label, dom, cod)` becomes
 `(constructor label, sort dom, sort cod)`.  Injectivity is necessary
 (`unaryCrossings_not_transported_without_injectivity` below). -/
-theorem unaryCrossings_mapLanguageDef (symbols : PresentationSymbols)
+theorem unaryCrossings_mapLanguageDef (symbols : LanguageDefSymbolMap)
     (language : LanguageDef)
     (sortInjective : Function.Injective symbols.sort) :
     unaryCrossings (mapLanguageDef symbols language) =
@@ -122,7 +122,7 @@ theorem unaryCrossings_mapLanguageDef (symbols : PresentationSymbols)
 
 /-- A sort-crossing arrow of a presentation transports to a sort-crossing
 arrow of its image, provided the sort action is injective. -/
-def mapSortArrow (symbols : PresentationSymbols) {language : LanguageDef}
+def mapSortArrow (symbols : LanguageDefSymbolMap) {language : LanguageDef}
     {dom cod : LangSort language}
     (sortInjective : Function.Injective symbols.sort)
     (arrow : SortArrow language dom cod) :
@@ -133,7 +133,7 @@ def mapSortArrow (symbols : PresentationSymbols) {language : LanguageDef}
     rw [unaryCrossings_mapLanguageDef symbols language sortInjective]
     exact List.mem_map_of_mem arrow.valid
 
-@[simp] theorem mapSortArrow_label (symbols : PresentationSymbols)
+@[simp] theorem mapSortArrow_label (symbols : LanguageDefSymbolMap)
     {language : LanguageDef} {dom cod : LangSort language}
     (sortInjective : Function.Injective symbols.sort)
     (arrow : SortArrow language dom cod) :
@@ -165,7 +165,7 @@ Both hypotheses are necessary: dropping reduction-sort reflection flips a
 neutral arrow (`classifyArrow_not_preserved_without_reduction_reflection`),
 and dropping injectivity already destroys the crossing table
 (`unaryCrossings_not_transported_without_injectivity`). -/
-theorem classifyArrow_mapLanguageDef (symbols : PresentationSymbols)
+theorem classifyArrow_mapLanguageDef (symbols : LanguageDefSymbolMap)
     {language : LanguageDef} {dom cod : LangSort language}
     (sortInjective : Function.Injective symbols.sort)
     {procSort mappedProcSort : String}
@@ -230,8 +230,8 @@ private def swapActSig (sortName : String) : String :=
   else if sortName = "Sig" then "Act"
   else sortName
 
-private def swapSymbols : PresentationSymbols :=
-  { PresentationSymbols.id with
+private def swapSymbols : LanguageDefSymbolMap :=
+  { LanguageDefSymbolMap.id with
     sort := swapActSig
     constructor := fun constructorName => constructorName ++ "'" }
 
@@ -305,8 +305,8 @@ theorem classifyArrow_not_preserved_without_reduction_reflection :
 
 /-! ## Negative canary (b): sort injectivity is necessary -/
 
-private def collapseSymbols : PresentationSymbols :=
-  { PresentationSymbols.id with sort := fun _ => "Pt" }
+private def collapseSymbols : LanguageDefSymbolMap :=
+  { LanguageDefSymbolMap.id with sort := fun _ => "Pt" }
 
 private theorem collapseSymbols_sort_not_injective :
     ¬ Function.Injective collapseSymbols.sort := by

@@ -12,7 +12,7 @@ instruction-list head is replaced by a compact word record.  The added
 `DWMDecodeRecord` premise recovers the exact instruction pattern expected by
 the source transition.  It performs bounded record decoding only; all node,
 relevance, calculus, service-state, root, and final checks remain the original
-authored premises.
+declared premises.
 
 This separation is intentional.  A native backend may fuse decoding with the
 retained transition, while the presentation still exposes which source
@@ -131,7 +131,7 @@ def liftLeft (left : Pattern) : Pattern :=
         (liftPattern serviceState)
   | other => liftPattern other
 
-/-- Lift one authored semantic transition to the compact record carrier. -/
+/-- Lift one declared semantic transition to the compact record carrier. -/
 def liftRewrite (rewrite : RewriteRule) : RewriteRule :=
   let instruction? := sourceInstruction? rewrite.left
   {
@@ -215,7 +215,7 @@ def retainedSourceType (declaration : TypeDecl) : Bool :=
 /-- The compact target is generated from the source signature and transition
 table.  The instruction-list carrier and the two source control terms are
 replaced; semantic payloads are represented by explicit finite-arena
-references while all authored machine transitions remain shared. -/
+references while all declared machine transitions remain shared. -/
 def language : LanguageDef := {
   name := "DerivationWordMachine"
   types :=
@@ -285,7 +285,9 @@ private theorem liftPremise_supported (premise : Premise) :
       CanonicalWire.premiseSupported premise := by
   cases premise with
   | freshness => rfl
-  | congruence => rfl
+  | congruence left right =>
+      simp only [liftPremise, CanonicalWire.premiseSupported]
+      rw [liftPattern_supported left, liftPattern_supported right]
   | relationQuery relation arguments =>
       simp only [liftPremise, CanonicalWire.premiseSupported]
       apply patternListSupported_map_of_pointwise
@@ -644,8 +646,6 @@ def missingFinishStart : Pattern :=
 def missingFinishDone : Pattern :=
   halted (a "dcm:outcome-fault" [a "dcm:fault-missing-finish"]) nodesNil
 
-set_option maxHeartbeats 12000000 in
-set_option maxRecDepth 100000 in
 theorem missingFinishStart_has_type :
     CarrierWellSorted.checkHasType language
       WellSorted.FreeTypeContext.empty [] missingFinishStart
@@ -732,8 +732,6 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 compact representation change.  This computation is proved in the defining
 module so that the private mechanical-lifting helpers are transparent to the
 kernel reduction. -/
-set_option maxHeartbeats 30000000 in
-set_option maxRecDepth 100000 in
 theorem missingFinishStep_exact :
     rewriteAt (engineBasePremises RelationEnv.empty) language 1
       missingFinishStart = [missingFinishDone] := by
@@ -794,8 +792,6 @@ theorem missingFinishStep_exact :
     Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
 
 /- A compact halted configuration has no outgoing target transition. -/
-set_option maxHeartbeats 30000000 in
-set_option maxRecDepth 100000 in
 theorem missingFinishDone_irreducible :
     rewriteAt (engineBasePremises RelationEnv.empty) language 1
       missingFinishDone = [] := by

@@ -4,22 +4,26 @@ import Mathlib.CategoryTheory.Subfunctor.Basic
 /-!
 # Internal Presheaf Reduction Relation for OSLF
 
-This module packages the premise-aware reduction relation as a subobject in a
-presheaf category.
+This module packages the equation-saturated operational relation as a
+subobject in a presheaf category.
 
 For any base category `C`, we use the constant presheaf on reduction pairs
 `Pattern × Pattern`, and define a `Subfunctor` selecting exactly those pairs
-that satisfy the declarative/internal one-step relation `langReducesUsing`.
+that satisfy the OSLF one-step relation `langSemanticReducesUsing`.
 
-This gives a concrete internal relation object in `Psh(C)` and a direct bridge
-to the executable engine.
+This gives a concrete internal relation object in `Psh(C)`.  Primitive
+executable steps embed into it; a general semantic edge decomposes into an
+equation change, one executable primitive step, and another equation change.
 -/
 
 namespace Mettapedia.OSLF.Framework.ToposReduction
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+open Mettapedia.GSLT.LanguageDef.EquationSemantics
 
 universe u v
 
@@ -47,13 +51,13 @@ def pairConstPresheaf (C : Type u) [CategoryTheory.Category.{v} C] :
   map_id := by intro _; rfl
   map_comp := by intro _ _ _ _ _; rfl
 
-/-- Internal (presheaf) reduction relation: subfunctor of the constant
-pair-presheaf selecting exactly premise-aware one-step reductions. -/
+/-- Internal OSLF reduction relation: the subfunctor of the constant
+pair-presheaf selecting exactly equation-saturated one-step reductions. -/
 def reductionSubfunctorUsing (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef) :
     CategoryTheory.Subfunctor (pairConstPresheaf (C := C)) where
   obj X := { pq : (pairConstPresheaf (C := C)).obj X |
-    langReducesUsing relEnv lang pq.down.1 pq.down.2 }
+    langSemanticReducesUsing relEnv lang pq.down.1 pq.down.2 }
   map := by
     intro X Y f pq hpq
     exact hpq
@@ -90,7 +94,7 @@ def reductionTargetUsing (C : Type u) [CategoryTheory.Category.{v} C]
     rfl
 
 /-- Internal reduction graph object over `Psh(C)`:
-vertices are patterns, edges are premise-aware one-step reductions. -/
+vertices are authored patterns and edges are equation-saturated reductions. -/
 def reductionGraphUsing (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef) :
     InternalReductionGraph C where
@@ -114,21 +118,21 @@ structure ReductionGraphObj (C : Type u) [CategoryTheory.Category.{v} C]
   edge_endpoints_iff :
     ∀ {X : Opposite C} {p q : Pattern},
       (∃ e : Edge.obj X, (source.app X e).down = p ∧ (target.app X e).down = q) ↔
-        langReducesUsing relEnv lang p q
+        langSemanticReducesUsing relEnv lang p q
 
-/-- Membership in the internal reduction subfunctor is exactly
-`langReducesUsing`. -/
+/-- Membership in the internal reduction subfunctor is exactly the semantic
+one-step relation consumed by OSLF. -/
 theorem mem_reductionSubfunctorUsing_iff
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)
     {X : Opposite C} {p q : Pattern} :
     ((ULift.up (p, q)) : (pairConstPresheaf (C := C)).obj X) ∈
       (reductionSubfunctorUsing (C := C) relEnv lang).obj X ↔
-      langReducesUsing relEnv lang p q := by
+      langSemanticReducesUsing relEnv lang p q := by
   rfl
 
 /-- Endpoint characterization of the internal graph edges:
-there is an edge from `p` to `q` iff `langReducesUsing p q`. -/
+there is an edge from `p` to `q` iff the equation-saturated relation holds. -/
 theorem reductionGraphUsing_edge_endpoints_iff
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)
@@ -136,14 +140,14 @@ theorem reductionGraphUsing_edge_endpoints_iff
     (∃ e : (reductionGraphUsing (C := C) relEnv lang).Edge.obj X,
       ((reductionGraphUsing (C := C) relEnv lang).source.app X e).down = p ∧
       ((reductionGraphUsing (C := C) relEnv lang).target.app X e).down = q) ↔
-      langReducesUsing relEnv lang p q := by
+      langSemanticReducesUsing relEnv lang p q := by
   constructor
   · rintro ⟨e, hs, ht⟩
     have hs' : e.1.down.1 = p := by
       simp only [reductionGraphUsing, reductionSourceUsing] at hs; exact hs
     have ht' : e.1.down.2 = q := by
       simp only [reductionGraphUsing, reductionTargetUsing] at ht; exact ht
-    have hred : langReducesUsing relEnv lang e.1.down.1 e.1.down.2 := e.2
+    have hred : langSemanticReducesUsing relEnv lang e.1.down.1 e.1.down.2 := e.2
     simpa [hs', ht'] using hred
   · intro hred
     refine ⟨⟨ULift.up (p, q), hred⟩, ?_, ?_⟩
@@ -173,11 +177,12 @@ def reductionGraphObj (C : Type u) [CategoryTheory.Category.{v} C]
 theorem langDiamondUsing_iff_exists_graphStep
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)
-    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    {X : Opposite C}
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
     langDiamondUsing relEnv lang φ p ↔
       ∃ e : (reductionGraphUsing (C := C) relEnv lang).Edge.obj X,
         ((reductionGraphUsing (C := C) relEnv lang).source.app X e).down = p ∧
-        φ (((reductionGraphUsing (C := C) relEnv lang).target.app X e).down) := by
+        φ.1 (((reductionGraphUsing (C := C) relEnv lang).target.app X e).down) := by
   constructor
   · intro h
     rcases (langDiamondUsing_spec relEnv lang φ p).1 h with ⟨q, hred, hφ⟩
@@ -187,7 +192,7 @@ theorem langDiamondUsing_iff_exists_graphStep
   · rintro ⟨e, hs, hφ⟩
     refine (langDiamondUsing_spec relEnv lang φ p).2 ?_
     refine ⟨((reductionGraphUsing (C := C) relEnv lang).target.app X e).down, ?_, hφ⟩
-    have hred : langReducesUsing relEnv lang
+    have hred : langSemanticReducesUsing relEnv lang
         (((reductionGraphUsing (C := C) relEnv lang).source.app X e).down)
         (((reductionGraphUsing (C := C) relEnv lang).target.app X e).down) := e.2
     simpa [hs] using hred
@@ -196,14 +201,15 @@ theorem langDiamondUsing_iff_exists_graphStep
 theorem langBoxUsing_iff_forall_graphIncoming
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)
-    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    {X : Opposite C}
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
     langBoxUsing relEnv lang φ p ↔
       ∀ e : (reductionGraphUsing (C := C) relEnv lang).Edge.obj X,
         ((reductionGraphUsing (C := C) relEnv lang).target.app X e).down = p →
-        φ (((reductionGraphUsing (C := C) relEnv lang).source.app X e).down) := by
+        φ.1 (((reductionGraphUsing (C := C) relEnv lang).source.app X e).down) := by
   constructor
   · intro h e ht
-    have hred : langReducesUsing relEnv lang
+    have hred : langSemanticReducesUsing relEnv lang
       (((reductionGraphUsing (C := C) relEnv lang).source.app X e).down)
       (((reductionGraphUsing (C := C) relEnv lang).target.app X e).down) := e.2
     exact (langBoxUsing_spec relEnv lang φ p).1 h
@@ -221,17 +227,18 @@ theorem langBoxUsing_iff_forall_graphIncoming
     have hq' := h e ht
     simpa [hs] using hq'
 
-/-- `◇` over `langReducesUsing` is equivalent to existence of an internal
-one-step edge in the presheaf reduction subfunctor. -/
+/-- `◇` is equivalent to existence of an internal semantic one-step edge in
+the presheaf reduction subfunctor. -/
 theorem langDiamondUsing_iff_exists_internalStep
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)
-    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    {X : Opposite C}
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
     langDiamondUsing relEnv lang φ p ↔
       ∃ q,
         (((ULift.up (p, q)) : (pairConstPresheaf (C := C)).obj X) ∈
           (reductionSubfunctorUsing (C := C) relEnv lang).obj X) ∧
-        φ q := by
+        φ.1 q := by
   constructor
   · intro h
     rcases (langDiamondUsing_spec relEnv lang φ p).1 h with ⟨q, hpq, hφq⟩
@@ -242,17 +249,18 @@ theorem langDiamondUsing_iff_exists_internalStep
       ⟨q, (mem_reductionSubfunctorUsing_iff
         (C := C) (relEnv := relEnv) (lang := lang) (X := X) (p := p) (q := q)).1 hmem, hφq⟩
 
-/-- `□` over `langReducesUsing` is equivalent to universal quantification over
-incoming internal edges in the presheaf reduction subfunctor. -/
+/-- `□` is equivalent to universal quantification over incoming semantic
+edges in the presheaf reduction subfunctor. -/
 theorem langBoxUsing_iff_forall_internalStep
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)
-    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    {X : Opposite C}
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
     langBoxUsing relEnv lang φ p ↔
       ∀ q,
         (((ULift.up (q, p)) : (pairConstPresheaf (C := C)).obj X) ∈
           (reductionSubfunctorUsing (C := C) relEnv lang).obj X) →
-        φ q := by
+        φ.1 q := by
   constructor
   · intro h q hmem
     exact (langBoxUsing_spec relEnv lang φ p).1 h q
@@ -268,12 +276,12 @@ theorem langBoxUsing_iff_forall_internalStep
 theorem langDiamond_iff_exists_internalStep
     (C : Type u) [CategoryTheory.Category.{v} C]
     (lang : LanguageDef)
-    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    {X : Opposite C} (φ : EquationPredicate (langGSLT lang)) (p : Pattern) :
     langDiamond lang φ p ↔
       ∃ q,
         (((ULift.up (p, q)) : (pairConstPresheaf (C := C)).obj X) ∈
           (reductionSubfunctor (C := C) lang).obj X) ∧
-        φ q := by
+        φ.1 q := by
   simpa [langDiamond, reductionSubfunctor] using
     (langDiamondUsing_iff_exists_internalStep
       (C := C) (relEnv := RelationEnv.empty) (lang := lang) (X := X) (φ := φ) (p := p))
@@ -282,12 +290,12 @@ theorem langDiamond_iff_exists_internalStep
 theorem langBox_iff_forall_internalStep
     (C : Type u) [CategoryTheory.Category.{v} C]
     (lang : LanguageDef)
-    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    {X : Opposite C} (φ : EquationPredicate (langGSLT lang)) (p : Pattern) :
     langBox lang φ p ↔
       ∀ q,
         (((ULift.up (q, p)) : (pairConstPresheaf (C := C)).obj X) ∈
           (reductionSubfunctor (C := C) lang).obj X) →
-        φ q := by
+        φ.1 q := by
   simpa [langBox, reductionSubfunctor] using
     (langBoxUsing_iff_forall_internalStep
       (C := C) (relEnv := RelationEnv.empty) (lang := lang) (X := X) (φ := φ) (p := p))
@@ -296,11 +304,11 @@ theorem langBox_iff_forall_internalStep
 theorem langDiamond_iff_exists_graphStep
     (C : Type u) [CategoryTheory.Category.{v} C]
     (lang : LanguageDef)
-    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    {X : Opposite C} (φ : EquationPredicate (langGSLT lang)) (p : Pattern) :
     langDiamond lang φ p ↔
       ∃ e : (reductionGraph (C := C) lang).Edge.obj X,
         ((reductionGraph (C := C) lang).source.app X e).down = p ∧
-        φ (((reductionGraph (C := C) lang).target.app X e).down) := by
+        φ.1 (((reductionGraph (C := C) lang).target.app X e).down) := by
   exact
     (langDiamondUsing_iff_exists_graphStep
       (C := C) (relEnv := RelationEnv.empty) (lang := lang) (X := X) (φ := φ) (p := p))
@@ -309,11 +317,11 @@ theorem langDiamond_iff_exists_graphStep
 theorem langBox_iff_forall_graphIncoming
     (C : Type u) [CategoryTheory.Category.{v} C]
     (lang : LanguageDef)
-    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    {X : Opposite C} (φ : EquationPredicate (langGSLT lang)) (p : Pattern) :
     langBox lang φ p ↔
       ∀ e : (reductionGraph (C := C) lang).Edge.obj X,
         ((reductionGraph (C := C) lang).target.app X e).down = p →
-        φ (((reductionGraph (C := C) lang).source.app X e).down) := by
+        φ.1 (((reductionGraph (C := C) lang).source.app X e).down) := by
   exact
     (langBoxUsing_iff_forall_graphIncoming
       (C := C) (relEnv := RelationEnv.empty) (lang := lang) (X := X) (φ := φ) (p := p))
@@ -326,11 +334,12 @@ theorem langDiamondUsing_iff_exists_graphObjStep
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)
     (G : ReductionGraphObj C relEnv lang)
-    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    {X : Opposite C}
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
     langDiamondUsing relEnv lang φ p ↔
       ∃ e : G.Edge.obj X,
         (G.source.app X e).down = p ∧
-        φ ((G.target.app X e).down) := by
+        φ.1 ((G.target.app X e).down) := by
   constructor
   · intro h
     rcases (langDiamondUsing_spec relEnv lang φ p).1 h with ⟨q, hred, hφ⟩
@@ -338,7 +347,7 @@ theorem langDiamondUsing_iff_exists_graphObjStep
     exact ⟨e, hs, by simpa [ht] using hφ⟩
   · rintro ⟨e, hs, hφ⟩
     let q : Pattern := (G.target.app X e).down
-    have hred : langReducesUsing relEnv lang p q :=
+    have hred : langSemanticReducesUsing relEnv lang p q :=
       (G.edge_endpoints_iff (X := X) (p := p) (q := q)).1 ⟨e, hs, rfl⟩
     refine (langDiamondUsing_spec relEnv lang φ p).2 ?_
     exact ⟨q, hred, by simpa [q] using hφ⟩
@@ -351,14 +360,15 @@ theorem langBoxUsing_iff_forall_graphObjIncoming
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)
     (G : ReductionGraphObj C relEnv lang)
-    {X : Opposite C} (φ : Pattern → Prop) (p : Pattern) :
+    {X : Opposite C}
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern) :
     langBoxUsing relEnv lang φ p ↔
       ∀ e : G.Edge.obj X,
         (G.target.app X e).down = p →
-        φ ((G.source.app X e).down) := by
+        φ.1 ((G.source.app X e).down) := by
   constructor
   · intro h e ht
-    have hred : langReducesUsing relEnv lang
+    have hred : langSemanticReducesUsing relEnv lang
         ((G.source.app X e).down) ((G.target.app X e).down) :=
       (G.edge_endpoints_iff
         (X := X) (p := (G.source.app X e).down) (q := (G.target.app X e).down)).1
@@ -373,8 +383,7 @@ theorem langBoxUsing_iff_forall_graphObjIncoming
     have hq := h e ht
     simpa [hs] using hq
 
-/-- Executable premise-aware one-step reduction gives membership in the
-internal presheaf relation. -/
+/-- Every executable primitive step embeds in the semantic presheaf relation. -/
 theorem exec_mem_reductionSubfunctorUsing
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)
@@ -382,19 +391,28 @@ theorem exec_mem_reductionSubfunctorUsing
     (hq : langReducesExecUsing relEnv lang p q) :
     ((ULift.up (p, q)) : (pairConstPresheaf (C := C)).obj X) ∈
       (reductionSubfunctorUsing (C := C) relEnv lang).obj X := by
-  change langReducesUsing relEnv lang p q
-  exact exec_to_langReducesUsing relEnv lang hq
+  change langSemanticReducesUsing relEnv lang p q
+  exact langReducesUsing_to_semantic relEnv lang
+    (exec_to_langReducesUsing relEnv lang hq)
 
-/-- Membership in the internal presheaf relation yields executable
-one-step reduction. -/
-theorem reductionSubfunctorUsing_mem_exec
+/-- Every semantic presheaf edge exposes its exact implementation boundary:
+an equation change, one executable primitive step, and an equation change.
+There is deliberately no false conversion of the whole semantic edge into a
+primitive engine step. -/
+theorem reductionSubfunctorUsing_mem_decomposes
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)
     {X : Opposite C} {p q : Pattern}
     (hmem : ((ULift.up (p, q)) : (pairConstPresheaf (C := C)).obj X) ∈
       (reductionSubfunctorUsing (C := C) relEnv lang).obj X) :
-    langReducesExecUsing relEnv lang p q := by
-  change langReducesUsing relEnv lang p q at hmem
-  exact langReducesUsing_to_exec relEnv lang hmem
+    ∃ redex contractum : Pattern,
+      EquationEquiv (engineBasePremises relEnv) lang p redex ∧
+      langReducesExecUsing relEnv lang redex contractum ∧
+      EquationEquiv (engineBasePremises relEnv) lang contractum q := by
+  change langSemanticReducesUsing relEnv lang p q at hmem
+  rcases hmem with ⟨redex, contractum, sourceEquivalent, primitive,
+    targetEquivalent⟩
+  exact ⟨redex, contractum, sourceEquivalent,
+    langReducesUsing_to_exec relEnv lang primitive, targetEquivalent⟩
 
 end Mettapedia.OSLF.Framework.ToposReduction

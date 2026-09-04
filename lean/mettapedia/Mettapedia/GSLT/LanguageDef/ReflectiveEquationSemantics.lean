@@ -316,11 +316,12 @@ equivalence is exactly syntactic equality. -/
 theorem equationEquiv_iff_eq_of_no_generators
     {profile : ReflectionProfile} {base : BasePremiseEvaluator}
     {language : LanguageDef}
-    (equationsEmpty : language.equations = [])
+    (equationFree : language.isEquationFree = true)
     (presentationsEmpty : profile.presentations = [])
     (source target : Pattern) :
     ReflectiveEquationEquiv profile base language source target ↔
       source = target := by
+  have equationsEmpty := equations_eq_nil_of_isEquationFree equationFree
   constructor
   · intro equivalent
     induction equivalent with
@@ -328,10 +329,16 @@ theorem equationEquiv_iff_eq_of_no_generators
         cases step with
         | core coreStep =>
             cases coreStep with
-            | inContext context equationWitness =>
-                exact False.elim
-                  (no_equationInstance_of_equations_eq_nil
-                    equationsEmpty _ _ equationWitness)
+            | inContext context generator =>
+                cases generator with
+                | inl equationWitness =>
+                    exact False.elim
+                      (no_equationInstance_of_equations_eq_nil
+                        equationsEmpty _ _ equationWitness)
+                | inr derivedWitness =>
+                    exact False.elim
+                      (no_derivedInstance_of_isEquationFree
+                        equationFree _ _ derivedWitness)
         | reflectiveInContext context membership representatives =>
             rw [presentationsEmpty] at membership
             cases membership

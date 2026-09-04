@@ -67,6 +67,10 @@ theorem wmVertexLanguageDef_eq (v w : WMVertex) :
 def wmVertexIdMorphism (v w : WMVertex) :
     LanguageMorphism (wmVertexLanguageDef v) (wmVertexLanguageDef w) Eq where
   mapTerm := id
+  map_equiv := by
+    intro left right equivalent
+    rw [← wmVertexLanguageDef_eq v w]
+    exact equivalent
   forward_sim := by
     intro p q h
     refine ⟨q, LangReducesStar.single ?_, rfl⟩
@@ -189,6 +193,10 @@ def wmFullVertexIdMorphism (v w : WMFullVertex)
     (heq : wmFullVertexLanguageDef v = wmFullVertexLanguageDef w) :
     LanguageMorphism (wmFullVertexLanguageDef v) (wmFullVertexLanguageDef w) Eq where
   mapTerm := id
+  map_equiv := by
+    intro left right equivalent
+    rw [← heq]
+    exact equivalent
   forward_sim := by
     intro p q h
     refine ⟨q, LangReducesStar.single ?_, rfl⟩

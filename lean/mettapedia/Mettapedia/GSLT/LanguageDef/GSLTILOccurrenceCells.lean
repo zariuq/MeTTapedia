@@ -41,7 +41,7 @@ abbrev Boundary := Pattern × Pattern
 surface and internal composability independently. -/
 structure OccurrenceWireCell (program : Program)
     (source target : Boundary) where
-  event : AuthoredEvent program source.1 target.1
+  event : ProgramEvent program source.1 target.1
   sourceElaboration : Elaborates program source.1 source.2
   targetElaboration : Elaborates program target.1 target.2
   sourceCanonical : source.2 = (WireCell.ofEvent event).sourceIR
@@ -51,7 +51,7 @@ namespace OccurrenceWireCell
 
 /-- Every authored generator has its canonical occurrence-preserving square. -/
 def ofEvent {program : Program} {source target : Pattern}
-    (event : AuthoredEvent program source target) :
+    (event : ProgramEvent program source target) :
     OccurrenceWireCell program
       (source, (WireCell.ofEvent event).sourceIR)
       (target, (WireCell.ofEvent event).targetIR) where
@@ -76,7 +76,7 @@ def occurrence {program : Program} {source target : Boundary}
 
 @[simp] theorem occurrence_ofEvent
     {program : Program} {source target : Pattern}
-    (event : AuthoredEvent program source target) :
+    (event : ProgramEvent program source target) :
     (ofEvent event).occurrence = event.occurrence :=
   rfl
 
@@ -91,7 +91,7 @@ namespace OccurrenceWirePath
 /-- Project a paired path to its occurrence-bearing authored path. -/
 def surfacePath {program : Program} {source target : Boundary} :
     OccurrenceWirePath program source target →
-      AuthoredPath program source.1 target.1
+      ProgramPath program source.1 target.1
   | .refl _ => .refl source.1
   | .cons cell rest => .cons cell.event (surfacePath rest)
 
@@ -182,7 +182,7 @@ end OccurrenceWirePath
 /-- The exact double-cell realization of one authored path.  Endpoint
 elaborations are retained explicitly so reflexive paths are meaningful too. -/
 structure OccurrenceCompilation {program : Program}
-    {source target : Pattern} (path : AuthoredPath program source target) where
+    {source target : Pattern} (path : ProgramPath program source target) where
   sourceIR : Pattern
   targetIR : Pattern
   compiled : OccurrenceWirePath program (source, sourceIR) (target, targetIR)
@@ -196,7 +196,7 @@ namespace CertificateBridge
 occurrences and strict internal transitions. -/
 def toOccurrenceWirePath
     {program : Program} {source target sourceIR targetIR : Pattern}
-    {path : AuthoredPath program source target} :
+    {path : ProgramPath program source target} :
     Certificate path sourceIR targetIR →
       OccurrenceWirePath program (source, sourceIR) (target, targetIR)
   | .refl _ => .refl _
@@ -208,7 +208,7 @@ def toOccurrenceWirePath
 event occurrence. -/
 @[simp] theorem surfacePath_toOccurrenceWirePath
     {program : Program} {source target sourceIR targetIR : Pattern}
-    {path : AuthoredPath program source target}
+    {path : ProgramPath program source target}
     (certificate : Certificate path sourceIR targetIR) :
     OccurrenceWirePath.surfacePath
         (toOccurrenceWirePath certificate) = path := by
@@ -224,7 +224,7 @@ event occurrence. -/
 the established strict wire compilation. -/
 @[simp] theorem wirePath_toOccurrenceWirePath
     {program : Program} {source target sourceIR targetIR : Pattern}
-    {path : AuthoredPath program source target}
+    {path : ProgramPath program source target}
     (certificate : Certificate path sourceIR targetIR) :
     OccurrenceWirePath.wirePath
         (toOccurrenceWirePath certificate) = certificate.toWirePath := by
@@ -245,7 +245,7 @@ namespace OccurrenceCompilation
 preserving double-cell realization. -/
 def ofCertificate {program : Program}
     {source target sourceIR targetIR : Pattern}
-    {path : AuthoredPath program source target}
+    {path : ProgramPath program source target}
     (certificate : Certificate path sourceIR targetIR) :
     OccurrenceCompilation path where
   sourceIR := sourceIR
@@ -258,7 +258,7 @@ def ofCertificate {program : Program}
 /-- A double-cell realization reconstructs a coherence certificate for the
 exact authored path it claims to compile. -/
 noncomputable def toCertificate {program : Program}
-    {source target : Pattern} {path : AuthoredPath program source target}
+    {source target : Pattern} {path : ProgramPath program source target}
     (compilation : OccurrenceCompilation path) :
     Certificate path compilation.sourceIR compilation.targetIR := by
   have certificate := compilation.compiled.toCertificate
@@ -269,7 +269,7 @@ noncomputable def toCertificate {program : Program}
 /-- Double-cell realization is exactly the existing compilability criterion,
 now with occurrence identity retained rather than quotiented. -/
 theorem nonempty_iff_compilable {program : Program}
-    {source target : Pattern} {path : AuthoredPath program source target} :
+    {source target : Pattern} {path : ProgramPath program source target} :
     Nonempty (OccurrenceCompilation path) ↔
       Certificate.Compilable path := by
   constructor
@@ -308,11 +308,11 @@ private def program : Program :=
     routes := []
     routeRules := [] }
 
-private def firstEvent : AuthoredEvent program
+private def firstEvent : ProgramEvent program
     (inSpace space input) (inSpace space output) :=
   .inSpace firstRule (by simp [program])
 
-private def secondEvent : AuthoredEvent program
+private def secondEvent : ProgramEvent program
     (inSpace space input) (inSpace space output) :=
   .inSpace secondRule (by simp [program])
 
@@ -369,7 +369,7 @@ theorem exists_distinct_cells_with_equal_wire_steps :
 strict realization; it remains valid in the ambient authored layer. -/
 theorem ambiguous_path_has_no_occurrence_compilation :
     IsEmpty (OccurrenceCompilation
-      AmbiguousIntermediateCanary.authoredPath) :=
+      AmbiguousIntermediateCanary.programPath) :=
   ⟨by
     intro compilation
     exact CoherentCompilation.Canaries.ambiguous_path_not_compilable

@@ -58,7 +58,7 @@ theorem safeEscalationFormula_ne_coerciveOverrideFormula :
 def endorseSafeEscalationClaim : StructuredEthicalClaim TrustTriangleChoiceWorld Nat where
   subject := 1
   content := .propositional safeEscalationFormula
-  presentation := .axiological .MorallyGood
+  normativeForm := .axiological .MorallyGood
   ground := .asserted
   role := .activeGoal
 
@@ -447,7 +447,7 @@ def trustTriangleTheoryPracticalBridge : PracticalEthicsBridge TrustTriangleChoi
 
 /-- Concrete label policy for staging the trust-triangle action rendering
 through the legacy upper-shard encoder.  The policy depends on content/ground
-but intentionally ignores presentation, so aligned deontic/value readings keep
+but intentionally ignores normative form, so aligned deontic/value readings keep
 the same legacy label. -/
 def trustTriangleUpperShardStructuredLabeler :
     StructuredClaimLabeler TrustTriangleChoiceWorld Nat
@@ -481,7 +481,7 @@ theorem trustTriangleUpperShardLegacyPracticalBridge_harmfulDisclosure_query_eq_
     trustTriangleUpperShardLegacyPracticalBridge.actionQuery .harmfulDisclosure =
       ({ subject := 1
          content := .propositional harmfulDisclosureFormula
-         presentation := .axiological (deonticToMoralValue .Prohibition)
+         normativeForm := .axiological (deonticToMoralValue .Prohibition)
          ground := .universalDuty .noHarm
          role := .activeGoal } : StructuredEthicalClaim TrustTriangleChoiceWorld Nat).toQuery
         (StructuredEthicsQueryEncoder.ofLegacy
@@ -512,7 +512,7 @@ theorem trustTriangleUpperShardLegacyPracticalBridge_coerciveOverride_query_eq_a
     trustTriangleUpperShardLegacyPracticalBridge.actionQuery .coerciveOverride =
       ({ subject := 1
          content := .propositional coerciveOverrideFormula
-         presentation := .axiological (deonticToMoralValue .Prohibition)
+         normativeForm := .axiological (deonticToMoralValue .Prohibition)
          ground := .universalDuty .respectAutonomy
          role := .activeGoal } : StructuredEthicalClaim TrustTriangleChoiceWorld Nat).toQuery
         (StructuredEthicsQueryEncoder.ofLegacy

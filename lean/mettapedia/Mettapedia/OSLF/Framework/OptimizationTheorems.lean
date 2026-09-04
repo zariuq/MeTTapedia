@@ -30,6 +30,7 @@ namespace Mettapedia.OSLF.Framework.OptimizationTheorems
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine (RelationEnv)
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.HypercubeGSLTFunctor
 
 /-! ## §1: Early Termination via Diamond Falsity
@@ -40,9 +41,9 @@ entire search subtree rooted at `p` without exploring any successors. -/
 /-- If no reduction of `p` satisfies `φ`, every individual successor fails `φ`.
     The engine can skip exploring `p`'s successors for `φ`. -/
 theorem diamond_false_early_termination (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p : Pattern)
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern)
     (h : ¬ langDiamondUsing relEnv lang φ p) :
-    ∀ q, langReducesUsing relEnv lang p q → ¬ φ q := by
+    ∀ q, langSemanticReducesUsing relEnv lang p q → ¬ φ.1 q := by
   intro q hred hφ
   exact h ((langDiamondUsing_spec relEnv lang φ p).mpr ⟨q, hred, hφ⟩)
 
@@ -55,9 +56,9 @@ No re-checking needed. -/
 /-- If all predecessors of `p` satisfy `φ`, any specific predecessor satisfies `φ`.
     The engine can safely memoize `□φ` results. -/
 theorem box_memoization_safe (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p : Pattern)
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern)
     (h : langBoxUsing relEnv lang φ p) :
-    ∀ q, langReducesUsing relEnv lang q p → φ q :=
+    ∀ q, langSemanticReducesUsing relEnv lang q p → φ.1 q :=
   (langBoxUsing_spec relEnv lang φ p).mp h
 
 /-! ## §3: Deterministic Reduction Collapse
@@ -69,10 +70,10 @@ instead of search. -/
 /-- If reduction at `p` is deterministic (unique successor `q`), then
     `◇φ p ↔ φ q`. The engine can skip search and direct-dispatch to `q`. -/
 theorem deterministic_diamond_collapse (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p q : Pattern)
-    (hred : langReducesUsing relEnv lang p q)
-    (hdet : ∀ q', langReducesUsing relEnv lang p q' → q' = q) :
-    langDiamondUsing relEnv lang φ p ↔ φ q := by
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p q : Pattern)
+    (hred : langSemanticReducesUsing relEnv lang p q)
+    (hdet : ∀ q', langSemanticReducesUsing relEnv lang p q' → q' = q) :
+    langDiamondUsing relEnv lang φ p ↔ φ.1 q := by
   rw [langDiamondUsing_spec]
   constructor
   · rintro ⟨q', hred', hφ⟩
@@ -84,10 +85,10 @@ theorem deterministic_diamond_collapse (relEnv : RelationEnv) (lang : LanguageDe
     `□φ p ↔ (∀ q, langReducesUsing relEnv lang q p → φ q)` is already the
     spec, but in the deterministic-predecessor case we get a simpler form. -/
 theorem deterministic_box_collapse (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p q : Pattern)
-    (hred : langReducesUsing relEnv lang q p)
-    (hdet : ∀ q', langReducesUsing relEnv lang q' p → q' = q) :
-    langBoxUsing relEnv lang φ p ↔ φ q := by
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p q : Pattern)
+    (hred : langSemanticReducesUsing relEnv lang q p)
+    (hdet : ∀ q', langSemanticReducesUsing relEnv lang q' p → q' = q) :
+    langBoxUsing relEnv lang φ p ↔ φ.1 q := by
   rw [langBoxUsing_spec]
   constructor
   · intro h; exact h q hred
@@ -100,9 +101,10 @@ If a term reduces in a weaker language (fewer rules), it reduces in any
 stronger language (more rules). The engine can specialize rules to stronger
 fragments without re-checking reductions established in weaker fragments. -/
 
-/-- Reduction is monotone in the core rule set: if `lang₁`'s rules are a
-    subset of `lang₂`'s rules, then any core reduction in `lang₁` is also a
-    reduction in `lang₂`.
+/-- Semantic reduction is monotone in the core rule set for equation-free
+    presentations. If `lang₁`'s rules are a subset of `lang₂`'s rules, then
+    any semantic reduction in `lang₁` is also a semantic reduction in
+    `lang₂`.
 
     The engine can safely specialize rules to stronger fragments.
     This holds for ALL languages, including those with premise-driven rules
@@ -111,10 +113,52 @@ fragments without re-checking reductions established in weaker fragments. -/
 theorem specialization_preserves_reduction
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (equationFree₁ : lang₁.isEquationFree = true)
     {relEnv : RelationEnv} {p q : Pattern}
-    (hred : langReducesUsing relEnv lang₁ p q) :
-    langReducesUsing relEnv lang₂ p q :=
-  contextualStep_mono_rules hrules hred
+    (hred : langSemanticReducesUsing relEnv lang₁ p q) :
+    langSemanticReducesUsing relEnv lang₂ p q := by
+  apply langReducesUsing_to_semantic relEnv lang₂
+  apply contextualStep_mono_rules hrules
+  exact (langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+    relEnv equationFree₁ p q).mp hred
+
+/-! Rule inclusion is only one way to prove semantic step preservation.
+Equation-bearing languages use the following contracts directly, supplying
+the preservation map justified by their equation-aware language morphism. -/
+
+/-- A semantic one-step simulation transports diamond observations when the
+source and target predicates agree on authored representatives. -/
+theorem diamond_mono_semantic
+    {lang₁ lang₂ : LanguageDef} {relEnv : RelationEnv}
+    (preservesStep : ∀ {p q},
+      langSemanticReducesUsing relEnv lang₁ p q →
+        langSemanticReducesUsing relEnv lang₂ p q)
+    (φ₁ : EquationPredicate (langGSLTUsing relEnv lang₁))
+    (φ₂ : EquationPredicate (langGSLTUsing relEnv lang₂))
+    (sameObservation : ∀ term, φ₁.1 term ↔ φ₂.1 term)
+    (p : Pattern)
+    (h : langDiamondUsing relEnv lang₁ φ₁ p) :
+    langDiamondUsing relEnv lang₂ φ₂ p := by
+  rw [langDiamondUsing_spec] at h ⊢
+  obtain ⟨q, hred, hφ⟩ := h
+  exact ⟨q, preservesStep hred, (sameObservation q).mp hφ⟩
+
+/-- A semantic one-step simulation transports box observations
+contravariantly when the predicates agree on authored representatives. -/
+theorem box_contra_semantic
+    {lang₁ lang₂ : LanguageDef} {relEnv : RelationEnv}
+    (preservesStep : ∀ {p q},
+      langSemanticReducesUsing relEnv lang₁ p q →
+        langSemanticReducesUsing relEnv lang₂ p q)
+    (φ₁ : EquationPredicate (langGSLTUsing relEnv lang₁))
+    (φ₂ : EquationPredicate (langGSLTUsing relEnv lang₂))
+    (sameObservation : ∀ term, φ₁.1 term ↔ φ₂.1 term)
+    (p : Pattern)
+    (h : langBoxUsing relEnv lang₂ φ₂ p) :
+    langBoxUsing relEnv lang₁ φ₁ p := by
+  rw [langBoxUsing_spec] at h ⊢
+  intro q hred
+  exact (sameObservation q).mpr (h q (preservesStep hred))
 
 /-- Diamond is monotone in the rule set: if `lang₁ ⊆ lang₂`, then
     `◇₁φ ≤ ◇₂φ`.
@@ -124,15 +168,20 @@ theorem specialization_preserves_reduction
 theorem diamond_mono_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (equationFree₁ : lang₁.isEquationFree = true)
+    (equationFree₂ : lang₂.isEquationFree = true)
     {relEnv : RelationEnv}
     (φ : Pattern → Prop) (p : Pattern)
-    (h : langDiamondUsing relEnv lang₁ φ p) :
-    langDiamondUsing relEnv lang₂ φ p := by
-  rw [langDiamondUsing_spec] at h ⊢
-  obtain ⟨q, hred, hφ⟩ := h
-  exact ⟨q,
-    specialization_preserves_reduction hrules hred,
-    hφ⟩
+    (h : langDiamondUsing relEnv lang₁
+      (equationPredicateUsingOfEquationFree relEnv equationFree₁ φ) p) :
+    langDiamondUsing relEnv lang₂
+      (equationPredicateUsingOfEquationFree relEnv equationFree₂ φ) p :=
+  diamond_mono_semantic
+    (fun {_ _} step =>
+      specialization_preserves_reduction hrules equationFree₁ step)
+    (equationPredicateUsingOfEquationFree relEnv equationFree₁ φ)
+    (equationPredicateUsingOfEquationFree relEnv equationFree₂ φ)
+    (fun _ => Iff.rfl) p h
 
 /-- Box is contravariant in the rule set: `◇₁ ≤ ◇₂` implies `□₂ ≤ □₁`.
 
@@ -143,14 +192,20 @@ theorem diamond_mono_rules
 theorem box_contra_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (equationFree₁ : lang₁.isEquationFree = true)
+    (equationFree₂ : lang₂.isEquationFree = true)
     {relEnv : RelationEnv}
     (φ : Pattern → Prop) (p : Pattern)
-    (h : langBoxUsing relEnv lang₂ φ p) :
-    langBoxUsing relEnv lang₁ φ p := by
-  rw [langBoxUsing_spec] at h ⊢
-  intro q hred
-  exact h q
-    (specialization_preserves_reduction hrules hred)
+    (h : langBoxUsing relEnv lang₂
+      (equationPredicateUsingOfEquationFree relEnv equationFree₂ φ) p) :
+    langBoxUsing relEnv lang₁
+      (equationPredicateUsingOfEquationFree relEnv equationFree₁ φ) p :=
+  box_contra_semantic
+    (fun {_ _} step =>
+      specialization_preserves_reduction hrules equationFree₁ step)
+    (equationPredicateUsingOfEquationFree relEnv equationFree₁ φ)
+    (equationPredicateUsingOfEquationFree relEnv equationFree₂ φ)
+    (fun _ => Iff.rfl) p h
 
 /-! ## §5: Substitution-Reduction Fusion (Beck-Chevalley)
 
@@ -166,11 +221,18 @@ reduction passes into a single traversal. -/
     process both in a single traversal.
 
     Re-exported from BeckChevalleyOSLF for the optimization-theorem API. -/
-theorem substitution_reduction_fusion (lang : LanguageDef) (q : Pattern) :
-    GaloisConnection
-      (BeckChevalleyOSLF.commDi q ∘ langDiamond lang)
-      (langBox lang ∘ BeckChevalleyOSLF.commPb q) :=
-  BeckChevalleyOSLF.commDi_diamond_galois lang q
+theorem substitution_reduction_fusion (lang : LanguageDef) (q : Pattern)
+    (substitutionRespectsEquations : ∀ {left right : Pattern},
+      (langGSLT lang).Equiv left right →
+        (langGSLT lang).Equiv
+          (Mettapedia.OSLF.MeTTaIL.Substitution.commSubst left q)
+          (Mettapedia.OSLF.MeTTaIL.Substitution.commSubst right q)) :
+    let map := BeckChevalleyOSLF.commEquationMap lang q
+      substitutionRespectsEquations
+    GaloisConnection (map.directImage ∘ langDiamond lang)
+      (langBox lang ∘ map.pullback) :=
+  BeckChevalleyOSLF.commDi_diamond_galois
+    lang q substitutionRespectsEquations
 
 /-! ## §6: Galois Connection Composition
 

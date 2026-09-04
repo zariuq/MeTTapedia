@@ -264,12 +264,11 @@ theorem spice_mono {p : Pattern} {n m : ℕ} (h : n ≤ m) :
     This is the base case for finiteness and is unconditionally true:
     `spiceEval q 0 = {q}` is a singleton, hence finite.
 
-    General finiteness for n>0 requires finite branching (each pattern has
-    finitely many 1-step successors up to structural congruence). This is
-    standard in process calculus but not provable here because `Reduces.equiv`
-    combined with `AlphaEquiv.lambda_rename` produces infinitely many
-    syntactically distinct alpha-variants. A quotient by `StructuralCongruence`
-    would make general finiteness provable.
+    General finiteness for n>0 requires finite branching on equation classes.
+    It is not a property of the raw presentation relation: unit insertion and
+    reassociation alone can produce infinitely many syntactically distinct
+    representatives of one structural-congruence class.  The quotient GSLT is
+    therefore the proper carrier for an image-finiteness theorem.
 -/
 theorem spiceEval_zero_finite (q : Pattern) : (spiceEval q 0).Finite := by
   simp only [spiceEval, reachableStates_zero]

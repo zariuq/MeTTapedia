@@ -3,7 +3,7 @@
 
 This module isolates the general categorical syntax used by staged and
 reflective dependent type theories.  It is independent of MeTTa syntax,
-runtime patterns, and any particular universe presentation.
+runtime patterns, and any particular universe encoding.
 
 A `ModeTheory` is a small strict category of modalities.  A `ModalCwF` carries
 contexts, substitutions, types, terms, comprehension, dependent products, a
@@ -314,7 +314,7 @@ end ModalCwFLaws
 The operational spine and its equations do not by themselves state the
 universal property of the empty context, naturality of comprehension, or
 stability of Tarski decoding.  These are kept in a separate extension so a
-partial presentation can use `ModalCwFLaws` without silently claiming the
+partial contextual structure can use `ModalCwFLaws` without silently claiming the
 stronger semantic structure. -/
 
 /-- The universal and universe-coherence laws that turn the contextual spine

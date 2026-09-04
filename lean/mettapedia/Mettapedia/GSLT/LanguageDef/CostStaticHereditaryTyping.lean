@@ -56,7 +56,7 @@ mutual
             mappedLookup)
     | @constructor bound rule arguments labelSupported membership notBare
         argumentsTyped =>
-        let authored : AuthoredConstructor
+        let authored : DeclaredConstructor
             source.theory.presentation.presentation := ⟨rule, membership⟩
         have wrappedConstructor : authored ∈
             source.continuationRetyping.wrappedConstructors :=
@@ -93,7 +93,7 @@ mutual
                   (costBaseConstructor source.cut rule).label :=
               ⟨rule.label, labelSupported, rfl⟩
             simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor,
-              costBaseStaticSymbols, costBasePresentationSymbols,
+              costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               mapTypeExpr] using
               (WellSorted.HasTypeWithConstructors.constructor targetAllowed
                 (source.costBaseConstructor_mem_costWhole rule membership)
@@ -176,7 +176,7 @@ mutual
     | @collectionConstructor bound rule parameterName collectionType elements
         rest elementType labelSupported membership parameterShape
         elementsTyped =>
-        let authored : AuthoredConstructor
+        let authored : DeclaredConstructor
             source.theory.presentation.presentation := ⟨rule, membership⟩
         have wrappedConstructor : authored ∈
             source.continuationRetyping.wrappedConstructors :=
@@ -204,7 +204,7 @@ mutual
                   (costBaseConstructor source.cut rule).label :=
               ⟨rule.label, labelSupported, rfl⟩
             simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor,
-              costBaseStaticSymbols, costBasePresentationSymbols,
+              costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               mapTypeExpr] using
               (WellSorted.HasTypeWithConstructors.collectionConstructor
                 targetAllowed

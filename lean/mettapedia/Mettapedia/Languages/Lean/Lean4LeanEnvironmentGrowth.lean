@@ -238,8 +238,11 @@ theorem satisfies_exactDefEqRelationTargetType_iff
         (exactDefEqRelationTargetType environment universeParameters context
           expectedType right).pred ↔
       environment.IsDefEq universeParameters context left right expectedType := by
-  rw [satisfies_exactTargetNativeType_iff_step]
-  rfl
+  exact (satisfies_exactTargetNativeType_iff_step
+    (defEqRelationGSLT environment universeParameters context expectedType)
+    left right).trans
+      (defEqRelationGSLT_step_iff environment universeParameters context
+        expectedType left right)
 
 /-- Environment growth transports an authored judgment into the exact OSLF
 native predicate generated at the later stage.  Thus OSLF/NTT is used by the

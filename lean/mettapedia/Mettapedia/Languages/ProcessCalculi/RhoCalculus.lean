@@ -4,6 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalTyping
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureCanonicalSection
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ReflectiveCodeBoundary
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoOpening
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubjectEquiv
@@ -29,6 +30,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.OperationalBridge
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Bridges
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.TypedCommunicationVerticalBraid
 import Mettapedia.OSLF.Framework.RhoInstance
 
 /-!

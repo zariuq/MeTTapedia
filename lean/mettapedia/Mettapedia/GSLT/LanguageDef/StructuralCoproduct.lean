@@ -3,11 +3,11 @@ import Mettapedia.GSLT.LanguageDef.StructuralRenamingSemantics
 /-!
 # Conservative coproducts of validated language definitions
 
-Independent operational presentations may be placed side by side after their
+Independent operational language definitions may be placed side by side after their
 symbols are embedded into disjoint namespaces.  This module separates the raw
 list construction from the proof that it is conservative:
 
-* all four authored name families are globally duplicate-free;
+* all four declared name families are globally duplicate-free;
 * every mapped constructor, equation, and rewrite row remains valid when the
   other component's declarations are present.
 
@@ -16,6 +16,12 @@ subtle case where a newly added constructor name turns an existing schema
 variable into a constructor-shaped wildcard collision.  Once these exact
 conditions hold, validation of the union and both structural inclusions are
 derived rather than postulated.
+
+The resulting object is a coproduct in the extensional category of validated
+language declarations.  Operational conservativity is proved separately below
+for the concrete rewrite and typing relations.  No general model-theoretic or
+semantic coproduct is inferred merely from the declaration-level universal
+property.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.StructuralCoproduct
@@ -25,23 +31,23 @@ open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.StructuralRenamingSemantics
 
-/-- A rewrite is rooted at an authored constructor.  This excludes a bare
+/-- A rewrite is rooted at a declared constructor.  This excludes a bare
 metavariable left-hand side, which would match terms belonging to every
 component of a disjoint operational sum. -/
 def ConstructorRooted (rewrite : RewriteRule) : Prop :=
   ∃ constructor arguments, rewrite.left = .apply constructor arguments
 
-/-- Every namespace map of a tagged presentation embedding is injective. -/
-structure InjectiveSymbolMap (symbols : PresentationSymbols) : Prop where
+/-- Every namespace map of a tagged `LanguageDef` embedding is injective. -/
+structure InjectiveSymbolMap (symbols : LanguageDefSymbolMap) : Prop where
   sort : Function.Injective symbols.sort
   constructor : Function.Injective symbols.constructor
   relation : Function.Injective symbols.relation
   equation : Function.Injective symbols.equation
   rewrite : Function.Injective symbols.rewrite
 
-/-- The two images of every authored namespace are disjoint. -/
+/-- The two images of every declared namespace are disjoint. -/
 structure DisjointSymbolImages
-    (leftSymbols rightSymbols : PresentationSymbols) : Prop where
+    (leftSymbols rightSymbols : LanguageDefSymbolMap) : Prop where
   sort : ∀ left right,
     leftSymbols.sort left ≠ rightSymbols.sort right
   constructor : ∀ left right,
@@ -53,9 +59,9 @@ structure DisjointSymbolImages
   rewrite : ∀ left right,
     leftSymbols.rewrite left ≠ rightSymbols.rewrite right
 
-/-- Rename every authored symbol of a language presentation while preserving
+/-- Rename every declared symbol of a `LanguageDef` while preserving
 declaration order, concrete syntax, binding shape, and evaluation policy. -/
-def renameLanguage (name : String) (symbols : PresentationSymbols)
+def renameLanguage (name : String) (symbols : LanguageDefSymbolMap)
     (language : LanguageDef) : LanguageDef := {
   name := name
   types := language.types.map (mapTypeDecl symbols)
@@ -64,10 +70,10 @@ def renameLanguage (name : String) (symbols : PresentationSymbols)
   rewrites := language.rewrites.map (mapRewriteRule symbols)
 }
 
-/-- Raw tagged union of two presentations.  Validation is deliberately not
+/-- Raw tagged union of two language definitions.  Validation is deliberately not
 part of this constructor; it is supplied only by `Compatibility.valid`. -/
 def rawCoproduct (name : String)
-    (leftSymbols rightSymbols : PresentationSymbols)
+    (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (left right : LanguageDef) : LanguageDef :=
   let left' := renameLanguage (name ++ ".left") leftSymbols left
   let right' := renameLanguage (name ++ ".right") rightSymbols right
@@ -82,7 +88,7 @@ def rawCoproduct (name : String)
 /-- The carrier names of a raw coproduct are exactly the two renamed carrier
 lists, in component order. -/
 theorem rawCoproduct_typeNames
-    (name : String) (leftSymbols rightSymbols : PresentationSymbols)
+    (name : String) (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (left right : LanguageDef) :
     (rawCoproduct name leftSymbols rightSymbols left right).typeNames =
       left.typeNames.map leftSymbols.sort ++
@@ -93,7 +99,7 @@ theorem rawCoproduct_typeNames
 /-- The constructor labels of a raw coproduct are exactly the two renamed
 constructor-label lists, in component order. -/
 theorem rawCoproduct_constructorLabels
-    (name : String) (leftSymbols rightSymbols : PresentationSymbols)
+    (name : String) (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (left right : LanguageDef) :
     ((rawCoproduct name leftSymbols rightSymbols left right).terms.map
       (·.label)) =
@@ -104,10 +110,10 @@ theorem rawCoproduct_constructorLabels
 
 /-- Filtering a renamed constructor table at a renamed label is exactly the
 renaming of the corresponding source filter.  This is the lookup fact that
-keeps validation of composed presentations structural rather than reducing a
+keeps validation of composed language definitions structural rather than reducing a
 whole concrete signature by brute force. -/
 theorem filter_mapGrammarRule_at
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (terms : List GrammarRule) (label : String) :
     (terms.map (mapGrammarRule symbols)).filter
@@ -130,7 +136,7 @@ theorem filter_mapGrammarRule_at
 /-- Constructors from the right component never appear in a lookup for a
 left-component label when the two constructor images are disjoint. -/
 theorem filter_rightGrammarRules_at_left_eq_nil
-    (leftSymbols rightSymbols : PresentationSymbols)
+    (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (constructorImagesDisjoint : ∀ left right,
       leftSymbols.constructor left ≠ rightSymbols.constructor right)
     (rightTerms : List GrammarRule) (leftLabel : String) :
@@ -148,7 +154,7 @@ theorem filter_rightGrammarRules_at_left_eq_nil
 
 /-- Symmetric constructor-lookup silence for the left table at a right label. -/
 theorem filter_leftGrammarRules_at_right_eq_nil
-    (leftSymbols rightSymbols : PresentationSymbols)
+    (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (constructorImagesDisjoint : ∀ left right,
       leftSymbols.constructor left ≠ rightSymbols.constructor right)
     (leftTerms : List GrammarRule) (rightLabel : String) :
@@ -166,7 +172,7 @@ theorem filter_leftGrammarRules_at_right_eq_nil
 
 /-- Exact lookup for a left constructor in the joint constructor table. -/
 theorem rawCoproduct_filter_leftConstructor
-    (name : String) (leftSymbols rightSymbols : PresentationSymbols)
+    (name : String) (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (leftConstructorInjective : Function.Injective leftSymbols.constructor)
     (constructorImagesDisjoint : ∀ left right,
       leftSymbols.constructor left ≠ rightSymbols.constructor right)
@@ -184,7 +190,7 @@ theorem rawCoproduct_filter_leftConstructor
 
 /-- Exact lookup for a right constructor in the joint constructor table. -/
 theorem rawCoproduct_filter_rightConstructor
-    (name : String) (leftSymbols rightSymbols : PresentationSymbols)
+    (name : String) (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (rightConstructorInjective : Function.Injective rightSymbols.constructor)
     (constructorImagesDisjoint : ∀ left right,
       leftSymbols.constructor left ≠ rightSymbols.constructor right)
@@ -205,7 +211,7 @@ theorem rawCoproduct_filter_rightConstructor
 
 /-- Structural sort renaming maps the base-sort inventory pointwise. -/
 @[simp]
-theorem mapTypeExpr_baseNames (symbols : PresentationSymbols)
+theorem mapTypeExpr_baseNames (symbols : LanguageDefSymbolMap)
     (type : TypeExpr) :
     (mapTypeExpr symbols type).baseNames =
       type.baseNames.map symbols.sort := by
@@ -221,7 +227,7 @@ theorem mapTypeExpr_baseNames (symbols : PresentationSymbols)
 
 /-- Premise traversal commutes with structural constructor renaming. -/
 @[simp]
-theorem premisePatterns_mapPremise (symbols : PresentationSymbols)
+theorem premisePatterns_mapPremise (symbols : LanguageDefSymbolMap)
     (premise : Premise) :
     LanguageDef.premisePatterns (mapPremise symbols premise) =
       (LanguageDef.premisePatterns premise).map (mapPattern symbols) := by
@@ -237,7 +243,7 @@ theorem premisePatterns_mapPremise (symbols : PresentationSymbols)
 /-- The flattened pattern inventory of a premise list commutes with the same
 structural action, preserving order and multiplicity. -/
 @[simp]
-theorem premisePatterns_mapPremises (symbols : PresentationSymbols)
+theorem premisePatterns_mapPremises (symbols : LanguageDefSymbolMap)
     (premises : List Premise) :
     ((premises.map (mapPremise symbols)).flatMap
       LanguageDef.premisePatterns) =
@@ -254,7 +260,7 @@ action.  Error text is intentionally not equated because it contains the
 renamed constructor labels. -/
 theorem validatePatternConstructors_left_eq_nil
     (name sourceContext targetContext : String)
-    (leftSymbols rightSymbols : PresentationSymbols)
+    (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (leftConstructorInjective : Function.Injective leftSymbols.constructor)
     (constructorImagesDisjoint : ∀ left right,
       leftSymbols.constructor left ≠ rightSymbols.constructor right)
@@ -293,7 +299,7 @@ theorem validatePatternConstructors_left_eq_nil
 patterns. -/
 theorem validatePatternConstructors_right_eq_nil
     (name sourceContext targetContext : String)
-    (leftSymbols rightSymbols : PresentationSymbols)
+    (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (rightConstructorInjective : Function.Injective rightSymbols.constructor)
     (constructorImagesDisjoint : ∀ left right,
       leftSymbols.constructor left ≠ rightSymbols.constructor right)
@@ -335,7 +341,7 @@ These are precisely the extra obligations not implied by validating the two
 components separately. -/
 structure Compatibility
     (name : String)
-    (leftSymbols rightSymbols : PresentationSymbols)
+    (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (left right : ValidatedLanguageDef) where
   leftSymbolsInjective : InjectiveSymbolMap leftSymbols
   rightSymbolsInjective : InjectiveSymbolMap rightSymbols
@@ -382,7 +388,7 @@ structure Compatibility
 
 namespace Compatibility
 
-variable {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+variable {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
   {left right : ValidatedLanguageDef}
 
 /-- A compatible raw coproduct passes the ordinary `LanguageDef` validation
@@ -417,17 +423,17 @@ theorem valid
       exact compatible.rightRewritesStable source sourceMember
 
 /-- The validated coproduct object determined by a compatibility witness. -/
-def presentation
+def combinedLanguage
     (compatible : Compatibility name leftSymbols rightSymbols left right) :
     ValidatedLanguageDef where
   language := rawCoproduct name leftSymbols rightSymbols
     left.language right.language
   valid := compatible.valid
 
-/-- Canonical structural inclusion of the left presentation. -/
+/-- Canonical structural inclusion of the left language definition. -/
 def leftInclusion
     (compatible : Compatibility name leftSymbols rightSymbols left right) :
-    StructuralMorphism left compatible.presentation where
+    StructuralMorphism left compatible.combinedLanguage where
   symbols := leftSymbols
   mapsTypes declaration membership := by
     exact List.mem_append_left _
@@ -442,10 +448,10 @@ def leftInclusion
     exact List.mem_append_left _
       (List.mem_map.mpr ⟨rewrite, membership, rfl⟩)
 
-/-- Canonical structural inclusion of the right presentation. -/
+/-- Canonical structural inclusion of the right language definition. -/
 def rightInclusion
     (compatible : Compatibility name leftSymbols rightSymbols left right) :
-    StructuralMorphism right compatible.presentation where
+    StructuralMorphism right compatible.combinedLanguage where
   symbols := rightSymbols
   mapsTypes declaration membership := by
     exact List.mem_append_right _
@@ -461,7 +467,7 @@ def rightInclusion
       (List.mem_map.mpr ⟨rewrite, membership, rfl⟩)
 
 private theorem renamedRules_rewriteStep
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (rules : List RewriteRule) (term : Pattern) :
     (rules.map (mapRewriteRule symbols)).flatMap
@@ -475,11 +481,11 @@ private theorem renamedRules_rewriteStep
       rw [applyRule_equivariance symbols constructorInjective rule term,
         inductionHypothesis]
 
-/-- Renaming an operational presentation by an injective constructor map
+/-- Renaming an operational language definition by an injective constructor map
 commutes exactly with its executable one-step relation. -/
 theorem renameLanguage_rewriteStep
     (language : LanguageDef) (renamedName : String)
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (term : Pattern) :
     rewriteStep (renameLanguage renamedName symbols language)
@@ -489,7 +495,7 @@ theorem renameLanguage_rewriteStep
     language.rewrites term
 
 private theorem applyRule_right_on_left_eq_nil
-    (leftSymbols rightSymbols : PresentationSymbols)
+    (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (imagesDisjoint : ∀ leftConstructor rightConstructor,
       leftSymbols.constructor leftConstructor ≠
         rightSymbols.constructor rightConstructor)
@@ -519,7 +525,7 @@ private theorem applyRule_right_on_left_eq_nil
       simp [matchPattern, mapPattern]
 
 private theorem applyRule_left_on_right_eq_nil
-    (leftSymbols rightSymbols : PresentationSymbols)
+    (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (imagesDisjoint : ∀ leftConstructor rightConstructor,
       leftSymbols.constructor leftConstructor ≠
         rightSymbols.constructor rightConstructor)
@@ -555,10 +561,10 @@ and multiplicity. -/
 theorem left_rewriteStep_exact
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (term : Pattern) :
-    rewriteStep compatible.presentation.language
+    rewriteStep compatible.combinedLanguage.language
         (mapPattern leftSymbols term) =
       (rewriteStep left.language term).map (mapPattern leftSymbols) := by
-  unfold presentation rawCoproduct rewriteStep
+  unfold combinedLanguage rawCoproduct rewriteStep
   simp only [renameLanguage, List.flatMap_append]
   rw [renamedRules_rewriteStep leftSymbols
     compatible.leftSymbolsInjective.constructor left.language.rewrites term]
@@ -577,10 +583,10 @@ theorem left_rewriteStep_exact
 theorem right_rewriteStep_exact
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (term : Pattern) :
-    rewriteStep compatible.presentation.language
+    rewriteStep compatible.combinedLanguage.language
         (mapPattern rightSymbols term) =
       (rewriteStep right.language term).map (mapPattern rightSymbols) := by
-  unfold presentation rawCoproduct rewriteStep
+  unfold combinedLanguage rawCoproduct rewriteStep
   simp only [renameLanguage, List.flatMap_append]
   have leftSilent :
       (left.language.rewrites.map (mapRewriteRule leftSymbols)).flatMap

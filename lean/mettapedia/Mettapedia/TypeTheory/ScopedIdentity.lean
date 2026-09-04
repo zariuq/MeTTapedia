@@ -18,7 +18,7 @@ Three facts are proved.
 
 * A route-plural layer can contain a nonempty proof-irrelevant region.
 * Proposition-valued support cannot reconstruct which conversion route ran.
-* Two materially different presentations can remain structurally
+* Two materially different constructions can remain structurally
   transportable by an explicit equivalence.
 
 The first fact captures only the scoping shape used by two-level systems; it
@@ -210,22 +210,22 @@ end ConversionCanary
 
 /-! ## Material inspection and structural transport coexist -/
 
-namespace PresentationCanary
+namespace ConstructionCanary
 
-inductive Presentation where
+inductive Construction where
   | boolean
   | finiteTwo
   deriving DecidableEq, Repr
 
-def Carrier : Presentation -> Type
+def Carrier : Construction -> Type
   | .boolean => Bool
   | .finiteTwo => Fin 2
 
-/-- A material presentation comparison retains distinct construction names
+/-- A material construction comparison retains distinct construction names
 and an explicit structural equivalence between their carriers. -/
 structure InspectableEquivalence where
-  source : Presentation
-  target : Presentation
+  source : Construction
+  target : Construction
   materiallyDistinct : source ≠ target
   structurallyEquivalent : Carrier source ≃ Carrier target
 
@@ -236,7 +236,7 @@ noncomputable def booleanFiniteTwoEquivalence : InspectableEquivalence where
   structurallyEquivalent :=
     show Bool ≃ Fin 2 from Fintype.equivOfCardEq (by decide)
 
-/-- Structural transport is invertible while the material presentation codes
+/-- Structural transport is invertible while the material construction tags
 remain distinguishable. -/
 theorem transportable_and_inspectable :
     booleanFiniteTwoEquivalence.source ≠
@@ -248,7 +248,7 @@ theorem transportable_and_inspectable :
   · exact booleanFiniteTwoEquivalence.materiallyDistinct
   · exact booleanFiniteTwoEquivalence.structurallyEquivalent.left_inv
 
-end PresentationCanary
+end ConstructionCanary
 
 /-! ## Axiom audit -/
 
@@ -258,6 +258,6 @@ end PresentationCanary
 #print axioms BubbleCanary.layer_not_routeUIP
 #print axioms BubbleCanary.reflectiveOnly_not_scopedUIP
 #print axioms ConversionCanary.routeLabel_does_not_factor_through_support
-#print axioms PresentationCanary.transportable_and_inspectable
+#print axioms ConstructionCanary.transportable_and_inspectable
 
 end Mettapedia.TypeTheory.ScopedIdentity

@@ -214,11 +214,11 @@ theorem empty_maps_to_empty
 /-- Injectivity is genuinely needed for cardinality preservation; the
 carrier-closure counterexample exhibits a two-to-one sort collapse. -/
 theorem noninjective_transport_need_not_preserve_cardinality :
-    ∃ (symbols : PresentationSymbols) (roots : List TypeExpr),
+    ∃ (symbols : LanguageDefSymbolMap) (roots : List TypeExpr),
       (CarrierObjectClosure.close
         (roots.map (mapTypeExpr symbols))).length ≠
         (CarrierObjectClosure.close roots).length := by
-  let symbols : PresentationSymbols :=
+  let symbols : LanguageDefSymbolMap :=
     { sort := fun _ => "selected-native-transport:merged"
       constructor := _root_.id
       relation := _root_.id

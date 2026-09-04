@@ -49,6 +49,15 @@ import Mettapedia.Languages.MeTTa.PeTTa.SemanticBundle
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardProjection
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardPlan
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardWire
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileCodec
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileSourceIndexedNTT
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileTyped
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileTypedOperational
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileBindingCoverage
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileFormationSemantics
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileGuardedContextSemantics
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileOccurrenceInstantiation
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardCompileSemanticComposite
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardControl
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardResumableControl
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardControlNTT

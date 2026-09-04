@@ -107,7 +107,7 @@ constructing a Type-valued generator-alignment certificate without choosing
 provenance from an erased existential. -/
 theorem rhoCostEquationInstanceOrigin_representatives
     {redex contractum : Pattern}
-    (witness : EquationSemantics.AuthoredEquationInstanceWitness
+    (witness : EquationSemantics.DeclaredEquationInstanceWitness
       defaultBasePremises rhoCIGSLT.costWholeLanguage redex contractum)
     (origin : RhoCostEquationInstanceOrigin witness) :
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
@@ -165,7 +165,7 @@ theorem rhoCostEquationInstanceOrigin_representatives
           applyBindings, costStaticReflectivePresentationDecl,
           costBaseReflectivePresentationDecl,
           costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-          costBasePresentationSymbols, costBaseStaticReflectiveSymbols,
+          costBaseLanguageDefSymbolMap, costBaseStaticReflectiveSymbols,
           costWrappedStaticReflectiveSymbols, costBaseStaticSymbols,
           costWrappedStaticSymbols, costBaseConstructorName,
           costWrappedConstructorName, costBaseConstructorTag,
@@ -218,7 +218,7 @@ theorem rhoCostEquationInstanceOrigin_representatives
           applyBindings, costStaticReflectivePresentationDecl,
           costBaseReflectivePresentationDecl,
           costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-          costBasePresentationSymbols, costBaseStaticReflectiveSymbols,
+          costBaseLanguageDefSymbolMap, costBaseStaticReflectiveSymbols,
           costWrappedStaticReflectiveSymbols, costBaseStaticSymbols,
           costWrappedStaticSymbols, costBaseConstructorName,
           costWrappedConstructorName, costBaseConstructorTag,

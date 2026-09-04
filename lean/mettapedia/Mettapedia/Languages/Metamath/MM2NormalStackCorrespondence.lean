@@ -104,15 +104,19 @@ theorem mm2StackRows_append
           (proofOffset + left.labels.length) right := by
   cases left with
   | nil =>
-      simp [GeneratedProvesForest.append,
+      simp only [GeneratedProvesForest.append,
         mm2StackRows,
-        GeneratedProvesForest.labels]
+        GeneratedProvesForest.labels, List.length_nil, Nat.add_zero,
+        List.nil_append]
   | @cons formula formulas head tail =>
-      simp [GeneratedProvesForest.append,
+      simp only [GeneratedProvesForest.append,
         mm2StackRows,
         GeneratedProvesForest.labels,
-        mm2StackRows_append tail right,
-        Nat.add_assoc, Nat.add_comm 1 formulas.length]
+        List.length_cons, List.length_append, List.cons_append]
+      rw [mm2StackRows_append tail right]
+      rw [show stackOffset + 1 + formulas.length =
+        stackOffset + (formulas.length + 1) by omega]
+      rw [Nat.add_assoc proofOffset head.labels.length tail.labels.length]
 
 /-- Appending one active-hypothesis tree produces exactly the stack cell
 emitted by the generic MM2 hypothesis directive. -/
@@ -155,7 +159,7 @@ theorem mm2StackRows_append_assertion
           (proofOffset + forest.labels.length + children.labels.length)
           assertion.label] := by
   rw [mm2StackRows_append]
-  simp [mm2StackRows, normalAssertionStackAtom, formulaAtom, Nat.add_assoc]
+  rfl
 
 /-- Occurrence identity is not recoverable from the formula alone: changing
 the root proof position changes the target stack row. -/
@@ -425,8 +429,8 @@ theorem normalAssertionPopDirectiveTrace_exact
         scopeOwner proofOwner proofPosition nextProofPosition assertionLabel
         previousHypothesis (previousHypothesis + 1)
         (stackBase + previousHypothesis) (stackBase + previousHypothesis + 1)
-      simpa [Nat.add_assoc] using
-        NormalAssertionPopDirectiveTrace.succ
+      rw [Nat.add_succ]
+      exact NormalAssertionPopDirectiveTrace.succ
           (scopeOwner := scopeOwner) (proofOwner := proofOwner)
           (proofPosition := proofPosition)
           (nextProofPosition := nextProofPosition)

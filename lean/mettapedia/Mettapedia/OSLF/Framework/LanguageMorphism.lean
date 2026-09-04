@@ -41,7 +41,8 @@ open Mettapedia.OSLF.Formula
 
 /-! ## Multi-Step Reduction for Generic Languages
 
-Reflexive-transitive closure of `langReduces` for any LanguageDef.
+Reflexive-transitive closure of the equation-saturated semantic one-step
+relation for any `LanguageDef`.
 This parallels `ReducesStar` from the ρ-calculus but works for any language. -/
 
 /-- Multi-step reduction: `p` reduces to `q` in zero or more steps via `lang`.
@@ -49,7 +50,8 @@ This parallels `ReducesStar` from the ρ-calculus but works for any language. -/
 inductive LangReducesStar (lang : LanguageDef) : Pattern → Pattern → Prop where
   | refl (p : Pattern) : LangReducesStar lang p p
   | step {p q r : Pattern} :
-      langReduces lang p q → LangReducesStar lang q r → LangReducesStar lang p r
+      langSemanticReduces lang p q →
+      LangReducesStar lang q r → LangReducesStar lang p r
 
 notation:20 p " ⟶[" lang "]* " q => LangReducesStar lang p q
 
@@ -64,7 +66,7 @@ theorem trans {lang : LanguageDef} {p q r : Pattern}
 
 /-- Single step gives multi-step. -/
 theorem single {lang : LanguageDef} {p q : Pattern}
-    (h : langReduces lang p q) : p ⟶[lang]* q :=
+    (h : langSemanticReduces lang p q) : p ⟶[lang]* q :=
   .step h (.refl q)
 
 end LangReducesStar
@@ -111,18 +113,22 @@ structure LanguageMorphism (L₁ L₂ : LanguageDef) (sc : Pattern → Pattern �
   /-- Maps L₁ terms to L₂ terms -/
   mapTerm : Pattern → Pattern
 
+  /-- The term translation respects the authored equation theories. -/
+  map_equiv : ∀ {left right}, (langGSLT L₁).Equiv left right →
+    (langGSLT L₂).Equiv (mapTerm left) (mapTerm right)
+
   /-- Forward simulation: every L₁ single-step reduction is matched by L₂
       multi-step reduction, up to sc on the result.
 
       ∀ p q, L₁ : p ⟶ q → ∃ T, L₂ : mapTerm(p) ⟶* T ∧ sc T (mapTerm q) -/
-  forward_sim : ∀ p q, langReduces L₁ p q →
+  forward_sim : ∀ p q, langSemanticReduces L₁ p q →
     ∃ T, LangReducesStar L₂ (mapTerm p) T ∧ sc T (mapTerm q)
 
   /-- Backward simulation: every L₂ single-step reduction of an encoded term
       corresponds to some L₁ reduction.
 
       ∀ p T, L₂ : mapTerm(p) ⟶ T → ∃ p', L₁ : p ⟶* p' ∧ sc T (mapTerm p') -/
-  backward_sim : ∀ p T, langReduces L₂ (mapTerm p) T →
+  backward_sim : ∀ p T, langSemanticReduces L₂ (mapTerm p) T →
     ∃ p', LangReducesStar L₁ p p' ∧ sc T (mapTerm p')
 
 /-! ## Generic Theorems -/
@@ -205,8 +211,8 @@ theorem LanguageMorphism.backward_multi_strong
     (sc_refl : ∀ p, sc p p)
     (sc_trans : ∀ p q r, sc p q → sc q r → sc p r)
     (sc_step_reduces : ∀ p q, sc p q →
-      ∀ r, langReduces L₂ p r →
-      ∃ r', langReduces L₂ q r' ∧ sc r r')
+      ∀ r, langSemanticReduces L₂ p r →
+      ∃ r', langSemanticReduces L₂ q r' ∧ sc r r')
     {p : Pattern} {T : Pattern} (h : LangReducesStar L₂ (m.mapTerm p) T) :
     ∃ p', LangReducesStar L₁ p p' ∧ sc T (m.mapTerm p') := by
   have aux :
@@ -239,9 +245,9 @@ theorem LanguageMorphism.backward_multi_strong
     to mapTerm(q), where q satisfies φ. -/
 theorem LanguageMorphism.preserves_diamond
     (m : LanguageMorphism L₁ L₂ sc)
-    {φ : Pattern → Prop} {p : Pattern}
+    {φ : GSLTTypeSynthesis.EquationPredicate (langGSLT L₁)} {p : Pattern}
     (h : langDiamond L₁ φ p) :
-    ∃ q, langReduces L₁ p q ∧ φ q ∧
+    ∃ q, langSemanticReduces L₁ p q ∧ φ.1 q ∧
          ∃ T, LangReducesStar L₂ (m.mapTerm p) T ∧ sc T (m.mapTerm q) := by
   rw [langDiamond_spec] at h
   obtain ⟨q, hred, hφ⟩ := h
@@ -276,6 +282,7 @@ variable {L₃ L₄ : LanguageDef}
 /-- Identity language morphism (`Eq` specialization). -/
 def idLanguageMorphism (L : LanguageDef) : LanguageMorphism L L Eq where
   mapTerm := id
+  map_equiv := fun equivalent => equivalent
   forward_sim := by
     intro p q hred
     exact ⟨q, LangReducesStar.single hred, rfl⟩
@@ -289,6 +296,7 @@ def composeLanguageMorphism
     (m₂₃ : LanguageMorphism L₂ L₃ Eq) :
     LanguageMorphism L₁ L₃ Eq where
   mapTerm := fun p => m₂₃.mapTerm (m₁₂.mapTerm p)
+  map_equiv := fun equivalent => m₂₃.map_equiv (m₁₂.map_equiv equivalent)
   forward_sim := by
     intro p q hred
     obtain ⟨t₁, hstar₁, ht₁⟩ := m₁₂.forward_sim p q hred

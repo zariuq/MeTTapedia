@@ -229,7 +229,7 @@ theorem english_bareHouse_not_dia_is_house :
     simpa [englishGFLanguageDef, gfLegacySemanticLanguageDef,
       allIdentityRewrites, allSemanticRewrites, allTenseRewrites] using ruleMember
   rcases ruleCases with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
-    rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)] <;>
+    rw [matchPatternForRule_eq_syntactic] <;>
     simp [bareHouseTree, useNElimRewrite,
       positAElimRewrite, useCompElimRewrite, useVElimRewrite,
       useN2ElimRewrite, useA2ElimRewrite, activePassiveRewrite,

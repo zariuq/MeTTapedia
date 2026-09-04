@@ -1,0 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.CostBoundaryNameAgreement
+open Mettapedia.GSLT.LanguageDef
+#print axioms Mettapedia.GSLT.LanguageDef.TypedCostRegionBoundaryTable.name_of_resolve
+#print axioms Mettapedia.GSLT.LanguageDef.TypedCostRegionBoundaryTable.boundary_eq_of_resolve_of_resolve

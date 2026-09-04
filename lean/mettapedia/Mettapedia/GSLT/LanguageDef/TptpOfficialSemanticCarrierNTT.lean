@@ -35,8 +35,8 @@ def contextualCarrierNativeType (sort : String)
     (free : WellSorted.FreeTypeContext) :
     langNativeType language sort where
   sort := sort
-  pred := fun term =>
-    checkHasType language free [] term (.base sort) = true
+  pred := equationPredicateOfEquationFree rfl (fun term =>
+    checkHasType language free [] term (.base sort) = true)
 
 def carrierNativeType (sort : String) :
     langNativeType language sort :=
@@ -82,42 +82,42 @@ def symbolicDerivationNativeType :=
     (symbolicRootContext "TptpSemantic:derivation-nodes")
 
 theorem thf_input_inhabits_native_type :
-    thfInputNativeType.pred
+    thfInputNativeType.pred.1
       (symbolicFamilyInput "tptp-semantic:thf-input") :=
   thf_symbolic_input_admitted
 
 theorem tff_input_inhabits_native_type :
-    tffInputNativeType.pred
+    tffInputNativeType.pred.1
       (symbolicFamilyInput "tptp-semantic:tff-input") :=
   tff_symbolic_input_admitted
 
 theorem tcf_input_inhabits_native_type :
-    tcfInputNativeType.pred
+    tcfInputNativeType.pred.1
       (symbolicFamilyInput "tptp-semantic:tcf-input") :=
   tcf_symbolic_input_admitted
 
 theorem fof_input_inhabits_native_type :
-    fofInputNativeType.pred
+    fofInputNativeType.pred.1
       (symbolicFamilyInput "tptp-semantic:fof-input") :=
   fof_symbolic_input_admitted
 
 theorem cnf_input_inhabits_native_type :
-    cnfInputNativeType.pred
+    cnfInputNativeType.pred.1
       (symbolicFamilyInput "tptp-semantic:cnf-input") :=
   cnf_symbolic_input_admitted
 
 theorem tpi_input_inhabits_native_type :
-    tpiInputNativeType.pred
+    tpiInputNativeType.pred.1
       (symbolicFamilyInput "tptp-semantic:tpi-input") :=
   tpi_symbolic_input_admitted
 
 theorem document_inhabits_native_type :
-    symbolicDocumentNativeType.pred
+    symbolicDocumentNativeType.pred.1
       (symbolicRoot "tptp-semantic:document") :=
   symbolic_document_admitted
 
 theorem derivation_inhabits_native_type :
-    symbolicDerivationNativeType.pred
+    symbolicDerivationNativeType.pred.1
       (symbolicRoot "tptp-semantic:derivation") :=
   symbolic_derivation_admitted
 
@@ -125,7 +125,7 @@ theorem derivation_inhabits_native_type :
 node.  This is checked by the generated semantic typing predicate. -/
 theorem include_not_annotated_input :
     ¬ (contextualCarrierNativeType "TptpSemantic:annotated-input"
-        TptpOfficialSourceLocation.symbolicInputContext).pred
+        TptpOfficialSourceLocation.symbolicInputContext).pred.1
       TptpOfficialSourceLocation.symbolicLocatedInclude := by
   change ¬ (checkHasType language
     TptpOfficialSourceLocation.symbolicInputContext []
@@ -138,7 +138,7 @@ fibre.  The symbolic witness keeps the failure at the family boundary instead
 of relying on one large concrete formula. -/
 theorem thf_constructor_rejects_fof_payload :
     ¬ (contextualCarrierNativeType "TptpSemantic:annotated-input"
-        (symbolicFamilyInputContext "Tptp92Ast:fof-annotated")).pred
+        (symbolicFamilyInputContext "Tptp92Ast:fof-annotated")).pred.1
       (symbolicFamilyInput "tptp-semantic:thf-input") := by
   change ¬ (checkHasType language
     (symbolicFamilyInputContext "Tptp92Ast:fof-annotated") []
@@ -149,7 +149,7 @@ theorem thf_constructor_rejects_fof_payload :
 /-- A document is not silently admitted as a derivation merely because both
 are append-only semantic roots over the same source identity. -/
 theorem document_not_derivation :
-    ¬ derivationNativeType.pred documentExample := by
+    ¬ derivationNativeType.pred.1 documentExample := by
   change ¬ (checkHasType language WellSorted.FreeTypeContext.empty []
     documentExample (.base "TptpSemantic:derivation") = true)
   decide +kernel
@@ -157,8 +157,9 @@ theorem document_not_derivation :
 theorem exact_target_native_type_empty (source target : Pattern) :
     ¬ (gsltOSLF theory).satisfies source
         (exactTargetNativeType theory target).pred := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  intro holds
   exact theory_no_step source target
+    ((satisfies_exactTargetNativeType_iff_step theory source target).mp holds)
 
 #print axioms thf_input_inhabits_native_type
 #print axioms tff_input_inhabits_native_type

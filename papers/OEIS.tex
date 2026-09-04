@@ -1044,6 +1044,67 @@ inside these results: it had zero eligible direct receipts, changed no retrieval
 and was stopped before checker evaluation.  The executed contrast was hindsight replay,
 not learned retrieval weighting.
 
+\subsection{Behaviour-preserving translation and a three-language panel}
+\label{sec:cross-language-translation}
+
+Comparing synthesis across target languages requires the languages to be posed the same
+problems, which in turn requires programs that provably compute the same sequences.  We
+built two compositional translators from the synthesis DSL---one into PeTTa, one into
+MM2---and admitted a translated program only after its first twenty terms were recomputed
+by the target engine and matched the reference evaluator exactly.  Behaviour preservation
+is thus established per witness rather than argued once for the translation scheme, and
+the resulting corpora are verified by construction: $7{,}773$ PeTTa and $5{,}888$ MM2
+programs covering $5{,}265$ behaviours expressible in all three languages.
+
+Two semantic details dominated correctness, and both are invisible until a witness
+disagrees.  First, the DSL's values are integer \emph{stacks}, not integers: the binary
+operations retain the left operand's tail, and \code{push} and \code{pop} edit the stack,
+so any scalar translation is wrong on precisely the structurally interesting programs.
+The PeTTa translation is stack-faithful throughout; the MM2 translation carries a scalar
+backend for the push-free fragment---$81.8\%$ of the pool, where every stack is provably a
+singleton and \code{pop} is the identity---and a stack backend otherwise.  Second, host
+arithmetic does not agree with the reference: the DSL floors division and modulo, whereas
+the MM2 grounding truncates division and takes the dividend's sign for modulo, and its
+modulo aborts rather than faulting on a zero divisor.  Both were corrected branchlessly
+and gated, so a demanded division by zero yields no result---mirroring a reference
+fault---instead of destroying the run.  These are the ordinary hazards of semantic
+preservation, and the per-witness gate is what converts them from silent corruption into
+a rejected translation.
+
+On this shared basis a twelve-cell panel crossed the three languages with ordinary versus
+structurally constrained decoding at two seeds, training on $4{,}988$ behaviours (a
+registered MM2 corpus cap excluded $277$) and holding out $508$.  The constrained arm
+guarantees structural completion, which the panel showed to be strictly weaker than
+producing an operational program: conditional conversion from complete tree to executing
+program fell by $1.5$, $2.1$ and $7.2$ points for A--P, PeTTa and MM2, while absolute
+operational output rose ($+12.8\%$, $+11.7\%$, $+8.7\%$) and distinct whole-OEIS coverage
+was flat for A--P ($-0.2\%$) but rose for PeTTa ($+8.7\%$) and MM2 ($+14.9\%$).  The two
+views were strongly complementary---within-language unions exceeded the better single arm
+by $46$--$57\%$, and the union across all twelve cells contains $5{,}567$ confirmed
+A-numbers.
+
+The design bounds its own conclusions in a way worth stating plainly.  Because the PeTTa
+and MM2 corpora are translations, every target carries the hash of the DSL program it was
+compiled from, and the three corpora encode one program population in three notations
+rather than three populations.  The idioms that distinguish the languages---PeTTa's
+equational definitions, MM2's saturation and reflection---are therefore absent from
+training, and median target length inflates from $16$ to $178$ and $680$ decoder actions
+under translation.  That inflation is ranked identically to both the parameter increment
+of the treatment ($1.0\%$, $12.7\%$, $30.2\%$) and its measured effect, so with three
+languages the panel cannot separate authored language structure from target length or
+capacity.  Stratifying held-out behaviours by the action length of their reference
+programs decides between them on the recorded evidence: the structural gain rises with
+target length within every language ($-2.9\%$ to $+1.2\%$ for A--P, $+4.8\%$ to $+16.1\%$
+for PeTTa, $+13.7\%$ to $+44.2\%$ for MM2), and since capacity and provenance are constant
+inside a language, a single length-dependent curve accounts for the cross-language
+gradient.  What the panel measures is thus largely the effect of translation-inflated
+target length, not of the target languages themselves.  Ranking these languages as
+synthesis targets additionally confounds provenance
+with simplicity, since the DSL is at once the population's home language and the most
+compact of the three.  Both limitations have the same remedy: natively authored programs
+in the non-DSL corpora, which is also the only route by which the behaviour-keyed pool
+becomes genuinely multilingual rather than a translation image.
+
 \section{From coverage to proof: adjudicating discoveries against their definitions}
 \label{sec:adjudication}
 

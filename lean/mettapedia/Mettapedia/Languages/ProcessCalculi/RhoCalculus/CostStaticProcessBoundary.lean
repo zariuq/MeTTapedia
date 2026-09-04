@@ -41,7 +41,7 @@ theorem rho_decodeCostStaticTypeExpr_flip_process_eq_none
         simp [costStaticReflectivePresentationDecl_eq_map,
           ReflectionExtension.mapReflectivePresentation,
           rhoReflectivePresentation, CostStaticColor.symbols,
-          costBaseStaticSymbols, costBasePresentationSymbols]
+          costBaseStaticSymbols, costBaseLanguageDefSymbolMap]
       rw [processSort]
       rfl
   | wrapped =>
@@ -90,7 +90,7 @@ theorem rho_costStaticCollectionTypingChoices_flip_mappedProcess_eq_nil
     simp [costStaticReflectivePresentationDecl_eq_map,
       ReflectionExtension.mapReflectivePresentation,
       rhoReflectivePresentation, CostStaticColor.symbols,
-      costBaseStaticSymbols, costBasePresentationSymbols,
+      costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
       costWrappedStaticSymbols, mapTypeExpr, interacting]
 
 /-- A collection that is being planned at the rho process type always has a

@@ -79,7 +79,7 @@ theorem rho_costReflectiveNameResultsQuoted :
     cases color <;>
       simp [costStaticReflectivePresentationDecl_eq_map,
         mapReflectivePresentation, CostStaticColor.symbols, costBaseStaticSymbols,
-        costBasePresentationSymbols, costWrappedStaticSymbols,
+        costBaseLanguageDefSymbolMap, costWrappedStaticSymbols,
         rhoReflectivePresentation, interactingName,
         show "Name" ≠ "Proc" by decide]
   have ruleCategoryBase : rule.category = costBaseSortName "Name" :=
@@ -114,7 +114,7 @@ theorem rho_costReflectiveNameResultsQuoted :
             costBaseConstructor, costStaticReflectivePresentationDecl,
             costBaseReflectivePresentationDecl, mapReflectivePresentation,
             costBaseStaticReflectiveSymbols, costBaseStaticSymbols,
-            costBasePresentationSymbols, sourceLabel]
+            costBaseLanguageDefSymbolMap, sourceLabel]
       · intro targetBare
         exact sourceNotBare
           ((usesBareCollection_costBaseConstructor_iff rhoCIGSLT.cut
@@ -375,7 +375,7 @@ private theorem rhoCostMixedColorCanonicalName_not_typed :
       (.base (costBaseSortName "Name")) := by
     simpa [declaration, costStaticReflectivePresentationDecl,
       costBaseReflectivePresentationDecl, mapReflectivePresentation,
-      costBaseStaticSymbols, costBasePresentationSymbols,
+      costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
       CostStaticColor.symbols, CostStaticColor.constructorTag,
       rhoReflectivePresentation] using typed
   obtain ⟨argument, argumentTyped, argumentsShape, _argumentSafe⟩ :=
@@ -392,7 +392,7 @@ private theorem rhoCostMixedColorCanonicalName_not_typed :
       (.base (costBaseSortName "Proc")) := by
     simpa [declaration, costStaticReflectivePresentationDecl,
       costBaseReflectivePresentationDecl, mapReflectivePresentation,
-      costBaseStaticSymbols, costBasePresentationSymbols,
+      costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
       CostStaticColor.symbols, CostStaticColor.constructorTag,
       rhoReflectivePresentation] using argumentTyped
   have typeEquality := HasType.apply_type_unique_of_validate_eq_nil
@@ -532,21 +532,21 @@ private theorem rho_costReflectiveConstructorsAllowed :
       (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels)
       rhoReflectivePresentation := by
   constructor
-  · let constructor : StructuralMorphism.AuthoredConstructor
+  · let constructor : StructuralMorphism.DeclaredConstructor
         rhoIGSLT.presentation.presentation :=
       ⟨rhoCalc.terms[2], List.getElem_mem (by simp [rhoCalc])⟩
     change constructor.1.label ∈ rhoContinuationRetyping.wrappedLabels
     apply (rhoContinuationRetyping.mem_wrappedLabels_iff constructor).2
     rw [rhoContinuationRetyping.mem_wrappedConstructors_iff]
     constructor <;> decide
-  · let constructor : StructuralMorphism.AuthoredConstructor
+  · let constructor : StructuralMorphism.DeclaredConstructor
         rhoIGSLT.presentation.presentation :=
       ⟨rhoCalc.terms[1], List.getElem_mem (by simp [rhoCalc])⟩
     change constructor.1.label ∈ rhoContinuationRetyping.wrappedLabels
     apply (rhoContinuationRetyping.mem_wrappedLabels_iff constructor).2
     rw [rhoContinuationRetyping.mem_wrappedConstructors_iff]
     constructor <;> decide
-  · let constructor : StructuralMorphism.AuthoredConstructor
+  · let constructor : StructuralMorphism.DeclaredConstructor
         rhoIGSLT.presentation.presentation :=
       ⟨rhoCalc.terms[0], List.getElem_mem (by simp [rhoCalc])⟩
     change constructor.1.label ∈ rhoContinuationRetyping.wrappedLabels
@@ -2242,7 +2242,7 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
             costWrappedReflectivePresentationDecl, mapReflectivePresentation,
             costBaseStaticReflectiveSymbols,
             costWrappedStaticReflectiveSymbols,
-            costBasePresentationSymbols, costBaseStaticSymbols,
+            costBaseLanguageDefSymbolMap, costBaseStaticSymbols,
             costWrappedStaticSymbols, costBaseConstructorName,
             costWrappedConstructorName, costBaseConstructorTag,
             costWrappedConstructorTag,
@@ -2293,7 +2293,7 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
             costWrappedReflectivePresentationDecl, mapReflectivePresentation,
             costBaseStaticReflectiveSymbols,
             costWrappedStaticReflectiveSymbols,
-            costBasePresentationSymbols, costBaseStaticSymbols,
+            costBaseLanguageDefSymbolMap, costBaseStaticSymbols,
             costWrappedStaticSymbols, costBaseConstructorName,
             costWrappedConstructorName, costBaseConstructorTag,
             costWrappedConstructorTag,
@@ -2305,8 +2305,8 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
 order-preserving ambient binder embedding.  Each equation instance is first
 identified with its matching generated reflective edge, after which the
 generic declaration-derived ambient-renaming theorem applies. -/
-theorem rho_costAuthoredEquationAmbientRenamingStable :
-    AuthoredEquationAmbientRenamingStable (profile := rhoCIGSLT.costWholeReflectionProfile) rhoCIGSLT.costWholeLanguage := by
+theorem rho_costDeclaredEquationAmbientRenamingStable :
+    DeclaredEquationAmbientRenamingStable (profile := rhoCIGSLT.costWholeReflectionProfile) rhoCIGSLT.costWholeLanguage := by
   intro rename strict depth context redex contractum instanceWitness
   obtain ⟨fuel, bounded⟩ := instanceWitness
   obtain ⟨declaration, membership, representatives⟩ :=
@@ -2323,7 +2323,7 @@ and reflective declaration tables. -/
 theorem rho_costSupportedEquationAmbientRenamingStable :
     SupportedEquationAmbientRenamingStable (profile := rhoCIGSLT.costWholeReflectionProfile)
       rhoCIGSLT.costWholeLanguage :=
-  ⟨rho_costAuthoredEquationAmbientRenamingStable,
+  ⟨rho_costDeclaredEquationAmbientRenamingStable,
     reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
       (profile := rhoCIGSLT.costWholeReflectionProfile)
       rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate

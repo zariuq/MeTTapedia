@@ -40,7 +40,7 @@ private theorem getElem?_map_eq_some_iff
   | some actual => simp [injective.eq_iff]
 
 private theorem free_map_eq_some_iff
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (sortInjective : Function.Injective symbols.sort)
     (free : FreeTypeContext) (name : String) (expected : TypeExpr) :
     free.map symbols name = some (mapTypeExpr symbols expected) ↔
@@ -52,7 +52,7 @@ private theorem free_map_eq_some_iff
       simp [(mapTypeExpr_injective symbols sortInjective).eq_iff]
 
 private theorem matchesParameterRepresentation?_map
-    (symbols : PresentationSymbols) (parameter : TermParam)
+    (symbols : LanguageDefSymbolMap) (parameter : TermParam)
     (argument : Pattern) :
     matchesParameterRepresentation? (mapTermParam symbols parameter)
         (mapPattern symbols argument) =
@@ -71,7 +71,7 @@ private theorem matchesParameterRepresentation?_map
       case multiLambda arity binders body => cases binders <;> rfl
 
 private theorem usesBareCollection?_map
-    (symbols : PresentationSymbols) (rule : GrammarRule) :
+    (symbols : LanguageDefSymbolMap) (rule : GrammarRule) :
     usesBareCollection? (mapGrammarRule symbols rule) =
       usesBareCollection? rule := by
   cases rule with
@@ -136,17 +136,17 @@ private theorem checkHasType_apply_eq_any
   rfl
 
 private theorem checkArguments_map_exact
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     {arguments : List Pattern} {parameters : List TermParam}
     (argumentExact : ∀ argument ∈ arguments, ∀ expected,
-      checkHasType compatible.presentation.language (free.map leftSymbols)
+      checkHasType compatible.combinedLanguage.language (free.map leftSymbols)
           (bound.map (mapTypeExpr leftSymbols))
           (mapPattern leftSymbols argument) (mapTypeExpr leftSymbols expected) =
         checkHasType left.language free bound argument expected) :
-    checkArgumentsHaveTypes compatible.presentation.language
+    checkArgumentsHaveTypes compatible.combinedLanguage.language
         (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
         (arguments.map (mapPattern leftSymbols))
         (parameters.map (mapTermParam leftSymbols)) =
@@ -171,18 +171,18 @@ private theorem checkArguments_map_exact
                 argumentExact other (by simp [membership]) otherExpected)]
 
 private theorem checkElements_map_exact
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     {elements : List Pattern} {elementType : TypeExpr}
     (elementExact : ∀ element ∈ elements,
-      checkHasType compatible.presentation.language (free.map leftSymbols)
+      checkHasType compatible.combinedLanguage.language (free.map leftSymbols)
           (bound.map (mapTypeExpr leftSymbols))
           (mapPattern leftSymbols element)
           (mapTypeExpr leftSymbols elementType) =
         checkHasType left.language free bound element elementType) :
-    checkElementsHaveType compatible.presentation.language
+    checkElementsHaveType compatible.combinedLanguage.language
         (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
         (elements.map (mapPattern leftSymbols))
         (mapTypeExpr leftSymbols elementType) =
@@ -196,19 +196,19 @@ private theorem checkElements_map_exact
         elementExact other (by simp [membership]))]
 
 private theorem constructorCandidate_left_map
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     (constructor : String) (arguments : List Pattern) (expected : TypeExpr)
     (rule : GrammarRule)
     (argumentsExact :
-      checkArgumentsHaveTypes compatible.presentation.language
+      checkArgumentsHaveTypes compatible.combinedLanguage.language
           (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
           (arguments.map (mapPattern leftSymbols))
           (rule.params.map (mapTermParam leftSymbols)) =
         checkArgumentsHaveTypes left.language free bound arguments rule.params) :
-    constructorCandidate compatible.presentation.language
+    constructorCandidate compatible.combinedLanguage.language
         (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
         (leftSymbols.constructor constructor)
         (arguments.map (mapPattern leftSymbols))
@@ -235,13 +235,13 @@ private theorem constructorCandidate_left_map
   rw [bareCheck, argumentsExact]
 
 private theorem constructorCandidate_right_map_eq_false
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     (constructor : String) (arguments : List Pattern) (expected : TypeExpr)
     (rule : GrammarRule) :
-    constructorCandidate compatible.presentation.language
+    constructorCandidate compatible.combinedLanguage.language
         (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
         (leftSymbols.constructor constructor)
         (arguments.map (mapPattern leftSymbols))
@@ -256,7 +256,7 @@ private theorem constructorCandidate_right_map_eq_false
   simp [mapGrammarRule, unequal]
 
 private theorem bareCollectionElementType?_left_map
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (rule : GrammarRule) (collectionType : CollType) (expected : TypeExpr) :
@@ -287,7 +287,7 @@ private theorem bareCollectionElementType?_left_map
                       compatible.leftSymbolsInjective.sort.eq_iff]
 
 private theorem bareCollectionElementType?_right_map_eq_none
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (rule : GrammarRule) (collectionType : CollType) (expected : TypeExpr) :
@@ -327,19 +327,19 @@ private theorem bareCollectionElementType?_right_map_eq_none
                         mapTermParam, mapTypeExpr]
 
 private theorem bareCollectionCandidate_left_map
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     (collectionType : CollType) (elements : List Pattern)
     (expected : TypeExpr) (rule : GrammarRule)
     (elementsExact : ∀ elementType,
-      checkElementsHaveType compatible.presentation.language
+      checkElementsHaveType compatible.combinedLanguage.language
           (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
           (elements.map (mapPattern leftSymbols))
           (mapTypeExpr leftSymbols elementType) =
         checkElementsHaveType left.language free bound elements elementType) :
-    bareCollectionCandidate compatible.presentation.language
+    bareCollectionCandidate compatible.combinedLanguage.language
         (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
         collectionType (elements.map (mapPattern leftSymbols))
         (mapTypeExpr leftSymbols expected) (mapGrammarRule leftSymbols rule) =
@@ -352,13 +352,13 @@ private theorem bareCollectionCandidate_left_map
   | some elementType => exact elementsExact elementType
 
 private theorem bareCollectionCandidate_right_map_eq_false
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     (collectionType : CollType) (elements : List Pattern)
     (expected : TypeExpr) (rule : GrammarRule) :
-    bareCollectionCandidate compatible.presentation.language
+    bareCollectionCandidate compatible.combinedLanguage.language
         (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
         collectionType (elements.map (mapPattern leftSymbols))
         (mapTypeExpr leftSymbols expected) (mapGrammarRule rightSymbols rule) =
@@ -367,14 +367,14 @@ private theorem bareCollectionCandidate_right_map_eq_false
   rw [bareCollectionElementType?_right_map_eq_none compatible]
 
 private theorem directCollection_map_exact
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     (collectionType : CollType) (elements : List Pattern)
     (expected : TypeExpr)
     (elementsExact : ∀ elementType,
-      checkElementsHaveType compatible.presentation.language
+      checkElementsHaveType compatible.combinedLanguage.language
           (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
           (elements.map (mapPattern leftSymbols))
           (mapTypeExpr leftSymbols elementType) =
@@ -382,7 +382,7 @@ private theorem directCollection_map_exact
     (match mapTypeExpr leftSymbols expected with
     | .collection actual elementType =>
         actual == collectionType &&
-          checkElementsHaveType compatible.presentation.language
+          checkElementsHaveType compatible.combinedLanguage.language
             (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
             (elements.map (mapPattern leftSymbols)) elementType
     | _ => false) =
@@ -394,17 +394,17 @@ private theorem directCollection_map_exact
   cases expected <;> simp [mapTypeExpr, elementsExact]
 
 private theorem checkArguments_right_map_exact
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     {arguments : List Pattern} {parameters : List TermParam}
     (argumentExact : ∀ argument ∈ arguments, ∀ expected,
-      checkHasType compatible.presentation.language (free.map rightSymbols)
+      checkHasType compatible.combinedLanguage.language (free.map rightSymbols)
           (bound.map (mapTypeExpr rightSymbols))
           (mapPattern rightSymbols argument) (mapTypeExpr rightSymbols expected) =
         checkHasType right.language free bound argument expected) :
-    checkArgumentsHaveTypes compatible.presentation.language
+    checkArgumentsHaveTypes compatible.combinedLanguage.language
         (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
         (arguments.map (mapPattern rightSymbols))
         (parameters.map (mapTermParam rightSymbols)) =
@@ -429,18 +429,18 @@ private theorem checkArguments_right_map_exact
                 argumentExact other (by simp [membership]) otherExpected)]
 
 private theorem checkElements_right_map_exact
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     {elements : List Pattern} {elementType : TypeExpr}
     (elementExact : ∀ element ∈ elements,
-      checkHasType compatible.presentation.language (free.map rightSymbols)
+      checkHasType compatible.combinedLanguage.language (free.map rightSymbols)
           (bound.map (mapTypeExpr rightSymbols))
           (mapPattern rightSymbols element)
           (mapTypeExpr rightSymbols elementType) =
         checkHasType right.language free bound element elementType) :
-    checkElementsHaveType compatible.presentation.language
+    checkElementsHaveType compatible.combinedLanguage.language
         (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
         (elements.map (mapPattern rightSymbols))
         (mapTypeExpr rightSymbols elementType) =
@@ -454,19 +454,19 @@ private theorem checkElements_right_map_exact
         elementExact other (by simp [membership]))]
 
 private theorem constructorCandidate_right_source_map
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     (constructor : String) (arguments : List Pattern) (expected : TypeExpr)
     (rule : GrammarRule)
     (argumentsExact :
-      checkArgumentsHaveTypes compatible.presentation.language
+      checkArgumentsHaveTypes compatible.combinedLanguage.language
           (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
           (arguments.map (mapPattern rightSymbols))
           (rule.params.map (mapTermParam rightSymbols)) =
         checkArgumentsHaveTypes right.language free bound arguments rule.params) :
-    constructorCandidate compatible.presentation.language
+    constructorCandidate compatible.combinedLanguage.language
         (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
         (rightSymbols.constructor constructor)
         (arguments.map (mapPattern rightSymbols))
@@ -493,13 +493,13 @@ private theorem constructorCandidate_right_source_map
   rw [bareCheck, argumentsExact]
 
 private theorem constructorCandidate_left_map_eq_false_on_right
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     (constructor : String) (arguments : List Pattern) (expected : TypeExpr)
     (rule : GrammarRule) :
-    constructorCandidate compatible.presentation.language
+    constructorCandidate compatible.combinedLanguage.language
         (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
         (rightSymbols.constructor constructor)
         (arguments.map (mapPattern rightSymbols))
@@ -513,7 +513,7 @@ private theorem constructorCandidate_left_map_eq_false_on_right
   simp [mapGrammarRule, unequal]
 
 private theorem bareCollectionElementType?_right_source_map
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (rule : GrammarRule) (collectionType : CollType) (expected : TypeExpr) :
@@ -544,7 +544,7 @@ private theorem bareCollectionElementType?_right_source_map
                       compatible.rightSymbolsInjective.sort.eq_iff]
 
 private theorem bareCollectionElementType?_left_map_eq_none_on_right
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (rule : GrammarRule) (collectionType : CollType) (expected : TypeExpr) :
@@ -583,19 +583,19 @@ private theorem bareCollectionElementType?_left_map_eq_none_on_right
                         mapTermParam, mapTypeExpr]
 
 private theorem bareCollectionCandidate_right_source_map
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     (collectionType : CollType) (elements : List Pattern)
     (expected : TypeExpr) (rule : GrammarRule)
     (elementsExact : ∀ elementType,
-      checkElementsHaveType compatible.presentation.language
+      checkElementsHaveType compatible.combinedLanguage.language
           (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
           (elements.map (mapPattern rightSymbols))
           (mapTypeExpr rightSymbols elementType) =
         checkElementsHaveType right.language free bound elements elementType) :
-    bareCollectionCandidate compatible.presentation.language
+    bareCollectionCandidate compatible.combinedLanguage.language
         (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
         collectionType (elements.map (mapPattern rightSymbols))
         (mapTypeExpr rightSymbols expected) (mapGrammarRule rightSymbols rule) =
@@ -608,13 +608,13 @@ private theorem bareCollectionCandidate_right_source_map
   | some elementType => exact elementsExact elementType
 
 private theorem bareCollectionCandidate_left_map_eq_false_on_right
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     (collectionType : CollType) (elements : List Pattern)
     (expected : TypeExpr) (rule : GrammarRule) :
-    bareCollectionCandidate compatible.presentation.language
+    bareCollectionCandidate compatible.combinedLanguage.language
         (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
         collectionType (elements.map (mapPattern rightSymbols))
         (mapTypeExpr rightSymbols expected) (mapGrammarRule leftSymbols rule) =
@@ -623,14 +623,14 @@ private theorem bareCollectionCandidate_left_map_eq_false_on_right
   rw [bareCollectionElementType?_left_map_eq_none_on_right compatible]
 
 private theorem directCollection_right_map_exact
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     (collectionType : CollType) (elements : List Pattern)
     (expected : TypeExpr)
     (elementsExact : ∀ elementType,
-      checkElementsHaveType compatible.presentation.language
+      checkElementsHaveType compatible.combinedLanguage.language
           (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
           (elements.map (mapPattern rightSymbols))
           (mapTypeExpr rightSymbols elementType) =
@@ -638,7 +638,7 @@ private theorem directCollection_right_map_exact
     (match mapTypeExpr rightSymbols expected with
     | .collection actual elementType =>
         actual == collectionType &&
-          checkElementsHaveType compatible.presentation.language
+          checkElementsHaveType compatible.combinedLanguage.language
             (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
             (elements.map (mapPattern rightSymbols)) elementType
     | _ => false) =
@@ -653,12 +653,12 @@ private theorem directCollection_right_map_exact
 is at the Boolean decision boundary, so it entails both preservation and
 reflection without introducing a second typing relation. -/
 theorem left_checkHasType_exact
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (free : FreeTypeContext) (bound : List TypeExpr)
     (pattern : Pattern) (expected : TypeExpr) :
-    checkHasType compatible.presentation.language (free.map leftSymbols)
+    checkHasType compatible.combinedLanguage.language (free.map leftSymbols)
         (bound.map (mapTypeExpr leftSymbols))
         (mapPattern leftSymbols pattern) (mapTypeExpr leftSymbols expected) =
       checkHasType left.language free bound pattern expected := by
@@ -679,7 +679,7 @@ theorem left_checkHasType_exact
       rw [checkHasType_apply_eq_any, checkHasType_apply_eq_any]
       have leftAny :
           (left.language.terms.map (mapGrammarRule leftSymbols)).any
-              (constructorCandidate compatible.presentation.language
+              (constructorCandidate compatible.combinedLanguage.language
                 (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
                 (leftSymbols.constructor constructor)
                 (arguments.map (mapPattern leftSymbols))
@@ -698,7 +698,7 @@ theorem left_checkHasType_exact
                 argumentExpected))
       have rightAny :
           (right.language.terms.map (mapGrammarRule rightSymbols)).any
-              (constructorCandidate compatible.presentation.language
+              (constructorCandidate compatible.combinedLanguage.language
                 (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
                 (leftSymbols.constructor constructor)
                 (arguments.map (mapPattern leftSymbols))
@@ -709,7 +709,7 @@ theorem left_checkHasType_exact
         rw [constructorCandidate_right_map_eq_false compatible constructor
           arguments expected rule]
         exact Bool.false_ne_true
-      rw [show compatible.presentation.language.terms =
+      rw [show compatible.combinedLanguage.language.terms =
         left.language.terms.map (mapGrammarRule leftSymbols) ++
           right.language.terms.map (mapGrammarRule rightSymbols) by rfl]
       rw [List.any_append]
@@ -744,7 +744,7 @@ theorem left_checkHasType_exact
       rfl
   | hcollection collectionType elements rest inductionHypothesis =>
       have elementsExact : ∀ elementType,
-          checkElementsHaveType compatible.presentation.language
+          checkElementsHaveType compatible.combinedLanguage.language
               (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
               (elements.map (mapPattern leftSymbols))
               (mapTypeExpr leftSymbols elementType) =
@@ -755,7 +755,7 @@ theorem left_checkHasType_exact
             inductionHypothesis element elementMember bound elementType)
       have leftAny :
           (left.language.terms.map (mapGrammarRule leftSymbols)).any
-              (bareCollectionCandidate compatible.presentation.language
+              (bareCollectionCandidate compatible.combinedLanguage.language
                 (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
                 collectionType (elements.map (mapPattern leftSymbols))
                 (mapTypeExpr leftSymbols expected)) =
@@ -769,7 +769,7 @@ theorem left_checkHasType_exact
           elements expected rule elementsExact
       have rightAny :
           (right.language.terms.map (mapGrammarRule rightSymbols)).any
-              (bareCollectionCandidate compatible.presentation.language
+              (bareCollectionCandidate compatible.combinedLanguage.language
                 (free.map leftSymbols) (bound.map (mapTypeExpr leftSymbols))
                 collectionType (elements.map (mapPattern leftSymbols))
                 (mapTypeExpr leftSymbols expected)) = false := by
@@ -783,13 +783,13 @@ theorem left_checkHasType_exact
         collectionType elements expected elementsExact
       have authoredExact :
           ((left.language.terms.map (mapGrammarRule leftSymbols)).any
-              (bareCollectionCandidate compatible.presentation.language
+              (bareCollectionCandidate compatible.combinedLanguage.language
                 (free.map leftSymbols)
                 (bound.map (mapTypeExpr leftSymbols)) collectionType
                 (elements.map (mapPattern leftSymbols))
                 (mapTypeExpr leftSymbols expected)) ||
             (right.language.terms.map (mapGrammarRule rightSymbols)).any
-              (bareCollectionCandidate compatible.presentation.language
+              (bareCollectionCandidate compatible.combinedLanguage.language
                 (free.map leftSymbols)
                 (bound.map (mapTypeExpr leftSymbols)) collectionType
                 (elements.map (mapPattern leftSymbols))
@@ -799,7 +799,7 @@ theorem left_checkHasType_exact
                 elements expected) := by
         rw [leftAny, rightAny, Bool.or_false]
       simp only [mapPattern, mapPatternList_eq_map, checkHasType]
-      rw [show compatible.presentation.language.terms =
+      rw [show compatible.combinedLanguage.language.terms =
         left.language.terms.map (mapGrammarRule leftSymbols) ++
           right.language.terms.map (mapGrammarRule rightSymbols) by rfl]
       rw [List.any_append]
@@ -810,12 +810,12 @@ theorem left_checkHasType_exact
 
 /-- Exact executable typing on the image of the right component. -/
 theorem right_checkHasType_exact
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (free : FreeTypeContext) (bound : List TypeExpr)
     (pattern : Pattern) (expected : TypeExpr) :
-    checkHasType compatible.presentation.language (free.map rightSymbols)
+    checkHasType compatible.combinedLanguage.language (free.map rightSymbols)
         (bound.map (mapTypeExpr rightSymbols))
         (mapPattern rightSymbols pattern) (mapTypeExpr rightSymbols expected) =
       checkHasType right.language free bound pattern expected := by
@@ -836,7 +836,7 @@ theorem right_checkHasType_exact
       rw [checkHasType_apply_eq_any, checkHasType_apply_eq_any]
       have leftAny :
           (left.language.terms.map (mapGrammarRule leftSymbols)).any
-              (constructorCandidate compatible.presentation.language
+              (constructorCandidate compatible.combinedLanguage.language
                 (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
                 (rightSymbols.constructor constructor)
                 (arguments.map (mapPattern rightSymbols))
@@ -849,7 +849,7 @@ theorem right_checkHasType_exact
         exact Bool.false_ne_true
       have rightAny :
           (right.language.terms.map (mapGrammarRule rightSymbols)).any
-              (constructorCandidate compatible.presentation.language
+              (constructorCandidate compatible.combinedLanguage.language
                 (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
                 (rightSymbols.constructor constructor)
                 (arguments.map (mapPattern rightSymbols))
@@ -866,7 +866,7 @@ theorem right_checkHasType_exact
             (fun argument argumentMember argumentExpected =>
               inductionHypothesis argument argumentMember bound
                 argumentExpected))
-      rw [show compatible.presentation.language.terms =
+      rw [show compatible.combinedLanguage.language.terms =
         left.language.terms.map (mapGrammarRule leftSymbols) ++
           right.language.terms.map (mapGrammarRule rightSymbols) by rfl]
       rw [List.any_append, leftAny, rightAny, Bool.false_or]
@@ -900,7 +900,7 @@ theorem right_checkHasType_exact
       rfl
   | hcollection collectionType elements rest inductionHypothesis =>
       have elementsExact : ∀ elementType,
-          checkElementsHaveType compatible.presentation.language
+          checkElementsHaveType compatible.combinedLanguage.language
               (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
               (elements.map (mapPattern rightSymbols))
               (mapTypeExpr rightSymbols elementType) =
@@ -911,7 +911,7 @@ theorem right_checkHasType_exact
             inductionHypothesis element elementMember bound elementType)
       have leftAny :
           (left.language.terms.map (mapGrammarRule leftSymbols)).any
-              (bareCollectionCandidate compatible.presentation.language
+              (bareCollectionCandidate compatible.combinedLanguage.language
                 (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
                 collectionType (elements.map (mapPattern rightSymbols))
                 (mapTypeExpr rightSymbols expected)) = false := by
@@ -923,7 +923,7 @@ theorem right_checkHasType_exact
         exact Bool.false_ne_true
       have rightAny :
           (right.language.terms.map (mapGrammarRule rightSymbols)).any
-              (bareCollectionCandidate compatible.presentation.language
+              (bareCollectionCandidate compatible.combinedLanguage.language
                 (free.map rightSymbols) (bound.map (mapTypeExpr rightSymbols))
                 collectionType (elements.map (mapPattern rightSymbols))
                 (mapTypeExpr rightSymbols expected)) =
@@ -939,13 +939,13 @@ theorem right_checkHasType_exact
         collectionType elements expected elementsExact
       have authoredExact :
           ((left.language.terms.map (mapGrammarRule leftSymbols)).any
-              (bareCollectionCandidate compatible.presentation.language
+              (bareCollectionCandidate compatible.combinedLanguage.language
                 (free.map rightSymbols)
                 (bound.map (mapTypeExpr rightSymbols)) collectionType
                 (elements.map (mapPattern rightSymbols))
                 (mapTypeExpr rightSymbols expected)) ||
             (right.language.terms.map (mapGrammarRule rightSymbols)).any
-              (bareCollectionCandidate compatible.presentation.language
+              (bareCollectionCandidate compatible.combinedLanguage.language
                 (free.map rightSymbols)
                 (bound.map (mapTypeExpr rightSymbols)) collectionType
                 (elements.map (mapPattern rightSymbols))
@@ -955,7 +955,7 @@ theorem right_checkHasType_exact
                 elements expected) := by
         rw [leftAny, rightAny, Bool.false_or]
       simp only [mapPattern, mapPatternList_eq_map, checkHasType]
-      rw [show compatible.presentation.language.terms =
+      rw [show compatible.combinedLanguage.language.terms =
         left.language.terms.map (mapGrammarRule leftSymbols) ++
           right.language.terms.map (mapGrammarRule rightSymbols) by rfl]
       rw [List.any_append]
@@ -966,13 +966,13 @@ theorem right_checkHasType_exact
 
 /-- Object-term typing is preserved and reflected exactly on the left image. -/
 theorem left_hasType_iff
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     {pattern : Pattern} {expected : TypeExpr}
     (object : isObjectPattern pattern = true) :
-    HasType compatible.presentation.language (free.map leftSymbols)
+    HasType compatible.combinedLanguage.language (free.map leftSymbols)
         (bound.map (mapTypeExpr leftSymbols))
         (mapPattern leftSymbols pattern) (mapTypeExpr leftSymbols expected) ↔
       HasType left.language free bound pattern expected := by
@@ -984,13 +984,13 @@ theorem left_hasType_iff
 
 /-- Object-term typing is preserved and reflected exactly on the right image. -/
 theorem right_hasType_iff
-    {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+    {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
     {left right : ValidatedLanguageDef}
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     {free : FreeTypeContext} {bound : List TypeExpr}
     {pattern : Pattern} {expected : TypeExpr}
     (object : isObjectPattern pattern = true) :
-    HasType compatible.presentation.language (free.map rightSymbols)
+    HasType compatible.combinedLanguage.language (free.map rightSymbols)
         (bound.map (mapTypeExpr rightSymbols))
         (mapPattern rightSymbols pattern) (mapTypeExpr rightSymbols expected) ↔
       HasType right.language free bound pattern expected := by

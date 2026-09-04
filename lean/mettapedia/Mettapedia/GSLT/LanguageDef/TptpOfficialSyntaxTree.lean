@@ -8,13 +8,13 @@ import Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
 import Mettapedia.GSLT.LanguageDef.CanonicalWire
 
 /-!
-# Generated lossless concrete syntax for TPTP v9.2.0.0
+# Static concrete-syntax migration snapshot for TPTP v9.2.0.0
 
-This inert carrier is generated from the regular productions of the official
-TPTP `SyntaxBNF`.  Production nodes, alternative-choice nodes, lexical nodes,
-and the structural tree constructors are all explicit.  Alternative identity
-is retained so the later typed-AST projection never has to invent which BNF
-alternative produced an otherwise identical payload.
+This inert carrier records a table previously generated from the regular
+productions of the TPTP `SyntaxBNF`.  No theorem in this module establishes
+that external-source correspondence.  The declarations and validation proofs
+below are therefore conditional facts about this static table, not evidence
+for a native TPTP parser-generation pipeline.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.TptpOfficialSyntaxTree
@@ -1036,12 +1036,13 @@ theorem unknown_alternative_is_rejected :
 
 def theory : Mettapedia.GSLT.GSLT :=
   languageGSLT language
-    (ReductionRespectsEquations.of_no_equations rfl)
+    (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem theory_no_step (source target : Pattern) :
     ¬ theory.Step source target := by
   intro reduction
-  change langReducesUsing RelationEnv.empty language source target at reduction
+  unfold theory at reduction
+  rw [languageGSLT_step] at reduction
   unfold langReducesUsing at reduction
   rcases reduction with ⟨_, step⟩
   cases step with

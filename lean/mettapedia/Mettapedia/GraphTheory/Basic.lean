@@ -29,6 +29,9 @@ import Mathlib.Combinatorics.SimpleGraph.Acyclic
 import Mathlib.Combinatorics.SimpleGraph.Paths
 import Mathlib.Combinatorics.SimpleGraph.Hamiltonian
 import Mathlib.Combinatorics.SimpleGraph.Bipartite
+import Mathlib.Combinatorics.SimpleGraph.Matching
+import Mathlib.Combinatorics.SimpleGraph.Coloring.Constructions
+import Mathlib.Combinatorics.SimpleGraph.LineGraph
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Finset.Card
@@ -149,100 +152,67 @@ theorem connected_n_minus_one_edges_tree [Fintype V] (G : SimpleGraph V) [Decida
       exact Fintype.card_pos
     omega
 
-/-!
-## Section 4: Hamiltonicity (Chapter 18)
+/-- A finite vertex set separates two surviving vertices when every walk
+between them meets the set. -/
+def IsVertexSeparator (G : SimpleGraph V) (S : Finset V) : Prop :=
+  ∃ u v : V, u ∉ S ∧ v ∉ S ∧ u ≠ v ∧
+    ∀ walk : G.Walk u v, ∃ x ∈ walk.support, x ∈ S
 
-Classical theorems about Hamiltonian cycles.
--/
-
-/-- A graph is Hamiltonian if it has a Hamiltonian cycle (visits every vertex exactly once).
-    Using Mathlib's definition. -/
-def IsHamiltonian [Fintype V] (G : SimpleGraph V) : Prop := G.IsHamiltonian
-
-/-- Dirac's theorem (1952): If every vertex has degree ≥ n/2, the graph is Hamiltonian.
-    Bondy & Murty, Theorem 18.4, p.485
-
-    Note: We use 2 * deg(v) ≥ n to avoid integer division issues.
-    See Hamiltonicity.lean for the detailed proof structure. -/
-theorem dirac_hamiltonian [Fintype V] (G : SimpleGraph V) [DecidableRel G.Adj]
-    (hn : Fintype.card V ≥ 3)
-    (hdeg : ∀ v, 2 * G.degree v ≥ Fintype.card V) :
-    G.IsHamiltonian := by
-  -- Proof by 2-coloring method (Bondy & Murty §18.3)
-  -- 1. Take Hamilton cycle C of complete graph K_n with max blue (∈G) edges
-  -- 2. If there's a red edge xx⁺, then deg(x) + deg(x⁺) ≥ n
-  -- 3. By pigeonhole, can find cycle exchange with more blue edges
-  -- 4. Contradiction with maximality, so all edges of C are blue
-  sorry
-
-/-- Ore's theorem (1960): If deg(u) + deg(v) ≥ n for all non-adjacent u,v, graph is Hamiltonian.
-    Bondy & Murty, Theorem 18.6, p.486 -/
-theorem ore_hamiltonian [Fintype V] (G : SimpleGraph V) [DecidableRel G.Adj]
-    (hn : Fintype.card V ≥ 3)
-    (hore : ∀ u v, u ≠ v → ¬G.Adj u v → G.degree u + G.degree v ≥ Fintype.card V) :
-    G.IsHamiltonian := by
-  -- Ore's theorem generalizes Dirac's theorem
-  -- Often proved via the closure operation
-  sorry
-
-/-- Connectivity number of a graph (minimum vertex cut size) -/
+/-- Connectivity number: the minimum finite vertex-separator size, with the
+standard complete-graph value `|V| - 1` when no separator exists. -/
 noncomputable def connectivity [Fintype V] (G : SimpleGraph V) : ℕ :=
-  sorry -- TODO: Define via minimum vertex separator
+  let separators := Finset.univ.filter (IsVertexSeparator G)
+  if present : separators.Nonempty then
+    separators.inf' present Finset.card
+  else
+    Fintype.card V - 1
 
-/-- Independence number (maximum independent set size) -/
+/-- Independence number: the largest cardinality of a finite vertex set with
+no adjacent distinct pair. -/
 noncomputable def independence_number [Fintype V] (G : SimpleGraph V) : ℕ :=
-  sorry -- TODO: Define via maximum anticlique
-
-/-- Chvátal-Erdős theorem (1972): If κ(G) ≥ α(G), the graph is Hamiltonian.
-    Bondy & Murty, p.488-491 -/
-theorem chvatal_erdos_hamiltonian [Fintype V] (G : SimpleGraph V) [DecidableRel G.Adj]
-    (hn : Fintype.card V ≥ 3)
-    (hCE : connectivity G ≥ independence_number G) :
-    G.IsHamiltonian := by
-  -- Most complex of the Hamiltonicity theorems
-  -- Requires careful analysis of longest paths and connectivity
-  sorry
+  Finset.sup Finset.univ fun S : Finset V =>
+    if (∀ u ∈ S, ∀ v ∈ S, u ≠ v → ¬G.Adj u v) then S.card else 0
 
 /-!
-## Section 5: Other Classical Results (Placeholders)
--/
-
-/- TODO: Bondy-Chvátal closure preserves Hamiltonicity.
-
-   This should be stated using Mathlib's closure construction and proved as in Bondy–Murty.
+## Section 4: Coloring and matchings
 -/
 
 omit [DecidableEq V] in
-/-- Vertex chromatic number (placeholder) -/
-noncomputable def ChromaticNumber (_G : SimpleGraph V) : ℕ := 0
+/-- Vertex chromatic number, using Mathlib's independently defined coloring
+semantics.  The value is extended-natural because an infinite graph need not
+admit a coloring by any finite palette. -/
+noncomputable abbrev ChromaticNumber (G : SimpleGraph V) : ℕ∞ := G.chromaticNumber
 
 omit [DecidableEq V] in
-/-- Edge chromatic number (placeholder) -/
-noncomputable def EdgeChromaticNumber (_G : SimpleGraph V) : ℕ := 0
+/-- Edge chromatic number, defined canonically as the vertex chromatic number
+of the line graph. -/
+noncomputable abbrev EdgeChromaticNumber (G : SimpleGraph V) : ℕ∞ :=
+  G.lineGraph.chromaticNumber
 
 omit [DecidableEq V] in
-/-- Brook's chromatic bound -/
-theorem brooks_chromatic_bound [Fintype V] (G : SimpleGraph V) :
+/-- Every finite graph colors itself by using its vertices as colors. -/
+theorem chromaticNumber_le_vertexCard [Fintype V] (G : SimpleGraph V) :
     ChromaticNumber G ≤ Fintype.card V := by
-  simp [ChromaticNumber]
+  exact G.chromaticNumber_le_card
 
 omit [DecidableEq V] in
-/-- Matching predicate (placeholder) -/
-def Matching (_G : SimpleGraph V) : Prop := by
-  -- TODO: give the standard definition of a matching as a set of pairwise-disjoint edges.
-  sorry
+/-- The analogous unconditional edge bound follows by coloring the vertices
+of the line graph, one color per edge occurrence. -/
+theorem edgeChromaticNumber_le_edgeCard [Fintype V]
+    (G : SimpleGraph V) [DecidableRel G.Adj] :
+    EdgeChromaticNumber G ≤ Fintype.card G.edgeSet := by
+  exact G.lineGraph.chromaticNumber_le_card
 
 omit [DecidableEq V] in
-/-- Perfect matching (placeholder) -/
-def PerfectMatching (_G : SimpleGraph V) : Prop := by
-  -- TODO: perfect matching = matching that covers every vertex.
-  sorry
+/-- The graph admits a matching subgraph.  The matching itself retains its
+edge occurrences as a `SimpleGraph.Subgraph`. -/
+def Matching (G : SimpleGraph V) : Prop :=
+  ∃ matching : G.Subgraph, matching.IsMatching
 
 omit [DecidableEq V] in
-/-- Planarity predicate (placeholder) -/
-def IsPlanar (_G : SimpleGraph V) : Prop := by
-  -- TODO: connect to Mathlib's planar graph notions (or add a definition).
-  sorry
+/-- The graph admits a matching subgraph spanning every vertex. -/
+def PerfectMatching (G : SimpleGraph V) : Prop :=
+  ∃ matching : G.Subgraph, matching.IsPerfectMatching
 
 omit [DecidableEq V] in
 /-- Handshaking lemma -/
@@ -263,8 +233,8 @@ omit [DecidableEq V] in
 theorem tree_edge_is_bridge [Fintype V] (G : SimpleGraph V) [DecidableRel G.Adj]
     (hTree : G.IsTree) (e : Sym2 V) (he : e ∈ G.edgeSet) :
     G.IsBridge e := by
-  have hacyclic := hTree.IsAcyclic
-  rw [SimpleGraph.isAcyclic_iff_forall_edge_isBridge] at hacyclic
+  have hacyclic := hTree.isAcyclic
+  rw [SimpleGraph.isAcyclic_iff_forall_isBridge] at hacyclic
   exact hacyclic he
 
 omit [DecidableEq V] in
@@ -276,16 +246,48 @@ theorem tree_two_leaves [Fintype V] (G : SimpleGraph V) [DecidableRel G.Adj]
     (hTree : G.IsTree) (hn : Fintype.card V ≥ 2) :
     ∃ u v : V, u ≠ v ∧ G.degree u = 1 ∧ G.degree v = 1 := by
   classical
-  -- TODO: Port a proof from mathlib (trees have at least two leaves when `card V ≥ 2`),
-  -- or replace this file with a curated wrapper around existing mathlib theorems.
-  -- This file is currently not part of the probability foundations work.
-  sorry
+  letI : Nontrivial V := Fintype.one_lt_card_iff_nontrivial.mp (by omega)
+  obtain ⟨u, hu⟩ := hTree.exists_vert_degree_one_of_nontrivial
+  by_contra noPair
+  have uniqueLeaf {v : V} (hv : G.degree v = 1) : v = u := by
+    by_contra hvu
+    exact noPair ⟨u, v, Ne.symm hvu, hu, hv⟩
+  have two_le_degree {v : V} (hvu : v ≠ u) : 2 ≤ G.degree v := by
+    have positive : 0 < G.degree v :=
+      hTree.preconnected.degree_pos_of_nontrivial v
+    have notOne : G.degree v ≠ 1 := fun hv => hvu (uniqueLeaf hv)
+    omega
+  have eraseBound :
+      2 * (Finset.univ.erase u).card ≤
+        ∑ v ∈ (Finset.univ.erase u), G.degree v := by
+    calc
+      2 * (Finset.univ.erase u).card =
+          ∑ _v ∈ (Finset.univ.erase u), 2 := by simp [Nat.mul_comm]
+      _ ≤ ∑ v ∈ (Finset.univ.erase u), G.degree v :=
+        Finset.sum_le_sum fun v hv =>
+          two_le_degree (Finset.ne_of_mem_erase hv)
+  have eraseCard : (Finset.univ.erase u).card = Fintype.card V - 1 := by
+    simp
+  have sumSplit :
+      (∑ v ∈ (Finset.univ.erase u), G.degree v) + G.degree u =
+        ∑ v : V, G.degree v := by
+    simpa using
+      (Finset.sum_erase_add Finset.univ (fun v : V => G.degree v)
+        (Finset.mem_univ u))
+  have lower : 2 * (Fintype.card V - 1) + 1 ≤ ∑ v : V, G.degree v := by
+    rw [← sumSplit, hu, ← eraseCard]
+    exact Nat.add_le_add_right eraseBound 1
+  have exactSum : ∑ v : V, G.degree v = 2 * (Fintype.card V - 1) := by
+    rw [handshaking_lemma G, tree_edge_count G hTree]
+  omega
 
 omit [DecidableEq V] in
-/-- A graph is bipartite iff it has no odd cycle -/
-theorem bipartite_iff_no_odd_cycle (G : SimpleGraph V) :
-    G.IsBipartite ↔ ∀ (v : V) (c : G.Walk v v), c.IsCycle → Even c.length := by
-  sorry
+/-- A graph is bipartite exactly when every closed walk has even length.  This
+form is stronger and more compositional than quantifying only over cycles,
+and is Mathlib's executable coloring characterization. -/
+theorem bipartite_iff_all_closed_walks_even (G : SimpleGraph V) :
+    G.IsBipartite ↔ ∀ (v : V) (walk : G.Walk v v), Even walk.length :=
+  SimpleGraph.two_colorable_iff_forall_loop_even
 
 /-!
 ## Additional placeholders for future development
@@ -294,10 +296,6 @@ theorem bipartite_iff_no_odd_cycle (G : SimpleGraph V) :
 /- TODO: actual Turan extremal theorem. -/
 
 /- TODO: actual Ramsey existence statement. -/
-
-omit [DecidableEq V] in
-theorem vizing_edge_chromatic (G : SimpleGraph V) :
-    EdgeChromaticNumber G ≤ ChromaticNumber G + 1 := by simp [EdgeChromaticNumber, ChromaticNumber]
 
 /- TODO: actual statement (Kőnig line coloring theorem). -/
 

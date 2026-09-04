@@ -43,6 +43,7 @@ open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Framework.ConstructorFibration
 open Mettapedia.OSLF.Framework.ModalEquivalence
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.GeneratedTyping (GenNativeType GenTypingContext GenHasType
   topPred meetPred rhoCalc_has_PZero rhoCalc_has_NQuote rhoCalc_has_PDrop
   rhoCalc_has_POutput rhoCalc_has_PInput toAbstractType)
@@ -99,7 +100,7 @@ theorem classifyArrow_eq_reflecting_iff (lang : LanguageDef) (procSort : String)
 
 /-- The modal operator assigned to each constructor role. -/
 def roleAction (lang : LanguageDef) (role : ConstructorRole)
-    (φ : Pattern → Prop) : Pattern → Prop :=
+    (φ : EquationPredicate (langGSLT lang)) : EquationPredicate (langGSLT lang) :=
   match role with
   | .quoting => langDiamond lang φ
   | .reflecting => langBox lang φ
@@ -112,7 +113,7 @@ def roleAction (lang : LanguageDef) (role : ConstructorRole)
     is determined by its position in the constructor category. -/
 def typingAction (lang : LanguageDef) (procSort : String)
     {dom cod : LangSort lang} (arr : SortArrow lang dom cod)
-    (φ : Pattern → Prop) : Pattern → Prop :=
+    (φ : EquationPredicate (langGSLT lang)) : EquationPredicate (langGSLT lang) :=
   roleAction lang (classifyArrow lang procSort arr) φ
 
 /-! ## ρ-Calculus Classification -/
@@ -133,12 +134,12 @@ theorem pdrop_is_reflecting :
   decide
 
 /-- NQuote typing action = ◇ (diamond). -/
-theorem nquote_action_eq_diamond (φ : Pattern → Prop) :
+theorem nquote_action_eq_diamond (φ : EquationPredicate (langGSLT rhoCalc)) :
     typingAction rhoCalc "Proc" nquoteArrow φ = langDiamond rhoCalc φ := by
   simp [typingAction, nquote_is_quoting, roleAction]
 
 /-- PDrop typing action = □ (box). -/
-theorem pdrop_action_eq_box (φ : Pattern → Prop) :
+theorem pdrop_action_eq_box (φ : EquationPredicate (langGSLT rhoCalc)) :
     typingAction rhoCalc "Proc" pdropArrow φ = langBox rhoCalc φ := by
   simp [typingAction, pdrop_is_reflecting, roleAction]
 
@@ -173,7 +174,7 @@ inductive DerivedHasType (lang : LanguageDef) (procSort : String := "Proc") :
   | nullary {Γ : GenTypingContext lang} {label : String} {sort : String}
       (hgrammar : ∃ g ∈ lang.terms, g.label = label ∧ g.category = sort ∧ g.params = [])
       (hsort : sort ∈ lang.types) :
-      DerivedHasType lang procSort Γ (.apply label []) ⟨sort, topPred, hsort⟩
+      DerivedHasType lang procSort Γ (.apply label []) ⟨sort, topPred lang, hsort⟩
 
   /-- Unary sort-crossing constructor: apply typingAction.
 
@@ -181,7 +182,8 @@ inductive DerivedHasType (lang : LanguageDef) (procSort : String := "Proc") :
       and a term typed at the domain sort, the constructor application is typed
       at the codomain sort with the modal operator determined by the arrow's
       classification (quoting→◇, reflecting→□, neutral→id). -/
-  | unary {Γ : GenTypingContext lang} {p : Pattern} {φ : Pattern → Prop}
+  | unary {Γ : GenTypingContext lang} {p : Pattern}
+      {φ : EquationPredicate (langGSLT lang)}
       {dom cod : LangSort lang} (arr : SortArrow lang dom cod) :
       DerivedHasType lang procSort Γ p ⟨dom.val, φ, dom.property⟩ →
       DerivedHasType lang procSort Γ (.apply arr.label [p])
@@ -190,19 +192,19 @@ inductive DerivedHasType (lang : LanguageDef) (procSort : String := "Proc") :
   /-- Binary constructor: both arguments typed, result gets top type.
       Covers POutput and similar 2-argument constructors. -/
   | binary {Γ : GenTypingContext lang} {p q : Pattern}
-      {φ ψ : Pattern → Prop} {label : String}
+      {φ ψ : EquationPredicate (langGSLT lang)} {label : String}
       {sort₁ sort₂ resultSort : String}
       (hgrammar : ∃ g ∈ lang.terms, g.label = label ∧ g.category = resultSort)
       (hs₁ : sort₁ ∈ lang.types) (hs₂ : sort₂ ∈ lang.types)
       (hr : resultSort ∈ lang.types) :
       DerivedHasType lang procSort Γ p ⟨sort₁, φ, hs₁⟩ →
       DerivedHasType lang procSort Γ q ⟨sort₂, ψ, hs₂⟩ →
-      DerivedHasType lang procSort Γ (.apply label [p, q]) ⟨resultSort, topPred, hr⟩
+      DerivedHasType lang procSort Γ (.apply label [p, q]) ⟨resultSort, topPred lang, hr⟩
 
   /-- Binder constructor: extends context (cofinite quantification).
       Covers PInput and similar binding constructors. -/
   | binder {Γ : GenTypingContext lang} {n : Pattern} {body : Pattern}
-      {α φ : Pattern → Prop} {label : String}
+      {α φ : EquationPredicate (langGSLT lang)} {label : String}
       {sort₁ resultSort : String}
       (hgrammar : ∃ g ∈ lang.terms, g.label = label ∧ g.category = resultSort)
       (hs₁ : sort₁ ∈ lang.types) (hr : resultSort ∈ lang.types)
@@ -212,14 +214,14 @@ inductive DerivedHasType (lang : LanguageDef) (procSort : String := "Proc") :
         DerivedHasType lang procSort (Γ.extend z ⟨sort₁, α, hs₁⟩)
           (openBVar 0 (.fvar z) body) ⟨resultSort, φ, hr⟩) →
       DerivedHasType lang procSort Γ (.apply label [n, .lambda none body])
-        ⟨resultSort, topPred, hr⟩
+        ⟨resultSort, topPred lang, hr⟩
 
   /-- Parallel composition: all elements typed at the same sort. -/
   | collection {Γ : GenTypingContext lang} {ps : List Pattern}
       {sort : String} (hsort : sort ∈ lang.types) :
-      (∀ p ∈ ps, DerivedHasType lang procSort Γ p ⟨sort, topPred, hsort⟩) →
+      (∀ p ∈ ps, DerivedHasType lang procSort Γ p ⟨sort, topPred lang, hsort⟩) →
       DerivedHasType lang procSort Γ (.collection .hashBag ps none)
-        ⟨sort, topPred, hsort⟩
+        ⟨sort, topPred lang, hsort⟩
 
 /-! ## Per-Constructor Agreement
 
@@ -239,7 +241,7 @@ open ConstructorCategory (rhoProc rhoName nquoteArrow pdropArrow)
     Given `p : (Proc, φ)` in the derived system, applying `DerivedHasType.unary
     nquoteArrow` yields `@(p) : (Name, ◇φ)`, exactly matching GenHasType.quote. -/
 theorem nquote_derived_gives_generated {Γ : GenTypingContext rhoCalc}
-    {p : Pattern} {φ : Pattern → Prop}
+    {p : Pattern} {φ : EquationPredicate (langGSLT rhoCalc)}
     (h : GenHasType rhoCalc Γ p ⟨"Proc", φ, rhoProc.property⟩) :
     GenHasType rhoCalc Γ (.apply "NQuote" [p])
       ⟨"Name", typingAction rhoCalc "Proc" nquoteArrow φ, rhoName.property⟩ := by
@@ -248,7 +250,7 @@ theorem nquote_derived_gives_generated {Γ : GenTypingContext rhoCalc}
 
 /-- PDrop: the derived unary rule gives the same result as GenHasType.drop. -/
 theorem pdrop_derived_gives_generated {Γ : GenTypingContext rhoCalc}
-    {n : Pattern} {α : Pattern → Prop}
+    {n : Pattern} {α : EquationPredicate (langGSLT rhoCalc)}
     (h : GenHasType rhoCalc Γ n ⟨"Name", α, rhoName.property⟩) :
     GenHasType rhoCalc Γ (.apply "PDrop" [n])
       ⟨"Proc", typingAction rhoCalc "Proc" pdropArrow α, rhoProc.property⟩ := by
@@ -260,7 +262,7 @@ theorem pdrop_derived_gives_generated {Γ : GenTypingContext rhoCalc}
     Given `p : (Proc, φ)` in the derived system, `GenHasType.quote` and
     `DerivedHasType.unary nquoteArrow` produce the same result type. -/
 theorem nquote_generated_gives_derived {Γ : GenTypingContext rhoCalc}
-    {p : Pattern} {φ : Pattern → Prop}
+    {p : Pattern} {φ : EquationPredicate (langGSLT rhoCalc)}
     (h : DerivedHasType rhoCalc "Proc" Γ p ⟨"Proc", φ, rhoProc.property⟩) :
     DerivedHasType rhoCalc "Proc" Γ (.apply "NQuote" [p])
       ⟨"Name", langDiamond rhoCalc φ, rhoName.property⟩ := by
@@ -269,7 +271,7 @@ theorem nquote_generated_gives_derived {Γ : GenTypingContext rhoCalc}
 
 /-- The reverse for PDrop. -/
 theorem pdrop_generated_gives_derived {Γ : GenTypingContext rhoCalc}
-    {n : Pattern} {α : Pattern → Prop}
+    {n : Pattern} {α : EquationPredicate (langGSLT rhoCalc)}
     (h : DerivedHasType rhoCalc "Proc" Γ n ⟨"Name", α, rhoName.property⟩) :
     DerivedHasType rhoCalc "Proc" Γ (.apply "PDrop" [n])
       ⟨"Proc", langBox rhoCalc α, rhoProc.property⟩ := by
@@ -286,7 +288,7 @@ open ConstructorCategory (rhoProc rhoName nquoteArrow pdropArrow)
 
 /-- Example: PZero has top type in the derived system -/
 example : DerivedHasType rhoCalc "Proc" GenTypingContext.empty
-    (.apply "PZero" []) ⟨"Proc", topPred, rhoProc.property⟩ :=
+    (.apply "PZero" []) ⟨"Proc", topPred rhoCalc, rhoProc.property⟩ :=
   .nullary rhoCalc_has_PZero rhoProc.property
 
 /-- Example: @(0) has type (Name, typingAction(NQuote)(⊤))
@@ -295,7 +297,7 @@ example : DerivedHasType rhoCalc "Proc" GenTypingContext.empty
     So this is (Name, ◇⊤). -/
 example : DerivedHasType rhoCalc "Proc" GenTypingContext.empty
     (.apply "NQuote" [.apply "PZero" []])
-    ⟨"Name", typingAction rhoCalc "Proc" nquoteArrow topPred, rhoName.property⟩ :=
+    ⟨"Name", typingAction rhoCalc "Proc" nquoteArrow (topPred rhoCalc), rhoName.property⟩ :=
   .unary nquoteArrow (.nullary rhoCalc_has_PZero rhoProc.property)
 
 /-- Example: *(@(0)) has type (Proc, typingAction(PDrop)(typingAction(NQuote)(⊤)))
@@ -305,15 +307,15 @@ example : DerivedHasType rhoCalc "Proc" GenTypingContext.empty
 example : DerivedHasType rhoCalc "Proc" GenTypingContext.empty
     (.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]])
     ⟨"Proc", typingAction rhoCalc "Proc" pdropArrow
-      (typingAction rhoCalc "Proc" nquoteArrow topPred), rhoProc.property⟩ :=
+      (typingAction rhoCalc "Proc" nquoteArrow (topPred rhoCalc)), rhoProc.property⟩ :=
   .unary pdropArrow
     (.unary nquoteArrow (.nullary rhoCalc_has_PZero rhoProc.property))
 
 /-- Verify: the derived type for @(0) matches the generated type.
 
     `typingAction rhoCalc "Proc" nquoteArrow topPred = langDiamond rhoCalc topPred` -/
-example : typingAction rhoCalc "Proc" nquoteArrow topPred =
-    langDiamond rhoCalc topPred := by
+example : typingAction rhoCalc "Proc" nquoteArrow (topPred rhoCalc) =
+    langDiamond rhoCalc (topPred rhoCalc) := by
   simp [typingAction, nquote_is_quoting, roleAction]
 
 /-- Verify: the derived type for *(@(0)) matches the generated type.
@@ -321,8 +323,8 @@ example : typingAction rhoCalc "Proc" nquoteArrow topPred =
     `typingAction "Proc" pdropArrow (typingAction "Proc" nquoteArrow topPred)
      = langBox rhoCalc (langDiamond rhoCalc topPred)` -/
 example : typingAction rhoCalc "Proc" pdropArrow
-    (typingAction rhoCalc "Proc" nquoteArrow topPred) =
-    langBox rhoCalc (langDiamond rhoCalc topPred) := by
+    (typingAction rhoCalc "Proc" nquoteArrow (topPred rhoCalc)) =
+    langBox rhoCalc (langDiamond rhoCalc (topPred rhoCalc)) := by
   simp [typingAction, nquote_is_quoting, pdrop_is_reflecting, roleAction]
 
 end Examples

@@ -195,7 +195,7 @@ denoted transition system. -/
 def parserPackTheoryUsing (relationEnv : RelationEnv) :
     Mettapedia.GSLT.GSLT :=
   languageGSLTUsing relationEnv parserPack
-    (ReductionRespectsEquationsUsing.of_no_equations _ rfl)
+    (ReductionRespectsEquationsUsing.of_equation_free _ rfl)
 
 /-- The small concrete environment below is a positive and negative control,
 not the authority for ParserPack's effective structure. -/
@@ -233,7 +233,8 @@ theorem parserPackTheoryUsing_step_iff_mem_executor
     (parserPackTheoryUsing relationEnv).Step source target ↔
       target ∈ rewriteStepWithPremisesUsing
         relationEnv parserPack source := by
-  change langReducesUsing relationEnv parserPack source target ↔ _
+  unfold parserPackTheoryUsing
+  rw [languageGSLTUsing_step]
   unfold langReducesUsing
   rw [step_iff_rootStep_of_noncontextualRules
     parserPack_rules_noncontextual]
@@ -304,8 +305,9 @@ theorem completed_is_normal :
 theorem demo_completion_is_decided :
     parserPackStepDecision.decideStep demoRunning demoCompleted = true := by
   apply (parserPackStepDecision.correct demoRunning demoCompleted).2
-  change langReducesUsing parserDemoRelationEnv parserPack
-    demoRunning demoCompleted
+  apply (languageGSLTUsing_step parserDemoRelationEnv parserPack
+    (ReductionRespectsEquationsUsing.of_equation_free _ rfl)
+    demoRunning demoCompleted).2
   apply exec_to_langReducesUsing
   refine ⟨1, ?_⟩
   rw [complete_forest_exact]
@@ -377,12 +379,13 @@ in separate presentations, so this carrier intentionally has no reduction
 steps of its own. -/
 def jsonValueTheory : Mettapedia.GSLT.GSLT :=
   languageGSLT jsonValue
-    (ReductionRespectsEquations.of_no_equations rfl)
+    (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem jsonValueTheory_no_step (source target : Pattern) :
     ¬ jsonValueTheory.Step source target := by
   intro reduction
-  change langReducesUsing RelationEnv.empty jsonValue source target at reduction
+  unfold jsonValueTheory at reduction
+  rw [languageGSLT_step] at reduction
   unfold langReducesUsing at reduction
   rcases reduction with ⟨_, step⟩
   cases step with

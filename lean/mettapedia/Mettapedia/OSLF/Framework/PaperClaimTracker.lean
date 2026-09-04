@@ -43,11 +43,11 @@ def paperClaimList : List PaperClaim :=
   [ ⟨"oslf.pdf", "Def 1", "Rewrite system: sorts, terms, one-step reduction",
     "RewriteSystem", .proven⟩
   , ⟨"oslf.pdf", "§3", "Step-future operator ◇",
-    "langDiamond / possiblyProp", .proven⟩
+    "semanticDiamond / langDiamond", .proven⟩
   , ⟨"oslf.pdf", "§3", "Step-past operator □",
-    "langBox / relyProp", .proven⟩
+    "semanticBox / langBox", .proven⟩
   , ⟨"oslf.pdf", "§4", "Galois connection ◇ ⊣ □",
-    "langGalois / galois_connection", .proven⟩
+    "semanticGalois / langGalois", .proven⟩
   , ⟨"oslf.pdf", "§6", "OSLF type system output (frame + modalities)",
     "OSLFTypeSystem / langOSLF", .proven⟩
   , ⟨"oslf.pdf", "Thm 1", "Behavioral equiv → same native types (forward)",
@@ -129,9 +129,8 @@ theorem fullNTTParity_closed :
 #check @Mettapedia.OSLF.Framework.TypeSynthesis.langBox
 #check @Mettapedia.OSLF.Framework.TypeSynthesis.langGalois
 #check @Mettapedia.OSLF.Framework.TypeSynthesis.langOSLF
-#check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.possiblyProp
-#check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.relyProp
-#check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.galois_connection
+#check @Mettapedia.OSLF.Framework.RhoInstance.rhoOSLF
+#check @Mettapedia.OSLF.Framework.RhoInstance.rho_mathlib_galois
 #check @Mettapedia.OSLF.Framework.Theorem1SubstitutabilityEquiv
 #check @Mettapedia.OSLF.Framework.theorem1_substitutability_forward
 #check @Mettapedia.OSLF.Framework.theorem1_substitutability_imageFinite

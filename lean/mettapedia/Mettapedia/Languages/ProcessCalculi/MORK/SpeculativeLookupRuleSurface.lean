@@ -365,6 +365,44 @@ theorem buildSelected?_sourceRules (profile : Profile) (selection : Selection)
                       cases built
                       rfl
 
+/-- A successful positional build retains the exact selected opaque-rule
+occurrence.  This is stronger than whole-list retention at the use site: the
+stored compiler witness is tied to the selected source position. -/
+theorem buildSelected?_sourceOpaqueRule (profile : Profile)
+    (selection : Selection) (sourceRules : List Atom)
+    (artifact : SelectedArtifact)
+    (built : buildSelected? profile selection sourceRules = some artifact) :
+    sourceRules[selection.opaquePosition]? =
+      some artifact.artifact.sourceOpaqueRule := by
+  unfold buildSelected? at built
+  cases terminalExact : sourceRules[selection.terminalPosition]? with
+  | none => simp [terminalExact] at built
+  | some sourceTerminalRule =>
+      simp only [terminalExact] at built
+      cases proofExact : sourceRules[selection.proofPosition]? with
+      | none => simp [proofExact] at built
+      | some sourceProofRule =>
+          simp only [proofExact] at built
+          cases opaqueExact : sourceRules[selection.opaquePosition]? with
+          | none => simp [opaqueExact] at built
+          | some sourceOpaqueRule =>
+              simp only [opaqueExact] at built
+              simp only [bind, Option.bind] at built
+              cases derivedExact : deriveRules? profile sourceTerminalRule
+                  sourceProofRule sourceOpaqueRule with
+              | none => simp [derivedExact] at built
+              | some derivedRules =>
+                  rcases derivedRules with
+                    ⟨directProofRule, directOpaqueRule, targetTerminalRule⟩
+                  rw [derivedExact] at built
+                  cases retainedExact : replaceAt? selection.terminalPosition
+                      targetTerminalRule sourceRules with
+                  | none => simp [retainedExact] at built
+                  | some retainedRules =>
+                      simp only [retainedExact] at built
+                      cases built
+                      rfl
+
 /-- A successful occurrence-sensitive build preserves every source rule
 occurrence and appends exactly the two derived direct handlers. -/
 theorem buildSelected?_targetRules_length (profile : Profile)
@@ -416,6 +454,26 @@ theorem buildSelectedStrict?_sourceRules (profile : Profile)
     · cases built
       exact buildSelected?_sourceRules profile selection sourceRules artifact
         candidateBuilt
+    · simp at built
+  · simp at built
+
+/-- The strict inventory check preserves the same position-bound opaque-rule
+identity as the positional compiler beneath it. -/
+theorem buildSelectedStrict?_sourceOpaqueRule (profile : Profile)
+    (selection : Selection) (sourceRules : List Atom)
+    (artifact : SelectedArtifact)
+    (built : buildSelectedStrict? profile selection sourceRules =
+      some artifact) :
+    sourceRules[selection.opaquePosition]? =
+      some artifact.artifact.sourceOpaqueRule := by
+  unfold buildSelectedStrict? at built
+  split at built
+  · obtain ⟨candidate, candidateBuilt, built⟩ :=
+      Option.bind_eq_some_iff.mp built
+    split at built
+    · cases built
+      exact buildSelected?_sourceOpaqueRule profile selection sourceRules
+        artifact candidateBuilt
     · simp at built
   · simp at built
 
@@ -612,6 +670,8 @@ example :
 #print axioms build?_sourceRules
 #print axioms buildSelected?_sourceRules
 #print axioms buildSelectedStrict?_sourceRules
+#print axioms buildSelected?_sourceOpaqueRule
+#print axioms buildSelectedStrict?_sourceOpaqueRule
 #print axioms buildSelected?_targetRules_length
 #print axioms buildSelectedStrict?_targetRules_length
 #print axioms build?_targetRules_length

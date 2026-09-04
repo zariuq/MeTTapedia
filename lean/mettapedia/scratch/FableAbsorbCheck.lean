@@ -1,0 +1,5 @@
+import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalStopFvarAbsorption
+open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
+#print axioms Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.CanonicalStopAligned.absorbFvars
+#print axioms Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.CanonicalStopAlignedList.absorbFvars
+#print axioms Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.StopWithFvars.elim

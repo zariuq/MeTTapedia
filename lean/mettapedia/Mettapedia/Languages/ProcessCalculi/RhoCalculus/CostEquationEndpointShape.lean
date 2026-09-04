@@ -65,7 +65,7 @@ collapsing (quote-headed) endpoint at its own colour: the redex for a
 forward instance, the contractum for a reverse instance. -/
 theorem rho_costEquationInstance_collapsingEndpoint
     {redex contractum : Pattern}
-    (witness : EquationSemantics.AuthoredEquationInstanceWitness
+    (witness : EquationSemantics.DeclaredEquationInstanceWitness
       defaultBasePremises rhoCIGSLT.costWholeLanguage redex contractum) :
     ∃ color : CostStaticColor,
       CollapsingRoot

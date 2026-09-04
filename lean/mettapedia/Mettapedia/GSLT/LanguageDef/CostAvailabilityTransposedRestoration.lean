@@ -576,7 +576,7 @@ mutual
       {smallSupport largeSupport : ContextSupport.Support}
       {smallAssignment largeAssignment : ContextSupport.Assignment}
       {ambient : List TypeExpr}
-      (symbols : PresentationSymbols)
+      (symbols : LanguageDefSymbolMap)
       (quotePreserved : ∀ constructor,
         isQuoteConstructor targetProfile (symbols.constructor constructor) =
           isQuoteConstructor sourceProfile constructor) :
@@ -627,7 +627,7 @@ mutual
       {smallSupport largeSupport : ContextSupport.Support}
       {smallAssignment largeAssignment : ContextSupport.Assignment}
       {ambient : List TypeExpr}
-      (symbols : PresentationSymbols)
+      (symbols : LanguageDefSymbolMap)
       (quotePreserved : ∀ constructor,
         isQuoteConstructor targetProfile (symbols.constructor constructor) =
           isQuoteConstructor sourceProfile constructor) :

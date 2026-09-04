@@ -30,12 +30,12 @@ namespace CostStaticColor
 /-- Uniform static symbol action determined solely by the authored theory.
 This is the non-circular form used while constructing the next continued
 Cost object. -/
-def symbolsOf (theory : IGSLT) : CostStaticColor → PresentationSymbols
+def symbolsOf (theory : IGSLT) : CostStaticColor → LanguageDefSymbolMap
   | .base => costBaseStaticSymbols
   | .wrapped => costWrappedStaticSymbols theory
 
 /-- Uniform presentation action that embeds one static copy. -/
-def symbols (source : CIGSLT) : CostStaticColor → PresentationSymbols
+def symbols (source : CIGSLT) : CostStaticColor → LanguageDefSymbolMap
   | .base => costBaseStaticSymbols
   | .wrapped => costWrappedStaticSymbols source.theory
 
@@ -57,9 +57,9 @@ def reflectiveSymbols (source : CIGSLT) : CostStaticColor → ReflectiveSymbols
   | .wrapped => costWrappedStaticReflectiveSymbols source.theory
 
 @[simp]
-theorem reflectiveSymbols_toPresentationSymbols
+theorem reflectiveSymbols_toLanguageDefSymbolMap
     (source : CIGSLT) (color : CostStaticColor) :
-    (color.reflectiveSymbols source).toPresentationSymbols =
+    (color.reflectiveSymbols source).toLanguageDefSymbolMap =
       color.symbols source := by
   cases color <;> rfl
 
@@ -384,7 +384,7 @@ theorem color_eq_of_mapLangSort_eq_of_interacting (source : CIGSLT)
             source.theory.presentation.interactingSort.1.name =
           costWrappedSortName := by
       simpa [CostStaticColor.mapLangSort_name, CostStaticColor.symbols,
-        costBaseStaticSymbols, costBasePresentationSymbols,
+        costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
         costWrappedStaticSymbols, firstInteracting, secondInteracting] using
         nameEquality
     exact (costBaseSortName_ne_wrapped _ impossible).elim
@@ -393,7 +393,7 @@ theorem color_eq_of_mapLangSort_eq_of_interacting (source : CIGSLT)
           costBaseSortName
             source.theory.presentation.interactingSort.1.name := by
       simpa [CostStaticColor.mapLangSort_name, CostStaticColor.symbols,
-        costBaseStaticSymbols, costBasePresentationSymbols,
+        costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
         costWrappedStaticSymbols, firstInteracting, secondInteracting] using
         nameEquality
     exact (costBaseSortName_ne_wrapped _ impossible.symm).elim
@@ -427,7 +427,7 @@ theorem reflectiveScopeSafeAt_mapCostStatic
         simpa [costBaseReflectivePresentationDecl,
           mapReflectivePresentation, CostStaticColor.symbols,
           costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-          costBasePresentationSymbols] using
+          costBaseLanguageDefSymbolMap] using
           (show binderSafeAt
               ((CostStaticColor.base.symbols source).constructor
                 sourcePresentation.quoteConstructor) depth
@@ -447,7 +447,7 @@ theorem reflectiveScopeSafeAt_mapCostStatic
         simpa [costBaseReflectivePresentationDecl,
           mapReflectivePresentation, CostStaticColor.symbols,
           costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-          costBasePresentationSymbols] using
+          costBaseLanguageDefSymbolMap] using
           (scopeEquality.trans mappedOrdinaryScope)
   · rcases List.mem_map.mp wrappedMembership with
       ⟨sourcePresentation, sourceMembership, rfl⟩
@@ -504,7 +504,7 @@ theorem reflectiveIsQuoteConstructor_mapCostStatic
           simpa [CostStaticColor.symbols,
             costBaseReflectivePresentationDecl, mapReflectivePresentation,
             costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-            costBasePresentationSymbols] using equality
+            costBaseLanguageDefSymbolMap] using equality
         · have impossible :
               costWrappedConstructorName declaration.quoteConstructor =
                 costBaseConstructorName constructor := by
@@ -512,7 +512,7 @@ theorem reflectiveIsQuoteConstructor_mapCostStatic
               costWrappedReflectivePresentationDecl,
               mapReflectivePresentation, costWrappedStaticSymbols,
               costWrappedStaticReflectiveSymbols, costBaseStaticSymbols,
-              costBasePresentationSymbols] using equality
+              costBaseLanguageDefSymbolMap] using equality
           exact False.elim
             (costBaseConstructorName_ne_wrapped constructor
               declaration.quoteConstructor impossible.symm)
@@ -522,7 +522,7 @@ theorem reflectiveIsQuoteConstructor_mapCostStatic
         simp [CostStaticColor.symbols,
           costBaseReflectivePresentationDecl, mapReflectivePresentation,
           costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-          costBasePresentationSymbols, equality]
+          costBaseLanguageDefSymbolMap, equality]
   | wrapped =>
       rw [Bool.eq_iff_iff]
       simp only [List.any_map, Function.comp_apply, Bool.or_eq_true,
@@ -536,7 +536,7 @@ theorem reflectiveIsQuoteConstructor_mapCostStatic
             simpa [CostStaticColor.symbols,
               costBaseReflectivePresentationDecl, mapReflectivePresentation,
               costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
-              costBasePresentationSymbols,
+              costBaseLanguageDefSymbolMap,
               costWrappedStaticSymbols] using equality
           exact False.elim
             (costBaseConstructorName_ne_wrapped
@@ -583,7 +583,7 @@ theorem isSelectedContinuation_eq_false_of_mem_wrappedLabelsFor
     (wrapped : rule.label ∈ plan.wrappedLabels)
     (index : Nat) :
     isSelectedContinuation cut rule index = false := by
-  let authored : AuthoredConstructor theory.presentation.presentation :=
+  let authored : DeclaredConstructor theory.presentation.presentation :=
     ⟨rule, membership⟩
   have wrappedConstructor : authored ∈ plan.wrappedConstructors :=
     (plan.mem_wrappedLabels_iff authored).mp wrapped
@@ -762,7 +762,7 @@ theorem quoteDropShape_mapEquationSymbols
     (shape : LanguageDef.QuoteDropShape declaration equation) :
     LanguageDef.QuoteDropShape
       (mapReflectivePresentation symbols declaration)
-      (mapEquation symbols.toPresentationSymbols equation) := by
+      (mapEquation symbols.toLanguageDefSymbolMap equation) := by
   rw [LanguageDef.quoteDropShape_iff] at shape ⊢
   rcases shape with ⟨name, forward | reverse⟩
   · refine ⟨name, Or.inl ?_⟩
@@ -1045,13 +1045,13 @@ theorem validateReflectivePresentation_costWrapped_of_wrapped
       witness.equation.name = declaration.quoteDropEquation :=
     beq_iff_eq.mp (List.mem_filter.mp equationFiltered).2
   let quoteAuthored :
-      AuthoredConstructor theory.presentation.presentation :=
+      DeclaredConstructor theory.presentation.presentation :=
     ⟨witness.quote, quoteMembership⟩
   let dropAuthored :
-      AuthoredConstructor theory.presentation.presentation :=
+      DeclaredConstructor theory.presentation.presentation :=
     ⟨witness.drop, dropMembership⟩
   let unitAuthored :
-      AuthoredConstructor theory.presentation.presentation :=
+      DeclaredConstructor theory.presentation.presentation :=
     ⟨witness.unit, unitMembership⟩
   have quoteSelected : quoteAuthored ∈ plan.wrappedConstructors :=
     (plan.mem_wrappedLabels_iff quoteAuthored).mp (by
@@ -1478,7 +1478,7 @@ mutual
             mappedLookup)
     | @constructor bound rule arguments labelSupported membership notBare
         argumentsTyped =>
-        let authored : AuthoredConstructor theory.presentation.presentation :=
+        let authored : DeclaredConstructor theory.presentation.presentation :=
           ⟨rule, membership⟩
         have wrappedConstructor : authored ∈ plan.wrappedConstructors :=
           (plan.mem_wrappedLabels_iff authored).mp labelSupported
@@ -1511,7 +1511,7 @@ mutual
                   targetBare)
             simpa [mapPattern, CostStaticColor.symbolsOf,
               costBaseConstructor, costBaseStaticSymbols,
-              costBasePresentationSymbols, mapTypeExpr] using
+              costBaseLanguageDefSymbolMap, mapTypeExpr] using
               (WellSorted.HasType.constructor
                 (plan.costBaseConstructor_mem_generated rule membership)
                 targetNotBare targetArguments)
@@ -1588,7 +1588,7 @@ mutual
     | @collectionConstructor bound rule parameterName collectionType elements
         rest elementType labelSupported membership parameterShape
         elementsTyped =>
-        let authored : AuthoredConstructor theory.presentation.presentation :=
+        let authored : DeclaredConstructor theory.presentation.presentation :=
           ⟨rule, membership⟩
         have wrappedConstructor : authored ∈ plan.wrappedConstructors :=
           (plan.mem_wrappedLabels_iff authored).mp labelSupported
@@ -1612,7 +1612,7 @@ mutual
                 costBaseTypeExpr]
             simpa [mapPattern, CostStaticColor.symbolsOf,
               costBaseConstructor, costBaseStaticSymbols,
-              costBasePresentationSymbols, mapTypeExpr] using
+              costBaseLanguageDefSymbolMap, mapTypeExpr] using
               (WellSorted.HasType.collectionConstructor
                 (plan.costBaseConstructor_mem_generated rule membership)
                 targetShape mappedElements)
@@ -1727,7 +1727,7 @@ mutual
             mappedLookup)
     | @constructor bound rule arguments labelSupported membership notBare
         argumentsTyped =>
-        let authored : AuthoredConstructor
+        let authored : DeclaredConstructor
             source.theory.presentation.presentation := ⟨rule, membership⟩
         have wrappedConstructor : authored ∈
             source.continuationRetyping.wrappedConstructors :=
@@ -1758,7 +1758,7 @@ mutual
                 ((usesBareCollection_costBaseConstructor_iff source.cut rule).mp
                   targetBare)
             simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor,
-              costBaseStaticSymbols, costBasePresentationSymbols,
+              costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               mapTypeExpr] using
               (WellSorted.HasType.constructor
                 (source.costBaseConstructor_mem_costWhole rule membership)
@@ -1832,7 +1832,7 @@ mutual
     | @collectionConstructor bound rule parameterName collectionType elements
         rest elementType labelSupported membership parameterShape
         elementsTyped =>
-        let authored : AuthoredConstructor
+        let authored : DeclaredConstructor
             source.theory.presentation.presentation := ⟨rule, membership⟩
         have wrappedConstructor : authored ∈
             source.continuationRetyping.wrappedConstructors :=
@@ -1856,7 +1856,7 @@ mutual
                 CostStaticColor.symbols, mapParameterType,
                 costBaseTypeExpr]
             simpa [mapPattern, CostStaticColor.symbols, costBaseConstructor,
-              costBaseStaticSymbols, costBasePresentationSymbols,
+              costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               mapTypeExpr] using
               (WellSorted.HasType.collectionConstructor
                 (source.costBaseConstructor_mem_costWhole rule membership)
@@ -2155,10 +2155,10 @@ mutual
                 targetQuoted targetArgumentsSafe
             simpa [targetTyped, mapPattern, CostStaticColor.symbols,
               costBaseConstructor, costBaseStaticSymbols,
-              costBasePresentationSymbols, mapTypeExpr] using
+              costBaseLanguageDefSymbolMap, mapTypeExpr] using
                 Exists.intro targetTyped targetSafe
         | wrapped =>
-            let authored : AuthoredConstructor
+            let authored : DeclaredConstructor
                 source.theory.presentation.presentation := ⟨rule, membership⟩
             have wrappedConstructor : authored ∈
                 source.continuationRetyping.wrappedConstructors :=
@@ -2284,10 +2284,10 @@ mutual
                 targetOrdinary targetArgumentsSafe
             simpa [targetTyped, mapPattern, CostStaticColor.symbols,
               costBaseConstructor, costBaseStaticSymbols,
-              costBasePresentationSymbols, mapTypeExpr] using
+              costBaseLanguageDefSymbolMap, mapTypeExpr] using
                 Exists.intro targetTyped targetSafe
         | wrapped =>
-            let authored : AuthoredConstructor
+            let authored : DeclaredConstructor
                 source.theory.presentation.presentation := ⟨rule, membership⟩
             have wrappedConstructor : authored ∈
                 source.continuationRetyping.wrappedConstructors :=
@@ -2469,10 +2469,10 @@ mutual
             simpa [targetTyped, mapPattern, mapPatternList_eq_map,
               CostStaticColor.symbols,
               costBaseConstructor, costBaseStaticSymbols,
-              costBasePresentationSymbols, mapTypeExpr] using
+              costBaseLanguageDefSymbolMap, mapTypeExpr] using
                 Exists.intro targetTyped targetSafe
         | wrapped =>
-            let authored : AuthoredConstructor
+            let authored : DeclaredConstructor
                 source.theory.presentation.presentation := ⟨rule, membership⟩
             have wrappedConstructor : authored ∈
                 source.continuationRetyping.wrappedConstructors :=

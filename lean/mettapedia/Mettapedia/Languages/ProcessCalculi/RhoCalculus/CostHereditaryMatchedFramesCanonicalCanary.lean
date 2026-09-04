@@ -597,7 +597,7 @@ theorem left_endpoint_frame_keyed
     leftNode leftEnvironment, reifiedFrame]
   simp [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
     mapPatternList_eq_map, CostStaticColor.symbols, costBaseStaticSymbols,
-    costBasePresentationSymbols, rhoReflectivePresentation,
+    costBaseLanguageDefSymbolMap, rhoReflectivePresentation,
     canonicalizeByDepths, canonicalizeListByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
 
@@ -628,7 +628,7 @@ theorem right_endpoint_frame_keyed
     rightNode rightEnvironment, reifiedFrame]
   simp [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
     mapPatternList_eq_map, CostStaticColor.symbols, costBaseStaticSymbols,
-    costBasePresentationSymbols, rhoReflectivePresentation,
+    costBaseLanguageDefSymbolMap, rhoReflectivePresentation,
     canonicalizeByDepths, canonicalizeListByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
 
@@ -739,7 +739,7 @@ theorem left_common_frame_canonical
       simp only [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
         mapPatternList_eq_map,
         CostStaticColor.symbols, costBaseStaticSymbols,
-        costBasePresentationSymbols, List.map_cons, List.map_nil]
+        costBaseLanguageDefSymbolMap, List.map_cons, List.map_nil]
       let name := cospan.commonAtomName (cospan.leftSlot leftSlot)
       have dropNeQuote : declaration.dropConstructor ≠
           declaration.quoteConstructor := by decide
@@ -793,7 +793,7 @@ theorem right_common_frame_canonical
       simp only [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
         mapPatternList_eq_map,
         CostStaticColor.symbols, costBaseStaticSymbols,
-        costBasePresentationSymbols, List.map_cons, List.map_nil]
+        costBaseLanguageDefSymbolMap, List.map_cons, List.map_nil]
       let name := cospan.commonAtomName (cospan.rightSlot rightSlot)
       have dropNeQuote : declaration.dropConstructor ≠
           declaration.quoteConstructor := by decide
@@ -853,7 +853,7 @@ theorem left_common_frame_keyed
     _ = _ := by
       simp only [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
         mapPatternList_eq_map, CostStaticColor.symbols, costBaseStaticSymbols,
-        costBasePresentationSymbols, List.map_cons, List.map_nil]
+        costBaseLanguageDefSymbolMap, List.map_cons, List.map_nil]
       let name := cospan.commonAtomName (cospan.leftSlot leftSlot)
       change canonicalizeByAt (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
           declaration 1
@@ -916,7 +916,7 @@ theorem right_common_frame_keyed
     _ = _ := by
       simp only [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
         mapPatternList_eq_map, CostStaticColor.symbols, costBaseStaticSymbols,
-        costBasePresentationSymbols, List.map_cons, List.map_nil]
+        costBaseLanguageDefSymbolMap, List.map_cons, List.map_nil]
       let name := cospan.commonAtomName (cospan.rightSlot rightSlot)
       change canonicalizeByAt (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
           declaration 1
@@ -1022,7 +1022,7 @@ theorem aligned_views_have_source_canonical_alignment :
   exact .cons (.leaf (fun _sourceDepth restoreDepth => by
     simpa [CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
       CostStaticColor.symbols, costBaseStaticSymbols,
-      costBasePresentationSymbols, CostStaticAtomKeyCospan.reifyWith,
+      costBaseLanguageDefSymbolMap, CostStaticAtomKeyCospan.reifyWith,
       Pattern.renameFVars, CostStaticAtomKeyCospan.reifyNameWith,
       CostStaticAtomEnvironment.lookupAtom?_atomName, cospan] using
         CostStaticAtomEnvironment.substituteAt_commonReifiedAtom_eq_of_scoped_normal

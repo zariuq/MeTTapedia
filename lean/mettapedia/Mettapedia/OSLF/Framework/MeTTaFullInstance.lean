@@ -16,6 +16,7 @@ namespace Mettapedia.OSLF.Framework.MeTTaFullInstance
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Formula
 
@@ -73,8 +74,8 @@ theorem mettaFull_pathOrder
 /-- End-to-end MeTTaFull bridge parallel to TinyML/MeTTaMinimal. -/
 theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
     {relEnv : RelationEnv}
-    {I_check : AtomCheck} {I_sem : AtomSem}
-    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {I_check : AtomCheck} {I_sem : EquationAtomSemUsing relEnv mettaFull}
+    (h_atoms : ∀ a p, I_check a p = true → (I_sem a).1 p)
     {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
     (hSat : checkLangUsing relEnv mettaFull I_check fuel p φf = .sat)
     (seed q : Pattern)
@@ -84,7 +85,7 @@ theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
     (hNat :
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         mettaFull mettaState seed
-        (sem (langReducesUsing relEnv mettaFull) I_sem φf))
+        (langFormulaSemUsing relEnv mettaFull I_sem φf).1)
     {P B D : CategoryTheory.Functor (Opposite (ConstructorObj mettaFull)) (Type _)}
     (pi1 : P ⟶
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
@@ -101,10 +102,10 @@ theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
         mettaFull mettaState).obj X)
     (hp : pathSem mettaFull hArrow seed = p) :
-    let ψ := sem (langReducesUsing relEnv mettaFull) I_sem φf
-    (langOSLF mettaFull "State").satisfies (S := "State")
+    let ψ := langFormulaSemUsing relEnv mettaFull I_sem φf
+    (langOSLFUsing relEnv mettaFull "State").satisfies (S := "State")
       (pathSem mettaFull hArrow seed) ψ
-    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ
+    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1
         (pathSem mettaFull hArrow seed)
     ∧
       ((CategoryTheory.Subobject.map pi2).obj
@@ -112,22 +113,23 @@ theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaFull mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaFull mettaState seed q ψ hPkg)))
+                mettaFull mettaState seed q ψ.1 hPkg)))
         =
       (CategoryTheory.Subobject.pullback g).obj
           ((CategoryTheory.Subobject.map f).obj
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaFull mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaFull mettaState seed q ψ hPkg))))
+                mettaFull mettaState seed q ψ.1 hPkg))))
     ∧
       (langDiamondUsing relEnv mettaFull
-        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ)) p ↔
+        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree
+          relEnv mettaFull (by rfl) q
+          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1)) p ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj mettaFull) relEnv mettaFull).Edge.obj X,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -136,17 +138,18 @@ theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
             Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u q =
               ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
                 (C := ConstructorObj mettaFull) relEnv mettaFull).target.app X e).down ∧
-            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ u) := by
-  let ψ : Pattern → Prop := sem (langReducesUsing relEnv mettaFull) I_sem φf
+            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1 u) := by
+  let ψ : EquationPredicate (langGSLTUsing relEnv mettaFull) :=
+    langFormulaSemUsing relEnv mettaFull I_sem φf
   have hSatFiber :
-      (langOSLF mettaFull "State").satisfies (S := "State")
+      (langOSLFUsing relEnv mettaFull "State").satisfies (S := "State")
         (pathSem mettaFull hArrow seed) ψ :=
     checkLangUsing_sat_sound_sort_fiber_mem_iff
       (relEnv := relEnv) (lang := mettaFull) (procSort := "State")
       (I_check := I_check) (I_sem := I_sem)
       h_atoms hSat mettaState seed hNat hArrow hp
   have hClosedBase :
-      Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ
+      Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1
         (pathSem mettaFull hArrow seed) :=
     Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred.base hSatFiber
   have hBCGraph :
@@ -155,22 +158,23 @@ theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaFull mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaFull mettaState seed q ψ hPkg)))
+                mettaFull mettaState seed q ψ.1 hPkg)))
         =
       (CategoryTheory.Subobject.pullback g).obj
           ((CategoryTheory.Subobject.map f).obj
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaFull mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaFull mettaState seed q ψ hPkg))))
+                mettaFull mettaState seed q ψ.1 hPkg))))
       ∧
       (langDiamondUsing relEnv mettaFull
-        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ)) p ↔
+        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree
+          relEnv mettaFull (by rfl) q
+          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1)) p ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj mettaFull) relEnv mettaFull).Edge.obj X,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -179,27 +183,31 @@ theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
             Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u q =
               ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
                 (C := ConstructorObj mettaFull) relEnv mettaFull).target.app X e).down ∧
-            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ u) :=
-    Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
-      (lang := mettaFull) (s := mettaState) (seed := seed) (q := q) (φ := ψ)
+            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1 u) := by
+    simpa [Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree] using
+      (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
+      (lang := mettaFull) (s := mettaState) (seed := seed) (q := q) (φ := ψ.1)
       (hPkg := hPkg)
       (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
       (hpb := hpb) (hf := hf) (hpi2 := hpi2)
-      (relEnv := relEnv) (X := X) (p := p)
+      (relEnv := relEnv)
+      (hInvariant := equationInvariant_langGSLTUsing_of_equation_free
+        relEnv (by rfl) _)
+      (X := X) (p := p))
   exact ⟨hSatFiber, hClosedBase, hBCGraph.1, hBCGraph.2⟩
 
 /-- Public no-package wrapper using the concrete `mettaFull_pathOrder` law. -/
 theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
     {relEnv : RelationEnv}
-    {I_check : AtomCheck} {I_sem : AtomSem}
-    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {I_check : AtomCheck} {I_sem : EquationAtomSemUsing relEnv mettaFull}
+    (h_atoms : ∀ a p, I_check a p = true → (I_sem a).1 p)
     {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
     (hSat : checkLangUsing relEnv mettaFull I_check fuel p φf = .sat)
     (seed q : Pattern)
     (hNat :
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         mettaFull mettaState seed
-        (sem (langReducesUsing relEnv mettaFull) I_sem φf))
+        (langFormulaSemUsing relEnv mettaFull I_sem φf).1)
     {P B D : CategoryTheory.Functor (Opposite (ConstructorObj mettaFull)) (Type _)}
     (pi1 : P ⟶
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
@@ -216,10 +224,10 @@ theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
         mettaFull mettaState).obj X)
     (hp : pathSem mettaFull hArrow seed = p) :
-    let ψ := sem (langReducesUsing relEnv mettaFull) I_sem φf
-    (langOSLF mettaFull "State").satisfies (S := "State")
+    let ψ := langFormulaSemUsing relEnv mettaFull I_sem φf
+    (langOSLFUsing relEnv mettaFull "State").satisfies (S := "State")
       (pathSem mettaFull hArrow seed) ψ
-    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ
+    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1
         (pathSem mettaFull hArrow seed)
     ∧
       ((CategoryTheory.Subobject.map pi2).obj
@@ -227,9 +235,9 @@ theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaFull mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaFull mettaState seed q ψ
+                mettaFull mettaState seed q ψ.1
                 (Mettapedia.OSLF.Framework.CategoryBridge.commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
                   mettaFull mettaState seed q (mettaFull_pathOrder seed)))))
         =
@@ -238,15 +246,16 @@ theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaFull mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaFull mettaState seed q ψ
+                mettaFull mettaState seed q ψ.1
                 (Mettapedia.OSLF.Framework.CategoryBridge.commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
                   mettaFull mettaState seed q (mettaFull_pathOrder seed))))))
     ∧
       (langDiamondUsing relEnv mettaFull
-        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ)) p ↔
+        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree
+          relEnv mettaFull (by rfl) q
+          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1)) p ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj mettaFull) relEnv mettaFull).Edge.obj X,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -255,7 +264,7 @@ theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
             Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u q =
               ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
                 (C := ConstructorObj mettaFull) relEnv mettaFull).target.app X e).down ∧
-            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ u) := by
+            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaFull ψ.1 u) := by
   let hPkg :
       Mettapedia.OSLF.Framework.CategoryBridge.CommDiPathSemLiftPkg
         mettaFull mettaState seed q :=
@@ -281,36 +290,48 @@ def mettaFullSpecAtomCheck : AtomCheck
   | "isDoneState", .apply "State" [.apply "Done" [], _, _] => true
   | _, _ => false
 
-/-- Semantics for MeTTaFull spec-facing atoms (classifier aligned). -/
-def mettaFullSpecAtomSem : AtomSem :=
+/-- Raw classifier meaning used to construct the equation-respecting atomic
+semantics. -/
+private def mettaFullSpecAtomRawSem : AtomSem :=
   fun a p => mettaFullSpecAtomCheck a p = true
 
+/-- Equation-respecting semantics for MeTTaFull spec-facing atoms.  The
+presentation is certified equation-free, so this is the equation-free
+specialization of the canonical OSLF predicate carrier. -/
+def mettaFullSpecAtomSem (relEnv : RelationEnv) :
+    EquationAtomSemUsing relEnv mettaFull :=
+  equationAtomSemUsingOfEquationFree relEnv (by rfl) mettaFullSpecAtomRawSem
+
 /-- Soundness of the MeTTaFull spec atom checker by construction. -/
-theorem mettaFullSpecAtomCheck_sound :
-    ∀ a p, mettaFullSpecAtomCheck a p = true → mettaFullSpecAtomSem a p := by
+theorem mettaFullSpecAtomCheck_sound (relEnv : RelationEnv) :
+    ∀ a p, mettaFullSpecAtomCheck a p = true →
+      (mettaFullSpecAtomSem relEnv a).1 p := by
   intro a p h
-  simpa [mettaFullSpecAtomSem] using h
+  simpa [mettaFullSpecAtomSem, mettaFullSpecAtomRawSem,
+    equationAtomSemUsingOfEquationFree, equationPredicateUsingOfEquationFree,
+    invariantPredicate] using h
 
 /-- Public API theorem for MeTTaFull spec-facing checker soundness. -/
 theorem mettaFull_checkLangUsing_sat_sound_specAtoms
     {relEnv : RelationEnv}
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
     (hSat : checkLangUsing relEnv mettaFull mettaFullSpecAtomCheck fuel p φ = .sat) :
-    sem (langReducesUsing relEnv mettaFull) mettaFullSpecAtomSem φ p := by
+    langFormulaSemUsing relEnv mettaFull (mettaFullSpecAtomSem relEnv) φ p := by
   exact checkLangUsing_sat_sound
     (relEnv := relEnv) (lang := mettaFull)
-    (I_check := mettaFullSpecAtomCheck) (I_sem := mettaFullSpecAtomSem)
-    mettaFullSpecAtomCheck_sound hSat
+    (I_check := mettaFullSpecAtomCheck) (I_sem := mettaFullSpecAtomSem relEnv)
+    (mettaFullSpecAtomCheck_sound relEnv) hSat
 
 /-- Default-environment specialization for MeTTaFull spec-facing checker soundness. -/
 theorem mettaFull_checkLang_sat_sound_specAtoms
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
     (hSat : checkLang mettaFull mettaFullSpecAtomCheck fuel p φ = .sat) :
-    sem (langReduces mettaFull) mettaFullSpecAtomSem φ p := by
-  change sem (langReducesUsing RelationEnv.empty mettaFull) mettaFullSpecAtomSem φ p
-  simpa [checkLang] using
-    (mettaFull_checkLangUsing_sat_sound_specAtoms
-      (relEnv := RelationEnv.empty) (fuel := fuel) (p := p) (φ := φ) hSat)
+    langFormulaSem mettaFull (mettaFullSpecAtomSem RelationEnv.empty) φ p := by
+  change langFormulaSemUsing RelationEnv.empty mettaFull
+    (mettaFullSpecAtomSem RelationEnv.empty) φ p
+  exact mettaFull_checkLangUsing_sat_sound_specAtoms
+    (relEnv := RelationEnv.empty) (fuel := fuel) (p := p) (φ := φ)
+    (by simpa [checkLang] using hSat)
 
 /-- Concrete coded-string concat state with whitespace in the payload. -/
 private def codedConcatSpacesState : Pattern :=
@@ -336,8 +357,12 @@ theorem mettaFull_checkLangUsing_sat_coded_concat_spaces_done :
 
 /-- Semantic corollary for coded-string concat checker result. -/
 theorem mettaFull_sem_coded_concat_spaces_done :
-    sem (langReducesUsing Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullRelEnv mettaFull)
-      mettaFullSpecAtomSem (.dia (.dia (.atom "isDoneState"))) codedConcatSpacesState := by
+    langFormulaSemUsing
+      Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullRelEnv
+      mettaFull
+      (mettaFullSpecAtomSem
+        Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullRelEnv)
+      (.dia (.dia (.atom "isDoneState"))) codedConcatSpacesState := by
   exact mettaFull_checkLangUsing_sat_sound_specAtoms
     (relEnv := Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullRelEnv)
     (fuel := 8) (p := codedConcatSpacesState) (φ := .dia (.dia (.atom "isDoneState")))

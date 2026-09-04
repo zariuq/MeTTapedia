@@ -1,5 +1,7 @@
 import Mettapedia.InformationTheory.Basic
 import Mettapedia.InformationTheory.MutualInformation
+import Mettapedia.InformationTheory.ConditionalMutualInformation
+import Mettapedia.InformationTheory.ConditionalMutualInformationBridges
 import Mettapedia.InformationTheory.ShannonEntropy.Main
 import Mettapedia.InformationTheory.EntropyKL
 import Mettapedia.InformationTheory.FiniteBrierInformation

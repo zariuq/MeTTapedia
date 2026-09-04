@@ -1,0 +1,10 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryVariableStopApex
+
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+
+#print axioms canonicalize_environmentReify_eq_bvar_of_eq
+#print axioms canonicalize_environmentReify_eq_fvar_of_eq
+#print axioms CostStaticBinderThinning.embedIndexAt_eq_of_eq_heq
+#print axioms rho_reachedPlanPairCommonApex_of_sameColorBVar
+#print axioms rho_reachedPlanPairCommonApex_of_sameColorFVar
+#print axioms rho_reachedPlanPairCommonApex_of_sameColorVariable

@@ -79,7 +79,10 @@ def decodeCharAtom (atom : Atom) : Option Char :=
 private def charNilTag : String := "mm-char-nil"
 private def charConsTag : String := "mm-char-cons"
 
-private def charListAtom : List Char → Atom
+/-- Canonical character-list payload used by `stringAtom`.  It is public so
+representation theorems can recurse over the exact encoded syntax without
+duplicating the string codec. -/
+def charListAtom : List Char → Atom
   | [] => .expression [.symbol charNilTag]
   | head :: tail =>
       .expression [.symbol charConsTag, charAtom head, charListAtom tail]

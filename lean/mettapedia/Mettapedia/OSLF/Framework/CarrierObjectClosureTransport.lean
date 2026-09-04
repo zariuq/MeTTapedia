@@ -24,7 +24,7 @@ open Mettapedia.GSLT.LanguageDef
 namespace CarrierObjectClosure
 
 /-- Structural type mapping commutes with hereditary carrier decomposition. -/
-theorem constituents_mapTypeExpr (symbols : PresentationSymbols)
+theorem constituents_mapTypeExpr (symbols : LanguageDefSymbolMap)
     (object : TypeExpr) :
     constituents (mapTypeExpr symbols object) =
       (constituents object).map (mapTypeExpr symbols) := by
@@ -68,7 +68,7 @@ decreasing_by
 
 /-- Mapping every requested root commutes with flattening all hereditary
 constituents. -/
-theorem flatMap_constituents_map (symbols : PresentationSymbols) :
+theorem flatMap_constituents_map (symbols : LanguageDefSymbolMap) :
     ∀ roots : List TypeExpr,
       (roots.map (mapTypeExpr symbols)).flatMap constituents =
         (roots.flatMap constituents).map (mapTypeExpr symbols)
@@ -80,7 +80,7 @@ theorem flatMap_constituents_map (symbols : PresentationSymbols) :
 /-- Every carrier retained by source closure remains retained after structural
 mapping.  Injectivity is unnecessary for this one-way law: distinct source
 carriers may coalesce, but no mapped constituent disappears. -/
-theorem mem_close_mapTypeExpr (symbols : PresentationSymbols)
+theorem mem_close_mapTypeExpr (symbols : LanguageDefSymbolMap)
     {object : TypeExpr} {roots : List TypeExpr}
     (membership : object ∈ close roots) :
     mapTypeExpr symbols object ∈
@@ -94,7 +94,7 @@ theorem mem_close_mapTypeExpr (symbols : PresentationSymbols)
 
 /-- Injective sort maps commute exactly with sparse hereditary closure,
 including retained order. -/
-theorem close_mapTypeExpr (symbols : PresentationSymbols)
+theorem close_mapTypeExpr (symbols : LanguageDefSymbolMap)
     (sortInjective : Function.Injective symbols.sort)
     (roots : List TypeExpr) :
     close (roots.map (mapTypeExpr symbols)) =
@@ -155,7 +155,7 @@ def map {source target : ValidatedLanguageDef}
     (source : ValidatedLanguageDef) (request : Request source) :
     request.map (StructuralMorphism.id source) = request := by
   apply Request.ext
-  change request.roots.map (mapTypeExpr PresentationSymbols.id) = request.roots
+  change request.roots.map (mapTypeExpr LanguageDefSymbolMap.id) = request.roots
   induction request.roots with
   | nil => rfl
   | cons root roots inductionHypothesis =>
@@ -226,7 +226,7 @@ end Request
 
 namespace TransportCanary
 
-private def collapseSorts : PresentationSymbols where
+private def collapseSorts : LanguageDefSymbolMap where
   sort := fun _ => "carrier-closure-transport:merged"
   constructor := _root_.id
   relation := _root_.id
@@ -239,12 +239,12 @@ theorem injective_rename_preserves_inventory :
         ([TypeExpr.base "carrier-closure-transport:A",
           TypeExpr.arrow (.base "carrier-closure-transport:A")
             (.base "carrier-closure-transport:B")].map
-          (mapTypeExpr PresentationSymbols.id)) =
+          (mapTypeExpr LanguageDefSymbolMap.id)) =
       close
         [TypeExpr.base "carrier-closure-transport:A",
           TypeExpr.arrow (.base "carrier-closure-transport:A")
             (.base "carrier-closure-transport:B")] := by
-  rw [close_mapTypeExpr PresentationSymbols.id]
+  rw [close_mapTypeExpr LanguageDefSymbolMap.id]
   · generalize close
         [TypeExpr.base "carrier-closure-transport:A",
           TypeExpr.arrow (.base "carrier-closure-transport:A")

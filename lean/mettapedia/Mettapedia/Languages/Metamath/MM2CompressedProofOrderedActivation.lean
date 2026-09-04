@@ -26,6 +26,7 @@ open Mettapedia.Languages.Metamath.MM2CompressedProofHeaderExecution
 open Mettapedia.Languages.Metamath.MM2DataEncoding
 open Mettapedia.Languages.Metamath.MM2SourceActionExecution
 open Mettapedia.Languages.Metamath.MM2SourceActionKindDispatch
+open Mettapedia.Languages.Metamath.MM2SourceActionRuleInventory
 open Mettapedia.Languages.Metamath.MM2Transformation
 open Mettapedia.Languages.ProcessCalculi.MORK
 open Mettapedia.Languages.ProcessCalculi.MORK.ReloadingRuleSurface
@@ -440,6 +441,125 @@ def normalAssertionResultCompleteRuleWithCompressedRejoin : Atom :=
     normalAssertionResultCompleteRule).get
       (by simpa using normalAssertionResultComplete_rejoinable)
 
+def normalFloatingTypecodePrepareCaptureTemplate : Atom :=
+  .expression [.symbol "mm-internal-normal-floating-typecode-prepare",
+    .var "normal-floating-typecode-prepare-rule"]
+
+private def compressedNormalConsumedStackTemplate : Atom :=
+  .expression
+    [.symbol "mm-compressed-stack-cell", .var "proof",
+      .var "stack-position", .var "compressed-child-node"]
+
+private def compressedNormalFloatingChildNodeTemplate : Atom :=
+  .expression
+    [.symbol "mm-compressed-node", .var "proof",
+      .var "compressed-child-node",
+      .expression
+        [.symbol "mm-formula", .var "actual-typecode", .var "body"],
+      .var "child-occurrence"]
+
+private theorem normalFloatingTypecodePrepareRule_compact_consumable :
+    (appendPositivePremisesAndRemoveSink?
+      [compressedNormalConsumedStackTemplate,
+        compressedNormalFloatingChildNodeTemplate]
+      compressedNormalConsumedStackTemplate
+      normalFloatingTypecodePrepareRule).isSome = true := by
+  decide +kernel
+
+/-- The compressed assertion handoff checks the ordinary stack formula and
+its compact node identity together, then consumes the exact compact stack
+mirror before the assertion may shrink and later reuse that position. -/
+def normalFloatingTypecodePrepareRuleWithCompactStackConsumption : Atom :=
+  (appendPositivePremisesAndRemoveSink?
+    [compressedNormalConsumedStackTemplate,
+      compressedNormalFloatingChildNodeTemplate]
+    compressedNormalConsumedStackTemplate
+    normalFloatingTypecodePrepareRule).get
+      (by simpa using normalFloatingTypecodePrepareRule_compact_consumable)
+
+def normalFloatingTypecodePrepareCaptureRow : Atom :=
+  .expression [.symbol "mm-internal-normal-floating-typecode-prepare",
+    normalFloatingTypecodePrepareRuleWithCompactStackConsumption]
+
+private def compressedNormalEssentialChildNodeTemplate : Atom :=
+  .expression
+    [.symbol "mm-compressed-node", .var "proof",
+      .var "compressed-child-node",
+      .expression
+        [.symbol "mm-formula", .var "typecode", .var "actual-body"],
+      .var "child-occurrence"]
+
+private theorem normalAssertionEssentialRule_compact_consumable :
+    (appendPositivePremisesAndRemoveSink?
+      [compressedNormalConsumedStackTemplate,
+        compressedNormalEssentialChildNodeTemplate]
+      compressedNormalConsumedStackTemplate
+      normalAssertionEssentialRule).isSome = true := by
+  decide +kernel
+
+/-- Essential-hypothesis matching consumes the same compact stack mirror as
+floating-hypothesis matching while retaining the original normal rule's body
+comparison and continuation. -/
+def normalAssertionEssentialRuleWithCompactStackConsumption : Atom :=
+  (appendPositivePremisesAndRemoveSink?
+    [compressedNormalConsumedStackTemplate,
+      compressedNormalEssentialChildNodeTemplate]
+    compressedNormalConsumedStackTemplate
+    normalAssertionEssentialRule).get
+      (by simpa using normalAssertionEssentialRule_compact_consumable)
+
+private theorem normalAssertionBeginRule_prepare_capturable :
+    (appendCapturedRuleSink? normalFloatingTypecodePrepareCaptureTemplate
+      (.var "normal-floating-typecode-prepare-rule")
+      normalAssertionBeginRule).isSome = true := by
+  decide +kernel
+
+/-- Creating the first assertion bind releases the exact verifier-owned
+typecode checker that is authorized to consume it. -/
+def normalAssertionBeginRuleWithTypecodePrepare : Atom :=
+  (appendCapturedRuleSink? normalFloatingTypecodePrepareCaptureTemplate
+    (.var "normal-floating-typecode-prepare-rule")
+    normalAssertionBeginRule).get
+      (by simpa using normalAssertionBeginRule_prepare_capturable)
+
+private theorem normalFloatingTypecodeEqualRule_prepare_capturable :
+    (appendCapturedRuleSink? normalFloatingTypecodePrepareCaptureTemplate
+      (.var "normal-floating-typecode-prepare-rule")
+      normalFloatingTypecodeEqualRule).isSome = true := by
+  decide +kernel
+
+/-- A successful floating bind releases the same checker for the next
+hypothesis occurrence. -/
+def normalFloatingTypecodeEqualRuleWithTypecodePrepare : Atom :=
+  (appendCapturedRuleSink? normalFloatingTypecodePrepareCaptureTemplate
+    (.var "normal-floating-typecode-prepare-rule")
+    normalFloatingTypecodeEqualRule).get
+      (by simpa using normalFloatingTypecodeEqualRule_prepare_capturable)
+
+private theorem compressedNormalVerdictRules_prepare_replaceable :
+    (replaceMatching? normalFloatingTypecodePrepareRule
+      normalFloatingTypecodePrepareRuleWithCompactStackConsumption
+      (sourceVerdictRules normalProofMachineRuleInventory)).isSome = true := by
+  decide +kernel
+
+private def compressedNormalMirrorVerdictRules : List Atom :=
+  (replaceMatching? normalFloatingTypecodePrepareRule
+    normalFloatingTypecodePrepareRuleWithCompactStackConsumption
+    (sourceVerdictRules normalProofMachineRuleInventory)).get
+      (by simpa using compressedNormalVerdictRules_prepare_replaceable)
+
+private theorem compressedNormalVerdictRules_equal_replaceable :
+    (replaceMatching? normalFloatingTypecodeEqualRule
+      normalFloatingTypecodeEqualRuleWithTypecodePrepare
+      compressedNormalMirrorVerdictRules).isSome = true := by
+  decide +kernel
+
+def compressedNormalVerdictRules : List Atom :=
+  (replaceMatching? normalFloatingTypecodeEqualRule
+    normalFloatingTypecodeEqualRuleWithTypecodePrepare
+    compressedNormalMirrorVerdictRules).get
+      (by simpa using compressedNormalVerdictRules_equal_replaceable)
+
 private theorem normalProofMachineRules_rejoin_replaceable :
     (replaceMatching? normalAssertionResultCompleteRule
       normalAssertionResultCompleteRuleWithCompressedRejoin
@@ -455,9 +575,35 @@ def normalProofMachineRulesWithCompressedRejoin : List Atom :=
     normalProofMachineRules).get
       (by simpa using normalProofMachineRules_rejoin_replaceable)
 
+private theorem normalProofMachineRules_begin_replaceable :
+    (replaceMatching? normalAssertionBeginRule
+      normalAssertionBeginRuleWithTypecodePrepare
+      normalProofMachineRulesWithCompressedRejoin).isSome = true := by
+  decide +kernel
+
+private def normalProofMachineRulesWithCompressedRejoinAndPreparedTypecode :
+    List Atom :=
+  (replaceMatching? normalAssertionBeginRule
+    normalAssertionBeginRuleWithTypecodePrepare
+    normalProofMachineRulesWithCompressedRejoin).get
+      (by simpa using normalProofMachineRules_begin_replaceable)
+
+private theorem normalProofMachineRules_essential_replaceable :
+    (replaceMatching? normalAssertionEssentialRule
+      normalAssertionEssentialRuleWithCompactStackConsumption
+      normalProofMachineRulesWithCompressedRejoinAndPreparedTypecode).isSome =
+        true := by
+  decide +kernel
+
+def normalProofMachineRulesWithCompressedRejoinAndTypecodePrepare : List Atom :=
+  (replaceMatching? normalAssertionEssentialRule
+    normalAssertionEssentialRuleWithCompactStackConsumption
+    normalProofMachineRulesWithCompressedRejoinAndPreparedTypecode).get
+      (by simpa using normalProofMachineRules_essential_replaceable)
+
 private theorem normalProofMachineRules_source_verdict_replaceable :
     (replaceNormalAcceptWithSourceTheoremSuccess?
-      normalProofMachineRulesWithCompressedRejoin).isSome = true := by
+      normalProofMachineRulesWithCompressedRejoinAndTypecodePrepare).isSome = true := by
   decide +kernel
 
 /-- The normal terminal rule is replaced by an exact captured continuation
@@ -465,7 +611,7 @@ into source theorem success.  This keeps the source verdict path dormant until
 the normal machine has actually emitted its acceptance observation. -/
 def normalProofMachineRulesWithCompressedRejoinAndSourceVerdict : List Atom :=
   (replaceNormalAcceptWithSourceTheoremSuccess?
-    normalProofMachineRulesWithCompressedRejoin).get
+    normalProofMachineRulesWithCompressedRejoinAndTypecodePrepare).get
       (by simpa using normalProofMachineRules_source_verdict_replaceable)
 
 /-- Owner-bound request which re-arms one normal assertion transition after a
@@ -485,29 +631,57 @@ private def compressedNormalRearmCaptureTemplate : Atom :=
 private def compressedNormalRearmCaptureVariable : Atom :=
   .var "compressed-normal-rearm-rule"
 
-private theorem normalProofMachineRules_rearmable :
+private def compressedNormalHandoffSourceRules : List Atom :=
+  normalProofMachineRulesWithCompressedRejoinAndSourceVerdict ++
+    compressedNormalVerdictRules
+
+private theorem compressedNormalHandoffSourceRules_reload_removable :
+    (removeAddedOutputHeadFromRules? "mm-reload-normal-dispatch"
+      compressedNormalHandoffSourceRules).isSome = true := by
+  decide +kernel
+
+/-- The compact handoff has a distinct owner-bound rearm protocol.  Its
+source rules therefore shed the ordinary normal-dispatch request before the
+generic rearm transformation is applied. -/
+def compressedNormalHandoffSourceRulesWithoutOrdinaryReload : List Atom :=
+  (removeAddedOutputHeadFromRules? "mm-reload-normal-dispatch"
+    compressedNormalHandoffSourceRules).get
+      (by simpa using compressedNormalHandoffSourceRules_reload_removable)
+
+/-- Capability separation is visible in the transformed syntax: no compact
+handoff rule can request the ordinary normal dispatcher. -/
+theorem compressedNormalHandoffSourceRules_no_ordinary_reload :
+    ∀ rule ∈ compressedNormalHandoffSourceRulesWithoutOrdinaryReload,
+      outputAddsHead? "mm-reload-normal-dispatch" rule = some false := by
+  decide +kernel
+
+theorem compressedNormalHandoffSourceRulesWithoutOrdinaryReload_length :
+    compressedNormalHandoffSourceRulesWithoutOrdinaryReload.length =
+      compressedNormalHandoffSourceRules.length := by
+  decide +kernel
+
+private theorem compressedNormalHandoffSourceRules_rearmable :
     (buildRearm? compressedNormalRearmTriggerTemplate
       compressedNormalRearmCaptureTemplate
       compressedNormalRearmCaptureVariable
-      normalProofMachineRulesWithCompressedRejoinAndSourceVerdict).isSome =
-        true := by
+      compressedNormalHandoffSourceRulesWithoutOrdinaryReload).isSome = true := by
   decide +kernel
 
-/-- The normal submachine is made reactive by the same finite surface
-transformation used for compact header rules.  It remains a presentation
-transform over the supplied rule list; no normal proof labels are inspected. -/
+/-- The normal submachine is made reactive by the same finite rule
+transformation used for compact header rules.  It remains a transformation of
+the supplied presentation; no normal proof labels are inspected. -/
 def compressedNormalRearmArtifact : RearmArtifact :=
   (buildRearm? compressedNormalRearmTriggerTemplate
     compressedNormalRearmCaptureTemplate
     compressedNormalRearmCaptureVariable
-    normalProofMachineRulesWithCompressedRejoinAndSourceVerdict).get
-      (by simpa using normalProofMachineRules_rearmable)
+    compressedNormalHandoffSourceRulesWithoutOrdinaryReload).get
+      (by simpa using compressedNormalHandoffSourceRules_rearmable)
 
 private theorem compressedNormalRearmArtifact_built :
     buildRearm? compressedNormalRearmTriggerTemplate
       compressedNormalRearmCaptureTemplate
       compressedNormalRearmCaptureVariable
-      normalProofMachineRulesWithCompressedRejoinAndSourceVerdict =
+      compressedNormalHandoffSourceRulesWithoutOrdinaryReload =
         some compressedNormalRearmArtifact := by
   simp [compressedNormalRearmArtifact]
 
@@ -515,16 +689,12 @@ private theorem compressedNormalRearmArtifact_built :
 that the compact handoff passes to the generic rearming transform. -/
 theorem compressedNormalRearmArtifact_sourceRules :
     compressedNormalRearmArtifact.sourceRules =
-      normalProofMachineRulesWithCompressedRejoinAndSourceVerdict := by
+      compressedNormalHandoffSourceRulesWithoutOrdinaryReload := by
   exact buildRearm?_sourceRules compressedNormalRearmTriggerTemplate
     compressedNormalRearmCaptureTemplate
     compressedNormalRearmCaptureVariable
-    normalProofMachineRulesWithCompressedRejoinAndSourceVerdict
+    compressedNormalHandoffSourceRulesWithoutOrdinaryReload
     compressedNormalRearmArtifact compressedNormalRearmArtifact_built
-
-def normalProofMachineRulesWithCompressedRejoinAndSourceVerdictAndRearm :
-    List Atom :=
-  compressedNormalRearmArtifact.targetRules
 
 /-- The reactive normal-profile transform preserves the exact number of
 rule occurrences recorded by its actual finite presentation. -/
@@ -536,19 +706,22 @@ theorem compressedNormalRearmArtifact_preserves_occurrences :
     compressedNormalRearmCaptureVariable
     compressedNormalRearmArtifact.exact
 
-theorem normalProofMachineRulesWithCompressedRejoinAndSourceVerdictAndRearm_length :
-    normalProofMachineRulesWithCompressedRejoinAndSourceVerdictAndRearm.length =
-      normalProofMachineRulesWithCompressedRejoinAndSourceVerdict.length := by
-  rw [normalProofMachineRulesWithCompressedRejoinAndSourceVerdictAndRearm,
-    compressedNormalRearmArtifact_preserves_occurrences,
-    compressedNormalRearmArtifact_sourceRules]
-
 /-- The complete normal-profile inventory needed after a compact assertion
 code is resolved.  Values remain opaque to the compact proof source: this is
 verifier-owned target code, loaded occurrence by occurrence before the normal
 machine is released. -/
 def compressedNormalHandoffRules : List Atom :=
-  normalProofMachineRulesWithCompressedRejoinAndSourceVerdictAndRearm
+  compressedNormalRearmArtifact.targetRules
+
+theorem compressedNormalHandoffRules_length :
+    compressedNormalHandoffRules.length =
+      normalProofMachineRulesWithCompressedRejoinAndSourceVerdict.length +
+        compressedNormalVerdictRules.length := by
+  rw [compressedNormalHandoffRules,
+    compressedNormalRearmArtifact_preserves_occurrences,
+    compressedNormalRearmArtifact_sourceRules,
+    compressedNormalHandoffSourceRulesWithoutOrdinaryReload_length]
+  simp [compressedNormalHandoffSourceRules]
 
 /-- The strict selected-rule transform changes the handoff inventory at its
 real normal result-completion occurrence and leaves the original raw rule out.
@@ -596,7 +769,9 @@ private def compressedNormalHandoffLoadingTemplate : Atom :=
   .expression [.symbol "mm-compressed-normal-handoff-loading",
     .var "proof-owner", .var "normal-rule-position"]
 
-private def compressedNormalHandoffInitialLoadingTemplate : Atom :=
+/-- Initial cursor emitted when a compressed assertion enters the finite
+normal-profile loader. -/
+def compressedNormalHandoffInitialLoadingTemplate : Atom :=
   .expression [.symbol "mm-compressed-normal-handoff-loading",
     .var "proof-owner", natAtom 0]
 
@@ -678,28 +853,32 @@ def compressedNormalHandoffFinishRule : Atom :=
       (by simpa using compressedNormalHandoffFinishRule_rearmable)
 
 private def compressedNormalDispatchBridgeLocation : Atom :=
-  .expression [.symbol "37", .symbol "mm-compressed-normal-dispatch-bridge"]
+  .expression [.symbol "31", .symbol "mm-compressed-normal-dispatch-bridge"]
 
 private def compressedNormalDispatchBridgeSelf : Atom :=
   .expression
     [.symbol "exec", compressedNormalDispatchBridgeLocation,
       .var "normal-bridge-input", .var "normal-bridge-output"]
 
-private def compressedNormalHandoffLoaderCaptureTemplate : Atom :=
+/-- Pattern that recovers the compiler-owned finite-loader rule. -/
+def compressedNormalHandoffLoaderCaptureTemplate : Atom :=
   .expression [.symbol "mm-internal-compressed-normal-handoff-loader",
     .var "normal-handoff-loader-rule"]
 
-private def compressedNormalHandoffFinishCaptureTemplate : Atom :=
+/-- Pattern that recovers the compiler-owned terminal loader rule. -/
+def compressedNormalHandoffFinishCaptureTemplate : Atom :=
   .expression [.symbol "mm-internal-compressed-normal-handoff-finish",
     .var "normal-handoff-finish-rule"]
 
-private def compressedNormalDispatchBridgePatterns : List Atom :=
+/-- Complete input pattern of the compressed-to-normal bridge. -/
+def compressedNormalDispatchBridgePatterns : List Atom :=
   [compressedNormalDispatchBridgeSelf,
    compressedAssertionNormalReloadRequest,
    compressedNormalHandoffLoaderCaptureTemplate,
    compressedNormalHandoffFinishCaptureTemplate]
 
-private def compressedNormalDispatchBridgeSinks : List Sink :=
+/-- Complete output transaction of the compressed-to-normal bridge. -/
+def compressedNormalDispatchBridgeSinks : List Sink :=
   [.remove compressedAssertionNormalReloadRequest,
    .add (.var "normal-handoff-loader-rule"),
    .add (.var "normal-handoff-finish-rule"),
@@ -715,11 +894,27 @@ def compressedNormalDispatchBridgeRule : Atom :=
       inputSurface compressedNormalDispatchBridgePatterns,
       outputSurface compressedNormalDispatchBridgeSinks]
 
+theorem compressedNormalDispatchBridgeRule_exec_shape :
+    ∃ input output,
+      compressedNormalDispatchBridgeRule =
+        .expression
+          [.symbol "exec",
+           .expression
+             [.symbol "31", .symbol "mm-compressed-normal-dispatch-bridge"],
+           input, output] := by
+  exact ⟨_, _, rfl⟩
+
+theorem compressedNormalDispatchBridgeRule_head_shape :
+    ∃ tail,
+      compressedNormalDispatchBridgeRule =
+        .expression (.symbol "exec" :: tail) := by
+  exact ⟨_, rfl⟩
+
 def compressedNormalDispatchBridgeDirective : SourceExecFact where
   atom := compressedNormalDispatchBridgeRule
   loc := compressedNormalDispatchBridgeLocation
   rule :=
-    { priority := 37
+    { priority := 31
       name := "mm-compressed-normal-dispatch-bridge"
       input := .compat (mkPattern compressedNormalDispatchBridgePatterns)
       guards := []
@@ -729,6 +924,15 @@ theorem extract_compressedNormalDispatchBridgeRule_exact :
     extractSupportedSourceExecFact compressedNormalDispatchBridgeRule =
       some compressedNormalDispatchBridgeDirective := by
   rfl
+
+/-- The handoff must run before the dormant assertion rejoin.  Rule-scoped
+execution selects resident directives before matching their data premises, so
+the opposite order would consume the rejoin before the normal submachine could
+produce its result. -/
+theorem compressedNormalDispatchBridge_before_assertionRejoin :
+    compressedNormalDispatchBridgeDirective.rule.priority <
+      compressedAssertionRejoinDirective.rule.priority := by
+  decide
 
 /-! ### Trigger-created normal rearming dispatcher -/
 
@@ -786,12 +990,21 @@ private def compressedNormalRearmCaptureRow : Atom :=
     compressedNormalRearmRule]
 
 private def compressedNormalRearmRuleRows : List Atom :=
-  normalProofMachineRulesWithCompressedRejoinAndSourceVerdictAndRearm.map
-    compressedNormalRearmRuleRow
+  compressedNormalHandoffRules.map compressedNormalRearmRuleRow
 
 private def compressedNormalDispatchBridgeCaptureTemplate : Atom :=
   .expression [.symbol "mm-internal-compressed-normal-dispatch-bridge",
     .var "normal-bridge-rule"]
+
+/-- Compiler-owned carrier for the finite normal-profile loader. -/
+def compressedNormalHandoffLoaderCaptureRow : Atom :=
+  .expression [.symbol "mm-internal-compressed-normal-handoff-loader",
+    compressedNormalHandoffLoadRule]
+
+/-- Compiler-owned carrier for the terminal normal-profile loader step. -/
+def compressedNormalHandoffFinishCaptureRow : Atom :=
+  .expression [.symbol "mm-internal-compressed-normal-handoff-finish",
+    compressedNormalHandoffFinishRule]
 
 /-- Opaque verifier-owned code used at the compact-to-normal boundary.  The
 assertion launcher captures the bridge as a whole, and the bridge in turn
@@ -800,11 +1013,10 @@ crosses an expression-local substitution boundary as source data. -/
 def compressedNormalDispatchBridgeRows : List Atom :=
   [.expression [.symbol "mm-internal-compressed-normal-dispatch-bridge",
       compressedNormalDispatchBridgeRule],
-   .expression [.symbol "mm-internal-compressed-normal-handoff-loader",
-      compressedNormalHandoffLoadRule],
-   .expression [.symbol "mm-internal-compressed-normal-handoff-finish",
-      compressedNormalHandoffFinishRule],
-   compressedNormalRearmCaptureRow] ++
+   compressedNormalHandoffLoaderCaptureRow,
+   compressedNormalHandoffFinishCaptureRow,
+   compressedNormalRearmCaptureRow,
+   normalFloatingTypecodePrepareCaptureRow] ++
     compressedNormalRearmRuleRows ++ sourceActionKindDispatchStaticRows
 
 private theorem compressedAssertionLaunchRule_bridgeable :
@@ -818,6 +1030,42 @@ def compressedAssertionLaunchRuleWithNormalBridge : Atom :=
     (.var "normal-bridge-rule")
     compressedAssertionLaunchRule).get
       (by simpa using compressedAssertionLaunchRule_bridgeable)
+
+theorem compressedAssertionLaunchRuleWithNormalBridge_build_exact :
+    appendCapturedRuleSink? compressedNormalDispatchBridgeCaptureTemplate
+        (.var "normal-bridge-rule") compressedAssertionLaunchRule =
+      some compressedAssertionLaunchRuleWithNormalBridge := by
+  unfold compressedAssertionLaunchRuleWithNormalBridge
+  exact (Option.some_get
+    (by simpa using compressedAssertionLaunchRule_bridgeable)).symm
+
+/-- Adding the captured normal bridge changes only the assertion launcher's
+input and output rows; its executable location remains exact. -/
+theorem compressedAssertionLaunchRuleWithNormalBridge_exec_shape :
+    ∃ input output,
+      compressedAssertionLaunchRuleWithNormalBridge =
+        .expression
+          [.symbol "exec",
+           .expression
+             [.symbol "08", .symbol "mm-compressed-proof-step-assertion"],
+           input, output] := by
+  obtain ⟨inputs, sinks, sourceExact⟩ :
+      ∃ inputs sinks,
+        compressedAssertionLaunchRule =
+          .expression
+            [.symbol "exec", compressedAssertionLaunchDirective.loc,
+             .expression (.symbol "," :: inputs),
+             .expression (.symbol "O" :: sinks)] := by
+    exact ⟨_, _, rfl⟩
+  obtain ⟨input, output, targetExact⟩ :=
+    appendCapturedRuleSink?_preserves_comma_exec_location sourceExact
+      compressedAssertionLaunchRuleWithNormalBridge_build_exact
+  have locationExact : compressedAssertionLaunchDirective.loc =
+      .expression
+        [.symbol "08", .symbol "mm-compressed-proof-step-assertion"] := by
+    rfl
+  rw [locationExact] at targetExact
+  exact ⟨input, output, targetExact⟩
 
 private theorem compressedBodyRules_normal_bridgeable :
     (replaceMatching? compressedAssertionLaunchRule
@@ -874,6 +1122,14 @@ def compressedBodyRulesWithNormalBridgeAndSourceVerdictAndFaultReject :
     compressedProofFaultCaptureVariable
     compressedBodyRulesWithNormalBridgeAndSourceVerdict).get
       (by simpa using compressedBodyRules_source_fault_captureable)
+
+/-- The occurrence selected as the opaque assertion handler remains the
+normal-bridge-decorated assertion launcher through the later verdict and
+fault-observation passes. -/
+theorem compressedBodyRulesWithNormalBridgeAndSourceVerdictAndFaultReject_assertion_at :
+    compressedBodyRulesWithNormalBridgeAndSourceVerdictAndFaultReject[7]? =
+      some compressedAssertionLaunchRuleWithNormalBridge := by
+  decide +kernel
 
 private theorem compressedHeapLookupFaultRule_is_fault_observation :
     execAddsOutputHead? "mm-proof-fault" compressedHeapLookupFaultRule =
@@ -1338,11 +1594,19 @@ def compressedOrderedVerifierExtensionProgram : List Atom :=
 #print axioms extract_compressedDispatchReloadRule_exact
 #print axioms compressedOrderedActivationRules_extract_exact
 #print axioms extract_compressedNormalDispatchBridgeRule_exact
+#print axioms compressedNormalDispatchBridgeRule_exec_shape
+#print axioms compressedNormalDispatchBridgeRule_head_shape
+#print axioms compressedNormalDispatchBridge_before_assertionRejoin
+#print axioms compressedAssertionLaunchRuleWithNormalBridge_build_exact
+#print axioms compressedAssertionLaunchRuleWithNormalBridge_exec_shape
+#print axioms compressedBodyRulesWithNormalBridgeAndSourceVerdictAndFaultReject_assertion_at
 #print axioms compressedVerifierStaticRowsWithNormalBridge_lookup_handler_exact
 #print axioms compressedHeaderRearmArtifact_sourceRules
 #print axioms compressedHeaderRulesWithReload_length
 #print axioms compressedNormalRearmArtifact_sourceRules
-#print axioms normalProofMachineRulesWithCompressedRejoinAndSourceVerdictAndRearm_length
+#print axioms compressedNormalHandoffSourceRules_no_ordinary_reload
+#print axioms compressedNormalHandoffSourceRulesWithoutOrdinaryReload_length
+#print axioms compressedNormalHandoffRules_length
 #print axioms FiniteVerifierRulePresentation.rows_length
 #print axioms FiniteVerifierRulePresentation.mem_rows_iff
 #print axioms FiniteVerifierRulePresentation.reifiedRuleArtifact_source

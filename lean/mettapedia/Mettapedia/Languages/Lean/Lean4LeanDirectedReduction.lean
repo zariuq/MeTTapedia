@@ -304,7 +304,8 @@ abbrev exactCoreRawHeadTargetType
     CoreRawHeadNativeType environment universeParameters :=
   exactTargetNativeType (coreRawHeadGSLT environment universeParameters) target
 
-/-- Raw OSLF exact-target inhabitation is exactly one evaluator-facing event. -/
+/-- OSLF exact-target inhabitation for the raw-head evaluator GSLT is exactly
+one evaluator-facing event. -/
 theorem satisfies_exactCoreRawHeadTargetType_iff_event
     (environment : VEnv) (universeParameters : Nat)
     (source target : VExpr) :
@@ -548,8 +549,8 @@ def coreRawHeadIndexedOSLF
         (coreRawHeadGSLT (growth.stage stage) universeParameters) :=
   rfl
 
-/-- Raw OSLF/NTT exact-target inhabitation transports across environment
-growth. -/
+/-- OSLF/NTT exact-target inhabitation for the raw-head evaluator GSLT
+transports across environment growth. -/
 theorem environment_growth_preserves_coreRawHead_type
     {environment extended : VEnv} (extension : environment <= extended)
     (universeParameters : Nat) (source target : VExpr)

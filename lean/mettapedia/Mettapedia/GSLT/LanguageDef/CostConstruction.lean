@@ -488,7 +488,7 @@ theorem exists_declaredCostConstructor_of_mem (source : CIGSLT)
     · rcases List.mem_map.mp baseMembership with
         ⟨sourceRule, sourceMembership, equality⟩
       let sourceConstructor :
-          AuthoredConstructor source.theory.presentation.presentation :=
+          DeclaredConstructor source.theory.presentation.presentation :=
         ⟨sourceRule, sourceMembership⟩
       refine ⟨⟨.base sourceConstructor, True.intro⟩, ?_⟩
       exact equality
@@ -512,7 +512,7 @@ theorem exists_declaredCostConstructor_of_mem (source : CIGSLT)
 constructor carrier of the validated generated Cost presentation. -/
 noncomputable def declaredCostConstructorEquiv (source : CIGSLT) :
     source.DeclaredCostConstructor ≃
-      AuthoredConstructor source.costCorePresentation :=
+      DeclaredConstructor source.costCorePresentation :=
   Equiv.ofBijective
     (fun constructor =>
       ⟨source.materializeDeclaredCostConstructor constructor,

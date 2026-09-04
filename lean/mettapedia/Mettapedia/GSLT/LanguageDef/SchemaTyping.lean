@@ -29,7 +29,7 @@ theorem ofList_nil : ofList [] = empty := rfl
 
 /-- Mapping schema annotations commutes with interpreting the schema
 context. -/
-theorem ofList_mapTypeContext (symbols : PresentationSymbols)
+theorem ofList_mapTypeContext (symbols : LanguageDefSymbolMap)
     (context : List (String × TypeExpr)) :
     ofList (mapTypeContext symbols context) = (ofList context).map symbols := by
   funext sought

@@ -18,7 +18,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.ReproducibleBuild.DiverseDoubleCompilingHosting
 
-open Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting
+open Mettapedia.GSLT.LanguageDef.GSLTHosting
 open Mettapedia.GSLT.LanguageDef.NIKObservedRefinement
 open Mettapedia.GSLT.ReproducibleBuild.DiverseDoubleCompiling
 
@@ -62,7 +62,7 @@ theorem result_transport_does_not_imply_proof_fibre_fidelity :
     (forall value,
       ProducesObservation
           Mettapedia.GSLT.LanguageDef.NIKObservedRefinement.FusionCanary.targetObserved
-          (Mettapedia.GSLT.LanguageDef.AuthoredGSLTHosting.FusionCanary.hosting.compile
+          (Mettapedia.GSLT.LanguageDef.GSLTHosting.FusionCanary.hosting.compile
             (false, true)) value <->
         ProducesObservation
           Mettapedia.GSLT.LanguageDef.NIKObservedRefinement.FusionCanary.sourceObserved

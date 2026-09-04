@@ -3,8 +3,9 @@ import Mettapedia.GSLT.LanguageDef.ExactEndpointCodec
 /-!
 # Exact endpoint identity realizations
 
-NIK replay needs exact equality for semantic endpoints.  This module gives
-three representations and states their different proof obligations:
+External-certificate replay needs exact equality for semantic endpoints.  This
+module gives three representations and states their different proof
+obligations:
 
 * a canonical left-invertible codec is exact directly;
 * a revisioned registry is exact when every issued key resolves back to its

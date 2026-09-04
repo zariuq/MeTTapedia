@@ -68,7 +68,6 @@ private def equality_N := regN "equality"
 private def contract_N := regN "contract"
 private def scope_N := regN "scope"
 private def tracker_N := regN "tracker"
-private def scope_N := regN "scope"
 private def parity_N := regN "parity"
 private def overview_N := regN "overview"
 private def usage_N := regN "usage"
@@ -543,7 +542,7 @@ def renderOSLFClaim : OSLFClaim → String
       let subj := properNameNP "It"
       let parserNP := linDetCN aIndefArt (linUseN parser_N)
       let standardNP := linDetCN aIndefArt
-        (linAdjCN (linPositA (compoundA "syntax"))
+        (linAdjCN (linPositA (compoundA "concrete"))
           (linAdjCN (linPositA (compoundA "syntax"))
             (linUseN standard_N)))
       let coordCompl := linConjNP or_Conj [parserNP, standardNP]

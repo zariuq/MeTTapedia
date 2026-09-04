@@ -22,7 +22,7 @@ def CostQuoteClassificationNatural {source target : CIGSLT}
   ∀ constructor,
     ReflectiveContextSupport.isQuoteConstructor
         target.costWholeReflectionProfile
-        ((costPresentationSymbols
+        ((costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols).constructor
           constructor) =
       ReflectiveContextSupport.isQuoteConstructor
@@ -85,37 +85,37 @@ def id (source : CIGSLT) :
     intro constructor
     change ReflectiveContextSupport.isQuoteConstructor
         source.costWholeReflectionProfile
-        ((costPresentationSymbols PresentationSymbols.id).constructor
+        ((costLanguageDefSymbolMap LanguageDefSymbolMap.id).constructor
           constructor) = _
-    rw [costPresentationSymbols_id]
+    rw [costLanguageDefSymbolMap_id]
     rfl
   collectionRejectionPreserving := by
     intro color targetFree targetBound collectionType elements sourceType
       rejected
     change costStaticCollectionTypingChoices source color
         (targetFree.map
-          (costPresentationSymbols PresentationSymbols.id))
+          (costLanguageDefSymbolMap LanguageDefSymbolMap.id))
         (targetBound.map
-          (mapTypeExpr (costPresentationSymbols PresentationSymbols.id)))
+          (mapTypeExpr (costLanguageDefSymbolMap LanguageDefSymbolMap.id)))
         collectionType
         (elements.map
-          (mapPattern (costPresentationSymbols PresentationSymbols.id)))
+          (mapPattern (costLanguageDefSymbolMap LanguageDefSymbolMap.id)))
         (mapTypeExpr (color.symbols source)
-          (mapTypeExpr PresentationSymbols.id sourceType)) = []
-    rw [costPresentationSymbols_id,
+          (mapTypeExpr LanguageDefSymbolMap.id sourceType)) = []
+    rw [costLanguageDefSymbolMap_id,
       WellSorted.FreeTypeContext.map_id]
     have boundIdentity :
-        targetBound.map (mapTypeExpr PresentationSymbols.id) =
+        targetBound.map (mapTypeExpr LanguageDefSymbolMap.id) =
           targetBound := by
       calc
-        targetBound.map (mapTypeExpr PresentationSymbols.id) =
+        targetBound.map (mapTypeExpr LanguageDefSymbolMap.id) =
             targetBound.map _root_.id :=
           List.map_congr_left fun type _ => mapTypeExpr_id type
         _ = targetBound := List.map_id targetBound
     have elementsIdentity :
-        elements.map (mapPattern PresentationSymbols.id) = elements := by
+        elements.map (mapPattern LanguageDefSymbolMap.id) = elements := by
       calc
-        elements.map (mapPattern PresentationSymbols.id) =
+        elements.map (mapPattern LanguageDefSymbolMap.id) =
             elements.map _root_.id :=
           List.map_congr_left fun pattern _ => mapPattern_id pattern
         _ = elements := List.map_id elements
@@ -132,11 +132,11 @@ def comp {first second third : CIGSLT}
     intro constructor
     change ReflectiveContextSupport.isQuoteConstructor
         third.costWholeReflectionProfile
-        ((costPresentationSymbols
+        ((costLanguageDefSymbolMap
           (left.underlying.structural.structural.symbols.comp
             right.underlying.structural.structural.symbols)).constructor
           constructor) = _
-    rw [costPresentationSymbols_comp]
+    rw [costLanguageDefSymbolMap_comp]
     exact (rightLaws.quoteClassificationNatural _).trans
       (leftLaws.quoteClassificationNatural constructor)
   collectionRejectionPreserving := by
@@ -159,7 +159,7 @@ def comp {first second third : CIGSLT}
         (CIGSLT.Morphism.comp left right).costWholeStructural.symbols =
           left.costWholeStructural.symbols.comp
             right.costWholeStructural.symbols := by
-      exact costPresentationSymbols_comp
+      exact costLanguageDefSymbolMap_comp
         left.underlying.structural.structural.symbols
         right.underlying.structural.structural.symbols
     rw [generatedSymbolsComp]

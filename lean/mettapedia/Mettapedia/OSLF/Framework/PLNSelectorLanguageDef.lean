@@ -639,6 +639,13 @@ def selectorAtomCheck : AtomCheck := fun a p =>
 def selectorAtomSem : AtomSem := fun a p =>
   if a = "isExtBayes2RHS" then p = extBayes2Target else False
 
+/-- The selector observations admitted to the canonical equation-respecting
+OSLF.  This presentation has no equations, so the saturation is extensionally
+transparent; using the common admission operation keeps that fact explicit. -/
+def selectorEquationAtomSem (relEnv : RelationEnv) :
+    EquationAtomSemUsing relEnv plnSelectorLanguageDef :=
+  saturateAtomSemUsing relEnv plnSelectorLanguageDef selectorAtomSem
+
 theorem selectorAtom_sound :
     ∀ a p, selectorAtomCheck a p = true → selectorAtomSem a p := by
   intro a p h
@@ -653,11 +660,14 @@ theorem selectorAtom_sound :
 theorem plnSelector_checkLangUsing_sat_sound
     {relEnv : RelationEnv} {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
     (hSat : checkLangUsing relEnv plnSelectorLanguageDef selectorAtomCheck fuel p φ = .sat) :
-    sem (langReducesUsing relEnv plnSelectorLanguageDef) selectorAtomSem φ p := by
+    langFormulaSemUsing relEnv plnSelectorLanguageDef
+      (selectorEquationAtomSem relEnv) φ p := by
   exact checkLangUsing_sat_sound
     (relEnv := relEnv) (lang := plnSelectorLanguageDef)
-    (I_check := selectorAtomCheck) (I_sem := selectorAtomSem)
-    (h_atoms := selectorAtom_sound) hSat
+    (I_check := selectorAtomCheck) (I_sem := selectorEquationAtomSem relEnv)
+    (h_atoms := fun a p holds =>
+      holds_saturateAtomSemUsing relEnv plnSelectorLanguageDef
+        selectorAtomSem a p (selectorAtom_sound a p holds)) hSat
 
 /-- Graph-level checker soundness corollary specialized to the PLN selector
 LanguageDef. -/
@@ -671,13 +681,16 @@ theorem plnSelector_checkLangUsing_sat_sound_graph
       (C := C) relEnv plnSelectorLanguageDef).Edge.obj X,
       ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := C) relEnv plnSelectorLanguageDef).source.app X e).down = p ∧
-      sem (langReducesUsing relEnv plnSelectorLanguageDef) selectorAtomSem φ
+      (langFormulaSemUsing relEnv plnSelectorLanguageDef
+        (selectorEquationAtomSem relEnv) φ).1
         (((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := C) relEnv plnSelectorLanguageDef).target.app X e).down) := by
   exact checkLangUsing_sat_sound_graph
     (C := C) (relEnv := relEnv) (lang := plnSelectorLanguageDef)
-    (I_check := selectorAtomCheck) (I_sem := selectorAtomSem)
-    (h_atoms := selectorAtom_sound) hSat
+    (I_check := selectorAtomCheck) (I_sem := selectorEquationAtomSem relEnv)
+    (h_atoms := fun a p holds =>
+      holds_saturateAtomSemUsing relEnv plnSelectorLanguageDef
+        selectorAtomSem a p (selectorAtom_sound a p holds)) hSat
 
 def demoExtBayes2Src : Pattern := pUpdate (pFuse pAtom pAtom) pAtom
 def demoIrreducible : Pattern := pAtom
@@ -699,8 +712,9 @@ example :
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 theorem demoExtBayes2_sat_sem :
-    sem (langReducesUsing RelationEnv.empty plnSelectorLanguageDef)
-      selectorAtomSem (.dia (.atom "isExtBayes2RHS")) demoExtBayes2Src := by
+    langFormulaSemUsing RelationEnv.empty plnSelectorLanguageDef
+      (selectorEquationAtomSem RelationEnv.empty)
+      (.dia (.atom "isExtBayes2RHS")) demoExtBayes2Src := by
   have hSat :
       checkLangUsing RelationEnv.empty plnSelectorLanguageDef selectorAtomCheck
         3 demoExtBayes2Src (.dia (.atom "isExtBayes2RHS")) = .sat := by

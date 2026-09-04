@@ -624,10 +624,10 @@ theorem definition_valid : definition.isValid = true := by
 
 /-- The determinism/effect language and its fifty rules as one GSLT. -/
 def totalTheory : Mettapedia.GSLT.GSLT :=
-  definition.toGSLTOfNoEquations definition_valid rfl
+  definition.toGSLTOfEquationFree definition_valid rfl
 
 theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := by
-  unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
+  unfold totalTheory CalculusLanguageDef.toGSLTOfEquationFree
   rfl
 
 def checked : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩

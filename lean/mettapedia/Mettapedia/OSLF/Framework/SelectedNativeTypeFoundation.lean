@@ -27,7 +27,49 @@ open Mettapedia.GSLT.LanguageDef.WellSorted
 
 namespace SelectedNativeTypeFoundation
 
-/-- Carrier expressions required by one typed displayed rewrite site. -/
+/-- Authored metavariable carriers available to one displayed rewrite.  They
+remain in source order.  Source-indexed rules may type the literal rewrite
+endpoints, so these carriers are part of the generated support even when the
+selected focus is the whole root and has no fixed context. -/
+def authoredVariableCarrierTypes {source : ValidatedLanguageDef}
+    (typing : DisplayedRewriteTyping source) : List TypeExpr :=
+  typing.site.rewrite.typeContext.map Prod.snd
+
+@[simp] theorem authoredVariableCarrierTypes_eq
+    {source : ValidatedLanguageDef}
+    (typing : DisplayedRewriteTyping source) :
+    authoredVariableCarrierTypes typing =
+      typing.site.rewrite.typeContext.map Prod.snd := by
+  rfl
+
+/-- Authored endpoint-variable carriers need no additional grounding
+certificate: the source language's own rewrite validator has already checked
+every base sort in the exact type-context row. -/
+theorem authoredVariableCarrier_grounded
+    {source : ValidatedLanguageDef}
+    (typing : DisplayedRewriteTyping source) {object : TypeExpr}
+    (membership : object ∈ authoredVariableCarrierTypes typing) :
+    CarrierObjectClosure.GroundedIn source object := by
+  unfold authoredVariableCarrierTypes at membership
+  obtain ⟨entry, entryMembership, equality⟩ := List.mem_map.mp membership
+  subst object
+  intro name nameMembership
+  have rewriteMembership :
+      typing.site.rewrite ∈ source.language.rewrites := by
+    exact List.get_mem source.language.rewrites typing.site.rewriteIndex
+  have rewriteClean :=
+    LanguageDef.validateRewrite_eq_nil_of_validate_eq_nil
+      source.language source.valid typing.site.rewrite rewriteMembership
+  unfold LanguageDef.validateRewrite at rewriteClean
+  simp only [List.append_eq_nil_iff] at rewriteClean
+  apply LanguageDef.baseName_mem_of_validateTypeExpr_eq_nil
+    source.language.typeNames s!"rewrite {typing.site.rewrite.name}"
+      entry.2 ?_ nameMembership
+  aesop
+
+/-- Carrier expressions required by the contextual modal signature of one
+typed displayed rewrite site.  Literal authored endpoint syntax is a separate
+source-indexed dependency and is appended only by that later extension. -/
 def requiredCarrierRoots {source : ValidatedLanguageDef}
     (typing : DisplayedRewriteTyping source) : List TypeExpr :=
   [typing.rewriteType, typing.focusType] ++ typing.focusBoundPrefix ++

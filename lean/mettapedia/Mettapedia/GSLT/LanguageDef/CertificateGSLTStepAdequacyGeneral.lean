@@ -12,6 +12,8 @@ without it (`CertificateGSLTStepAdequacyGeneralCanary`).
 
 The adequate fragment, per rewrite rule:
 
+* the presentation is equation-free: no authored equations and no
+  presentation-derived bag, set, or algebra laws;
 * every premise is an authored congruence premise (`DirectTraceLanguage`);
 * rule patterns are **hole skeletons**: constructor/binder shapes whose
   metavariables occur only at ambient depth, with no explicit-substitution
@@ -206,28 +208,35 @@ def rewriteDirectTraceAdequate (rule : RewriteRule) : Bool :=
     | some bound => (patternOccurrenceNames rule.right).all bound.contains
     | none => false
 
-/-- The adequate direct-trace fragment of a language: every rewrite rule is
-adequate and rewrite names are unique.  Matching and substitution in the
-five-field core are syntactic by construction; reflective interpretations are
+/-- The adequate equation-free direct-trace fragment of a language: the
+generated equation theory is syntactic equality, every rewrite rule is
+adequate, and rewrite names are unique.  Reflective interpretations are
 separate extensions and therefore require no exclusion clause here.  A
 duplicated rewrite name would already be rejected by generated-definition
 admission (duplicate rule identifiers); the gate makes it locally checkable. -/
 def languageDirectTraceAdequate (language : LanguageDef) : Bool :=
-  language.rewrites.all rewriteDirectTraceAdequate &&
-    decide (language.rewrites.map RewriteRule.name).Nodup
+  language.isEquationFree &&
+    (language.rewrites.all rewriteDirectTraceAdequate &&
+      decide (language.rewrites.map RewriteRule.name).Nodup)
+
+theorem languageDirectTraceAdequate_equationFree {language : LanguageDef}
+    (adequate : languageDirectTraceAdequate language = true) :
+    language.isEquationFree = true := by
+  simp only [languageDirectTraceAdequate, Bool.and_eq_true] at adequate
+  exact adequate.1
 
 theorem languageDirectTraceAdequate_rules {language : LanguageDef}
     (adequate : languageDirectTraceAdequate language = true) :
     ∀ rule ∈ language.rewrites, rewriteDirectTraceAdequate rule = true := by
   simp only [languageDirectTraceAdequate, Bool.and_eq_true] at adequate
-  exact List.all_eq_true.mp adequate.1
+  exact List.all_eq_true.mp adequate.2.1
 
 theorem languageDirectTraceAdequate_nodupNames {language : LanguageDef}
     (adequate : languageDirectTraceAdequate language = true) :
     (language.rewrites.map RewriteRule.name).Nodup := by
   simp only [languageDirectTraceAdequate, Bool.and_eq_true,
     decide_eq_true_eq] at adequate
-  exact adequate.2
+  exact adequate.2.2
 
 /-- A moded premise chain consists of congruence premises only. -/
 theorem tracePremisesModed_congruence_shape :
@@ -259,6 +268,8 @@ refines the direct-trace premise gate. -/
 theorem directTraceSupported_of_adequate {language : LanguageDef}
     (adequate : languageDirectTraceAdequate language = true) :
     LanguageDef.directTraceSupported language = true := by
+  simp only [LanguageDef.directTraceSupported, Bool.and_eq_true]
+  refine ⟨languageDirectTraceAdequate_equationFree adequate, ?_⟩
   apply List.all_eq_true.mpr
   intro rule member
   have ruleAdequate := languageDirectTraceAdequate_rules adequate rule member

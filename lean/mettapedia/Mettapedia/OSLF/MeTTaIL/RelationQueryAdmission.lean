@@ -140,6 +140,92 @@ theorem admitted_relationQuery_has_merge_witness
     (premiseStepWithEnv_relationQuery_of_env_tuple
       (language := language) row matched merged)
 
+/-! ## Exact fully-bound echo queries -/
+
+/-- A successful binding lookup is the value substituted for that free
+variable.  This local interface avoids exposing the `find?` representation of
+`Bindings.lookup` to relation-query clients. -/
+theorem applyBindings_boundVariable_eq
+    {bindings : Bindings} {name : String} {value : Pattern}
+    (found : bindings.lookup name = some value) :
+    applyBindings bindings (.fvar name) = value := by
+  unfold Bindings.lookup at found
+  cases foundPair : bindings.find? (fun entry => entry.1 == name) with
+  | none => simp [foundPair] at found
+  | some entry =>
+      rcases entry with ⟨entryName, entryValue⟩
+      simp only [foundPair, Option.map_some, Option.some.injEq] at found
+      subst entryValue
+      simp [applyBindings, foundPair]
+
+/-- Pointwise successful lookups substitute a list of relation variables to
+the corresponding list of values. -/
+theorem map_applyBindings_boundVariables_eq
+    {bindings : Bindings} {names : List String} {values : List Pattern}
+    (aligned : List.Forall₂
+      (fun name value => bindings.lookup name = some value) names values) :
+    (names.map Pattern.fvar).map (applyBindings bindings) = values := by
+  induction aligned with
+  | nil => rfl
+  | cons found _ inductionHypothesis =>
+      simp [applyBindings_boundVariable_eq found, inductionHypothesis]
+
+/-- Matching already-bound relation variables against their corresponding
+values yields exactly the empty binding extension.  In particular, an echo
+query cannot silently rebind a fully bound input. -/
+theorem matchRelationArgs_boundVariables_eq
+    {bindings : Bindings} {names : List String} {values : List Pattern}
+    (aligned : List.Forall₂
+      (fun name value => bindings.lookup name = some value) names values) :
+    matchRelationArgs bindings (names.map Pattern.fvar) values = [[]] := by
+  induction aligned with
+  | nil => simp [matchRelationArgs]
+  | cons found _ inductionHypothesis =>
+      simp [matchRelationArgs, matchRelationArgument, found,
+        inductionHypothesis, mergeBindings]
+
+/-- A fully-bound relation whose only possible environment row echoes its
+substituted arguments either preserves the input bindings exactly or produces
+no result.  Builtin rows are excluded explicitly because they share the same
+query namespace and could otherwise add behavior. -/
+theorem relationQueryStep_boundVariables_echo_eq
+    {relEnv : RelationEnv} {language : LanguageDef}
+    {bindings : Bindings} {relation : String}
+    {names : List String} {values : List Pattern} {condition : Bool}
+    (aligned : List.Forall₂
+      (fun name value => bindings.lookup name = some value) names values)
+    (noBuiltin : builtinRelationTuples language relation values = [])
+    (echo : relEnv.tuples relation values =
+      if condition then [values] else []) :
+    relationQueryStep relEnv language bindings relation
+        (names.map Pattern.fvar) =
+      if condition then [bindings] else [] := by
+  have applied := map_applyBindings_boundVariables_eq aligned
+  rw [relationQueryStep]
+  simp only [applied, noBuiltin, echo, List.nil_append]
+  by_cases enabled : condition
+  · simp [enabled, matchRelationArgs_boundVariables_eq aligned, mergeBindings]
+  · simp [enabled]
+
+private def echoCanaryValue : Pattern := .apply "echo-value" []
+
+/-- Positive canary: an already-bound query variable contributes no new
+binding when it is matched against its own value. -/
+example :
+    matchRelationArgs [("x", echoCanaryValue)] [.fvar "x"]
+      [echoCanaryValue] = [[]] := by
+  simp [matchRelationArgs, matchRelationArgument, Bindings.lookup,
+    mergeBindings, echoCanaryValue]
+
+/-- Negative control: without the fully-bound hypothesis the same query shape
+does extend the binding map, so the exact echo theorem cannot be generalized
+to arbitrary relation queries. -/
+example :
+    matchRelationArgs [] [.fvar "x"] [echoCanaryValue] =
+      [[("x", echoCanaryValue)]] := by
+  simp [matchRelationArgs, matchRelationArgument, Bindings.lookup,
+    mergeBindings, echoCanaryValue]
+
 /-! ## Failure composition -/
 
 /-- If one premise has no binding continuation, no suffix can revive the

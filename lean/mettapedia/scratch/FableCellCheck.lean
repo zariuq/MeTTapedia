@@ -1,0 +1,7 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryNonBoundaryPlanStop
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.rhoAlignedViewsRestorationAligned_of_liveCells
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.rhoCollapsingViewsPlanStopSourceAligned_of_liveCells
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.abstractPattern_eq_fvar_of_isCertifiedBoundary
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.rhoCanonicalRawStop_collapsingEndpoint
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.rho_planStop_sharpCell

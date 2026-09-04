@@ -526,7 +526,7 @@ theorem rhoCanonicalOccurrence_atomSafeAt_targetAvailable
           cases color <;>
             simp [declaration, costStaticReflectivePresentationDecl_eq_map,
               mapReflectivePresentation, CostStaticColor.symbols,
-              costBaseStaticSymbols, costBasePresentationSymbols,
+              costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
               costWrappedStaticSymbols, rhoReflectivePresentation,
               mapTypeExpr, TypeExpr.name, TypeExpr.baseType,
               interactingName, show "Name" ≠ "Proc" by decide]
@@ -962,7 +962,7 @@ mutual
   /-- Static symbol mapping changes labels and sorts but never introduces a
   binder or an explicit substitution node. -/
   theorem rhoReflectiveSubstitutionBinderFree_mapPattern
-      (symbols : PresentationSymbols) : ∀ pattern,
+      (symbols : LanguageDefSymbolMap) : ∀ pattern,
       WellSorted.ReflectiveSubstitutionBinderFree (mapPattern symbols pattern) =
         WellSorted.ReflectiveSubstitutionBinderFree pattern
     | .bvar _ => rfl
@@ -984,7 +984,7 @@ mutual
 
   /-- List companion to binder-freedom under static symbol mapping. -/
   theorem rhoReflectiveSubstitutionBinderFreeList_mapPattern
-      (symbols : PresentationSymbols) : ∀ patterns,
+      (symbols : LanguageDefSymbolMap) : ∀ patterns,
       WellSorted.ReflectiveSubstitutionBinderFreeList
           (mapPatternList symbols patterns) =
         WellSorted.ReflectiveSubstitutionBinderFreeList patterns

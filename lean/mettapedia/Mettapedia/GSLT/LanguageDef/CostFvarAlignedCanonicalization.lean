@@ -80,7 +80,7 @@ namespace FvarAligned
 mutual
   /-- Mapping one presentation on both endpoints preserves free-variable
   alignment; presentation maps leave free-variable spellings unchanged. -/
-  def mapPattern (symbols : PresentationSymbols)
+  def mapPattern (symbols : LanguageDefSymbolMap)
       {relation : String → String → Prop} :
       ∀ {left right}, FvarAligned relation left right →
         FvarAligned relation
@@ -101,7 +101,7 @@ mutual
           (FvarAlignedList.mapPattern symbols elements)
 
   /-- Listwise companion of `FvarAligned.mapPattern`. -/
-  def FvarAlignedList.mapPattern (symbols : PresentationSymbols)
+  def FvarAlignedList.mapPattern (symbols : LanguageDefSymbolMap)
       {relation : String → String → Prop} :
       ∀ {left right}, FvarAlignedList relation left right →
         FvarAlignedList relation (mapPatternList symbols left)

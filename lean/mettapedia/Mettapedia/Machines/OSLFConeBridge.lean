@@ -1,17 +1,19 @@
 import Mettapedia.Machines.ConeDuality
 import Mettapedia.OSLF.Framework.TypeSynthesis
+import Mettapedia.OSLF.Framework.GSLTQuotientCoherence
 
 /-!
 # OSLF modalities and production/demand cones
 
 This module pins the variance between the one-step OSLF modalities generated
-from a `LanguageDef` and the reflexive-transitive cones of a production
-relation.
+from a `LanguageDef` and the reflexive-transitive cones of its semantic
+production relation on equation classes.
 
-For a reduction `p ⟶ q`, `langDiamond φ p` asks whether a successor `q`
-satisfies `φ`. As a transformer on sets, this is the one-step image under the
-*reversed* relation. Its reachability closure is therefore `backwardCone`, not
-`forwardCone`. Dually, the reachability box is `onlyFrom`.
+For a reduction `[p] ⟶ [q]`, `langDiamond φ p` asks whether a successor class
+`[q]` satisfies `φ`. As a transformer on semantic predicates, this is the
+one-step image under the *reversed* relation. Its reachability closure is
+therefore `backwardCone`, not `forwardCone`. Dually, the reachability box is
+`onlyFrom`.
 
 This distinction matters operationally: a multi-step demand cone can contain a
 state that the one-step diamond does not. The examples at the end retain that
@@ -24,74 +26,114 @@ open Set
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.GSLT
+open Mettapedia.GSLT.IndexedOperational
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTQuotientCoherence
 
-/-- The generated one-step diamond is the step image under the reversed
-reduction relation. This is the variance-correct set-transformer view. -/
+/-- The semantic term carrier of a generated language is its authored pattern
+carrier modulo the equations declared by the language. -/
+abbrev LangSemanticTermUsing (relEnv : RelationEnv) (lang : LanguageDef) :=
+  SemanticTerm (langGSLTUsing relEnv lang)
+
+/-- The generated one-step diamond descends exactly to the step image under
+the reversed semantic relation. This is the variance-correct set-transformer
+view; no equation-blind OSLF is involved. -/
 theorem langDiamondUsing_eq_stepImage_swap
-    (relEnv : RelationEnv) (lang : LanguageDef) (φ : Pattern → Prop) :
-    langDiamondUsing relEnv lang φ =
-      stepImage (Function.swap (langReducesUsing relEnv lang)) φ := by
-  ext p
-  rw [langDiamondUsing_spec]
-  change (∃ q, langReducesUsing relEnv lang p q ∧ φ q) ↔
-    ∃ q, φ q ∧ langReducesUsing relEnv lang p q
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) :
+    descendPredicate (langGSLTUsing relEnv lang)
+        (langDiamondUsing relEnv lang φ) =
+      stepImage
+        (Function.swap (SemanticStep (langGSLTUsing relEnv lang)))
+        (descendPredicate (langGSLTUsing relEnv lang) φ) := by
+  rw [show langDiamondUsing relEnv lang φ =
+      semanticDiamond (langGSLTUsing relEnv lang) φ from rfl]
+  rw [descend_semanticDiamond]
+  ext source
+  rw [equationQuotientDiamond, gsltDiamond_spec]
+  change (∃ target,
+      SemanticStep (langGSLTUsing relEnv lang) source target ∧
+        descendPredicate (langGSLTUsing relEnv lang) φ target) ↔
+    ∃ target,
+      descendPredicate (langGSLTUsing relEnv lang) φ target ∧
+        SemanticStep (langGSLTUsing relEnv lang) source target
   constructor
-  · rintro ⟨q, hpq, hφ⟩
-    exact ⟨q, hφ, hpq⟩
-  · rintro ⟨q, hφ, hpq⟩
-    exact ⟨q, hpq, hφ⟩
+  · rintro ⟨target, step, holds⟩
+    exact ⟨target, holds, step⟩
+  · rintro ⟨target, holds, step⟩
+    exact ⟨target, step, holds⟩
 
-/-- The generated one-step box is universal quantification over immediate
-predecessors. -/
+/-- The generated one-step box descends to universal quantification over
+immediate predecessor classes. -/
 theorem langBoxUsing_eq_immediateOnlyFrom
-    (relEnv : RelationEnv) (lang : LanguageDef) (φ : Pattern → Prop) :
-    langBoxUsing relEnv lang φ =
-      {p | ∀ q, langReducesUsing relEnv lang q p → φ q} := by
-  ext p
-  exact langBoxUsing_spec relEnv lang φ p
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) :
+    descendPredicate (langGSLTUsing relEnv lang)
+        (langBoxUsing relEnv lang φ) =
+      {target | ∀ source,
+        SemanticStep (langGSLTUsing relEnv lang) source target →
+          descendPredicate (langGSLTUsing relEnv lang) φ source} := by
+  rw [show langBoxUsing relEnv lang φ =
+      semanticBox (langGSLTUsing relEnv lang) φ from rfl]
+  rw [descend_semanticBox]
+  ext target
+  exact gsltBox_spec (semanticTheory (langGSLTUsing relEnv lang))
+    (descendPredicate (langGSLTUsing relEnv lang) φ) target
 
 /-- Reflexive-transitive demand modality for a `LanguageDef`: states that can
-reach a demanded state satisfying `φ`. -/
+reach a demanded semantic state satisfying `φ`. -/
 def langDiamondStarUsing (relEnv : RelationEnv) (lang : LanguageDef) :
-    (Pattern → Prop) → (Pattern → Prop) :=
-  backwardCone (langReducesUsing relEnv lang)
+    (LangSemanticTermUsing relEnv lang → Prop) →
+      (LangSemanticTermUsing relEnv lang → Prop) :=
+  backwardCone (SemanticStep (langGSLTUsing relEnv lang))
 
 /-- Reflexive-transitive provenance box for a `LanguageDef`: states all of
-whose reachable predecessors satisfy `φ`. -/
+whose reachable semantic predecessors satisfy `φ`. -/
 def langBoxStarUsing (relEnv : RelationEnv) (lang : LanguageDef) :
-    (Pattern → Prop) → (Pattern → Prop) :=
-  onlyFrom (langReducesUsing relEnv lang)
+    (LangSemanticTermUsing relEnv lang → Prop) →
+      (LangSemanticTermUsing relEnv lang → Prop) :=
+  onlyFrom (SemanticStep (langGSLTUsing relEnv lang))
 
 /-- Default-environment reachability diamond. -/
 def langDiamondStar (lang : LanguageDef) :
-    (Pattern → Prop) → (Pattern → Prop) :=
+    (LangSemanticTermUsing RelationEnv.empty lang → Prop) →
+      (LangSemanticTermUsing RelationEnv.empty lang → Prop) :=
   langDiamondStarUsing RelationEnv.empty lang
 
 /-- Default-environment reachability box. -/
 def langBoxStar (lang : LanguageDef) :
-    (Pattern → Prop) → (Pattern → Prop) :=
+    (LangSemanticTermUsing RelationEnv.empty lang → Prop) →
+      (LangSemanticTermUsing RelationEnv.empty lang → Prop) :=
   langBoxStarUsing RelationEnv.empty lang
 
 @[simp] theorem langDiamondStarUsing_spec
     (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p : Pattern) :
-    langDiamondStarUsing relEnv lang φ p ↔
-      ∃ q, φ q ∧ Reaches (langReducesUsing relEnv lang) p q :=
+    (φ : LangSemanticTermUsing relEnv lang → Prop)
+    (source : LangSemanticTermUsing relEnv lang) :
+    langDiamondStarUsing relEnv lang φ source ↔
+      ∃ target, φ target ∧
+        Reaches (SemanticStep (langGSLTUsing relEnv lang)) source target :=
   Iff.rfl
 
 @[simp] theorem langBoxStarUsing_spec
     (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p : Pattern) :
-    langBoxStarUsing relEnv lang φ p ↔
-      ∀ q, Reaches (langReducesUsing relEnv lang) q p → φ q :=
+    (φ : LangSemanticTermUsing relEnv lang → Prop)
+    (target : LangSemanticTermUsing relEnv lang) :
+    langBoxStarUsing relEnv lang φ target ↔
+      ∀ source,
+        Reaches (SemanticStep (langGSLTUsing relEnv lang)) source target →
+          φ source :=
   Iff.rfl
 
 /-- Demand over reachability is forward production in the opposite
 direction. -/
 theorem langDiamondStarUsing_eq_forwardCone_swap
-    (relEnv : RelationEnv) (lang : LanguageDef) (φ : Pattern → Prop) :
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (φ : LangSemanticTermUsing relEnv lang → Prop) :
     langDiamondStarUsing relEnv lang φ =
-      forwardCone (Function.swap (langReducesUsing relEnv lang)) φ :=
+      forwardCone
+        (Function.swap (SemanticStep (langGSLTUsing relEnv lang))) φ :=
   backwardCone_eq_forwardCone_swap _ _
 
 /-- The reachability diamond and provenance box retain the generic cone
@@ -100,26 +142,34 @@ theorem langReachabilityGaloisUsing
     (relEnv : RelationEnv) (lang : LanguageDef) :
     GaloisConnection (langDiamondStarUsing relEnv lang)
       (langBoxStarUsing relEnv lang) :=
-  gc_backward (langReducesUsing relEnv lang)
+  gc_backward (SemanticStep (langGSLTUsing relEnv lang))
 
 /-- Every immediate demand is a reachable demand. -/
 theorem langDiamondUsing_le_langDiamondStarUsing
-    (relEnv : RelationEnv) (lang : LanguageDef) (φ : Pattern → Prop) :
-    langDiamondUsing relEnv lang φ ≤ langDiamondStarUsing relEnv lang φ := by
-  intro p hp
-  obtain ⟨q, hpq, hφ⟩ :=
-    (langDiamondUsing_spec relEnv lang φ p).mp hp
-  exact ⟨q, hφ, Relation.ReflTransGen.single hpq⟩
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) :
+    descendPredicate (langGSLTUsing relEnv lang)
+        (langDiamondUsing relEnv lang φ) ≤
+      langDiamondStarUsing relEnv lang
+        (descendPredicate (langGSLTUsing relEnv lang) φ) := by
+  intro source holds
+  rw [langDiamondUsing_eq_stepImage_swap] at holds
+  obtain ⟨target, targetHolds, step⟩ := holds
+  exact ⟨target, targetHolds, Relation.ReflTransGen.single step⟩
 
 /-- Reachability provenance is stronger than immediate-predecessor
 provenance. -/
 theorem langBoxStarUsing_le_langBoxUsing
-    (relEnv : RelationEnv) (lang : LanguageDef) (φ : Pattern → Prop) :
-    langBoxStarUsing relEnv lang φ ≤ langBoxUsing relEnv lang φ := by
-  intro p hp
-  apply (langBoxUsing_spec relEnv lang φ p).mpr
-  intro q hqp
-  exact hp q (Relation.ReflTransGen.single hqp)
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) :
+    langBoxStarUsing relEnv lang
+        (descendPredicate (langGSLTUsing relEnv lang) φ) ≤
+      descendPredicate (langGSLTUsing relEnv lang)
+        (langBoxUsing relEnv lang φ) := by
+  intro target holds
+  rw [langBoxUsing_eq_immediateOnlyFrom]
+  intro source step
+  exact holds source (Relation.ReflTransGen.single step)
 
 /-! ## Positive and negative orientation examples -/
 

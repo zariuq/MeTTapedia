@@ -178,11 +178,11 @@ private theorem definition_valid : definition.isValid = true := by
 
 /-- The complete canary as one GSLT, not merely as checker input. -/
 private def totalTheory : Mettapedia.GSLT.GSLT :=
-  definition.toGSLTOfNoEquations definition_valid rfl
+  definition.toGSLTOfEquationFree definition_valid rfl
 
 private theorem totalTheory_Term :
     totalTheory.Term = (Pattern ⊕ List Pattern) := by
-  unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
+  unfold totalTheory CalculusLanguageDef.toGSLTOfEquationFree
   rfl
 
 private def checked : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩

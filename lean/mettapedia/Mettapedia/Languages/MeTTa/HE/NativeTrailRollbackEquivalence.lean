@@ -1,33 +1,32 @@
 import Mettapedia.Languages.MeTTa.HE.Types
 
 /-!
-# Native Trail/Rollback Equivalence
+# Native assignment/equality trail projection
 
-Proves that CeTTa's trail-based save/rollback model is observationally
-equivalent to the older clone/restore model on the REAL `Bindings` type
-(assignments + equalities), not a toy model.
+Proves that append/truncate rollback is observationally equivalent to
+clone/restore on the HE assignment/equality projection.
 
-## CeTTa Runtime Mapping
+This is not a complete model of the live CeTTa binding builder.  In particular,
+the live state also carries Prime occurrence state, derived cycle and support
+summaries, an authority-indexed lookup accelerator, revision clocks, owner
+identity, and observer-free-region protocol state.  Complete-runtime claims
+must use a product refinement that retains those independent coordinates.
 
-| Lean | CeTTa (match.h) |
+## Runtime projection map
+
+| Lean projection | Live runtime role |
 |------|-----------------|
-| `TrailEntry` | `BindingsBuilderTrailEntry` (match.h:43) — `len`, `eq_len` |
-| `trailSave` | `bindings_builder_save` (match.c:1536) — returns trail_len |
-| `trailRollback` | `bindings_builder_rollback` (match.c:1540) — restores len/eq_len |
-| `trailCommit` | `bindings_builder_commit` (match.c:1551) — clears trail |
-| `ChoicePoint` | `ChoicePoint` (search_machine.h:19) — bindings_mark + arena_mark |
+| `TrailEntry` | binding/constraint prefix lengths decoded from a builder checkpoint |
+| `captureTrailEntry` | the logical prefix observed at a save boundary |
+| `restoreFromTrail` | suffix rollback of those two authoritative sequences |
+| `ChoicePoint` | the binding projection of a larger search checkpoint |
 
 ## Model
 
-The real `BindingsBuilderTrailEntry` records:
-```c
-{ uint32_t len; uint32_t eq_len; bool ground_only_values;
-  uint8_t lookup_cache_count; uint8_t lookup_cache_next; }
-```
-
-We model the semantically relevant fields: `len` (assignments count) and
-`eq_len` (equalities count). The cache fields are performance-only and
-don't affect observable binding state.
+We model the fields semantically relevant to this projection: `len`
+(assignments count) and `eq_len` (equalities count).  The statement does not
+erase Prime occurrence state from the complete runtime semantics, nor does it
+establish correctness of the current cache realizations.
 
 Rollback restores both `len` and `eq_len`, logically hiding later entries.
 -/
@@ -36,12 +35,9 @@ namespace Mettapedia.Languages.MeTTa.HE.NativeTrailRollbackEquivalence
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 
-/-! ## §1: Trail Entry — matches BindingsBuilderTrailEntry -/
+/-! ## §1: Assignment/equality checkpoint projection -/
 
-/-- Trail entry: records the assignment count and equality count at save time.
-    Matches `BindingsBuilderTrailEntry.len` and `.eq_len` from match.h:43.
-    Cache fields (`ground_only_values`, `lookup_cache_*`) are performance-only
-    and don't affect semantic equivalence. -/
+/-- Trail entry for the assignment/equality projection. -/
 structure TrailEntry where
   assignmentCount : Nat
   equalityCount : Nat
@@ -75,7 +71,8 @@ def addEquality (b : Bindings) (v w : String) : Bindings :=
 
 /-! ## §4: Save-Rollback Equivalence on Real Bindings -/
 
-/-- **THE MAIN THEOREM: trail rollback = clone restore on real Bindings.**
+/-- Trail rollback equals clone restore on the assignment/equality
+projection.
 
     Maps to: `bindings_builder_save` records `(len, eq_len)`;
     `bindings_builder_rollback` restores them. Both assignment and
@@ -102,7 +99,7 @@ theorem trail_rollback_observationally_eq_clone_model
 
 /-! ## §5: Nested Rollback -/
 
-/-- **Nested rollback is sound on real Bindings:**
+/-- Nested rollback is sound on the assignment/equality projection:
     Inner rollback restores to inner save point.
     Outer rollback (after inner) restores to outer save point.
 
@@ -126,11 +123,10 @@ theorem nested_trail_rollback_sound
     simp only [List.length_append, List.append_assoc,
                List.take_left, List.take_length_add_append]
 
-/-! ## §6: ChoicePoint — matches search_machine.h:19 -/
+/-! ## §6: Binding projection of a choice point -/
 
-/-- A choice point: bindings trail entry + arena mark validity.
-    Matches `ChoicePoint` from search_machine.h:19:
-    `{ uint32_t bindings_mark; ArenaMark scratch_mark; bool has_scratch_mark; }` -/
+/-- A projected choice point: binding prefix checkpoint plus whether the
+surrounding runtime also retained an arena mark. -/
 structure ChoicePoint where
   bindingsEntry : TrailEntry
   hasArenamark : Bool
@@ -140,7 +136,7 @@ structure ChoicePoint where
 def choicepointSave (b : Bindings) (arenaActive : Bool) : ChoicePoint :=
   ⟨captureTrailEntry b, arenaActive⟩
 
-/-- **ChoicePoint restore is exact on real Bindings.** -/
+/-- Choice-point restore is exact on this projection. -/
 theorem choicepoint_restore_exact
     (base : Bindings)
     (newA : List (String × Atom)) (newE : List (String × String))
@@ -199,16 +195,12 @@ theorem rollback_equality_count_exact (b : Bindings) (te : TrailEntry)
 
 /-! ## §9: Summary
 
-**0 sorries. 0 warnings.**
-
-This file operates on the REAL `Bindings` type (assignments + equalities),
-not a toy model. The trail entry records both `assignmentCount` and
-`equalityCount`, matching the C `BindingsBuilderTrailEntry` struct fields
-`len` and `eq_len`.
+This file operates on the HE `Bindings` assignment/equality projection.  It
+does not by itself justify a statement about the complete live C builder.
 
 | Theorem | What it says |
 |---------|-------------|
-| `bindings_builder_save_restore_exact` | Trail rollback = original on real Bindings |
+| `bindings_builder_save_restore_exact` | Trail rollback = original projected state |
 | `trail_rollback_observationally_eq_clone_model` | Trail = clone model |
 | `nested_trail_rollback_sound` | Inner rollback preserves outer |
 | `choicepoint_restore_exact` | ChoicePoint restores exactly |
@@ -217,9 +209,9 @@ not a toy model. The trail entry records both `assignmentCount` and
 | `rollback_idempotent` | Double rollback = single |
 | `rollback_assignment_count_exact` | Exact count after rollback |
 
-A maintainer can say: "the trail model over real Bindings (assignments +
-equalities) is observationally equivalent to clone/restore, with nested
-save/rollback sound and published results preserved."
+A maintainer can say: "the append/truncate trail over the assignment/equality
+projection is observationally equivalent to clone/restore, with nested
+save/rollback sound and old projected entries preserved."
 -/
 
 end Mettapedia.Languages.MeTTa.HE.NativeTrailRollbackEquivalence

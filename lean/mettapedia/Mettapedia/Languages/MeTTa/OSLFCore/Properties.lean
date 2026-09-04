@@ -14,13 +14,6 @@ Key properties of the MeTTa interpreter: confluence, type preservation, and prog
 * Type preservation (types stable under evaluation)
 * Progress (well-typed terms evaluate or are values)
 
-## Council Insights (for key proofs)
-
-* **Mario Carneiro**: Use Multiset.mem_map and structural decomposition
-* **Terrence Tao**: Focus on invariant quantities (card, membership)
-* **Kevin Buzzard**: Case split on conditionals and match expressions
-* **Ben Goertzel**: Characterize normal forms as "insensitive" atoms
-
 ## References
 
 * Meta-MeTTa paper: bisimulation, confluence

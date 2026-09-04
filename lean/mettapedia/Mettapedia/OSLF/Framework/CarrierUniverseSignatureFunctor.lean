@@ -56,7 +56,7 @@ theorem mapLabel_comp (first second : String → String) :
       simp
 
 /-- Symbol action induced on the standalone universe-code signature. -/
-def symbols (sourceSymbols : PresentationSymbols) : PresentationSymbols where
+def symbols (sourceSymbols : LanguageDefSymbolMap) : LanguageDefSymbolMap where
   sort := sourceSymbols.sort
   constructor := mapLabel sourceSymbols.sort
   relation := sourceSymbols.relation
@@ -64,17 +64,17 @@ def symbols (sourceSymbols : PresentationSymbols) : PresentationSymbols where
   rewrite := sourceSymbols.rewrite
 
 @[simp]
-theorem symbols_id : symbols PresentationSymbols.id = PresentationSymbols.id := by
-  ext name <;> simp [symbols, PresentationSymbols.id]
+theorem symbols_id : symbols LanguageDefSymbolMap.id = LanguageDefSymbolMap.id := by
+  ext name <;> simp [symbols, LanguageDefSymbolMap.id]
 
 @[simp]
-theorem symbols_comp (first second : PresentationSymbols) :
-    symbols (PresentationSymbols.comp first second) =
-      PresentationSymbols.comp (symbols first) (symbols second) := by
-  ext name <;> simp [symbols, PresentationSymbols.comp]
+theorem symbols_comp (first second : LanguageDefSymbolMap) :
+    symbols (LanguageDefSymbolMap.comp first second) =
+      LanguageDefSymbolMap.comp (symbols first) (symbols second) := by
+  ext name <;> simp [symbols, LanguageDefSymbolMap.comp]
 
 @[simp]
-theorem map_rule (sourceSymbols : PresentationSymbols)
+theorem map_rule (sourceSymbols : LanguageDefSymbolMap)
     (code : Code) (carrier : String) :
     mapGrammarRule (symbols sourceSymbols) (rule code carrier) =
       rule code (sourceSymbols.sort carrier) := by

@@ -41,6 +41,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match (Bindings applyBindings matchPattern)
 open Mettapedia.OSLF.MeTTaIL.Export
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
 open Mettapedia.Logic.LP (leastHerbrandModel GroundAtom)
 open Mettapedia.OSLF.MeTTaIL.LPBridge (encodeReduces mettailLPSig)
@@ -69,15 +70,19 @@ theorem pettaGalois (s : PeTTaSpace) :
 /-! ## §2 Diamond / Box Characterizations -/
 
 /-- ◇φ(p) in PeTTa = ∃ q, p reduces via PeTTa rules to q ∧ φ(q). -/
-theorem pettaDiamond_spec (s : PeTTaSpace) (φ : Pattern → Prop) (p : Pattern) :
+theorem pettaDiamond_spec (s : PeTTaSpace)
+    (φ : EquationPredicate (langGSLT (pettaSpaceToLangDef s)))
+    (p : Pattern) :
     langDiamond (pettaSpaceToLangDef s) φ p ↔
-    ∃ q, langReduces (pettaSpaceToLangDef s) p q ∧ φ q :=
+    ∃ q, langSemanticReduces (pettaSpaceToLangDef s) p q ∧ φ.1 q :=
   langDiamond_spec (pettaSpaceToLangDef s) φ p
 
 /-- □φ(p) in PeTTa = ∀ q, q reduces via PeTTa rules to p → φ(q). -/
-theorem pettaBox_spec (s : PeTTaSpace) (φ : Pattern → Prop) (p : Pattern) :
+theorem pettaBox_spec (s : PeTTaSpace)
+    (φ : EquationPredicate (langGSLT (pettaSpaceToLangDef s)))
+    (p : Pattern) :
     langBox (pettaSpaceToLangDef s) φ p ↔
-    ∀ q, langReduces (pettaSpaceToLangDef s) q p → φ q :=
+    ∀ q, langSemanticReduces (pettaSpaceToLangDef s) q p → φ.1 q :=
   langBox_spec (pettaSpaceToLangDef s) φ p
 
 /-! ## §3 LP Soundness Bridge

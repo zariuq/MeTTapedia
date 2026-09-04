@@ -102,7 +102,7 @@ private theorem rhoCutOrderRedex_typed :
     exact .cons (by trivial) rfl rhoCutOrderBaseDropZero_typed .nil
 
 private def rhoCutOrderDropConstructor :
-    AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoCalc.terms[1], rhoRule_mem 1⟩
 
 private theorem rhoCutOrderDrop_selected :
@@ -135,7 +135,7 @@ private theorem rhoCutOrderWrappedDrop_typed (name : Pattern)
     exact .cons (by trivial) rfl typed .nil
 
 private def rhoCutOrderParallelConstructor :
-    AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoCalc.terms[3], rhoRule_mem 3⟩
 
 private theorem rhoCutOrderParallel_selected :
@@ -402,7 +402,7 @@ theorem rhoCutOrderBoundaryWitness_spec :
   rhoCutOrderBoundaryCertificate_spec
 
 private def rhoCutOrderBaseQuoteConstructor :
-    AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoCalc.terms[2], rhoRule_mem 2⟩
 
 private def rhoCutOrderBaseQuoteDeclared :
@@ -546,7 +546,7 @@ private def rhoCutOrderBaseFvarPlan (outer : OneHoleContext) :
   .fvar (by
     simp [rhoCutOrderFree, FreeTypeContext.ofList, mapTypeExpr,
       CostStaticColor.symbols, costBaseStaticSymbols,
-      costBasePresentationSymbols])
+      costBaseLanguageDefSymbolMap])
 
 private def rhoCutOrderBaseDropPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree

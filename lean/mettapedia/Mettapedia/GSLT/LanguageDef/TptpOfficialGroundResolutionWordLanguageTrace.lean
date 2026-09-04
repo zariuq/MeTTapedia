@@ -342,7 +342,7 @@ theorem valid_program_verified_structural :
 /-- The official ground-resolution canary has one continuous exact trace in
 the authored word-machine `LanguageDef`; the separately proved calculus
 service establishes the logical objective at the verified root. -/
-theorem valid_authored_trace_sound :
+theorem valid_word_language_trace_sound :
     ∃ finalWords target length,
       ExactRewriteTrace Host
           TptpOfficialGroundResolutionWordLanguageExecution.Canary.start
@@ -352,7 +352,7 @@ theorem valid_authored_trace_sound :
           TptpOfficialGroundResolutionWordMachine.Canary.words ∧
         EncodesConfig Host finalWords (.halted (.verified validRoot)) target ∧
         RelativeTheorem problem validRoot.obligation := by
-  apply execute_verified_authored_trace_sound Host (services_sound problem)
+  apply execute_verified_word_language_trace_sound Host (services_sound problem)
       validProgram TptpOfficialGroundResolutionWordMachine.Canary.words
       TptpOfficialGroundResolutionWordLanguageExecution.Canary.start
       validRoot
@@ -363,7 +363,7 @@ theorem valid_authored_trace_sound :
       TptpOfficialGroundResolutionWordLanguageExecution.Canary.host] using
       valid_program_verified_structural
 
-#print axioms valid_authored_trace_sound
+#print axioms valid_word_language_trace_sound
 
 end Canary
 

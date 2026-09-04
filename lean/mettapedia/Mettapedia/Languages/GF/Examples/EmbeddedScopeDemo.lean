@@ -10,7 +10,7 @@ strictly on the real `GFCore.check` / PGF-witness lane:
 - generated English and Czech `PaperAmbiguity` witnesses recover the same
   abstract trees;
 - those witnesses check to the same Lean patterns;
-- the syntax-only OSLF lane distinguishes the real VP/NP attachment readings
+- the syntax-presentation OSLF distinguishes the real VP/NP attachment readings
   at the native-type level;
 - the syntax-only modal boundary is honest: `□` is vacuous and there is no
   positive `◇` witness because there are no rewrites.
@@ -26,7 +26,12 @@ namespace Mettapedia.Languages.GF.Examples.EmbeddedScopeDemo
 open Mettapedia.Languages.GF.GFCoreNTTDiagnostics
 open Mettapedia.Languages.GF.PaperAmbiguityPGFBridge
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.TypeSynthesis
+
+private def paperEquationPredicate (predicate : Pattern → Prop) :
+    EquationPredicate (langGSLT paperLangKR) :=
+  equationPredicateOfEquationFree (by rfl) predicate
 
 /-- Grounded cross-language recovery: the generated English and Czech telescope
     witness sets recover the same abstract trees. -/
@@ -61,8 +66,12 @@ theorem telescope_attachment_distinction :
     witness toward the temporal target is absent because the real syntax lane
     has no rewrites. -/
 theorem present_sentence_modal_boundary :
-    langBox paperLangKR (fun q => q = presentSentencePattern) presentSentencePattern ∧
-    ¬ langDiamond paperLangKR (fun q => q = temporalPresentPattern) presentSentencePattern := by
+    langBox paperLangKR
+        (paperEquationPredicate fun q => q = presentSentencePattern)
+        presentSentencePattern ∧
+    ¬ langDiamond paperLangKR
+        (paperEquationPredicate fun q => q = temporalPresentPattern)
+        presentSentencePattern := by
   exact ⟨presentSentence_box_self, presentSentence_not_diamond_temporal⟩
 
 /-- Summary theorem for the grounded English/Czech boundary currently present
@@ -74,7 +83,9 @@ theorem grounded_paper_ambiguity_summary :
       Mettapedia.Languages.GF.Generated.PaperAmbiguityPGFWitnesses.czechAnnaRecovered ∧
     ((langOSLF paperLangKR "S").satisfies telescopeVPPattern vpAttachmentType.pred) ∧
     ((langOSLF paperLangKR "S").satisfies telescopeNPPattern npAttachmentType.pred) ∧
-    langBox paperLangKR (fun q => q = presentSentencePattern) presentSentencePattern := by
+    langBox paperLangKR
+      (paperEquationPredicate fun q => q = presentSentencePattern)
+      presentSentencePattern := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact telescope_recovery_aligns_across_english_czech
   · exact anna_recovery_aligns_across_english_czech

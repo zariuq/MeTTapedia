@@ -51,6 +51,75 @@ def auxiliaryLabel (kind : AuxiliaryKind) (slot : Nat) : String :=
     ("$oslf:contextual:".toList ++ kind.tag :: ':' ::
       List.replicate slot 's')
 
+/-- Decode exactly the occurrence-local support-constructor namespace. -/
+def decodeAuxiliaryLabel? (name : String) : Option (AuxiliaryKind × Nat) :=
+  match name.toList with
+  | '$' :: 'o' :: 's' :: 'l' :: 'f' :: ':' ::
+      'c' :: 'o' :: 'n' :: 't' :: 'e' :: 'x' :: 't' :: 'u' :: 'a' :: 'l' ::
+      ':' :: 'f' :: ':' :: suffix =>
+      if suffix = List.replicate suffix.length 's'
+      then some (.familyApplication, suffix.length)
+      else none
+  | '$' :: 'o' :: 's' :: 'l' :: 'f' :: ':' ::
+      'c' :: 'o' :: 'n' :: 't' :: 'e' :: 'x' :: 't' :: 'u' :: 'a' :: 'l' ::
+      ':' :: 'c' :: ':' :: suffix =>
+      if suffix = List.replicate suffix.length 's'
+      then some (.contextPlug, suffix.length)
+      else none
+  | '$' :: 'o' :: 's' :: 'l' :: 'f' :: ':' ::
+      'c' :: 'o' :: 'n' :: 't' :: 'e' :: 'x' :: 't' :: 'u' :: 'a' :: 'l' ::
+      ':' :: 'p' :: ':' :: suffix =>
+      if suffix = List.replicate suffix.length 's'
+      then some (.predicateApplication, suffix.length)
+      else none
+  | _ => none
+
+@[simp]
+theorem decodeAuxiliaryLabel?_auxiliaryLabel
+    (kind : AuxiliaryKind) (slot : Nat) :
+    decodeAuxiliaryLabel? (auxiliaryLabel kind slot) = some (kind, slot) := by
+  cases kind <;>
+    simp [decodeAuxiliaryLabel?, auxiliaryLabel, AuxiliaryKind.tag]
+
+/-- Successful auxiliary decoding reconstructs the exact private label. -/
+theorem auxiliaryLabel_of_decodeAuxiliaryLabel?_eq_some
+    {name : String} {kind : AuxiliaryKind} {slot : Nat}
+    (decoded : decodeAuxiliaryLabel? name = some (kind, slot)) :
+    auxiliaryLabel kind slot = name := by
+  unfold decodeAuxiliaryLabel? at decoded
+  split at decoded
+  next suffix equation =>
+    split at decoded
+    next canonical =>
+      cases decoded
+      rw [← String.ofList_toList (s := name), equation]
+      unfold auxiliaryLabel
+      rw [canonical]
+      simp only [List.length_replicate]
+      congr 1
+    next notCanonical => simp at decoded
+  next suffix equation =>
+    split at decoded
+    next canonical =>
+      cases decoded
+      rw [← String.ofList_toList (s := name), equation]
+      unfold auxiliaryLabel
+      rw [canonical]
+      simp only [List.length_replicate]
+      congr 1
+    next notCanonical => simp at decoded
+  next suffix equation =>
+    split at decoded
+    next canonical =>
+      cases decoded
+      rw [← String.ofList_toList (s := name), equation]
+      unfold auxiliaryLabel
+      rw [canonical]
+      simp only [List.length_replicate]
+      congr 1
+    next notCanonical => simp at decoded
+  next => simp at decoded
+
 theorem auxiliaryLabel_injective (kind : AuxiliaryKind) :
     Function.Injective (auxiliaryLabel kind) := by
   intro first second equality
@@ -506,16 +575,21 @@ theorem contextual_claim_term_syntax_nil (carrierNames : List String)
     {term : GrammarRule}
     (membership : term ∈
       [emptyContextTerm, extendContextTerm] ++
-        ContextualCarrierClaims.claimTermsFor carrierNames) :
+        ContextualInferenceCanonicalContext.extension.newTerms ++
+          ContextualCarrierClaims.claimTermsFor carrierNames) :
     term.syntaxPattern = [] := by
-  rw [List.mem_append] at membership
-  rcases membership with shared | claim
+  simp only [List.mem_append] at membership
+  rcases membership with (shared | canonical) | claim
   · simp at shared
     rcases shared with empty | extended
     · subst term
       rfl
     · subst term
       rfl
+  · simp [ContextualInferenceCanonicalContext.extension,
+      ContextualInferenceCanonicalContext.contextCodeTerm] at canonical
+    subst term
+    rfl
   · unfold ContextualCarrierClaims.claimTermsFor at claim
     obtain ⟨carrier, _carrierMembership, rowMembership⟩ :=
       List.mem_flatMap.mp claim
@@ -698,7 +772,8 @@ theorem middle_grouped_terms :
       ((CarrierUniverseSignature.termsFor [middleCarrierName] ++
           ContextualModalExtension.modalTerms (middleDemand .star).foundation) ++
         ([emptyContextTerm, extendContextTerm] ++
-          ContextualCarrierClaims.claimTermsFor [middleCarrierName])) ++
+          ContextualInferenceCanonicalContext.extension.newTerms ++
+            ContextualCarrierClaims.claimTermsFor [middleCarrierName])) ++
       supportTerms (middleDemand .star) := by
   simp [groupedDefinition, profileExtension, middle_stableCarrierNames,
     middleCarrierName]
@@ -714,6 +789,7 @@ theorem middle_grouped_terms_explicit :
           (middleDemand .star).foundation ⟨0, by simp [middleDemand]⟩
       , emptyContextTerm
       , extendContextTerm
+      , ContextualInferenceCanonicalContext.contextCodeTerm
       , ContextualCarrierClaims.variableClaimTerm middleCarrierName
       , ContextualCarrierClaims.typingClaimTerm middleCarrierName
       , ContextualCarrierClaims.reductionClaimTerm middleCarrierName
@@ -726,11 +802,16 @@ theorem middle_grouped_terms_explicit :
   rw [middle_grouped_terms]
   simp [CarrierUniverseSignature.termsFor,
     ContextualModalExtension.modalTerms,
+    ContextualInferenceCanonicalContext.extension,
     ContextualCarrierClaims.claimTermsFor,
     ContextualCarrierClaims.claimTerms,
     supportTerms, supportTermsAt,
     SelectedNativeTypeDemand.foundation, middleDemand, middleOccurrence,
     ProfiledRewriteOccurrence.constant]
+
+@[simp] theorem middle_grouped_equations :
+    (groupedDefinition (middleDemand .star)).equations = [] :=
+  rfl
 
 theorem middle_grouped_judgments :
     (groupedDefinition (middleDemand .star)).judgments =
@@ -742,6 +823,8 @@ theorem middle_grouped_judgments :
 theorem middle_grouped_rules :
     (groupedDefinition (middleDemand .star)).rules =
       [ CarrierTypingLanguageDef.universeAxiom middleCarrierName
+      , ContextualInferenceCanonicalContext.nilRule
+      , ContextualInferenceCanonicalContext.consRule
       , ContextualCarrierClaims.liftTypingRule middleCarrierName
       , lowerRule
           (formationRule (middleDemand .star) ⟨0, by simp [middleDemand]⟩)
@@ -755,6 +838,7 @@ theorem middle_grouped_rules :
     SelectedNativeTypeFoundation.definition_rules]
   rw [middle_stableCarrierNames]
   simp [profiledRules, rulesAt, ContextualCarrierClaims.bridgeRules,
+    ContextualInferenceCanonicalContext.extension,
     middleDemand, middleCarrierName]
 
 theorem middle_grouped_conversion :
@@ -770,6 +854,13 @@ theorem middle_grouped_rules_locallyValid :
     ContextualCarrierClaims.liftTypingRule_locallyValid]
   simp only [Bool.true_and]
   simp [formationRule, introductionRule, eliminationRule, relySortPremises,
+    ContextualInferenceCanonicalContext.nilRule,
+    ContextualInferenceCanonicalContext.consRule,
+    ContextualInferenceCanonicalContext.premise,
+    ContextualInferenceCanonicalContext.sequent,
+    ContextualInferenceCanonicalContext.claim,
+    ContextualInference.lowerSequent,
+    ContextualInference.encodeContext,
     resultSortPremise, relyMetavariables, relyVariableClaims, relyTypingClaims,
     modalType, familyApplication, contextPlug, predicateApplication,
     relyTypes, relyValues, sortCode,
@@ -858,6 +949,12 @@ theorem middle_bridge_rule_validIn :
     ContextualInference.contextualJudgment,
     ContextualInference.emptyContextTerm,
     ContextualInference.extendContextTerm,
+    ContextualInferenceCanonicalContext.contextCodeTerm,
+    ContextualInferenceCanonicalContext.premise,
+    ContextualInferenceCanonicalContext.sequent,
+    ContextualInferenceCanonicalContext.claim,
+    ContextualInference.lowerSequent,
+    ContextualInference.encodeContext,
     ContextualCarrierClaims.variableClaimTerm,
     ContextualCarrierClaims.typingClaimTerm,
     ContextualCarrierClaims.reductionClaimTerm,
@@ -928,8 +1025,8 @@ theorem middle_grouped_language_validate :
     rcases membership with ((foundation | modal) | contextual) | support
     · exact universe_term_syntax_nil _ foundation
     · exact modal_term_syntax_nil _ modal
-    · exact contextual_claim_term_syntax_nil _
-        (List.mem_append.mpr contextual)
+    · apply contextual_claim_term_syntax_nil _
+      simpa only [List.mem_append] using contextual
     · exact support_term_syntax_nil _ support
   case hparams =>
     intro term termMembership parameter parameterMembership typeName
@@ -947,6 +1044,8 @@ theorem middle_grouped_language_validate :
       ContextualInference.formulaType, ContextualInference.contextType,
       ContextualInference.emptyContextTerm,
       ContextualInference.extendContextTerm,
+      ContextualInferenceCanonicalContext.extension,
+      ContextualInferenceCanonicalContext.contextCodeTerm,
       ContextualModalExtension.modalTerms,
       ContextualModalExtension.modalRuleAt,
       ContextualModalExtension.typingAt,
@@ -961,7 +1060,7 @@ theorem middle_grouped_language_validate :
       LanguageDef.typeNames, TypeDecl.plain,
       TermParam.typeExpr] at *
     rcases termMembership with star | box | modal | emptyContext |
-      extendedContext | variableClaimRow | typingClaimRow |
+      extendedContext | canonicalContext | variableClaimRow | typingClaimRow |
       reductionClaimRow | familyApplicationRow | contextPlugRow |
       predicateApplicationRow
     · subst term
@@ -983,6 +1082,11 @@ theorem middle_grouped_language_validate :
       rcases parameterMembership with rfl | rfl <;>
         simp [TypeExpr.baseNames] at typeNameMembership ⊢ <;>
         aesop
+    · subst term
+      simp at parameterMembership
+      subst parameter
+      simp [TypeExpr.baseNames] at typeNameMembership
+      exact Or.inr (Or.inr typeNameMembership)
     · subst term
       simp at parameterMembership
       subst parameter
@@ -1031,6 +1135,8 @@ theorem middle_grouped_language_validate :
       ContextualInference.formulaType, ContextualInference.contextType,
       ContextualInference.emptyContextTerm,
       ContextualInference.extendContextTerm,
+      ContextualInferenceCanonicalContext.extension,
+      ContextualInferenceCanonicalContext.contextCodeTerm,
       ContextualModalExtension.modalTerms,
       ContextualModalExtension.modalRuleAt,
       ContextualModalExtension.typingAt,
@@ -1038,7 +1144,7 @@ theorem middle_grouped_language_validate :
       CarrierUniverseSignature.termsFor, CarrierUniverseSignature.rule,
       LanguageDef.typeNames, TypeDecl.plain] at *
     rcases termMembership with star | box | modal | emptyContext |
-      extendedContext | variableClaimRow | typingClaimRow |
+      extendedContext | canonicalContext | variableClaimRow | typingClaimRow |
       reductionClaimRow | familyApplicationRow | contextPlugRow |
       predicateApplicationRow <;> subst term
     all_goals
@@ -1063,6 +1169,13 @@ theorem middle_grouped_language_validate :
       ContextualInference.formulaType, ContextualInference.contextType,
       ContextualInference.emptyContextTerm,
       ContextualInference.extendContextTerm,
+      ContextualInferenceCanonicalContext.extension,
+      ContextualInferenceCanonicalContext.contextCodeTerm,
+      ContextualInferenceCanonicalContext.nilRule,
+      ContextualInferenceCanonicalContext.consRule,
+      ContextualInferenceCanonicalContext.premise,
+      ContextualInferenceCanonicalContext.sequent,
+      ContextualInferenceCanonicalContext.claim,
       ContextualModalSignature.relyBindings,
       ContextualModalSignature.resultFamilyType,
       ContextualModalSignature.resolvedCarrier,
@@ -1122,6 +1235,16 @@ theorem middle_extendContext_has_arity :
     middle_constructor_has_arity extendContextTerm (by
       rw [middle_grouped_terms_explicit]
       simp)
+
+theorem middle_contextCode_has_arity :
+    languageHasConstructorArity
+      (groupedDefinition (middleDemand .star)).toLanguageDef
+      ContextualInferenceCanonicalContext.contextCodeTerm.label 1 = true := by
+  simpa [ContextualInferenceCanonicalContext.contextCodeTerm] using
+    middle_constructor_has_arity
+      ContextualInferenceCanonicalContext.contextCodeTerm (by
+        rw [middle_grouped_terms_explicit]
+        simp)
 
 theorem middle_variableClaim_has_arity :
     languageHasConstructorArity
@@ -1202,6 +1325,58 @@ theorem middle_modal_has_arity :
           simp only [List.mem_append]
           exact Or.inl (Or.inl (Or.inr
             (List.mem_ofFn.mpr ⟨middleSlot, rfl⟩))))
+
+/-- The shared empty-context certificate is valid in the concrete mixed
+signature. -/
+theorem middle_context_nil_rule_validIn :
+    RuleSchema.isValidIn (groupedDefinition (middleDemand .star))
+      ContextualInferenceCanonicalContext.nilRule = true := by
+  unfold RuleSchema.isValidIn
+  have localValidity :
+      RuleSchema.isLocallyValid
+        ContextualInferenceCanonicalContext.nilRule = true := by
+    decide +kernel
+  rw [localValidity]
+  simp [RuleSchema.patterns,
+    ContextualInferenceCanonicalContext.nilRule,
+    ContextualInferenceCanonicalContext.sequent,
+    ContextualInferenceCanonicalContext.claim,
+    ContextualInference.lowerSequent,
+    ContextualInference.encodeContext,
+    CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, middle_grouped_judgments,
+    fixedConstructorListsValid, fixedConstructorsValid,
+    ContextualInference.contextualJudgment,
+    CarrierTypingLanguageDef.judgment, CarrierTypingLanguageDef.typingHead,
+    middleCarrierName,
+    middle_emptyContext_has_arity, middle_contextCode_has_arity]
+
+/-- The shared context-extension certificate is valid in the concrete mixed
+signature. -/
+theorem middle_context_cons_rule_validIn :
+    RuleSchema.isValidIn (groupedDefinition (middleDemand .star))
+      ContextualInferenceCanonicalContext.consRule = true := by
+  unfold RuleSchema.isValidIn
+  have localValidity :
+      RuleSchema.isLocallyValid
+        ContextualInferenceCanonicalContext.consRule = true := by
+    decide +kernel
+  rw [localValidity]
+  simp [RuleSchema.patterns,
+    ContextualInferenceCanonicalContext.consRule,
+    ContextualInferenceCanonicalContext.premise,
+    ContextualInferenceCanonicalContext.sequent,
+    ContextualInferenceCanonicalContext.claim,
+    ContextualInference.lowerSequent,
+    ContextualInference.encodeContext,
+    CalculusLanguageDef.judgmentSchemaValid,
+    CalculusLanguageDef.lookupJudgment?, middle_grouped_judgments,
+    fixedConstructorListsValid, fixedConstructorsValid,
+    ContextualInference.contextualJudgment,
+    CarrierTypingLanguageDef.judgment, CarrierTypingLanguageDef.typingHead,
+    middleCarrierName,
+    middle_emptyContext_has_arity, middle_extendContext_has_arity,
+    middle_contextCode_has_arity]
 
 @[simp] theorem middle_profileAt_star
     (slot : Occurrence (middleDemand .star)) :
@@ -1312,7 +1487,8 @@ theorem middle_grouped_rules_validIn :
       (RuleSchema.isValidIn (groupedDefinition (middleDemand .star))) = true := by
   rw [middle_grouped_rules]
   simp only [List.all_cons, List.all_nil, Bool.and_true]
-  rw [middle_universe_rule_validIn, middle_bridge_rule_validIn,
+  rw [middle_universe_rule_validIn, middle_context_nil_rule_validIn,
+    middle_context_cons_rule_validIn, middle_bridge_rule_validIn,
     middle_formation_rule_validIn, middle_introduction_rule_validIn,
     middle_elimination_rule_validIn]
   rfl
@@ -1418,9 +1594,38 @@ theorem middle_endpoint_definitions_distinct :
   rw [definition_rules, definition_rules, middle_signatures_equal] at rulesEquality
   exact middle_endpoint_rules_distinct (List.append_cancel_left rulesEquality)
 
+/-- The closed contextual canary introduces only ordinary constructor
+parameters.  In particular, none of its generated carrier or proof-calculus
+rows silently contributes a collection equation. -/
+theorem middle_definition_equationFree :
+    (definition (middleDemand .star)).toLanguageDef.isEquationFree = true := by
+  rw [middle_definition_eq_grouped]
+  unfold LanguageDef.isEquationFree LanguageDef.usesCollection
+    LanguageDef.hasAlgebraDeclarations
+  rw [middle_grouped_terms_explicit, middle_grouped_equations]
+  simp [CarrierUniverseSignature.rule, ContextualModalExtension.modalRuleAt,
+    ContextualModalExtension.typingAt, ContextualModalSignature.modalRule,
+    ContextualModalSignature.parameters,
+    ContextualModalSignature.parametersFor,
+    ContextualModalSignature.relyParametersFor,
+    ContextualModalSignature.relyBindings,
+    ContextualModalSignature.resultFamilyType,
+    ContextualModalSignature.resolvedCarrier,
+    ContextualInferenceCanonicalContext.contextCodeTerm,
+    ContextualCarrierClaims.variableClaimTerm,
+    ContextualCarrierClaims.typingClaimTerm,
+    ContextualCarrierClaims.reductionClaimTerm,
+    familyApplicationTerm, contextPlugTerm, predicateApplicationTerm,
+    ContextualInference.emptyContextTerm, ContextualInference.extendContextTerm,
+    ContextualModalSignature.mentionsCollection_curryType_map_base,
+    middle_typingAt, middle_bindingsAt,
+    middleTyping,
+    resolve, ContextualModalExtension.compiledCarrierName,
+    TermParam.typeExpr, TypeExpr.mentionsCollection]
+
 def middleTheory : Mettapedia.GSLT.GSLT :=
-  (definition (middleDemand .star)).toGSLTOfNoEquations
-    middle_definition_valid rfl
+  (definition (middleDemand .star)).toGSLTOfEquationFree
+    middle_definition_valid middle_definition_equationFree
 
 theorem middleTheory_term :
     middleTheory.Term = (Pattern ⊕ List Pattern) :=
@@ -1430,11 +1635,14 @@ end Canary
 
 #print axioms auxiliaryLabel_injective
 #print axioms auxiliaryLabel_ne_of_kind_ne
+#print axioms decodeAuxiliaryLabel?_auxiliaryLabel
+#print axioms auxiliaryLabel_of_decodeAuxiliaryLabel?_eq_some
 #print axioms Canary.middleGrounded
 #print axioms Canary.middle_definition_valid
 #print axioms Canary.middle_formation_conclusions_distinct
 #print axioms Canary.middle_endpoint_rules_distinct
 #print axioms Canary.middle_endpoint_definitions_distinct
+#print axioms Canary.middle_definition_equationFree
 #print axioms Canary.middleTheory_term
 
 end Mettapedia.OSLF.Framework.SelectedNativeTypeContextualCalculus

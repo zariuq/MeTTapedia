@@ -1,0 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderBuilt
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoCanonicalStaticPairSemanticCutsInDomain.of_provider_built
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoCanonicalStaticPairSemanticCutProviderInDomain.toBuilt

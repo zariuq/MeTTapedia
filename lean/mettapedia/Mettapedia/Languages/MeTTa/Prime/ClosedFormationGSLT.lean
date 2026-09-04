@@ -245,10 +245,10 @@ theorem syntax_binding_valid : syntaxBindingValid = true := by
 fragment to a final definition of Prime; it only totalizes the declarations
 authored in this deliberately bounded module. -/
 def totalTheory : Mettapedia.GSLT.GSLT :=
-  definition.toGSLTOfNoEquations definition_valid rfl
+  definition.toGSLTOfEquationFree definition_valid rfl
 
 theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := by
-  unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
+  unfold totalTheory CalculusLanguageDef.toGSLTOfEquationFree
   rfl
 
 def checked : ValidatedCalculusLanguageDef := ⟨definition, definition_valid⟩

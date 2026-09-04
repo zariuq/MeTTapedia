@@ -1,0 +1,37 @@
+import Mettapedia.GraphTheory.Representation.Basic
+import Mettapedia.GraphTheory.Representation.EdgeList
+import Mettapedia.GraphTheory.Representation.AdjacencyMatrix
+import Mettapedia.GraphTheory.Representation.AdjacencyRows
+import Mettapedia.GraphTheory.Representation.NeighborFinsets
+import Mettapedia.GraphTheory.Representation.IncidenceMatrix
+import Mettapedia.GraphTheory.Representation.CSR
+import Mettapedia.GraphTheory.Representation.RotationSystem
+import Mettapedia.GraphTheory.Representation.Transformations
+import Mettapedia.GraphTheory.Representation.RepresentationGSLT
+import Mettapedia.GraphTheory.Representation.EdgeListToMatrixGSLT
+import Mettapedia.GraphTheory.Representation.EdgeListToMatrixLanguageDef
+import Mettapedia.GraphTheory.Representation.SemanticTransport
+import Mettapedia.GraphTheory.Representation.CostModel
+import Mettapedia.GraphTheory.Representation.CostedRepresentationGSLT
+import Mettapedia.GraphTheory.Representation.RevisionQuery
+import Mettapedia.GraphTheory.Representation.RevisionPortfolio
+import Mettapedia.GraphTheory.Representation.MatrixBridge
+import Mettapedia.GraphTheory.Representation.Hypergraph
+import Mettapedia.GraphTheory.Representation.Metagraph
+import Mettapedia.GraphTheory.Representation.DistinctionBridge
+import Mettapedia.GraphTheory.Representation.WorldModelGSLT
+import Mettapedia.GraphTheory.Representation.SemanticInvariant
+import Mettapedia.GraphTheory.Representation.SemanticRevisionGSLT
+import Mettapedia.GraphTheory.Representation.HigherGraphSemanticGSLT
+import Mettapedia.GraphTheory.Representation.MultiView
+import Mettapedia.GraphTheory.Representation.MigrationExamples
+
+/-!
+# Graph representation and behavioral portfolio
+
+Umbrella import for ordinary graph layouts, standard-matrix semantics,
+hypergraphs, labeled metagraphs, OSLF distinction graphs, revision/query world
+models, exact resource accounts, sound refinement rules, their transformation
+specifications, and detailed operational GSLTs where small-step machines have
+been proved.
+-/

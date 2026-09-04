@@ -90,7 +90,7 @@ def costClosureConstructorName (source : CIGSLT) (constructor : String) :
     costWrappedConstructorName constructor
 
 /-- Total symbol action underlying repeated Cost retyping. -/
-def costClosureSymbols (source : CIGSLT) : PresentationSymbols where
+def costClosureSymbols (source : CIGSLT) : LanguageDefSymbolMap where
   sort := source.costClosureSortName
   constructor := source.costClosureConstructorName
   relation := id
@@ -429,7 +429,7 @@ theorem mapGrammarRule_costClosure_environment (source : CIGSLT) :
 theorem costClosureConstructorName_of_nonprincipalAuthored
     (source : CIGSLT)
     (constructor :
-      AuthoredConstructor source.costIGSLT.presentation.presentation)
+      DeclaredConstructor source.costIGSLT.presentation.presentation)
     (notProgram : constructor ≠
       source.costInteractionCut.program.constructor)
     (notEnvironment : constructor ≠
@@ -469,7 +469,7 @@ theorem costCoreTerm_evalPolicy_eq_none (source : CIGSLT)
 by the next continuation plan. -/
 theorem mapGrammarRule_costClosure_of_nonprincipal (source : CIGSLT)
     (constructor :
-      AuthoredConstructor source.costIGSLT.presentation.presentation)
+      DeclaredConstructor source.costIGSLT.presentation.presentation)
     (notProgram : constructor ≠
       source.costInteractionCut.program.constructor)
     (notEnvironment : constructor ≠
@@ -517,7 +517,7 @@ theorem mapGrammarRule_costClosure_mem_generated
     mapGrammarRule source.costClosureSymbols rule ∈
       source.costContinuationRetyping.generatedLanguage.terms := by
   let authored :
-      AuthoredConstructor source.costIGSLT.presentation.presentation :=
+      DeclaredConstructor source.costIGSLT.presentation.presentation :=
     ⟨rule, membership⟩
   by_cases program :
       authored = source.costInteractionCut.program.constructor
@@ -573,7 +573,7 @@ theorem costClosureConstructorChoice
       else costBaseConstructorName rule.label) =
       source.costClosureConstructorName rule.label := by
   let authored :
-      AuthoredConstructor source.costIGSLT.presentation.presentation :=
+      DeclaredConstructor source.costIGSLT.presentation.presentation :=
     ⟨rule, membership⟩
   by_cases program :
       authored = source.costInteractionCut.program.constructor
@@ -837,7 +837,7 @@ constructor actions without changing whether an argument has the required
 binder representation.  Representation matching observes only the
 `TermParam` and `Pattern` constructors, not their type payloads. -/
 theorem matchesParameterRepresentation_mixed_map_iff
-    (parameterSymbols patternSymbols : PresentationSymbols)
+    (parameterSymbols patternSymbols : LanguageDefSymbolMap)
     (parameter : TermParam) (pattern : Pattern) :
     MatchesParameterRepresentation (mapTermParam parameterSymbols parameter)
         (mapPattern patternSymbols pattern) ↔
@@ -864,12 +864,12 @@ mutual
       {pattern : Pattern} {type : TypeExpr}
       (typed :
         HasType source.continuationRetyping.generatedLanguage free bound
-          (mapPattern costBasePresentationSymbols pattern) type) :
+          (mapPattern costBaseLanguageDefSymbolMap pattern) type) :
       HasType source.costContinuationRetyping.generatedLanguage
         (free.map source.costClosureSymbols)
         (bound.map (mapTypeExpr source.costClosureSymbols))
-        (mapPattern costBasePresentationSymbols
-          (mapPattern costBasePresentationSymbols pattern))
+        (mapPattern costBaseLanguageDefSymbolMap
+          (mapPattern costBaseLanguageDefSymbolMap pattern))
         (mapTypeExpr source.costClosureSymbols type) := by
     induction pattern using Pattern.inductionOn generalizing free bound type with
     | hbvar index =>
@@ -898,7 +898,7 @@ mutual
                 mappedLookup)
     | happly constructor arguments inductionHypothesis =>
         generalize patternEquality :
-            mapPattern costBasePresentationSymbols
+            mapPattern costBaseLanguageDefSymbolMap
               (.apply constructor arguments) = mappedPattern at typed
         cases typed <;> simp [mapPattern] at patternEquality
         case constructor rule arguments' membership notBare argumentsTyped =>
@@ -910,7 +910,7 @@ mutual
                   source.continuationRetyping.generatedLanguage
                   free bound
                   (arguments.map
-                    (mapPattern costBasePresentationSymbols))
+                    (mapPattern costBaseLanguageDefSymbolMap))
                   rule.params :=
               argumentsTyped
             simp only [ContinuationRetypingPlan.generatedLanguage,
@@ -922,7 +922,7 @@ mutual
               have sourceLabelEquality :
                   sourceRule.label = constructor := by
                 apply costBaseConstructorName_injective
-                simpa [costBasePresentationSymbols] using
+                simpa [costBaseLanguageDefSymbolMap] using
                   mappedLabelEquality.symm
               subst constructor
               have targetArguments :=
@@ -956,7 +956,7 @@ mutual
                     exact targetArguments)
               simpa only [mapPattern, mapPatternList_eq_map, List.map_map,
                 Function.comp_def, costBaseConstructor,
-                costBasePresentationSymbols, mapTypeExpr,
+                costBaseLanguageDefSymbolMap, mapTypeExpr,
                 costClosureSymbols, costClosureSortName,
                 costBaseSortName_ne_wrapped, if_false] using target
             · have generatedLabelEquality :=
@@ -993,7 +993,7 @@ mutual
                   source.continuationRetyping.generatedLanguage
                   free bound
                   (elements.map
-                    (mapPattern costBasePresentationSymbols))
+                    (mapPattern costBaseLanguageDefSymbolMap))
                   elementType := by
               simpa [mapPatternList_eq_map] using elementsTyped
             have targetElements :=
@@ -1009,7 +1009,7 @@ mutual
                   source.continuationRetyping.generatedLanguage
                   free bound
                   (elements.map
-                    (mapPattern costBasePresentationSymbols))
+                    (mapPattern costBaseLanguageDefSymbolMap))
                   elementType := by
               simpa [mapPatternList_eq_map] using elementsTyped
             have targetElements :=
@@ -1053,25 +1053,25 @@ mutual
       (typed :
         ArgumentsHaveTypes source.continuationRetyping.generatedLanguage
           free bound
-          (patterns.map (mapPattern costBasePresentationSymbols))
+          (patterns.map (mapPattern costBaseLanguageDefSymbolMap))
           parameters)
       (inductionHypothesis : ∀ pattern ∈ patterns,
         ∀ {free : FreeTypeContext} {bound : List TypeExpr}
           {type : TypeExpr},
           HasType source.continuationRetyping.generatedLanguage
-            free bound (mapPattern costBasePresentationSymbols pattern) type →
+            free bound (mapPattern costBaseLanguageDefSymbolMap pattern) type →
           HasType source.costContinuationRetyping.generatedLanguage
             (free.map source.costClosureSymbols)
             (bound.map (mapTypeExpr source.costClosureSymbols))
-            (mapPattern costBasePresentationSymbols
-              (mapPattern costBasePresentationSymbols pattern))
+            (mapPattern costBaseLanguageDefSymbolMap
+              (mapPattern costBaseLanguageDefSymbolMap pattern))
             (mapTypeExpr source.costClosureSymbols type)) :
       ArgumentsHaveTypes source.costContinuationRetyping.generatedLanguage
         (free.map source.costClosureSymbols)
         (bound.map (mapTypeExpr source.costClosureSymbols))
         (patterns.map fun pattern =>
-          mapPattern costBasePresentationSymbols
-            (mapPattern costBasePresentationSymbols pattern))
+          mapPattern costBaseLanguageDefSymbolMap
+            (mapPattern costBaseLanguageDefSymbolMap pattern))
         (parameters.map (mapTermParam source.costClosureSymbols)) := by
     induction patterns generalizing parameters with
     | nil =>
@@ -1084,12 +1084,12 @@ mutual
             have mappedRepresentation :
                 MatchesParameterRepresentation
                   (mapTermParam source.costClosureSymbols parameter)
-                  (mapPattern costBasePresentationSymbols
-                    (mapPattern costBasePresentationSymbols pattern)) :=
+                  (mapPattern costBaseLanguageDefSymbolMap
+                    (mapPattern costBaseLanguageDefSymbolMap pattern)) :=
               (matchesParameterRepresentation_mixed_map_iff
-                source.costClosureSymbols costBasePresentationSymbols
+                source.costClosureSymbols costBaseLanguageDefSymbolMap
                 parameter
-                (mapPattern costBasePresentationSymbols pattern)).2
+                (mapPattern costBaseLanguageDefSymbolMap pattern)).2
                   representation
             have mappedParameterType :
                 parameterType?
@@ -1112,25 +1112,25 @@ mutual
       (typed :
         ElementsHaveType source.continuationRetyping.generatedLanguage
           free bound
-          (patterns.map (mapPattern costBasePresentationSymbols))
+          (patterns.map (mapPattern costBaseLanguageDefSymbolMap))
           type)
       (inductionHypothesis : ∀ pattern ∈ patterns,
         ∀ {free : FreeTypeContext} {bound : List TypeExpr}
           {type : TypeExpr},
           HasType source.continuationRetyping.generatedLanguage
-            free bound (mapPattern costBasePresentationSymbols pattern) type →
+            free bound (mapPattern costBaseLanguageDefSymbolMap pattern) type →
           HasType source.costContinuationRetyping.generatedLanguage
             (free.map source.costClosureSymbols)
             (bound.map (mapTypeExpr source.costClosureSymbols))
-            (mapPattern costBasePresentationSymbols
-              (mapPattern costBasePresentationSymbols pattern))
+            (mapPattern costBaseLanguageDefSymbolMap
+              (mapPattern costBaseLanguageDefSymbolMap pattern))
             (mapTypeExpr source.costClosureSymbols type)) :
       ElementsHaveType source.costContinuationRetyping.generatedLanguage
         (free.map source.costClosureSymbols)
         (bound.map (mapTypeExpr source.costClosureSymbols))
         (patterns.map fun pattern =>
-          mapPattern costBasePresentationSymbols
-            (mapPattern costBasePresentationSymbols pattern))
+          mapPattern costBaseLanguageDefSymbolMap
+            (mapPattern costBaseLanguageDefSymbolMap pattern))
         (mapTypeExpr source.costClosureSymbols type) := by
     induction patterns with
     | nil =>
@@ -1192,9 +1192,9 @@ generated free context. -/
 theorem costBaseMappedRedex_retyped (source : CIGSLT) :
     HasSort source.costContinuationRetyping.generatedLanguage
       source.costContinuationRetyping.generatedFreeContext []
-      (mapPattern costBasePresentationSymbols
+      (mapPattern costBaseLanguageDefSymbolMap
         (mapPatternSchemaNames costSourceSchemaName
-          (mapPattern costBasePresentationSymbols
+          (mapPattern costBaseLanguageDefSymbolMap
             source.theory.presentation.interactionRewrite.1.left)))
       (costBaseSortName
         (costBaseSortName
@@ -1498,11 +1498,11 @@ theorem costRedexRetypable (source : CIGSLT) :
   change
     HasSort source.costContinuationRetyping.generatedLanguage
       source.costContinuationRetyping.generatedFreeContext []
-      (mapPattern costBasePresentationSymbols source.costWholeRedexSource)
+      (mapPattern costBaseLanguageDefSymbolMap source.costWholeRedexSource)
       (costBaseSortName costWrappedSortName)
   rw [source.costWholeRedexSource_eq]
   simpa [mapPattern, mapPatternList_eq_map,
-    costBasePresentationSymbols] using
+    costBaseLanguageDefSymbolMap] using
     costClosureContact_hasType source
       (costClosureSigned_hasType source
         (costBaseMappedRedex_retyped source))
@@ -1548,7 +1548,7 @@ theorem costBareCollectionConstructorsWrapped (source : CIGSLT) :
         rule.label ∈ source.costContinuationRetyping.wrappedLabels := by
   intro rule membership bare
   let constructor :
-      AuthoredConstructor source.costIGSLT.presentation.presentation :=
+      DeclaredConstructor source.costIGSLT.presentation.presentation :=
     ⟨rule, membership⟩
   apply (source.costContinuationRetyping.mem_wrappedLabels_iff
     constructor).2
@@ -1587,7 +1587,7 @@ theorem costSourceEnvelopeStable (source : CIGSLT) :
   simpa [costInteractionCut, costWholeCutSource, costIGSLT,
     costWholeInteractivePresentation, costWholeInteractingSort,
     costBaseCoreContact, TypeDecl.plain,
-    costBaseAuthoredSort] using source.costWholeRedexEnvelopeStable
+    costBaseDeclaredSort] using source.costWholeRedexEnvelopeStable
 
 /-- Raw declaration membership plus exclusion of the two retained
 introductions is exactly enough to enter the next hereditary continuation
@@ -1600,7 +1600,7 @@ theorem costContinuationLabel_mem_of_ne_principals (source : CIGSLT)
       rule ≠ source.costInteractionCut.environment.constructor.1) :
     rule.label ∈ source.costContinuationRetyping.wrappedLabels := by
   let authored :
-      AuthoredConstructor source.costIGSLT.presentation.presentation :=
+      DeclaredConstructor source.costIGSLT.presentation.presentation :=
     ⟨rule, membership⟩
   apply (source.costContinuationRetyping.mem_wrappedLabels_iff authored).2
   apply (source.costContinuationRetyping.mem_wrappedConstructors_iff
@@ -1623,7 +1623,7 @@ theorem costStaticConstructorLabel_mem_costContinuationLabels
     (color.symbols source).constructor rule.label ∈
       source.costContinuationRetyping.wrappedLabels := by
   let authored :
-      AuthoredConstructor source.theory.presentation.presentation :=
+      DeclaredConstructor source.theory.presentation.presentation :=
     ⟨rule, membership⟩
   have sourceNonprincipal :=
     (source.continuationRetyping.mem_wrappedConstructors_iff authored).1

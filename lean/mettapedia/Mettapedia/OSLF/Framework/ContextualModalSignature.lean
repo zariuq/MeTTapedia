@@ -12,7 +12,7 @@ generated modal type former is not generally unary.  Its signature retains:
 * one result-type family, curried over those same variables;
 * the carrier of the focused occurrence as its result carrier.
 
-This is the signature coordinate of the syntactic OSLF construction.  A local
+This is the signature coordinate of the source-indexed OSLF construction.  A local
 star/box assignment and the corresponding formation, introduction, and
 elimination rules are separate generated coordinates.  Keeping the two
 coordinates distinct prevents a signature compiler from silently selecting a
@@ -46,6 +46,20 @@ def curryType : List TypeExpr → TypeExpr → TypeExpr
     curryType (domain :: domains) codomain =
       .arrow domain (curryType domains codomain) :=
   rfl
+
+/-- Currying ordinary named carriers cannot manufacture collection structure.
+This is the reusable negative half of the collection-law boundary for
+generated modal signatures. -/
+@[simp] theorem mentionsCollection_curryType_map_base
+    {α : Type} (kind : CollType) (items : List α) (name : α → String)
+    (codomain : String) :
+    TypeExpr.mentionsCollection kind
+        (curryType (items.map fun item => .base (name item))
+          (.base codomain)) = false := by
+  induction items with
+  | nil => rfl
+  | cons item items inductionHypothesis =>
+      simp [curryType, TypeExpr.mentionsCollection, inductionHypothesis]
 
 /-- Base-name support of a curried carrier is exactly the support of its
 ordered domains followed by the support of its codomain. -/
@@ -427,6 +441,16 @@ def middleTyping : DisplayedRewriteTyping source where
     apply HasType.fvar
     simp [source, middleSite, DisplayedRewriteSite.rewrite, sourceLanguage,
       contextualRewrite, FreeTypeContext.ofList]
+
+/-- This homogeneous witness uses the same source carrier for every authored
+endpoint variable.  Keeping the exact row visible distinguishes that fact
+from the heterogeneous endpoint support required by general rewrites. -/
+@[simp] theorem middle_authored_variable_carriers :
+    middleTyping.site.rewrite.typeContext.map Prod.snd =
+      [ .base termType.name
+      , .base termType.name
+      , .base termType.name ] := by
+  rfl
 
 /-- A certified non-root occurrence recovers both fixed-frame dependencies
 from the authored rewrite context, in their contextual order. -/

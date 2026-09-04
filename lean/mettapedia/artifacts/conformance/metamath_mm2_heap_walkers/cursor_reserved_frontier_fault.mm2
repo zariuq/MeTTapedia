@@ -1,0 +1,58 @@
+; A live-frontier cursor walk.  The successor at 1 is reserved capacity, not
+; evidence that index 1 is live.  The lower-scheduled frontier rule must win.
+(exec (00 cursor-hit)
+  (, (cursor-walk $owner $query $query)
+     (heap-cell $owner $query $kind $value))
+  (O (- (cursor-walk $owner $query $query))
+     (+ (heap-result cursor found $owner $query $kind $value))))
+
+(exec (01 cursor-frontier-fault)
+  (, (cursor-walk $owner $query $frontier)
+     (heap-frontier $owner $frontier))
+  (O (- (cursor-walk $owner $query $frontier))
+     (+ (heap-result cursor missing $owner $query $frontier))))
+
+(exec (02 cursor-advance)
+  (, (cursor-walk $owner $query $cursor)
+     (heap-successor $owner $cursor $next)
+     (cursor-handler hit $hit-rule)
+     (cursor-handler fault $fault-rule)
+     (cursor-handler advance $advance-rule))
+  (O (- (cursor-walk $owner $query $cursor))
+     (+ (cursor-walk $owner $query $next))
+     (+ $hit-rule)
+     (+ $fault-rule)
+     (+ $advance-rule)))
+
+(cursor-handler hit
+  (exec (00 cursor-hit)
+    (, (cursor-walk $owner $query $query)
+       (heap-cell $owner $query $kind $value))
+    (O (- (cursor-walk $owner $query $query))
+       (+ (heap-result cursor found $owner $query $kind $value)))))
+
+(cursor-handler fault
+  (exec (01 cursor-frontier-fault)
+    (, (cursor-walk $owner $query $frontier)
+       (heap-frontier $owner $frontier))
+    (O (- (cursor-walk $owner $query $frontier))
+       (+ (heap-result cursor missing $owner $query $frontier)))))
+
+(cursor-handler advance
+  (exec (02 cursor-advance)
+    (, (cursor-walk $owner $query $cursor)
+       (heap-successor $owner $cursor $next)
+       (cursor-handler hit $hit-rule)
+       (cursor-handler fault $fault-rule)
+       (cursor-handler advance $advance-rule))
+    (O (- (cursor-walk $owner $query $cursor))
+       (+ (cursor-walk $owner $query $next))
+       (+ $hit-rule)
+       (+ $fault-rule)
+       (+ $advance-rule))))
+
+(heap-cell heap-A 0 proof node-0)
+(heap-frontier heap-A 1)
+(heap-successor heap-A 0 1)
+(heap-successor heap-A 1 2)
+(cursor-walk heap-A 1 0)

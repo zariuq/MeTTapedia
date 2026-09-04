@@ -3668,6 +3668,62 @@ experiment belongs: improve the query/state retrieval function first, verify a l
 stored-to-retrieved recall under fixed search, and only then cross that working retrieval
 mechanism with local recurrent credit.
 
+\subsection{Structural decoding across three target languages}
+\label{sec:structural-decoding-panel}
+
+The clearest test of whether a decoding constraint earns its cost came from a twelve-cell
+panel: three target languages (A--P, PeTTa, MM2) crossed with ordinary versus
+structurally constrained decoding, at two seeds, on $4{,}988$ OEIS behaviors expressible
+in all three and $508$ held out.  Verified compositional translators produced the PeTTa
+and MM2 corpora from the A--P programs, so every cell trains on the same behaviors under
+the same budget.  Each unique structurally complete candidate was replayed through its
+native executor under wall-clock and memory envelopes---no action bound, since one
+language's programs are legitimately far longer than another's---and matched against the
+full pinned OEIS catalogue.
+
+The first finding is a vocabulary correction with teeth.  The constrained arm's guarantee
+is structural completion, not operational validity, and the two came apart: it completed
+every tree it emitted, yet the conditional rate at which complete trees became executing
+programs \emph{fell} by $1.5$, $2.1$ and $7.2$ points in the three languages.  Absolute
+operational output still rose ($+12.8\%$, $+11.7\%$, $+8.7\%$), and distinct whole-OEIS
+coverage was flat for A--P ($-0.2\%$) while rising for PeTTa ($+8.7\%$) and MM2
+($+14.9\%$).  Only MM2 replicated cleanly across both seeds, and only MM2 improved
+semantic yield per operational program ($+12.3\%$), so only there is the gain more than
+extra candidate volume.  Both views remained strongly complementary: within every
+language and seed the two-arm union exceeded the better single arm by $46$--$57\%$, and
+the union over all twelve cells contains $5{,}567$ confirmed A-numbers.  On the portfolio
+reading the treatment earns its cost; as a replacement it does not.
+
+The cost accounting is where this panel is most instructive, because three separate
+quantities are ranked identically over its only three language points, and three points
+cannot separate them.  The treatment adds $1.0\%$, $12.7\%$ and $30.2\%$ trainable
+parameters in the order A--P, PeTTa, MM2; median target length runs $16$, $178$ and $680$
+decoder actions in the same order, an eleven- and forty-two-fold expansion of identical
+content under translation; and the OEIS effect is ordered the same way.  The parsimonious
+reading is not that authored language structure matters more in MM2, but that a
+structural constraint helps roughly in proportion to the length of what it constrains.
+
+That alternative is testable on data already recorded, and it survives the test.  Sorting
+each language's held-out behaviours into terciles by the action length of their reference
+programs, the structural gain rises with target length \emph{within} every language: from
+$-2.9\%$ to $+1.2\%$ across A--P's terciles, $+4.8\%$ to $+16.1\%$ across PeTTa's, and
+$+13.7\%$ to $+44.2\%$ across MM2's.  Capacity and provenance are constant inside a
+language and so cannot generate this gradient, and ordering all nine strata by absolute
+length nearly reproduces the between-language ranking.  The honest reading of the panel is
+therefore that one length-dependent curve, not three languages, carries the headline
+effect.  What remains entangled is that longer reference programs also encode harder
+behaviours---ordinary-arm coverage falls monotonically with length everywhere---so the
+next design should vary target length at fixed difficulty, which within a single language
+is exactly what a change of translator or encoding provides.
+
+Measured training cost carries a second, more mundane confound in the same direction.
+Training overhead was $+105.1\%$ for A--P against $+11.6\%$ and $+6.5\%$ for PeTTa and
+MM2---not because the treatment is cheaper on longer targets, but because the A--P cell
+ran an earlier unvectorised implementation of the same algorithm while the other two ran
+the cached-trace version.  A cost comparison across cells therefore reports implementation
+maturity as if it were architecture.  This is the failure mode this paper exists to name,
+and it is worth recording that it recurred in our own panel.
+
 \subsection{A dependent-proof credit screen}
 \label{sec:dtt-credit-screen}
 

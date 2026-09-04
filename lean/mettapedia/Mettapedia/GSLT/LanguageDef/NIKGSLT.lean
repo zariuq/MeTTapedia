@@ -2,14 +2,19 @@ import Mathlib.CategoryTheory.Discrete.Basic
 import Mettapedia.GSLT.LanguageDef.CheckerAuthorityFamily
 
 /-!
-# The fail-closed NIK dispatcher as a GSLT
+# The fail-closed external-certificate NIK dispatcher as a GSLT
 
-An executable checker can itself be presented as a reduction theory.  The
-atomic construction here exposes submission, acceptance, and rejection as
-ordinary terms.  It deliberately treats the checker's Boolean replay as one
-atomic step; a native implementation may refine that step into decoding, DAG
-replay, global-condition checking, or guest-kernel computation and prove a
-separate refinement theorem.
+An executable external-certificate checker can itself be presented as a
+reduction theory.  The atomic construction here exposes submission,
+acceptance, and rejection as ordinary terms.  It deliberately treats the
+checker's Boolean result as one atomic step; a native implementation may
+refine that step into decoding, DAG replay, global-condition checking, or
+guest-kernel computation and prove a separate refinement theorem.
+
+This is the certificate-boundary face of NIK, not the definition of NIK as a
+whole.  Direct decision, intrinsic native proof, and meaning-preserving native
+operation are separate service constructors in
+`Mettapedia.GSLT.LanguageDef.NIK` and do not pass through this machine.
 
 The construction is not self-certifying.  For a raw checker it proves only
 that reduction agrees with that checker.  Semantic soundness enters only when
@@ -190,7 +195,7 @@ theorem submitted_multiStep_rejected_iff
 
 end Atomic
 
-/-! ## Authority-family NIK -/
+/-! ## External-certificate authority family -/
 
 namespace Family
 
@@ -198,7 +203,8 @@ variable {Kind : Type uKind} (family : AuthorityFamily Kind)
 
 abbrev State := Atomic.State family.PackedClaim family.PackedCertificate
 
-/-- The fail-closed packed NIK machine for a dependent authority family. -/
+/-- The fail-closed packed external-certificate machine for a dependent
+authority family. -/
 def theory [DecidableEq Kind] : GSLT :=
   Atomic.theory family.packedChecker
 

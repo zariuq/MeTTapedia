@@ -222,7 +222,11 @@ the compiler's execution order through composition. -/
     (earlier.comp later).closureOSLFPullback =
       later.closureOSLFPullback.comp earlier.closureOSLFPullback := by
   apply ForwardModalPredicateTheory.Hom.ext
-  rfl
+  apply CompleteLatticeHom.ext
+  intro predicate
+  ext state
+  induction state using Quotient.inductionOn with
+  | _ representative => rfl
 
 end OperationalRealization
 

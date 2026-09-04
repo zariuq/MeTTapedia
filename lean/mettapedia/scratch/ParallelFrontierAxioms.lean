@@ -1,0 +1,5 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryParallelFrontier
+
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+
+#print axioms ParallelFrontier.parallelLeaves_abstractPattern_forall2

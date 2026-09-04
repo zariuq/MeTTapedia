@@ -285,6 +285,9 @@ theorem modalSubobject_commDi_bc_graph_endpoint_of_pathSemLiftPkg
     (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
     (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2)
     (relEnv : RelationEnv)
+    (hInvariant :
+      Mettapedia.OSLF.Framework.GSLTTypeSynthesis.EquationInvariant
+        (langGSLTUsing relEnv lang) (commDi q (PathSemClosedPred lang φ)))
     {X : Opposite (ConstructorObj lang)} (p : Pattern) :
     ((CategoryTheory.Subobject.map pi2).obj
         ((CategoryTheory.Subobject.pullback pi1).obj
@@ -301,7 +304,8 @@ theorem modalSubobject_commDi_bc_graph_endpoint_of_pathSemLiftPkg
               lang s seed q φ hPkg))))
     ∧
     (langDiamondUsing relEnv lang
-      (commDi q (PathSemClosedPred lang φ)) p ↔
+      (commDiPredicateUsing relEnv lang q (PathSemClosedPred lang φ)
+        hInvariant) p ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj lang) relEnv lang).Edge.obj X,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -317,7 +321,7 @@ theorem modalSubobject_commDi_bc_graph_endpoint_of_pathSemLiftPkg
       (hPkg := hPkg)
       (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
       (hpb := hpb) (hf := hf) (hpi2 := hpi2)
-      (relEnv := relEnv) (X := X) (p := p))
+      (relEnv := relEnv) (hInvariant := hInvariant) (X := X) (p := p))
 
 /-- Unified canonical endpoint over real substitution squares:
 COMM Beck-Chevalley plus reduction-graph witness transport, with path-lift
@@ -337,6 +341,9 @@ theorem modalSubobject_commDi_bc_graph_endpoint_of_pathOrder
     (hpb : CategoryTheory.IsPullback pi1 pi2 f g)
     (hf : CategoryTheory.Mono f) (hpi2 : CategoryTheory.Mono pi2)
     (relEnv : RelationEnv)
+    (hInvariant :
+      Mettapedia.OSLF.Framework.GSLTTypeSynthesis.EquationInvariant
+        (langGSLTUsing relEnv lang) (commDi q (PathSemClosedPred lang φ)))
     {X : Opposite (ConstructorObj lang)} (p : Pattern) :
     ((CategoryTheory.Subobject.map pi2).obj
         ((CategoryTheory.Subobject.pullback pi1).obj
@@ -357,7 +364,8 @@ theorem modalSubobject_commDi_bc_graph_endpoint_of_pathOrder
                 lang s seed q hPathOrder)))))
     ∧
     (langDiamondUsing relEnv lang
-      (commDi q (PathSemClosedPred lang φ)) p ↔
+      (commDiPredicateUsing relEnv lang q (PathSemClosedPred lang φ)
+        hInvariant) p ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj lang) relEnv lang).Edge.obj X,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -373,7 +381,7 @@ theorem modalSubobject_commDi_bc_graph_endpoint_of_pathOrder
       lang s seed q hPathOrder)
     (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)
-    (relEnv := relEnv) (X := X) (p := p)
+    (relEnv := relEnv) (hInvariant := hInvariant) (X := X) (p := p)
 
 /-- Modal-subobject BC+graph endpoint consumed through a unified policy object. -/
 theorem modalSubobject_commDi_bc_graph_endpoint_of_policy
@@ -382,6 +390,9 @@ theorem modalSubobject_commDi_bc_graph_endpoint_of_policy
     (relEnv : RelationEnv)
     (I : Mettapedia.OSLF.Framework.EvidenceSemantics.EvidenceAtomSem)
     (policy : ModalSubobjectControlledPolicy lang s seed q relEnv I)
+    (hInvariant :
+      Mettapedia.OSLF.Framework.GSLTTypeSynthesis.EquationInvariant
+        (langGSLTUsing relEnv lang) (commDi q (PathSemClosedPred lang φ)))
     {P B D : CategoryTheory.Functor (Opposite (ConstructorObj lang)) (Type _)}
     (pi1 : P ⟶ (languageSortRepresentableObj lang s))
     (pi2 : P ⟶ B)
@@ -405,7 +416,8 @@ theorem modalSubobject_commDi_bc_graph_endpoint_of_policy
               lang s seed q φ policy.pathLiftPkg))))
     ∧
     (langDiamondUsing relEnv lang
-      (commDi q (PathSemClosedPred lang φ)) p ↔
+      (commDiPredicateUsing relEnv lang q (PathSemClosedPred lang φ)
+        hInvariant) p ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj lang) relEnv lang).Edge.obj X,
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -420,7 +432,7 @@ theorem modalSubobject_commDi_bc_graph_endpoint_of_policy
     (hPkg := policy.pathLiftPkg)
     (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)
-    (relEnv := relEnv) (X := X) (p := p)
+    (relEnv := relEnv) (hInvariant := hInvariant) (X := X) (p := p)
 
 end Canonical
 
@@ -481,7 +493,8 @@ theorem mettaFull_modalSubobject_commDi_bc_graph_endpoint
                 (Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull_pathOrder seed))))))
     ∧
     (langDiamondUsing relEnv Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull
-      (commDi q
+      (commDiPredicateUsingOfEquationFree relEnv
+        Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull (by rfl) q
         (PathSemClosedPred Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull φ)) p ↔
       ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
         (C := ConstructorObj Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull)
@@ -495,7 +508,8 @@ theorem mettaFull_modalSubobject_commDi_bc_graph_endpoint
               (C := ConstructorObj Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull)
               relEnv Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull).target.app X e).down ∧
           PathSemClosedPred Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull φ u) := by
-  exact modalSubobject_commDi_bc_graph_endpoint_of_pathSemLiftPkg
+  simpa [commDiPredicateUsingOfEquationFree] using
+    (modalSubobject_commDi_bc_graph_endpoint_of_pathSemLiftPkg
     (lang := Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull)
     (s := Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaState)
     (seed := seed) (q := q) (φ := φ)
@@ -507,7 +521,10 @@ theorem mettaFull_modalSubobject_commDi_bc_graph_endpoint
         (Mettapedia.OSLF.Framework.MeTTaFullInstance.mettaFull_pathOrder seed))
     (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)
-    (relEnv := relEnv) (X := X) (p := p)
+    (relEnv := relEnv)
+    (hInvariant := equationInvariant_langGSLTUsing_of_equation_free
+      relEnv (by rfl) _)
+    (X := X) (p := p))
 
 /-- Legacy-canonical alias for the concrete MeTTaFull modal-subobject endpoint. -/
 abbrev mettaFullLegacy_modalSubobject_commDi_bc_graph_endpoint :=

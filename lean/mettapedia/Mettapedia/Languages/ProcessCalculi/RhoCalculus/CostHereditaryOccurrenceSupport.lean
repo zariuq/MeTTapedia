@@ -1778,7 +1778,7 @@ theorem collectionElementsSafe
             (parameterShape := targetShape) (elementsTyped := elementsTyped)
             collectionDeterministic selectedSafe⟩
     | wrapped =>
-        let authored : StructuralMorphism.AuthoredConstructor
+        let authored : StructuralMorphism.DeclaredConstructor
             source.theory.presentation.presentation := ⟨rule, ruleMembership⟩
         have wrappedConstructor : authored ∈
             source.continuationRetyping.wrappedConstructors :=

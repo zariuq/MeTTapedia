@@ -18,18 +18,18 @@ The input and output rules follow current mainline PeTTa:
 * `%Undefined%`, `_`, and `Atom` outputs are unchecked; and
 * ordinary outputs use the same soft-cut query order.
 
-The updateable reference baseline is `trueagi-io/PeTTa`, branch
-`fix/minimal-space-owned-eval-20260827`, commit
-`91c27146b129f4d54776362ddb58898568f4665f`, containing the late-type
-coherence repair `9c036a506b7c2bf14b26d7034f95add5e371d4ce`.  The direct source
-clauses are `src/translator.pl:94-102` (space-sensitive soft-cut guard),
-`src/translator.pl:650-704` (ordered typed-call branches and output guard),
-and `src/translator.pl:707-717` (raw, unchecked, and checked inputs).
-`src/filereader.pl:13-25` and `src/spaces.pl:9-45` establish coherent
-predeclaration, ownership, and recompilation after type mutation.  The Lean
-revision is an artifact-generation coordinate for that coherent program; it
-is not presented as a literal SWI-Prolog revision field.  Advancing the
-reference requires a clause diff and cross-runtime requalification.
+The updateable reference baseline is commit
+`91c27146b129f4d54776362ddb58898568f4665f`, retained on the project fork as
+branch `fix/minimal-space-owned-eval-20260827` and published by upstream review
+ref `refs/pull/219/head`.  It contains the late-type coherence repair
+`9c036a506b7c2bf14b26d7034f95add5e371d4ce`.  The complete source coordinate
+is recorded by `MainlineCallGuardReferenceAuthority.clauseTable`; its direct
+guard spans include `src/translator.pl:94-102`, `src/translator.pl:650-717`,
+`src/filereader.pl:13-55`, `src/translator.pl:170-178` and `233-313`, and
+`src/spaces.pl:9-57`.  The Lean revision is an artifact-generation coordinate
+for that coherent program; it is not presented as a literal SWI-Prolog
+revision field.  Advancing the reference requires a clause diff and
+cross-runtime requalification.
 
 Argument evaluation and the called function's own semantics are adjacent
 authorities.  This kernel consumes their values but does not pretend to prove
@@ -270,7 +270,9 @@ theorem decideStep_iff_ntt (source target : Machine) :
     stepDecision.decideStep source target = true ↔
       (gsltOSLF callGuardGSLT).satisfies source
         (exactTargetNativeType callGuardGSLT target).pred := by
-  rw [stepDecision.correct, satisfies_exactTargetNativeType_iff_step]
+  rw [stepDecision.correct]
+  exact (satisfies_exactTargetNativeType_iff_step
+    callGuardGSLT source target).symm
 
 /-- The exact modal type consumed by later native inference composition. -/
 abbrev typedCallNTT (claim : Claim) (declaration : ArrowDeclaration) :
@@ -286,12 +288,23 @@ theorem satisfies_typedCallNTT_iff
         (typedCallNTT claim declaration).pred ↔
       declaration ∈ claim.snapshot.declarations ∧
         GuardedBy declaration claim := by
-  rw [satisfies_exactTargetNativeType_iff_step]
   constructor
-  · rintro ⟨_, candidate, member, guarded, targetEqual⟩
+  · intro inhabits
+    have step : callGuardGSLT.Step
+        (⟨claim, .pending⟩ : Machine)
+        (⟨claim, .accepted declaration⟩ : Machine) :=
+      (satisfies_exactTargetNativeType_iff_step callGuardGSLT
+        (⟨claim, .pending⟩ : Machine)
+        (⟨claim, .accepted declaration⟩ : Machine)).mp inhabits
+    change MachineStep _ _ at step
+    rcases step with ⟨_, candidate, member, guarded, targetEqual⟩
     cases targetEqual
     exact ⟨member, guarded⟩
   · rintro ⟨member, guarded⟩
+    apply (satisfies_exactTargetNativeType_iff_step callGuardGSLT
+      (⟨claim, .pending⟩ : Machine)
+      (⟨claim, .accepted declaration⟩ : Machine)).mpr
+    change MachineStep _ _
     exact ⟨rfl, declaration, member, guarded, rfl⟩
 
 /-- The generated NTT has exactly the ordered list fibre exposed by the native

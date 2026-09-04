@@ -42,6 +42,7 @@ open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.LanguageDef.GSLTIL.OperationalEquipment
 open Mettapedia.GSLT.LanguageDef.GSLTIL.SemanticPredicateInstitution
 open Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 universe u
 
@@ -314,12 +315,21 @@ def reachesTargetSentence (theory : Theory.{u, u, u, u})
     (target : theory.World) : Set theory.World :=
   { source | (revisionGSLT theory).MultiStep source target }
 
+/-- Reachability is invariant under the revision GSLT's equation theory. -/
+def reachesTargetEquationPredicate (theory : Theory.{u, u, u, u})
+    (target : theory.World) : EquationPredicate (revisionGSLT theory) where
+  val := reachesTargetSentence theory target
+  property := by
+    intro left right equal
+    cases equal
+    rfl
+
 /-- The same predicate at the exact institutional sentence type. -/
 def reachesTargetInstitutionSentence (theory : Theory.{u, u, u, u})
     (target : theory.World) :
-    predicateSentence.obj (Opposite.op (revisionSignature theory)) := by
-  change Set theory.World
-  exact reachesTargetSentence theory target
+    predicateSentence.obj (Opposite.op (revisionSignature theory)) :=
+  descendPredicate (revisionGSLT theory)
+    (reachesTargetEquationPredicate theory target)
 
 /-- Every existing occurrence-retaining finite route projects to truth of the
 target reachability sentence, even though its execution path is only
@@ -339,10 +349,14 @@ theorem institution_derives_reachesTarget_iff_all_sources
         (reachesTargetInstitutionSentence theory target) ↔
       ∀ source : theory.World,
         (revisionGSLT theory).MultiStep source target := by
-  change reachesTargetSentence theory target ∈
-      semanticConsequence theory.World ∅ ↔ _
-  rw [mem_semanticConsequence_empty_iff]
-  rfl
+  rw [derives_iff_entails]
+  constructor
+  · intro entails source
+    exact entails (Quotient.mk (revisionGSLT theory).equations source)
+      (by intro predicate impossible; exact False.elim impossible)
+  · intro universal sourceClass _
+    induction sourceClass using Quotient.inductionOn with
+    | _ source => exact universal source
 
 /-! ## Negative control: the path cannot recover displayed identity -/
 

@@ -34,6 +34,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 /-! ## Generated Native Types -/
 
@@ -44,8 +45,8 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 structure GenNativeType (lang : LanguageDef) where
   /-- Sort name from lang.types (e.g. "Proc", "Name") -/
   sort : String
-  /-- Behavioral predicate on patterns -/
-  predicate : Pattern → Prop
+  /-- Behavioral predicate on equation classes. -/
+  predicate : EquationPredicate (langGSLT lang)
   /-- Sort must be in the language's type list -/
   sort_valid : sort ∈ lang.types
 
@@ -70,11 +71,13 @@ end GenTypingContext
 
 /-! ## Predicate Combinators -/
 
-/-- Top predicate: all patterns satisfy it -/
-def topPred : Pattern → Prop := fun _ => True
+/-- Top equation-invariant predicate: every presentation satisfies it. -/
+noncomputable def topPred (lang : LanguageDef) : EquationPredicate (langGSLT lang) := ⊤
 
-/-- Meet of predicates (conjunction) -/
-def meetPred (φ ψ : Pattern → Prop) : Pattern → Prop := fun p => φ p ∧ ψ p
+/-- Meet of equation-invariant predicates. -/
+noncomputable def meetPred {lang : LanguageDef}
+    (φ ψ : EquationPredicate (langGSLT lang)) :
+    EquationPredicate (langGSLT lang) := φ ⊓ ψ
 
 /-! ## The Core OSLF Insight: Modal Type Assignment
 
@@ -126,11 +129,12 @@ inductive GenHasType (lang : LanguageDef) :
   | nullary {Γ : GenTypingContext lang} {label : String} {sort : String}
       (hgrammar : ∃ g ∈ lang.terms, g.label = label ∧ g.category = sort ∧ g.params = [])
       (hsort : sort ∈ lang.types) :
-      GenHasType lang Γ (.apply label []) ⟨sort, topPred, hsort⟩
+      GenHasType lang Γ (.apply label []) ⟨sort, topPred lang, hsort⟩
 
   /-- Quote: process → name, introduces ◇.
       If `p : (Proc, φ)` then `@(p) : (Name, ◇φ)`. -/
-  | quote {Γ : GenTypingContext lang} {p : Pattern} {φ : Pattern → Prop}
+  | quote {Γ : GenTypingContext lang} {p : Pattern}
+      {φ : EquationPredicate (langGSLT lang)}
       {procSort nameSort : String}
       (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
       (hgrammar : ∃ g ∈ lang.terms, g.label = "NQuote" ∧ g.category = nameSort) :
@@ -139,7 +143,8 @@ inductive GenHasType (lang : LanguageDef) :
 
   /-- Drop: name → process, introduces □.
       If `n : (Name, α)` then `*(n) : (Proc, □α)`. -/
-  | drop {Γ : GenTypingContext lang} {n : Pattern} {α : Pattern → Prop}
+  | drop {Γ : GenTypingContext lang} {n : Pattern}
+      {α : EquationPredicate (langGSLT lang)}
       {procSort nameSort : String}
       (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
       (hgrammar : ∃ g ∈ lang.terms, g.label = "PDrop" ∧ g.category = procSort) :
@@ -149,30 +154,30 @@ inductive GenHasType (lang : LanguageDef) :
   /-- Output: `n!(q)` is well-typed when subterms are.
       Output gets top type (it's a redex component, not a value). -/
   | output {Γ : GenTypingContext lang} {n q : Pattern}
-      {α φ : Pattern → Prop} {procSort nameSort : String}
+      {α φ : EquationPredicate (langGSLT lang)} {procSort nameSort : String}
       (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
       (hgrammar : ∃ g ∈ lang.terms, g.label = "POutput" ∧ g.category = procSort) :
       GenHasType lang Γ n ⟨nameSort, α, hname⟩ →
       GenHasType lang Γ q ⟨procSort, φ, hproc⟩ →
-      GenHasType lang Γ (.apply "POutput" [n, q]) ⟨procSort, topPred, hproc⟩
+      GenHasType lang Γ (.apply "POutput" [n, q]) ⟨procSort, topPred lang, hproc⟩
 
   /-- Input: `for(<-n){p}` extends context with binder (locally nameless).
       Input gets top type (it's a redex component). Uses cofinite quantification. -/
   | input {Γ : GenTypingContext lang} {n : Pattern} {p : Pattern}
-      {α φ : Pattern → Prop} {procSort nameSort : String}
+      {α φ : EquationPredicate (langGSLT lang)} {procSort nameSort : String}
       (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
       (hgrammar : ∃ g ∈ lang.terms, g.label = "PInput" ∧ g.category = procSort)
       (L : List String) :
       GenHasType lang Γ n ⟨nameSort, α, hname⟩ →
       (∀ z, z ∉ L → GenHasType lang (Γ.extend z ⟨nameSort, α, hname⟩)
         (openBVar 0 (.fvar z) p) ⟨procSort, φ, hproc⟩) →
-      GenHasType lang Γ (.apply "PInput" [n, .lambda none p]) ⟨procSort, topPred, hproc⟩
+      GenHasType lang Γ (.apply "PInput" [n, .lambda none p]) ⟨procSort, topPred lang, hproc⟩
 
   /-- Parallel composition: all elements must be well-typed. -/
   | par {Γ : GenTypingContext lang} {ps : List Pattern}
       {procSort : String} (hproc : procSort ∈ lang.types) :
-      (∀ p ∈ ps, GenHasType lang Γ p ⟨procSort, topPred, hproc⟩) →
-      GenHasType lang Γ (.collection .hashBag ps none) ⟨procSort, topPred, hproc⟩
+      (∀ p ∈ ps, GenHasType lang Γ p ⟨procSort, topPred lang, hproc⟩) →
+      GenHasType lang Γ (.collection .hashBag ps none) ⟨procSort, topPred lang, hproc⟩
 
 notation:40 Γ " ⊢[" lang "] " p " : " τ => GenHasType lang Γ p τ
 
@@ -220,20 +225,20 @@ theorem rhoCalc_has_PInput :
 /-- Example: `0` has the top type at sort "Proc" in the generated system -/
 example : GenHasType rhoCalc GenTypingContext.empty
     (.apply "PZero" [])
-    ⟨"Proc", topPred, rhoProc⟩ :=
+    ⟨"Proc", topPred rhoCalc, rhoProc⟩ :=
   .nullary rhoCalc_has_PZero rhoProc
 
 /-- Example: `@(0)` has type `(Name, ◇⊤)` -/
 example : GenHasType rhoCalc GenTypingContext.empty
     (.apply "NQuote" [.apply "PZero" []])
-    ⟨"Name", langDiamond rhoCalc topPred, rhoName⟩ :=
+    ⟨"Name", langDiamond rhoCalc (topPred rhoCalc), rhoName⟩ :=
   .quote rhoProc rhoName rhoCalc_has_NQuote
     (.nullary rhoCalc_has_PZero rhoProc)
 
 /-- Example: `*(@(0))` has type `(Proc, □(◇⊤))` -/
 example : GenHasType rhoCalc GenTypingContext.empty
     (.apply "PDrop" [.apply "NQuote" [.apply "PZero" []]])
-    ⟨"Proc", langBox rhoCalc (langDiamond rhoCalc topPred), rhoProc⟩ :=
+    ⟨"Proc", langBox rhoCalc (langDiamond rhoCalc (topPred rhoCalc)), rhoProc⟩ :=
   .drop rhoProc rhoName rhoCalc_has_PDrop
     (.quote rhoProc rhoName rhoCalc_has_NQuote
       (.nullary rhoCalc_has_PZero rhoProc))
@@ -250,16 +255,18 @@ This is already proven in `TypeSynthesis.lean` via `langDiamond_spec` and
 
     If `p : (Name, ◇φ)` (via quote), then `p = @(q)` where `q` can reduce to
     something satisfying `φ`. This is the **operational meaning** of diamond types. -/
-theorem diamond_type_operational (lang : LanguageDef) (φ : Pattern → Prop) (q : Pattern) :
-    langDiamond lang φ q → ∃ r, langReduces lang q r ∧ φ r :=
+theorem diamond_type_operational (lang : LanguageDef)
+    (φ : EquationPredicate (langGSLT lang)) (q : Pattern) :
+    langDiamond lang φ q → ∃ r, langSemanticReduces lang q r ∧ φ.1 r :=
   langDiamond_spec lang φ q |>.mp
 
 /-- A well-typed term at a box type: all predecessors satisfy the inner predicate.
 
     If `p : (Proc, □α)` (via drop), then all patterns that reduce to `p`
     satisfy `α`. This is the **safety guarantee** of box types. -/
-theorem box_type_operational (lang : LanguageDef) (α : Pattern → Prop) (p : Pattern) :
-    langBox lang α p → ∀ q, langReduces lang q p → α q :=
+theorem box_type_operational (lang : LanguageDef)
+    (α : EquationPredicate (langGSLT lang)) (p : Pattern) :
+    langBox lang α p → ∀ q, langSemanticReduces lang q p → α.1 q :=
   langBox_spec lang α p |>.mp
 
 /-! ## The Galois Connection Gives Type Soundness for Free
@@ -298,49 +305,58 @@ as future work.  The definitions and theorem package below make this extension
 explicit at the generated typing layer.
 -/
 
-/-- Dependent predicate family: an index term selects a behavioral predicate. -/
-abbrev DepPred := Pattern → Pattern → Prop
+/-- Dependent predicate family: an index term selects an equation-invariant
+behavioral predicate. -/
+abbrev DepPred (lang : LanguageDef) :=
+  Pattern → EquationPredicate (langGSLT lang)
 
 /-- Parametric predicate family: an external parameter selects a predicate. -/
-abbrev ParamPred (ι : Type) := ι → Pattern → Prop
+abbrev ParamPred (lang : LanguageDef) (ι : Type) :=
+  ι → EquationPredicate (langGSLT lang)
 
 /-- Dependent diamond operator induced by `langDiamond`. -/
-abbrev depDiamond (lang : LanguageDef) (φ : DepPred) : DepPred :=
-  fun i q => langDiamond lang (fun r => φ i r) q
+abbrev depDiamond (lang : LanguageDef) (φ : DepPred lang) : DepPred lang :=
+  fun i => langDiamond lang (φ i)
 
 /-- Dependent box operator induced by `langBox`. -/
-abbrev depBox (lang : LanguageDef) (φ : DepPred) : DepPred :=
-  fun i q => langBox lang (fun r => φ i r) q
+abbrev depBox (lang : LanguageDef) (φ : DepPred lang) : DepPred lang :=
+  fun i => langBox lang (φ i)
 
 /-- Parametric diamond operator induced by `langDiamond`. -/
-abbrev paramDiamond (lang : LanguageDef) {ι : Type} (φ : ParamPred ι) : ParamPred ι :=
-  fun a q => langDiamond lang (fun r => φ a r) q
+abbrev paramDiamond (lang : LanguageDef) {ι : Type}
+    (φ : ParamPred lang ι) : ParamPred lang ι :=
+  fun a => langDiamond lang (φ a)
 
 /-- Parametric box operator induced by `langBox`. -/
-abbrev paramBox (lang : LanguageDef) {ι : Type} (φ : ParamPred ι) : ParamPred ι :=
-  fun a q => langBox lang (fun r => φ a r) q
+abbrev paramBox (lang : LanguageDef) {ι : Type}
+    (φ : ParamPred lang ι) : ParamPred lang ι :=
+  fun a => langBox lang (φ a)
 
 /-- Operational meaning of dependent diamond types. -/
-theorem depDiamond_spec (lang : LanguageDef) (φ : DepPred) (i q : Pattern) :
-    depDiamond lang φ i q ↔ ∃ r, langReduces lang q r ∧ φ i r := by
-  simpa [depDiamond] using (langDiamond_spec lang (fun r => φ i r) q)
+theorem depDiamond_spec (lang : LanguageDef) (φ : DepPred lang) (i q : Pattern) :
+    depDiamond lang φ i q ↔
+      ∃ r, langSemanticReduces lang q r ∧ (φ i).1 r := by
+  simpa [depDiamond] using (langDiamond_spec lang (φ i) q)
 
 /-- Operational meaning of dependent box types. -/
-theorem depBox_spec (lang : LanguageDef) (φ : DepPred) (i p : Pattern) :
-    depBox lang φ i p ↔ ∀ q, langReduces lang q p → φ i q := by
-  simpa [depBox] using (langBox_spec lang (fun r => φ i r) p)
+theorem depBox_spec (lang : LanguageDef) (φ : DepPred lang) (i p : Pattern) :
+    depBox lang φ i p ↔
+      ∀ q, langSemanticReduces lang q p → (φ i).1 q := by
+  simpa [depBox] using (langBox_spec lang (φ i) p)
 
 /-- Operational meaning of parametric diamond types. -/
 theorem paramDiamond_spec (lang : LanguageDef) {ι : Type}
-    (φ : ParamPred ι) (a : ι) (q : Pattern) :
-    paramDiamond lang φ a q ↔ ∃ r, langReduces lang q r ∧ φ a r := by
-  simpa [paramDiamond] using (langDiamond_spec lang (fun r => φ a r) q)
+    (φ : ParamPred lang ι) (a : ι) (q : Pattern) :
+    paramDiamond lang φ a q ↔
+      ∃ r, langSemanticReduces lang q r ∧ (φ a).1 r := by
+  simpa [paramDiamond] using (langDiamond_spec lang (φ a) q)
 
 /-- Operational meaning of parametric box types. -/
 theorem paramBox_spec (lang : LanguageDef) {ι : Type}
-    (φ : ParamPred ι) (a : ι) (p : Pattern) :
-    paramBox lang φ a p ↔ ∀ q, langReduces lang q p → φ a q := by
-  simpa [paramBox] using (langBox_spec lang (fun r => φ a r) p)
+    (φ : ParamPred lang ι) (a : ι) (p : Pattern) :
+    paramBox lang φ a p ↔
+      ∀ q, langSemanticReduces lang q p → (φ a).1 q := by
+  simpa [paramBox] using (langBox_spec lang (φ a) p)
 
 /-- Dependent quote typing rule derived from `GenHasType.quote`. -/
 theorem dep_quote {lang : LanguageDef}
@@ -348,7 +364,7 @@ theorem dep_quote {lang : LanguageDef}
     {procSort nameSort : String}
     (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
     (hgrammar : ∃ g ∈ lang.terms, g.label = "NQuote" ∧ g.category = nameSort)
-    (φ : DepPred) (i : Pattern) :
+    (φ : DepPred lang) (i : Pattern) :
     GenHasType lang Γ p ⟨procSort, φ i, hproc⟩ →
     GenHasType lang Γ (.apply "NQuote" [p]) ⟨nameSort, depDiamond lang φ i, hname⟩ := by
   intro hp
@@ -360,7 +376,7 @@ theorem dep_drop {lang : LanguageDef}
     {procSort nameSort : String}
     (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
     (hgrammar : ∃ g ∈ lang.terms, g.label = "PDrop" ∧ g.category = procSort)
-    (φ : DepPred) (i : Pattern) :
+    (φ : DepPred lang) (i : Pattern) :
     GenHasType lang Γ n ⟨nameSort, φ i, hname⟩ →
     GenHasType lang Γ (.apply "PDrop" [n]) ⟨procSort, depBox lang φ i, hproc⟩ := by
   intro hn
@@ -372,7 +388,7 @@ theorem param_quote {lang : LanguageDef} {ι : Type}
     {procSort nameSort : String}
     (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
     (hgrammar : ∃ g ∈ lang.terms, g.label = "NQuote" ∧ g.category = nameSort)
-    (φ : ParamPred ι) (a : ι) :
+    (φ : ParamPred lang ι) (a : ι) :
     GenHasType lang Γ p ⟨procSort, φ a, hproc⟩ →
     GenHasType lang Γ (.apply "NQuote" [p]) ⟨nameSort, paramDiamond lang φ a, hname⟩ := by
   intro hp
@@ -384,7 +400,7 @@ theorem param_drop {lang : LanguageDef} {ι : Type}
     {procSort nameSort : String}
     (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
     (hgrammar : ∃ g ∈ lang.terms, g.label = "PDrop" ∧ g.category = procSort)
-    (φ : ParamPred ι) (a : ι) :
+    (φ : ParamPred lang ι) (a : ι) :
     GenHasType lang Γ n ⟨nameSort, φ a, hname⟩ →
     GenHasType lang Γ (.apply "PDrop" [n]) ⟨procSort, paramBox lang φ a, hproc⟩ := by
   intro hn
@@ -393,23 +409,27 @@ theorem param_drop {lang : LanguageDef} {ι : Type}
 /-- Bundled endpoint for the dependent/parametric generated typing extension. -/
 structure DepParamGeneratedTypingExtension (lang : LanguageDef) : Prop where
   depDiamond_spec :
-    ∀ (φ : DepPred) (i q : Pattern),
-      depDiamond lang φ i q ↔ ∃ r, langReduces lang q r ∧ φ i r
+    ∀ (φ : DepPred lang) (i q : Pattern),
+      depDiamond lang φ i q ↔
+        ∃ r, langSemanticReduces lang q r ∧ (φ i).1 r
   depBox_spec :
-    ∀ (φ : DepPred) (i p : Pattern),
-      depBox lang φ i p ↔ ∀ q, langReduces lang q p → φ i q
+    ∀ (φ : DepPred lang) (i p : Pattern),
+      depBox lang φ i p ↔
+        ∀ q, langSemanticReduces lang q p → (φ i).1 q
   paramDiamond_spec :
-    ∀ {ι : Type} (φ : ParamPred ι) (a : ι) (q : Pattern),
-      paramDiamond lang φ a q ↔ ∃ r, langReduces lang q r ∧ φ a r
+    ∀ {ι : Type} (φ : ParamPred lang ι) (a : ι) (q : Pattern),
+      paramDiamond lang φ a q ↔
+        ∃ r, langSemanticReduces lang q r ∧ (φ a).1 r
   paramBox_spec :
-    ∀ {ι : Type} (φ : ParamPred ι) (a : ι) (p : Pattern),
-      paramBox lang φ a p ↔ ∀ q, langReduces lang q p → φ a q
+    ∀ {ι : Type} (φ : ParamPred lang ι) (a : ι) (p : Pattern),
+      paramBox lang φ a p ↔
+        ∀ q, langSemanticReduces lang q p → (φ a).1 q
   dep_quote :
     ∀ {Γ : GenTypingContext lang} {p : Pattern}
       {procSort nameSort : String}
       (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
       (_ : ∃ g ∈ lang.terms, g.label = "NQuote" ∧ g.category = nameSort)
-      (φ : DepPred) (i : Pattern),
+      (φ : DepPred lang) (i : Pattern),
       GenHasType lang Γ p ⟨procSort, φ i, hproc⟩ →
       GenHasType lang Γ (.apply "NQuote" [p]) ⟨nameSort, depDiamond lang φ i, hname⟩
   dep_drop :
@@ -417,7 +437,7 @@ structure DepParamGeneratedTypingExtension (lang : LanguageDef) : Prop where
       {procSort nameSort : String}
       (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
       (_ : ∃ g ∈ lang.terms, g.label = "PDrop" ∧ g.category = procSort)
-      (φ : DepPred) (i : Pattern),
+      (φ : DepPred lang) (i : Pattern),
       GenHasType lang Γ n ⟨nameSort, φ i, hname⟩ →
       GenHasType lang Γ (.apply "PDrop" [n]) ⟨procSort, depBox lang φ i, hproc⟩
   param_quote :
@@ -425,7 +445,7 @@ structure DepParamGeneratedTypingExtension (lang : LanguageDef) : Prop where
       {procSort nameSort : String}
       (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
       (_ : ∃ g ∈ lang.terms, g.label = "NQuote" ∧ g.category = nameSort)
-      (φ : ParamPred ι) (a : ι),
+      (φ : ParamPred lang ι) (a : ι),
       GenHasType lang Γ p ⟨procSort, φ a, hproc⟩ →
       GenHasType lang Γ (.apply "NQuote" [p]) ⟨nameSort, paramDiamond lang φ a, hname⟩
   param_drop :
@@ -433,7 +453,7 @@ structure DepParamGeneratedTypingExtension (lang : LanguageDef) : Prop where
       {procSort nameSort : String}
       (hproc : procSort ∈ lang.types) (hname : nameSort ∈ lang.types)
       (_ : ∃ g ∈ lang.terms, g.label = "PDrop" ∧ g.category = procSort)
-      (φ : ParamPred ι) (a : ι),
+      (φ : ParamPred lang ι) (a : ι),
       GenHasType lang Γ n ⟨nameSort, φ a, hname⟩ →
       GenHasType lang Γ (.apply "PDrop" [n]) ⟨procSort, paramBox lang φ a, hproc⟩
 

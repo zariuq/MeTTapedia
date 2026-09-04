@@ -99,6 +99,17 @@ def DecisionKernel.toChecker {Claim : Type uClaim} {Meaning : Claim -> Prop}
     (kernel : DecisionKernel Claim Meaning) : Checker Claim Unit where
   check := fun claim _ => kernel.decide claim
 
+/-- A computable direct decision procedure remains computable when exposed as
+a checker with a trivial certificate. -/
+theorem DecisionKernel.toChecker_computable
+    {Claim : Type uClaim} [Primcodable Claim]
+    {Meaning : Claim -> Prop}
+    (kernel : DecisionKernel Claim Meaning)
+    (kernelComputable : Computable kernel.decide) :
+    Computable (fun input : Claim × Unit =>
+      kernel.toChecker.check input.1 input.2) :=
+  kernelComputable.comp Computable.fst
+
 /-- Direct decision eliminates informative boundary evidence without losing
 exact authority. -/
 theorem DecisionKernel.authority
@@ -282,6 +293,176 @@ def sum
     | .inr claim, .inr certificate => right.check claim certificate
     | .inl _, .inr _ => false
     | .inr _, .inl _ => false
+
+/-- Tagged dispatch preserves executable replay.  The theorem is stated for
+the paired trust-boundary interface so it composes directly with machine
+realizations of checkers. -/
+theorem sum_computable
+    {LeftClaim : Type uClaim} {RightClaim : Type uJudgment}
+    {LeftCertificate : Type uCertificate}
+    {RightCertificate : Type uAxiom}
+    [Primcodable LeftClaim] [Primcodable RightClaim]
+    [Primcodable LeftCertificate] [Primcodable RightCertificate]
+    (left : Checker LeftClaim LeftCertificate)
+    (right : Checker RightClaim RightCertificate)
+    (leftComputable : Computable
+      (fun input : LeftClaim × LeftCertificate =>
+        left.check input.1 input.2))
+    (rightComputable : Computable
+      (fun input : RightClaim × RightCertificate =>
+        right.check input.1 input.2)) :
+    Computable (fun input :
+      Sum LeftClaim RightClaim × Sum LeftCertificate RightCertificate =>
+      (sum left right).check input.1 input.2) := by
+  have hLeft :
+      Computable₂
+        (fun input :
+            Sum LeftClaim RightClaim ×
+              Sum LeftCertificate RightCertificate =>
+          fun claim : LeftClaim =>
+            match input.2 with
+            | .inl certificate => left.check claim certificate
+            | .inr _certificate => false) := by
+    change Computable
+      (fun pair :
+          (Sum LeftClaim RightClaim ×
+            Sum LeftCertificate RightCertificate) × LeftClaim =>
+        match pair.1.2 with
+        | .inl certificate => left.check pair.2 certificate
+        | .inr _certificate => false)
+    have hCertificate : Computable
+        (fun pair :
+          (Sum LeftClaim RightClaim ×
+            Sum LeftCertificate RightCertificate) × LeftClaim =>
+          pair.1.2) := by
+      exact Computable.snd.comp Computable.fst
+    have hRaw : Computable
+        (fun pair :
+          (Sum LeftClaim RightClaim ×
+            Sum LeftCertificate RightCertificate) × LeftClaim =>
+          Sum.elim
+            (fun certificate : LeftCertificate =>
+              left.check pair.2 certificate)
+            (fun _certificate : RightCertificate => false)
+            pair.1.2) := by
+      refine @Computable.sumCasesOn
+        ((Sum LeftClaim RightClaim ×
+          Sum LeftCertificate RightCertificate) × LeftClaim)
+        LeftCertificate RightCertificate Bool _ _ _ _
+        (fun pair => pair.1.2)
+        (fun pair certificate => left.check pair.2 certificate)
+        (fun _pair _certificate => false)
+        hCertificate ?_ ?_
+      · have hInput : Computable
+            (fun args :
+              (((Sum LeftClaim RightClaim ×
+                Sum LeftCertificate RightCertificate) × LeftClaim) ×
+                  LeftCertificate) =>
+              (args.1.2, args.2)) := by
+          exact (Computable.snd.comp Computable.fst).pair Computable.snd
+        exact (leftComputable.comp hInput).to₂
+      · exact (Computable.const false :
+          Computable (fun _args :
+            ((Sum LeftClaim RightClaim ×
+              Sum LeftCertificate RightCertificate) × LeftClaim) ×
+                RightCertificate =>
+            false)).to₂
+    exact hRaw.of_eq (by
+      intro pair
+      cases pair.1.2 <;> rfl)
+  have hRight :
+      Computable₂
+        (fun input :
+            Sum LeftClaim RightClaim ×
+              Sum LeftCertificate RightCertificate =>
+          fun claim : RightClaim =>
+            match input.2 with
+            | .inl _certificate => false
+            | .inr certificate => right.check claim certificate) := by
+    change Computable
+      (fun pair :
+          (Sum LeftClaim RightClaim ×
+            Sum LeftCertificate RightCertificate) × RightClaim =>
+        match pair.1.2 with
+        | .inl _certificate => false
+        | .inr certificate => right.check pair.2 certificate)
+    have hCertificate : Computable
+        (fun pair :
+          (Sum LeftClaim RightClaim ×
+            Sum LeftCertificate RightCertificate) × RightClaim =>
+          pair.1.2) := by
+      exact Computable.snd.comp Computable.fst
+    have hRaw : Computable
+        (fun pair :
+          (Sum LeftClaim RightClaim ×
+            Sum LeftCertificate RightCertificate) × RightClaim =>
+          Sum.elim
+            (fun _certificate : LeftCertificate => false)
+            (fun certificate : RightCertificate =>
+              right.check pair.2 certificate)
+            pair.1.2) := by
+      refine @Computable.sumCasesOn
+        ((Sum LeftClaim RightClaim ×
+          Sum LeftCertificate RightCertificate) × RightClaim)
+        LeftCertificate RightCertificate Bool _ _ _ _
+        (fun pair => pair.1.2)
+        (fun _pair _certificate => false)
+        (fun pair certificate => right.check pair.2 certificate)
+        hCertificate ?_ ?_
+      · exact (Computable.const false :
+          Computable (fun _args :
+            ((Sum LeftClaim RightClaim ×
+              Sum LeftCertificate RightCertificate) × RightClaim) ×
+                LeftCertificate =>
+            false)).to₂
+      · have hInput : Computable
+            (fun args :
+              (((Sum LeftClaim RightClaim ×
+                Sum LeftCertificate RightCertificate) × RightClaim) ×
+                  RightCertificate) =>
+              (args.1.2, args.2)) := by
+          exact (Computable.snd.comp Computable.fst).pair Computable.snd
+        exact (rightComputable.comp hInput).to₂
+    exact hRaw.of_eq (by
+      intro pair
+      cases pair.1.2 <;> rfl)
+  have hClaim : Computable
+      (fun input :
+        Sum LeftClaim RightClaim ×
+          Sum LeftCertificate RightCertificate =>
+        input.1) :=
+    Computable.fst
+  have hRaw : Computable
+      (fun input :
+        Sum LeftClaim RightClaim ×
+          Sum LeftCertificate RightCertificate =>
+        Sum.elim
+          (fun claim : LeftClaim =>
+            match input.2 with
+            | .inl certificate => left.check claim certificate
+            | .inr _certificate => false)
+          (fun claim : RightClaim =>
+            match input.2 with
+            | .inl _certificate => false
+            | .inr certificate => right.check claim certificate)
+          input.1) := by
+    exact @Computable.sumCasesOn
+      (Sum LeftClaim RightClaim ×
+        Sum LeftCertificate RightCertificate)
+      LeftClaim RightClaim Bool _ _ _ _
+      (fun input => input.1)
+      (fun input claim =>
+        match input.2 with
+        | .inl certificate => left.check claim certificate
+        | .inr _certificate => false)
+      (fun input claim =>
+        match input.2 with
+        | .inl _certificate => false
+        | .inr certificate => right.check claim certificate)
+      hClaim hLeft hRight
+  exact hRaw.of_eq (by
+    intro input
+    cases input.1 <;> cases input.2 <;> rfl)
 
 @[simp] theorem sum_check_left
     {LeftClaim : Type uClaim} {RightClaim : Type uJudgment}
@@ -1130,6 +1311,8 @@ theorem no_straddling_authority
 /-! ## Axiom audit for the elimination/necessity doctrine -/
 
 #print axioms Checker.DecisionKernel.authority
+#print axioms Checker.DecisionKernel.toChecker_computable
+#print axioms Checker.sum_computable
 #print axioms Checker.haltingTrustBoundaryChecker_computable
 #print axioms Checker.haltingTrustBoundaryChecker_sound
 #print axioms Checker.haltingTrustBoundaryChecker_complete

@@ -42,6 +42,42 @@ def indexedNameAt (index : Nat) : String :=
   String.ofList
     ("$oslf:carrier-object:".toList ++ List.replicate index 'i')
 
+/-- Decode exactly the compact positional carrier namespace.  The numerical
+result is still only a wire index; a request-bound slot is reconstructed
+below before it receives a carrier-object meaning. -/
+def indexedNameAt? (name : String) : Option Nat :=
+  match name.toList with
+  | '$' :: 'o' :: 's' :: 'l' :: 'f' :: ':' ::
+      'c' :: 'a' :: 'r' :: 'r' :: 'i' :: 'e' :: 'r' :: '-' ::
+      'o' :: 'b' :: 'j' :: 'e' :: 'c' :: 't' :: ':' :: suffix =>
+      if suffix = List.replicate suffix.length 'i'
+      then some suffix.length
+      else none
+  | _ => none
+
+@[simp]
+theorem indexedNameAt?_indexedNameAt (index : Nat) :
+    indexedNameAt? (indexedNameAt index) = some index := by
+  simp [indexedNameAt?, indexedNameAt]
+
+/-- Successful raw-name decoding reconstructs the exact private wire. -/
+theorem indexedNameAt_of_indexedNameAt?_eq_some {name : String} {index : Nat}
+    (decoded : indexedNameAt? name = some index) :
+    indexedNameAt index = name := by
+  unfold indexedNameAt? at decoded
+  split at decoded
+  next suffix equation =>
+    split at decoded
+    next canonical =>
+      cases decoded
+      rw [← String.ofList_toList (s := name), equation]
+      unfold indexedNameAt
+      rw [canonical]
+      simp only [List.length_replicate]
+      congr 1
+    next notCanonical => simp at decoded
+  all_goals simp at decoded
+
 theorem indexedNameAt_injective : Function.Injective indexedNameAt := by
   intro first second equality
   have lists := congrArg String.toList equality
@@ -57,6 +93,46 @@ def indexedName {source : ValidatedLanguageDef}
     {request : CarrierObjectClosure.Request source}
     (slot : request.Slot) : String :=
   indexedNameAt slot.val
+
+/-- Turn a decoded positional name into a carrier slot only when it belongs
+to the supplied request.  The request is the revision-bound semantic
+authority for the otherwise meaningless numerical index. -/
+def indexedSlot? {source : ValidatedLanguageDef}
+    (request : CarrierObjectClosure.Request source) (name : String) :
+    Option request.Slot := do
+  let index ← indexedNameAt? name
+  if bound : index < request.objects.length then
+    some ⟨index, bound⟩
+  else
+    none
+
+@[simp]
+theorem indexedSlot?_indexedName {source : ValidatedLanguageDef}
+    {request : CarrierObjectClosure.Request source} (slot : request.Slot) :
+    indexedSlot? request (indexedName slot) = some slot := by
+  simp [indexedSlot?, indexedName]
+
+/-- Successful request-bound decoding reconstructs the exact indexed name. -/
+theorem indexedName_of_indexedSlot?_eq_some
+    {source : ValidatedLanguageDef}
+    {request : CarrierObjectClosure.Request source}
+    {name : String} {slot : request.Slot}
+    (decoded : indexedSlot? request name = some slot) :
+    indexedName slot = name := by
+  unfold indexedSlot? at decoded
+  cases raw : indexedNameAt? name with
+  | none => simp [raw] at decoded
+  | some index =>
+      rw [raw] at decoded
+      change
+        (if bound : index < request.objects.length then
+          some (⟨index, bound⟩ : request.Slot)
+        else none) = some slot at decoded
+      split at decoded
+      next bound =>
+        cases decoded
+        exact indexedNameAt_of_indexedNameAt?_eq_some raw
+      next outOfBounds => simp at decoded
 
 theorem indexedName_injective {source : ValidatedLanguageDef}
     {request : CarrierObjectClosure.Request source} :
@@ -422,6 +498,10 @@ end Canary
 #print axioms Naming.indexedName_injective
 #print axioms Naming.indexedNameAt_injective
 #print axioms Naming.indexedName_appendSlot
+#print axioms Naming.indexedNameAt?_indexedNameAt
+#print axioms Naming.indexedNameAt_of_indexedNameAt?_eq_some
+#print axioms Naming.indexedSlot?_indexedName
+#print axioms Naming.indexedName_of_indexedSlot?_eq_some
 #print axioms carrierTypeNames_nodup
 #print axioms carrierSignature_valid
 #print axioms definition_valid

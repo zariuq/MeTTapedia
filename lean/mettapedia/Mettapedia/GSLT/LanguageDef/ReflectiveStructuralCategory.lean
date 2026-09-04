@@ -35,18 +35,18 @@ end ReflectionSymbols
 
 /-- Symbol action for a five-field language and its reflection fibre. -/
 @[ext]
-structure ReflectiveSymbols extends PresentationSymbols where
+structure ReflectiveSymbols extends LanguageDefSymbolMap where
   reflection : ReflectionSymbols
 
 namespace ReflectiveSymbols
 
 def id : ReflectiveSymbols where
-  toPresentationSymbols := PresentationSymbols.id
+  toLanguageDefSymbolMap := LanguageDefSymbolMap.id
   reflection := ReflectionSymbols.id
 
 def comp (first second : ReflectiveSymbols) : ReflectiveSymbols where
-  toPresentationSymbols := first.toPresentationSymbols.comp
-    second.toPresentationSymbols
+  toLanguageDefSymbolMap := first.toLanguageDefSymbolMap.comp
+    second.toLanguageDefSymbolMap
   reflection := first.reflection.comp second.reflection
 
 end ReflectiveSymbols
@@ -115,19 +115,19 @@ structure ReflectiveStructuralMorphism
   symbols : ReflectiveSymbols
   mapsTypes : ∀ declaration,
     List.Mem declaration source.language.types →
-      List.Mem (mapTypeDecl symbols.toPresentationSymbols declaration)
+      List.Mem (mapTypeDecl symbols.toLanguageDefSymbolMap declaration)
         target.language.types
   mapsTerms : ∀ declaration,
     List.Mem declaration source.language.terms →
-      List.Mem (mapGrammarRule symbols.toPresentationSymbols declaration)
+      List.Mem (mapGrammarRule symbols.toLanguageDefSymbolMap declaration)
         target.language.terms
   mapsEquations : ∀ declaration,
     List.Mem declaration source.language.equations →
-      List.Mem (mapEquation symbols.toPresentationSymbols declaration)
+      List.Mem (mapEquation symbols.toLanguageDefSymbolMap declaration)
         target.language.equations
   mapsRewrites : ∀ declaration,
     List.Mem declaration source.language.rewrites →
-      List.Mem (mapRewriteRule symbols.toPresentationSymbols declaration)
+      List.Mem (mapRewriteRule symbols.toLanguageDefSymbolMap declaration)
         target.language.rewrites
   mapsPresentations : ∀ declaration,
     List.Mem declaration source.language.reflection.presentations →
@@ -144,7 +144,7 @@ def toCore {source target : ValidatedReflectiveLanguageDef}
     (morphism : ReflectiveStructuralMorphism source target) :
     StructuralMorphism source.toValidatedLanguageDef
       target.toValidatedLanguageDef where
-  symbols := morphism.symbols.toPresentationSymbols
+  symbols := morphism.symbols.toLanguageDefSymbolMap
   mapsTypes := morphism.mapsTypes
   mapsTerms := morphism.mapsTerms
   mapsEquations := morphism.mapsEquations
@@ -162,20 +162,20 @@ def id (language : ValidatedReflectiveLanguageDef) :
     ReflectiveStructuralMorphism language language where
   symbols := ReflectiveSymbols.id
   mapsTypes declaration membership := by
-    rw [show ReflectiveSymbols.id.toPresentationSymbols =
-      PresentationSymbols.id from rfl, mapTypeDecl_id]
+    rw [show ReflectiveSymbols.id.toLanguageDefSymbolMap =
+      LanguageDefSymbolMap.id from rfl, mapTypeDecl_id]
     exact membership
   mapsTerms declaration membership := by
-    rw [show ReflectiveSymbols.id.toPresentationSymbols =
-      PresentationSymbols.id from rfl, mapGrammarRule_id]
+    rw [show ReflectiveSymbols.id.toLanguageDefSymbolMap =
+      LanguageDefSymbolMap.id from rfl, mapGrammarRule_id]
     exact membership
   mapsEquations declaration membership := by
-    rw [show ReflectiveSymbols.id.toPresentationSymbols =
-      PresentationSymbols.id from rfl, mapEquation_id]
+    rw [show ReflectiveSymbols.id.toLanguageDefSymbolMap =
+      LanguageDefSymbolMap.id from rfl, mapEquation_id]
     exact membership
   mapsRewrites declaration membership := by
-    rw [show ReflectiveSymbols.id.toPresentationSymbols =
-      PresentationSymbols.id from rfl, mapRewriteRule_id]
+    rw [show ReflectiveSymbols.id.toLanguageDefSymbolMap =
+      LanguageDefSymbolMap.id from rfl, mapRewriteRule_id]
     exact membership
   mapsPresentations declaration membership := by
     simpa using membership
@@ -189,26 +189,26 @@ def comp {first second third : ValidatedReflectiveLanguageDef}
   symbols := left.symbols.comp right.symbols
   mapsTypes declaration membership := by
     change List.Mem
-      (mapTypeDecl (left.symbols.toPresentationSymbols.comp
-        right.symbols.toPresentationSymbols) declaration) _
+      (mapTypeDecl (left.symbols.toLanguageDefSymbolMap.comp
+        right.symbols.toLanguageDefSymbolMap) declaration) _
     rw [mapTypeDecl_comp]
     exact right.mapsTypes _ (left.mapsTypes declaration membership)
   mapsTerms declaration membership := by
     change List.Mem
-      (mapGrammarRule (left.symbols.toPresentationSymbols.comp
-        right.symbols.toPresentationSymbols) declaration) _
+      (mapGrammarRule (left.symbols.toLanguageDefSymbolMap.comp
+        right.symbols.toLanguageDefSymbolMap) declaration) _
     rw [mapGrammarRule_comp]
     exact right.mapsTerms _ (left.mapsTerms declaration membership)
   mapsEquations declaration membership := by
     change List.Mem
-      (mapEquation (left.symbols.toPresentationSymbols.comp
-        right.symbols.toPresentationSymbols) declaration) _
+      (mapEquation (left.symbols.toLanguageDefSymbolMap.comp
+        right.symbols.toLanguageDefSymbolMap) declaration) _
     rw [mapEquation_comp]
     exact right.mapsEquations _ (left.mapsEquations declaration membership)
   mapsRewrites declaration membership := by
     change List.Mem
-      (mapRewriteRule (left.symbols.toPresentationSymbols.comp
-        right.symbols.toPresentationSymbols) declaration) _
+      (mapRewriteRule (left.symbols.toLanguageDefSymbolMap.comp
+        right.symbols.toLanguageDefSymbolMap) declaration) _
     rw [mapRewriteRule_comp]
     exact right.mapsRewrites _ (left.mapsRewrites declaration membership)
   mapsPresentations declaration membership := by

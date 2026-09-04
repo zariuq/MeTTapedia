@@ -1,0 +1,9 @@
+import Mathlib.Data.List.Dedup
+#check List.Perm.mem_iff
+#check List.Perm.mem_iff_of_mem
+#check List.Perm.mem_iff
+#check List.mem_dedup
+#check Bool.eq_false_iff
+#check Bool.not_eq_true
+#check Bool.eq_false_of_not_eq_true
+#check Bool.eq_false_of_not_eq_true

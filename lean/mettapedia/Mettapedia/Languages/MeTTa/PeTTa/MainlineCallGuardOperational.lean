@@ -1,6 +1,7 @@
 import Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardControl
 import Mettapedia.GSLT.LanguageDef.CanonicalWire
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTStepAdequacyGeneral
+import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificateExtension
 import Mettapedia.OSLF.MeTTaIL.RelationQueryAdmission
 
 /-!
@@ -27,6 +28,7 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardOperational
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.Match
+open Mettapedia.OSLF.MeTTaIL.RelationQueryAdmission
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.Languages.MeTTa.PeTTa.MainlineTypeQueryGSLT
 open Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardProjection
@@ -609,6 +611,23 @@ def skipHeadTransition : RewriteRule := {
     (v "remaining") (v "accepted")
 }
 
+/-- The exact authored metavariable context of the `skip-head` transition.
+Downstream source-indexed calculi may inspect this equation without exposing
+the private context-building abbreviations used by the operational module. -/
+@[simp] theorem skipHeadTransition_typeContext :
+    skipHeadTransition.typeContext =
+      [ ("owner", .base "CGOwner")
+      , ("revision", .base "CGNat")
+      , ("head", .base "CGName")
+      , ("arity", .base "CGNat")
+      , ("remaining", .base "CGDeclarations")
+      , ("accepted", .base "CGPlans")
+      , ("occurrence", .base "CGNat")
+      , ("declarationHead", .base "CGName")
+      , ("inputs", .base "CGTerms")
+      , ("output", .base "CGTerm") ] := by
+  rfl
+
 def skipArityTransition : RewriteRule := {
   name := "petta-call-guard-compile-skip-arity"
   typeContext := declarationContext
@@ -964,7 +983,17 @@ private theorem RewriteCertificate.patternsClean
     simp [certificate.contextAvoidsConstructors entry membership]
   · apply List.flatMap_eq_nil_iff.mpr
     intro name membership
-    simp [certificate.rightBound name membership]
+    have bound := certificate.rightBound name membership
+    simp only [List.mem_append] at bound
+    rcases bound with leftBound | premiseBound
+    · unfold LanguageDef.patternFvarNames at leftBound
+      simp only [List.mem_filter] at leftBound
+      simp [leftBound.1]
+    · simp only [List.mem_flatMap] at premiseBound
+      obtain ⟨premise, premiseMembership, nameMembership⟩ := premiseBound
+      simp
+      intro _ premiseAbsent
+      exact (premiseAbsent premise premiseMembership nameMembership).elim
 
 private theorem validateRewrite_eq_nil_of_certificate
     {rewrite : RewriteRule} (certificate : RewriteCertificate rewrite) :
@@ -1427,6 +1456,186 @@ private theorem transitions_certified :
     atomResultTransition_certified, checkedResultTransition_certified,
     openResultTransition_certified]
 
+private def schemaNamesPrivateErrors (rewrite : RewriteRule) : List String :=
+  (Mettapedia.GSLT.LanguageDef.RewriteValidationCertificateExtension.schemaNames
+    rewrite).filter fun name => decide (name.toList.head? = some '$')
+
+local macro "certify_private_schema" rule:Lean.Parser.Tactic.simpLemma : tactic =>
+  `(tactic| simp [schemaNamesPrivateErrors,
+    Mettapedia.GSLT.LanguageDef.RewriteValidationCertificateExtension.schemaNames,
+    $rule, inputStepTransition, resultStepTransition, compileRunning,
+    compileArguments, compileResult, compileHalted, declarationsNil,
+    declarationsCons, declarationPattern, termsNil, termsCons, argModesNil,
+    argModesSnoc, rawArgMode, uncheckedArgMode, checkedArgMode,
+    uncheckedResultMode, checkedResultMode, plansSnoc, planPattern,
+    compiledPattern, familyPattern, outsideFragmentPattern,
+    atomType, undefinedType, holeType, runningContext, declarationContext,
+    argumentContext, typed, query, a, v,
+    LanguageDef.premisePatterns, LanguageDef.patternFvarNames,
+    LanguageDef.patternBinderNames, LanguageDef.premiseFvarNames,
+    LanguageDef.premiseForAllParams, Pattern.freeFvarNames]
+    <;> aesop)
+
+private theorem finishTransition_privateSchema :
+    schemaNamesPrivateErrors finishTransition = [] := by
+  certify_private_schema finishTransition
+
+private theorem skipHeadTransition_privateSchema :
+    schemaNamesPrivateErrors skipHeadTransition = [] := by
+  certify_private_schema skipHeadTransition
+
+private theorem skipArityTransition_privateSchema :
+    schemaNamesPrivateErrors skipArityTransition = [] := by
+  certify_private_schema skipArityTransition
+
+private theorem beginDeclarationTransition_privateSchema :
+    schemaNamesPrivateErrors beginDeclarationTransition = [] := by
+  certify_private_schema beginDeclarationTransition
+
+private theorem argumentsFinishedTransition_privateSchema :
+    schemaNamesPrivateErrors argumentsFinishedTransition = [] := by
+  certify_private_schema argumentsFinishedTransition
+
+private theorem rawInputTransition_privateSchema :
+    schemaNamesPrivateErrors rawInputTransition = [] := by
+  certify_private_schema rawInputTransition
+
+private theorem undefinedInputTransition_privateSchema :
+    schemaNamesPrivateErrors undefinedInputTransition = [] := by
+  certify_private_schema undefinedInputTransition
+
+private theorem holeInputTransition_privateSchema :
+    schemaNamesPrivateErrors holeInputTransition = [] := by
+  certify_private_schema holeInputTransition
+
+private theorem checkedInputTransition_privateSchema :
+    schemaNamesPrivateErrors checkedInputTransition = [] := by
+  certify_private_schema checkedInputTransition
+
+private theorem openInputTransition_privateSchema :
+    schemaNamesPrivateErrors openInputTransition = [] := by
+  certify_private_schema openInputTransition
+
+private theorem undefinedResultTransition_privateSchema :
+    schemaNamesPrivateErrors undefinedResultTransition = [] := by
+  certify_private_schema undefinedResultTransition
+
+private theorem holeResultTransition_privateSchema :
+    schemaNamesPrivateErrors holeResultTransition = [] := by
+  certify_private_schema holeResultTransition
+
+private theorem atomResultTransition_privateSchema :
+    schemaNamesPrivateErrors atomResultTransition = [] := by
+  certify_private_schema atomResultTransition
+
+private theorem checkedResultTransition_privateSchema :
+    schemaNamesPrivateErrors checkedResultTransition = [] := by
+  certify_private_schema checkedResultTransition
+
+private theorem openResultTransition_privateSchema :
+    schemaNamesPrivateErrors openResultTransition = [] := by
+  certify_private_schema openResultTransition
+
+private theorem not_generatedPrefix_of_privateErrors
+    (rewrite : RewriteRule) (errors : schemaNamesPrivateErrors rewrite = []) :
+    ∀ name ∈
+      Mettapedia.GSLT.LanguageDef.RewriteValidationCertificateExtension.schemaNames
+        rewrite,
+      name.toList.head? ≠ some '$' := by
+  intro name nameMembership equality
+  have absent := (List.filter_eq_nil_iff.mp errors) name nameMembership
+  exact absent (decide_eq_true_eq.mpr equality)
+
+/-- Authored schema names stay outside the private generated-calculus
+namespace.  This makes later signature extension capture-freedom a structural
+fact rather than a repeated whole-validator computation. -/
+theorem transition_schemaNames_not_generatedPrefix (rewrite : RewriteRule)
+    (membership : rewrite ∈ language.rewrites) :
+    ∀ name ∈
+      Mettapedia.GSLT.LanguageDef.RewriteValidationCertificateExtension.schemaNames
+        rewrite,
+      name.toList.head? ≠ some '$' := by
+  change rewrite ∈ transitions at membership
+  simp only [transitions, List.mem_cons, List.mem_nil_iff, or_false]
+    at membership
+  rcases membership with
+      rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+      rfl | rfl | rfl | rfl | rfl
+  · exact not_generatedPrefix_of_privateErrors _
+      finishTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _
+      skipHeadTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _
+      skipArityTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _
+      beginDeclarationTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _
+      argumentsFinishedTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _ rawInputTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _
+      undefinedInputTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _ holeInputTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _
+      checkedInputTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _ openInputTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _
+      undefinedResultTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _ holeResultTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _ atomResultTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _
+      checkedResultTransition_privateSchema
+  · exact not_generatedPrefix_of_privateErrors _ openResultTransition_privateSchema
+
+/-- Every authored cold-compiler transition carries the shared structural
+rewrite certificate.  This is the reusable validation boundary for later
+capture-free signature extensions; clients need not unfold the source
+presentation's binary literal encodings again. -/
+theorem transition_certificate (rewrite : RewriteRule)
+    (membership : rewrite ∈ language.rewrites) :
+    Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate.Certificate
+      language rewrite := by
+  change rewrite ∈ transitions at membership
+  have checked := List.all_eq_true.mp transitions_certified rewrite membership
+  have certificate := rewriteCertificate_of_check checked
+  exact {
+    contextTypes := certificate.contextTypes
+    leftDeclared := by
+      intro reference referenceMembership
+      simpa only [
+        Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate.constructorSignatures,
+        constructorSignatures, language] using
+        certificate.leftDeclared reference referenceMembership
+    rightDeclared := by
+      intro reference referenceMembership
+      simpa only [
+        Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate.constructorSignatures,
+        constructorSignatures, language] using
+        certificate.rightDeclared reference referenceMembership
+    premisesDeclared := by
+      intro pattern patternMembership reference referenceMembership
+      simpa only [
+        Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate.constructorSignatures,
+        constructorSignatures, language] using
+        certificate.premisesDeclared pattern patternMembership reference
+          referenceMembership
+    allPatternsScoped := certificate.allPatternsScoped
+    fvarsAvoidConstructors := by
+      intro name nameMembership
+      change name ∉ terms.map (fun declaration => declaration.label)
+      rw [terms_constructorLabels_eq]
+      exact certificate.fvarsAvoidConstructors name nameMembership
+    bindersAvoidConstructors := by
+      intro name nameMembership
+      change name ∉ terms.map (fun declaration => declaration.label)
+      rw [terms_constructorLabels_eq]
+      exact certificate.bindersAvoidConstructors name nameMembership
+    contextAvoidsConstructors := by
+      intro entry entryMembership
+      change entry.1 ∉ terms.map (fun declaration => declaration.label)
+      rw [terms_constructorLabels_eq]
+      exact certificate.contextAvoidsConstructors entry entryMembership
+    rightBound := certificate.rightBound }
+
 private theorem rewrites_validate :
     ∀ rewrite ∈ language.rewrites,
       LanguageDef.validateRewrite language rewrite = [] := by
@@ -1443,7 +1652,9 @@ theorem language_validate : language.validate = [] := by
 
 #print axioms language_validate
 
-private theorem rules_noncontextual :
+/-- Every cold-compiler rule has only root-local premises, so contextual
+closure adds no transition beyond the authored root executor. -/
+theorem language_rules_noncontextual :
     ∀ rule, rule ∈ language.rewrites →
       Mettapedia.OSLF.MeTTaIL.ContextualStep.NoncontextualPremises
         rule.premises := by
@@ -1471,7 +1682,7 @@ theorem language_step_iff_mem_executor (source target : Pattern) :
       target ∈ rewriteStepWithPremisesUsing relationEnv language source := by
   unfold Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing
   rw [Mettapedia.OSLF.MeTTaIL.ContextualStep.step_iff_rootStep_of_noncontextualRules
-    rules_noncontextual]
+    language_rules_noncontextual]
   exact rootStep_iff_mem_executor source target
 
 /-- The least compiler-language step is exactly one authored root-rule
@@ -1484,7 +1695,7 @@ theorem language_step_iff_rootStep (source target : Pattern) :
         source target := by
   unfold Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing
   exact Mettapedia.OSLF.MeTTaIL.ContextualStep.step_iff_rootStep_of_noncontextualRules
-    rules_noncontextual
+    language_rules_noncontextual
 
 theorem language_finish_step_exact
     (owner : SpaceOwner) (revision : Nat) (head : String) (arity : Nat)
@@ -3572,6 +3783,7 @@ theorem compileLanguageGSLT_total_exact (owned : OwnedSnapshot)
   simpa [exactResult] using steps
 
 #print axioms compileArgumentTail_start_exact
+#print axioms skipHeadTransition_typeContext
 #print axioms compileLanguageStep_denote_preserved
 #print axioms compileLanguageStart_denote_exact
 #print axioms compileLanguageGSLT_multiStep_denote_preserved

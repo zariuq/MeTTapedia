@@ -193,6 +193,53 @@ def compileWhole? (admitted : AdmittedDerivation) (rootName : String) :
     artifact
   }
 
+/-- Successful status-indexed compilation retains exactly the artifact
+produced by the generic calculus-neutral official-DAG compiler. -/
+theorem compileWhole?_semantic_exact
+    {admitted : AdmittedDerivation} {rootName : String}
+    {compiled : CompiledGroundRoot}
+    (compiledEq : compileWhole? admitted rootName = .ok compiled) :
+    TptpOfficialDerivationProgram.compileAdmittedWhole?
+        projection admitted rootName = .ok compiled.artifact := by
+  unfold compileWhole? at compiledEq
+  generalize clausesEq :
+      collectProblemClauses? admitted.compiled.nodes = clausesResult
+    at compiledEq
+  cases clausesResult with
+  | error failure => cases compiledEq
+  | ok clauses =>
+      generalize symbolsEq :
+          collectInputPrincipalSymbols? guest admitted.compiled.nodes =
+            symbolsResult
+        at compiledEq
+      cases symbolsResult with
+      | error failure => cases compiledEq
+      | ok symbols =>
+          generalize semanticEq :
+              TptpOfficialDerivationProgram.compileAdmittedWhole?
+                projection admitted rootName = semanticResult
+            at compiledEq
+          cases semanticResult with
+          | error failure => cases compiledEq
+          | ok artifact =>
+              have compiledValueEq :
+                  ({
+                    problem := {
+                      sourceDigest := admitted.derivation.sourceDigest
+                      clauses
+                    }
+                    initialSymbols := symbols
+                    artifact
+                  } : CompiledGroundRoot) = compiled :=
+                Except.ok.inj compiledEq
+              have artifactEq : artifact = compiled.artifact :=
+                congrArg (fun result : CompiledGroundRoot => result.artifact)
+                  compiledValueEq
+              exact congrArg
+                (fun value : MachineArtifact =>
+                  (Except.ok value : Except CompileFailure MachineArtifact))
+                artifactEq
+
 /-- Any artifact accepted by this status-indexed machine establishes its root
 as a theorem relative to the admitted problem.  This is the semantic result;
 it follows from the reusable per-instruction machine invariant, independently
@@ -364,6 +411,7 @@ end Canary
 #print axioms Canary.missing_input_symbol_fails_closed
 #print axioms Canary.undeclared_inference_symbol_fails_before_calculus
 #print axioms Canary.valid_official_derivation_is_unsatisfiable
+#print axioms compileWhole?_semantic_exact
 #print axioms servicesSound
 #print axioms acceptedArtifact_relativeTheorem
 #print axioms acceptedArtifact_statusChecked

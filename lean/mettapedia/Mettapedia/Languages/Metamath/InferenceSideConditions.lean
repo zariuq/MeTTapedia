@@ -437,7 +437,7 @@ theorem sideDefinition_valid : sideDefinition.isValid = true := by
 
 /-- The side-condition language and its proof calculus as one GSLT. -/
 def totalTheory : Mettapedia.GSLT.GSLT :=
-  sideDefinition.toGSLTOfNoEquations sideDefinition_valid rfl
+  sideDefinition.toGSLTOfEquationFree sideDefinition_valid rfl
 
 theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) :=
   rfl

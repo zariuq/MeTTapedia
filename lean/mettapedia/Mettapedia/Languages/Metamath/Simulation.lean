@@ -23,13 +23,13 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 def hasRewriteByName (label : String) : Bool :=
   metamathCore.rewrites.any (fun rw => rw.name == label)
 
-def AuthoredRewriteLabel (label : String) : Prop :=
+def DeclaredRewriteLabel (label : String) : Prop :=
   ∃ rw, rw ∈ metamathCore.rewrites ∧ (rw.name == label) = true
 
 theorem authoredRewriteLabel_iff_hasRewriteByName_true
     (label : String) :
-    AuthoredRewriteLabel label ↔ hasRewriteByName label = true := by
-  unfold AuthoredRewriteLabel hasRewriteByName
+    DeclaredRewriteLabel label ↔ hasRewriteByName label = true := by
+  unfold DeclaredRewriteLabel hasRewriteByName
   constructor
   · intro h
     rcases h with ⟨rw, hrw, hname⟩
@@ -41,7 +41,7 @@ theorem authoredRewriteLabel_iff_hasRewriteByName_true
 /-- A language transition is a runtime step whose label is present in the
     authored Metamath rewrite set. -/
 def LanguageTransition (rt rt' : RuntimeState) (label : String) : Prop :=
-  AuthoredRewriteLabel label ∧ RuntimeState.step? rt label = some rt'
+  DeclaredRewriteLabel label ∧ RuntimeState.step? rt label = some rt'
 
 /-- `stepSpec?` is exactly runtime stepping followed by bridge projection. -/
 theorem stepSpec?_iff
@@ -84,7 +84,7 @@ theorem stepSpec?_complete
 
 theorem languageTransition_stepSpec?_sound
     (rt : RuntimeState) (label : String) (sp' : SpecState)
-    (hRule : AuthoredRewriteLabel label)
+    (hRule : DeclaredRewriteLabel label)
     (hStep : RuntimeState.stepSpec? rt label = some sp') :
     ∃ rt', LanguageTransition rt rt' label ∧ StateCorresponds rt' sp' := by
   rcases stepSpec?_sound rt label sp' hStep with ⟨rt', hrt, hcorr⟩
@@ -101,7 +101,7 @@ theorem languageTransition_stepSpec?_complete
 equivalent to obtaining a `stepSpec?` image. -/
 theorem languageTransition_stepSpec?_iff
     (rt : RuntimeState) (label : String) (sp' : SpecState)
-    (hRule : AuthoredRewriteLabel label) :
+    (hRule : DeclaredRewriteLabel label) :
     RuntimeState.stepSpec? rt label = some sp' ↔
       ∃ rt', LanguageTransition rt rt' label ∧ StateCorresponds rt' sp' := by
   constructor
@@ -167,12 +167,12 @@ theorem stepManySpec?_complete
 runtime trace stepping. -/
 def LanguageTraceTransition
     (rt rt' : RuntimeState) (labels : List String) : Prop :=
-  (∀ label ∈ labels, AuthoredRewriteLabel label) ∧
+  (∀ label ∈ labels, DeclaredRewriteLabel label) ∧
     RuntimeState.stepMany? rt labels = some rt'
 
 theorem languageTrace_stepManySpec?_sound
     (rt : RuntimeState) (labels : List String) (sp' : SpecState)
-    (hAuthored : ∀ label ∈ labels, AuthoredRewriteLabel label)
+    (hAuthored : ∀ label ∈ labels, DeclaredRewriteLabel label)
     (hStep : RuntimeState.stepManySpec? rt labels = some sp') :
     ∃ rt', LanguageTraceTransition rt rt' labels ∧ StateCorresponds rt' sp' := by
   rcases stepManySpec?_sound rt labels sp' hStep with ⟨rt', hrt, hcorr⟩
@@ -187,7 +187,7 @@ theorem languageTrace_stepManySpec?_complete
 
 theorem languageTrace_stepManySpec?_iff
     (rt : RuntimeState) (labels : List String) (sp' : SpecState)
-    (hAuthored : ∀ label ∈ labels, AuthoredRewriteLabel label) :
+    (hAuthored : ∀ label ∈ labels, DeclaredRewriteLabel label) :
     RuntimeState.stepManySpec? rt labels = some sp' ↔
       ∃ rt', LanguageTraceTransition rt rt' labels ∧ StateCorresponds rt' sp' := by
   constructor
@@ -208,7 +208,7 @@ def LabeledRootStep (p q : Pattern) (label : String) : Prop :=
 theorem labeledRootStep_authored
     {p q : Pattern} {label : String}
     (h : LabeledRootStep p q label) :
-    AuthoredRewriteLabel label := by
+    DeclaredRewriteLabel label := by
   rcases h with ⟨rw, hrw, hname, _⟩
   refine ⟨rw, hrw, ?_⟩
   simp [hname]
@@ -341,7 +341,7 @@ private theorem labeledReducesAlong_to_reducesAlong :
 private theorem labeledReducesAlong_labels_authored :
     ∀ {states labels},
       LabeledReducesAlong states labels →
-      ∀ label ∈ labels, AuthoredRewriteLabel label
+      ∀ label ∈ labels, DeclaredRewriteLabel label
   | [], _, h => False.elim h
   | [_], [], h => by
       intro label hMem
@@ -381,7 +381,7 @@ theorem labeledLanguageDefEngineTraceWitness_accepts
 theorem labeledLanguageDefEngineTraceWitness_labels_authored
     {start finish : Pattern}
     (hTrace : LabeledLanguageDefEngineTraceWitness start finish) :
-    ∀ label ∈ hTrace.labels, AuthoredRewriteLabel label := by
+    ∀ label ∈ hTrace.labels, DeclaredRewriteLabel label := by
   rcases hTrace with ⟨trace, labels, _hHead, _hLast, hRedLbl⟩
   exact labeledReducesAlong_labels_authored hRedLbl
 
@@ -389,10 +389,10 @@ example : hasRewriteByName "BeginLower" = true := by native_decide
 example : hasRewriteByName "CompileLinearizeDone" = true := by native_decide
 example : hasRewriteByName "DefinitelyMissingRule" = false := by native_decide
 
-example : AuthoredRewriteLabel "BeginLower" := by
+example : DeclaredRewriteLabel "BeginLower" := by
   exact (authoredRewriteLabel_iff_hasRewriteByName_true "BeginLower").2 (by native_decide)
 
-example : ¬ AuthoredRewriteLabel "DefinitelyMissingRule" := by
+example : ¬ DeclaredRewriteLabel "DefinitelyMissingRule" := by
   intro h
   have hTrue : hasRewriteByName "DefinitelyMissingRule" = true :=
     (authoredRewriteLabel_iff_hasRewriteByName_true "DefinitelyMissingRule").1 h

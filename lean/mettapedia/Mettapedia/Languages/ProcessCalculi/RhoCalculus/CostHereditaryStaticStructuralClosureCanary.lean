@@ -203,7 +203,7 @@ private theorem rhoForeignRule_mem (index : Nat) (inBounds : index < 6) :
   List.getElem_mem _
 
 private def rhoForeignDropConstructor :
-    AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoCalc.terms[1], rhoForeignRule_mem 1 (by omega)⟩
 
 private theorem rhoForeignDrop_selected :
@@ -214,7 +214,7 @@ private theorem rhoForeignDrop_selected :
   constructor <;> decide
 
 private def rhoForeignQuoteConstructor :
-    AuthoredConstructor rhoIGSLT.presentation.presentation :=
+    DeclaredConstructor rhoIGSLT.presentation.presentation :=
   ⟨rhoCalc.terms[2], rhoForeignRule_mem 2 (by omega)⟩
 
 private theorem rhoForeignQuote_selected :

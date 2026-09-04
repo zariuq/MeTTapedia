@@ -117,8 +117,10 @@ We model this as a list-based bindings builder with explicit marks. -/
 structure BindingsMark where
   savedLength : Nat
 
-/-- A **bindings builder**: mutable accumulator with mark/rollback.
-    Models CeTTa's `BindingsBuilder` from `search_machine.c`. -/
+/-- A minimal assignment-list projection with mark/rollback.  It illustrates
+the prefix law used by CeTTa but is not a complete model of the live
+`BindingsBuilder`, which also carries constraints, Prime occurrence state,
+derived caches, revision clocks, ownership, and region protocol state. -/
 structure BindingsBuilder where
   entries : List (String × Atom)
 

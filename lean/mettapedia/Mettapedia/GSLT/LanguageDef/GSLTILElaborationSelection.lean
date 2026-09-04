@@ -303,7 +303,7 @@ deliberately strong and is refuted by the ambiguity control below. -/
 theorem exact_raw_selection_compiles_every_path
     {program : Program}
     (selection : ExactSelection (Profile.raw program)) :
-    ∀ {source target} (path : AuthoredPath program source target),
+    ∀ {source target} (path : ProgramPath program source target),
       Certificate.Compilable path
   | _, _, .refl surface =>
       ⟨selection.select surface, selection.selected surface⟩

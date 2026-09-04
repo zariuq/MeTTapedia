@@ -29,20 +29,20 @@ def mettaCalcValidatedLanguageDef : ValidatedLanguageDef :=
   ⟨mettaCalc, mettaCalc_validate_eq_nil⟩
 
 /-- The authored process sort. -/
-def mettaCalcProcessSort : AuthoredSort mettaCalcValidatedLanguageDef :=
+def mettaCalcProcessSort : DeclaredSort mettaCalcValidatedLanguageDef :=
   ⟨mettaCalc.types[0], by
     change List.Mem mettaCalc.types[0] mettaCalc.types
     exact List.getElem_mem (by simp [mettaCalc])⟩
 
 /-- The authored bare hash-bag constructor used by `pPar`. -/
 def mettaCalcParallelConstructor :
-    AuthoredConstructor mettaCalcValidatedLanguageDef :=
+    DeclaredConstructor mettaCalcValidatedLanguageDef :=
   ⟨mettaCalc.terms[1], by
     change List.Mem mettaCalc.terms[1] mettaCalc.terms
     exact List.getElem_mem (by simp [mettaCalc])⟩
 
 /-- The authored symmetric communication rewrite. -/
-def mettaCalcCommRewrite : AuthoredRewrite mettaCalcValidatedLanguageDef :=
+def mettaCalcCommRewrite : DeclaredRewrite mettaCalcValidatedLanguageDef :=
   ⟨mettaCalc.rewrites[0], by
     change List.Mem mettaCalc.rewrites[0] mettaCalc.rewrites
     exact List.getElem_mem (by simp [mettaCalc])⟩

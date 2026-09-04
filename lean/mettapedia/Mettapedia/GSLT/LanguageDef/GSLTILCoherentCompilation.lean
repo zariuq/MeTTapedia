@@ -35,14 +35,14 @@ their exact internal endpoints.  The internal source and target are indices,
 so adjacency is enforced by construction rather than checked during
 execution. -/
 inductive Certificate {program : Program} :
-    {source target : Pattern} → AuthoredPath program source target →
+    {source target : Pattern} → ProgramPath program source target →
       Pattern → Pattern → Type where
   | refl {surface internal : Pattern}
       (elaboration : Elaborates program surface internal) :
       Certificate (.refl surface) internal internal
   | cons {source middle target targetIR : Pattern}
-      (event : AuthoredEvent program source middle)
-      (rest : AuthoredPath program middle target)
+      (event : ProgramEvent program source middle)
+      (rest : ProgramPath program middle target)
       (tail : Certificate rest (WireCell.ofEvent event).targetIR targetIR) :
       Certificate (.cons event rest)
         (WireCell.ofEvent event).sourceIR targetIR
@@ -52,7 +52,7 @@ namespace Certificate
 /-- Erase a coherence certificate to the strict wire path that the runtime
 may execute directly. -/
 def toWirePath {program : Program} {source target sourceIR targetIR : Pattern}
-    {path : AuthoredPath program source target} :
+    {path : ProgramPath program source target} :
     Certificate path sourceIR targetIR →
       Route (RetainedWireStep program.toCatalog) sourceIR targetIR
   | .refl _ => .refl sourceIR
@@ -62,7 +62,7 @@ def toWirePath {program : Program} {source target sourceIR targetIR : Pattern}
 /-- The indexed internal source still elaborates from the authored source. -/
 theorem sourceElaboration {program : Program}
     {source target sourceIR targetIR : Pattern}
-    {path : AuthoredPath program source target}
+    {path : ProgramPath program source target}
     (certificate : Certificate path sourceIR targetIR) :
     Elaborates program source sourceIR := by
   cases certificate with
@@ -72,7 +72,7 @@ theorem sourceElaboration {program : Program}
 /-- The indexed internal target still elaborates from the authored target. -/
 theorem targetElaboration {program : Program}
     {source target sourceIR targetIR : Pattern}
-    {path : AuthoredPath program source target}
+    {path : ProgramPath program source target}
     (certificate : Certificate path sourceIR targetIR) :
     Elaborates program target targetIR := by
   induction certificate with
@@ -81,7 +81,7 @@ theorem targetElaboration {program : Program}
 
 /-- A single authored event always has a coherent strict compilation. -/
 def singleton {program : Program} {source target : Pattern}
-    (event : AuthoredEvent program source target) :
+    (event : ProgramEvent program source target) :
     Certificate (Route.cons event (Route.refl target))
       (WireCell.ofEvent event).sourceIR
       (WireCell.ofEvent event).targetIR :=
@@ -92,8 +92,8 @@ def singleton {program : Program} {source target : Pattern}
 same index. -/
 noncomputable def append {program : Program}
     {first middle last firstIR middleIR lastIR : Pattern}
-    {earlier : AuthoredPath program first middle}
-    {later : AuthoredPath program middle last}
+    {earlier : ProgramPath program first middle}
+    {later : ProgramPath program middle last}
     (front : Certificate earlier firstIR middleIR)
     (back : Certificate later middleIR lastIR) :
     Certificate (earlier.append later) firstIR lastIR := by
@@ -106,8 +106,8 @@ noncomputable def append {program : Program}
 source of its first event. -/
 theorem sourceIR_eq_of_cons {program : Program}
     {source middle target sourceIR targetIR : Pattern}
-    (event : AuthoredEvent program source middle)
-    (rest : AuthoredPath program middle target)
+    (event : ProgramEvent program source middle)
+    (rest : ProgramPath program middle target)
     (certificate : Certificate (Route.cons event rest) sourceIR targetIR) :
     sourceIR = (WireCell.ofEvent event).sourceIR := by
   cases certificate
@@ -117,9 +117,9 @@ theorem sourceIR_eq_of_cons {program : Program}
 canonical internal boundary. -/
 theorem adjacentInternalEq {program : Program}
     {source middle next target sourceIR targetIR : Pattern}
-    (first : AuthoredEvent program source middle)
-    (second : AuthoredEvent program middle next)
-    (rest : AuthoredPath program next target)
+    (first : ProgramEvent program source middle)
+    (second : ProgramEvent program middle next)
+    (rest : ProgramPath program next target)
     (certificate : Certificate
       (Route.cons first (Route.cons second rest)) sourceIR targetIR) :
     (WireCell.ofEvent first).targetIR =
@@ -131,7 +131,7 @@ theorem adjacentInternalEq {program : Program}
 /-- The first adjacent boundary of a path, when present, is internally
 coherent. -/
 def FirstBoundaryCoherent {program : Program} :
-    {source target : Pattern} → AuthoredPath program source target → Prop
+    {source target : Pattern} → ProgramPath program source target → Prop
   | _, _, .refl _ => True
   | _, _, .cons _ (.refl _) => True
   | _, _, .cons first (.cons second _rest) =>
@@ -140,7 +140,7 @@ def FirstBoundaryCoherent {program : Program} :
 
 theorem firstBoundaryCoherent {program : Program}
     {source target sourceIR targetIR : Pattern}
-    {path : AuthoredPath program source target}
+    {path : ProgramPath program source target}
     (certificate : Certificate path sourceIR targetIR) :
     FirstBoundaryCoherent path := by
   cases certificate with
@@ -156,7 +156,7 @@ theorem firstBoundaryCoherent {program : Program}
 path must still name an elaborable command; a nonempty path is compilable
 exactly when every adjacent pair of canonical cells agrees internally. -/
 def Compilable {program : Program} :
-    {source target : Pattern} → AuthoredPath program source target → Prop
+    {source target : Pattern} → ProgramPath program source target → Prop
   | _, _, .refl surface =>
       ∃ internal, Elaborates program surface internal
   | _, _, .cons _ (.refl _) => True
@@ -167,7 +167,7 @@ def Compilable {program : Program} :
 
 theorem compilable_of_certificate {program : Program}
     {source target sourceIR targetIR : Pattern}
-    {path : AuthoredPath program source target}
+    {path : ProgramPath program source target}
     (certificate : Certificate path sourceIR targetIR) :
     Compilable path := by
   induction certificate with
@@ -180,7 +180,7 @@ theorem compilable_of_certificate {program : Program}
             inductionHypothesis⟩
 
 theorem certificate_of_compilable {program : Program}
-    {source target : Pattern} {path : AuthoredPath program source target}
+    {source target : Pattern} {path : ProgramPath program source target}
     (compilable : Compilable path) :
     Nonempty (Σ sourceIR targetIR, Certificate path sourceIR targetIR) := by
   induction path with
@@ -209,7 +209,7 @@ theorem certificate_of_compilable {program : Program}
             .cons first _ joinedTail⟩⟩
 
 theorem nonempty_certificate_iff_compilable {program : Program}
-    {source target : Pattern} {path : AuthoredPath program source target} :
+    {source target : Pattern} {path : ProgramPath program source target} :
     Nonempty (Σ sourceIR targetIR, Certificate path sourceIR targetIR) ↔
       Compilable path := by
   constructor
@@ -219,8 +219,8 @@ theorem nonempty_certificate_iff_compilable {program : Program}
 
 theorem toWirePath_append {program : Program}
     {first middle last firstIR middleIR lastIR : Pattern}
-    {earlier : AuthoredPath program first middle}
-    {later : AuthoredPath program middle last}
+    {earlier : ProgramPath program first middle}
+    {later : ProgramPath program middle last}
     (front : Certificate earlier firstIR middleIR)
     (back : Certificate later middleIR lastIR) :
     (front.append back).toWirePath =
@@ -238,7 +238,7 @@ theorem toWirePath_append {program : Program}
 /-- Compilation retains every authored occurrence as one wire transition. -/
 theorem toWirePath_length {program : Program}
     {source target sourceIR targetIR : Pattern}
-    {path : AuthoredPath program source target}
+    {path : ProgramPath program source target}
     (certificate : Certificate path sourceIR targetIR) :
     certificate.toWirePath.length = path.length := by
   induction certificate with
@@ -275,15 +275,15 @@ private def program : Program :=
     routes := []
     routeRules := [] }
 
-private def firstEvent : AuthoredEvent program
+private def firstEvent : ProgramEvent program
     (inSpace space input) (inSpace space middle) :=
   .inSpace firstRule (by simp [program])
 
-private def secondEvent : AuthoredEvent program
+private def secondEvent : ProgramEvent program
     (inSpace space middle) (inSpace space output) :=
   .inSpace secondRule (by simp [program])
 
-private def path : AuthoredPath program
+private def path : ProgramPath program
     (inSpace space input) (inSpace space output) :=
   .cons firstEvent (.cons secondEvent (.refl _))
 
@@ -306,18 +306,18 @@ theorem positive_compilable : Certificate.Compilable path :=
 but it has no canonical strict compilation. -/
 theorem ambiguous_path_has_no_certificate :
     IsEmpty (Σ sourceIR targetIR,
-      Certificate AmbiguousIntermediateCanary.authoredPath sourceIR targetIR) :=
+      Certificate AmbiguousIntermediateCanary.programPath sourceIR targetIR) :=
   ⟨by
     rintro ⟨sourceIR, targetIR, certificate⟩
     have boundary := Certificate.firstBoundaryCoherent certificate
-    simp only [AmbiguousIntermediateCanary.authoredPath,
+    simp only [AmbiguousIntermediateCanary.programPath,
       Certificate.FirstBoundaryCoherent] at boundary
     exact AmbiguousIntermediateCanary.canonical_cells_do_not_strictly_join
       boundary⟩
 
 theorem ambiguous_path_not_compilable :
     ¬ Certificate.Compilable
-      AmbiguousIntermediateCanary.authoredPath := by
+      AmbiguousIntermediateCanary.programPath := by
   intro compilable
   obtain ⟨certificate⟩ :=
     Certificate.certificate_of_compilable compilable

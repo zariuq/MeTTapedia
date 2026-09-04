@@ -1,0 +1,174 @@
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryNodeCommonAssignment.lean:863:/-- Two exact subplan frames that tie under the common semantic key admit a
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryNodeCommonAssignment.lean:1004:/-- Equal-key members of two exact process-plan frontiers admit restoration
+Mettapedia/GSLT/LanguageDef/CheckedInferenceExtraction.lean:45:def admit (input : AdmissionInput) : Except AdmissionError CheckedGSLT :=
+Mettapedia/GSLT/LanguageDef/CheckedInferenceExtraction.lean:61:    {checked : CheckedGSLT} (hadmit : admit input = .ok checked) :
+Mettapedia/GSLT/LanguageDef/CheckedInferenceExtraction.lean:66:      simp [admit, AdmissionInput.generatedSource, hextraction] at hadmit
+Mettapedia/GSLT/LanguageDef/CheckedInferenceExtraction.lean:78:              admit input = .error (.validationFailed error) := by
+Mettapedia/GSLT/LanguageDef/CheckedInferenceExtraction.lean:79:            unfold admit
+Mettapedia/GSLT/LanguageDef/CheckedInferenceExtraction.lean:90:          have hAdmitOk : admit input = .ok admitted := by
+Mettapedia/GSLT/LanguageDef/CheckedInferenceExtraction.lean:91:            unfold admit
+Mettapedia/GSLT/LanguageDef/CheckedInferenceExtraction.lean:128:#guard admissionAccepted (admit fixtureInput)
+Mettapedia/GSLT/LanguageDef/CheckedInferenceExtraction.lean:133:        (admit { fixtureInput with profiles := { entries := [] } }) =
+Mettapedia/GSLT/LanguageDef/CheckedInferenceExtraction.lean:140:        (admit
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryVariableStopApex.lean:329:admit the exact parent-cospan apex at arbitrary canonicalization, scope, and
+Mettapedia/GSLT/LanguageDef/CostHereditaryTransportAtoms.lean:1598:compact normal forms, either of which would admit the known wrong-source-
+Mettapedia/GSLT/LanguageDef/CostElaborationDecoration.lean:10:it does not parse, typecheck, or admit terms and is therefore not a second
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryParallelFrontier.lean:3824:permutation.  Each paired occurrence must admit a common apex at every
+Mettapedia/GSLT/LanguageDef/WellSorted.lean:84:Single-binder declarations historically admit both an explicit arrow and the
+Mettapedia/GSLT/LanguageDef/GrammarInferenceExtraction.lean:328:def admit? (language : LanguageDef) (ledger : SourceLedger) :
+Mettapedia/GSLT/LanguageDef/GrammarInferenceExtraction.lean:3172:example : (admit? exprLanguage zeroLedger).isSome = true := by
+Mettapedia/GSLT/LanguageDef/GrammarInferenceExtraction.lean:3180:  simp [admit?, hgenerate, Presentation.validateV2?, zeroPresentationValid]
+Mettapedia/GSLT/LanguageDef/LFEngineCorrespondence.lean:20:Integrity: 0 sorry / 0 native_decide; corpus closed by `rfl`; `#print axioms` clean.
+Mettapedia/GSLT/LanguageDef/LFEngineCorrespondence.lean:31:-- `maxRecDepth`, an elaboration/whnf stack limit, NOT `native_decide`).
+Mettapedia/GSLT/LanguageDef/ProofGSLTArticleIdentity.lean:203:cannot admit anything new. -/
+Mettapedia/GSLT/LanguageDef/ProofGSLTArticleIdentity.lean:231:`checkRootedArticle` is sound by inheritance, so adopting it can never admit
+Mettapedia/GSLT/LanguageDef/LFRecognizerEncoding.lean:21:Integrity: 0 sorry / 0 native_decide; corpus closed by `rfl` (kernel computation on the certified
+Mettapedia/GSLT/LanguageDef/LFRecognizerEncoding.lean:32:-- `native_decide` — every proof below is still kernel-checked.
+Mettapedia/GSLT/LanguageDef/CostElaborationTransport.lean:1152:intentionally no generic default that would admit arbitrary choice changes.
+Mettapedia/GSLT/LanguageDef/MatchDecisionContract.lean:143:pattern admit a common realization iff they nowhere visibly disagree.
+Mettapedia/GSLT/LanguageDef/MaximalNativeCalculus.lean:241:/-- When recognized licensed realizations admit common upgrades, every
+Mettapedia/GSLT/LanguageDef/ProofGSLTParityAuthority.lean:479:/-- Natural numbers admit no infinite pointwise-strict descending sequence. -/
+Mettapedia/GSLT/LanguageDef/TwoPhaseFrameMachinePhysicalRefinement.lean:106:def admit? (source : SourceProgram Token width) :
+Mettapedia/GSLT/LanguageDef/LiteralHoleRunCompilation.lean:415:def admit? (source : SourceProgram Token Var) :
+Mettapedia/GSLT/LanguageDef/LiteralHoleRunCompilation.lean:550:example : (admit? parserPattern).isSome = true := by
+Mettapedia/GSLT/LanguageDef/LiteralHoleRunCompilation.lean:554:    let admitted := (admit? parserPattern).get (by decide)
+Mettapedia/GSLT/LanguageDef/LiteralHoleRunCompilation.lean:571:    let admitted := (admit? rewritePattern).get (by decide)
+Mettapedia/GSLT/LanguageDef/LiteralHoleRunCompilation.lean:588:example : (admit? nestedPattern).isSome = false := by
+Mettapedia/GSLT/LanguageDef/LiteralHoleRunCompilation.lean:596:example : (admit? scopedFormulaPattern).isSome = false := by
+Mettapedia/GSLT/LanguageDef/LiteralHoleRunCompilation.lean:604:example : (admit? escapingPattern).isSome = false := by
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:184:def admit? (language : LanguageDef) (source : CalculusSyntax) :
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:190:theorem admit?_eq_of_equation (language : LanguageDef)
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:193:    admit? language source = admit? language target := by
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:194:  unfold admit?
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:198:theorem admit?_eq_of_rewrite (language : LanguageDef)
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:201:    admit? language source = admit? language target := by
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:202:  unfold admit?
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:209:    (admitted : admit? language source = some checked) :
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:211:  unfold admit? at admitted
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:226:    (admitted : admit? language source = some checked) :
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:228:  unfold admit? at admitted
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:246:    (admitted : admit? language source = some checked)
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:304:recovers `admit?` exactly. -/
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:305:theorem admit?_eq_map_admitCalculus? (language : LanguageDef)
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:307:    admit? language source =
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:312:      simp [admit?, elaborateDefinition?, admitCalculus?, elaborated]
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:316:      · simp [admit?, elaborateDefinition?, admitCalculus?, elaborated,
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:318:      · simp [admit?, elaborateDefinition?, admitCalculus?, elaborated,
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:422:    admit? canaryLanguage canarySource = some canaryChecked := by
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:423:  simp [admit?, canarySource, elaborateDefinition?, canaryChecked,
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:484:    admit? canaryLanguage
+Mettapedia/GSLT/LanguageDef/CalculusExtension.lean:486:  unfold admit?
+Mettapedia/GSLT/LanguageDef/GroundLinearHeadCompilation.lean:38:def admit? (source : Pat Symbol) : Option (AdmittedLinearHead Symbol) :=
+Mettapedia/GSLT/LanguageDef/GroundLinearHeadCompilation.lean:45:theorem admit?_isSome_iff (source : Pat Symbol) :
+Mettapedia/GSLT/LanguageDef/GroundLinearHeadCompilation.lean:46:    (admit? source).isSome = true ↔ Linear source := by
+Mettapedia/GSLT/LanguageDef/GroundLinearHeadCompilation.lean:47:  simp [admit?, Linear]
+Mettapedia/GSLT/LanguageDef/GroundLinearHeadCompilation.lean:97:    (admit? nestedLinear).map compile = some { variableOrder := [4, 9] } ∧
+Mettapedia/GSLT/LanguageDef/GroundLinearHeadCompilation.lean:98:    (admit? wideLinear).map compile =
+Mettapedia/GSLT/LanguageDef/GroundLinearHeadCompilation.lean:104:example : (admit? nonlinear).isSome = false := by
+Mettapedia/GSLT/LanguageDef/PreparedIndexedValueTableCompilation.lean:173:def admit? [DecidableEq Role] (source : SourceProgram Role Value) :
+Mettapedia/GSLT/LanguageDef/PreparedIndexedValueTableCompilation.lean:249:example : (admit? parserProgram).isSome = true := by
+Mettapedia/GSLT/LanguageDef/PreparedIndexedValueTableCompilation.lean:253:    let admitted := (admit? parserProgram).get (by decide)
+Mettapedia/GSLT/LanguageDef/PreparedIndexedValueTableCompilation.lean:275:    let admitted := (admit? processProgram).get (by decide)
+Mettapedia/GSLT/LanguageDef/PreparedIndexedValueTableCompilation.lean:295:example : (admit? mutableProgram).isSome = false := by
+Mettapedia/GSLT/LanguageDef/PreparedIndexedValueTableCompilation.lean:303:example : (admit? escapingProgram).isSome = false := by
+Mettapedia/GSLT/LanguageDef/PreparedIndexedValueTableCompilation.lean:316:example : (admit? ambiguousProgram).isSome = false := by
+Mettapedia/GSLT/LanguageDef/CompiledPlanLowering.lean:807:own output: the physical plan is reconstructed by `admit?` and compared with
+Mettapedia/GSLT/LanguageDef/CompiledPlanLowering.lean:812:    match admit? program with
+Mettapedia/GSLT/LanguageDef/CompiledPlanLowering.lean:819:/-- Decode and structurally admit the compiler output.  Physical bounds are
+Mettapedia/GSLT/LanguageDef/CompiledPlanLowering.lean:835:      admit? program = some admitted ∧
+Mettapedia/GSLT/LanguageDef/CompiledPlanLowering.lean:840:    cases admission : admit? program with
+Mettapedia/GSLT/LanguageDef/CompiledPlanLowering.lean:1744:      admit? binaryWireProgram = some { rules := [binaryAdmittedRule] } := by
+Mettapedia/GSLT/LanguageDef/CompiledPlanLowering.lean:1745:    simp [admit?, decodeRule?, decodeTerm?, decodeTerms?, slice?,
+Mettapedia/GSLT/LanguageDef/CompiledPlanLowering.lean:1835:  have rejected : admit? sparseWireProgram = none := by
+Mettapedia/GSLT/LanguageDef/CompiledPlanLowering.lean:1836:    unfold admit?
+Mettapedia/GSLT/LanguageDef/FlatVariableHeadCompilation.lean:126:def admit? (source : Atom) : Option AdmittedFlatHead :=
+Mettapedia/GSLT/LanguageDef/FlatVariableHeadCompilation.lean:132:theorem admit?_isSome_eq_compile?_isSome (source : Atom) :
+Mettapedia/GSLT/LanguageDef/FlatVariableHeadCompilation.lean:133:    (admit? source).isSome = (compile? source).isSome := by
+Mettapedia/GSLT/LanguageDef/FlatVariableHeadCompilation.lean:134:  unfold admit?
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:335:def admit? (program : Program) : Option AdmittedProgram := do
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:347:  (admit? program).isSome
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:353:  admit? program
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:357:    admitBytes? (encodeProgram program) = admit? program := by
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:369:    admit? canaryProgram = some { rules := [canaryAdmittedRule] } := by
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:370:  simp [admit?, decodeRule?, decodeTerm?, decodeTerms?, slice?, exactCover,
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:394:  simp [accepted, admit?, decodeRule?, decodeTerm?,
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:403:  simp [accepted, admit?, decodeRule?, decodeTerm?, decodeTerms?, slice?,
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:421:  simp [accepted, admit?, decodeRule?, decodeTerm?, decodeTerms?, slice?,
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:460:  change (admit? sparseVariableProgram).isSome = false
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:474:  have rejected : admit? sparseVariableProgram = none := by
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:475:    unfold admit?
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:488:  simp [accepted, admit?, decodeRule?, decodeTerm?, decodeTerms?, slice?,
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:518:  change (admit? duplicateNameProgram).isSome = false
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:519:  have rejected : admit? duplicateNameProgram = none := by
+Mettapedia/GSLT/LanguageDef/CompiledPlanAdmission.lean:520:    simp [admit?, decodeRule?, decodeTerm?, decodeTerms?, slice?,
+Mettapedia/GSLT/LanguageDef/CostElaborationDisplayed.lean:160:decorations admit a lift even when the retained proof terms differ. -/
+Mettapedia/GSLT/LanguageDef/FixedHeadBucketCompilation.lean:69:def admit? (source query : Atom) : Option BucketedComparison :=
+Mettapedia/GSLT/LanguageDef/FixedHeadBucketCompilation.lean:76:theorem admit?_isSome_iff (source query : Atom) :
+Mettapedia/GSLT/LanguageDef/FixedHeadBucketCompilation.lean:77:    (admit? source query).isSome = true ↔
+Mettapedia/GSLT/LanguageDef/FixedHeadBucketCompilation.lean:79:  simp [admit?]
+Mettapedia/GSLT/LanguageDef/FixedHeadBucketCompilation.lean:142:    (admit? clauseHead clauseQuery).map (execute ∘ compile) = some true := by
+Mettapedia/GSLT/LanguageDef/FixedHeadBucketCompilation.lean:148:    (admit? evaluatorHead evaluatorQuery).map (execute ∘ compile) =
+Mettapedia/GSLT/LanguageDef/FixedHeadBucketCompilation.lean:154:    (admit? evaluatorHead {
+Mettapedia/GSLT/LanguageDef/EpochStampedSlotCompilation.lean:91:def admit?
+Mettapedia/GSLT/LanguageDef/EpochStampedSlotCompilation.lean:195:example : (admit? parserBuffer 9 parserTransaction).isSome = true := by
+Mettapedia/GSLT/LanguageDef/EpochStampedSlotCompilation.lean:203:example : (admit? collidingBuffer 9 parserTransaction).isSome = false := by
+Mettapedia/GSLT/LanguageDef/GroundDenseHeadCompilation.lean:270:def admit? (inventory : Inventory Nat) (source : Pat Symbol) :
+Mettapedia/GSLT/LanguageDef/ConstructorGuidedUnificationCompilation.lean:57:def admit?
+Mettapedia/GSLT/LanguageDef/ContiguousSliceCompilation.lean:201:def admit? [DecidableEq α] (source : List (List α)) :
+Mettapedia/GSLT/LanguageDef/ContiguousSliceCompilation.lean:260:example : (admit? proofFormulaVectors).isSome = true := by
+Mettapedia/GSLT/LanguageDef/ContiguousSliceCompilation.lean:263:example : (admit? parserTokenSpans).isSome = true := by
+Mettapedia/GSLT/LanguageDef/ContiguousSliceCompilation.lean:267:example : (admit? ([[1, 2], []] : List (List Nat))).isSome = false := by
+Mettapedia/GSLT/LanguageDef/CompiledPlanLoweringCompleteness.lean:1279:theorem admit?_compile_of_locallySupported (source : TypedProgram)
+Mettapedia/GSLT/LanguageDef/CompiledPlanLoweringCompleteness.lean:1281:    admit? (compile source) = some source.toAdmitted := by
+Mettapedia/GSLT/LanguageDef/CompiledPlanLoweringCompleteness.lean:1364:  unfold admit?
+Mettapedia/GSLT/LanguageDef/CompiledPlanLoweringCompleteness.lean:1391:  have admission := admit?_compile_of_locallySupported source supported
+Mettapedia/GSLT/LanguageDef/CompiledPlanGroundDenseCompilation.lean:474:def admit? (width : UInt32) (source : Term) : Option AdmittedGroundHead :=
+Mettapedia/GSLT/LanguageDef/CompiledPlanGroundDenseCompilation.lean:482:theorem admit?_complete_of_all_lt
+Mettapedia/GSLT/LanguageDef/CompiledPlanGroundDenseCompilation.lean:486:    ∃ admitted, admit? width source = some admitted := by
+Mettapedia/GSLT/LanguageDef/CompiledPlanGroundDenseCompilation.lean:489:  unfold admit?
+Mettapedia/GSLT/LanguageDef/CompiledPlanGroundDenseCompilation.lean:502:    (accepted : admit? width source = some admitted) (target : GroundTerm) :
+Mettapedia/GSLT/LanguageDef/CompiledPlanGroundDenseCompilation.lean:507:  unfold admit? at accepted
+Mettapedia/GSLT/LanguageDef/CompiledPlanGroundDenseCompilation.lean:575:    match admit? 1 parserShape with
+Mettapedia/GSLT/LanguageDef/CompiledPlanGroundDenseCompilation.lean:585:    match admit? 1 parserShape with
+Mettapedia/GSLT/LanguageDef/CompiledPlanOptimizationPipeline.lean:72:      CompiledPlanGroundDenseCompilation.admit?
+Mettapedia/GSLT/LanguageDef/CompiledPlanOptimizationPipeline.lean:441:  IndexedInstructionStreamCompilation.admit?
+Mettapedia/GSLT/LanguageDef/CompiledPlanOptimizationPipeline.lean:453:  unfold IndexedInstructionStreamCompilation.admit? at success
+Mettapedia/GSLT/LanguageDef/CompiledPlanOptimizationPipeline.lean:637:    CompiledPlanGroundDenseCompilation.admit?_complete_of_all_lt
+Mettapedia/GSLT/LanguageDef/CompiledPlanFlatHeadCompilation.lean:124:def admit? (source : Term) : Option AdmittedFlatHead :=
+Mettapedia/GSLT/LanguageDef/IndexedInstructionStreamCompilation.lean:242:def admit? (plan : Plan) (chunks : List (List UInt8)) :
+Mettapedia/GSLT/LanguageDef/CompiledPlanConstructorGuidedCompilation.lean:110:def admit?
+Mettapedia/GSLT/LanguageDef/LiteralHeadSeparationCompilation.lean:346:  (LiteralHoleRunCompilation.admit? parserSource).get (by decide)
+Mettapedia/GSLT/LanguageDef/LiteralHeadSeparationCompilation.lean:371:  (LiteralHoleRunCompilation.admit? rewriteSource).get (by decide)
+Mettapedia/GSLT/LanguageDef/NIKMetalogic.lean:3103:/-- Finite candidate enumeration and a finite input fragment always admit a
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/CostHereditaryObjectReduction.lean:8:Both open hypotheses of the rho Cost₁ object admit proved reductions to
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1539:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1566:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1573:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1582:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1591:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1615:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1621:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1626:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1657:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1669:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1681:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1706:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1756:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1760:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1764:  native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Basic.lean:1779:  · native_decide
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Cost/DeploymentAcceptance.lean:224:def admit (state : FundingValidatorState Cell)
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Cost/DeploymentAcceptance.lean:235:    state.admit deployment = state := by
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Cost/DeploymentAcceptance.lean:236:  simp [admit, DeploymentDecision.check, insufficient]
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Cost/DeploymentAcceptance.lean:242:    (state.admit deployment).available =
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Cost/DeploymentAcceptance.lean:244:  simp [admit, DeploymentDecision.check, funded, DeploymentReservation.of_le]
+Mettapedia/GSLT/LanguageDef/LFEngineParserSim.lean:9:Integrity: 0 sorry / 0 native_decide.
+Mettapedia/Languages/ProcessCalculi/RhoCalculus/Cost/ParallelBudgetExamples.lean:8:unit of fuel and by every larger allowance, while zero fuel cannot admit it.
+Mettapedia/GSLT/LanguageDef/LFEngineResolveSim.lean:16:Integrity: 0 sorry / 0 native_decide; `#print axioms` clean.
+Mettapedia/GSLT/LanguageDef/LFEngineReduce.lean:6:pretty-prints), and `native_decide` is banned — so no corpus-through-the-real-engine proof by
+Mettapedia/GSLT/LanguageDef/LFEngineReduce.lean:26:Integrity: 0 sorry / 0 native_decide; `eval_fires` axioms = `{propext}`.
+Mettapedia/GSLT/LanguageDef/LFEngineProbe.lean:14:    which the kernel reduces cheaply — and `native_decide` is prohibited here.  So a
+Mettapedia/GSLT/LanguageDef/LFCorrespondence.lean:17:Integrity: 0 sorry / 0 native_decide; `#print axioms` clean.
+Mettapedia/GSLT/LanguageDef/LFEngineUniversal.lean:20:Integrity: 0 sorry / 0 native_decide; `#print axioms` clean.
+Mettapedia/GSLT/LanguageDef/LFEngineSim.lean:18:Integrity: 0 sorry / 0 native_decide; `#print axioms` clean.
+Mettapedia/GSLT/LanguageDef/LFEngineShiftSim.lean:9:Integrity: 0 sorry / 0 native_decide; `#print axioms` clean.

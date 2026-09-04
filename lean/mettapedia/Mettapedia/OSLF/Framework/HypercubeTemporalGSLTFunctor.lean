@@ -20,6 +20,7 @@ Core result:
 namespace Mettapedia.OSLF.Framework.HypercubeTemporalGSLTFunctor
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.LangMorphism
 open Mettapedia.ProbabilityTheory.Hypercube
@@ -37,6 +38,21 @@ theorem langReduces_mono_vertex_temporal {v w : ProbabilityVertex} (h : v ≤ w)
     (activeRulesWithTemporal_subset_of_le h)
     hred
 
+/-- The canonical equation-saturated step is monotone along the temporal
+hypercube.  These presentations have no equation generators, so the proof is
+the identity-equivalence specialization of the one semantic relation. -/
+theorem langSemanticReduces_mono_vertex_temporal
+    {v w : ProbabilityVertex} (h : v ≤ w) {p q : Pattern}
+    (hred : langSemanticReduces (vertexTemporalLanguageDef w) p q) :
+    langSemanticReduces (vertexTemporalLanguageDef v) p q := by
+  apply langReduces_to_semantic
+  apply langReduces_mono_vertex_temporal h
+  have raw :=
+    (langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+      RelationEnv.empty (lang := vertexTemporalLanguageDef w) (by rfl) p q).mp
+      (by simpa [langSemanticReduces] using hred)
+  simpa [langReduces] using raw
+
 theorem langReducesStar_mono_vertex_temporal {v w : ProbabilityVertex} (h : v ≤ w)
     {p q : Pattern}
     (hred : LangReducesStar (vertexTemporalLanguageDef w) p q) :
@@ -44,14 +60,22 @@ theorem langReducesStar_mono_vertex_temporal {v w : ProbabilityVertex} (h : v �
   induction hred with
   | refl _ => exact .refl _
   | step h_pq _ ih =>
-    exact .step (langReduces_mono_vertex_temporal h h_pq) ih
+    exact .step (langSemanticReduces_mono_vertex_temporal h h_pq) ih
 
 /-! ## Forward Morphism and Fiber -/
 
 def weaknessForwardMorphism_temporal {v w : ProbabilityVertex} (h : v ≤ w) :
     ForwardMorphism (vertexTemporalLanguageDef w) (vertexTemporalLanguageDef v) where
   mapTerm := id
-  forward_sim _ q hred := ⟨q, .single (langReduces_mono_vertex_temporal h hred), rfl⟩
+  map_equiv := by
+    intro left right equivalent
+    have equal : left = right :=
+      (langGSLT_equiv_iff_eq_of_equation_free
+        (lang := vertexTemporalLanguageDef w) (by rfl) left right).mp equivalent
+    subst right
+    exact (langGSLT (vertexTemporalLanguageDef v)).equations.refl _
+  forward_sim _ q hred :=
+    ⟨q, .single (langSemanticReduces_mono_vertex_temporal h hred), rfl⟩
 
 def gsltTemporalForwardFiber : ForwardFiber ProbabilityVertex where
   lang := vertexTemporalLanguageDef
@@ -76,10 +100,13 @@ noncomputable def vertexTemporalGalois (v : ProbabilityVertex) :=
 
 theorem diamond_mono_vertex_temporal {v w : ProbabilityVertex} (h : v ≤ w)
     {φ : Pattern → Prop} {p : Pattern}
-    (hdiam : ∃ q, langReduces (vertexTemporalLanguageDef w) p q ∧ φ q) :
-    ∃ q, langReduces (vertexTemporalLanguageDef v) p q ∧ φ q := by
+    (hdiam : langDiamond (vertexTemporalLanguageDef w)
+      (equationPredicateOfEquationFree (by rfl) φ) p) :
+    langDiamond (vertexTemporalLanguageDef v)
+      (equationPredicateOfEquationFree (by rfl) φ) p := by
+  rw [langDiamond_spec] at hdiam ⊢
   obtain ⟨q, hred, hphi⟩ := hdiam
-  exact ⟨q, langReduces_mono_vertex_temporal h hred, hphi⟩
+  exact ⟨q, langSemanticReduces_mono_vertex_temporal h hred, hphi⟩
 
 /-! ## Examples -/
 

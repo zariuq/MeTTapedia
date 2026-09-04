@@ -1013,13 +1013,13 @@ noncomputable def semanticRelationEnv (model : Model) (space : model.Space)
           []
     | _, _ => []
 
-/-- Compatibility follows from Zero's authored empty equation list for every
-semantic relation environment. -/
+/-- Compatibility follows because Zero's root presentation generates no
+equations: it has neither authored equations nor collection-law declarations. -/
 abbrev reductionRespectsEquations (model : Model) (space : model.Space)
     (spaceTerm : Pattern) :
     ReductionRespectsEquationsUsing
       (semanticRelationEnv model space spaceTerm) language :=
-  ReductionRespectsEquationsUsing.of_no_equations
+  ReductionRespectsEquationsUsing.of_equation_free
     (semanticRelationEnv model space spaceTerm) rfl
 
 /-- **MeTTa Zero as one GSLT.**  Its authored requests reduce directly under
@@ -1041,17 +1041,28 @@ theorem totalTheory_rewrites (model : Model) (space : model.Space)
     (spaceTerm : Pattern) :
     (totalTheory model space spaceTerm).rewrites =
       langReducesUsing (semanticRelationEnv model space spaceTerm) language :=
-  rfl
+  by
+    funext source target
+    apply propext
+    exact languageGSLTUsing_step
+      (semanticRelationEnv model space spaceTerm) language
+      (reductionRespectsEquations model space spaceTerm) source target
 
 /-- The authored root declares no equations. -/
 theorem totalTheory_object_equations_empty : language.equations = [] :=
+  rfl
+
+/-- The root also declares no bag, set, or collection algebra, so its complete
+generated equation theory is empty. -/
+theorem totalTheory_object_equationFree : language.isEquationFree = true :=
   rfl
 
 /-- Consequently the total theory's equivalence is exactly syntactic equality. -/
 theorem totalTheory_equiv (model : Model) (space : model.Space)
     (spaceTerm source target : Pattern) :
     (totalTheory model space spaceTerm).Equiv source target ↔ source = target :=
-  equationEquiv_iff_eq_of_no_generators rfl source target
+  equationEquiv_iff_eq_of_no_generators totalTheory_object_equationFree
+    source target
 
 /-- One-step reduction in the total theory is precisely authored reduction
 under the semantic relation environment. -/
@@ -1060,7 +1071,8 @@ theorem totalTheory_step (model : Model) (space : model.Space)
     (totalTheory model space spaceTerm).Step source target ↔
       langReducesUsing (semanticRelationEnv model space spaceTerm)
         language source target :=
-  Iff.rfl
+  languageGSLTUsing_step (semanticRelationEnv model space spaceTerm) language
+    (reductionRespectsEquations model space spaceTerm) source target
 
 end TotalTheory
 

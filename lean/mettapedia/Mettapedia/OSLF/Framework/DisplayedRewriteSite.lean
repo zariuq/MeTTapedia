@@ -3,7 +3,7 @@ import Mettapedia.OSLF.MeTTaIL.DerivedContexts
 /-!
 # Displayed source sites of authored rewrites
 
-The syntactic OSLF construction is indexed by selected occurrences in the
+The source-indexed OSLF construction is indexed by selected occurrences in the
 source side of authored rewrites.  A selected occurrence is not merely a
 pattern that happens to occur somewhere: it retains the rewrite-list index,
 the focused pattern, the one-hole context, and evidence that filling the

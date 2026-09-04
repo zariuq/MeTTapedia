@@ -88,21 +88,28 @@ inductive Reduces : Pattern → Pattern → Type where
 
 infix:50 " ⇝ " => Reduces
 
-/-! ## Modal Operators via Reduction -/
+/-! ## Raw operational predicate transformers
+
+These helpers query the unrestricted `Pattern` receipt relation directly.
+They are useful inside the direct rho typing development, but they are not the
+rho OSLF: OSLF observations must be invariant under the semantic equation
+setoid and are constructed in `OSLF/Framework/RhoInstance.lean`.
+-/
 
 /-- Possibly: ◇φ = { p | ∃q. p ⇝ q ∧ q ∈ φ } -/
-def possiblyProp (φ : Pattern → Prop) : Pattern → Prop :=
+def rawStepFuture (φ : Pattern → Prop) : Pattern → Prop :=
   fun p => ∃ q, Nonempty (p ⇝ q) ∧ φ q
 
 /-- Rely: ⧫φ = { p | ∀q. q ⇝ p → q ∈ φ } -/
-def relyProp (φ : Pattern → Prop) : Pattern → Prop :=
+def rawStepPast (φ : Pattern → Prop) : Pattern → Prop :=
   fun p => ∀ q, Nonempty (q ⇝ p) → φ q
 
-/-! ## Galois Connection -/
+/-! ## Raw relational adjunction -/
 
 /-- Galois connection: possibly ⊣ rely -/
-theorem galois_connection (φ ψ : Pattern → Prop) :
-    (∀ p, possiblyProp φ p → ψ p) ↔ (∀ p, φ p → relyProp ψ p) := by
+theorem rawStepGalois (φ ψ : Pattern → Prop) :
+    (∀ p, rawStepFuture φ p → ψ p) ↔
+      (∀ p, φ p → rawStepPast ψ p) := by
   constructor
   · intro h p hp q hqp
     apply h
@@ -116,17 +123,18 @@ theorem galois_connection (φ ψ : Pattern → Prop) :
 def ProcessPred := Pattern → Prop
 
 theorem possibly_pointwise (φ : ProcessPred) (p : Pattern) :
-    possiblyProp φ p → (∃ q, φ q) := by
+    rawStepFuture φ p → (∃ q, φ q) := by
   intro ⟨q, _, hq⟩
   exact ⟨q, hq⟩
 
 theorem rely_pointwise (φ : ProcessPred) (p : Pattern) :
-    (∀ q, φ q) → relyProp φ p := by
+    (∀ q, φ q) → rawStepPast φ p := by
   intro hall q _
   exact hall q
 
 theorem rely_possibly_true_eq_true :
-    relyProp (possiblyProp (fun _ : Pattern => True)) = (fun _ => True) := by
+    rawStepPast (rawStepFuture (fun _ : Pattern => True)) =
+      (fun _ => True) := by
   funext p
   apply propext
   constructor
@@ -407,9 +415,9 @@ theorem ioCount_eq_zero_of_emptyBag_SC {p : Pattern}
 This file now contains the SC-quotiented irreducibility theorem
 `emptyBag_SC_irreducible` at the raw `Reduces` level.
 
-For the executable OSLF pipeline, we also keep the operational counterparts:
+For the executable and generated semantic pipelines, we also keep the counterparts:
 - `RhoCalculus/Engine.lean` (`emptyBag_reduceStep_nil`)
-- `Framework/TypeSynthesis.lean` (`rhoCalc_emptyBag_langReduces_irreducible`)
+- `Framework/TypeSynthesis.lean` (`rhoCalc_SC_emptyBag_no_diamondTop_of_soundBridge`)
 -/
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction

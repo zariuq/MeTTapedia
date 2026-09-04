@@ -71,7 +71,7 @@ instance itself continues to retain orientation, bindings, premise evidence,
 and exact endpoints. -/
 def CostEquationInstanceOrigin (source : CIGSLT)
     {redex contractum : Pattern}
-    (witness : EquationSemantics.AuthoredEquationInstanceWitness
+    (witness : EquationSemantics.DeclaredEquationInstanceWitness
       defaultBasePremises source.costWholeLanguage redex contractum) : Type :=
   match witness with
   | .forward _ equation _ _ _ _ _ =>
@@ -83,7 +83,7 @@ def CostEquationInstanceOrigin (source : CIGSLT)
 declaration origin. -/
 theorem nonempty_costEquationInstanceOrigin
     (source : CIGSLT) {redex contractum : Pattern}
-    (witness : EquationSemantics.AuthoredEquationInstanceWitness
+    (witness : EquationSemantics.DeclaredEquationInstanceWitness
       defaultBasePremises source.costWholeLanguage redex contractum) :
     Nonempty (CostEquationInstanceOrigin source witness) := by
   cases witness with

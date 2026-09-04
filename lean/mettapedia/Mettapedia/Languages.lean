@@ -1,5 +1,6 @@
 import Mettapedia.Languages.GF
 import Mettapedia.Languages.IMP
+import Mettapedia.Languages.KIF
 import Mettapedia.Languages.Lean
 import Mettapedia.Languages.MM0
 import Mettapedia.Languages.MM0Lite

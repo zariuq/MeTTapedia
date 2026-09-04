@@ -42,4 +42,5 @@ import Mettapedia.ProbabilityTheory.Hypercube.StayWellsConstruction
 import Mettapedia.ProbabilityTheory.Hypercube.Taxonomy
 import Mettapedia.ProbabilityTheory.Hypercube.ThetaSemantics
 import Mettapedia.ProbabilityTheory.Hypercube.UnifiedTheory
+import Mettapedia.ProbabilityTheory.Hypercube.OrthomodularVertex
 import Mettapedia.ProbabilityTheory.Hypercube.WeaknessOrder

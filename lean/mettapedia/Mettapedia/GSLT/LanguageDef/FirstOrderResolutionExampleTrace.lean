@@ -210,12 +210,13 @@ theorem no_unchecked_resolvent_crossing :
 /-- Certificates are data.  Checking them belongs to another presentation. -/
 def theory : Mettapedia.GSLT.GSLT :=
   languageGSLT language
-    (ReductionRespectsEquations.of_no_equations rfl)
+    (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem theory_no_step (source target : Pattern) :
     ¬ theory.Step source target := by
   intro reduction
-  change langReducesUsing RelationEnv.empty language source target at reduction
+  unfold theory at reduction
+  rw [languageGSLT_step] at reduction
   unfold langReducesUsing at reduction
   rcases reduction with ⟨_, step⟩
   cases step with

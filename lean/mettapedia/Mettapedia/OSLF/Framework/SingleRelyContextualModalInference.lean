@@ -370,7 +370,7 @@ theorem elimination_discharges_operational_evidence
 /-- The admitted flat record denotes one combined GSLT. -/
 def theory (relySort resultSort : CarrierUniverseSignature.Code) :
     Mettapedia.GSLT.GSLT :=
-  (definition relySort resultSort).toGSLTOfNoEquations
+  (definition relySort resultSort).toGSLTOfEquationFree
     (definition_valid relySort resultSort) rfl
 
 theorem theory_term (relySort resultSort : CarrierUniverseSignature.Code) :

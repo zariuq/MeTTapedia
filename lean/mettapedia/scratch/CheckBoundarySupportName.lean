@@ -1,0 +1,6 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryPlanOccurrenceAvailability
+
+#check Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticRegionNode.CostStaticRegionPlan.boundaryTargetSupport_eq_sourceAvailable_or_nil
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticRegionNode
+#check CostStaticRegionPlan.boundaryTargetSupport_eq_sourceAvailable_or_nil

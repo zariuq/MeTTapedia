@@ -33,8 +33,13 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.CategoryBridge
 open Mettapedia.OSLF.Framework.ConstructorCategory
+
+private def metamathEquationPredicate (predicate : Pattern → Prop) :
+    EquationPredicate (langGSLT metamathCore) :=
+  equationPredicateOfEquationFree (by rfl) predicate
 
 def mmStmtSort : LangSort metamathCore :=
   LangSort.mk' metamathCore "Stmt" (by decide)
@@ -132,9 +137,12 @@ theorem dbOne_in_stmtDatabaseOrbitFiber :
   exact ⟨mmStmtSort, dbOneArrow.toPath, rfl⟩
 
 theorem minimalCompile_begin_diamond :
-    langDiamond metamathCore (fun q => q = minimalCompileAfterLower) minimalCompileStart := by
+    langDiamond metamathCore
+      (metamathEquationPredicate (fun q => q = minimalCompileAfterLower))
+      minimalCompileStart := by
   rw [langDiamond_spec]
   refine ⟨minimalCompileAfterLower, ?_, rfl⟩
+  apply langReduces_to_semantic metamathCore
   apply exec_to_langReducesUsing
     (relEnv := Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
     (lang := metamathCore)

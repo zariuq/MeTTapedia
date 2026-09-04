@@ -1,5 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.NIKAdmissionDoctrineCrown
-import Mettapedia.GSLT.LanguageDef.MaximalNativeCalculus
+import Mettapedia.GSLT.LanguageDef.NIK
 import Mettapedia.GSLT.LanguageDef.NIKCompositionCapabilitySelection
 import Mettapedia.GSLT.Core.PolicyFamilyTransport
 import Mettapedia.GSLT.Dynamics.ObservationPolicyFamilyUniversal

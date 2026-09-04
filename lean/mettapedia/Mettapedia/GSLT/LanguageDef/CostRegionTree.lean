@@ -74,7 +74,7 @@ theorem decodeDeclaredCostStaticConstructor_symbols_of_wrapped
     (wrapped : rule.label ∈ source.continuationRetyping.wrappedLabels) :
     decodeDeclaredCostStaticConstructor source color
         ((color.symbols source).constructor rule.label) = some rule.label := by
-  let authored : AuthoredConstructor
+  let authored : DeclaredConstructor
       source.theory.presentation.presentation := ⟨rule, membership⟩
   have wrappedConstructor : authored ∈
       source.continuationRetyping.wrappedConstructors :=
@@ -207,7 +207,7 @@ theorem WellSorted.ElementsHaveType.extendOuter
 /-- Mapping a declaration's type and constructor names cannot change whether
 an already-concrete argument uses the required binder representation. -/
 theorem WellSorted.matchesParameterRepresentation_mapTermParam_iff
-    (symbols : PresentationSymbols) (parameter : TermParam)
+    (symbols : LanguageDefSymbolMap) (parameter : TermParam)
     (argument : Pattern) :
     WellSorted.MatchesParameterRepresentation
         (mapTermParam symbols parameter) argument ↔
@@ -7434,7 +7434,7 @@ collection representation are not erased to result types during inversion. -/
 structure CostStaticConstructorPreimage (source : CIGSLT)
     (color : CostStaticColor)
     (constructor : source.DeclaredCostConstructor) where
-  sourceConstructor : AuthoredConstructor
+  sourceConstructor : DeclaredConstructor
     source.theory.presentation.presentation
   wrapped : sourceConstructor ∈
     source.continuationRetyping.wrappedConstructors

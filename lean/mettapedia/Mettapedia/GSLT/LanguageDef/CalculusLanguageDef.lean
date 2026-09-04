@@ -34,13 +34,13 @@ The five original fields are untouched and remain canonical: `toLanguageDef`
 is a plain field selection.  The checker, totalizer, and downstream compilers
 consume this same flat object; there is no parallel pair representation.
 
-`toGSLT` is the point.  An admitted `CalculusLanguageDef` whose reductions
-respect its equations denotes one GSLT — one carrier, one equation relation,
-one reduction relation — with the object language embedding faithfully, the
-rules embedding faithfully, and no step crossing between them:
-`toGSLT_object_step`, `toGSLT_proof_step`, `toGSLT_no_crossing`, and
-`toGSLT_derivability`.  `toGSLTOfNoEquations` discharges the equation law for
-the common exact-syntax case.
+`toGSLTUsing` is the general point.  An admitted `CalculusLanguageDef` whose
+reductions respect its equations in an explicit relation environment denotes
+one GSLT — one carrier, one equation relation, and one reduction relation —
+with the object language embedding faithfully, the rules embedding
+faithfully, and no step crossing between them.  `toGSLT` is exactly its empty
+relation-environment specialization, while the two no-equation conveniences
+discharge the compatibility law for exact-syntax languages.
 
 ## When a further field may be added
 
@@ -145,16 +145,112 @@ abbrev validated (admitted : extended.isAdmitted = true) :
 
 An admitted extended language *is* a GSLT. -/
 
+/-- **The relation-aware theory.**  Premise-bearing object rewrites use the
+supplied relation environment; proof search remains the admitted generic
+calculus. -/
+def toGSLTUsing (relations : RelationEnv)
+    (admitted : extended.isAdmitted = true)
+    (laws : ReductionRespectsEquationsUsing relations
+      extended.toLanguageDef) : GSLT :=
+  combinedGSLTUsing relations (extended.validated admitted) laws
+
+/-- Convenient relation-aware totalization for equation-free languages. -/
+def toGSLTUsingOfEquationFree (relations : RelationEnv)
+    (admitted : extended.isAdmitted = true)
+    (free : extended.toLanguageDef.isEquationFree = true) : GSLT :=
+  extended.toGSLTUsing relations admitted
+    (ReductionRespectsEquationsUsing.of_equation_free relations free)
+
 /-- **The one theory.**  The additional law is exactly the compatibility
-required for authored rewrites to descend through authored equations. -/
+required for authored rewrites to descend through authored equations in the
+empty relation environment. -/
 def toGSLT (admitted : extended.isAdmitted = true)
     (laws : ReductionRespectsEquations extended.toLanguageDef) : GSLT :=
   combinedGSLT (extended.validated admitted) laws
 
-/-- Convenient totalization for languages whose equation list is empty. -/
-def toGSLTOfNoEquations (admitted : extended.isAdmitted = true)
-    (empty : extended.equations = []) : GSLT :=
-  extended.toGSLT admitted (ReductionRespectsEquations.of_no_equations empty)
+/-- Convenient totalization for languages with no equation generators. -/
+def toGSLTOfEquationFree (admitted : extended.isAdmitted = true)
+    (free : extended.toLanguageDef.isEquationFree = true) : GSLT :=
+  extended.toGSLT admitted (ReductionRespectsEquations.of_equation_free free)
+
+theorem toGSLT_eq_toGSLTUsing_empty (admitted : extended.isAdmitted = true)
+    (laws : ReductionRespectsEquations extended.toLanguageDef) :
+    extended.toGSLT admitted laws =
+      extended.toGSLTUsing RelationEnv.empty admitted laws :=
+  rfl
+
+/-- **The relation-aware carrier**: an object pattern, or a proof-obligation
+state. -/
+theorem toGSLTUsing_Term (relations : RelationEnv)
+    (admitted : extended.isAdmitted = true)
+    (laws : ReductionRespectsEquationsUsing relations
+      extended.toLanguageDef) :
+    (extended.toGSLTUsing relations admitted laws).Term =
+      (Pattern ⊕ GoalState) :=
+  rfl
+
+/-- **The relation-aware reduction relation**: object reduction under the
+supplied premise interpretation on the left and generic proof search on the
+right. -/
+theorem toGSLTUsing_rewrites (relations : RelationEnv)
+    (admitted : extended.isAdmitted = true)
+    (laws : ReductionRespectsEquationsUsing relations
+      extended.toLanguageDef) :
+    (extended.toGSLTUsing relations admitted laws).rewrites =
+      GSLT.SumStep
+        (languageGSLTUsing relations extended.toLanguageDef laws)
+        (proofSearchGSLT (extended.validated admitted)) :=
+  rfl
+
+/-- **The object projection is exact in the supplied environment.** -/
+theorem toGSLTUsing_object_step (relations : RelationEnv)
+    (admitted : extended.isAdmitted = true)
+    (laws : ReductionRespectsEquationsUsing relations
+      extended.toLanguageDef)
+    (source target : Pattern) :
+    (extended.toGSLTUsing relations admitted laws).Step
+        (inLanguage source) (inLanguage target) ↔
+      langReducesUsing relations extended.toLanguageDef source target :=
+  combinedGSLTUsing_language_step relations (extended.validated admitted)
+    laws source target
+
+/-- **The calculus projection is independent of the object environment.** -/
+theorem toGSLTUsing_proof_step (relations : RelationEnv)
+    (admitted : extended.isAdmitted = true)
+    (laws : ReductionRespectsEquationsUsing relations
+      extended.toLanguageDef)
+    (source target : GoalState) :
+    (extended.toGSLTUsing relations admitted laws).Step
+        (inCalculus source) (inCalculus target) ↔
+      (proofSearchGSLT (extended.validated admitted)).Step source target :=
+  combinedGSLTUsing_calculus_step relations (extended.validated admitted)
+    laws source target
+
+/-- **Nothing crosses** between relation-aware object execution and proof
+search. -/
+theorem toGSLTUsing_no_crossing (relations : RelationEnv)
+    (admitted : extended.isAdmitted = true)
+    (laws : ReductionRespectsEquationsUsing relations
+      extended.toLanguageDef)
+    (pattern : Pattern) (state : GoalState) :
+    ¬ (extended.toGSLTUsing relations admitted laws).Step
+        (inLanguage pattern) (inCalculus state) ∧
+      ¬ (extended.toGSLTUsing relations admitted laws).Step
+        (inCalculus state) (inLanguage pattern) :=
+  combinedGSLTUsing_no_crossing relations (extended.validated admitted)
+    laws pattern state
+
+/-- **Derivability remains proof search** inside the right summand. -/
+theorem toGSLTUsing_derivability (relations : RelationEnv)
+    (admitted : extended.isAdmitted = true)
+    (laws : ReductionRespectsEquationsUsing relations
+      extended.toLanguageDef)
+    (goals : GoalState) :
+    Nonempty (DerivationList (extended.validated admitted) goals) ↔
+      (extended.toGSLTUsing relations admitted laws).MultiStep
+        (inCalculus goals) (inCalculus []) :=
+  derivability_iff_combinedGSLTUsing relations (extended.validated admitted)
+    laws goals
 
 /-- **The carrier**: an object pattern, or a proof-obligation state. -/
 theorem toGSLT_Term (admitted : extended.isAdmitted = true)
@@ -269,14 +365,14 @@ theorem evenNumbers_admitted : evenNumbers.isAdmitted = true := by
 
 /-- The theory the record denotes. -/
 def theory : GSLT :=
-  evenNumbers.toGSLTOfNoEquations evenNumbers_admitted rfl
+  evenNumbers.toGSLTOfEquationFree evenNumbers_admitted rfl
 
 /-- Zero is even, and its goal discharges in one reduction of that theory. -/
 theorem zero_is_even :
     theory.Step
       (Sum.inr (α := Pattern) [Pattern.apply "Even" [Pattern.apply "z" []]])
       (Sum.inr (α := Pattern) []) := by
-  unfold theory toGSLTOfNoEquations toGSLT combinedGSLT
+  unfold theory toGSLTOfEquationFree toGSLT combinedGSLT
   apply GSLT.SumStep.right
   refine ⟨{ ruleId := ⟨"even-zero"⟩, arguments := [] },
     [], .apply "Even" [.apply "z" []], [], ?_, rfl, rfl⟩

@@ -1,0 +1,16 @@
+import Mettapedia.GSLT.Dynamics.ParallelExecutionAuthority
+import Mettapedia.PLN.Bridges.GSLT.WMPosteriorProofAuthority
+
+#print axioms Mettapedia.GSLT.Dynamics.ParallelExecutionAuthority.replayChecker_authority
+#print axioms Mettapedia.GSLT.Dynamics.ParallelExecutionAuthority.authorityProjection
+#print axioms Mettapedia.GSLT.Dynamics.ParallelExecutionAuthority.meaning_preserves_plan_observation
+#print axioms Mettapedia.GSLT.Dynamics.ParallelExecutionAuthority.Canary.conservative_claim_is_meaningful
+#print axioms Mettapedia.GSLT.Dynamics.ParallelExecutionAuthority.Canary.conservative_claim_not_certified
+#print axioms Mettapedia.PLN.Bridges.GSLT.WMQueryProofAuthority.replayChecker_authority
+#print axioms Mettapedia.PLN.Bridges.GSLT.WMQueryProofAuthority.certificateGSLT_article_iff_revisionTree
+#print axioms Mettapedia.PLN.Bridges.GSLT.WMQueryProofAuthority.accepted_implies_oslf_atom_evidence
+#print axioms Mettapedia.PLN.Bridges.GSLT.WMPosteriorProofAuthority.accepted_revise_implies_sequential_posterior
+#print axioms Mettapedia.PLN.Bridges.GSLT.WMPosteriorProofAuthority.accepted_implies_posterior_view
+#print axioms Mettapedia.PLN.Bridges.GSLT.WMPosteriorProofAuthority.noninjective_view_has_no_global_recovery
+#print axioms Mettapedia.PLN.Bridges.GSLT.WMPosteriorProofAuthority.Canary.posterior_article_accepted
+#print axioms Mettapedia.PLN.Bridges.GSLT.WMPosteriorProofAuthority.Canary.wrong_posterior_rejected

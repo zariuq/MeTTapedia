@@ -1,0 +1,22 @@
+; A link owned by heap-B cannot advance or satisfy heap-A's lookup.
+(exec (00 fused-hit)
+  (, (fused-walk $owner $query $query)
+     (heap-link $owner $query $next $kind $value))
+  (O (- (fused-walk $owner $query $query))
+     (+ (heap-result fused found $owner $query $kind $value))))
+
+(exec (01 fused-frontier-fault)
+  (, (fused-walk $owner $query $frontier)
+     (heap-frontier $owner $frontier))
+  (O (- (fused-walk $owner $query $frontier))
+     (+ (heap-result fused missing $owner $query $frontier))))
+
+(exec (02 fused-advance)
+  (, (fused-walk $owner $query $cursor)
+     (heap-link $owner $cursor $next $kind $value))
+  (O (- (fused-walk $owner $query $cursor))
+     (+ (fused-walk $owner $query $next))))
+
+(heap-link heap-B 0 1 proof node-0)
+(heap-frontier heap-B 1)
+(fused-walk heap-A 1 0)

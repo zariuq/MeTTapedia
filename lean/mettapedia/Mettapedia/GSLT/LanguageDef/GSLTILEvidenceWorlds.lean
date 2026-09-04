@@ -266,7 +266,7 @@ theorem distinct_occurrence_histories_not_representable
 /-- The existing GSLT-IL occurrence canary supplies a real authored profile
 with one visible internal outcome and two histories.  Wire-step equality does
 not make that richer profile representable. -/
-theorem exists_authored_occurrence_history_nonrepresentable :
+theorem exists_program_occurrence_history_nonrepresentable :
     ∃ (program : Program) (source target : Boundary)
       (first second : OccurrenceWireCell program source target),
       first ≠ second ∧
@@ -408,7 +408,7 @@ end Canary
 #print axioms PropositionalBridge.representable_iff_exactSelection
 #print axioms PropositionalBridge.criterion_reduces
 #print axioms distinct_occurrence_histories_not_representable
-#print axioms exists_authored_occurrence_history_nonrepresentable
+#print axioms exists_program_occurrence_history_nonrepresentable
 #print axioms Canary.duplicateHistory_not_representable
 #print axioms Canary.uniqueHistory_representable
 #print axioms Canary.uniqueHistory_selected_internal

@@ -14,7 +14,7 @@ checked GF artifacts into the MeTTaIL DSL:
 
 - `GFCore.CheckedExpr -> Pattern`
 - `GFCore.FunDecl / GrammarSig -> LanguageDef`
-- the induced syntax-only OSLF layer (`gfSyntaxLanguageDef`, `gfSyntaxOSLF`)
+- the OSLF of the syntax presentation (`gfSyntaxLanguageDef`, `gfSyntaxOSLF`)
 - generic soundness lemmas for checked GF trees
 
 It intentionally excludes the legacy authored semantic overlay. That older
@@ -29,6 +29,7 @@ open GFCore
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 /-- Convert a checked GF tree into the canonical MeTTaIL pattern syntax. -/
 def gfCheckedExprToPattern (e : CheckedExpr) : Pattern :=
@@ -124,23 +125,23 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 /-- If `checkLangUsing` reports `sat` on a checked GF tree, semantics hold. -/
 theorem gfCheckedExpr_checkSat_sound
     {lang : LanguageDef}
-    {I_check : AtomCheck} {I_sem : AtomSem}
-    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {I_check : AtomCheck} {I_sem : EquationAtomSem lang}
+    (h_atoms : ∀ a p, I_check a p = true → (I_sem a).1 p)
     {fuel : Nat} {node : CheckedExpr} {φ : OSLFFormula}
     (h : checkLangUsing .empty lang I_check fuel
            (gfCheckedExprToPattern node) φ = .sat) :
-    sem (langReduces lang) I_sem φ (gfCheckedExprToPattern node) :=
+    langFormulaSem lang I_sem φ (gfCheckedExprToPattern node) :=
   checkLangUsing_sat_sound h_atoms h
 
 /-- A checked GF tree that reduces witnesses `◇`. -/
 theorem gfCheckedExpr_diamond_of_reduces
     {lang : LanguageDef}
-    {φ : Pattern → Prop} {node : CheckedExpr} {q : Pattern}
+    {φ : EquationPredicate (langGSLT lang)} {node : CheckedExpr} {q : Pattern}
     (hReduce : langReduces lang (gfCheckedExprToPattern node) q)
-    (hφ : φ q) :
+    (hφ : φ.1 q) :
     langDiamond lang φ (gfCheckedExprToPattern node) := by
   rw [langDiamond_spec]
-  exact ⟨q, hReduce, hφ⟩
+  exact ⟨q, langReduces_to_semantic lang hReduce, hφ⟩
 
 /-- Membership in the bounded contextual compiler for a checked GF tree
 implies the least authored reduction relation. -/
@@ -156,10 +157,10 @@ theorem gfCheckedExpr_mem_rewriteAt_implies_reduces
 /-- Practical checked-tree bridge from executable reduction to `◇`. -/
 theorem gfCheckedExpr_diamond_of_rewriteAt
     {lang : LanguageDef} {contextDepth : Nat}
-    {φ : Pattern → Prop} {node : CheckedExpr} {q : Pattern}
+    {φ : EquationPredicate (langGSLT lang)} {node : CheckedExpr} {q : Pattern}
     (hExec : q ∈ rewriteAt (engineBasePremises RelationEnv.empty) lang contextDepth
       (gfCheckedExprToPattern node))
-    (hφ : φ q) :
+    (hφ : φ.1 q) :
     langDiamond lang φ (gfCheckedExprToPattern node) :=
   gfCheckedExpr_diamond_of_reduces
     (gfCheckedExpr_mem_rewriteAt_implies_reduces hExec) hφ

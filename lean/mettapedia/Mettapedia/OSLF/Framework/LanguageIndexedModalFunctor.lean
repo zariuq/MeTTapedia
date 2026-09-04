@@ -2,6 +2,8 @@ import Mathlib.CategoryTheory.EssentialImage
 import Mathlib.Data.List.MinMax
 import Mathlib.Order.Hom.CompleteLattice
 import Mettapedia.GSLT.Core.ProofRelevantGSLT
+import Mettapedia.GSLT.Core.StructuralIsomorphism
+import Mettapedia.OSLF.Framework.GSLTQuotientCoherence
 import Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 import Mettapedia.OSLF.Framework.ModeTheory
 import Mettapedia.OSLF.PresheafNativeType.PresheafSemantics
@@ -40,19 +42,26 @@ open Mettapedia.GSLT.Ultrainfinite
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.LangMorphism
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTQuotientCoherence
 open CategoryTheory
 open scoped CategoryTheory
 
 abbrev LanguageEqHom (L₁ L₂ : LanguageDef) := LanguageMorphism L₁ L₂ Eq
 
-/-- Predicate pullback along a language morphism. -/
+/-- Predicate pullback along an equation-preserving language morphism. -/
 def predPullback {L₁ L₂ : LanguageDef}
     (m : LanguageEqHom L₁ L₂) :
-    (Pattern → Prop) → (Pattern → Prop) :=
-  fun ψ p => ψ (m.mapTerm p)
+    EquationPredicate (langGSLT L₂) →
+      EquationPredicate (langGSLT L₁) :=
+  fun ψ =>
+    ⟨fun p => ψ.1 (m.mapTerm p), by
+      intro left right equivalent
+      exact ψ.2 (m.map_equiv equivalent)⟩
 
-@[simp] theorem predPullback_id (L : LanguageDef) (ψ : Pattern → Prop) :
+@[simp] theorem predPullback_id (L : LanguageDef)
+    (ψ : EquationPredicate (langGSLT L)) :
     predPullback (idLanguageMorphism L) ψ = ψ := by
+  apply Subtype.ext
   funext p
   rfl
 
@@ -60,23 +69,26 @@ def predPullback {L₁ L₂ : LanguageDef}
     {L₁ L₂ L₃ : LanguageDef}
     (m₁₂ : LanguageEqHom L₁ L₂)
     (m₂₃ : LanguageEqHom L₂ L₃)
-    (ψ : Pattern → Prop) :
+    (ψ : EquationPredicate (langGSLT L₃)) :
     predPullback (composeLanguageMorphism m₁₂ m₂₃) ψ =
       predPullback m₁₂ (predPullback m₂₃ ψ) := by
+  apply Subtype.ext
   funext p
   rfl
 
 /-- Minimal functor package for language-indexed predicate transport. -/
 structure IndexedPredFunctor where
   mapHom : ∀ {L₁ L₂ : LanguageDef}, LanguageEqHom L₁ L₂ →
-    ((Pattern → Prop) → (Pattern → Prop))
-  map_id : ∀ (L : LanguageDef) (ψ : Pattern → Prop),
+    EquationPredicate (langGSLT L₂) →
+      EquationPredicate (langGSLT L₁)
+  map_id : ∀ (L : LanguageDef)
+    (ψ : EquationPredicate (langGSLT L)),
     mapHom (idLanguageMorphism L) ψ = ψ
   map_comp :
     ∀ {L₁ L₂ L₃ : LanguageDef}
       (m₁₂ : LanguageEqHom L₁ L₂)
       (m₂₃ : LanguageEqHom L₂ L₃)
-      (ψ : Pattern → Prop),
+      (ψ : EquationPredicate (langGSLT L₃)),
       mapHom (composeLanguageMorphism m₁₂ m₂₃) ψ =
         mapHom m₁₂ (mapHom m₂₃ ψ)
 
@@ -90,9 +102,9 @@ def runtimePredicatePullbackFunctor : IndexedPredFunctor where
 theorem diamond_witness_transport
     {L₁ L₂ : LanguageDef}
     (m : LanguageEqHom L₁ L₂)
-    {φ : Pattern → Prop} {p : Pattern}
+    {φ : EquationPredicate (langGSLT L₁)} {p : Pattern}
     (h : langDiamond L₁ φ p) :
-    ∃ q, langReduces L₁ p q ∧ φ q ∧
+    ∃ q, langSemanticReduces L₁ p q ∧ φ q ∧
       ∃ T, LangReducesStar L₂ (m.mapTerm p) T ∧ T = m.mapTerm q := by
   simpa using
     (LanguageMorphism.preserves_diamond (m := m) (φ := φ) (p := p) h)
@@ -102,9 +114,9 @@ theorem diamond_witness_transport_comp
     {L₁ L₂ L₃ : LanguageDef}
     (m₁₂ : LanguageEqHom L₁ L₂)
     (m₂₃ : LanguageEqHom L₂ L₃)
-    {φ : Pattern → Prop} {p : Pattern}
+    {φ : EquationPredicate (langGSLT L₁)} {p : Pattern}
     (h : langDiamond L₁ φ p) :
-    ∃ q, langReduces L₁ p q ∧ φ q ∧
+    ∃ q, langSemanticReduces L₁ p q ∧ φ q ∧
       ∃ T, LangReducesStar L₃
         ((composeLanguageMorphism m₁₂ m₂₃).mapTerm p) T ∧
         T = (composeLanguageMorphism m₁₂ m₂₃).mapTerm q := by
@@ -177,6 +189,63 @@ def comp {first middle last : GSLT.{uTerm}}
       earlier.liftIncoming middleStep
     exact ⟨sourcePredecessor, sourceStep,
       (congrArg later.mapTerm sourceEq).trans middleEq⟩
+
+end ModalTranslation
+
+namespace CoveredTranslation
+
+/-- Exact outgoing coverage descends from authored representatives to the
+semantic equation classes. -/
+def onSemanticTheories {source target : GSLT.{uTerm}}
+    (translation : CoveredTranslation source target) :
+    CoveredTranslation (semanticTheory source) (semanticTheory target) where
+  mapTerm := translation.toOperational.mapSemantic
+  mapEquiv := fun equal => congrArg translation.toOperational.mapSemantic equal
+  cover :=
+    { mapStep := translation.toOperational.mapSemanticStep
+      liftStep := by
+        intro sourceClass targetClass targetStep
+        induction sourceClass using Quotient.inductionOn with
+        | _ sourceTerm =>
+            induction targetClass using Quotient.inductionOn with
+            | _ targetTerm =>
+                have targetStep' :
+                    target.Step (translation.mapTerm sourceTerm) targetTerm :=
+                  (semanticStep_mk_iff_step target
+                    (translation.mapTerm sourceTerm) targetTerm).mp targetStep
+                obtain ⟨sourceTarget, sourceStep, imageEq⟩ :=
+                  translation.cover.liftStep targetStep'
+                refine ⟨Quotient.mk source.equations sourceTarget,
+                  semanticStep_mk sourceStep, ?_⟩
+                exact congrArg (Quotient.mk target.equations) imageEq }
+
+end CoveredTranslation
+
+namespace ModalTranslation
+
+/-- A bounded operational translation descends to a bounded translation of
+semantic equation classes. -/
+def onSemanticTheories {source target : GSLT.{uTerm}}
+    (translation : ModalTranslation source target) :
+    ModalTranslation (semanticTheory source) (semanticTheory target) where
+  toCoveredTranslation :=
+    LanguageIndexedModalFunctor.CoveredTranslation.onSemanticTheories
+      translation.toCoveredTranslation
+  liftIncoming := by
+    intro sourceClass targetClass targetStep
+    induction sourceClass using Quotient.inductionOn with
+    | _ sourceTerm =>
+        induction targetClass using Quotient.inductionOn with
+        | _ targetTerm =>
+            have targetStep' :
+                target.Step targetTerm (translation.mapTerm sourceTerm) :=
+              (semanticStep_mk_iff_step target targetTerm
+                (translation.mapTerm sourceTerm)).mp targetStep
+            obtain ⟨sourcePredecessor, sourceStep, imageEq⟩ :=
+              translation.liftIncoming targetStep'
+            refine ⟨Quotient.mk source.equations sourcePredecessor,
+              semanticStep_mk sourceStep, ?_⟩
+            exact congrArg (Quotient.mk target.equations) imageEq
 
 end ModalTranslation
 
@@ -282,17 +351,25 @@ end ModalPredicateTheory
 
 /-- The operational modal fragment generated by one abstract GSLT. -/
 def oslfModalObject (theory : GSLT.{uTerm}) : ModalPredicateTheory.{uTerm} where
-  State := theory.Term
-  diamond := gsltDiamond theory
-  box := gsltBox theory
-  galois := gsltGalois theory
+  State := SemanticTerm theory
+  diamond := equationQuotientDiamond theory
+  box := equationQuotientBox theory
+  galois := equationQuotientGalois theory
 
-/-- The categorical modal object is a reduct of the existing `gsltOSLF`
-construction, not a second semantics. -/
+/-- The categorical modal object is the quotient presentation of the sole
+generated `gsltOSLF`: both modalities commute with predicate descent. -/
 theorem oslfModalObject_agrees_gsltOSLF (theory : GSLT.{uTerm}) :
-    (oslfModalObject theory).diamond = (gsltOSLF theory).diamond ∧
-      (oslfModalObject theory).box = (gsltOSLF theory).box :=
-  ⟨rfl, rfl⟩
+    (∀ predicate : EquationPredicate theory,
+      (oslfModalObject theory).diamond (descendPredicate theory predicate) =
+        descendPredicate theory ((gsltOSLF theory).diamond predicate)) ∧
+    (∀ predicate : EquationPredicate theory,
+      (oslfModalObject theory).box (descendPredicate theory predicate) =
+        descendPredicate theory ((gsltOSLF theory).box predicate)) := by
+  constructor
+  · intro predicate
+    exact (descend_semanticDiamond theory predicate).symm
+  · intro predicate
+    exact (descend_semanticBox theory predicate).symm
 
 namespace CoveredTranslation
 
@@ -539,10 +616,24 @@ morphism. -/
 def pullback {source target : GSLT.{uTerm}}
     (translation : ModalTranslation source target) :
     ModalPredicateTheory.Hom (oslfModalObject target) (oslfModalObject source) where
-  mapPred := CompleteLatticeHom.setPreimage translation.mapTerm
-  map_diamond := LanguageIndexedModalFunctor.CoveredTranslation.preimage_diamond
-    translation.toCoveredTranslation
-  map_box := LanguageIndexedModalFunctor.ModalTranslation.preimage_box translation
+  mapPred := CompleteLatticeHom.setPreimage
+    translation.onSemanticTheories.mapTerm
+  map_diamond := by
+    intro predicate
+    change Set.preimage translation.onSemanticTheories.mapTerm
+        (gsltDiamond (semanticTheory target) predicate) =
+      gsltDiamond (semanticTheory source)
+        (Set.preimage translation.onSemanticTheories.mapTerm predicate)
+    exact LanguageIndexedModalFunctor.CoveredTranslation.preimage_diamond
+      translation.onSemanticTheories.toCoveredTranslation predicate
+  map_box := by
+    intro predicate
+    change Set.preimage translation.onSemanticTheories.mapTerm
+        (gsltBox (semanticTheory target) predicate) =
+      gsltBox (semanticTheory source)
+        (Set.preimage translation.onSemanticTheories.mapTerm predicate)
+    exact LanguageIndexedModalFunctor.ModalTranslation.preimage_box
+      translation.onSemanticTheories predicate
 
 end ModalTranslation
 
@@ -555,10 +646,18 @@ def oslfModalFunctor :
   map translation := translation.unop.pullback
   map_id object := by
     apply ModalPredicateTheory.Hom.ext
-    rfl
+    apply CompleteLatticeHom.ext
+    intro predicate
+    ext term
+    induction term using Quotient.inductionOn with
+    | _ representative => rfl
   map_comp earlier later := by
     apply ModalPredicateTheory.Hom.ext
-    rfl
+    apply CompleteLatticeHom.ext
+    intro predicate
+    ext term
+    induction term using Quotient.inductionOn with
+    | _ representative => rfl
 
 /-! ## Reification and the categorical status of native presentations -/
 
@@ -647,6 +746,20 @@ structure SuccessorEnumeration (theory : GSLT.{uTerm}) where
   mem_iff : ∀ source target,
     target ∈ successors source ↔ theory.Step source target
 
+/-- A finite enumeration of one representative of every reachable equation
+class.  Unlike `SuccessorEnumeration`, this interface remains realizable when
+one semantic successor class has infinitely many authored representatives.
+Every listed representative is a genuine step, and every genuine step is
+covered up to the theory's own equation relation. -/
+structure SuccessorClassEnumeration (theory : GSLT.{uTerm}) where
+  successors : theory.Term → List theory.Term
+  sound : ∀ source target,
+    target ∈ successors source → theory.Step source target
+  complete : ∀ source target,
+    theory.Step source target →
+      ∃ representative ∈ successors source,
+        theory.Equiv target representative
+
 /-- A finite extensional enumeration of all one-step predecessors. -/
 structure PredecessorEnumeration (theory : GSLT.{uTerm}) where
   predecessors : theory.Term → List theory.Term
@@ -660,6 +773,15 @@ structure CanonicalEquationNormalizer (theory : GSLT.{uTerm}) where
   sound : ∀ term, theory.Equiv term (normalize term)
   complete : ∀ left right,
     theory.Equiv left right ↔ normalize left = normalize right
+
+/-- The finite endpoint-level runtime needed to execute the quotient
+transition system without choosing quotient representatives inside the
+kernel.  It deliberately says nothing about derivation evidence: languages
+whose consumers distinguish proofs additionally require an exact
+proof-relevant realization. -/
+structure QuotientEndpointRuntime (theory : GSLT.{uTerm}) where
+  equationNormalizer : CanonicalEquationNormalizer theory
+  successorClasses : SuccessorClassEnumeration theory
 
 /-- An executable normalizer for operational reduction. -/
 structure ReductionNormalizer (theory : GSLT.{uTerm}) where
@@ -704,7 +826,101 @@ def toStepDecision {theory : GSLT.{uTerm}}
 
 end SuccessorEnumeration
 
+namespace SuccessorClassEnumeration
+
+/-- Exact successor-class enumeration transports across a structural GSLT
+isomorphism.  This is the executable counterpart of changing syntax without
+changing either static equations or operational behavior. -/
+def transport {source target : GSLT.{uTerm}}
+    (isomorphism : GSLT.StructuralIsomorphism source target)
+    (enumeration : SuccessorClassEnumeration target) :
+    SuccessorClassEnumeration source where
+  successors sourceTerm :=
+    (enumeration.successors (isomorphism.termEquiv sourceTerm)).map
+      isomorphism.termEquiv.symm
+  sound := by
+    intro sourceTerm targetTerm member
+    obtain ⟨representative, representativeMember, rfl⟩ :=
+      List.mem_map.mp member
+    apply (isomorphism.step_iff _ _).mp
+    simpa using enumeration.sound
+      (isomorphism.termEquiv sourceTerm) representative representativeMember
+  complete := by
+    intro sourceTerm targetTerm step
+    have mappedStep := (isomorphism.step_iff sourceTerm targetTerm).mpr step
+    obtain ⟨representative, representativeMember, equivalent⟩ :=
+      enumeration.complete _ _ mappedStep
+    refine ⟨isomorphism.termEquiv.symm representative, ?_, ?_⟩
+    · exact List.mem_map.mpr ⟨representative, representativeMember, rfl⟩
+    · apply (isomorphism.equiv_iff _ _).mp
+      simpa using equivalent
+
+/-- The finite runtime list, projected to semantic equation classes.  The
+input remains an authored representative so a kernel can compute it without
+choosing a representative from a quotient. -/
+def quotientSuccessorsAt {theory : GSLT.{uTerm}}
+    (enumeration : SuccessorClassEnumeration theory)
+    (source : theory.Term) : List (SemanticTerm theory) :=
+  (enumeration.successors source).map
+    (Quotient.mk theory.equations)
+
+/-- Representative soundness and class coverage are exactly an all-input
+successor enumeration for the quotient semantics. -/
+theorem mem_quotientSuccessorsAt_iff_semanticStep
+    {theory : GSLT.{uTerm}}
+    (enumeration : SuccessorClassEnumeration theory)
+    (source target : theory.Term) :
+    Quotient.mk theory.equations target ∈
+        enumeration.quotientSuccessorsAt source ↔
+      SemanticStep theory
+        (Quotient.mk theory.equations source)
+        (Quotient.mk theory.equations target) := by
+  constructor
+  · intro member
+    obtain ⟨representative, representativeMember, classEquality⟩ :=
+      List.mem_map.mp member
+    have step := semanticStep_mk
+      (enumeration.sound source representative representativeMember)
+    rw [classEquality] at step
+    exact step
+  · intro step
+    have authoredStep :=
+      (semanticStep_mk_iff_step theory source target).mp step
+    obtain ⟨representative, representativeMember, equivalent⟩ :=
+      enumeration.complete source target authoredStep
+    apply List.mem_map.mpr
+    exact ⟨representative, representativeMember,
+      (Quotient.sound equivalent).symm⟩
+
+end SuccessorClassEnumeration
+
 namespace CanonicalEquationNormalizer
+
+/-- Exact equation normalization transports across a structural GSLT
+isomorphism.  The transported algorithm normalizes in the target
+representation and maps the canonical result back. -/
+def transport {source target : GSLT.{uTerm}}
+    (isomorphism : GSLT.StructuralIsomorphism source target)
+    (normalizer : CanonicalEquationNormalizer target) :
+    CanonicalEquationNormalizer source where
+  normalize term :=
+    isomorphism.termEquiv.symm
+      (normalizer.normalize (isomorphism.termEquiv term))
+  sound := by
+    intro term
+    apply (isomorphism.equiv_iff _ _).mp
+    simpa using normalizer.sound (isomorphism.termEquiv term)
+  complete := by
+    intro left right
+    constructor
+    · intro equivalent
+      have mappedEquivalent := (isomorphism.equiv_iff left right).mpr equivalent
+      exact congrArg isomorphism.termEquiv.symm
+        ((normalizer.complete _ _).mp mappedEquivalent)
+    · intro equality
+      apply (isomorphism.equiv_iff left right).mp
+      apply (normalizer.complete _ _).mpr
+      exact isomorphism.termEquiv.symm.injective equality
 
 /-- A canonical equation normalizer yields exact equation decision whenever
 normal-form equality is decidable. -/
@@ -717,6 +933,49 @@ def toEquationDecision {theory : GSLT.{uTerm}}
     simp [normalizer.complete]
 
 end CanonicalEquationNormalizer
+
+namespace QuotientEndpointRuntime
+
+/-- Run the successor-class enumerator only after selecting the proved
+canonical representative of the source class. -/
+def normalizedSuccessorClassesAt {theory : GSLT.{uTerm}}
+    (runtime : QuotientEndpointRuntime theory)
+    (source : theory.Term) : List (SemanticTerm theory) :=
+  runtime.successorClasses.quotientSuccessorsAt
+    (runtime.equationNormalizer.normalize source)
+
+/-- Normalizing before enumeration neither loses nor invents a semantic
+edge.  This is the all-input contract an endpoint-level generated runtime
+must preserve and reflect. -/
+theorem mem_normalizedSuccessorClassesAt_iff_semanticStep
+    {theory : GSLT.{uTerm}}
+    (runtime : QuotientEndpointRuntime theory)
+    (source target : theory.Term) :
+    Quotient.mk theory.equations target ∈
+        runtime.normalizedSuccessorClassesAt source ↔
+      SemanticStep theory
+        (Quotient.mk theory.equations source)
+        (Quotient.mk theory.equations target) := by
+  rw [normalizedSuccessorClassesAt,
+    runtime.successorClasses.mem_quotientSuccessorsAt_iff_semanticStep]
+  rw [← Quotient.sound (runtime.equationNormalizer.sound source)]
+
+/-- Endpoint runtimes transport across exact structural isomorphisms of
+GSLTs. -/
+def transport {source target : GSLT.{uTerm}}
+    (isomorphism : GSLT.StructuralIsomorphism source target)
+    (runtime : QuotientEndpointRuntime target) :
+    QuotientEndpointRuntime source where
+  equationNormalizer := runtime.equationNormalizer.transport isomorphism
+  successorClasses := runtime.successorClasses.transport isomorphism
+
+end QuotientEndpointRuntime
+
+#print axioms SuccessorClassEnumeration.transport
+#print axioms SuccessorClassEnumeration.mem_quotientSuccessorsAt_iff_semanticStep
+#print axioms CanonicalEquationNormalizer.transport
+#print axioms QuotientEndpointRuntime.mem_normalizedSuccessorClassesAt_iff_semanticStep
+#print axioms QuotientEndpointRuntime.transport
 
 /-- Exact endpoint semantics and proof-relevant semantics are separate
 requirements.  A proof-relevant native implementation must be compared by an
@@ -900,6 +1159,7 @@ end Canary
 #print axioms oslfModalObject_agrees_gsltOSLF
 #print axioms nativeType_obj_mem_essentialImage
 #print axioms reifiedOSLF_obj_mem_essentialImage
+#print axioms EffectiveStructure.SuccessorClassEnumeration.mem_quotientSuccessorsAt_iff_semanticStep
 #print axioms Canary.forward_only_does_not_preserve_diamond
 #print axioms Canary.outgoing_coverage_does_not_preserve_box
 #print axioms Canary.completeNat_has_no_finite_successor_enumeration

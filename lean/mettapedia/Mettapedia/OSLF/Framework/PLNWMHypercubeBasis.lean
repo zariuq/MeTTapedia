@@ -276,6 +276,7 @@ theorem transport_canonical_forward
 /-- Identity language morphism (`Eq`-up-to) for a fixed language. -/
 def idLanguageMorphism (lang : LanguageDef) : LanguageMorphism lang lang Eq where
   mapTerm := id
+  map_equiv := fun equivalent => equivalent
   forward_sim := by
     intro p q h
     exact ⟨q, LangReducesStar.single h, rfl⟩

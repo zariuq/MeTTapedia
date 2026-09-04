@@ -266,6 +266,17 @@ noncomputable def thresholdAtomSemOfWM
     tau ≤ BinaryEvidence.toStrength
       (BinaryWorldModel.evidence (State := State) (Query := Pat) W (queryOfAtom a p))
 
+/-- Threshold observations admitted to the canonical equation-respecting
+language logic. -/
+noncomputable def thresholdEquationAtomSemOfWM
+    {State : Type*}
+    [Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType State]
+    [BinaryWorldModel State Pat]
+    (lang : LangDef) (relEnv : RelEnv)
+    (W : State) (tau : ℝ≥0∞)
+    (queryOfAtom : String → Pat → Pat) : EquationAtomSemUsing relEnv lang :=
+  saturateAtomSemUsing relEnv lang (thresholdAtomSemOfWM W tau queryOfAtom)
+
 /-- End-to-end executable-to-denotational bridge under WM-threshold atoms. -/
 theorem checker_sat_implies_threshold_sem
     {State : Type*}
@@ -279,14 +290,17 @@ theorem checker_sat_implies_threshold_sem
       ∀ a p, Icheck a p = true → thresholdAtomSemOfWM W tau queryOfAtom a p)
     {fuel : Nat} {p : Pat} {φ : OSLFFormula}
     (hSat : checkLangUsing relEnv lang Icheck fuel p φ = .sat) :
-    sem (Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing relEnv lang)
-      (thresholdAtomSemOfWM W tau queryOfAtom) φ p := by
+    langFormulaSemUsing relEnv lang
+      (thresholdEquationAtomSemOfWM lang relEnv W tau queryOfAtom) φ p := by
   exact
     checkLangUsing_sat_sound
       (relEnv := relEnv) (lang := lang)
       (I_check := Icheck)
-      (I_sem := thresholdAtomSemOfWM W tau queryOfAtom)
-      hAtoms hSat
+      (I_sem := thresholdEquationAtomSemOfWM lang relEnv W tau queryOfAtom)
+      (fun atom term checked =>
+        holds_saturateAtomSemUsing relEnv lang
+          (thresholdAtomSemOfWM W tau queryOfAtom) atom term
+          (hAtoms atom term checked)) hSat
 
 /-- WM revision law lifted directly at query level. -/
 theorem wm_evidence_revision

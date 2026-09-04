@@ -4,7 +4,7 @@ import Mettapedia.GSLT.LanguageDef.StructuralSelection
 /-!
 # Structural transport of displayed rewrite sites
 
-The syntactic OSLF construction acts on selected source occurrences, not only
+The source-indexed OSLF signature construction acts on selected source occurrences, not only
 on unindexed patterns.  This module lifts a structural language morphism
 to those occurrences.  The target rewrite index is recovered uniquely from
 validation: authored rewrite names are duplicate-free, hence the target
@@ -350,8 +350,8 @@ private def source : ValidatedLanguageDef :=
 private def target : ValidatedLanguageDef :=
   ⟨targetLanguage, targetLanguage_valid⟩
 
-private def coalesceRewrites : PresentationSymbols :=
-  { PresentationSymbols.id with
+private def coalesceRewrites : LanguageDefSymbolMap :=
+  { LanguageDefSymbolMap.id with
     rewrite := fun _ => targetOnly.name }
 
 private def coalescingMorphism : StructuralMorphism source target where

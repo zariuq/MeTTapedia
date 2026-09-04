@@ -1,0 +1,646 @@
+*** Begin Patch
+*** Update File: /home/aimama/aihub/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/Verified/PeanoAdd.lean
+@@
+ theorem mettaEvalAddZero_exists (n : Nat) :
+     ∃ fuel stOut,
+       mettaEval addEnv fuel St.init [] (addQuery 0 n) = ([(peano n, [])], stOut) ∧
+         stOut.world.selfExtra = [] :=
+   mettaEvalAddZero_exists_static n St.init rfl
++
++/-- Private sufficient-fuel induction for executable Peano addition.
++
++The public theorem below hides the budget existentially.  This helper is only the induction
++measure that lets the recursive rule reuse the generic closed-add fold and the `S` constructor
++congruence without unfolding concrete evaluator traces. -/
++private theorem mettaEvalAdd_eq_sufficient_static (a b extra : Nat) (st : St)
++    (hstatic : st.world.selfExtra = []) :
++    ∃ stOut,
++      mettaEval addEnv (extra + b + 2 * a + 3) st [] (addQuery a b) =
++        ([(peano (a + b), [])], stOut) ∧
++        stOut.world.selfExtra = [] := by
++  induction a generalizing extra st with
++  | zero =>
++      let stRoot : St := { st with counter := st.counter + 2 }
++      have hZ :
++          mettaEval addEnv (extra + b + 2) st [] (mSym "Z") =
++            ([(mSym "Z", [])], st) := by
++        simpa [peano, mSym, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
++          mettaEvalPeanoSelf_sufficient_static 0 (extra + b + 1) st hstatic
++      have hb :
++          mettaEval addEnv (extra + b + 2) st [] (peano b) =
++            ([(peano b, [])], st) := by
++        have hb0 := mettaEvalPeanoSelf_sufficient_static b (extra + 1) st hstatic
++        convert hb0 using 1 <;> omega
++      have hRoot :
++          interpretFuel addEnv (extra + b + 2 + 1) st [evalItemNil (addQuery 0 b)] [] =
++          ([(peano b, (renameBindings (counterSuffix st.counter)
++              [Metta.BindingRel.val "n" (peano b)]).reverse)], stRoot) := by
++        simpa [stRoot, evalItemNil] using
++          interpretFuelAddZeroKernelReadoutOfStaticEq (extra + b + 2) b st hstatic
++      have hstaticRoot : stRoot.world.selfExtra = [] := by
++        simpa [stRoot] using hstatic
++      have hFinal :
++          mettaEval addEnv (extra + b + 2) stRoot [] (peano b) =
++            ([(peano b, [])], stRoot) := by
++        have hb0 := mettaEvalPeanoSelf_sufficient_static b (extra + 1) stRoot hstaticRoot
++        convert hb0 using 1 <;> omega
++      have hNoErr :
++          (([mSym "Z", peano b].zip [mSym "Z", peano b]).find?
++            (fun ho => ho.1.isError && ho.1 != ho.2)) = none := by
++        simpa [mSym, peano] using addArgs_errorGuard_none 0 b
++      have hFold :
++          mettaEval addEnv (extra + b + 2 + 1) st [] (mE "add" [mSym "Z", peano b]) =
++            ([(peano b, [])], stRoot) :=
++        mettaEvalAddClosed_eq_of_arg_singletons_and_root_eval
++          (fuel := extra + b + 2) (st := st) (st₁ := st) (st₂ := st)
++          (stRoot := stRoot) (stOut := stRoot) (x := mSym "Z") (y := peano b)
++          (x' := mSym "Z") (y' := peano b) (root := peano b) (final := peano b)
++          (rootBnd := (renameBindings (counterSuffix st.counter)
++            [Metta.BindingRel.val "n" (peano b)]).reverse)
++          (hxClosed := by simp [mSym, Metta.Atom.vars]) (hyClosed := peano_vars_nil b)
++          hZ hb hNoErr (by simpa [addQuery, peano, mSym] using hRoot)
++          (peano_beq_notReducible_false b)
++          (by simpa [addQuery, peano, mSym] using peano_beq_addZero_false b)
++          hFinal
++      exact ⟨stRoot, by
++        convert hFold using 1 <;> try omega
++        · simp [addQuery, peano, mSym]
++        · simp [Nat.zero_add]
++        · exact hstaticRoot⟩
++  | succ a ih =>
++      let stRoot : St := { st with counter := st.counter + 2 }
++      have hx :
++          mettaEval addEnv (extra + b + 2 * a + 4) st [] (peano (a + 1)) =
++            ([(peano (a + 1), [])], st) := by
++        have hx0 :=
++          mettaEvalPeanoSelf_sufficient_static (a + 1) (extra + b + a + 2) st hstatic
++        convert hx0 using 1 <;> omega
++      have hy :
++          mettaEval addEnv (extra + b + 2 * a + 4) st [] (peano b) =
++            ([(peano b, [])], st) := by
++        have hy0 :=
++          mettaEvalPeanoSelf_sufficient_static b (extra + 2 * a + 3) st hstatic
++        convert hy0 using 1 <;> omega
++      have hRoot :
++          interpretFuel addEnv (extra + b + 2 * a + 4 + 1) st
++            [evalItemNil (addQuery (a + 1) b)] [] =
++          ([(mE "S" [addQuery a b],
++              (renameBindings (counterSuffix st.counter)
++                [Metta.BindingRel.val "n" (peano b),
++                  Metta.BindingRel.val "m" (peano a)]).reverse)], stRoot) := by
++        simpa [stRoot, evalItemNil] using
++          interpretFuelAddSuccKernelReadoutOfStaticEq (extra + b + 2 * a + 4) a b st hstatic
++      have hstaticRoot : stRoot.world.selfExtra = [] := by
++        simpa [stRoot] using hstatic
++      rcases ih extra stRoot hstaticRoot with ⟨stIH, hIH, hstaticIH⟩
++      have hFinal :
++          mettaEval addEnv (extra + b + 2 * a + 4) stRoot [] (mE "S" [addQuery a b]) =
++            ([(mE "S" [peano (a + b)], [])], stIH) := by
++        have hS :=
++          mettaEvalS_eq_of_arg_singleton_static_from (extra + b + 2 * a + 3)
++            stRoot stIH (addQuery a b) (peano (a + b)) hIH
++            (peano_isError_false (a + b)) hstaticIH
++        have hrestrict :
++            restrictBnd (addQuery a b).vars ((Bindings.merge [] []).head?.getD []) = [] := by
++          rw [addQuery_vars_nil a b]
++          exact restrictBnd_nil_vars ((Bindings.merge [] []).head?.getD [])
++        convert hS using 1
++        · omega
++        · simp [hrestrict]
++      have hNoErr :
++          (([peano (a + 1), peano b].zip [peano (a + 1), peano b]).find?
++            (fun ho => ho.1.isError && ho.1 != ho.2)) = none := by
++        simpa using addArgs_errorGuard_none (a + 1) b
++      have hRootNotSelf :
++          (mE "S" [addQuery a b] == mE "add" [peano (a + 1), peano b]) = false := by
++        rfl
++      have hRootNotNR :
++          (mE "S" [addQuery a b] == notReducibleA) = false := by
++        rfl
++      have hFold :
++          mettaEval addEnv (extra + b + 2 * a + 4 + 1) st []
++              (mE "add" [peano (a + 1), peano b]) =
++            ([(mE "S" [peano (a + b)], [])], stIH) :=
++        mettaEvalAddClosed_eq_of_arg_singletons_and_root_eval
++          (fuel := extra + b + 2 * a + 4) (st := st) (st₁ := st) (st₂ := st)
++          (stRoot := stRoot) (stOut := stIH) (x := peano (a + 1)) (y := peano b)
++          (x' := peano (a + 1)) (y' := peano b) (root := mE "S" [addQuery a b])
++          (final := mE "S" [peano (a + b)])
++          (rootBnd := (renameBindings (counterSuffix st.counter)
++            [Metta.BindingRel.val "n" (peano b), Metta.BindingRel.val "m" (peano a)]).reverse)
++          (hxClosed := peano_vars_nil (a + 1)) (hyClosed := peano_vars_nil b)
++          hx hy hNoErr (by simpa [addQuery, peano, mE] using hRoot)
++          hRootNotNR hRootNotSelf hFinal
++      exact ⟨stIH, by
++        convert hFold using 1 <;> try omega
++        · simp [addQuery, peano]
++        · simp [peano, Nat.succ_add, Nat.add_assoc]
++        · exact hstaticIH⟩
++
++/-- The executable evaluator computes Peano addition with some sufficient fuel. -/
++theorem mettaEvalAdd_exists_static (a b : Nat) (st : St)
++    (hstatic : st.world.selfExtra = []) :
++    ∃ fuel stOut,
++      mettaEval addEnv fuel st [] (addQuery a b) = ([(peano (a + b), [])], stOut) ∧
++        stOut.world.selfExtra = [] := by
++  rcases mettaEvalAdd_eq_sufficient_static a b 0 st hstatic with ⟨stOut, hEval, hStatic⟩
++  exact ⟨b + 2 * a + 3, stOut, by simpa [Nat.zero_add] using hEval, hStatic⟩
++
++/-- Initial-state executable Peano-addition theorem. -/
++theorem mettaEvalAdd_exists (a b : Nat) :
++    ∃ fuel stOut,
++      mettaEval addEnv fuel St.init [] (addQuery a b) =
++        ([(peano (a + b), [])], stOut) ∧
++        stOut.world.selfExtra = [] :=
++  mettaEvalAdd_exists_static a b St.init rfl
+ 
+ -- add 2 3 ⇒ S(S(S(S(S Z)))) ;  add 0 1 ⇒ S Z
+ #eval (mettaEval addEnv 200 St.init [] (addQuery 2 3)).1.map (·.1)
+*** End Patch
+
+*** Begin Patch
+*** Update File: /home/aimama/aihub/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/Verified/PeanoAdd.lean
+@@
+-/-- Membership-shaped closed two-argument `add` outer-loop fold.
+-
+-This is the non-singleton companion to `mettaEvalAddClosed_eq_of_arg_singletons_and_root_eval`.
+-The argument and root evaluator calls may still be supplied by exact helper lemmas, but the final
+-recursive evaluator call is consumed as a membership premise. This is the useful shape for replacing
+-Peano-layer exact-fuel equality with readout soundness by induction. -/
+-private theorem mettaEvalAddClosed_mem_of_arg_singletons_root_eval_mem
+-    (fuel : Nat) (st st₁ st₂ stRoot : St)
+-    (x y x' y' root final : Metta.Atom) (rootBnd finalBnd : Bindings)
+-    (hxClosed : x.vars = []) (hyClosed : y.vars = [])
+-    (hx : mettaEval addEnv fuel st [] x = ([(x', [])], st₁))
+-    (hy : mettaEval addEnv fuel st₁ [] y = ([(y', [])], st₂))
+-    (hNoErr : (([x', y'].zip [x, y]).find? (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+-    (hRoot : interpretFuel addEnv (fuel + 1) st₂ [evalItemNil (mE "add" [x', y'])] [] =
+-      ([(root, rootBnd)], stRoot))
+-    (hRootNotNotReducible : (root == notReducibleA) = false)
+-    (hRootNotSelf : (root == mE "add" [x', y']) = false)
+-    (hFinal : (final, finalBnd) ∈ (mettaEval addEnv fuel stRoot [] root).1) :
+-    (final, finalBnd) ∈ (mettaEval addEnv (fuel + 1) st [] (mE "add" [x, y])).1 := by
+-  unfold mettaEval
+-  rw [instantiate_nil (mE "add" [x, y])]
+-  simp only [typeMismatch_add_world, argMask_add, List.length_cons, List.length_nil,
+-    Nat.reduceAdd, List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
+-  rw [hx]
+-  simp [hxClosed, hyClosed, restrictBnd_nil_vars]
+-  rw [hy]
+-  simp only [List.map_cons, List.map_nil, List.foldl_cons, List.foldl_nil]
+-  rw [hNoErr]
+-  have hRoot' :
+-      interpretFuel addEnv (fuel + 1) st₂
+-        [{ stack := atomToStack
+-            (Metta.Atom.expr [Metta.Atom.sym "eval", mE "add" [x', y']]) [], bnd := [] }] [] =
+-      ([(root, rootBnd)], stRoot) := by
+-    simpa [evalItemNil, mE] using hRoot
+-  rw [hRoot']
+-  simp [mettaEvalExprRootFoldStep, hRootNotNotReducible, hRootNotSelf,
+-    returnsAtom_add_expr x' y', hFinal]
+-
+ /-- Static root-normal-form readout for Peano's `S` constructor.
+@@
+-/-- Exact `S`-constructor congruence rung for the full evaluator.
+-
+-This is still one-layer and hypothesis-driven: it reuses the exact generic constructor theorem and
+-the exact static root readout for `S`; it does not choose a Peano fuel formula. -/
+-theorem mettaEvalS_eq_of_arg_singleton_static
+-    (fuel : Nat) (arg out : Metta.Atom) (stArg : St)
+-    (hArg : mettaEval addEnv fuel St.init [] arg = ([(out, [])], stArg))
+-    (hNotError : out.isError = false)
+-    (hstatic : stArg.world.selfExtra = []) :
+-    mettaEval addEnv (fuel + 1) St.init [] (mE "S" [arg]) =
+-      ([(mE "S" [out], restrictBnd arg.vars ((Bindings.merge [] []).head?.getD []))],
+-        stArg) := by
+-  have hroot := mettaEvalS_root_notReducible_static_eq fuel out stArg hstatic
+-  simpa [mE] using
+-    mettaEval_unary_expr_eq_of_arg_singleton_and_notReducible_eq
+-      addEnv fuel St.init stArg stArg "S" arg out hArg (typeMismatch_S [arg])
+-      (argMask_S 1) hNotError hroot
+-
+-/-- State-parametric exact `S` constructor congruence. -/
+-theorem mettaEvalS_eq_of_arg_singleton_static_from
+-    (fuel : Nat) (st stArg : St) (arg out : Metta.Atom)
+-    (hArg : mettaEval addEnv fuel st [] arg = ([(out, [])], stArg))
+-    (hNotError : out.isError = false)
+-    (hstatic : stArg.world.selfExtra = []) :
+-    mettaEval addEnv (fuel + 1) st [] (mE "S" [arg]) =
+-      ([(mE "S" [out], restrictBnd arg.vars ((Bindings.merge [] []).head?.getD []))],
+-        stArg) := by
+-  have hroot := mettaEvalS_root_notReducible_static_eq fuel out stArg hstatic
+-  simpa [mE] using
+-    mettaEval_unary_expr_eq_of_arg_singleton_and_notReducible_eq
+-      addEnv fuel st stArg stArg "S" arg out hArg (typeMismatch_S_world st.world [arg])
+-      (argMask_S 1) hNotError hroot
+-
+-/-- Exact full-evaluator readout for the Peano zero constructor. -/
+-theorem mettaEvalZ_eq :
+-    mettaEval addEnv 1 St.init [] (mSym "Z") = ([(mSym "Z", [])], St.init) := by
+-  have hroot : interpretFuel addEnv (0 + 1) St.init
+-      [evalItemNil (mSym "Z")] [] = ([(notReducibleA, [])], St.init) := by
+-    refine interpretFuel_eval_symbol_notReducible_of_no_candidates_eq
+-      addEnv St.init 0 (mSym "Z") [] "Z" ?_ ?_ ?_
+-    · simpa [mSym] using (instantiate_nil (mSym "Z"))
+-    · simp [isEmbeddedOp]
+-    · change candidatesW addEnv St.init.world (mSym "Z") = []
+-      rw [candidatesW_init_eq_candidates addEnv (mSym "Z")]
+-      exact addEnv_Z_candidates
+-  simpa [mSym, evalItemNil] using
+-    mettaEval_symbol_eq_of_notReducible_eq addEnv 0 St.init [] "Z" hroot
+-
+-/-- Peano zero self-evaluates from any static evaluator state and preserves that state. -/
+-theorem mettaEvalZ_sufficient_static (fuel : Nat) (st : St)
+-    (hstatic : st.world.selfExtra = []) :
+-    mettaEval addEnv (fuel + 1) st [] (mSym "Z") =
+-      ([(mSym "Z", [])], st) := by
+-  have hroot : interpretFuel addEnv (fuel + 1) st
+-      [evalItemNil (mSym "Z")] [] = ([(notReducibleA, [])], st) := by
+-    refine interpretFuel_eval_symbol_notReducible_of_no_candidates_eq
+-      addEnv st fuel (mSym "Z") [] "Z" ?_ ?_ ?_
+-    · simpa [mSym] using (instantiate_nil (mSym "Z"))
+-    · simp [isEmbeddedOp]
+-    · change candidatesW addEnv st.world (mSym "Z") = []
+-      rw [candidatesW_eq_candidates_of_no_selfExtra addEnv st.world (mSym "Z") hstatic]
+-      exact addEnv_Z_candidates
+-  simpa [mSym, evalItemNil] using
+-    mettaEval_symbol_eq_of_notReducible_eq addEnv fuel st [] "Z" hroot
+-
+-/-- Peano zero self-evaluates for any positive fuel budget.
+-
+-This is a sufficient-fuel theorem, not a trace-specific arithmetic computation: the proof uses the
+-generic symbol-not-reducible boundary for an arbitrary fuel parameter. -/
+-theorem mettaEvalZ_sufficient (fuel : Nat) :
+-    mettaEval addEnv (fuel + 1) St.init [] (mSym "Z") =
+-      ([(mSym "Z", [])], St.init) := by
+-  exact mettaEvalZ_sufficient_static fuel St.init rfl
+-
+-/-- State-parametric sufficient-fuel self-evaluation for Peano numerals. -/
+-theorem mettaEvalPeanoSelf_sufficient_static (n extra : Nat) (st : St)
+-    (hstatic : st.world.selfExtra = []) :
+-    mettaEval addEnv (extra + n + 1) st [] (peano n) =
+-      ([(peano n, [])], st) := by
+-  induction n generalizing extra st with
+-  | zero =>
+-      simpa [peano, mSym] using mettaEvalZ_sufficient_static extra st hstatic
+-  | succ n ih =>
+-      have hArg :
+-          mettaEval addEnv (extra + n + 1) st [] (peano n) =
+-            ([(peano n, [])], st) := ih extra st hstatic
+-      have hS :=
+-        mettaEvalS_eq_of_arg_singleton_static_from (extra + n + 1) st st
+-          (peano n) (peano n) hArg (peano_isError_false n) hstatic
+-      have hrestrict :
+-          restrictBnd (peano n).vars ((Bindings.merge [] []).head?.getD []) = [] := by
+-        rw [peano_vars_nil n]
+-        exact restrictBnd_nil_vars ((Bindings.merge [] []).head?.getD [])
+-      simpa [peano, mE, hrestrict, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hS
+-
+-/-- Peano numerals self-evaluate for every syntactically sufficient fuel budget.
+-
+-The budget `extra + n + 1` is only a lower-bound schema carried by induction; the proof composes
+-`mettaEvalS_eq_of_arg_singleton_static` at each constructor layer instead of unfolding the evaluator
+-trace for concrete numerals. -/
+-theorem mettaEvalPeanoSelf_sufficient (n extra : Nat) :
+-    mettaEval addEnv (extra + n + 1) St.init [] (peano n) =
+-      ([(peano n, [])], St.init) := by
+-  exact mettaEvalPeanoSelf_sufficient_static n extra St.init rfl
+-
+-/-- Every Peano numeral self-evaluates under the full LeaTTa evaluator with some sufficient fuel.
+-
+-The fuel is existential: the theorem composes the generic one-layer `S` congruence instead of
+-encoding a brittle closed-form fuel arithmetic formula. -/
+-theorem mettaEvalPeanoSelf_exists (n : Nat) :
+-    ∃ fuel st,
+-      mettaEval addEnv fuel St.init [] (peano n) = ([(peano n, [])], st) ∧
+-        st.world.selfExtra = [] := by
+-  exact ⟨n + 1, St.init, by
+-    simpa [Nat.zero_add] using mettaEvalPeanoSelf_sufficient n 0, rfl⟩
+-
+-/-- The executable evaluator computes the base Peano-addition rule with some sufficient fuel.
+-
+-Unlike the earlier trace-shaped attempt, this proof factors through
+-`mettaEvalAddClosed_eq_of_arg_singletons_and_root_eval`: argument self-evaluation, root rule
+-readout, and recursive evaluation of the root readout are separate reusable obligations. -/
+-theorem mettaEvalAddZero_exists_static (n : Nat) (st : St)
+-    (hstatic : st.world.selfExtra = []) :
+-    ∃ fuel stOut,
+-      mettaEval addEnv fuel st [] (addQuery 0 n) = ([(peano n, [])], stOut) ∧
+-        stOut.world.selfExtra = [] := by
+-  let stRoot : St := { st with counter := st.counter + 2 }
+-  have hZ :
+-      mettaEval addEnv (n + 2) st [] (mSym "Z") = ([(mSym "Z", [])], st) := by
+-    simpa [peano, mSym, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+-      mettaEvalPeanoSelf_sufficient_static 0 (n + 1) st hstatic
+-  have hn :
+-      mettaEval addEnv (n + 2) st [] (peano n) = ([(peano n, [])], st) := by
+-    simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+-      mettaEvalPeanoSelf_sufficient_static n 1 st hstatic
+-  have hRoot :
+-      interpretFuel addEnv (n + 2 + 1) st [evalItemNil (addQuery 0 n)] [] =
+-      ([(peano n, (renameBindings (counterSuffix st.counter)
+-          [Metta.BindingRel.val "n" (peano n)]).reverse)], stRoot) := by
+-    simpa [stRoot, evalItemNil] using
+-      interpretFuelAddZeroKernelReadoutOfStaticEq (n + 2) n st hstatic
+-  have hstaticRoot : stRoot.world.selfExtra = [] := by
+-    simpa [stRoot] using hstatic
+-  have hFinal :
+-      mettaEval addEnv (n + 2) stRoot [] (peano n) = ([(peano n, [])], stRoot) := by
+-    simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+-      mettaEvalPeanoSelf_sufficient_static n 1 stRoot hstaticRoot
+-  have hNoErr :
+-      (([mSym "Z", peano n].zip [mSym "Z", peano n]).find?
+-        (fun ho => ho.1.isError && ho.1 != ho.2)) = none := by
+-    simpa [mSym, peano] using addArgs_errorGuard_none 0 n
+-  have hFold :
+-      mettaEval addEnv (n + 2 + 1) st [] (mE "add" [mSym "Z", peano n]) =
+-        ([(peano n, [])], stRoot) :=
+-    mettaEvalAddClosed_eq_of_arg_singletons_and_root_eval
+-      (fuel := n + 2) (st := st) (st₁ := st) (st₂ := st) (stRoot := stRoot)
+-      (stOut := stRoot) (x := mSym "Z") (y := peano n) (x' := mSym "Z")
+-      (y' := peano n) (root := peano n) (final := peano n)
+-      (rootBnd := (renameBindings (counterSuffix st.counter)
+-        [Metta.BindingRel.val "n" (peano n)]).reverse)
+-      (hxClosed := by simp [mSym, Metta.Atom.vars]) (hyClosed := peano_vars_nil n)
+-      hZ hn hNoErr (by simpa [addQuery, peano, mSym] using hRoot)
+-      (peano_beq_notReducible_false n) (by simpa [addQuery, peano, mSym] using peano_beq_addZero_false n)
+-      hFinal
+-  exact ⟨n + 3, stRoot, by
+-    simpa [addQuery, peano, mSym, Nat.add_assoc] using hFold, hstaticRoot⟩
+-
+-/-- Initial-state version of `mettaEvalAddZero_exists_static`. -/
+-theorem mettaEvalAddZero_exists (n : Nat) :
+-    ∃ fuel stOut,
+-      mettaEval addEnv fuel St.init [] (addQuery 0 n) = ([(peano n, [])], stOut) ∧
+-        stOut.world.selfExtra = [] :=
+-  mettaEvalAddZero_exists_static n St.init rfl
+-
+-/-- Private sufficient-fuel induction for executable Peano addition.
+-
+-The public theorem below hides the budget existentially.  This helper is only the induction
+-measure that lets the recursive rule reuse the generic closed-add fold and the `S` constructor
+-congruence without unfolding concrete evaluator traces. -/
+-private theorem mettaEvalAdd_eq_sufficient_static (a b extra : Nat) (st : St)
+-    (hstatic : st.world.selfExtra = []) :
+-    ∃ stOut,
+-      mettaEval addEnv (extra + b + 2 * a + 3) st [] (addQuery a b) =
+-        ([(peano (a + b), [])], stOut) ∧
+-        stOut.world.selfExtra = [] := by
+-  induction a generalizing extra st with
+-  | zero =>
+-      let stRoot : St := { st with counter := st.counter + 2 }
+-      have hZ :
+-          mettaEval addEnv (extra + b + 2) st [] (mSym "Z") =
+-            ([(mSym "Z", [])], st) := by
+-        simpa [peano, mSym, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+-          mettaEvalPeanoSelf_sufficient_static 0 (extra + b + 1) st hstatic
+-      have hb :
+-          mettaEval addEnv (extra + b + 2) st [] (peano b) =
+-            ([(peano b, [])], st) := by
+-        have hb0 := mettaEvalPeanoSelf_sufficient_static b (extra + 1) st hstatic
+-        rw [show extra + b + 2 = (extra + 1) + b + 1 by omega]
+-        exact hb0
+-      have hRoot :
+-          interpretFuel addEnv (extra + b + 2 + 1) st [evalItemNil (addQuery 0 b)] [] =
+-          ([(peano b, (renameBindings (counterSuffix st.counter)
+-              [Metta.BindingRel.val "n" (peano b)]).reverse)], stRoot) := by
+-        simpa [stRoot, evalItemNil] using
+-          interpretFuelAddZeroKernelReadoutOfStaticEq (extra + b + 2) b st hstatic
+-      have hstaticRoot : stRoot.world.selfExtra = [] := by
+-        simpa [stRoot] using hstatic
+-      have hFinal :
+-          mettaEval addEnv (extra + b + 2) stRoot [] (peano b) =
+-            ([(peano b, [])], stRoot) := by
+-        have hb0 := mettaEvalPeanoSelf_sufficient_static b (extra + 1) stRoot hstaticRoot
+-        rw [show extra + b + 2 = (extra + 1) + b + 1 by omega]
+-        exact hb0
+-      have hNoErr :
+-          (([mSym "Z", peano b].zip [mSym "Z", peano b]).find?
+-            (fun ho => ho.1.isError && ho.1 != ho.2)) = none := by
+-        simpa [mSym, peano] using addArgs_errorGuard_none 0 b
+-      have hFold :
+-          mettaEval addEnv (extra + b + 2 + 1) st [] (mE "add" [mSym "Z", peano b]) =
+-            ([(peano b, [])], stRoot) :=
+-        mettaEvalAddClosed_eq_of_arg_singletons_and_root_eval
+-          (fuel := extra + b + 2) (st := st) (st₁ := st) (st₂ := st)
+-          (stRoot := stRoot) (stOut := stRoot) (x := mSym "Z") (y := peano b)
+-          (x' := mSym "Z") (y' := peano b) (root := peano b) (final := peano b)
+-          (rootBnd := (renameBindings (counterSuffix st.counter)
+-            [Metta.BindingRel.val "n" (peano b)]).reverse)
+-          (hxClosed := by simp [mSym, Metta.Atom.vars]) (hyClosed := peano_vars_nil b)
+-          hZ hb hNoErr (by simpa [addQuery, peano, mSym] using hRoot)
+-          (peano_beq_notReducible_false b)
+-          (by simpa [addQuery, peano, mSym] using peano_beq_addZero_false b)
+-          hFinal
+-      refine ⟨stRoot, ?_, hstaticRoot⟩
+-      rw [show extra + b + 2 * 0 + 3 = extra + b + 2 + 1 by omega]
+-      simpa [addQuery, peano, mSym, Nat.zero_add] using hFold
+-  | succ a ih =>
+-      let stRoot : St := { st with counter := st.counter + 2 }
+-      have hx :
+-          mettaEval addEnv (extra + b + 2 * a + 4) st [] (peano (a + 1)) =
+-            ([(peano (a + 1), [])], st) := by
+-        have hx0 :=
+-          mettaEvalPeanoSelf_sufficient_static (a + 1) (extra + b + a + 2) st hstatic
+-        rw [show extra + b + 2 * a + 4 = (extra + b + a + 2) + (a + 1) + 1 by omega]
+-        exact hx0
+-      have hy :
+-          mettaEval addEnv (extra + b + 2 * a + 4) st [] (peano b) =
+-            ([(peano b, [])], st) := by
+-        have hy0 :=
+-          mettaEvalPeanoSelf_sufficient_static b (extra + 2 * a + 3) st hstatic
+-        rw [show extra + b + 2 * a + 4 = (extra + 2 * a + 3) + b + 1 by omega]
+-        exact hy0
+-      have hRoot :
+-          interpretFuel addEnv (extra + b + 2 * a + 4 + 1) st
+-            [evalItemNil (addQuery (a + 1) b)] [] =
+-          ([(mE "S" [addQuery a b],
+-              (renameBindings (counterSuffix (st.counter + 1))
+-                [Metta.BindingRel.val "n" (peano b),
+-                  Metta.BindingRel.val "m" (peano a)]).reverse)], stRoot) := by
+-        simpa [stRoot, evalItemNil] using
+-          interpretFuelAddSuccKernelReadoutOfStaticEq (extra + b + 2 * a + 4) a b st hstatic
+-      have hstaticRoot : stRoot.world.selfExtra = [] := by
+-        simpa [stRoot] using hstatic
+-      rcases ih extra stRoot hstaticRoot with ⟨stIH, hIH, hstaticIH⟩
+-      have hFinal :
+-          mettaEval addEnv (extra + b + 2 * a + 4) stRoot [] (mE "S" [addQuery a b]) =
+-            ([(mE "S" [peano (a + b)], [])], stIH) := by
+-        have hS :=
+-          mettaEvalS_eq_of_arg_singleton_static_from (extra + b + 2 * a + 3)
+-            stRoot stIH (addQuery a b) (peano (a + b)) hIH
+-            (peano_isError_false (a + b)) hstaticIH
+-        have hrestrict :
+-            restrictBnd (addQuery a b).vars ((Bindings.merge [] []).head?.getD []) = [] := by
+-          rw [addQuery_vars_nil a b]
+-          exact restrictBnd_nil_vars ((Bindings.merge [] []).head?.getD [])
+-        have hS' :
+-            mettaEval addEnv (extra + b + 2 * a + 3 + 1) stRoot [] (mE "S" [addQuery a b]) =
+-              ([(mE "S" [peano (a + b)], [])], stIH) := by
+-          simpa [hrestrict] using hS
+-        rw [show extra + b + 2 * a + 4 = extra + b + 2 * a + 3 + 1 by omega]
+-        exact hS'
+-      have hNoErr :
+-          (([peano (a + 1), peano b].zip [peano (a + 1), peano b]).find?
+-            (fun ho => ho.1.isError && ho.1 != ho.2)) = none := by
+-        simpa using addArgs_errorGuard_none (a + 1) b
+-      have hRootNotSelf :
+-          (mE "S" [addQuery a b] == mE "add" [peano (a + 1), peano b]) = false := by
+-        rfl
+-      have hRootNotNR :
+-          (mE "S" [addQuery a b] == notReducibleA) = false := by
+-        rfl
+-      have hFold :
+-          mettaEval addEnv (extra + b + 2 * a + 4 + 1) st []
+-              (mE "add" [peano (a + 1), peano b]) =
+-            ([(mE "S" [peano (a + b)], [])], stIH) :=
+-        mettaEvalAddClosed_eq_of_arg_singletons_and_root_eval
+-          (fuel := extra + b + 2 * a + 4) (st := st) (st₁ := st) (st₂ := st)
+-          (stRoot := stRoot) (stOut := stIH) (x := peano (a + 1)) (y := peano b)
+-          (x' := peano (a + 1)) (y' := peano b) (root := mE "S" [addQuery a b])
+-          (final := mE "S" [peano (a + b)])
+-          (rootBnd := (renameBindings (counterSuffix (st.counter + 1))
+-            [Metta.BindingRel.val "n" (peano b), Metta.BindingRel.val "m" (peano a)]).reverse)
+-          (hxClosed := peano_vars_nil (a + 1)) (hyClosed := peano_vars_nil b)
+-          hx hy hNoErr (by simpa [addQuery, peano, mE] using hRoot)
+-          hRootNotNR hRootNotSelf hFinal
+-      refine ⟨stIH, ?_, hstaticIH⟩
+-      rw [show extra + b + 2 * (a + 1) + 3 = extra + b + 2 * a + 4 + 1 by omega]
+-      have hPeanoSucc : peano ((a + 1) + b) = mE "S" [peano (a + b)] := by
+-        rw [Nat.succ_add]
+-        rfl
+-      change
+-        mettaEval addEnv (extra + b + 2 * a + 4 + 1) st []
+-            (mE "add" [peano (a + 1), peano b]) =
+-          ([(peano ((a + 1) + b), [])], stIH)
+-      rw [hPeanoSucc]
+-      exact hFold
+-
+-/-- The executable evaluator computes Peano addition with some sufficient fuel. -/
+-theorem mettaEvalAdd_exists_static (a b : Nat) (st : St)
+-    (hstatic : st.world.selfExtra = []) :
+-    ∃ fuel stOut,
+-      mettaEval addEnv fuel st [] (addQuery a b) = ([(peano (a + b), [])], stOut) ∧
+-        stOut.world.selfExtra = [] := by
+-  rcases mettaEvalAdd_eq_sufficient_static a b 0 st hstatic with ⟨stOut, hEval, hStatic⟩
+-  exact ⟨b + 2 * a + 3, stOut, by simpa [Nat.zero_add] using hEval, hStatic⟩
+-
+-/-- Initial-state executable Peano-addition theorem. -/
+-theorem mettaEvalAdd_exists (a b : Nat) :
+-    ∃ fuel stOut,
+-      mettaEval addEnv fuel St.init [] (addQuery a b) =
+-        ([(peano (a + b), [])], stOut) ∧
+-        stOut.world.selfExtra = [] :=
+-  mettaEvalAdd_exists_static a b St.init rfl
+-
+-/-- The executable evaluator computes Peano addition, and every readout from the chosen sufficient
+-fuel run is justified by the certified contextual `KernelStep` relation. -/
+-theorem mettaEvalAdd_exists_kernelSound (a b : Nat) :
+-    ∃ fuel stOut,
+-      mettaEval addEnv fuel St.init [] (addQuery a b) =
+-        ([(peano (a + b), [])], stOut) ∧
+-      (∀ out bnd,
+-        (out, bnd) ∈ (mettaEval addEnv fuel St.init [] (addQuery a b)).1 →
+-          bnd = [] ∧
+-            Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings)
+-              (addQuery a b) out) ∧
+-      stOut.world.selfExtra = [] := by
+-  rcases mettaEvalAdd_exists a b with ⟨fuel, stOut, hEval, hStatic⟩
+-  refine ⟨fuel, stOut, hEval, ?_, hStatic⟩
+-  exact
+-    mettaEval_singleton_readout_sound addEnv fuel St.init [] (addQuery a b)
+-      (peano (a + b)) [] stOut (ExprCtxKernelStep addRules stdGroundings)
+-      hEval (addReachesSumKernelContext a b)
+-
+-/-- Executable Peano addition commutes: both orders have sufficient-fuel evaluator runs whose
+-singleton readouts are the same Peano numeral, and both are justified by the certified contextual
+-`KernelStep` relation. -/
+-theorem mettaEvalAdd_comm_exists_kernelSound (a b : Nat) :
+-    ∃ fuelAB stAB fuelBA stBA,
+-      mettaEval addEnv fuelAB St.init [] (addQuery a b) =
+-        ([(peano (a + b), [])], stAB) ∧
+-      mettaEval addEnv fuelBA St.init [] (addQuery b a) =
+-        ([(peano (a + b), [])], stBA) ∧
+-      Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings)
+-        (addQuery a b) (peano (a + b)) ∧
+-      Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings)
+-        (addQuery b a) (peano (a + b)) ∧
+-      stAB.world.selfExtra = [] ∧
+-      stBA.world.selfExtra = [] := by
+-  rcases mettaEvalAdd_exists a b with ⟨fuelAB, stAB, hAB, hStaticAB⟩
+-  rcases mettaEvalAdd_exists b a with ⟨fuelBA, stBA, hBA, hStaticBA⟩
+-  refine ⟨fuelAB, stAB, fuelBA, stBA, hAB, ?_, addReachesSumKernelContext a b, ?_,
+-    hStaticAB, hStaticBA⟩
+-  · simpa [Nat.add_comm] using hBA
+-  · simpa [Nat.add_comm] using addReachesSumKernelContext b a
+-
+ -- add 2 3 ⇒ S(S(S(S(S Z)))) ;  add 0 1 ⇒ S Z
+ #eval (mettaEval addEnv 200 St.init [] (addQuery 2 3)).1.map (·.1)
+@@
+-This section records how the executable evidence is being connected to the certified relation
+-semantics. The root-rule boundary is now closed for both Peano rules:
+-`interpretFuelAddZeroKernelReadout` and `interpretFuelAddSuccKernelReadout` show that one real
+-fuel-driver call on the corresponding `(eval (add ...))` frame harvests the rule readout and
+-returns the same certified `KernelStep` reduct. `evalAtomMinAddZeroKernelReadout` and
+-`evalAtomMinAddSuccKernelReadout` expose the same facts through LeaTTa's public minimal-evaluator
+-wrapper.
+-
+-The implication-shaped root soundness theorem is `evalAtomMinAddRootSound`: an actual
+-`evalAtomMin` readout determines the contextual `KernelStep` target. The remaining capstone is the
+-outer `mettaEval` loop: after the recursive rule returns
+-`(S (add m n))`, `mettaEval` continues below `S`, so the final theorem must combine the
+-root-rule readout with contextual `KernelStep` closure and adequate-fuel / non-exhaustion
+-hypotheses. Low fuel can still yield `StackOverflow`, which is not a Peano rule reduct and must
+-remain an explicit boundary.
+-
+-`RuntimeCorrectness.lean` contains the reusable scheduler/fuel induction lemmas for this capstone.
+-The Peano-specific theorems here instantiate that bridge at the two program rules and at the
+-generic unary/binary evaluator folds.  They do not rederive `queryOp` or `firedReducts` semantics.
+-The full-evaluator equality theorems are used only to exhibit sufficient-fuel singleton readouts;
+-the soundness theorem itself is implication-shaped (`mettaEvalAdd_exists_kernelSound`): every actual
+-readout of the chosen run is justified by the contextual `KernelStep` relation.
+-
+-The constructor side of that obligation is now factored by
+-`mettaEvalS_readout_sound_of_arg_singleton_static_from` and
+-`mettaEvalS_readout_sound_of_addQuery_singleton_static_from`: once an induction hypothesis has
+-earned the actual evaluator result for a subterm, the outer evaluator readout and the contextual
+-`KernelStep` chain under `S` are obtained by one generic constructor step. Peano numerals also
+-self-evaluate for sufficient fuel from any static evaluator state (`mettaEvalPeanoSelf_exists`),
+-with no closed-form trace unrolling.
+-
+-The remaining general runtime-correctness obligation is broader than this Peano entry: generalize
+-the singleton sufficient-fuel packages to membership-shaped evaluator correspondence for the
+-symbol-headed static fragment.  That is the form needed by SR-2d, where the evaluator may expose
+-multiple readouts and the proof should not depend on a Peano-specific fuel budget.  The executable
+-face here remains the `#eval` demonstration; the proof object is the root readout implication and
+-the singleton readout soundness package composed with the certified relation theorem above.
++This section records how the executable evidence is being connected to the certified relation
++semantics. The root-rule boundary is closed for both Peano rules:
++`interpretFuelAddZeroKernelReadout` and `interpretFuelAddSuccKernelReadout` show that one real
++fuel-driver call on the corresponding `(eval (add ...))` frame harvests the rule readout and
++returns the same certified `KernelStep` reduct. `evalAtomMinAddZeroKernelReadout` and
++`evalAtomMinAddSuccKernelReadout` expose the same facts through LeaTTa's public minimal-evaluator
++wrapper.
++
++The implication-shaped root soundness theorem is `evalAtomMinAddRootSound`: an actual
++`evalAtomMin` readout determines the contextual `KernelStep` target. The constructor side of the
++outer-loop obligation is factored by `mettaEvalS_readout_sound_of_arg_member_static_from` and
++`mettaEvalS_readout_sound_of_addQuery_member_static_from`: once an induction hypothesis has earned
++an actual evaluator readout for a subterm, the outer evaluator readout and the contextual
++`KernelStep` chain under `S` are obtained by one generic constructor step.
++
++The remaining full-runtime obligation is not a Peano exact-fuel arithmetic trace. It is the general
++static-fragment theorem:
++
++`mettaEval_static_symbol_fragment_sound`:
++for every `(out, bnd)` in `mettaEval env fuel st [] q`, with `q` in the static symbol-headed
++equation-rule fragment and adequate fuel/non-overflow premises, `out` is reachable from `q` by
++`ReflTransGen KernelStep` (or the corresponding contextual closure) and `bnd` is the retained
++ambient binding.
++
++That theorem should be proved by fuel/work-list induction in `RuntimeCorrectness.lean`, composing
++the single-step `queryOp`/`firedReducts`/`KernelStep` bridge. The executable face here remains the
++`#eval` demonstration; this file no longer claims a full Peano soundness theorem by computing a
++closed-form fuel trace.
+*** End Patch
+

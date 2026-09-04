@@ -23,7 +23,8 @@ Each theorem has the form `zam_<contract>`: the `<contract>` from
 ## References
 
 - OptimizationTheorems.lean: engine optimization contracts
-- ZipperExecution.lean: ZAM soundness (`zam_oslf_sound`, `zam_diamond_sound`, `zam_box_sound`)
+- ZipperExecution.lean: ZAM soundness (`zam_semantic_reduction_sound`,
+  `zam_diamond_sound`, `zam_box_sound`)
 - Trie/TrieZipper.lean: concrete `SimpleTrieZipper` instance
 -/
 
@@ -32,8 +33,9 @@ namespace Mettapedia.OSLF.PathMap.Trie.ZamContracts
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine (RelationEnv)
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.OptimizationTheorems
-open Mettapedia.OSLF.Framework.BeckChevalleyOSLF (commDi commPb)
+open Mettapedia.OSLF.Framework.BeckChevalleyOSLF (commEquationMap)
 open Mettapedia.OSLF.PathMap.ZipperExecution
 open Mettapedia.PathMap
 
@@ -62,9 +64,9 @@ Works for any `RelationEnv`, so transfers directly to trie backend. -/
 /-- Early termination transfers to trie backend. -/
 theorem zam_diamond_false_early_termination
     (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p : Pattern)
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern)
     (h : ¬ langDiamondUsing relEnv lang φ p) :
-    ∀ q, langReducesUsing relEnv lang p q → ¬ φ q :=
+    ∀ q, langSemanticReducesUsing relEnv lang p q → ¬ φ.1 q :=
   diamond_false_early_termination relEnv lang φ p h
 
 /-! ## §3: Memoization on Trie Backend
@@ -74,9 +76,9 @@ Box memoization is safe on trie-backed stores. -/
 /-- Memoization transfers to trie backend. -/
 theorem zam_box_memoization_safe
     (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p : Pattern)
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p : Pattern)
     (h : langBoxUsing relEnv lang φ p) :
-    ∀ q, langReducesUsing relEnv lang q p → φ q :=
+    ∀ q, langSemanticReducesUsing relEnv lang q p → φ.1 q :=
   box_memoization_safe relEnv lang φ p h
 
 /-! ## §4: Deterministic Dispatch on Trie Backend
@@ -86,19 +88,19 @@ When reduction is deterministic, diamond collapses to direct dispatch. -/
 /-- Deterministic diamond collapse transfers to trie backend. -/
 theorem zam_deterministic_diamond_collapse
     (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p q : Pattern)
-    (hred : langReducesUsing relEnv lang p q)
-    (hdet : ∀ q', langReducesUsing relEnv lang p q' → q' = q) :
-    langDiamondUsing relEnv lang φ p ↔ φ q :=
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p q : Pattern)
+    (hred : langSemanticReducesUsing relEnv lang p q)
+    (hdet : ∀ q', langSemanticReducesUsing relEnv lang p q' → q' = q) :
+    langDiamondUsing relEnv lang φ p ↔ φ.1 q :=
   deterministic_diamond_collapse relEnv lang φ p q hred hdet
 
 /-- Deterministic box collapse transfers to trie backend. -/
 theorem zam_deterministic_box_collapse
     (relEnv : RelationEnv) (lang : LanguageDef)
-    (φ : Pattern → Prop) (p q : Pattern)
-    (hred : langReducesUsing relEnv lang q p)
-    (hdet : ∀ q', langReducesUsing relEnv lang q' p → q' = q) :
-    langBoxUsing relEnv lang φ p ↔ φ q :=
+    (φ : EquationPredicate (langGSLTUsing relEnv lang)) (p q : Pattern)
+    (hred : langSemanticReducesUsing relEnv lang q p)
+    (hdet : ∀ q', langSemanticReducesUsing relEnv lang q' p → q' = q) :
+    langBoxUsing relEnv lang φ p ↔ φ.1 q :=
   deterministic_box_collapse relEnv lang φ p q hred hdet
 
 /-! ## §5: Specialization on Trie Backend
@@ -112,30 +114,39 @@ theorem zam_specialization_preserves_reduction
     (relEnv : RelationEnv)
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (equationFree₁ : lang₁.isEquationFree = true)
     {p q : Pattern}
-    (hred : langReducesUsing relEnv lang₁ p q) :
-    langReducesUsing relEnv lang₂ p q :=
-  specialization_preserves_reduction hrules hred
+    (hred : langSemanticReducesUsing relEnv lang₁ p q) :
+    langSemanticReducesUsing relEnv lang₂ p q :=
+  specialization_preserves_reduction hrules equationFree₁ hred
 
 /-- Diamond is monotone across sub-languages (any backend). -/
 theorem zam_diamond_mono
     (relEnv : RelationEnv)
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (equationFree₁ : lang₁.isEquationFree = true)
+    (equationFree₂ : lang₂.isEquationFree = true)
     (φ : Pattern → Prop) (p : Pattern)
-    (h : langDiamondUsing relEnv lang₁ φ p) :
-    langDiamondUsing relEnv lang₂ φ p :=
-  diamond_mono_rules hrules φ p h
+    (h : langDiamondUsing relEnv lang₁
+      (equationPredicateUsingOfEquationFree relEnv equationFree₁ φ) p) :
+    langDiamondUsing relEnv lang₂
+      (equationPredicateUsingOfEquationFree relEnv equationFree₂ φ) p :=
+  diamond_mono_rules hrules equationFree₁ equationFree₂ φ p h
 
 /-- Box is contravariant across sub-languages (any backend). -/
 theorem zam_box_contra
     (relEnv : RelationEnv)
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
+    (equationFree₁ : lang₁.isEquationFree = true)
+    (equationFree₂ : lang₂.isEquationFree = true)
     (φ : Pattern → Prop) (p : Pattern)
-    (h : langBoxUsing relEnv lang₂ φ p) :
-    langBoxUsing relEnv lang₁ φ p :=
-  box_contra_rules hrules φ p h
+    (h : langBoxUsing relEnv lang₂
+      (equationPredicateUsingOfEquationFree relEnv equationFree₂ φ) p) :
+    langBoxUsing relEnv lang₁
+      (equationPredicateUsingOfEquationFree relEnv equationFree₁ φ) p :=
+  box_contra_rules hrules equationFree₁ equationFree₂ φ p h
 
 /-! ## §6: Substitution-Reduction Fusion on Trie Backend
 
@@ -146,11 +157,16 @@ which are parameterized over the standard RelationEnv.empty). -/
     Since fusion uses `langDiamond`/`langBox` (which fix `RelationEnv.empty`),
     the theorem transfers directly. -/
 theorem zam_substitution_reduction_fusion
-    (lang : LanguageDef) (q : Pattern) :
-    GaloisConnection
-      (commDi q ∘ langDiamond lang)
-      (langBox lang ∘ commPb q) :=
-  substitution_reduction_fusion lang q
+    (lang : LanguageDef) (q : Pattern)
+    (substitutionRespectsEquations : ∀ {left right : Pattern},
+      (langGSLT lang).Equiv left right →
+        (langGSLT lang).Equiv
+          (Mettapedia.OSLF.MeTTaIL.Substitution.commSubst left q)
+          (Mettapedia.OSLF.MeTTaIL.Substitution.commSubst right q)) :
+    let map := commEquationMap lang q substitutionRespectsEquations
+    GaloisConnection (map.directImage ∘ langDiamond lang)
+      (langBox lang ∘ map.pullback) :=
+  substitution_reduction_fusion lang q substitutionRespectsEquations
 
 /-! ## §7: Concrete Trie Zipper Instantiation
 

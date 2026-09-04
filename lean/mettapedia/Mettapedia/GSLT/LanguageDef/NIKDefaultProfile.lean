@@ -2,18 +2,26 @@ import Mettapedia.GSLT.Core.ClosureCriteria
 import Mettapedia.GSLT.LanguageDef.NIKGSLT
 
 /-!
-# The open, statusful default NIK profile
+# The open, statusful external-certificate NIK profile
 
-The Boolean checker is the trusted semantic core of one authority, but it is
-not an adequate public protocol for untrusted requests.  Before a checker can
-return `true` or `false`, a request must parse and resolve to an installed,
-typed authority.  This module separates those stages and exposes four logical
+This historically named `DefaultProfile` is the generic public protocol for
+an external-certificate authority.  It is not NIK's default calculus and must
+not route a request away from a stronger applicable native service.  The
+canonical service and maximal-native selection doctrine is
+`Mettapedia.GSLT.LanguageDef.NIK`.
+
+The Boolean checker is the semantic core of this one boundary face, but it is
+not an adequate public protocol for untrusted requests.  Before it can return
+`true` or `false`, a request must parse and resolve to an installed, typed
+authority.  This module separates those stages and exposes four logical
 outcomes:
 
 * `malformed`: the request did not parse;
 * `unsupported`: it parsed, but no declared authority resolved it;
-* `rejected`: a resolved authority replayed the evidence and returned false;
-* `accepted`: a resolved authority replayed the evidence and returned true.
+* `rejected`: a resolved external authority checked the evidence and returned
+  false;
+* `accepted`: a resolved external authority checked the evidence and returned
+  true.
 
 Operational expiration is a separate result layer.  In particular, an
 expired native run is neither rejection nor unsupported evidence.
@@ -302,7 +310,7 @@ def Step (frontend : Frontend family Request) :
   | .submitted request, .completed outcome => outcome = frontend.run request
   | _, _ => False
 
-/-- The atomic reference presentation of the default NIK profile. -/
+/-- The atomic reference presentation of this external-certificate profile. -/
 def theory (frontend : Frontend family Request) : GSLT where
   Term := State Request family.PackedClaim
   equations := ⟨Eq, ⟨Eq.refl, Eq.symm, Eq.trans⟩⟩

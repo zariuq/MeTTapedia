@@ -2,14 +2,14 @@ import Mettapedia.GSLT.LanguageDef.TptpOfficialSourceLocation
 import Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 /-!
-# Sparse native types for the official TPTP abstract syntax
+# Sparse native types for a static TPTP abstract-syntax snapshot
 
-The official abstract-syntax carrier contains every regular `SyntaxBNF`
-production, but downstream clients normally request only a family boundary.
-This module therefore derives structural native types for the file root and
-the FOF, CNF, TFF, TCF, THF, TPI, and NHF-facing sorts without materializing a
-cross-product of unused predicates.  The language is an inert carrier, so its
-behavioral one-step native types are exactly empty.
+The imported carrier is a static migration snapshot.  This module proves
+structural native-type facts relative to that carrier; it does not prove that
+the carrier was generated correctly from external `SyntaxBNF` source.
+Downstream clients normally request only a family boundary, so the definitions
+avoid materializing a cross-product of unused predicates.  The language is an
+inert carrier, so its behavioral one-step native types are exactly empty.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.TptpOfficialAbstractSyntaxNTT
@@ -27,8 +27,8 @@ def contextualCarrierNativeType (sort : String)
     (free : WellSorted.FreeTypeContext) :
     langNativeType language sort where
   sort := sort
-  pred := fun term =>
-    checkHasType language free [] term (.base sort) = true
+  pred := equationPredicateOfEquationFree rfl (fun term =>
+    checkHasType language free [] term (.base sort) = true)
 
 /-- The structural native type requested at one authored AST sort. -/
 def carrierNativeType (sort : String) :
@@ -49,86 +49,89 @@ def symbolicInputNativeType :=
     TptpOfficialSourceLocation.symbolicInputContext
 
 theorem located_input_inhabits_contextual_native_type :
-    symbolicInputNativeType.pred
+    symbolicInputNativeType.pred.1
       TptpOfficialSourceLocation.symbolicLocatedInput :=
   TptpOfficialSourceLocation.symbolic_located_input_is_admitted
 
 theorem located_include_inhabits_contextual_native_type :
-    symbolicInputNativeType.pred
+    symbolicInputNativeType.pred.1
       TptpOfficialSourceLocation.symbolicLocatedInclude :=
   TptpOfficialSourceLocation.symbolic_located_include_is_admitted
 
 private theorem representative_typing :
-    fileNativeType.pred emptyFile ∧
-      fofNativeType.pred fofAnnotatedExample ∧
-      cnfNativeType.pred cnfAnnotatedExample ∧
-      tffNativeType.pred tffAnnotatedExample ∧
-      tcfNativeType.pred tcfAnnotatedExample ∧
-      thfNativeType.pred thfAnnotatedExample ∧
-      tpiNativeType.pred tpiAnnotatedExample ∧
-      nhfNativeType.pred nhfLongConnectiveExample := by
+    fileNativeType.pred.1 emptyFile ∧
+      fofNativeType.pred.1 fofAnnotatedExample ∧
+      cnfNativeType.pred.1 cnfAnnotatedExample ∧
+      tffNativeType.pred.1 tffAnnotatedExample ∧
+      tcfNativeType.pred.1 tcfAnnotatedExample ∧
+      thfNativeType.pred.1 thfAnnotatedExample ∧
+      tpiNativeType.pred.1 tpiAnnotatedExample ∧
+      nhfNativeType.pred.1 nhfLongConnectiveExample := by
   simp only [fileNativeType, fofNativeType, cnfNativeType, tffNativeType,
     tcfNativeType, thfNativeType, tpiNativeType, nhfNativeType,
-    carrierNativeType, contextualCarrierNativeType]
+    carrierNativeType, contextualCarrierNativeType,
+    equationPredicateOfEquationFree, invariantPredicate]
   decide +kernel
 
-theorem file_inhabits_native_type : fileNativeType.pred emptyFile :=
+theorem file_inhabits_native_type : fileNativeType.pred.1 emptyFile :=
   representative_typing.1
 
 theorem fof_inhabits_native_type :
-    fofNativeType.pred fofAnnotatedExample :=
+    fofNativeType.pred.1 fofAnnotatedExample :=
   representative_typing.2.1
 
 theorem cnf_inhabits_native_type :
-    cnfNativeType.pred cnfAnnotatedExample :=
+    cnfNativeType.pred.1 cnfAnnotatedExample :=
   representative_typing.2.2.1
 
 theorem tff_inhabits_native_type :
-    tffNativeType.pred tffAnnotatedExample :=
+    tffNativeType.pred.1 tffAnnotatedExample :=
   representative_typing.2.2.2.1
 
 theorem tcf_inhabits_native_type :
-    tcfNativeType.pred tcfAnnotatedExample :=
+    tcfNativeType.pred.1 tcfAnnotatedExample :=
   representative_typing.2.2.2.2.1
 
 theorem thf_inhabits_native_type :
-    thfNativeType.pred thfAnnotatedExample :=
+    thfNativeType.pred.1 thfAnnotatedExample :=
   representative_typing.2.2.2.2.2.1
 
 theorem tpi_inhabits_native_type :
-    tpiNativeType.pred tpiAnnotatedExample :=
+    tpiNativeType.pred.1 tpiAnnotatedExample :=
   representative_typing.2.2.2.2.2.2.1
 
 theorem nhf_inhabits_native_type :
-    nhfNativeType.pred nhfLongConnectiveExample :=
+    nhfNativeType.pred.1 nhfLongConnectiveExample :=
   representative_typing.2.2.2.2.2.2.2
 
 private theorem cross_family_distinctness :
-    ¬ thfNativeType.pred fofAnnotatedExample ∧
-      ¬ fofNativeType.pred thfAnnotatedExample ∧
-      ¬ tcfNativeType.pred cnfAnnotatedExample ∧
-      ¬ fileNativeType.pred tpiAnnotatedExample := by
+    ¬ thfNativeType.pred.1 fofAnnotatedExample ∧
+      ¬ fofNativeType.pred.1 thfAnnotatedExample ∧
+      ¬ tcfNativeType.pred.1 cnfAnnotatedExample ∧
+      ¬ fileNativeType.pred.1 tpiAnnotatedExample := by
   simp only [fileNativeType, fofNativeType, tcfNativeType, thfNativeType,
-    carrierNativeType, contextualCarrierNativeType]
+    carrierNativeType, contextualCarrierNativeType,
+    equationPredicateOfEquationFree, invariantPredicate]
   decide +kernel
 
-theorem fof_not_thf : ¬ thfNativeType.pred fofAnnotatedExample :=
+theorem fof_not_thf : ¬ thfNativeType.pred.1 fofAnnotatedExample :=
   cross_family_distinctness.1
 
-theorem thf_not_fof : ¬ fofNativeType.pred thfAnnotatedExample :=
+theorem thf_not_fof : ¬ fofNativeType.pred.1 thfAnnotatedExample :=
   cross_family_distinctness.2.1
 
-theorem cnf_not_tcf : ¬ tcfNativeType.pred cnfAnnotatedExample :=
+theorem cnf_not_tcf : ¬ tcfNativeType.pred.1 cnfAnnotatedExample :=
   cross_family_distinctness.2.2.1
 
-theorem tpi_not_file : ¬ fileNativeType.pred tpiAnnotatedExample :=
+theorem tpi_not_file : ¬ fileNativeType.pred.1 tpiAnnotatedExample :=
   cross_family_distinctness.2.2.2
 
 theorem exact_target_native_type_empty (source target : Pattern) :
     ¬ (gsltOSLF theory).satisfies source
         (exactTargetNativeType theory target).pred := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  intro holds
   exact theory_no_step source target
+    ((satisfies_exactTargetNativeType_iff_step theory source target).mp holds)
 
 #print axioms file_inhabits_native_type
 #print axioms fof_inhabits_native_type

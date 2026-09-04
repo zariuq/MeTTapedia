@@ -31,7 +31,7 @@ private theorem typeDecl_ext {left right : TypeDecl}
 namespace CIGSLT.Morphism
 
 /-- The declaration-derived Cost interaction map.  Its symbol action is
-forced by `costPresentationSymbols`; the selected wrapped carrier, contact,
+forced by `costLanguageDefSymbolMap`; the selected wrapped carrier, contact,
 and funded rewrite are transported from their generated declarations. -/
 def costWholeInteractive {source target : CIGSLT}
     (morphism : source.Morphism target) :
@@ -41,18 +41,18 @@ def costWholeInteractive {source target : CIGSLT}
   mapsInteractingSort := by
     apply Subtype.ext
     change TypeDecl.mk
-        ((costPresentationSymbols
+        ((costLanguageDefSymbolMap
           morphism.underlying.structural.structural.symbols).sort
             costWrappedSortName) .ast =
       TypeDecl.mk costWrappedSortName .ast
-    rw [costPresentationSymbols_sort_wrapped]
+    rw [costLanguageDefSymbolMap_sort_wrapped]
   mapsContactConstructor := by
     apply Subtype.ext
     simp [costWholeInteractivePresentation, costWholeContactConstructor,
       costWholeStructural, StructuralMorphism.mapConstructor,
       costContactConstructor, mapGrammarRule, mapTermParam, mapTypeExpr,
       costContactConstructorName,
-      costPresentationSymbols_constructor_apparatus]
+      costLanguageDefSymbolMap_constructor_apparatus]
   mapsInteractionRewrite := by
     apply Subtype.ext
     exact morphism.map_costWholeRedexRewrite
@@ -64,7 +64,7 @@ theorem costWholeInteractive_id (source : CIGSLT) :
       InteractiveMorphism.id source.costWholeInteractivePresentation := by
   apply InteractiveMorphism.ext
   apply StructuralMorphism.ext
-  exact costPresentationSymbols_id
+  exact costLanguageDefSymbolMap_id
 
 /-- The generated interactive action respects composition. -/
 theorem costWholeInteractive_comp {first second third : CIGSLT}
@@ -74,7 +74,7 @@ theorem costWholeInteractive_comp {first second third : CIGSLT}
         right.costWholeInteractive := by
   apply InteractiveMorphism.ext
   apply StructuralMorphism.ext
-  exact costPresentationSymbols_comp
+  exact costLanguageDefSymbolMap_comp
     left.underlying.structural.structural.symbols
     right.underlying.structural.structural.symbols
 
@@ -87,11 +87,11 @@ theorem mapsCostCoreSort {source target : CIGSLT}
       target.costInteractionCut.coreContact.sort := by
   apply Subtype.ext
   apply typeDecl_ext
-  · change (costPresentationSymbols
+  · change (costLanguageDefSymbolMap
       morphism.underlying.structural.structural.symbols).sort
         (costBaseSortName source.cut.coreContact.sort.1.name) =
       costBaseSortName target.cut.coreContact.sort.1.name
-    rw [costPresentationSymbols_sort_base]
+    rw [costLanguageDefSymbolMap_sort_base]
     exact congrArg (fun name => costBaseSortName name)
       (congrArg TypeDecl.name
         (congrArg Subtype.val morphism.mapsCoreSort))
@@ -110,7 +110,7 @@ theorem mapsCostCoreContactConstructor {source target : CIGSLT}
       target.costInteractionCut.coreContact.constructor := by
   apply Subtype.ext
   change mapGrammarRule
-      (costPresentationSymbols
+      (costLanguageDefSymbolMap
         morphism.underlying.structural.structural.symbols)
       (costBaseConstructor source.cut source.cut.coreContact.constructor.1) =
     costBaseConstructor target.cut target.cut.coreContact.constructor.1
@@ -128,7 +128,7 @@ theorem mapsCostCorePattern {source target : CIGSLT}
         source.costInteractionCut.sourceShape.core =
       target.costInteractionCut.sourceShape.core := by
   change mapPattern
-      (costPresentationSymbols
+      (costLanguageDefSymbolMap
         morphism.underlying.structural.structural.symbols)
       source.costBaseInteractionCore = target.costBaseInteractionCore
   exact morphism.map_costBaseInteractionCore
@@ -141,7 +141,7 @@ theorem mapsCostSourceEnvelope {source target : CIGSLT}
         source.costInteractionCut.sourceShape.envelope =
       target.costInteractionCut.sourceShape.envelope := by
   change mapOneHoleContext
-      (costPresentationSymbols
+      (costLanguageDefSymbolMap
         morphism.underlying.structural.structural.symbols)
       source.costWholeRedexEnvelope = target.costWholeRedexEnvelope
   exact morphism.map_costWholeRedexEnvelope
@@ -158,9 +158,9 @@ theorem mapCostBaseSchemaPattern {source target : CIGSLT}
   rw [mapPattern_mapPatternSchemaNames]
   apply congrArg (mapPatternSchemaNames costSourceSchemaName)
   change mapPattern
-      (costPresentationSymbols
+      (costLanguageDefSymbolMap
         morphism.underlying.structural.structural.symbols)
-      (mapPattern costBasePresentationSymbols pattern) = _
+      (mapPattern costBaseLanguageDefSymbolMap pattern) = _
   exact mapPattern_costBasePresentation_natural _ _
 
 /-- The generated program introduction is the natural base copy of the
@@ -177,7 +177,7 @@ theorem mapsCostProgramConstructor {source target : CIGSLT}
       (costBaseConstructor source.cut source.cut.program.constructor.1) =
     costBaseConstructor target.cut target.cut.program.constructor.1
   change mapGrammarRule
-      (costPresentationSymbols
+      (costLanguageDefSymbolMap
         morphism.underlying.structural.structural.symbols)
       (costBaseConstructor source.cut source.cut.program.constructor.1) = _
   rw [morphism.mapGrammarRule_costBaseConstructor]
@@ -199,7 +199,7 @@ theorem mapsCostEnvironmentConstructor {source target : CIGSLT}
       (costBaseConstructor source.cut source.cut.environment.constructor.1) =
     costBaseConstructor target.cut target.cut.environment.constructor.1
   change mapGrammarRule
-      (costPresentationSymbols
+      (costLanguageDefSymbolMap
         morphism.underlying.structural.structural.symbols)
       (costBaseConstructor source.cut source.cut.environment.constructor.1) = _
   rw [morphism.mapGrammarRule_costBaseConstructor]
@@ -260,10 +260,10 @@ theorem reflectsCostInteractingSort {source target : CIGSLT}
     (mapped : morphism.costWholeStructural.symbols.sort sourceSort =
       target.costIGSLT.presentation.interactingSort.1.name) :
     sourceSort = source.costIGSLT.presentation.interactingSort.1.name := by
-  change (costPresentationSymbols
+  change (costLanguageDefSymbolMap
       morphism.underlying.structural.structural.symbols).sort sourceSort =
     costWrappedSortName at mapped
-  exact (costPresentationSymbols_sort_eq_wrapped_iff _ _).mp mapped
+  exact (costLanguageDefSymbolMap_sort_eq_wrapped_iff _ _).mp mapped
 
 theorem mapsCostProgramContinuationIndex {source target : CIGSLT}
     (morphism : source.Morphism target) :
@@ -342,7 +342,7 @@ def CostGeneratedReflectiveScopePreserving {source target : CIGSLT}
       ReflectiveWellSorted.ReflectiveScopeSafeAt
         target.costWholeReflectionProfile depth
         (mapPattern
-          (costPresentationSymbols
+          (costLanguageDefSymbolMap
             morphism.underlying.structural.structural.symbols)
           pattern)
 
@@ -406,8 +406,8 @@ theorem id (source : CIGSLT) :
   intro depth pattern safe
   change ReflectiveWellSorted.ReflectiveScopeSafeAt
     source.costWholeReflectionProfile depth
-      (mapPattern (costPresentationSymbols PresentationSymbols.id) pattern)
-  rw [costPresentationSymbols_id, mapPattern_id]
+      (mapPattern (costLanguageDefSymbolMap LanguageDefSymbolMap.id) pattern)
+  rw [costLanguageDefSymbolMap_id, mapPattern_id]
   exact safe
 
 /-- Generated Cost quotation-boundary preservation composes. -/
@@ -423,10 +423,10 @@ theorem comp {first second third : CIGSLT}
   change ReflectiveWellSorted.ReflectiveScopeSafeAt
     third.costWholeReflectionProfile depth
       (mapPattern
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           (left.underlying.structural.structural.symbols.comp
             right.underlying.structural.structural.symbols)) pattern)
-  rw [costPresentationSymbols_comp, mapPattern_comp]
+  rw [costLanguageDefSymbolMap_comp, mapPattern_comp]
   exact secondSafe
 
 end CostGeneratedReflectiveScopePreserving
@@ -464,18 +464,18 @@ structure Cost.Layer.Hom.CompactMapLaws
     CostGeneratedReflectiveScopePreserving underlying.underlying
   reflectsGeneratedProgramConstructor : ∀ constructor,
     mapGrammarRule
-        (costPresentationSymbols underlying.underlying.underlying.structural.structural.symbols)
+        (costLanguageDefSymbolMap underlying.underlying.underlying.structural.structural.symbols)
         constructor = target.source.toCIGSLT.costInteractionCut.program.constructor.1 →
       constructor = source.source.toCIGSLT.costInteractionCut.program.constructor.1
   reflectsGeneratedEnvironmentConstructor : ∀ constructor,
     mapGrammarRule
-        (costPresentationSymbols underlying.underlying.underlying.structural.structural.symbols)
+        (costLanguageDefSymbolMap underlying.underlying.underlying.structural.structural.symbols)
         constructor =
           target.source.toCIGSLT.costInteractionCut.environment.constructor.1 →
       constructor =
         source.source.toCIGSLT.costInteractionCut.environment.constructor.1
   mapsGeneratedWrappedLabelMembership : ∀ sourceLabel,
-    (costPresentationSymbols
+    (costLanguageDefSymbolMap
         underlying.underlying.underlying.structural.structural.symbols).constructor
           sourceLabel ∈
         target.source.toCIGSLT.costContinuationRetyping.wrappedLabels ↔
@@ -488,7 +488,7 @@ structure Cost.Layer.Hom.CompactMapLaws
   quoteFaithful : Function.Injective
     (fun key : source.compactOutput.toCIGSLT.CanonicalKey =>
       mapPattern
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           underlying.underlying.underlying.structural.structural.symbols)
         key.1.1)
 
@@ -506,30 +506,30 @@ def id (source : Cost.Layer) :
   reflectsGeneratedProgramConstructor := by
     intro constructor equality
     change mapGrammarRule
-      (costPresentationSymbols PresentationSymbols.id) constructor = _
+      (costLanguageDefSymbolMap LanguageDefSymbolMap.id) constructor = _
         at equality
-    rw [costPresentationSymbols_id, mapGrammarRule_id] at equality
+    rw [costLanguageDefSymbolMap_id, mapGrammarRule_id] at equality
     exact equality
   reflectsGeneratedEnvironmentConstructor := by
     intro constructor equality
     change mapGrammarRule
-      (costPresentationSymbols PresentationSymbols.id) constructor = _
+      (costLanguageDefSymbolMap LanguageDefSymbolMap.id) constructor = _
         at equality
-    rw [costPresentationSymbols_id, mapGrammarRule_id] at equality
+    rw [costLanguageDefSymbolMap_id, mapGrammarRule_id] at equality
     exact equality
   mapsGeneratedWrappedLabelMembership := by
     intro sourceLabel
-    change (costPresentationSymbols PresentationSymbols.id).constructor
+    change (costLanguageDefSymbolMap LanguageDefSymbolMap.id).constructor
         sourceLabel ∈ _ ↔ sourceLabel ∈ _
-    rw [costPresentationSymbols_id]
+    rw [costLanguageDefSymbolMap_id]
     rfl
   normalizerSemiconj := by
     intro free bound sort term
     symm
     let structural :=
       (OrderedCIGSLT.Morphism.id source.source).underlying.costWholeStructural
-    have symbolsIdentity : structural.symbols = PresentationSymbols.id := by
-      exact costPresentationSymbols_id
+    have symbolsIdentity : structural.symbols = LanguageDefSymbolMap.id := by
+      exact costLanguageDefSymbolMap_id
     have freeEquality : free = free.map structural.symbols := by
       rw [symbolsIdentity]
       exact (WellSorted.FreeTypeContext.map_id free).symm
@@ -538,7 +538,7 @@ def id (source : Cost.Layer) :
       rw [symbolsIdentity]
       symm
       calc
-        bound.map (mapTypeExpr PresentationSymbols.id) =
+        bound.map (mapTypeExpr LanguageDefSymbolMap.id) =
             bound.map _root_.id := by
           apply List.map_congr_left
           intro type membership
@@ -588,11 +588,11 @@ def id (source : Cost.Layer) :
     intro left right equality
     apply Subtype.ext
     apply Subtype.ext
-    change mapPattern (costPresentationSymbols PresentationSymbols.id)
+    change mapPattern (costLanguageDefSymbolMap LanguageDefSymbolMap.id)
         left.1.1 =
-      mapPattern (costPresentationSymbols PresentationSymbols.id) right.1.1
+      mapPattern (costLanguageDefSymbolMap LanguageDefSymbolMap.id) right.1.1
         at equality
-    simpa [costPresentationSymbols_id] using equality
+    simpa [costLanguageDefSymbolMap_id] using equality
 
 /-- Assemble the unique compact continued Cost map selected by the source
 arrow and its explicit semantic admission laws.  No output morphism is
@@ -666,33 +666,33 @@ def comp {first second third : Cost.Layer}
   reflectsGeneratedProgramConstructor := by
     intro constructor equality
     change mapGrammarRule
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           (left.underlying.underlying.structural.structural.symbols.comp
             right.underlying.underlying.structural.structural.symbols))
         constructor = _ at equality
-    rw [costPresentationSymbols_comp, mapGrammarRule_comp] at equality
+    rw [costLanguageDefSymbolMap_comp, mapGrammarRule_comp] at equality
     exact leftLaws.reflectsGeneratedProgramConstructor constructor
       (rightLaws.reflectsGeneratedProgramConstructor _ equality)
   reflectsGeneratedEnvironmentConstructor := by
     intro constructor equality
     change mapGrammarRule
-        (costPresentationSymbols
+        (costLanguageDefSymbolMap
           (left.underlying.underlying.structural.structural.symbols.comp
             right.underlying.underlying.structural.structural.symbols))
         constructor = _ at equality
-    rw [costPresentationSymbols_comp, mapGrammarRule_comp] at equality
+    rw [costLanguageDefSymbolMap_comp, mapGrammarRule_comp] at equality
     exact leftLaws.reflectsGeneratedEnvironmentConstructor constructor
       (rightLaws.reflectsGeneratedEnvironmentConstructor _ equality)
   mapsGeneratedWrappedLabelMembership := by
     intro sourceLabel
-    change (costPresentationSymbols
+    change (costLanguageDefSymbolMap
         (left.underlying.underlying.structural.structural.symbols.comp
           right.underlying.underlying.structural.structural.symbols)).constructor
           sourceLabel ∈ _ ↔ sourceLabel ∈ _
-    rw [costPresentationSymbols_comp]
-    change (costPresentationSymbols
+    rw [costLanguageDefSymbolMap_comp]
+    change (costLanguageDefSymbolMap
         right.underlying.underlying.structural.structural.symbols).constructor
-          ((costPresentationSymbols
+          ((costLanguageDefSymbolMap
             left.underlying.underlying.structural.structural.symbols).constructor
               sourceLabel) ∈ _ ↔ sourceLabel ∈ _
     rw [rightLaws.mapsGeneratedWrappedLabelMembership,
@@ -706,7 +706,7 @@ def comp {first second third : Cost.Layer}
       (OrderedCIGSLT.Morphism.comp left right).underlying.costWholeStructural
     have symbolsComposite : compositeStructural.symbols =
         firstStructural.symbols.comp secondStructural.symbols := by
-      exact costPresentationSymbols_comp
+      exact costLanguageDefSymbolMap_comp
         left.underlying.underlying.structural.structural.symbols
         right.underlying.underlying.structural.structural.symbols
     let firstMapped := term.map firstStructural
@@ -833,18 +833,18 @@ def comp {first second third : Cost.Layer}
       leftLaws.toCompactCIGSLTMorphism
       rightLaws.toCompactCIGSLTMorphism).quoteFaithful
     change mapPattern
-        ((costPresentationSymbols
+        ((costLanguageDefSymbolMap
           left.underlying.underlying.structural.structural.symbols).comp
-          (costPresentationSymbols
+          (costLanguageDefSymbolMap
             right.underlying.underlying.structural.structural.symbols))
         leftKey.1.1 =
       mapPattern
-        ((costPresentationSymbols
+        ((costLanguageDefSymbolMap
           left.underlying.underlying.structural.structural.symbols).comp
-          (costPresentationSymbols
+          (costLanguageDefSymbolMap
             right.underlying.underlying.structural.structural.symbols))
         rightKey.1.1
-    rw [← costPresentationSymbols_comp]
+    rw [← costLanguageDefSymbolMap_comp]
     exact equality
 
 /-- The constructed compact Cost map sends the admissible identity laws to

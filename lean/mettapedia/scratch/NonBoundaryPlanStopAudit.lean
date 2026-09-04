@@ -1,0 +1,66 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryNonBoundaryPlanStop
+
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+
+#check @RhoCollapsibleRootClass
+#check @rhoCollapsibleRootClass_of_collapsingRoot
+#check @rhoCollapsibleRootClass_boundaryApplication
+#check @rhoCollapsibleRootClass_boundaryCollection
+#check @rhoCollapsibleRootClass_quoteApplication
+#check @rhoCollapsibleRootClass_parallelCollection
+#check @not_rhoCollapsibleRootClass_rigid
+#check @not_rhoCollapsibleRootClass_application
+#check @not_rhoCollapsibleRootClass_collection
+#check @rhoCanonicalRawStop_collapsingEndpoint
+#check @rho_planStop_collapsibleSide
+#check @RhoPlanStopCell
+#check @rho_planStop_sharpCell
+#check @RhoPlanStopBoundarySideCell
+#check @RhoPlanStopParallelSideCell
+#check @RhoPlanStopQuotePairCell
+#check @RhoPlanStopSameColorQuoteSideCell
+#check @rhoPlanStopCell_cases
+#check @rho_planStop_boundarySide_size_lt
+#check @rho_rawStop_of_leftParallelPayload
+#check @rho_rawStop_of_rightParallelPayload
+#check @rho_planStop_rawStop_of_parallelSide
+#check @rho_planStop_parallelSide_size_lt
+#check @rho_planStop_quotePair_cases
+#check @PatternLeafAligned.of_fvar_left
+#check @PatternLeafAligned.of_fvar_right
+#check @abstractPattern_eq_fvar_of_isCertifiedBoundary
+#check @canonicalizeByDepths_reify_abstractPattern_of_isCertifiedBoundary
+#check @RhoStaticNonBoundaryPlanStopSourceAlignedOn
+#check @RhoStaticNonBoundaryPlanStopSourceAlignedOn.mono
+#check @RhoStaticNonBoundaryPlanStopSourceAligned.of_liveCells
+#check @RhoStaticNonBoundaryPlanStopSourceAligned.of_liveCells_rawStop
+#check @rhoAlignedViewsRestorationAligned_of_liveCells
+#check @rhoCollapsingViewsPlanStopSourceAligned_of_liveCells
+
+#print axioms rhoCollapsibleRootClass_of_collapsingRoot
+#print axioms rhoCollapsibleRootClass_boundaryApplication
+#print axioms rhoCollapsibleRootClass_boundaryCollection
+#print axioms rhoCollapsibleRootClass_quoteApplication
+#print axioms rhoCollapsibleRootClass_parallelCollection
+#print axioms not_rhoCollapsibleRootClass_rigid
+#print axioms not_rhoCollapsibleRootClass_application
+#print axioms not_rhoCollapsibleRootClass_collection
+#print axioms rhoCanonicalRawStop_collapsingEndpoint
+#print axioms rho_planStop_collapsibleSide
+#print axioms rho_planStop_sharpCell
+#print axioms rhoPlanStopCell_cases
+#print axioms rho_planStop_boundarySide_size_lt
+#print axioms rho_rawStop_of_leftParallelPayload
+#print axioms rho_rawStop_of_rightParallelPayload
+#print axioms rho_planStop_rawStop_of_parallelSide
+#print axioms rho_planStop_parallelSide_size_lt
+#print axioms rho_planStop_quotePair_cases
+#print axioms PatternLeafAligned.of_fvar_left
+#print axioms PatternLeafAligned.of_fvar_right
+#print axioms abstractPattern_eq_fvar_of_isCertifiedBoundary
+#print axioms canonicalizeByDepths_reify_abstractPattern_of_isCertifiedBoundary
+#print axioms RhoStaticNonBoundaryPlanStopSourceAlignedOn.mono
+#print axioms RhoStaticNonBoundaryPlanStopSourceAligned.of_liveCells
+#print axioms RhoStaticNonBoundaryPlanStopSourceAligned.of_liveCells_rawStop
+#print axioms rhoAlignedViewsRestorationAligned_of_liveCells
+#print axioms rhoCollapsingViewsPlanStopSourceAligned_of_liveCells

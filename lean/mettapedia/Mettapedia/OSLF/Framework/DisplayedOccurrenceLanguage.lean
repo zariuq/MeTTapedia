@@ -117,7 +117,7 @@ noncomputable instance : CategoryTheory.Category
     · apply StructuralMorphism.ext
       simp [DisplayedOccurrenceMorphism.comp, DisplayedOccurrenceMorphism.id,
         StructuralMorphism.comp, StructuralMorphism.id,
-        PresentationSymbols.comp, PresentationSymbols.id]
+        LanguageDefSymbolMap.comp, LanguageDefSymbolMap.id]
     · funext sourcePosition
       simp [DisplayedOccurrenceMorphism.comp, DisplayedOccurrenceMorphism.id]
   comp_id morphism := by
@@ -125,7 +125,7 @@ noncomputable instance : CategoryTheory.Category
     · apply StructuralMorphism.ext
       simp [DisplayedOccurrenceMorphism.comp, DisplayedOccurrenceMorphism.id,
         StructuralMorphism.comp, StructuralMorphism.id,
-        PresentationSymbols.comp, PresentationSymbols.id]
+        LanguageDefSymbolMap.comp, LanguageDefSymbolMap.id]
     · funext sourcePosition
       simp [DisplayedOccurrenceMorphism.comp, DisplayedOccurrenceMorphism.id]
   assoc first second third := by

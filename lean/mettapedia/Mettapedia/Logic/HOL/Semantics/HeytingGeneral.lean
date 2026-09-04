@@ -644,7 +644,7 @@ noncomputable def lindenbaumModel (T : ClosedTheorySet (WithParams Const))
       NoConstOccurrence (param σ k : WithParams Const σ) ψ) :
     HeytingGeneralModel Base (WithParams Const) :=
   lindenbaumModelOfAllIntro (Base := Base) T
-    (fun {σ' φb ω} h => all_intro_of_instances hT0 h)
+    (fun {_σ' _φb _ω} h => all_intro_of_instances hT0 h)
 
 end Lindenbaum
 

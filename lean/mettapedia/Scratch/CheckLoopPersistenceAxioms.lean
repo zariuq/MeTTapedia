@@ -1,0 +1,5 @@
+import Mettapedia.Languages.MeTTa.HE.LeaTTaLoopPersistence
+
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaBridge.resolveAtomAux_some_at_resolutionFuel
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaBridge.hasLoop_false_of_addValRaw_fresh
+#print axioms Mettapedia.Languages.MeTTa.HE.LeaTTaBridge.hasLoop_false_of_addEqRaw_emptyUnifier

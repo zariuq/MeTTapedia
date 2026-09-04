@@ -133,7 +133,7 @@ theorem rho_drop_mem_wrappedConstructors :
     (⟨rhoCalc.terms[1], by
         change rhoCalc.terms[1] ∈ rhoCalc.terms
         exact List.getElem_mem (by simp [rhoCalc])⟩ :
-      AuthoredConstructor rhoIGSLT.presentation.presentation) ∈
+      DeclaredConstructor rhoIGSLT.presentation.presentation) ∈
       rhoContinuationRetyping.wrappedConstructors := by
   rw [rhoContinuationRetyping.mem_wrappedConstructors_iff]
   constructor <;> decide
@@ -143,7 +143,7 @@ theorem rho_quote_mem_wrappedConstructors :
     (⟨rhoCalc.terms[2], by
         change rhoCalc.terms[2] ∈ rhoCalc.terms
         exact List.getElem_mem (by simp [rhoCalc])⟩ :
-      AuthoredConstructor rhoIGSLT.presentation.presentation) ∈
+      DeclaredConstructor rhoIGSLT.presentation.presentation) ∈
       rhoContinuationRetyping.wrappedConstructors := by
   rw [rhoContinuationRetyping.mem_wrappedConstructors_iff]
   constructor <;> decide
@@ -165,14 +165,14 @@ theorem rho_costWhole_rule_category_of_dropWire (color : CostStaticColor)
             (CostStaticColor.symbols rhoCIGSLT .base).constructor "PDrop" := by
         simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
           rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
-          costBasePresentationSymbols]
+          costBaseLanguageDefSymbolMap]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
       simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
         rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
-        costBasePresentationSymbols]
+        costBaseLanguageDefSymbolMap]
   | wrapped =>
       have labelRendered :
           (rhoCIGSLT.materializeDeclaredCostConstructor
@@ -207,14 +207,14 @@ theorem rho_costWhole_rule_category_of_quoteWire (color : CostStaticColor)
             (CostStaticColor.symbols rhoCIGSLT .base).constructor "NQuote" := by
         simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
           rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
-          costBasePresentationSymbols]
+          costBaseLanguageDefSymbolMap]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
       simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
         rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
-        costBasePresentationSymbols]
+        costBaseLanguageDefSymbolMap]
   | wrapped =>
       have labelRendered :
           (rhoCIGSLT.materializeDeclaredCostConstructor
@@ -2177,7 +2177,7 @@ theorem rho_dropTower_typed_chain
               cases color <;>
                 simp [CostStaticColor.symbols, mapTypeExpr,
                   costBaseStaticSymbols, costWrappedStaticSymbols,
-                  costBasePresentationSymbols, rho_interactingSort_name]
+                  costBaseLanguageDefSymbolMap, rho_interactingSort_name]
               · exact .nameLeaf
               · exact .nameLeaf
             · rw [resultEq] at canonicalElement
@@ -2199,7 +2199,7 @@ theorem rho_dropTower_typed_chain
             cases color with
             | base =>
                 simp [CostStaticColor.symbols, mapTypeExpr,
-                  costBaseStaticSymbols, costBasePresentationSymbols]
+                  costBaseStaticSymbols, costBaseLanguageDefSymbolMap]
                 exact .procLeafBase
             | wrapped =>
                 simp [CostStaticColor.symbols, mapTypeExpr,

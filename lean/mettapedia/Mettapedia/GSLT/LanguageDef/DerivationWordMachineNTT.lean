@@ -44,12 +44,12 @@ theorem no_formula_outcome_crossing :
 
 def configNativeType : langNativeType language "Config" where
   sort := "Config"
-  pred := fun term =>
+  pred := equationPredicateOfEquationFree rfl (fun term =>
     checkHasType language WellSorted.FreeTypeContext.empty [] term
-      (.base "Config") = true
+      (.base "Config") = true)
 
 theorem missing_start_inhabits_config :
-    configNativeType.pred missingFinishStart := by
+    configNativeType.pred.1 missingFinishStart := by
   change checkHasType language WellSorted.FreeTypeContext.empty []
     missingFinishStart (.base "Config") = true
   exact missingFinishStart_has_type
@@ -62,15 +62,11 @@ theorem machine_galois :
       (langBoxUsing RelationEnv.empty language) :=
   langGaloisUsing RelationEnv.empty language
 
-set_option maxHeartbeats 30000000 in
-set_option maxRecDepth 100000 in
 theorem missing_finish_step_exact :
     rewriteAt (engineBasePremises RelationEnv.empty) language 1
       missingFinishStart = [missingFinishDone] := by
   exact missingFinishStep_exact
 
-set_option maxHeartbeats 30000000 in
-set_option maxRecDepth 100000 in
 theorem halted_has_no_reducts :
     rewriteAt (engineBasePremises RelationEnv.empty) language 1
       missingFinishDone = [] := by

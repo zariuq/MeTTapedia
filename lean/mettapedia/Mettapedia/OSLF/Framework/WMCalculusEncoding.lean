@@ -34,8 +34,13 @@ open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.WMCalculusLanguageDef
 open Mettapedia.OSLF.Framework.WMCalculusOSLFBridge
+
+private def wmCoreEquationPredicate (predicate : Pattern → Prop) :
+    EquationPredicate (langGSLT wmCoreLanguageDef) :=
+  equationPredicateOfEquationFree (by rfl) predicate
 
 /-! ## Section 1: Computable Encoder -/
 
@@ -387,7 +392,9 @@ theorem wmStepStar_sound {s : WMSort} {t₁ t₂ : WMTerm s}
   unfold WMStepStar at h
   induction h with
   | refl => exact .refl _
-  | tail _ hab ih => exact ih.trans (LangReducesStar.single (wmStep_sound _ _ hab))
+  | tail _ hab ih =>
+      exact ih.trans (LangReducesStar.single
+        (langReduces_to_semantic wmCoreLanguageDef (wmStep_sound _ _ hab)))
 
 /-- Backward: `LangReducesStar` from an encoded term yields an encoded result. -/
 theorem wmStepStar_complete {s : WMSort} (t₁ : WMTerm s) (q : Pattern)
@@ -399,7 +406,10 @@ theorem wmStepStar_complete {s : WMSort} (t₁ : WMTerm s) (q : Pattern)
   | refl _ => exact ⟨t₁, .refl, hp⟩
   | step hstep _hstar ih =>
     subst hp
-    obtain ⟨t_mid, hstep_wm, hencode_mid⟩ := wmStep_complete _ _ hstep
+    have hstepRaw : langReduces wmCoreLanguageDef (encodeWM t₁) _ :=
+      (langSemanticReduces_iff_langReduces_of_equation_free
+        (by rfl) _ _).mp hstep
+    obtain ⟨t_mid, hstep_wm, hencode_mid⟩ := wmStep_complete _ _ hstepRaw
     obtain ⟨t₂, hstar_wm, hencode₂⟩ := ih t_mid hencode_mid
     exact ⟨t₂, Relation.ReflTransGen.head hstep_wm hstar_wm, hencode₂⟩
 
@@ -427,31 +437,40 @@ does NOT hold because `ruleCombineZero` can produce Pattern-level predecessors
 `encodeWM` for leaf-sorted terms. The biconditional on image is the correct
 formulation. -/
 
-/-- Single-step biconditional: `WMStep t₁ t₂ ↔ langReduces ... (encodeWM t₁) (encodeWM t₂)`. -/
+/-- Single-step biconditional against the sole equation-respecting semantic
+relation.  Here it agrees with the internal engine step by the
+empty-equations recovery theorem. -/
 theorem wmStep_iff {s : WMSort} (t₁ t₂ : WMTerm s) :
-    WMStep t₁ t₂ ↔ langReduces wmCoreLanguageDef (encodeWM t₁) (encodeWM t₂) := by
+    WMStep t₁ t₂ ↔
+      langSemanticReduces wmCoreLanguageDef (encodeWM t₁) (encodeWM t₂) := by
   constructor
-  · exact wmStep_sound t₁ t₂
   · intro h
-    obtain ⟨t₂', hstep, hencode⟩ := wmStep_complete t₁ _ h
+    exact langReduces_to_semantic wmCoreLanguageDef (wmStep_sound t₁ t₂ h)
+  · intro h
+    have hRaw : langReduces wmCoreLanguageDef (encodeWM t₁) (encodeWM t₂) :=
+      (langSemanticReduces_iff_langReduces_of_equation_free
+        (by rfl) _ _).mp h
+    obtain ⟨t₂', hstep, hencode⟩ := wmStep_complete t₁ _ hRaw
     have := encodeWM_injective hencode
     subst this
     exact hstep
 
 /-- Box soundness: `langBox` implies all WMStep predecessors satisfy φ. -/
 theorem wmBox_sound {s : WMSort} (t : WMTerm s) (φ : Pattern → Prop)
-    (h : langBox wmCoreLanguageDef φ (encodeWM t)) :
+    (h : langBox wmCoreLanguageDef (wmCoreEquationPredicate φ) (encodeWM t)) :
     ∀ t' : WMTerm s, WMStep t' t → φ (encodeWM t') := by
   intro t' hstep
   rw [langBox_spec] at h
-  exact h (encodeWM t') (wmStep_sound t' t hstep)
+  exact h (encodeWM t')
+    (langReduces_to_semantic wmCoreLanguageDef (wmStep_sound t' t hstep))
 
 /-- Diamond completeness: if `WMStep t t'` then `langDiamond φ (encodeWM t)`,
     for any `φ` satisfied by `encodeWM t'`. -/
 theorem wmDiamond_complete {s : WMSort} (t t' : WMTerm s) (φ : Pattern → Prop)
     (hstep : WMStep t t') (hφ : φ (encodeWM t')) :
-    langDiamond wmCoreLanguageDef φ (encodeWM t) := by
+    langDiamond wmCoreLanguageDef (wmCoreEquationPredicate φ) (encodeWM t) := by
   rw [langDiamond_spec]
-  exact ⟨encodeWM t', wmStep_sound t t' hstep, hφ⟩
+  exact ⟨encodeWM t',
+    langReduces_to_semantic wmCoreLanguageDef (wmStep_sound t t' hstep), hφ⟩
 
 end Mettapedia.OSLF.Framework.WMCalculusEncoding

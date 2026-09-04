@@ -1,5 +1,7 @@
 import Mettapedia.GSLT.Logic.MinimalContext
 
+set_option linter.dupNamespace false
+
 /-!
 # Context-Decorated Hennessy-Milner Logic
 
@@ -66,7 +68,7 @@ def disj (ϕ ψ : HMLFormula S) : HMLFormula S := .neg (.conj (.neg ϕ) (.neg ψ
 def imp (ϕ ψ : HMLFormula S) : HMLFormula S := disj (.neg ϕ) ψ
 
 /-- Box modality [K]ϕ = ¬⟨K⟩¬ϕ: "for all K-successors, ϕ holds" -/
-def box [HasMinimalContexts S] (K : MinimalContext S) (ϕ : HMLFormula S) :
+def box (K : MinimalContext S) (ϕ : HMLFormula S) :
     HMLFormula S := .neg (.diamond K (.neg ϕ))
 
 /-- Satisfaction relation: u ⊨ ϕ
@@ -106,22 +108,31 @@ def hmlSetoid (S : GSLT) [HasMinimalContexts S] : Setoid S.Term where
 
 end HMLFormula
 
-/-! ## Adequacy (Statement)
+/-! ## Adequacy, as stated
 
-    Theorem 5.1 (Meredith 2026): For any GSLT S equipped with the
-    Milner-Sewell-Leifer LTS:
-    u ∼ v  ⟺  ∀ϕ ∈ HML(K), u ⊨ ϕ ↔ v ⊨ ϕ
+    Theorem 5.1 (Meredith 2026) reads: for any GSLT S equipped with the
+    Milner-Sewell-Leifer LTS, u ∼ v ⟺ ∀ϕ ∈ HML(K), u ⊨ ϕ ↔ v ⊨ ϕ.
+
+    The three definitions below transcribe that statement with `∼` read as
+    the reduction bisimilarity `S.Bisimilar` of the GSLT.  So read, the
+    statement is false in general: `HennessyMilnerDirections` exhibits a GSLT
+    with two reduction-bisimilar terms that one context diamond separates
+    (`ReductionBisimilarityCanary.not_adequacy_sound`).  The adequate notion
+    is bisimilarity of the context-labeled system, for which the theorem is
+    proved there (`contextBisimilar_iff_hmlEquiv`).  The transcriptions are
+    kept only as the refuted reading.
 -/
 
-/-- Adequacy: bisimilarity implies HML equivalence (soundness direction) -/
+/-- The soundness direction with `∼` read as reduction bisimilarity; refuted
+in general. -/
 def GSLT.adequacy_sound (S : GSLT) [HasMinimalContexts S] : Prop :=
   ∀ {t u : S.Term}, S.Bisimilar t u → HMLFormula.hmlEquiv S t u
 
-/-- Adequacy: HML equivalence implies bisimilarity (completeness direction) -/
+/-- The completeness direction with `∼` read as reduction bisimilarity. -/
 def GSLT.adequacy_complete (S : GSLT) [HasMinimalContexts S] : Prop :=
   ∀ {t u : S.Term}, HMLFormula.hmlEquiv S t u → S.Bisimilar t u
 
-/-- Full adequacy: bisimilarity ↔ HML equivalence. Theorem 5.1 (Meredith 2026). -/
+/-- Both directions with `∼` read as reduction bisimilarity. -/
 def GSLT.adequacy (S : GSLT) [HasMinimalContexts S] : Prop :=
   S.adequacy_sound ∧ S.adequacy_complete
 
@@ -134,13 +145,12 @@ This file establishes:
 3. **HMLFormula**: Context-decorated HML formulae (Definition 5.2)
 4. **satisfies**: Satisfaction relation for HML
 5. **hmlEquiv**: HML equivalence (proven to be an equivalence relation)
-6. **adequacy**: Statement of the adequacy theorem (Theorem 5.1)
+6. **adequacy**: the transcription of Theorem 5.1 with reduction
+   bisimilarity, which `HennessyMilnerDirections` refutes and replaces by
+   the context-labeled statement it proves
 
-**Paper Coverage**: Definitions 5.1–5.2; Theorem 5.1 (statement)
-
-**No sorry statements** — everything is fully proven or cleanly stated.
-
-**Next**: `Dynamics/ExtendedHML.lean` (Definition 8.1) or `Causality/SyncTree.lean`
+**Paper Coverage**: Definitions 5.1–5.2; Theorem 5.1 is proved in
+`HennessyMilnerDirections` for context-labeled bisimilarity.
 -/
 
 end Mettapedia.GSLT

@@ -147,6 +147,16 @@ theorem wmLangReduces_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
   exact contextualStep_mono_rules
     (wmFullVertexRules_subset_of_le h) hred
 
+/-- Semantic one-step reduction is monotone along the WM full-vertex order. -/
+theorem wmLangSemanticReduces_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
+    {p q : Pattern}
+    (hred : langSemanticReduces (wmFullVertexLanguageDef w) p q) :
+    langSemanticReduces (wmFullVertexLanguageDef v) p q := by
+  apply langReduces_to_semantic
+  apply wmLangReduces_mono_fullVertex h
+  exact (langSemanticReduces_iff_langReduces_of_equation_free
+    (lang := wmFullVertexLanguageDef w) (by rfl) p q).mp hred
+
 /-- Multi-step reduction is monotone along the WM full vertex weakness order. -/
 theorem wmLangReducesStar_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
     {p q : Pattern}
@@ -154,7 +164,8 @@ theorem wmLangReducesStar_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
     LangReducesStar (wmFullVertexLanguageDef v) p q := by
   induction hred with
   | refl _ => exact .refl _
-  | step h_pq _ ih => exact .step (wmLangReduces_mono_fullVertex h h_pq) ih
+  | step h_pq _ ih =>
+      exact .step (wmLangSemanticReduces_mono_fullVertex h h_pq) ih
 
 /-- Single-step reduction monotonicity for 6-axis vertex. -/
 theorem wmLangReduces_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)
@@ -165,6 +176,16 @@ theorem wmLangReduces_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)
   exact contextualStep_mono_rules
     (wmExtVertexRules_subset_of_le h) hred
 
+/-- Semantic one-step reduction is monotone along the six-axis WM order. -/
+theorem wmLangSemanticReduces_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)
+    {p q : Pattern}
+    (hred : langSemanticReduces (wmExtVertexLanguageDef w) p q) :
+    langSemanticReduces (wmExtVertexLanguageDef v) p q := by
+  apply langReduces_to_semantic
+  apply wmLangReduces_mono_extVertex h
+  exact (langSemanticReduces_iff_langReduces_of_equation_free
+    (lang := wmExtVertexLanguageDef w) (by rfl) p q).mp hred
+
 /-- Multi-step reduction monotonicity for 6-axis vertex. -/
 theorem wmLangReducesStar_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)
     {p q : Pattern}
@@ -172,7 +193,8 @@ theorem wmLangReducesStar_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)
     LangReducesStar (wmExtVertexLanguageDef v) p q := by
   induction hred with
   | refl _ => exact .refl _
-  | step h_pq _ ih => exact .step (wmLangReduces_mono_extVertex h h_pq) ih
+  | step h_pq _ ih =>
+      exact .step (wmLangSemanticReduces_mono_extVertex h h_pq) ih
 
 /-! ## §4: Forward Morphism and Forward Fiber -/
 
@@ -182,7 +204,15 @@ theorem wmLangReducesStar_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)
 def wmWeaknessForwardMorphism_full {v w : WMFullVertex} (h : v ≤ w) :
     ForwardMorphism (wmFullVertexLanguageDef w) (wmFullVertexLanguageDef v) where
   mapTerm := id
-  forward_sim _ q hred := ⟨q, .single (wmLangReduces_mono_fullVertex h hred), rfl⟩
+  map_equiv := by
+    intro left right equivalent
+    have equal : left = right :=
+      (langGSLT_equiv_iff_eq_of_equation_free
+        (lang := wmFullVertexLanguageDef w) (by rfl) left right).mp equivalent
+    subst right
+    exact (langGSLT (wmFullVertexLanguageDef v)).equations.refl _
+  forward_sim _ q hred :=
+    ⟨q, .single (wmLangSemanticReduces_mono_fullVertex h hred), rfl⟩
 
 /-- The WM forward fiber over the full vertex preorder.
     Each vertex gets its `LanguageDef`; weakness edges induce identity
@@ -202,7 +232,15 @@ theorem wm_full_forward_transport {v w : WMFullVertex} (h : v ≤ w)
 def wmWeaknessForwardMorphism_ext {v w : WMExtVertex} (h : v ≤ w) :
     ForwardMorphism (wmExtVertexLanguageDef w) (wmExtVertexLanguageDef v) where
   mapTerm := id
-  forward_sim _ q hred := ⟨q, .single (wmLangReduces_mono_extVertex h hred), rfl⟩
+  map_equiv := by
+    intro left right equivalent
+    have equal : left = right :=
+      (langGSLT_equiv_iff_eq_of_equation_free
+        (lang := wmExtVertexLanguageDef w) (by rfl) left right).mp equivalent
+    subst right
+    exact (langGSLT (wmExtVertexLanguageDef v)).equations.refl _
+  forward_sim _ q hred :=
+    ⟨q, .single (wmLangSemanticReduces_mono_extVertex h hred), rfl⟩
 
 /-- The WM forward fiber over the ext vertex preorder. -/
 def wmExtForwardFiber : ForwardFiber WMExtVertex where

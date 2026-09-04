@@ -110,7 +110,7 @@ its role is that colour's static role, which a retained endpoint excludes. -/
 
 /-- The exact rho nullary process constructor. -/
 def rhoZeroConstructor :
-    StructuralMorphism.AuthoredConstructor rhoValidatedLanguageDef :=
+    StructuralMorphism.DeclaredConstructor rhoValidatedLanguageDef :=
   ⟨rhoCalc.terms[0], List.getElem_mem (by simp [rhoCalc])⟩
 
 /-- `PZero` is a wrapped-fragment constructor: it is neither interaction

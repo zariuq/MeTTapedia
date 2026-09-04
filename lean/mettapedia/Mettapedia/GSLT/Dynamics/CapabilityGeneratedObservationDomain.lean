@@ -123,8 +123,9 @@ end WitnessCollector.CapabilityCollection
 
 namespace ChronologicalCapability
 
-/-- Product observers inherit chronological composition componentwise.  This
-combines capabilities; it does not identify either retained coordinate. -/
+/-- Synchronized product collectors inherit chronological composition
+componentwise on common success.  This combines capabilities without
+identifying the two retained coordinates. -/
 def prod {Event : Type uEvent}
     {left : WitnessCollector.{uEvent, uContainer} Event}
     {right : WitnessCollector.{uEvent, uRightContainer} Event}
@@ -167,8 +168,9 @@ end ChronologicalCapability
 
 namespace IndependentParallelCapability
 
-/-- Product observers inherit independently parallel container composition
-only when both coordinates separately supply that capability. -/
+/-- Synchronized product collectors inherit independently parallel container
+composition on common success only when both coordinates separately supply
+that capability. -/
 def prod {Event : Type uEvent}
     {left : WitnessCollector.{uEvent, uContainer} Event}
     {right : WitnessCollector.{uEvent, uRightContainer} Event}

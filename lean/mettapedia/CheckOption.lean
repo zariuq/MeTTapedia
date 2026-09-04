@@ -1,0 +1,12 @@
+import Mettapedia.GSLT.LanguageDef.CompiledPlanLowering
+#check Option.some_bind
+#check Option.bind_some
+#check Option.bind_eq_bind
+#check bind_pure_comp
+#check Option.pure_bind
+#check Option.bind_some
+#print Option.bind
+#check List.Perm.nodup_iff
+#check List.Perm.mem_iff
+#check List.Perm.length_eq
+#check List.nodup_range

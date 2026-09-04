@@ -133,7 +133,7 @@ private theorem any_eq_of_perm {α : Type} {first second : List α}
   | cons _ _ inductionHypothesis =>
       simp [inductionHypothesis]
   | swap first second rest =>
-      simp [Bool.or_comm, Bool.or_left_comm, Bool.or_assoc]
+      simp [Bool.or_left_comm]
   | trans _ _ firstEquality secondEquality =>
       exact firstEquality.trans secondEquality
 
@@ -245,15 +245,61 @@ private theorem singletonMap_eq_of_perm {α β : Type}
     (fallback : β) (map : α → β) {first second : List α}
     (permutation : first.Perm second) :
     singletonMap fallback map first = singletonMap fallback map second := by
-  induction permutation with
-  | nil => rfl
-  | @cons element first second permutation inductionHypothesis =>
-      cases first <;> cases second <;>
-        simp_all [singletonMap]
-  | swap first second rest =>
+  cases first with
+  | nil =>
+      have empty : second = [] := permutation.nil_eq.symm
+      subst second
       rfl
-  | trans _ _ firstEquality secondEquality =>
-      exact firstEquality.trans secondEquality
+  | cons head tail =>
+      cases tail with
+      | nil =>
+          have singleton : second = [head] :=
+            permutation.singleton_eq.symm
+          subst second
+          rfl
+      | cons next rest =>
+          cases second with
+          | nil =>
+              have impossible := permutation.length_eq
+              simp at impossible
+          | cons other others =>
+              cases others with
+              | nil =>
+                  have impossible := permutation.length_eq
+                  simp at impossible
+              | cons another remainder =>
+                  rfl
+
+private theorem lookupJudgment_eq_singletonMap
+    (definition : CalculusLanguageDef) (head : String) (arity : Nat) :
+    definition.lookupJudgment? head arity =
+      singletonMap none (fun declaration : JudgmentDecl => some declaration)
+        (definition.judgments.filter fun declaration =>
+          declaration.head == head && declaration.arity == arity) := by
+  unfold CalculusLanguageDef.lookupJudgment?
+  generalize filteredEquality :
+    (definition.judgments.filter fun declaration =>
+      declaration.head == head && declaration.arity == arity) = filtered
+  cases filtered with
+  | nil => rfl
+  | cons first rest =>
+      cases rest <;> rfl
+
+private theorem languageHasConstructorArity_eq_singletonMap
+    (definition : CalculusLanguageDef) (head : String) (arity : Nat) :
+    languageHasConstructorArity definition.toLanguageDef head arity =
+      singletonMap false
+        (fun declaration : GrammarRule => declaration.params.length == arity)
+        (definition.terms.filter fun declaration =>
+          declaration.label == head) := by
+  unfold languageHasConstructorArity
+  generalize filteredEquality :
+    (definition.terms.filter fun declaration =>
+      declaration.label == head) = filtered
+  cases filtered with
+  | nil => rfl
+  | cons first rest =>
+      cases rest <;> rfl
 
 theorem typeNames_perm {first second : CalculusLanguageDef}
     (permutation : CalculusRowPermutation first second) :
@@ -331,11 +377,12 @@ theorem lookupJudgment_eq {first second : CalculusLanguageDef}
     (permutation : CalculusRowPermutation first second)
     (head : String) (arity : Nat) :
     first.lookupJudgment? head arity = second.lookupJudgment? head arity := by
-  unfold CalculusLanguageDef.lookupJudgment?
-  simpa only [singletonMap] using
-    singletonMap_eq_of_perm none some
-      (permutation.judgments.filter fun declaration =>
-        declaration.head == head && declaration.arity == arity)
+  rw [lookupJudgment_eq_singletonMap,
+    lookupJudgment_eq_singletonMap]
+  exact singletonMap_eq_of_perm none
+    (fun declaration : JudgmentDecl => some declaration)
+    (permutation.judgments.filter fun declaration =>
+      declaration.head == head && declaration.arity == arity)
 
 private theorem languageHasConstructorArity_eq
     {first second : CalculusLanguageDef}
@@ -343,11 +390,11 @@ private theorem languageHasConstructorArity_eq
     (head : String) (arity : Nat) :
     languageHasConstructorArity first.toLanguageDef head arity =
       languageHasConstructorArity second.toLanguageDef head arity := by
-  unfold languageHasConstructorArity
-  simpa only [singletonMap] using
-    singletonMap_eq_of_perm false
-      (fun declaration : GrammarRule => declaration.params.length == arity)
-      (permutation.terms.filter fun declaration => declaration.label == head)
+  rw [languageHasConstructorArity_eq_singletonMap,
+    languageHasConstructorArity_eq_singletonMap]
+  exact singletonMap_eq_of_perm false
+    (fun declaration : GrammarRule => declaration.params.length == arity)
+    (permutation.terms.filter fun declaration => declaration.label == head)
 
 mutual
 
@@ -357,8 +404,8 @@ private theorem fixedConstructorsValid_eq
     (pattern : Pattern) →
       fixedConstructorsValid first.toLanguageDef pattern =
         fixedConstructorsValid second.toLanguageDef pattern
-  | .bvar _ => rfl
-  | .fvar _ => rfl
+  | .bvar _ => by simp [fixedConstructorsValid]
+  | .fvar _ => by simp [fixedConstructorsValid]
   | .apply head arguments => by
       simp only [fixedConstructorsValid]
       rw [languageHasConstructorArity_eq permutation,
@@ -383,7 +430,7 @@ private theorem fixedConstructorListsValid_eq
     (patterns : List Pattern) →
       fixedConstructorListsValid first.toLanguageDef patterns =
         fixedConstructorListsValid second.toLanguageDef patterns
-  | [] => rfl
+  | [] => by simp [fixedConstructorListsValid]
   | pattern :: patterns => by
       simp only [fixedConstructorListsValid]
       rw [fixedConstructorsValid_eq permutation pattern,
@@ -401,23 +448,23 @@ private theorem judgmentSchemaValid_eq
       simp only [CalculusLanguageDef.judgmentSchemaValid]
       rw [permutation.lookupJudgment_eq,
         fixedConstructorListsValid_eq permutation arguments]
-  | bvar index => rfl
-  | fvar name => rfl
-  | lambda name body => rfl
-  | multiLambda name arity body => rfl
-  | subst body replacement => rfl
-  | collection collectionType elements rest => rfl
+  | bvar index => simp [CalculusLanguageDef.judgmentSchemaValid]
+  | fvar name => simp [CalculusLanguageDef.judgmentSchemaValid]
+  | lambda name body => simp [CalculusLanguageDef.judgmentSchemaValid]
+  | multiLambda name arity body =>
+      simp [CalculusLanguageDef.judgmentSchemaValid]
+  | subst body replacement =>
+      simp [CalculusLanguageDef.judgmentSchemaValid]
+  | collection collectionType elements rest =>
+      simp [CalculusLanguageDef.judgmentSchemaValid]
 
 theorem ruleValidIn_eq {first second : CalculusLanguageDef}
     (permutation : CalculusRowPermutation first second)
     (rule : RuleSchema) :
     RuleSchema.isValidIn first rule = RuleSchema.isValidIn second rule := by
   unfold RuleSchema.isValidIn
-  congr 2
-  congr 1
-  apply all_congr_on
-  intro pattern _membership
-  exact judgmentSchemaValid_eq permutation pattern
+  rw [all_congr_on (RuleSchema.patterns rule) fun pattern _membership =>
+    judgmentSchemaValid_eq permutation pattern]
 
 theorem judgmentSignatureValid_eq {first second : CalculusLanguageDef}
     (permutation : CalculusRowPermutation first second) :
@@ -474,12 +521,23 @@ theorem target_isValid_of_no_dynamics
     (firstRewrites : first.rewrites = [])
     (firstValid : first.isValid = true) :
     second.isValid = true := by
+  have firstComponents :
+      first.hasValidLocalRules = true ∧
+        first.judgmentSignatureValid = true ∧
+        first.rules.all (RuleSchema.isValidIn first) = true ∧
+        first.conversionDeclarationValid = true := by
+    simpa only [CalculusLanguageDef.isValid, Bool.and_eq_true,
+      and_assoc] using firstValid
   have firstLocal : first.hasValidLocalRules = true := by
-    simp only [CalculusLanguageDef.isValid, Bool.and_eq_true] at firstValid
-    exact firstValid.1
+    exact firstComponents.1
+  have firstLocalComponents :
+      first.toLanguageDef.validate = [] ∧
+        first.rules.all RuleSchema.isLocallyValid = true ∧
+        (first.ruleIds.eraseDups.length == first.ruleIds.length) = true := by
+    simpa only [CalculusLanguageDef.hasValidLocalRules, Bool.and_eq_true,
+      List.isEmpty_iff, and_assoc] using firstLocal
   have firstLanguage : first.toLanguageDef.validate = [] := by
-    simp only [CalculusLanguageDef.hasValidLocalRules, Bool.and_eq_true] at firstLocal
-    simpa using firstLocal.1.1
+    exact firstLocalComponents.1
   have secondLanguage := permutation.language_validate_of_no_dynamics
     firstEquations firstRewrites firstLanguage
   have localRules :
@@ -492,8 +550,8 @@ theorem target_isValid_of_no_dynamics
     rw [secondLanguage]
     simp only [List.isEmpty_nil, Bool.true_and]
     rw [localRules, ← ruleIds]
-    unfold CalculusLanguageDef.hasValidLocalRules at firstLocal
-    simpa using firstLocal
+    simp only [Bool.and_eq_true]
+    exact ⟨firstLocalComponents.2.1, firstLocalComponents.2.2⟩
   have rulesValid :
       second.rules.all (RuleSchema.isValidIn second) =
         first.rules.all (RuleSchema.isValidIn first) := by
@@ -505,10 +563,19 @@ theorem target_isValid_of_no_dynamics
         apply all_congr_on
         intro rule _membership
         exact (permutation.ruleValidIn_eq rule).symm
-  unfold CalculusLanguageDef.isValid
-  rw [secondLocal, ← permutation.judgmentSignatureValid_eq,
-    rulesValid, ← permutation.conversionDeclarationValid_eq]
-  simpa [CalculusLanguageDef.isValid] using firstValid
+  have secondSignature : second.judgmentSignatureValid = true := by
+    rw [← permutation.judgmentSignatureValid_eq]
+    exact firstComponents.2.1
+  have secondRules :
+      second.rules.all (RuleSchema.isValidIn second) = true := by
+    rw [rulesValid]
+    exact firstComponents.2.2.1
+  have secondConversion : second.conversionDeclarationValid = true := by
+    rw [← permutation.conversionDeclarationValid_eq]
+    exact firstComponents.2.2.2
+  simp only [CalculusLanguageDef.isValid, Bool.and_eq_true]
+  exact ⟨⟨⟨secondLocal, secondSignature⟩, secondRules⟩,
+    secondConversion⟩
 
 /-! ## Positive and negative controls -/
 
@@ -563,7 +630,7 @@ private def reordered : CalculusLanguageDef where
   rules := [ruleB, ruleA]
 
 private theorem authored_valid : authored.isValid = true := by
-  decide
+  decide +kernel
 
 private theorem reorderedRows : CalculusRowPermutation authored reordered where
   name := rfl

@@ -2,20 +2,21 @@ import Mettapedia.GSLT.Logic.LogicalMetric
 import Mettapedia.GSLT.Meredith.RhoMinimalContext
 
 /-!
-# P vs NP crux: the current Meredith observation interface is already infinitary
+# Conditional infinitary HML obstruction and the rho candidate-context boundary
 
-The current HML layer quantifies over all certified minimal contexts.  Without a
-separate finiteness theorem on that context type, the depth-bounded observable
-data domain need not be finite at all.  In fact:
+If a genuinely certified minimal-context type is infinite, then the
+depth-bounded observable data domain need not be finite at all.  Abstractly,
+this file proves that an infinite `MinimalContext S` makes `HMLFormula S` and
+even its depth-`1` fragment infinite.
 
-* abstractly, if `MinimalContext S` is infinite, then `HMLFormula S` and even the
-  depth-`1` fragment are infinite;
-* concretely, the rho-calculus minimal-context instance already has infinitely
-  many certified contexts, so its depth-`1` HML fragment is infinite.
+For rho, the syntactic evaluation-context grammar is infinite.  That is only a
+family of *candidate* labels: it does not establish that infinitely many of
+them satisfy the redex-relative-pushout least-enabler property.  The old
+inference from "evaluation context" to "minimal context" has therefore been
+removed.  A concrete rho HML obstruction requires an RPO construction first.
 
-This does not refute a repaired Meredith route.  It does show that the current
-semantic layer is not yet close to the finite encoded-family interface required
-by the switching/ERM route.
+The separation matters: grammar cardinality cannot mint the universal property
+required by the Meredith--Stay--Wells logic.
 -/
 
 namespace Mettapedia.Computability.PNP
@@ -113,41 +114,42 @@ theorem rhoParDepth_fill_rhoParLadder :
   | n + 1 => by
       simp [rhoParLadder, fillEvalContext, rhoParDepth, rhoParDepth_fill_rhoParLadder]
 
-theorem rhoParLadder_minimalContext_injective :
-    Function.Injective (fun n : Nat => minimalOfEvalContext (rhoParLadder n)) := by
+theorem rhoParLadder_evalContext_injective :
+    Function.Injective rhoParLadder := by
   intro m n h
   have hplug :
-      (minimalOfEvalContext (rhoParLadder m)).plug rhoProbePattern =
-      (minimalOfEvalContext (rhoParLadder n)).plug rhoProbePattern :=
-    congrArg (fun K : MinimalContext rhoGSLT => K.plug rhoProbePattern) h
+      fillEvalContext (rhoParLadder m) rhoProbePattern =
+      fillEvalContext (rhoParLadder n) rhoProbePattern :=
+    congrArg (fun K : EvalContext => fillEvalContext K rhoProbePattern) h
   have hdepth := congrArg rhoParDepth hplug
   simpa [rhoParDepth_fill_rhoParLadder] using hdepth
 
-theorem infinite_rhoMinimalContexts : Infinite (MinimalContext rhoGSLT) :=
-  Infinite.of_injective (fun n : Nat => minimalOfEvalContext (rhoParLadder n))
-    rhoParLadder_minimalContext_injective
+/-- Rho has infinitely many syntactically distinct evaluation contexts. -/
+theorem infinite_rhoEvalContexts : Infinite EvalContext :=
+  Infinite.of_injective rhoParLadder rhoParLadder_evalContext_injective
 
-theorem infinite_rhoHMLFormula : Infinite (HMLFormula rhoGSLT) := by
-  letI := infinite_rhoMinimalContexts
-  exact infinite_hmlFormula_of_infinite_minimalContext (S := rhoGSLT)
+/-- The same ladder remains injective after forgetting the syntax down to its
+extensional plug operation. -/
+theorem rhoParLadder_contextShape_injective :
+    Function.Injective (fun n : Nat => ofEvalContext (rhoParLadder n)) := by
+  intro m n h
+  have hplug :
+      (ofEvalContext (rhoParLadder m)).plug rhoProbePattern =
+      (ofEvalContext (rhoParLadder n)).plug rhoProbePattern :=
+    congrArg (fun K : GSLTContext rhoGSLT => K.plug rhoProbePattern) h
+  have hdepth := congrArg rhoParDepth hplug
+  simpa [ofEvalContext, rhoParDepth_fill_rhoParLadder] using hdepth
 
-theorem infinite_rhoDepthFragment_one : Infinite (DepthFragment (S := rhoGSLT) 1) := by
-  letI := infinite_rhoMinimalContexts
-  exact infinite_depthFragment_one_of_infinite_minimalContext (S := rhoGSLT)
+/-- Thus even the candidate plug operations are infinite.  No conclusion about
+least-enabling contexts follows without an RPO/minimality proof. -/
+theorem infinite_rhoEvaluationContextShapes : Infinite (GSLTContext rhoGSLT) :=
+  Infinite.of_injective (fun n : Nat => ofEvalContext (rhoParLadder n))
+    rhoParLadder_contextShape_injective
 
-theorem not_surjective_rhoDepthFragment_one_of_finite_code
-    {Code : Type*} [Fintype Code]
-    (decode : Code → DepthFragment (S := rhoGSLT) 1) :
-    ¬ Function.Surjective decode := by
-  letI := infinite_rhoMinimalContexts
-  exact not_surjective_depthFragment_one_of_finite_code (S := rhoGSLT) decode
-
-theorem not_surjective_rhoHMLFormula_of_finite_code
-    {Code : Type*} [Fintype Code]
-    (decode : Code → HMLFormula rhoGSLT) :
-    ¬ Function.Surjective decode := by
-  letI := infinite_rhoMinimalContexts
-  exact not_surjective_hmlFormula_of_finite_code (S := rhoGSLT) decode
+#print axioms rhoParLadder_evalContext_injective
+#print axioms infinite_rhoEvalContexts
+#print axioms rhoParLadder_contextShape_injective
+#print axioms infinite_rhoEvaluationContextShapes
 
 end Rho
 

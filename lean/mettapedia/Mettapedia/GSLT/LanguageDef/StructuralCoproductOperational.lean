@@ -26,7 +26,7 @@ open Mettapedia.GSLT.LanguageDef.StructuralCoproduct
 /-- Exact change-of-base law for non-contextual premise evidence.  This is
 the semantic datum that a structural presentation map alone cannot invent. -/
 def PremiseEvaluatorCommutes
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (source target : LanguageDef)
     (sourceBase targetBase : BasePremiseEvaluator) : Prop :=
   ∀ bindings premise,
@@ -36,7 +36,7 @@ def PremiseEvaluatorCommutes
 
 /-- The same change-of-base law restricted to one authored premise. -/
 def PremiseEvaluatorCommutesAt
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (source target : LanguageDef)
     (sourceBase targetBase : BasePremiseEvaluator)
     (premise : Premise) : Prop :=
@@ -49,7 +49,7 @@ def PremiseEvaluatorCommutesAt
 in source rewrite rules.  This avoids imposing behavior on premise forms that
 the operational theory never authors. -/
 def RulePremiseEvaluatorsCommute
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (source target : LanguageDef)
     (sourceBase targetBase : BasePremiseEvaluator) : Prop :=
   ∀ rule ∈ source.rewrites, ∀ premise ∈ rule.premises,
@@ -57,7 +57,7 @@ def RulePremiseEvaluatorsCommute
       premise
 
 private theorem premiseStepUsing_equivariance
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (source target : LanguageDef)
     (sourceBase targetBase : BasePremiseEvaluator)
@@ -93,7 +93,7 @@ private theorem premiseStepUsing_equivariance
           bindings (matchPattern targetPattern candidate)
 
 private theorem premisesUsing_equivariance
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (source target : LanguageDef)
     (sourceBase targetBase : BasePremiseEvaluator)
@@ -129,7 +129,7 @@ private theorem premisesUsing_equivariance
             baseCommutes later (by simp [laterMembership])) nextBindings
 
 private theorem applyRuleUsing_equivariance
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (source target : LanguageDef)
     (sourceBase targetBase : BasePremiseEvaluator)
@@ -167,7 +167,7 @@ private theorem applyRuleUsing_equivariance
     applyBindings_mapPattern symbols finalBindings rule.right
 
 private theorem mappedRules_apply_exact
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (source target : LanguageDef)
     (sourceBase targetBase : BasePremiseEvaluator)
@@ -201,7 +201,7 @@ private theorem mappedRules_apply_exact
           term]
 
 private theorem crossRule_apply_eq_nil
-    (leftSymbols rightSymbols : PresentationSymbols)
+    (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (imagesDisjoint : ∀ leftConstructor rightConstructor,
       leftSymbols.constructor leftConstructor ≠
         rightSymbols.constructor rightConstructor)
@@ -238,7 +238,7 @@ private theorem crossRule_apply_eq_nil
   rfl
 
 private theorem reverseCrossRule_apply_eq_nil
-    (leftSymbols rightSymbols : PresentationSymbols)
+    (leftSymbols rightSymbols : LanguageDefSymbolMap)
     (imagesDisjoint : ∀ leftConstructor rightConstructor,
       leftSymbols.constructor leftConstructor ≠
         rightSymbols.constructor rightConstructor)
@@ -276,7 +276,7 @@ private theorem reverseCrossRule_apply_eq_nil
 
 namespace Compatibility
 
-variable {name : String} {leftSymbols rightSymbols : PresentationSymbols}
+variable {name : String} {leftSymbols rightSymbols : LanguageDefSymbolMap}
   {left right : ValidatedLanguageDef}
 
 /-- Exact premise-aware and contextual operational conservativity for the
@@ -286,9 +286,9 @@ theorem left_rewriteAt_exact_onRules
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (sourceBase targetBase : BasePremiseEvaluator)
     (baseCommutes : RulePremiseEvaluatorsCommute leftSymbols left.language
-      compatible.presentation.language sourceBase targetBase)
+      compatible.combinedLanguage.language sourceBase targetBase)
     (fuel : Nat) (term : Pattern) :
-    rewriteAt targetBase compatible.presentation.language fuel
+    rewriteAt targetBase compatible.combinedLanguage.language fuel
         (mapPattern leftSymbols term) =
       (rewriteAt sourceBase left.language fuel term).map
         (mapPattern leftSymbols) := by
@@ -300,21 +300,21 @@ theorem left_rewriteAt_exact_onRules
         (((left.language.rewrites.map (mapRewriteRule leftSymbols)) ++
           (right.language.rewrites.map (mapRewriteRule rightSymbols))).flatMap
           (fun rule => applyRuleUsing targetBase
-            compatible.presentation.language
-            (rewriteAt targetBase compatible.presentation.language fuel)
+            compatible.combinedLanguage.language
+            (rewriteAt targetBase compatible.combinedLanguage.language fuel)
             rule (mapPattern leftSymbols term))) = _
       rw [List.flatMap_append]
       rw [mappedRules_apply_exact leftSymbols
         compatible.leftSymbolsInjective.constructor
-        left.language compatible.presentation.language sourceBase targetBase
+        left.language compatible.combinedLanguage.language sourceBase targetBase
         (rewriteAt sourceBase left.language fuel)
-        (rewriteAt targetBase compatible.presentation.language fuel)
+        (rewriteAt targetBase compatible.combinedLanguage.language fuel)
         inductionHypothesis left.language.rewrites baseCommutes term]
       have rightSilent :
           (right.language.rewrites.map (mapRewriteRule rightSymbols)).flatMap
               (fun rule => applyRuleUsing targetBase
-                compatible.presentation.language
-                (rewriteAt targetBase compatible.presentation.language fuel)
+                compatible.combinedLanguage.language
+                (rewriteAt targetBase compatible.combinedLanguage.language fuel)
                 rule (mapPattern leftSymbols term)) = [] := by
         rw [List.flatMap_eq_nil_iff]
         intro mappedRule mappedMember
@@ -322,8 +322,8 @@ theorem left_rewriteAt_exact_onRules
           List.mem_map.mp mappedMember
         exact crossRule_apply_eq_nil leftSymbols rightSymbols
           compatible.symbolImagesDisjoint.constructor targetBase
-          compatible.presentation.language
-          (rewriteAt targetBase compatible.presentation.language fuel)
+          compatible.combinedLanguage.language
+          (rewriteAt targetBase compatible.combinedLanguage.language fuel)
           sourceRule
           (compatible.rightRewritesRooted sourceRule sourceMember) term
       rw [rightSilent, List.append_nil]
@@ -334,9 +334,9 @@ theorem right_rewriteAt_exact_onRules
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (sourceBase targetBase : BasePremiseEvaluator)
     (baseCommutes : RulePremiseEvaluatorsCommute rightSymbols right.language
-      compatible.presentation.language sourceBase targetBase)
+      compatible.combinedLanguage.language sourceBase targetBase)
     (fuel : Nat) (term : Pattern) :
-    rewriteAt targetBase compatible.presentation.language fuel
+    rewriteAt targetBase compatible.combinedLanguage.language fuel
         (mapPattern rightSymbols term) =
       (rewriteAt sourceBase right.language fuel term).map
         (mapPattern rightSymbols) := by
@@ -348,15 +348,15 @@ theorem right_rewriteAt_exact_onRules
         (((left.language.rewrites.map (mapRewriteRule leftSymbols)) ++
           (right.language.rewrites.map (mapRewriteRule rightSymbols))).flatMap
           (fun rule => applyRuleUsing targetBase
-            compatible.presentation.language
-            (rewriteAt targetBase compatible.presentation.language fuel)
+            compatible.combinedLanguage.language
+            (rewriteAt targetBase compatible.combinedLanguage.language fuel)
             rule (mapPattern rightSymbols term))) = _
       rw [List.flatMap_append]
       have leftSilent :
           (left.language.rewrites.map (mapRewriteRule leftSymbols)).flatMap
               (fun rule => applyRuleUsing targetBase
-                compatible.presentation.language
-                (rewriteAt targetBase compatible.presentation.language fuel)
+                compatible.combinedLanguage.language
+                (rewriteAt targetBase compatible.combinedLanguage.language fuel)
                 rule (mapPattern rightSymbols term)) = [] := by
         rw [List.flatMap_eq_nil_iff]
         intro mappedRule mappedMember
@@ -364,16 +364,16 @@ theorem right_rewriteAt_exact_onRules
           List.mem_map.mp mappedMember
         exact reverseCrossRule_apply_eq_nil leftSymbols rightSymbols
           compatible.symbolImagesDisjoint.constructor targetBase
-          compatible.presentation.language
-          (rewriteAt targetBase compatible.presentation.language fuel)
+          compatible.combinedLanguage.language
+          (rewriteAt targetBase compatible.combinedLanguage.language fuel)
           sourceRule
           (compatible.leftRewritesRooted sourceRule sourceMember) term
       rw [leftSilent, List.nil_append]
       exact mappedRules_apply_exact rightSymbols
         compatible.rightSymbolsInjective.constructor
-        right.language compatible.presentation.language sourceBase targetBase
+        right.language compatible.combinedLanguage.language sourceBase targetBase
         (rewriteAt sourceBase right.language fuel)
-        (rewriteAt targetBase compatible.presentation.language fuel)
+        (rewriteAt targetBase compatible.combinedLanguage.language fuel)
         inductionHypothesis right.language.rewrites baseCommutes term
 
 /-- A global primitive-evaluator square is a sufficient special case of the
@@ -382,9 +382,9 @@ theorem left_rewriteAt_exact
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (sourceBase targetBase : BasePremiseEvaluator)
     (baseCommutes : PremiseEvaluatorCommutes leftSymbols left.language
-      compatible.presentation.language sourceBase targetBase)
+      compatible.combinedLanguage.language sourceBase targetBase)
     (fuel : Nat) (term : Pattern) :
-    rewriteAt targetBase compatible.presentation.language fuel
+    rewriteAt targetBase compatible.combinedLanguage.language fuel
         (mapPattern leftSymbols term) =
       (rewriteAt sourceBase left.language fuel term).map
         (mapPattern leftSymbols) :=
@@ -399,9 +399,9 @@ theorem right_rewriteAt_exact
     (compatible : Compatibility name leftSymbols rightSymbols left right)
     (sourceBase targetBase : BasePremiseEvaluator)
     (baseCommutes : PremiseEvaluatorCommutes rightSymbols right.language
-      compatible.presentation.language sourceBase targetBase)
+      compatible.combinedLanguage.language sourceBase targetBase)
     (fuel : Nat) (term : Pattern) :
-    rewriteAt targetBase compatible.presentation.language fuel
+    rewriteAt targetBase compatible.combinedLanguage.language fuel
         (mapPattern rightSymbols term) =
       (rewriteAt sourceBase right.language fuel term).map
         (mapPattern rightSymbols) :=

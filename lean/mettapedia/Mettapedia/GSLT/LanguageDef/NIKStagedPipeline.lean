@@ -526,7 +526,7 @@ private def zeroPattern : Pattern := .apply "z" []
 
 private def evenLaws : ReductionRespectsEquations
     Example.evenNumbers.toLanguageDef :=
-  ReductionRespectsEquations.of_no_equations rfl
+  ReductionRespectsEquations.of_equation_free rfl
 
 private abbrev evenLanguageTheory : GSLT :=
   languageGSLT Example.evenNumbers.toLanguageDef evenLaws

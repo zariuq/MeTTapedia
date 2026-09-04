@@ -29,6 +29,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Formula
 
@@ -265,8 +266,8 @@ substitution/rewrite BC + graph-`◇` square through the package path.
 -/
 theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph
     {relEnv : RelationEnv}
-    {I_check : AtomCheck} {I_sem : AtomSem}
-    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {I_check : AtomCheck} {I_sem : EquationAtomSemUsing relEnv mettaMinimal}
+    (h_atoms : ∀ a p, I_check a p = true → (I_sem a).1 p)
     {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
     (hSat : checkLangUsing relEnv mettaMinimal I_check fuel p φf = .sat)
     (seed q : Pattern)
@@ -276,7 +277,7 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph
     (hNat :
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         mettaMinimal mettaState seed
-        (sem (langReducesUsing relEnv mettaMinimal) I_sem φf))
+        (langFormulaSemUsing relEnv mettaMinimal I_sem φf).1)
     {P B D : CategoryTheory.Functor (Opposite (ConstructorObj mettaMinimal)) (Type _)}
     (pi1 : P ⟶
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
@@ -293,10 +294,10 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
         mettaMinimal mettaState).obj X)
     (hp : pathSem mettaMinimal hArrow seed = p) :
-    let ψ := sem (langReducesUsing relEnv mettaMinimal) I_sem φf
-    (langOSLF mettaMinimal "State").satisfies (S := "State")
+    let ψ := langFormulaSemUsing relEnv mettaMinimal I_sem φf
+    (langOSLFUsing relEnv mettaMinimal "State").satisfies (S := "State")
       (pathSem mettaMinimal hArrow seed) ψ
-    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ
+    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1
         (pathSem mettaMinimal hArrow seed)
     ∧
       ((CategoryTheory.Subobject.map pi2).obj
@@ -304,22 +305,23 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaMinimal mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaMinimal mettaState seed q ψ hPkg)))
+                mettaMinimal mettaState seed q ψ.1 hPkg)))
         =
       (CategoryTheory.Subobject.pullback g).obj
           ((CategoryTheory.Subobject.map f).obj
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaMinimal mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaMinimal mettaState seed q ψ hPkg))))
+                mettaMinimal mettaState seed q ψ.1 hPkg))))
     ∧
       (langDiamondUsing relEnv mettaMinimal
-        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ)) p ↔
+        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree
+          relEnv mettaMinimal (by rfl) q
+          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1)) p ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj mettaMinimal) relEnv mettaMinimal).Edge.obj X,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -328,17 +330,18 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph
             Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u q =
               ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
                 (C := ConstructorObj mettaMinimal) relEnv mettaMinimal).target.app X e).down ∧
-            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ u) := by
-  let ψ : Pattern → Prop := sem (langReducesUsing relEnv mettaMinimal) I_sem φf
+            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1 u) := by
+  let ψ : EquationPredicate (langGSLTUsing relEnv mettaMinimal) :=
+    langFormulaSemUsing relEnv mettaMinimal I_sem φf
   have hSatFiber :
-      (langOSLF mettaMinimal "State").satisfies (S := "State")
+      (langOSLFUsing relEnv mettaMinimal "State").satisfies (S := "State")
         (pathSem mettaMinimal hArrow seed) ψ :=
     checkLangUsing_sat_sound_sort_fiber_mem_iff
       (relEnv := relEnv) (lang := mettaMinimal) (procSort := "State")
       (I_check := I_check) (I_sem := I_sem)
       h_atoms hSat mettaState seed hNat hArrow hp
   have hClosedBase :
-      Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ
+      Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1
         (pathSem mettaMinimal hArrow seed) :=
     Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred.base hSatFiber
   have hBCGraph :
@@ -347,22 +350,23 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaMinimal mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaMinimal mettaState seed q ψ hPkg)))
+                mettaMinimal mettaState seed q ψ.1 hPkg)))
         =
       (CategoryTheory.Subobject.pullback g).obj
           ((CategoryTheory.Subobject.map f).obj
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaMinimal mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaMinimal mettaState seed q ψ hPkg))))
+                mettaMinimal mettaState seed q ψ.1 hPkg))))
       ∧
       (langDiamondUsing relEnv mettaMinimal
-        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ)) p ↔
+        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree
+          relEnv mettaMinimal (by rfl) q
+          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1)) p ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj mettaMinimal) relEnv mettaMinimal).Edge.obj X,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -371,13 +375,17 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph
             Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u q =
               ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
                 (C := ConstructorObj mettaMinimal) relEnv mettaMinimal).target.app X e).down ∧
-            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ u) :=
-    Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
-      (lang := mettaMinimal) (s := mettaState) (seed := seed) (q := q) (φ := ψ)
+            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1 u) := by
+    simpa [Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree] using
+      (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
+      (lang := mettaMinimal) (s := mettaState) (seed := seed) (q := q) (φ := ψ.1)
       (hPkg := hPkg)
       (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
       (hpb := hpb) (hf := hf) (hpi2 := hpi2)
-      (relEnv := relEnv) (X := X) (p := p)
+      (relEnv := relEnv)
+      (hInvariant := equationInvariant_langGSLTUsing_of_equation_free
+        relEnv (by rfl) _)
+      (X := X) (p := p))
   exact ⟨hSatFiber, hClosedBase, hBCGraph.1, hBCGraph.2⟩
 
 /-- MeTTaMinimal concrete package constructor from a named `liftEq` theorem. -/
@@ -399,8 +407,8 @@ theorem mettaMinimal_commDiPathSemLiftPkg_of_liftEq
 /-- No-`hPkg` wrapper: consumes a named MeTTaMinimal `liftEq` law directly. -/
 theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
     {relEnv : RelationEnv}
-    {I_check : AtomCheck} {I_sem : AtomSem}
-    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {I_check : AtomCheck} {I_sem : EquationAtomSemUsing relEnv mettaMinimal}
+    (h_atoms : ∀ a p, I_check a p = true → (I_sem a).1 p)
     {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
     (hSat : checkLangUsing relEnv mettaMinimal I_check fuel p φf = .sat)
     (seed q : Pattern)
@@ -414,7 +422,7 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
     (hNat :
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         mettaMinimal mettaState seed
-        (sem (langReducesUsing relEnv mettaMinimal) I_sem φf))
+        (langFormulaSemUsing relEnv mettaMinimal I_sem φf).1)
     {P B D : CategoryTheory.Functor (Opposite (ConstructorObj mettaMinimal)) (Type _)}
     (pi1 : P ⟶
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
@@ -431,10 +439,10 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
         mettaMinimal mettaState).obj X)
     (hp : pathSem mettaMinimal hArrow seed = p) :
-    let ψ := sem (langReducesUsing relEnv mettaMinimal) I_sem φf
-    (langOSLF mettaMinimal "State").satisfies (S := "State")
+    let ψ := langFormulaSemUsing relEnv mettaMinimal I_sem φf
+    (langOSLFUsing relEnv mettaMinimal "State").satisfies (S := "State")
       (pathSem mettaMinimal hArrow seed) ψ
-    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ
+    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1
         (pathSem mettaMinimal hArrow seed)
     ∧
       ((CategoryTheory.Subobject.map pi2).obj
@@ -442,9 +450,9 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaMinimal mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaMinimal mettaState seed q ψ
+                mettaMinimal mettaState seed q ψ.1
                 (mettaMinimal_commDiPathSemLiftPkg_of_liftEq seed q hLiftEq))))
         =
       (CategoryTheory.Subobject.pullback g).obj
@@ -452,14 +460,15 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaMinimal mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaMinimal mettaState seed q ψ
+                mettaMinimal mettaState seed q ψ.1
                 (mettaMinimal_commDiPathSemLiftPkg_of_liftEq seed q hLiftEq)))))
     ∧
       (langDiamondUsing relEnv mettaMinimal
-        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ)) p ↔
+        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree
+          relEnv mettaMinimal (by rfl) q
+          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1)) p ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj mettaMinimal) relEnv mettaMinimal).Edge.obj X,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -468,7 +477,7 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
             Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u q =
               ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
                 (C := ConstructorObj mettaMinimal) relEnv mettaMinimal).target.app X e).down ∧
-            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ u) := by
+            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1 u) := by
   let hPkg :
       Mettapedia.OSLF.Framework.CategoryBridge.CommDiPathSemLiftPkg
         mettaMinimal mettaState seed q :=
@@ -486,8 +495,8 @@ law + BC/graph square. Prefer
 `mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto` for public use. -/
 theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_autoPkg
     {relEnv : RelationEnv}
-    {I_check : AtomCheck} {I_sem : AtomSem}
-    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {I_check : AtomCheck} {I_sem : EquationAtomSemUsing relEnv mettaMinimal}
+    (h_atoms : ∀ a p, I_check a p = true → (I_sem a).1 p)
     {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
     (hSat : checkLangUsing relEnv mettaMinimal I_check fuel p φf = .sat)
     (seed q : Pattern)
@@ -499,7 +508,7 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_autoPkg
     (hNat :
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         mettaMinimal mettaState seed
-        (sem (langReducesUsing relEnv mettaMinimal) I_sem φf))
+        (langFormulaSemUsing relEnv mettaMinimal I_sem φf).1)
     {P B D : CategoryTheory.Functor (Opposite (ConstructorObj mettaMinimal)) (Type _)}
     (pi1 : P ⟶
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
@@ -516,10 +525,10 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_autoPkg
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
         mettaMinimal mettaState).obj X)
     (hp : pathSem mettaMinimal hArrow seed = p) :
-    let ψ := sem (langReducesUsing relEnv mettaMinimal) I_sem φf
-    (langOSLF mettaMinimal "State").satisfies (S := "State")
+    let ψ := langFormulaSemUsing relEnv mettaMinimal I_sem φf
+    (langOSLFUsing relEnv mettaMinimal "State").satisfies (S := "State")
       (pathSem mettaMinimal hArrow seed) ψ
-    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ
+    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1
         (pathSem mettaMinimal hArrow seed)
     ∧
       ((CategoryTheory.Subobject.map pi2).obj
@@ -527,9 +536,9 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_autoPkg
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaMinimal mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaMinimal mettaState seed q ψ
+                mettaMinimal mettaState seed q ψ.1
                 (Mettapedia.OSLF.Framework.CategoryBridge.commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
                   mettaMinimal mettaState seed q hPathOrder))))
         =
@@ -538,15 +547,16 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_autoPkg
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaMinimal mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaMinimal mettaState seed q ψ
+                mettaMinimal mettaState seed q ψ.1
                 (Mettapedia.OSLF.Framework.CategoryBridge.commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
                   mettaMinimal mettaState seed q hPathOrder)))))
     ∧
       (langDiamondUsing relEnv mettaMinimal
-        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ)) p ↔
+        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree
+          relEnv mettaMinimal (by rfl) q
+          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1)) p ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj mettaMinimal) relEnv mettaMinimal).Edge.obj X,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -555,7 +565,7 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_autoPkg
             Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u q =
               ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
                 (C := ConstructorObj mettaMinimal) relEnv mettaMinimal).target.app X e).down ∧
-            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ u) := by
+            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1 u) := by
   let hPkg :
       Mettapedia.OSLF.Framework.CategoryBridge.CommDiPathSemLiftPkg
         mettaMinimal mettaState seed q :=
@@ -572,15 +582,15 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_autoPkg
 instantiation through the concrete path-order law `mettaMinimal_pathOrder`. -/
 theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
     {relEnv : RelationEnv}
-    {I_check : AtomCheck} {I_sem : AtomSem}
-    (h_atoms : ∀ a p, I_check a p = true → I_sem a p)
+    {I_check : AtomCheck} {I_sem : EquationAtomSemUsing relEnv mettaMinimal}
+    (h_atoms : ∀ a p, I_check a p = true → (I_sem a).1 p)
     {fuel : Nat} {p : Pattern} {φf : OSLFFormula}
     (hSat : checkLangUsing relEnv mettaMinimal I_check fuel p φf = .sat)
     (seed q : Pattern)
     (hNat :
       Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality
         mettaMinimal mettaState seed
-        (sem (langReducesUsing relEnv mettaMinimal) I_sem φf))
+        (langFormulaSemUsing relEnv mettaMinimal I_sem φf).1)
     {P B D : CategoryTheory.Functor (Opposite (ConstructorObj mettaMinimal)) (Type _)}
     (pi1 : P ⟶
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
@@ -597,10 +607,10 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
       (Mettapedia.OSLF.Framework.CategoryBridge.languageSortRepresentableObj
         mettaMinimal mettaState).obj X)
     (hp : pathSem mettaMinimal hArrow seed = p) :
-    let ψ := sem (langReducesUsing relEnv mettaMinimal) I_sem φf
-    (langOSLF mettaMinimal "State").satisfies (S := "State")
+    let ψ := langFormulaSemUsing relEnv mettaMinimal I_sem φf
+    (langOSLFUsing relEnv mettaMinimal "State").satisfies (S := "State")
       (pathSem mettaMinimal hArrow seed) ψ
-    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ
+    ∧ Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1
         (pathSem mettaMinimal hArrow seed)
     ∧
       ((CategoryTheory.Subobject.map pi2).obj
@@ -608,9 +618,9 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaMinimal mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaMinimal mettaState seed q ψ
+                mettaMinimal mettaState seed q ψ.1
                 (Mettapedia.OSLF.Framework.CategoryBridge.commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
                   mettaMinimal mettaState seed q (mettaMinimal_pathOrder seed)))))
         =
@@ -619,15 +629,16 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
             (Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
               mettaMinimal mettaState seed
               (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ))
+                (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1))
               (Mettapedia.OSLF.Framework.CategoryBridge.languageSortPredNaturality_commDi_pathSemClosed_of_pkg
-                mettaMinimal mettaState seed q ψ
+                mettaMinimal mettaState seed q ψ.1
                 (Mettapedia.OSLF.Framework.CategoryBridge.commDiPathSemLiftPkg_of_pathSem_comm_subst_and_path_order
                   mettaMinimal mettaState seed q (mettaMinimal_pathOrder seed))))))
     ∧
       (langDiamondUsing relEnv mettaMinimal
-        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDi q
-          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ)) p ↔
+        (Mettapedia.OSLF.Framework.BeckChevalleyOSLF.commDiPredicateUsingOfEquationFree
+          relEnv mettaMinimal (by rfl) q
+          (Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1)) p ↔
         ∃ e : (Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := ConstructorObj mettaMinimal) relEnv mettaMinimal).Edge.obj X,
           ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
@@ -636,7 +647,7 @@ theorem mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
             Mettapedia.OSLF.MeTTaIL.Substitution.commSubst u q =
               ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
                 (C := ConstructorObj mettaMinimal) relEnv mettaMinimal).target.app X e).down ∧
-            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ u) := by
+            Mettapedia.OSLF.Framework.CategoryBridge.PathSemClosedPred mettaMinimal ψ.1 u) := by
   exact mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph_autoPkg
     (relEnv := relEnv) (I_check := I_check) (I_sem := I_sem)
     h_atoms hSat seed q (mettaMinimal_pathOrder seed) hNat
@@ -658,15 +669,26 @@ def mettaSpecAtomCheck : AtomCheck
   | "isDoneState", .apply "State" [.apply "Done" [], _, _] => true
   | _, _ => false
 
-/-- Semantics for spec-facing state atoms (decidable/classifier-aligned). -/
-def mettaSpecAtomSem : AtomSem :=
+/-- Raw classifier meaning used to construct the equation-respecting atomic
+semantics. -/
+private def mettaSpecAtomRawSem : AtomSem :=
   fun a p => mettaSpecAtomCheck a p = true
 
+/-- Equation-respecting semantics for spec-facing state atoms.  Since this
+presentation is certified equation-free, it uses the equation-free
+specialization of the canonical predicate carrier. -/
+def mettaSpecAtomSem (relEnv : RelationEnv) :
+    EquationAtomSemUsing relEnv mettaMinimal :=
+  equationAtomSemUsingOfEquationFree relEnv (by rfl) mettaSpecAtomRawSem
+
 /-- Soundness of the spec-facing atom checker by construction. -/
-theorem mettaSpecAtomCheck_sound :
-    ∀ a p, mettaSpecAtomCheck a p = true → mettaSpecAtomSem a p := by
+theorem mettaSpecAtomCheck_sound (relEnv : RelationEnv) :
+    ∀ a p, mettaSpecAtomCheck a p = true →
+      (mettaSpecAtomSem relEnv a).1 p := by
   intro a p h
-  simpa [mettaSpecAtomSem] using h
+  simpa [mettaSpecAtomSem, mettaSpecAtomRawSem,
+    equationAtomSemUsingOfEquationFree, equationPredicateUsingOfEquationFree,
+    invariantPredicate] using h
 
 /-- Public API theorem for spec-facing MeTTa atoms:
 `checkLangUsing ... = sat` implies denotational formula semantics. -/
@@ -674,21 +696,22 @@ theorem mettaMinimal_checkLangUsing_sat_sound_specAtoms
     {relEnv : RelationEnv}
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
     (hSat : checkLangUsing relEnv mettaMinimal mettaSpecAtomCheck fuel p φ = .sat) :
-    sem (langReducesUsing relEnv mettaMinimal) mettaSpecAtomSem φ p := by
+    langFormulaSemUsing relEnv mettaMinimal (mettaSpecAtomSem relEnv) φ p := by
   exact checkLangUsing_sat_sound
     (relEnv := relEnv) (lang := mettaMinimal)
-    (I_check := mettaSpecAtomCheck) (I_sem := mettaSpecAtomSem)
-    mettaSpecAtomCheck_sound hSat
+    (I_check := mettaSpecAtomCheck) (I_sem := mettaSpecAtomSem relEnv)
+    (mettaSpecAtomCheck_sound relEnv) hSat
 
 /-- Default-environment specialization of spec-facing checker soundness. -/
 theorem mettaMinimal_checkLang_sat_sound_specAtoms
     {fuel : Nat} {p : Pattern} {φ : OSLFFormula}
     (hSat : checkLang mettaMinimal mettaSpecAtomCheck fuel p φ = .sat) :
-    sem (langReduces mettaMinimal) mettaSpecAtomSem φ p := by
-  change sem (langReducesUsing RelationEnv.empty mettaMinimal) mettaSpecAtomSem φ p
-  simpa [checkLang] using
-    (mettaMinimal_checkLangUsing_sat_sound_specAtoms
-      (relEnv := RelationEnv.empty) (fuel := fuel) (p := p) (φ := φ) hSat)
+    langFormulaSem mettaMinimal (mettaSpecAtomSem RelationEnv.empty) φ p := by
+  change langFormulaSemUsing RelationEnv.empty mettaMinimal
+    (mettaSpecAtomSem RelationEnv.empty) φ p
+  exact mettaMinimal_checkLangUsing_sat_sound_specAtoms
+    (relEnv := RelationEnv.empty) (fuel := fuel) (p := p) (φ := φ)
+    (by simpa [checkLang] using hSat)
 
 #check mettaMinimal_checker_sat_to_pathSemClosed_commDi_bc_graph
 #check mettaMinimal_commDiPathSemLiftPkg_of_liftEq

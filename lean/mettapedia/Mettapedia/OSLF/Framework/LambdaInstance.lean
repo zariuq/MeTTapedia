@@ -90,12 +90,12 @@ declaration gate. -/
 theorem lambdaCalc_validate_eq_nil : lambdaCalc.validate = [] := by
   simp [LanguageDef.validate, lambdaCalc, LanguageDef.validateRewrite,
     LanguageDef.duplicateErrors, LanguageDef.duplicateErrorsAux,
-    LanguageDef.validatePatternConstructors, LanguageDef.validatePremises,
+    LanguageDef.validatePatternConstructors,
     LanguageDef.validateRulePatterns, Pattern.constructorRefs,
     Pattern.constructorRefsList, Pattern.freeFvarNames,
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-    LanguageDef.premiseProducedFvarNames, LanguageDef.typeNames,
+    LanguageDef.typeNames,
     TypeDecl.plain, TypeExpr.baseNames, TermParam.bodyName,
     TermParam.typeExpr]
 

@@ -21,17 +21,21 @@ compiled counterexample `congruence_is_not_free` in
 `CertificateGSLTStepTraceLanguageCanary`.  The generator therefore translates
 exactly the authored premises.
 
-Direct fragment.  The translation covers rules whose premises are all
+Direct fragment.  This generator is the equation-free specialization of the
+semantic trace construction.  It covers presentations whose generated
+equation theory is syntactic equality and rules whose premises are all
 congruence premises, whose metavariables live at ambient depth, and whose
-patterns are collection-rest free.  `DirectTraceLanguage` carries the
-premise-shape gate, so unsupported premises cannot be silently discarded;
-admission of the generated definition (`CalculusLanguageDef.isValid`) checks
-the remaining depth, pattern, and judgment conditions.
+patterns are collection-rest free.  `DirectTraceLanguage` carries both the
+equation-free and premise-shape gates, so neither equations nor unsupported
+premises can be silently discarded; admission of the generated definition
+(`CalculusLanguageDef.isValid`) checks the remaining depth, pattern, and
+judgment conditions.
 
-The source rewrite and equation declarations are consumed into the generated
-schemas (the generated language carries no residual rewrite or equation
-declarations), so the step relation keeps exactly one definition
-authority.
+The source rewrite declarations are consumed into the generated schemas.  An
+equation-bearing presentation is rejected before construction; consequently
+clearing the source equation field cannot discard semantic structure.  The
+generated language carries no residual rewrite or equation declarations, so
+the step relation keeps exactly one definition authority.
 
 The full proof checker strictly exceeds this uniform family: every generated
 definition declares exactly the binary `Step` and `Steps` judgments, so
@@ -53,27 +57,43 @@ def RewriteRule.directTraceSupported (rule : RewriteRule) : Bool :=
     | .congruence _ _ => true
     | _ => false
 
-/-- The premise fragment accepted by the direct trace translation. -/
+/-- The equation-free premise fragment accepted by the direct trace
+translation.  A presentation with authored or presentation-derived equations
+must use an equation-aware realization of `E;R;E`; it cannot enter this
+generator. -/
 def LanguageDef.directTraceSupported (language : LanguageDef) : Bool :=
-  language.rewrites.all RewriteRule.directTraceSupported
+  language.isEquationFree &&
+    language.rewrites.all RewriteRule.directTraceSupported
 
 /-- A language together with machine-checked evidence that the direct trace
-translation accounts for every authored rewrite premise.  This carrier is
-deliberately weaker than generated-definition validity: depth discipline,
-collection-rest freedom, and judgment validation remain the responsibility
-of `CalculusLanguageDef.isValid`. -/
+translation discards no equation theory and accounts for every authored
+rewrite premise.  This carrier is deliberately weaker than
+generated-definition validity: depth discipline, collection-rest freedom,
+and judgment validation remain the responsibility of
+`CalculusLanguageDef.isValid`. -/
 structure DirectTraceLanguage where
   toLanguageDef : LanguageDef
-  premisesSupported :
+  traceSupported :
     LanguageDef.directTraceSupported toLanguageDef = true
 
 namespace DirectTraceLanguage
 
+/-- A directly generated trace language has syntactic equality as its entire
+generated equation theory. -/
+theorem equation_free (source : DirectTraceLanguage) :
+    source.toLanguageDef.isEquationFree = true := by
+  have supported := source.traceSupported
+  simp only [LanguageDef.directTraceSupported, Bool.and_eq_true] at supported
+  exact supported.1
+
 /-- Recover support for any authored rule from the carrier evidence. -/
 theorem rule_supported (source : DirectTraceLanguage) {rule : RewriteRule}
     (member : rule ∈ source.toLanguageDef.rewrites) :
-    RewriteRule.directTraceSupported rule = true :=
-  List.all_eq_true.mp source.premisesSupported rule member
+    RewriteRule.directTraceSupported rule = true := by
+  have supported := source.traceSupported
+  simp only [LanguageDef.directTraceSupported, Bool.and_eq_true] at supported
+  have rulesSupported := supported.2
+  exact List.all_eq_true.mp rulesSupported rule member
 
 /-- Executable, fail-closed admission into the direct trace fragment. -/
 def ofLanguage? (language : LanguageDef) : Option DirectTraceLanguage :=
@@ -84,7 +104,7 @@ def ofLanguage? (language : LanguageDef) : Option DirectTraceLanguage :=
 
 @[simp] theorem ofLanguage?_eq_some (source : DirectTraceLanguage) :
     ofLanguage? source.toLanguageDef = some source := by
-  simp [ofLanguage?, source.premisesSupported]
+  simp [ofLanguage?, source.traceSupported]
 
 theorem ofLanguage?_eq_none_of_unsupported {language : LanguageDef}
     (unsupported : LanguageDef.directTraceSupported language = false) :

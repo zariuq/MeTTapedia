@@ -31,6 +31,225 @@ def argumentsOfBindings? : List (String × Nat) → Bindings → Option (List Pa
       let arguments ← argumentsOfBindings? formals bindings
       some (argument :: arguments)
 
+/-- Reconstruct a binding row from the checker's positional argument vector.
+The operation is deliberately fail-closed on an arity mismatch.  Binder
+depth remains part of the formal row, while `Bindings` records only the
+name-to-value projection used by source rewrite instantiation. -/
+def bindingsOfArguments? : List (String × Nat) → List Pattern → Option Bindings
+  | [], [] => some []
+  | (name, _depth) :: formals, argument :: arguments => do
+      let bindings ← bindingsOfArguments? formals arguments
+      some ((name, argument) :: bindings)
+  | _, _ => none
+
+/-- Every checker-valid argument vector has a positional binding row. -/
+theorem bindingsOfArguments?_exists_of_argumentsValidAt :
+    ∀ {formals : List (String × Nat)} {arguments : List Pattern},
+      argumentsValidAt formals arguments = true →
+        ∃ bindings, bindingsOfArguments? formals arguments = some bindings := by
+  intro formals
+  induction formals with
+  | nil =>
+      intro arguments valid
+      cases arguments with
+      | nil => exact ⟨[], rfl⟩
+      | cons argument arguments =>
+          simp [argumentsValidAt] at valid
+  | cons formal formals inductionHypothesis =>
+      intro arguments valid
+      cases arguments with
+      | nil => simp [argumentsValidAt] at valid
+      | cons argument arguments =>
+          rcases formal with ⟨name, depth⟩
+          simp only [argumentsValidAt, Bool.and_eq_true] at valid
+          obtain ⟨bindings, bindingsEq⟩ :=
+            inductionHypothesis valid.2
+          exact ⟨(name, argument) :: bindings, by
+            simp [bindingsOfArguments?, bindingsEq]⟩
+
+/-- A binding prepended under a different name does not change lookup. -/
+theorem bindings_lookup_cons_ne {headName name : String}
+    (different : headName ≠ name) (value : Pattern) (bindings : Bindings) :
+    Bindings.lookup ((headName, value) :: bindings) name =
+      Bindings.lookup bindings name := by
+  unfold Bindings.lookup
+  rw [List.find?_cons_of_neg (by simpa using different)]
+
+/-- An unrelated binding may be skipped while extracting a positional
+argument vector. -/
+theorem argumentsOfBindings?_cons_irrelevant :
+    ∀ {formals : List (String × Nat)} {headName : String}
+      {value : Pattern} {bindings : Bindings},
+      headName ∉ formals.map Prod.fst →
+      argumentsOfBindings? formals ((headName, value) :: bindings) =
+        argumentsOfBindings? formals bindings := by
+  intro formals
+  induction formals with
+  | nil => intro _ _ _ _; rfl
+  | cons formal formals inductionHypothesis =>
+      intro headName value bindings absent
+      rcases formal with ⟨name, depth⟩
+      have parts : headName ≠ name ∧ headName ∉ formals.map Prod.fst := by
+        simpa using absent
+      simp [argumentsOfBindings?, bindings_lookup_cons_ne parts.1,
+        inductionHypothesis parts.2]
+
+/-- On a depth-zero, name-unique formal row, positional reconstruction is a
+right inverse of ordered argument extraction.  This is the anti-splicing
+boundary used when one checked rule instance must determine one coherent
+source binding environment. -/
+theorem argumentsOfBindings?_of_bindingsOfArguments :
+    ∀ {formals : List (String × Nat)} {arguments : List Pattern}
+      {bindings : Bindings},
+      (formals.map Prod.fst).Nodup →
+      (∀ formal ∈ formals, formal.2 = 0) →
+      bindingsOfArguments? formals arguments = some bindings →
+      argumentsOfBindings? formals bindings = some arguments := by
+  intro formals
+  induction formals with
+  | nil =>
+      intro arguments bindings _names _depths decoded
+      cases arguments with
+      | nil =>
+          have bindingsEq : bindings = [] := by
+            simpa [bindingsOfArguments?] using decoded.symm
+          subst bindings
+          rfl
+      | cons argument arguments =>
+          simp [bindingsOfArguments?] at decoded
+  | cons formal formals inductionHypothesis =>
+      intro arguments bindings names depths decoded
+      cases arguments with
+      | nil => simp [bindingsOfArguments?] at decoded
+      | cons argument arguments =>
+          rcases formal with ⟨name, depth⟩
+          have depthZero : depth = 0 :=
+            depths (name, depth) (by simp)
+          subst depth
+          have namesParts : name ∉ formals.map Prod.fst ∧
+              (formals.map Prod.fst).Nodup := by
+            simpa using names
+          cases tailEq : bindingsOfArguments? formals arguments with
+          | none => simp [bindingsOfArguments?, tailEq] at decoded
+          | some tailBindings =>
+              have bindingsEq :
+                  bindings = (name, argument) :: tailBindings := by
+                simpa [bindingsOfArguments?, tailEq] using decoded.symm
+              subst bindings
+              have tailArguments := inductionHypothesis namesParts.2
+                (fun inner member =>
+                  depths inner (List.mem_cons_of_mem _ member)) tailEq
+              simp [argumentsOfBindings?, Bindings.lookup,
+                argumentsOfBindings?_cons_irrelevant namesParts.1,
+                tailArguments]
+
+/-- Positional reconstruction covers every declared formal name when the
+formal row is name-unique. -/
+theorem bindingsOfArguments?_lookup_isSome :
+    ∀ {formals : List (String × Nat)} {arguments : List Pattern}
+      {bindings : Bindings},
+      (formals.map Prod.fst).Nodup →
+      bindingsOfArguments? formals arguments = some bindings →
+      ∀ formal ∈ formals,
+        (Bindings.lookup bindings formal.1).isSome := by
+  intro formals
+  induction formals with
+  | nil =>
+      intro arguments bindings _names _decoded formal member
+      cases member
+  | cons head formals inductionHypothesis =>
+      intro arguments bindings names decoded formal member
+      cases arguments with
+      | nil => simp [bindingsOfArguments?] at decoded
+      | cons argument arguments =>
+          rcases head with ⟨headName, headDepth⟩
+          have namesParts : headName ∉ formals.map Prod.fst ∧
+              (formals.map Prod.fst).Nodup := by
+            simpa using names
+          cases tailEq : bindingsOfArguments? formals arguments with
+          | none => simp [bindingsOfArguments?, tailEq] at decoded
+          | some tailBindings =>
+              have bindingsEq :
+                  bindings = (headName, argument) :: tailBindings := by
+                simpa [bindingsOfArguments?, tailEq] using decoded.symm
+              subst bindings
+              rcases List.mem_cons.mp member with headEq | tailMember
+              · subst formal
+                simp [Bindings.lookup]
+              · have different : headName ≠ formal.1 := by
+                  intro equal
+                  exact namesParts.1
+                    (List.mem_map.mpr ⟨formal, tailMember, equal.symm⟩)
+                rw [bindings_lookup_cons_ne different]
+                exact inductionHypothesis namesParts.2 tailEq formal tailMember
+
+/-- Positional reconstruction agrees exactly with the checker's own lookup
+at every declared formal.  Name uniqueness is essential because `Bindings`
+forgets binder depth while the checker retains it in the formal coordinate. -/
+theorem bindingsOfArguments?_lookup_eq_lookupArgumentAt? :
+    ∀ {formals : List (String × Nat)} {arguments : List Pattern}
+      {bindings : Bindings},
+      (formals.map Prod.fst).Nodup →
+      bindingsOfArguments? formals arguments = some bindings →
+      ∀ formal ∈ formals,
+        Bindings.lookup bindings formal.1 =
+          lookupArgumentAt? formals arguments formal.1 formal.2 := by
+  intro formals
+  induction formals with
+  | nil =>
+      intro arguments bindings _names _decoded formal member
+      cases member
+  | cons head formals inductionHypothesis =>
+      intro arguments bindings names decoded formal member
+      cases arguments with
+      | nil => simp [bindingsOfArguments?] at decoded
+      | cons argument arguments =>
+          rcases head with ⟨headName, headDepth⟩
+          have namesParts : headName ∉ formals.map Prod.fst ∧
+              (formals.map Prod.fst).Nodup := by
+            simpa using names
+          cases tailEq : bindingsOfArguments? formals arguments with
+          | none => simp [bindingsOfArguments?, tailEq] at decoded
+          | some tailBindings =>
+              have bindingsEq :
+                  bindings = (headName, argument) :: tailBindings := by
+                simpa [bindingsOfArguments?, tailEq] using decoded.symm
+              subst bindings
+              rcases List.mem_cons.mp member with headEq | tailMember
+              · subst formal
+                simp [Bindings.lookup, lookupArgumentAt?]
+              · have differentName : headName ≠ formal.1 := by
+                  intro equal
+                  exact namesParts.1
+                    (List.mem_map.mpr ⟨formal, tailMember, equal.symm⟩)
+                have differentFormal :
+                    (headName, headDepth) ≠ (formal.1, formal.2) := by
+                  intro equal
+                  exact differentName (Prod.mk.inj equal).1
+                rw [bindings_lookup_cons_ne differentName]
+                simp only [lookupArgumentAt?, if_neg differentFormal]
+                exact inductionHypothesis namesParts.2 tailEq formal tailMember
+
+/-- Every declared formal has one exact checker lookup in a valid argument
+vector.  Name uniqueness is the boundary that lets the name-indexed binding
+projection recover the original depth-aware coordinate. -/
+theorem lookupArgumentAt?_exists_of_argumentsValidAt
+    {formals : List (String × Nat)} {arguments : List Pattern}
+    (namesNodup : (formals.map Prod.fst).Nodup)
+    (valid : argumentsValidAt formals arguments = true)
+    (formal : String × Nat) (member : formal ∈ formals) :
+    ∃ argument,
+      lookupArgumentAt? formals arguments formal.1 formal.2 = some argument := by
+  obtain ⟨bindings, bindingsExact⟩ :=
+    bindingsOfArguments?_exists_of_argumentsValidAt valid
+  have present : (Bindings.lookup bindings formal.1).isSome :=
+    bindingsOfArguments?_lookup_isSome namesNodup bindingsExact formal member
+  obtain ⟨argument, bindingLookup⟩ := Option.isSome_iff_exists.mp present
+  refine ⟨argument, ?_⟩
+  rw [← bindingsOfArguments?_lookup_eq_lookupArgumentAt? namesNodup
+    bindingsExact formal member]
+  exact bindingLookup
+
 mutual
 
 /-- Patterns on which source `applyBindings` and checker instantiation have
@@ -54,6 +273,34 @@ inductive BindingSchemasFragment (formals : List (String × Nat)) :
       (head : BindingSchemaFragment formals pattern)
       (tail : BindingSchemasFragment formals patterns) :
       BindingSchemasFragment formals (pattern :: patterns)
+
+end
+
+mutual
+
+/-- The supported first-order fragment is monotone in its formal inventory.
+This transports a source-local fragment proof into a larger generated rule
+without rechecking the pattern. -/
+theorem BindingSchemaFragment.mono
+    {smaller larger : List (String × Nat)} {pattern : Pattern}
+    (fragment : BindingSchemaFragment smaller pattern)
+    (included : ∀ formal ∈ smaller, formal ∈ larger) :
+    BindingSchemaFragment larger pattern := by
+  cases fragment with
+  | bvar index => exact .bvar index
+  | fvar declared => exact .fvar (included _ declared)
+  | apply items => exact .apply (items.mono included)
+  | collection items => exact .collection (items.mono included)
+
+/-- List-valued monotonicity of the supported first-order fragment. -/
+theorem BindingSchemasFragment.mono
+    {smaller larger : List (String × Nat)} {patterns : List Pattern}
+    (fragment : BindingSchemasFragment smaller patterns)
+    (included : ∀ formal ∈ smaller, formal ∈ larger) :
+    BindingSchemasFragment larger patterns := by
+  cases fragment with
+  | nil => exact .nil
+  | cons head tail => exact .cons (head.mono included) (tail.mono included)
 
 end
 
@@ -218,6 +465,64 @@ theorem instantiateSchemasAt?_eq_applyBindings
 
 end
 
+mutual
+
+/-- A direct pointwise lookup correspondence is sufficient for checker
+instantiation to equal source binding application.  Unlike the ordered-row
+theorem above, this reverse-facing form does not require reconstructing the
+entire checker argument vector from the binding row. -/
+theorem instantiateSchemaAt?_eq_applyBindings_of_lookup
+    {formals : List (String × Nat)} {arguments : List Pattern}
+    {bindings : Bindings} {schema : Pattern}
+    (fragment : BindingSchemaFragment formals schema)
+    (covered : ∀ name, (name, 0) ∈ formals →
+      (Bindings.lookup bindings name).isSome)
+    (lookupExact : ∀ name, (name, 0) ∈ formals →
+      lookupArgumentAt? formals arguments name 0 =
+        Bindings.lookup bindings name) :
+    instantiateSchemaAt? formals arguments 0 schema =
+      some (applyBindings bindings schema) := by
+  cases fragment with
+  | bvar index => simp [instantiateSchemaAt?, applyBindings]
+  | @fvar name declared =>
+      obtain ⟨value, valueEq⟩ := Option.isSome_iff_exists.mp
+        (covered name declared)
+      have argumentEq :
+          lookupArgumentAt? formals arguments name 0 = some value :=
+        (lookupExact name declared).trans valueEq
+      simpa [instantiateSchemaAt?,
+        applyBindings_fvar_eq_of_lookup valueEq] using argumentEq
+  | apply items =>
+      simp [instantiateSchemaAt?, applyBindings,
+        instantiateSchemasAt?_eq_applyBindings_of_lookup items covered
+          lookupExact]
+  | collection items =>
+      simp [instantiateSchemaAt?, applyBindings,
+        instantiateSchemasAt?_eq_applyBindings_of_lookup items covered
+          lookupExact]
+
+theorem instantiateSchemasAt?_eq_applyBindings_of_lookup
+    {formals : List (String × Nat)} {arguments : List Pattern}
+    {bindings : Bindings} {schemas : List Pattern}
+    (fragment : BindingSchemasFragment formals schemas)
+    (covered : ∀ name, (name, 0) ∈ formals →
+      (Bindings.lookup bindings name).isSome)
+    (lookupExact : ∀ name, (name, 0) ∈ formals →
+      lookupArgumentAt? formals arguments name 0 =
+        Bindings.lookup bindings name) :
+    instantiateSchemasAt? formals arguments 0 schemas =
+      some (schemas.map (applyBindings bindings)) := by
+  cases fragment with
+  | nil => simp [instantiateSchemasAt?]
+  | cons head tail =>
+      simp [instantiateSchemasAt?,
+        instantiateSchemaAt?_eq_applyBindings_of_lookup head covered
+          lookupExact,
+        instantiateSchemasAt?_eq_applyBindings_of_lookup tail covered
+          lookupExact]
+
+end
+
 
 /-- Top-level spelling of the source/checker correspondence. -/
 theorem instantiateSchema?_eq_applyBindings
@@ -331,11 +636,16 @@ example : BindingSchemaFragment fixedFormals fixedSchema := by
     some [.apply "X" [], .apply "Y" []])
 
 #guard decide
+  (bindingsOfArguments? fixedFormals [.apply "X" [], .apply "Y" []] =
+    some [("x", .apply "X" []), ("y", .apply "Y" [])])
+
+#guard decide
   (instantiateSchema? fixedFormals [.apply "X" [], .apply "Y" []] fixedSchema =
     some (applyBindings fixedBindings fixedSchema))
 
 #guard (argumentsOfBindings? [("x", 1)] fixedBindings).isNone
 #guard (argumentsOfBindings? [("missing", 0)] fixedBindings).isNone
+#guard (bindingsOfArguments? fixedFormals [.apply "X" []]).isNone
 
 example : ¬ BindingSchemaFragment fixedFormals
     (.lambda none (.fvar "x")) := by
@@ -351,5 +661,14 @@ example : ¬ BindingSchemaFragment fixedFormals
     (.collection .vec [] (some "rest")) := by
   intro h
   cases h
+
+#print axioms bindingsOfArguments?_exists_of_argumentsValidAt
+#print axioms argumentsOfBindings?_cons_irrelevant
+#print axioms argumentsOfBindings?_of_bindingsOfArguments
+#print axioms bindingsOfArguments?_lookup_isSome
+#print axioms bindingsOfArguments?_lookup_eq_lookupArgumentAt?
+#print axioms lookupArgumentAt?_exists_of_argumentsValidAt
+#print axioms BindingSchemaFragment.mono
+#print axioms instantiateSchemaAt?_eq_applyBindings_of_lookup
 
 end Mettapedia.GSLT.LanguageDef.InferenceInstantiationBridge

@@ -69,27 +69,29 @@ are the same fact expressed in two formalisms. -/
     extraction distributes over state composition. -/
 theorem neighborhood_evidence_add_correspondence
     (v : WMExtVertex) (val : NeighborhoodValuation) (s₁ s₂ q : String) :
-    -- Syntactic side: the LanguageDef reduction fires
-    langReduces (wmExtVertexLanguageDef v)
+    -- Presented semantic side: the LanguageDef reduction fires modulo equations
+    langSemanticReduces (wmExtVertexLanguageDef v)
       (pExtract (pRevise (.fvar s₁) (.fvar s₂)) (.fvar q))
       (pCombine (pExtract (.fvar s₁) (.fvar q)) (pExtract (.fvar s₂) (.fvar q))) ∧
     -- Semantic side: evidence additivity holds on the valued neighborhood states
     neighborhoodEvidence (val.stateVal s₁ + val.stateVal s₂) (val.queryVal q) =
       neighborhoodEvidence (val.stateVal s₁) (val.queryVal q) +
         neighborhoodEvidence (val.stateVal s₂) (val.queryVal q) :=
-  ⟨wmLangReduces_evidenceAdd v (.fvar s₁) (.fvar s₂) (.fvar q),
+  ⟨langReduces_to_semantic _
+      (wmLangReduces_evidenceAdd v (.fvar s₁) (.fvar s₂) (.fvar q)),
    neighborhoodEvidence_add (val.stateVal s₁) (val.stateVal s₂) (val.queryVal q)⟩
 
 /-- Full-vertex version of evidence-add correspondence. -/
 theorem neighborhood_evidence_add_correspondence_full
     (v : WMFullVertex) (val : NeighborhoodValuation) (s₁ s₂ q : String) :
-    langReduces (wmFullVertexLanguageDef v)
+    langSemanticReduces (wmFullVertexLanguageDef v)
       (pExtract (pRevise (.fvar s₁) (.fvar s₂)) (.fvar q))
       (pCombine (pExtract (.fvar s₁) (.fvar q)) (pExtract (.fvar s₂) (.fvar q))) ∧
     neighborhoodEvidence (val.stateVal s₁ + val.stateVal s₂) (val.queryVal q) =
       neighborhoodEvidence (val.stateVal s₁) (val.queryVal q) +
         neighborhoodEvidence (val.stateVal s₂) (val.queryVal q) :=
-  ⟨wmFullLangReduces_evidenceAdd v (.fvar s₁) (.fvar s₂) (.fvar q),
+  ⟨langReduces_to_semantic _
+      (wmFullLangReduces_evidenceAdd v (.fvar s₁) (.fvar s₂) (.fvar q)),
    neighborhoodEvidence_add (val.stateVal s₁) (val.stateVal s₂) (val.queryVal q)⟩
 
 /-! ## Section 3: Diamond Interpretation
@@ -102,8 +104,8 @@ into per-source neighborhood satisfaction counts. -/
     one from each sub-state, whose sum equals the combined evidence. -/
 theorem neighborhood_diamond_evidence_decomposition
     (v : WMExtVertex) (val : NeighborhoodValuation) (s₁ s₂ q : String) :
-    -- Syntactic: ◇(isCombined) holds at the decomposable pattern
-    langDiamond (wmExtVertexLanguageDef v) isCombined
+    -- OSLF: ◇(isCombined) holds at the decomposable equation class
+    langDiamond (wmExtVertexLanguageDef v) (wmExtPredicate v isCombined)
       (pExtract (pRevise (.fvar s₁) (.fvar s₂)) (.fvar q)) ∧
     -- Semantic: evidence decomposes into per-source components
     ∃ e₁ e₂ : BinaryEvidence,
@@ -120,7 +122,7 @@ theorem neighborhood_diamond_evidence_decomposition
     to the semantic fact that multiset addition is commutative. -/
 theorem neighborhood_diamond_revision_comm
     (v : WMExtVertex) (val : NeighborhoodValuation) (s₁ s₂ : String) :
-    langDiamond (wmExtVertexLanguageDef v) isRevision
+    langDiamond (wmExtVertexLanguageDef v) (wmExtPredicate v isRevision)
       (pRevise (.fvar s₁) (.fvar s₂)) ∧
     val.stateVal s₁ + val.stateVal s₂ = val.stateVal s₂ + val.stateVal s₁ :=
   ⟨diamond_isCommuted v (.fvar s₁) (.fvar s₂),
@@ -216,15 +218,19 @@ The Galois connection ◇ ⊣ □ instantiated with evidence-theoretic meaning:
     structure. -/
 theorem neighborhood_galois_evidence_safety
     (v : WMExtVertex) (ψ : Pattern → Prop) :
-    (∀ p, langDiamond (wmExtVertexLanguageDef v) isCombined p → ψ p) ↔
-    (∀ p, isCombined p → langBox (wmExtVertexLanguageDef v) ψ p) :=
-  wmCalc_decomposability_safety v ψ
+    (∀ p, langDiamond (wmExtVertexLanguageDef v)
+      (wmExtPredicate v isCombined) p → ψ p) ↔
+    (∀ p, isCombined p → langBox (wmExtVertexLanguageDef v)
+      (wmExtPredicate v ψ) p) :=
+  wmCalc_decomposability_safety v (wmExtPredicate v ψ)
 
 /-- Full-vertex Galois corollary. -/
 theorem neighborhood_galois_evidence_safety_full
     (v : WMFullVertex) (ψ : Pattern → Prop) :
-    (∀ p, langDiamond (wmFullVertexLanguageDef v) isCombined p → ψ p) ↔
-    (∀ p, isCombined p → langBox (wmFullVertexLanguageDef v) ψ p) :=
-  wmFullCalc_decomposability_safety v ψ
+    (∀ p, langDiamond (wmFullVertexLanguageDef v)
+      (wmFullPredicate v isCombined) p → ψ p) ↔
+    (∀ p, isCombined p → langBox (wmFullVertexLanguageDef v)
+      (wmFullPredicate v ψ) p) :=
+  wmFullCalc_decomposability_safety v (wmFullPredicate v ψ)
 
 end Mettapedia.OSLF.Framework.WMCalculusNeighborhoodBridge

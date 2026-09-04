@@ -1,5 +1,5 @@
 import Mathlib.Logic.Relation
-import Mettapedia.OSLF.Framework.RewriteSystem
+import Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 import Mettapedia.PLN.InferenceControl.PremiseSelection.ExternalBayesianity
 
 /-!
@@ -30,6 +30,7 @@ namespace Mettapedia.OSLF.Framework.PLNSelectorGSLT
 open scoped ENNReal
 open Mettapedia.PLN.InferenceControl.PremiseSelection
 open Mettapedia.PLN.Evidence.EvidenceQuantale
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 universe u v
 
@@ -228,34 +229,37 @@ open PLNSelectorExpr
 
 variable (Goal : Type u) (Fact : Type v)
 
-/-- OSLF `RewriteSystem` instance for PLN selector-rule rewriting. -/
-def plnSelectorRewriteSystem : RewriteSystem where
-  Sorts := PLNSelectorSort
-  procSort := .Proc
-  Term := fun _ => PLNSelectorExpr Goal Fact
-  Reduces := PLNSelectorExpr.Reduces
+/-- The selector rewrite calculus as a GSLT with equality as its explicit
+equation theory. -/
+def plnSelectorGSLT : Mettapedia.GSLT.GSLT :=
+  equalityGSLT (PLNSelectorExpr Goal Fact) PLNSelectorExpr.Reduces
 
-/-- OSLF type-system instance induced by the PLN selector rewrite relation. -/
-def plnSelectorOSLF : OSLFTypeSystem (plnSelectorRewriteSystem (Goal := Goal) (Fact := Fact)) where
-  Pred := fun _ => PLNSelectorExpr Goal Fact → Prop
-  frame := fun _ => inferInstance
-  satisfies := fun t φ => φ t
-  diamond := fun φ p => ∃ q, PLNSelectorExpr.Reduces p q ∧ φ q
-  diamond_spec := by
-    intro φ p
-    rfl
-  box := fun φ p => ∀ q, PLNSelectorExpr.Reduces q p → φ q
-  box_spec := by
-    intro φ p
-    rfl
-  galois := by
-    intro φ ψ
-    constructor
-    · intro h p hp q hqp
-      exact h q ⟨p, hqp, hp⟩
-    · intro h p hp
-      rcases hp with ⟨q, hpq, hq⟩
-      exact h q hq p hpq
+/-- Sort-indexed view of the selector GSLT used by its native types. -/
+def plnSelectorRewriteSystem : RewriteSystem :=
+  sortedGSLTRewriteSystem
+    (plnSelectorGSLT (Goal := Goal) (Fact := Fact)) PLNSelectorSort .Proc
+
+/-- OSLF type-system instance induced solely by the canonical GSLT synthesis. -/
+def plnSelectorOSLF :
+    OSLFTypeSystem (plnSelectorRewriteSystem (Goal := Goal) (Fact := Fact)) :=
+  sortedGSLTOSLF
+    (plnSelectorGSLT (Goal := Goal) (Fact := Fact)) PLNSelectorSort .Proc
+
+/-- Admit a selector observation through the common equation-saturation
+boundary. Equality equations make this extensionally the original predicate. -/
+def plnSelectorPredicate (predicate : PLNSelectorExpr Goal Fact → Prop) :
+    EquationPredicate (plnSelectorGSLT (Goal := Goal) (Fact := Fact)) :=
+  saturatePredicate (plnSelectorGSLT (Goal := Goal) (Fact := Fact)) predicate
+
+@[simp]
+theorem plnSelectorPredicate_apply
+    (predicate : PLNSelectorExpr Goal Fact → Prop)
+    (term : PLNSelectorExpr Goal Fact) :
+    plnSelectorPredicate (Goal := Goal) (Fact := Fact) predicate term ↔
+      predicate term :=
+  saturatePredicate_apply_iff_of_equiv_iff_eq
+    (plnSelectorGSLT (Goal := Goal) (Fact := Fact))
+    (equalityGSLT_equiv _ _) predicate term
 
 /-- OSLF diamond sees the two-expert external-Bayesian rewrite edge. -/
 theorem oslf_diamond_extBayes2
@@ -263,9 +267,15 @@ theorem oslf_diamond_extBayes2
     (plnSelectorOSLF (Goal := Goal) (Fact := Fact)).satisfies
       (.update (.fuse p q) l)
       ((plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond
-        (fun e => e = .fuse (.update p l) (.update q l))) := by
-  refine ⟨.fuse (.update p l) (.update q l), ?_, rfl⟩
-  exact PLNSelectorExpr.Reduces.extBayes2 p q l
+        (plnSelectorPredicate (Goal := Goal) (Fact := Fact)
+          (fun e => e = .fuse (.update p l) (.update q l)))) := by
+  rw [(plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond_spec]
+  refine ⟨.fuse (.update p l) (.update q l),
+    PLNSelectorExpr.Reduces.extBayes2 p q l, ?_⟩
+  change plnSelectorPredicate (Goal := Goal) (Fact := Fact)
+    (fun e => e = .fuse (.update p l) (.update q l))
+    (.fuse (.update p l) (.update q l))
+  exact (plnSelectorPredicate_apply (Goal := Goal) (Fact := Fact) _ _).2 rfl
 
 /-- OSLF diamond sees finite-family external-Bayesian rewrite edges. -/
 theorem oslf_diamond_extBayesFamily
@@ -273,9 +283,17 @@ theorem oslf_diamond_extBayesFamily
     (plnSelectorOSLF (Goal := Goal) (Fact := Fact)).satisfies
       (.update (.fuseFamily xs) l)
       ((plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond
-        (fun e => e = .fuseFamily (xs.map (fun x => PLNSelectorExpr.update x l)))) := by
-  refine ⟨.fuseFamily (xs.map (fun x => PLNSelectorExpr.update x l)), ?_, rfl⟩
-  exact PLNSelectorExpr.Reduces.extBayesFamily xs l
+        (plnSelectorPredicate (Goal := Goal) (Fact := Fact)
+          (fun e => e =
+            .fuseFamily (xs.map (fun x => PLNSelectorExpr.update x l))))) := by
+  rw [(plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond_spec]
+  refine ⟨.fuseFamily (xs.map (fun x => PLNSelectorExpr.update x l)),
+    PLNSelectorExpr.Reduces.extBayesFamily xs l, ?_⟩
+  change plnSelectorPredicate (Goal := Goal) (Fact := Fact)
+    (fun e => e =
+      .fuseFamily (xs.map (fun x => PLNSelectorExpr.update x l)))
+    (.fuseFamily (xs.map (fun x => PLNSelectorExpr.update x l)))
+  exact (plnSelectorPredicate_apply (Goal := Goal) (Fact := Fact) _ _).2 rfl
 
 /-- OSLF-diamond corollary for staged-family round-trip coherence:
 normalizing a regrade→unregrade staged posterior has a one-step successor whose
@@ -289,8 +307,11 @@ theorem oslf_diamond_stagedFamily_roundtrip
       (.normalize tnorm
         (.atom (regradeScorer w⁻¹ (regradeScorer w (stagedFamilyPosterior t s likelihood)))))
       ((plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond
-        (fun e =>
-          e = .atom (fuseFamily (fun i => update (normalizeScorer (t i) (s i)) likelihood)))) := by
+        (plnSelectorPredicate (Goal := Goal) (Fact := Fact) (fun e =>
+          e = .atom
+            (fuseFamily (fun i =>
+              update (normalizeScorer (t i) (s i)) likelihood))))) := by
+  rw [(plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond_spec]
   refine ⟨
       .atom (regradeScorer w⁻¹ (regradeScorer w (stagedFamilyPosterior t s likelihood))),
       ?_,
@@ -302,6 +323,13 @@ theorem oslf_diamond_stagedFamily_roundtrip
           fuseFamily (fun i => update (normalizeScorer (t i) (s i)) likelihood) :=
       stagedFamilyPosterior_regrade_roundtrip_commute
         (w := w) (hw := hw) (t := t) (s := s) (likelihood := likelihood)
+    change plnSelectorPredicate (Goal := Goal) (Fact := Fact)
+      (fun e => e = .atom
+        (fuseFamily (fun i =>
+          update (normalizeScorer (t i) (s i)) likelihood)))
+      (.atom (regradeScorer w⁻¹
+        (regradeScorer w (stagedFamilyPosterior t s likelihood))))
+    apply (plnSelectorPredicate_apply (Goal := Goal) (Fact := Fact) _ _).2
     simpa using congrArg PLNSelectorExpr.atom hRound
 
 /-- OSLF-box companion for staged-family round-trip coherence:
@@ -316,13 +344,23 @@ theorem oslf_box_stagedFamily_roundtrip
     (plnSelectorOSLF (Goal := Goal) (Fact := Fact)).satisfies
       (.atom (fuseFamily (fun i => update (normalizeScorer (t i) (s i)) likelihood)))
       ((plnSelectorOSLF (Goal := Goal) (Fact := Fact)).box
-        (fun q =>
+        (plnSelectorPredicate (Goal := Goal) (Fact := Fact) (fun q =>
           PLNSelectorExpr.strengthAt q g f =
             PLNSelectorExpr.strengthAt
               (.normalize tnorm
                 (.atom (regradeScorer w⁻¹ (regradeScorer w (stagedFamilyPosterior t s likelihood)))))
-              g f)) := by
+              g f))) := by
+  rw [(plnSelectorOSLF (Goal := Goal) (Fact := Fact)).box_spec]
   intro q hq
+  change plnSelectorPredicate (Goal := Goal) (Fact := Fact)
+    (fun candidate =>
+      PLNSelectorExpr.strengthAt candidate g f =
+        PLNSelectorExpr.strengthAt
+          (.normalize tnorm
+            (.atom (regradeScorer w⁻¹
+              (regradeScorer w (stagedFamilyPosterior t s likelihood)))))
+          g f) q
+  apply (plnSelectorPredicate_apply (Goal := Goal) (Fact := Fact) _ _).2
   have hqEq :
       PLNSelectorExpr.strengthAt q g f =
         PLNSelectorExpr.strengthAt

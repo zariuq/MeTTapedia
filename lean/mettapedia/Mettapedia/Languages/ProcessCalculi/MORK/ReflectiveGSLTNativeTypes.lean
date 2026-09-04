@@ -124,7 +124,11 @@ theorem satisfies_reflectiveNativeListExactTargetNativeType_iff_step
     (gsltOSLF (reflectiveNativeListExecGSLT policy)).satisfies source
         (reflectiveNativeListExactTargetNativeType policy target).pred ↔
       cReflectiveSourceWorkQueueStep policy source = some target := by
-  simpa only [reflectiveNativeListExactTargetNativeType] using
+  change
+    (gsltOSLF (reflectiveNativeListExecGSLT policy)).satisfies source
+        (exactTargetNativeType (reflectiveNativeListExecGSLT policy) target).pred ↔
+      cReflectiveSourceWorkQueueStep policy source = some target
+  exact
     (satisfies_exactTargetNativeType_iff_step
       (reflectiveNativeListExecGSLT policy) source target).trans
       (reflectiveNativeListExecGSLT_step_iff policy source target)

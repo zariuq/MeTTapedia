@@ -182,8 +182,16 @@ theorem langDiamondUsing_of_spacesAgree {α β : Type*}
     (hagree : ∀ rel args,
       RelationalSpace.query a rel args = RelationalSpace.query b rel args)
     (lang : LanguageDef) (φ : Pattern → Prop) (p : Pattern) :
-    Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing (toRelationEnv a) lang φ p ↔
-    Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing (toRelationEnv b) lang φ p := by
+    Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing
+        (toRelationEnv a) lang
+        (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.saturatePredicate
+          (Mettapedia.OSLF.Framework.TypeSynthesis.langGSLTUsing
+            (toRelationEnv a) lang) φ) p ↔
+    Mettapedia.OSLF.Framework.TypeSynthesis.langDiamondUsing
+        (toRelationEnv b) lang
+        (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.saturatePredicate
+          (Mettapedia.OSLF.Framework.TypeSynthesis.langGSLTUsing
+            (toRelationEnv b) lang) φ) p := by
   rw [toRelationEnv_eq_of_agree a b hagree]
 
 /-- Backend preservation for box: query-agreeing spaces produce
@@ -194,8 +202,16 @@ theorem langBoxUsing_of_spacesAgree {α β : Type*}
     (hagree : ∀ rel args,
       RelationalSpace.query a rel args = RelationalSpace.query b rel args)
     (lang : LanguageDef) (φ : Pattern → Prop) (p : Pattern) :
-    Mettapedia.OSLF.Framework.TypeSynthesis.langBoxUsing (toRelationEnv a) lang φ p ↔
-    Mettapedia.OSLF.Framework.TypeSynthesis.langBoxUsing (toRelationEnv b) lang φ p := by
+    Mettapedia.OSLF.Framework.TypeSynthesis.langBoxUsing
+        (toRelationEnv a) lang
+        (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.saturatePredicate
+          (Mettapedia.OSLF.Framework.TypeSynthesis.langGSLTUsing
+            (toRelationEnv a) lang) φ) p ↔
+    Mettapedia.OSLF.Framework.TypeSynthesis.langBoxUsing
+        (toRelationEnv b) lang
+        (Mettapedia.OSLF.Framework.GSLTTypeSynthesis.saturatePredicate
+          (Mettapedia.OSLF.Framework.TypeSynthesis.langGSLTUsing
+            (toRelationEnv b) lang) φ) p := by
   rw [toRelationEnv_eq_of_agree a b hagree]
 
 end Mettapedia.OSLF.PathMap

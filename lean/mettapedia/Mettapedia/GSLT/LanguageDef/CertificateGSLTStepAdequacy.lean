@@ -769,7 +769,8 @@ theorem derivedDiamond_langSpanUsing_iff
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv)
     (language : LanguageDef) (φ : Pattern → Prop) (source : Pattern) :
     derivedDiamond (langSpanUsing relEnv language) φ source ↔
-      ∃ target, langReducesUsing relEnv language source target ∧ φ target := by
+      ∃ target,
+        langSemanticReducesUsing relEnv language source target ∧ φ target := by
   constructor
   · rintro ⟨edge, sourceEq, φTarget⟩
     exact ⟨edge.val.2, sourceEq ▸ edge.property, φTarget⟩
@@ -786,7 +787,10 @@ theorem diamond_iff_checked_witness {source : Pattern}
           φ target := by
   rw [langSpan, derivedDiamond_langSpanUsing_iff]
   exact exists_congr fun target =>
-    and_congr_left fun _ => (step_adequacy wfSource).symm
+    and_congr_left fun _ =>
+      (langSemanticReduces_iff_langReduces_of_equation_free
+        (lang := stepLanguage) rfl source target).trans
+          (step_adequacy wfSource).symm
 
 /-- The derived step-past modality constrains every checked predecessor
 certificate: the sound direction of the box weld.  The converse needs
@@ -800,7 +804,8 @@ theorem box_constrains_checked_predecessors {target : Pattern}
   intro source wfSource witness
   obtain ⟨derivation⟩ := witness
   have reduces := (sound_derivation derivation).1 source target rfl
-  exact box ⟨(source, target), reduces⟩ rfl
+  exact box ⟨(source, target),
+    langReduces_to_semantic stepLanguage reduces⟩ rfl
 
 /-! ## The finite-certificate floor -/
 

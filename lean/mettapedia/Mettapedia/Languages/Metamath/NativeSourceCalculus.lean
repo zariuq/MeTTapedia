@@ -245,7 +245,7 @@ theorem generatedDefinition_valid : generatedDefinition.isValid = true := by
 
 /-- The complete native slice as one GSLT. -/
 def totalTheory : GSLT :=
-  generatedDefinition.toGSLTOfNoEquations generatedDefinition_valid rfl
+  generatedDefinition.toGSLTOfEquationFree generatedDefinition_valid rfl
 
 theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := rfl
 

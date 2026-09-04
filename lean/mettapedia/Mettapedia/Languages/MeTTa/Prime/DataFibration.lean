@@ -1,6 +1,7 @@
 import Mathlib.CategoryTheory.Elements
 import Mathlib.CategoryTheory.FiberedCategory.Cocartesian
 import Mathlib.CategoryTheory.Monad.Products
+import Mettapedia.GSLT.LanguageDef.NIK
 import Mettapedia.GSLT.LanguageDef.NIKIndexedOperational
 import Mettapedia.GSLT.LanguageDef.StructuralCategory
 import Mettapedia.GSLT.LanguageDef.WellSorted
@@ -451,7 +452,7 @@ instance pushforwardLift_isStronglyCocartesian
 
 end IndexedDataDiagram
 
-/-! ## The four admission capabilities at a Data boundary -/
+/-! ## The four local NIK service faces at a Data boundary -/
 
 /-- Turn an independently stated meaning on claims into an object of the
 common admission algebra. -/
@@ -461,8 +462,9 @@ def claimAdmissionObject {Claim : Type uBase} (Meaning : Claim → Prop) :
   Meaning := Meaning
 
 /-- The four ways in which raw material may earn entry into a typed Data
-fibre.  These are capabilities, not a global switch: one language may expose
-several modes at distinct boundaries. -/
+fibre.  This is the Data-local view of the canonical `NIK.Service` doctrine,
+not a definition of NIK itself.  These are capabilities, not a global switch:
+one language may expose several modes at distinct boundaries. -/
 inductive EntryMode (Claim : Type uBase) where
   /-- A total algorithm computes the judgment directly. -/
   | directDecision (Meaning : Claim → Prop)
@@ -471,8 +473,8 @@ inductive EntryMode (Claim : Type uBase) where
   exact proof-fibre preservation. -/
   | nativeProof (guest : NativeProofSystem.{uBase, uValue} Claim)
       (kernel : NativeProofKernel guest)
-  /-- A meaning-preserving operation was admitted once and now runs without
-  an interior checker. -/
+  /-- A native meaning-preserving construction, computation, inference, or
+  transformation was admitted once and now runs without an interior checker. -/
   | admittedFlow (source : AdmissionObject.{uBase})
       (Meaning : Claim → Prop)
       (operation : source ⟶ claimAdmissionObject Meaning)
@@ -491,7 +493,9 @@ def Accepted {Claim : Type uBase} :
   | .admittedFlow _ Meaning _ => Meaning
   | .certificateBoundary _ Meaning _ _ => Meaning
 
-/-- Only the fourth mode requires an informative certificate at entry. -/
+/-- Only the fourth mode has a separate external certificate language.  A
+native proof object belongs to its guest calculus and is not such a boundary
+certificate. -/
 def requiresCertificate {Claim : Type uBase} :
     EntryMode.{uBase, uValue} Claim → Bool
   | .directDecision .. => false
@@ -540,6 +544,33 @@ theorem admitted_run_preserves
     (value : source.Carrier) (meaningful : source.Meaning value) :
     Meaning (operation.run value) :=
   operation.preserves value meaningful
+
+/-! ### Exact bridge to the canonical NIK service doctrine -/
+
+/-- Every Data-local entry mode is one canonical NIK service over exactly the
+meaning selected by that mode.  In particular, admitted computation maps to a
+native operation, not to a certificate checker. -/
+def toNIKService {Claim : Type uBase}
+    (mode : EntryMode.{uBase, uValue} Claim) :
+    Mettapedia.GSLT.LanguageDef.NIK.Service
+      (claimAdmissionObject (Accepted mode)) :=
+  match mode with
+  | .directDecision _Meaning kernel => .directDecision kernel
+  | .nativeProof guest kernel =>
+      .nativeProof guest kernel (fun _claim => Iff.rfl)
+  | .admittedFlow source _Meaning operation =>
+      .nativeOperation source operation
+  | .certificateBoundary Certificate _Meaning checker authority =>
+      .certificateBoundary Certificate checker authority
+
+/-- The Data-local discriminator agrees exactly with the canonical service
+discriminator. -/
+@[simp] theorem toNIKService_external_boundary
+    {Claim : Type uBase} (mode : EntryMode.{uBase, uValue} Claim) :
+    Mettapedia.GSLT.LanguageDef.NIK.Service.hasExternalCertificateBoundary
+        (toNIKService mode) =
+      requiresCertificate mode := by
+  cases mode <;> rfl
 
 /-! ### Nondegenerate mode witnesses -/
 
@@ -622,9 +653,9 @@ actual closed, well-sorted object terms at the selected authored sort; the
 fibre therefore transports held syntax rather than merely transporting a
 sort label with a unit witness. -/
 def fibre (language : LangCode) : Fibre where
-  BaseType := StructuralMorphism.AuthoredSort language
+  BaseType := StructuralMorphism.DeclaredSort language
   BaseEl := fun sort =>
-    ClosedTerm language.language (authoredSortToLangSort language sort)
+    ClosedTerm language.language (declaredSortToLangSort language sort)
   Stamp := Bool
 
 /-- Every structural GSLT morphism transports authored sorts and their held
@@ -734,16 +765,16 @@ abbrev DataAt (language : LangCode) (type : TypeOf language) :=
 
 /-- Quote a genuine closed term at an authored sort. -/
 def quoteTerm (language : LangCode)
-    (sort : StructuralMorphism.AuthoredSort language)
+    (sort : StructuralMorphism.DeclaredSort language)
     (term : ClosedTerm language.language
-      (authoredSortToLangSort language sort))
+      (declaredSortToLangSort language sort))
     (stamp : Bool) : DataAt language (.base sort) :=
   (stamp, term)
 
 @[simp] theorem eval_quoteTerm (language : LangCode)
-    (sort : StructuralMorphism.AuthoredSort language)
+    (sort : StructuralMorphism.DeclaredSort language)
     (term : ClosedTerm language.language
-      (authoredSortToLangSort language sort)) (stamp : Bool) :
+      (declaredSortToLangSort language sort)) (stamp : Bool) :
     eval (quoteTerm language sort term stamp) = term := rfl
 
 /-! ### Concrete non-vacuity controls -/
@@ -751,7 +782,7 @@ def quoteTerm (language : LangCode)
 open Mettapedia.Languages.MeTTa.Prime.LanguageDef in
 /-- The authored `Atom` sort in today's Prime presentation. -/
 def currentPrimeAtomSort :
-    StructuralMorphism.AuthoredSort currentPrimePresentation :=
+    StructuralMorphism.DeclaredSort currentPrimePresentation :=
   ⟨Mettapedia.Languages.MeTTa.MeTTaZero.atomType, by
     change List.Mem Mettapedia.Languages.MeTTa.MeTTaZero.atomType
       [Mettapedia.Languages.MeTTa.MeTTaZero.atomType,
@@ -765,7 +796,7 @@ open Mettapedia.Languages.MeTTa.Prime.LanguageDef in
 /-- A concrete, closed Prime term inhabits the strengthened Data fibre. -/
 def currentPrimeUnitTerm :
     ClosedTerm currentPrimePresentation.language
-      (authoredSortToLangSort currentPrimePresentation currentPrimeAtomSort) := by
+      (declaredSortToLangSort currentPrimePresentation currentPrimeAtomSort) := by
   let unitPattern : Pattern := .apply "prime-unit" []
   refine ⟨unitPattern, ?_⟩
   have typed : HasSort currentPrimePresentation.language FreeTypeContext.empty []
@@ -779,7 +810,7 @@ def currentPrimeUnitTerm :
     · exact ArgumentsHaveTypes.nil
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · simpa [currentPrimePresentation, currentPrimeAtomSort,
-      authoredSortToLangSort,
+      declaredSortToLangSort,
       Mettapedia.Languages.MeTTa.MeTTaZero.atomType, TypeDecl.plain] using typed
   · rfl
   · rfl
@@ -803,7 +834,7 @@ open Mettapedia.Languages.MeTTa.Prime.LanguageDef in
 Prime Data merely by selecting the `Atom` sort. -/
 theorem free_variable_not_currentPrimeAtom :
     ¬ ClosedTermWellSorted currentPrimePresentation.language
-      (authoredSortToLangSort currentPrimePresentation currentPrimeAtomSort)
+      (declaredSortToLangSort currentPrimePresentation currentPrimeAtomSort)
       (.fvar "unbound") := by
   intro purported
   cases purported.1 with
@@ -813,9 +844,9 @@ theorem free_variable_not_currentPrimeAtom :
 retains the exact held object term as the Data payload. -/
 @[simp] theorem translation_mapBaseEl_pattern
     {source target : LangCode} (route : source ⟶ target)
-    {sort : StructuralMorphism.AuthoredSort source}
+    {sort : StructuralMorphism.DeclaredSort source}
     (term : ClosedTerm source.language
-      (authoredSortToLangSort source sort)) :
+      (declaredSortToLangSort source sort)) :
     ((translation route).mapBaseEl term).1 =
       mapPattern route.symbols term.1 :=
   rfl

@@ -5,10 +5,10 @@ import Mettapedia.GSLT.Dynamics.ObservationPolicyFactorization
 # Policies over composite observation disciplines
 
 Parallel composition of observation disciplines retains both witness and
-value coordinates.  Supported component policies therefore pair into a
-supported joint policy.  Conversely, adding an observation axis that is
-constant on the relevant collision cannot repair information already erased
-by another axis.
+value coordinates on common collection success.  Supported component policies
+therefore pair into a supported joint policy on that synchronized container.
+Conversely, adding an observation axis that is constant on the relevant
+collision cannot repair information already erased by another axis.
 -/
 
 namespace Mettapedia.GSLT.Dynamics

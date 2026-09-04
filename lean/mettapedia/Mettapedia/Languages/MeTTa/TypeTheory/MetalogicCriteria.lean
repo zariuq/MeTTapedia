@@ -144,15 +144,15 @@ end RouteObservationCanary
 /-- Explicit structural transport and material inspection are compatible,
 rather than competing global identity doctrines. -/
 theorem structural_transport_retains_material_distinction :
-    PresentationCanary.booleanFiniteTwoEquivalence.source ≠
-        PresentationCanary.booleanFiniteTwoEquivalence.target /\
+    ConstructionCanary.booleanFiniteTwoEquivalence.source ≠
+        ConstructionCanary.booleanFiniteTwoEquivalence.target /\
       forall value :
-          PresentationCanary.Carrier
-            PresentationCanary.booleanFiniteTwoEquivalence.source,
-        PresentationCanary.booleanFiniteTwoEquivalence.structurallyEquivalent.symm
-            (PresentationCanary.booleanFiniteTwoEquivalence.structurallyEquivalent
+          ConstructionCanary.Carrier
+            ConstructionCanary.booleanFiniteTwoEquivalence.source,
+        ConstructionCanary.booleanFiniteTwoEquivalence.structurallyEquivalent.symm
+            (ConstructionCanary.booleanFiniteTwoEquivalence.structurallyEquivalent
               value) = value :=
-  PresentationCanary.transportable_and_inspectable
+  ConstructionCanary.transportable_and_inspectable
 
 /-! ## Wellbeing-sensitive observation remains fine enough -/
 

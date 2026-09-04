@@ -1,0 +1,5 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryForeignPlanStopRestoration
+
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+
+#print axioms rho_staticPlanStopCommonApex_of_foreign

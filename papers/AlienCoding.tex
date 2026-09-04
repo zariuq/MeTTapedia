@@ -871,6 +871,82 @@ $2{,}043$ checker-verified discoveries were promoted into AC event~20, advancing
 known-sequence counter from $9{,}624$ to $11{,}667$.  Thus TGAD is a viable structural
 portfolio view here, not a demonstrated replacement for ordinary AC--NMT decoding.
 
+\paragraph{Three languages, one program population.}
+A second and larger control extended the same output-view comparison to three target
+languages.  Verified compositional translators carried A--P programs into PeTTa and into
+MM2, yielding $5{,}265$ behaviors expressible in all three; a registered $2{,}048$-action
+MM2 corpus cap reduced the primary panel to $4{,}988$ shared behaviors, of which $508$
+were held out.  Twelve cells---three languages, ordinary versus structurally constrained
+decoding, two seeds---were trained on identical data under identical budgets.  Every
+unique structurally complete candidate was then replayed through its native executor
+under wall-clock and memory envelopes, with no action bound, and matched against the
+full pinned OEIS catalogue.
+
+The result separates three stages that the earlier control had reported as one.  The
+structural arm completes every tree it emits, but a complete tree is not an operational
+program: conditional conversion from complete tree to executing program \emph{fell} in
+all three languages ($-1.5$, $-2.1$ and $-7.2$ points for A--P, PeTTa and MM2), while
+absolute operational output still rose ($+12.8\%$, $+11.7\%$, $+8.7\%$).  Distinct
+whole-OEIS coverage was flat for A--P ($-0.2\%$) and rose for PeTTa ($+8.7\%$) and MM2
+($+14.9\%$).  MM2 is the only cleanly replicated discovery gain ($+158$ and $+168$
+sequences at the two seeds), and its OEIS yield per operational program also rose
+$12.3\%$, so its advantage is not candidate volume alone.  Complementarity persisted at
+this scale: within every language and seed the two-view union exceeded the better single
+arm by $46$--$57\%$, and the union over all twelve cells contains $5{,}567$ confirmed
+A-numbers.
+
+\paragraph{What the structural mask does and does not encode.}
+The constrained arm's legality mask is language-independent.  Its prefix state carries
+the open-hole stack, the action budget, and a count of allocated variables; the only
+language-specific input is the size of a flat symbol alphabet harvested from the corpus.
+It therefore enforces well-formed ordered trees and nothing else.  For A--P this
+coincides with the language definition, since A--P's grammar is exactly operator arity;
+for PeTTa and MM2 it enforces strictly less than the language, projecting no binding
+discipline, equation-head shape, rule form, or pattern-to-template variable coverage.
+The measured effects are those of an AST-constrained decoder with structural
+conditioning.  The recorded failure modes name what a grammar-derived treatment would
+have to enforce: $1{,}132$ undefined uses and $315$ insufficiently instantiated
+arithmetic operations in PeTTa, and result-protocol failures in MM2.
+
+\paragraph{Why the cross-language gradient is not yet a language result.}
+The ordering A--P $<$ PeTTa $<$ MM2 in effect size is striking and, as it stands,
+uninterpretable, because two further quantities are ranked identically over the same
+three points.  The structural treatment adds $1.0\%$, $12.7\%$ and $30.2\%$ trainable
+parameters in that order; and, because the PeTTa and MM2 corpora are compositional
+translations of A--P programs rather than natively authored ones, median target length is
+$16$, $178$ and $680$ decoder actions in that order---an eleven- and forty-two-fold
+expansion of identical content.  With three languages and three perfectly rank-correlated
+candidate causes, the panel cannot attribute its gradient to authored language structure
+rather than to target length or capacity.  A language-independent reading is in fact the
+more parsimonious one, since a structural constraint should help roughly in proportion to
+the length of the sequence it constrains.
+
+That reading can be tested on the recorded evidence, and it survives.  Stratifying each
+language's held-out behaviours into terciles by the action length of their reference
+programs, the structural gain in confirmed sequences rises with target length inside every
+language: from $-2.9\%$ to $+1.2\%$ across A--P's terciles, $+4.8\%$ to $+16.1\%$ across
+PeTTa's, and $+13.7\%$ to $+44.2\%$ across MM2's.  Parameter count and corpus provenance
+are constant within a language, so neither can produce this gradient.  Ordering all nine
+strata by absolute target length---from $15$ to more than $905$ actions---very nearly
+reproduces the cross-language ranking, so a single length-dependent curve accounts for the
+between-language gradient without reference to language identity.  The remaining
+entanglement is that longer reference programs also encode harder behaviours, since
+ordinary-arm coverage falls monotonically with length in all three languages; length and
+difficulty are therefore not yet separated.  The largest absolute gain nonetheless occurs
+in MM2's longest stratum, where the base is smallest, which a pure ratio artefact would
+not produce.
+
+The provenance point deserves separate statement, because it bounds what this design
+could have shown even in principle.  Every PeTTa and MM2 training target carries the hash
+of the A--P program it was compiled from.  The three corpora therefore encode one program
+population in three notations, and the idioms that distinguish these languages---PeTTa's
+equational definitions, MM2's saturation and reflection---appear nowhere in the training
+data.  It also means the languages cannot be ranked against one another here at all: A--P
+is simultaneously the simplest notation, the shortest target, and the population's home
+language, and the earlier finding that simpler languages synthesise better points the
+same way.  Comparing \emph{languages} rather than notations requires natively authored
+programs in the corpora.
+
 \section{What can and cannot be compared}
 
 The tree and recurrent systems are complementary, not two rows in an architecture

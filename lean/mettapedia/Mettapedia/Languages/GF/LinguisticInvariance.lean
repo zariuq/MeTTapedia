@@ -37,6 +37,7 @@ open Mettapedia.Languages.GF.OSLFBridge
 open Mettapedia.Languages.GF.Typing
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Formula
 
 /-! ## Lexical Containment
@@ -282,19 +283,17 @@ theorem cross_ling_lexical_invariance :
     simp [containsLexical, containsLexical.go,
           theCat_pair, theBigHouse_pair, mkApp2, mkApp1, mkLeaf]
 
-/-- Montague's thesis: meaning is preserved under translation because
-    it is computed from the shared abstract tree.
-
-    For ANY abstract tree, ALL OSLF predicates (including lexical
-    containment, constructor type, modal properties) are identical
-    regardless of which language linearizes it.
-
-    The proof is `rfl` because `gfAbstractToPattern` takes no language
-    parameter.  The trivial proof IS the content — it shows the GF
-    architecture guarantees this by construction. -/
-theorem montague_thesis (tree : AbstractNode) (φ : Pattern → Prop) :
-    φ (gfAbstractToPattern tree) ↔ φ (gfAbstractToPattern tree) :=
-  Iff.rfl
+/-- A translation represented by equality of GF abstract trees preserves every
+equation-invariant semantic observation.  Concrete linearization agreement is
+a separate premise, rather than being asserted by a reflexive proposition. -/
+theorem abstract_translation_preserves_semantic_observation
+    (sourceTree targetTree : AbstractNode)
+    (sameAbstractTree : sourceTree = targetTree)
+    (φ : EquationPredicate (langGSLT gfLegacySemanticLanguageDef)) :
+    φ (gfAbstractToPattern sourceTree) ↔
+      φ (gfAbstractToPattern targetTree) := by
+  subst targetTree
+  exact Iff.rfl
 
 /-! ### OSLF-Level Cross-Lingual Invariance
 
@@ -386,17 +385,11 @@ theorem english_czech_reduces_iff (p q : Pattern) :
     · simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule]
         using targetEq
 
-theorem english_czech_diamond_eq (φ : Pattern → Prop) :
-    langDiamond englishGFLanguageDef φ =
-    langDiamond czechGFLanguageDef φ := by
-  funext p
-  simp [langDiamond_spec, english_czech_reduces_iff]
-
-theorem english_czech_box_eq (φ : Pattern → Prop) :
-    langBox englishGFLanguageDef φ =
-    langBox czechGFLanguageDef φ := by
-  funext p
-  simp [langBox_spec, english_czech_reduces_iff]
+/-- English and Czech linearizations select the same abstract semantic
+presentation.  Consequently all dependent OSLF constructions are shared,
+rather than compared after duplicating the language. -/
+theorem english_czech_semantic_language_eq :
+    englishGFLanguageDef = czechGFLanguageDef := rfl
 
 theorem english_czech_sem_iff
     (I : String → Pattern → Prop) (φ : OSLFFormula) (p : Pattern) :

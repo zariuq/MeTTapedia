@@ -29,6 +29,9 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
+open Mettapedia.OSLF.Framework.DerivedModalities
+open Mettapedia.GSLT.LanguageDef.EquationSemantics
 open Mettapedia.OSLF.StructuralModal
 
 /-- The generic executor and the total GSLT use one relation environment.
@@ -263,6 +266,39 @@ noncomputable def structuralModalSatisfies (model : Model) (space : model.Space)
     (spaceTerm : Pattern) : Formula → Pattern → Prop :=
   satisfiesOver (nativeSpan model space spaceTerm)
 
+/-- Zero's structural-modal predicates are predicates on semantic terms.
+Its root generates no authored or collection equations, so every structural
+predicate descends without enlargement. -/
+noncomputable def structuralModalPredicate (model : Model)
+    (space : model.Space) (spaceTerm : Pattern) (formula : Formula) :
+    EquationPredicate
+      (langGSLTUsing (relationEnv model space spaceTerm) language) :=
+  ⟨structuralModalSatisfies model space spaceTerm formula, by
+    intro source target equivalent
+    have equal : source = target :=
+      (equationSaturatedGSLT_equiv_iff_eq_of_no_generators
+        totalTheory_object_equationFree source target).mp equivalent
+    subst target
+    rfl⟩
+
+/-- In Zero's equation-free instance, the structural diamond is exactly
+the diamond of the sole equation-respecting OSLF. -/
+theorem structuralModal_diamond_iff_langDiamondUsing (model : Model)
+    (space : model.Space) (spaceTerm : Pattern) (formula : Formula)
+    (term : Pattern) :
+    structuralModalSatisfies model space spaceTerm (.diamond formula) term ↔
+      langDiamondUsing (relationEnv model space spaceTerm) language
+        (structuralModalPredicate model space spaceTerm formula) term := by
+  rw [langDiamondUsing_spec]
+  simp only [structuralModalSatisfies, satisfiesOver, nativeSpan,
+    derivedDiamond, di, pb, Function.comp, langSpanUsing]
+  constructor
+  · rintro ⟨⟨⟨source, target⟩, step⟩, sourceEq, targetHolds⟩
+    subst sourceEq
+    exact ⟨target, step, targetHolds⟩
+  · rintro ⟨target, step, targetHolds⟩
+    exact ⟨⟨⟨term, target⟩, step⟩, rfl, targetHolds⟩
+
 /-- The spatial type of an ordinary equation atom. -/
 def equationFormula : Formula :=
   .headed "=" [.top, .top]
@@ -345,22 +381,29 @@ theorem native_queryDiamond_iff (model : Model) (space : model.Space)
     structuralModalSatisfies model space spaceTerm (.diamond queryAnswerFormula)
         (queryRequestPattern spaceTerm pattern template) ↔
       ∃ answer, answer ∈ query model space pattern template := by
-  change langDiamondUsing (relationEnv model space spaceTerm) language
-      (structuralModalSatisfies model space spaceTerm queryAnswerFormula)
-      (queryRequestPattern spaceTerm pattern template) ↔ _
+  rw [structuralModal_diamond_iff_langDiamondUsing]
   rw [langDiamondUsing_spec]
   constructor
   · rintro ⟨target, step, targetInhabited⟩
     obtain ⟨answer, rfl⟩ :=
       (nativeSatisfies_queryAnswer_iff model space spaceTerm target).mp
         targetInhabited
+    have primitiveStep :=
+      (langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+        (relationEnv model space spaceTerm) totalTheory_object_equationFree
+        _ _).mp step
     exact ⟨answer, (totalTheory_query_step_iff model space spaceTerm pattern
-      template answer).mp ((totalTheory_step model space spaceTerm _ _).mpr step)⟩
+      template answer).mp
+        ((totalTheory_step model space spaceTerm _ _).mpr primitiveStep)⟩
   · rintro ⟨answer, answerMember⟩
     refine ⟨queryAnswerPattern answer, ?_, ?_⟩
-    · exact (totalTheory_step model space spaceTerm _ _).mp
-        ((totalTheory_query_step_iff model space spaceTerm pattern template
-          answer).mpr answerMember)
+    · exact
+        (langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+          (relationEnv model space spaceTerm) totalTheory_object_equationFree
+          _ _).mpr
+          ((totalTheory_step model space spaceTerm _ _).mp
+            ((totalTheory_query_step_iff model space spaceTerm pattern template
+              answer).mpr answerMember))
     · exact (nativeSatisfies_queryAnswer_iff model space spaceTerm _).mpr
         ⟨answer, rfl⟩
 
@@ -372,22 +415,29 @@ theorem native_evaluationDiamond_iff (model : Model) (space : model.Space)
         (.diamond evaluationAnswerFormula)
         (evaluationRequestPattern spaceTerm subject) ↔
       ∃ answer, answer ∈ evaluateOne model space subject := by
-  change langDiamondUsing (relationEnv model space spaceTerm) language
-      (structuralModalSatisfies model space spaceTerm evaluationAnswerFormula)
-      (evaluationRequestPattern spaceTerm subject) ↔ _
+  rw [structuralModal_diamond_iff_langDiamondUsing]
   rw [langDiamondUsing_spec]
   constructor
   · rintro ⟨target, step, targetInhabited⟩
     obtain ⟨answer, rfl⟩ :=
       (nativeSatisfies_evaluationAnswer_iff model space spaceTerm target).mp
         targetInhabited
+    have primitiveStep :=
+      (langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+        (relationEnv model space spaceTerm) totalTheory_object_equationFree
+        _ _).mp step
     exact ⟨answer, (totalTheory_evaluation_step_iff model space spaceTerm
-      subject answer).mp ((totalTheory_step model space spaceTerm _ _).mpr step)⟩
+      subject answer).mp
+        ((totalTheory_step model space spaceTerm _ _).mpr primitiveStep)⟩
   · rintro ⟨answer, answerMember⟩
     refine ⟨evaluationAnswerPattern answer, ?_, ?_⟩
-    · exact (totalTheory_step model space spaceTerm _ _).mp
-        ((totalTheory_evaluation_step_iff model space spaceTerm subject
-          answer).mpr answerMember)
+    · exact
+        (langSemanticReducesUsing_iff_langReducesUsing_of_equation_free
+          (relationEnv model space spaceTerm) totalTheory_object_equationFree
+          _ _).mpr
+          ((totalTheory_step model space spaceTerm _ _).mp
+            ((totalTheory_evaluation_step_iff model space spaceTerm subject
+              answer).mpr answerMember))
     · exact
         (nativeSatisfies_evaluationAnswer_iff model space spaceTerm _).mpr
           ⟨answer, rfl⟩

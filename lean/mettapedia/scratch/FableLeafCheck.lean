@@ -1,0 +1,5 @@
+import Mettapedia.GSLT.LanguageDef.CostRestorationFvarPairLeaf
+open Mettapedia.GSLT.LanguageDef
+#print axioms Mettapedia.GSLT.LanguageDef.not_restoresTogether_fvar_fvar_of_assignment_ne
+#print axioms Mettapedia.GSLT.LanguageDef.restoresTogether_fvar_fvar_of_assignment_eq
+#print axioms Mettapedia.GSLT.LanguageDef.CostStaticAtomEnvironment.matchedFvar_apex_of_jointAbsence

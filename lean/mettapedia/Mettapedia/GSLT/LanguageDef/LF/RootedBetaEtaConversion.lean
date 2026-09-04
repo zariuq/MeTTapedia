@@ -207,10 +207,10 @@ theorem definition_valid : definition.isValid = true := by
 
 /-- The complete LF grammar and rooted conversion calculus as one GSLT. -/
 def totalTheory : Mettapedia.GSLT.GSLT :=
-  definition.toGSLTOfNoEquations definition_valid rfl
+  definition.toGSLTOfEquationFree definition_valid rfl
 
 theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := by
-  unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
+  unfold totalTheory CalculusLanguageDef.toGSLTOfEquationFree
   rfl
 
 /-- Source package consumed by the generic checker.  The identity names this

@@ -21,7 +21,7 @@ factored along four independent axes:
 
 - **Content** (`EthicalContent`): WHAT is being claimed — a proposition
   about the world, a relation between agents, or an enduring disposition.
-- **Presentation** (`EthicalPresentation`): HOW the claim is modally
+- **Normative form** (`NormativeForm`): HOW the claim is modally
   expressed — as a deontic obligation/prohibition/permission, an axiological
   good/bad/permissible judgment, or a virtue/vice attribution.
 - **Ground** (`EthicalGround`): WHY the claim holds — grounded in the
@@ -33,7 +33,7 @@ factored along four independent axes:
 
 The critical constraint (GPT-5.4 Pro): **grounds never replace content**.
 A Gewirth-grounded claim still carries the explicit non-interference sentence
-it grounds.  A duty-grounded claim still carries the presented deontic or
+it grounds.  A duty-grounded claim still carries the expressed deontic or
 value content.
 
 The `StructuredEthicalClaim` structure bundles all four axes.  The legacy
@@ -71,7 +71,7 @@ universe u w
 
 /-- WHAT is being claimed: a proposition about the world, a typed relation
 between agents, or an enduring care-style disposition.  Content is orthogonal
-to how the claim is presented or why it holds. -/
+to how the claim is expressed or why it holds. -/
 inductive EthicalContent (World : Type u) (Agent : Type u) where
   | propositional : Formula World → EthicalContent World Agent
   | relational : Agent → Agent → RelationalValueType → EthicalContent World Agent
@@ -79,15 +79,15 @@ inductive EthicalContent (World : Type u) (Agent : Type u) where
 
 /-- HOW the claim is modally expressed.  This is the logical FORM, orthogonal
 to the justificatory ground.  A Gewirth right can be expressed as a deontic
-obligation OR as a value judgment; both are valid presentations of the same
+obligation OR as a value judgment; both are valid normative forms of the same
 grounded content. -/
-inductive EthicalPresentation where
-  | deontic : DeonticAttribute → EthicalPresentation
-  | axiological : MoralValueAttribute → EthicalPresentation
-  | unmodalized : EthicalPresentation
+inductive NormativeForm where
+  | deontic : DeonticAttribute → NormativeForm
+  | axiological : MoralValueAttribute → NormativeForm
+  | unmodalized : NormativeForm
   deriving DecidableEq
 
-/-- FOET-ready paradigm family for structured presentations. -/
+/-- FOET-ready paradigm family for structured ethical sentences. -/
 inductive EthicalParadigm where
   | deontological
   | axiological
@@ -96,55 +96,55 @@ inductive EthicalParadigm where
   | care
   deriving DecidableEq
 
-/-- FOET-ready structured presentation layer.
+/-- FOET-ready structured ethical-sentence layer.
 
-This is the migration target for replacing the thin `EthicalPresentation`
+This is the migration target for replacing the thin `NormativeForm`
 enumeration with recursive FOET-style sentences.  It is added in parallel so
 the current Stage 1 kernel can stay stable while Stage 2 porting proceeds.
 -/
-inductive StructuredEthicalPresentation (World : Type u) where
+inductive StructuredEthicalSentence (World : Type u) where
   | deontological :
       StructuredSentence World (StructuredImperativeAtom World) →
-        StructuredEthicalPresentation World
+        StructuredEthicalSentence World
   | axiological :
       StructuredSentence World (StructuredValueAtom World) →
-        StructuredEthicalPresentation World
+        StructuredEthicalSentence World
   | utilitarian :
       StructuredSentence World (StructuredUtilityAtom World) →
-        StructuredEthicalPresentation World
+        StructuredEthicalSentence World
   | virtue :
       StructuredSentence World (StructuredVirtueTargetAtom World) →
-        StructuredEthicalPresentation World
+        StructuredEthicalSentence World
   | care :
       StructuredSentence World (StructuredValueAtom World) →
-        StructuredEthicalPresentation World
+        StructuredEthicalSentence World
 
-def StructuredEthicalPresentation.paradigm {World : Type u} :
-    StructuredEthicalPresentation World → EthicalParadigm
+def StructuredEthicalSentence.paradigm {World : Type u} :
+    StructuredEthicalSentence World → EthicalParadigm
   | .deontological _ => .deontological
   | .axiological _ => .axiological
   | .utilitarian _ => .utilitarian
   | .virtue _ => .virtue
   | .care _ => .care
 
-/-- Promote a deontological structured presentation into the aligned
+/-- Translate a structured deontological sentence into the aligned
 axiological view already proved equivalent in FOET. -/
-def StructuredEthicalPresentation.deontologicalToAxiological
+def StructuredEthicalSentence.deontologicalToAxiological
     {World : Type u}
     (s : StructuredSentence World (StructuredImperativeAtom World)) :
-    StructuredEthicalPresentation World :=
+    StructuredEthicalSentence World :=
   .axiological (StructuredSentence.map imperativeToValueAtom s)
 
-/-- Satisfaction restricted to the deontological/axiological presentation seam.
+/-- Satisfaction restricted to the deontological/axiological normative-form seam.
 
 This keeps the deontic-to-value equivalence visible at the
-`StructuredEthicalPresentation` layer without pretending we already have one
+`StructuredEthicalSentence` layer without pretending we already have one
 uniform semantics for all five paradigms. -/
-def StructuredEthicalPresentation.SatDeonticOrAxiological
+def StructuredEthicalSentence.SatDeonticOrAxiological
     {World : Type u}
     (semD : DeonticSemantics World) (semV : ValueSemantics World)
     (w : World) :
-    StructuredEthicalPresentation World → Prop
+    StructuredEthicalSentence World → Prop
   | .deontological s =>
       (StructuredSentence.semantics (World := World)
         (sumSemantics (deonticSemantics World semD) (formulaSemantics World))).Sat w s
@@ -154,27 +154,27 @@ def StructuredEthicalPresentation.SatDeonticOrAxiological
   | _ => False
 
 /-- The FOET deontic/value equivalence transported into the kernel-level
-`StructuredEthicalPresentation` seam. -/
-theorem StructuredEthicalPresentation.sat_deontological_iff_sat_deontologicalToAxiological
+`StructuredEthicalSentence` seam. -/
+theorem StructuredEthicalSentence.sat_deontological_iff_sat_deontologicalToAxiological
     {World : Type u}
     (semD : DeonticSemantics World) (semV : ValueSemantics World)
     (h_align : ∀ a φ w, semD.deontic a φ w ↔ semV.morally (deonticToMoralValue a) φ w)
     (w : World)
     (s : StructuredSentence World (StructuredImperativeAtom World)) :
-    StructuredEthicalPresentation.SatDeonticOrAxiological semD semV w
+    StructuredEthicalSentence.SatDeonticOrAxiological semD semV w
         (.deontological s) ↔
-      StructuredEthicalPresentation.SatDeonticOrAxiological semD semV w
-        (StructuredEthicalPresentation.deontologicalToAxiological s) := by
-  simpa [StructuredEthicalPresentation.SatDeonticOrAxiological,
-    StructuredEthicalPresentation.deontologicalToAxiological] using
+      StructuredEthicalSentence.SatDeonticOrAxiological semD semV w
+        (StructuredEthicalSentence.deontologicalToAxiological s) := by
+  simpa [StructuredEthicalSentence.SatDeonticOrAxiological,
+    StructuredEthicalSentence.deontologicalToAxiological] using
     sat_structuredImperative_iff_sat_structuredValue
       (semD := semD) (semV := semV) h_align w s
 
-/-- Best-effort embedding of the thin Stage 1 presentation tag into the richer
+/-- Best-effort embedding of the thin Stage 1 normative-form tag into the richer
 FOET-ready paradigm family.  `unmodalized` is intentionally left unmapped,
 because forcing it into a paradigm would overstate what the current kernel
 knows. -/
-def EthicalPresentation.legacyParadigm? : EthicalPresentation → Option EthicalParadigm
+def NormativeForm.legacyParadigm? : NormativeForm → Option EthicalParadigm
   | .deontic _ => some .deontological
   | .axiological _ => some .axiological
   | .unmodalized => none
@@ -365,7 +365,7 @@ inductive EthicalRole where
 /-- A structured ethical claim with all four axes independent.
 
 This is the philosophically principled representation.  Any combination
-of content, presentation, ground, and role is expressible:
+of content, normative form, ground, and role is expressible:
 - a Gewirth-grounded deontic obligation serving as an active goal,
 - a care-grounded axiological judgment in the prediction role,
 - an asserted dispositional claim as a standing disposition.
@@ -379,7 +379,7 @@ structure StructuredEthicalClaim (World : Type u) (Agent : Type u) where
   /-- WHAT: proposition, relation, or disposition. -/
   content : EthicalContent World Agent
   /-- HOW: deontic, axiological, or unmodalized. -/
-  presentation : EthicalPresentation
+  normativeForm : NormativeForm
   /-- WHY: the justificatory source. -/
   ground : EthicalGround Agent
   /-- WHERE: role in the meaning-generation process. -/
@@ -389,7 +389,7 @@ structure StructuredEthicalClaim (World : Type u) (Agent : Type u) where
 four-axis structured claim kernel, rather than the legacy anchor layer. -/
 structure StructuredEthicsQueryEncoder (World : Type u) (Agent : Type u) (Atom : Type*) where
   propositionalQuery :
-    Agent → EthicalPresentation → EthicalGround Agent → EthicalRole →
+    Agent → NormativeForm → EthicalGround Agent → EthicalRole →
       Formula World → ConstraintQuery Atom
   relationalQuery :
     Agent → Agent → Agent → EthicalGround Agent → EthicalRole →
@@ -404,7 +404,7 @@ structure StructuredClaimLabeler (World : Type u) (Agent : Type u) (Label : Type
 
 /-- Honest extra hypothesis needed to transport FOET's deontic/value
 equivalence through the lossy legacy lowering seam: the labeler must not change
-the label when a propositional deontic claim is re-presented as its aligned
+the label when a propositional deontic claim is re-expressed as its aligned
 axiological translation. -/
 def StructuredClaimLabeler.DeonticValueAligned
     {World : Type u} {Agent : Type u} {Label : Type w}
@@ -414,19 +414,19 @@ def StructuredClaimLabeler.DeonticValueAligned
     labeler.label
         ({ subject := subject
            content := .propositional φ
-           presentation := .deontic tag
+           normativeForm := .deontic tag
            ground := ground
            role := role } :
           StructuredEthicalClaim World Agent) =
       labeler.label
         ({ subject := subject
            content := .propositional φ
-           presentation := .axiological (deonticToMoralValue tag)
+           normativeForm := .axiological (deonticToMoralValue tag)
            ground := ground
            role := role } :
           StructuredEthicalClaim World Agent)
 
-/-- Present a labeled value sentence as a structured axiological claim. -/
+/-- Encode a labeled value sentence as a structured axiological claim. -/
 def LabeledValueJudgmentSentence.toStructuredClaim
     {World : Type u} {Agent : Type u} {Label : Type w}
     (s : LabeledValueJudgmentSentence World Agent Label)
@@ -435,11 +435,11 @@ def LabeledValueJudgmentSentence.toStructuredClaim
     : StructuredEthicalClaim World Agent where
   subject := s.agent
   content := .propositional s.sentence.formula
-  presentation := .axiological s.sentence.tag
+  normativeForm := .axiological s.sentence.tag
   ground := ground
   role := role
 
-/-- Present a labeled deontic sentence as a structured deontological claim. -/
+/-- Encode a labeled deontic sentence as a structured deontological claim. -/
 def LabeledDeonticSentence.toStructuredClaim
     {World : Type u} {Agent : Type u} {Label : Type w}
     (s : LabeledDeonticSentence World Agent Label)
@@ -448,7 +448,7 @@ def LabeledDeonticSentence.toStructuredClaim
     : StructuredEthicalClaim World Agent where
   subject := s.agent
   content := .propositional s.sentence.formula
-  presentation := .deontic s.sentence.tag
+  normativeForm := .deontic s.sentence.tag
   ground := ground
   role := role
 
@@ -468,19 +468,19 @@ def StructuredEthicalClaim.toLegacyAnchor
   | .dispositional a => .epistemicUniversalLove a
   | .relational a b r => .relational a b r
   | .propositional _ =>
-      match claim.presentation with
+      match claim.normativeForm with
       | .deontic attr => .deontic claim.subject attr label
       | .axiological attr => .moralValue claim.subject attr label
       | .unmodalized => .epistemicUniversalLove claim.subject
 
-/-- When available, view a structured claim as a richer FOET-style paradigm
-presentation.  This is the migration seam for replacing the thin presentation
-tag with structured FOET sentences. -/
-def StructuredEthicalClaim.toFOETPresentation?
+/-- When available, encode a structured claim as a richer FOET-style ethical
+sentence. This is the migration seam for replacing the thin normative-form tag
+with structured FOET sentences. -/
+def StructuredEthicalClaim.toFOETSentence?
     {World : Type u} {Agent : Type u}
     (claim : StructuredEthicalClaim World Agent) :
-    Option (StructuredEthicalPresentation World) :=
-  match claim.content, claim.presentation with
+    Option (StructuredEthicalSentence World) :=
+  match claim.content, claim.normativeForm with
   | .propositional φ, .deontic tag =>
       some (.deontological (.atom (.inl { tag := tag, formula := φ })))
   | .propositional φ, .axiological tag =>
@@ -496,7 +496,7 @@ def StructuredEthicalClaim.toQuery
     (claim : StructuredEthicalClaim World Agent) : ConstraintQuery Atom :=
   match claim.content with
   | .propositional φ =>
-      enc.propositionalQuery claim.subject claim.presentation claim.ground claim.role φ
+      enc.propositionalQuery claim.subject claim.normativeForm claim.ground claim.role φ
   | .relational a b r =>
       enc.relationalQuery claim.subject a b claim.ground claim.role r
   | .dispositional a =>
@@ -527,11 +527,11 @@ def StructuredEthicsQueryEncoder.ofLegacy
     (labeler : StructuredClaimLabeler World Agent Label)
     (enc : EthicsQueryEncoder Agent Label Atom) :
     StructuredEthicsQueryEncoder World Agent Atom where
-  propositionalQuery := fun subject presentation ground role φ =>
+  propositionalQuery := fun subject normativeForm ground role φ =>
     let claim : StructuredEthicalClaim World Agent :=
       { subject := subject
         content := .propositional φ
-        presentation := presentation
+        normativeForm := normativeForm
         ground := ground
         role := role }
     claim.toLegacyAnchor (labeler.label claim) |>.toQuery enc
@@ -539,7 +539,7 @@ def StructuredEthicsQueryEncoder.ofLegacy
     let claim : StructuredEthicalClaim World Agent :=
       { subject := subject
         content := .relational a b r
-        presentation := .unmodalized
+        normativeForm := .unmodalized
         ground := ground
         role := role }
     claim.toLegacyAnchor (labeler.label claim) |>.toQuery enc
@@ -547,7 +547,7 @@ def StructuredEthicsQueryEncoder.ofLegacy
     let claim : StructuredEthicalClaim World Agent :=
       { subject := subject
         content := .dispositional a
-        presentation := .unmodalized
+        normativeForm := .unmodalized
         ground := ground
         role := role }
     claim.toLegacyAnchor (labeler.label claim) |>.toQuery enc
@@ -560,12 +560,12 @@ def StructuredEthicsQueryEncoder.ofLegacy
     claim.toQuery (StructuredEthicsQueryEncoder.ofLegacy labeler enc) =
       (claim.toLegacyAnchor (labeler.label claim)).toQuery enc := by
   cases claim with
-  | mk subject content presentation ground role =>
+  | mk subject content normativeForm ground role =>
       cases content <;> rfl
 
 /-- If the legacy labeler preserves labels across the FOET deontic/value
 translation and the legacy encoder respects the same alignment, then the
-structured WM lowering agrees on the two presentations. -/
+structured WM lowering agrees on the two aligned ethical claims. -/
 theorem StructuredEthicalClaim.propositional_deontic_toAxiological_toQuery_ofLegacy_eq_of_aligned
     {World : Type u} {Agent : Type u} {Label : Type w} {Atom : Type*}
     (labeler : StructuredClaimLabeler World Agent Label)
@@ -576,26 +576,26 @@ theorem StructuredEthicalClaim.propositional_deontic_toAxiological_toQuery_ofLeg
     (tag : DeonticAttribute) (φ : Formula World) :
     ({ subject := subject
        content := .propositional φ
-       presentation := .deontic tag
+       normativeForm := .deontic tag
        ground := ground
        role := role } : StructuredEthicalClaim World Agent).toQuery
         (StructuredEthicsQueryEncoder.ofLegacy labeler enc) =
       ({ subject := subject
          content := .propositional φ
-         presentation := .axiological (deonticToMoralValue tag)
+         normativeForm := .axiological (deonticToMoralValue tag)
          ground := ground
          role := role } : StructuredEthicalClaim World Agent).toQuery
         (StructuredEthicsQueryEncoder.ofLegacy labeler enc) := by
   let dClaim : StructuredEthicalClaim World Agent :=
     { subject := subject
       content := .propositional φ
-      presentation := .deontic tag
+      normativeForm := .deontic tag
       ground := ground
       role := role }
   let vClaim : StructuredEthicalClaim World Agent :=
     { subject := subject
       content := .propositional φ
-      presentation := .axiological (deonticToMoralValue tag)
+      normativeForm := .axiological (deonticToMoralValue tag)
       ground := ground
       role := role }
   have hLabel : labeler.label dClaim = labeler.label vClaim :=
@@ -621,7 +621,7 @@ normative proposition about the world. -/
 inductive EthicalDisposition (Agent : Type u) where
   | epistemicUniversalLove : Agent → EthicalDisposition Agent
 
-/-- Present a disposition as a structured dispositional claim. -/
+/-- Encode a disposition as a structured dispositional claim. -/
 def EthicalDisposition.toStructuredClaim
     {World : Type u} {Agent : Type u}
     (d : EthicalDisposition Agent)
@@ -632,7 +632,7 @@ def EthicalDisposition.toStructuredClaim
   | .epistemicUniversalLove a =>
       { subject := a
         content := .dispositional a
-        presentation := .unmodalized
+        normativeForm := .unmodalized
         ground := ground
         role := role }
 
@@ -655,15 +655,15 @@ def LabeledGewirthRightClaim.toDeonticSentence
     { tag := .Obligation
       formula := WorldEmbedding.ofMeaning (NonInterference I.InterferesWith claim.agent I.FWB) }
 
-/-- Normative claims separate claims that are merely *presented* in a certain
+/-- Normative claims separate claims that are merely *expressed* in a certain
 logical form from claims that are *grounded* in a named source such as a
 universal duty or the Gewirth PGC. -/
 inductive NormativeClaim :
     (World : Type u) → (Agent : Type u) → (Label : Type w) → Type (max (u + 2) (w + 2)) where
-  | presentedValue {World : Type u} {Agent : Type u} {Label : Type w} :
+  | valueJudgment {World : Type u} {Agent : Type u} {Label : Type w} :
       LabeledValueJudgmentSentence World Agent Label →
         NormativeClaim World Agent Label
-  | presentedDeontic {World : Type u} {Agent : Type u} {Label : Type w} :
+  | deonticJudgment {World : Type u} {Agent : Type u} {Label : Type w} :
       LabeledDeonticSentence World Agent Label →
         NormativeClaim World Agent Label
   | groundedUniversalDuty {World : Type u} {Agent : Type u} {Label : Type w} :
@@ -673,13 +673,13 @@ inductive NormativeClaim :
         NormativeClaim (I.Ctx × I.World) I.Entity Label
 
 /-- Relational claims are dyadic/value-typed and should not be confused with
-propositional or deontic presentations. -/
+propositional or deontic claims. -/
 structure RelationalClaim (Agent : Type u) where
   source : Agent
   target : Agent
   relation : RelationalValueType
 
-/-- Present a typed relation as a structured relational claim. -/
+/-- Encode a typed relation as a structured relational claim. -/
 def RelationalClaim.toStructuredClaim
     {World : Type u} {Agent : Type u}
     (r : RelationalClaim Agent)
@@ -688,7 +688,7 @@ def RelationalClaim.toStructuredClaim
     : StructuredEthicalClaim World Agent where
   subject := r.source
   content := .relational r.source r.target r.relation
-  presentation := .unmodalized
+  normativeForm := .unmodalized
   ground := ground
   role := role
 
@@ -712,8 +712,8 @@ def NormativeClaim.toAnchor
     (claim : NormativeClaim World Agent Label) :
     EthicalAnchor Agent Label :=
   match claim with
-  | .presentedValue s => s.toAnchor
-  | .presentedDeontic s => s.toAnchor
+  | .valueJudgment s => s.toAnchor
+  | .deonticJudgment s => s.toAnchor
   | .groundedUniversalDuty a d => .universalDuty a d
   | .groundedGewirthRight claim => claim.toDeonticSentence.toAnchor
 
@@ -742,15 +742,15 @@ theorem NormativeClaim.toQuery_supported
   exact EthicalAnchor.toQuery_supported enc Γ claim.toAnchor hsupp
 
 /-- When the encoder respects the FOET deontic/value alignment, the WM query
-compiled from a presented deontic claim agrees with the query compiled from
+compiled from a expressed deontic claim agrees with the query compiled from
 its value-judgment translation. -/
-theorem NormativeClaim.presented_deontic_toValue_toQuery_eq_of_aligned
+theorem NormativeClaim.deonticJudgment_toValue_toQuery_eq_of_aligned
     {World : Type u} {Agent : Type u} {Label : Type w} {Atom : Type*}
     (enc : EthicsQueryEncoder Agent Label Atom)
     (hAlign : enc.DeonticValueAligned)
     (s : LabeledDeonticSentence World Agent Label) :
-    (NormativeClaim.presentedDeontic s).toQuery enc =
-      (NormativeClaim.presentedValue s.toValue).toQuery enc := by
+    (NormativeClaim.deonticJudgment s).toQuery enc =
+      (NormativeClaim.valueJudgment s.toValue).toQuery enc := by
   simpa [NormativeClaim.toQuery, NormativeClaim.toAnchor] using
     LabeledDeonticSentence.toQuery_toValue_eq_of_aligned enc hAlign s
 
@@ -797,15 +797,15 @@ theorem UpperShardEthicalClaim.deontic_toValue_toQuery_eq_of_aligned
     (enc : EthicsQueryEncoder Agent Label Atom)
     (hAlign : enc.DeonticValueAligned)
     (s : LabeledDeonticSentence World Agent Label) :
-    (UpperShardEthicalClaim.normative (.presentedDeontic s)).toQuery enc =
-      (UpperShardEthicalClaim.normative (.presentedValue s.toValue)).toQuery enc := by
+    (UpperShardEthicalClaim.normative (.deonticJudgment s)).toQuery enc =
+      (UpperShardEthicalClaim.normative (.valueJudgment s.toValue)).toQuery enc := by
   -- Both `UpperShardEthicalClaim.toQuery` and `NormativeClaim.toQuery` reduce to
   -- `EthicalAnchor.toQuery enc · .toAnchor`; unfold both so the normative-claim
   -- lemma's statement matches the goal.  (At 4.31 the goal-side unfold alone left
   -- the lemma's `NormativeClaim.toQuery` un-reduced, breaking the `simpa` match.)
   simpa [UpperShardEthicalClaim.toQuery, UpperShardEthicalClaim.toAnchor,
     NormativeClaim.toQuery] using
-    NormativeClaim.presented_deontic_toValue_toQuery_eq_of_aligned enc hAlign s
+    NormativeClaim.deonticJudgment_toValue_toQuery_eq_of_aligned enc hAlign s
 
 /-- The Gewirth right claim can be lowered into the general upper-shard layer
 as a deontic sentence while preserving its provenance in the source type. -/
@@ -858,14 +858,14 @@ def NormativeClaim.toStructuredClaim
     (claim : NormativeClaim World Agent Label) :
     StructuredEthicalClaim World Agent :=
   match claim with
-  | .presentedValue s =>
+  | .valueJudgment s =>
       LabeledValueJudgmentSentence.toStructuredClaim s role .asserted
-  | .presentedDeontic s =>
+  | .deonticJudgment s =>
       LabeledDeonticSentence.toStructuredClaim s role .asserted
   | .groundedUniversalDuty a d =>
       { subject := a
         content := .propositional (dutyContent a d)
-        presentation := .deontic .Obligation
+        normativeForm := .deontic .Obligation
         ground := .universalDuty d
         role := role }
   | .groundedGewirthRight claim =>

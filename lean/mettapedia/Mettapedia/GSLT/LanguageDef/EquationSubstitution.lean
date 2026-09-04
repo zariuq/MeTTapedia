@@ -2327,7 +2327,7 @@ structural one-hole context.  Premise-freeness, exact matcher reconstruction,
 and schema-instantiation stability are sufficient data from which concrete
 Cost presentations prove this property; none of them is silently built into
 the definition. -/
-def AuthoredEquationSubstitutionStable (language : LanguageDef) : Prop :=
+def DeclaredEquationSubstitutionStable (language : LanguageDef) : Prop :=
   ∀ {source target : FreeTypeContext} {support : ContextSupport.Support}
     {bound : List TypeExpr} {type : TypeExpr}
     (assignment : SupportedOpenAssignment profile language source target support)
@@ -2342,7 +2342,7 @@ def AuthoredEquationSubstitutionStable (language : LanguageDef) : Prop :=
 /-- Exact language-level boundary needed to transport every generator of the
 support-safe contextual equation relation. -/
 def SupportedEquationSubstitutionStable (language : LanguageDef) : Prop :=
-  AuthoredEquationSubstitutionStable (profile := profile) language ∧
+  DeclaredEquationSubstitutionStable (profile := profile) language ∧
     ReflectiveEquationSubstitutionStable (profile := profile) language
 
 /-! ## Naturality under ambient binder embeddings
@@ -2849,7 +2849,7 @@ theorem canonicalize_renameAmbientBVarsAt_factor
 /-- Ordinary authored equation instances remain valid, up to the authored
 contextual equation relation, after any order-preserving embedding of the
 ambient binder context. -/
-def AuthoredEquationAmbientRenamingStable (language : LanguageDef) : Prop :=
+def DeclaredEquationAmbientRenamingStable (language : LanguageDef) : Prop :=
   ∀ (rename : Nat → Nat), StrictMono rename → ∀ (depth : Nat)
     (context : OneHoleContext) {redex contractum : Pattern},
     EquationInstance defaultBasePremises language redex contractum →
@@ -2954,7 +2954,7 @@ theorem reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
 /-- Exact pair of generator obligations making the authored contextual
 equation setoid natural under ambient binder embeddings. -/
 def SupportedEquationAmbientRenamingStable (language : LanguageDef) : Prop :=
-  AuthoredEquationAmbientRenamingStable (profile := profile) language ∧
+  DeclaredEquationAmbientRenamingStable (profile := profile) language ∧
     ReflectiveEquationAmbientRenamingStable (profile := profile) language
 
 /-- The two ambient-renaming obligations cover exactly the constructors of

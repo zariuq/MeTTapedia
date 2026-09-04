@@ -964,7 +964,7 @@ theorem rhoCostStatic_processSort_ne_nameSort
       ReflectionExtension.mapReflectivePresentation,
       rhoReflectivePresentation, CostStaticColor.symbols,
       costBaseStaticSymbols, costWrappedStaticSymbols,
-      costBasePresentationSymbols,
+      costBaseLanguageDefSymbolMap,
       show rhoCIGSLT.theory.presentation.interactingSort.1.name = "Proc" by
         rfl,
       costBaseSortName_injective.ne]
@@ -997,16 +997,16 @@ private theorem rho_costWhole_rule_category_of_unitWire_local
             (CostStaticColor.symbols rhoCIGSLT .base).constructor "PZero" := by
         simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
           rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
-          costBasePresentationSymbols]
+          costBaseLanguageDefSymbolMap]
       have materialized :=
         CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
           rule membership _ (labelRendered.trans labelEq.symm)
       subst rule
       simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
         rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
-        costBasePresentationSymbols]
+        costBaseLanguageDefSymbolMap]
   | wrapped =>
-      let zero : StructuralMorphism.AuthoredConstructor
+      let zero : StructuralMorphism.DeclaredConstructor
           rhoCIGSLT.theory.presentation.presentation :=
         ⟨rhoCalc.terms[0], List.getElem_mem (by simp [rhoCalc])⟩
       have zeroWrapped :
@@ -6028,13 +6028,13 @@ theorem rhoCommonRestorationApex_of_canonicalWithin
           simp [declaration, costStaticReflectivePresentationDecl_eq_map,
             ReflectionExtension.mapReflectivePresentation,
             rhoReflectivePresentation, CostStaticColor.symbols,
-            costBaseStaticSymbols, costBasePresentationSymbols]
+            costBaseStaticSymbols, costBaseLanguageDefSymbolMap]
         have nameSort : declaration.nameSort =
             costBaseSortName "Name" := by
           simp [declaration, costStaticReflectivePresentationDecl_eq_map,
             ReflectionExtension.mapReflectivePresentation,
             rhoReflectivePresentation, CostStaticColor.symbols,
-            costBaseStaticSymbols, costBasePresentationSymbols]
+            costBaseStaticSymbols, costBaseLanguageDefSymbolMap]
         rw [processSort, nameSort]
         intro equality
         exact (show "Proc" ≠ "Name" by decide)

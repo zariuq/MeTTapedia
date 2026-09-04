@@ -22,6 +22,7 @@ namespace Mettapedia.GSLT.LanguageDef.GSLTIL.SemanticPredicateInstitution
 
 open CategoryTheory
 open Mettapedia.GSLT
+open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.LanguageDef.GSLTIL.ModalDoctrineAttachment
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
@@ -84,26 +85,31 @@ base, because bounded operational maps act by inverse image. -/
 def predicateSentence :
     CategoryTheory.Functor (ModallyCoveredTheory.{uTerm})ᵒᵖ
       (Type uTerm) where
-  obj signature := Set signature.unop.theory.Term
+  obj signature := Set (SemanticTerm signature.unop.theory)
   map translation := TypeCat.ofHom fun predicate =>
-    Set.preimage translation.unop.mapTerm predicate
+    Set.preimage
+      translation.unop.toCoveredTranslation.toOperational.mapSemantic predicate
   map_id signature := by
     apply CategoryTheory.ConcreteCategory.hom_ext
     intro predicate
     ext state
-    rfl
+    induction state using Quotient.inductionOn with
+    | _ representative => rfl
   map_comp earlier later := by
     apply CategoryTheory.ConcreteCategory.hom_ext
     intro predicate
     ext state
-    rfl
+    induction state using Quotient.inductionOn with
+    | _ representative => rfl
 
 @[simp] theorem predicateSentence_map
     {source target : (ModallyCoveredTheory.{uTerm})ᵒᵖ}
     (translation : source ⟶ target)
-    (predicate : Set source.unop.theory.Term) :
+    (predicate : Set (SemanticTerm source.unop.theory)) :
     predicateSentence.map translation predicate =
-      Set.preimage translation.unop.mapTerm predicate :=
+      Set.preimage
+        translation.unop.toCoveredTranslation.toOperational.mapSemantic
+        predicate :=
   rfl
 
 /-! ## Pi-institution structure -/
@@ -113,15 +119,18 @@ def institution :
     PiInstitution (ModallyCoveredTheory.{uTerm})ᵒᵖ where
   sentence := predicateSentence
   consequence := fun signature =>
-    semanticConsequence signature.unop.theory.Term
+    semanticConsequence (SemanticTerm signature.unop.theory)
   translation := by
     intro source target translation premises mappedConclusion member
     rcases member with ⟨conclusion, conclusionMember, rfl⟩
     intro targetState satisfiesMappedPremises
-    apply conclusionMember (translation.unop.mapTerm targetState)
+    apply conclusionMember
+      (translation.unop.toCoveredTranslation.toOperational.mapSemantic targetState)
     intro premise premiseMember
     have mappedMember :
-        Set.preimage translation.unop.mapTerm premise ∈
+        Set.preimage
+            translation.unop.toCoveredTranslation.toOperational.mapSemantic
+            premise ∈
           Set.image (predicateSentence.map translation) premises := by
       exact ⟨premise, premiseMember, rfl⟩
     exact satisfiesMappedPremises _ mappedMember
@@ -129,8 +138,8 @@ def institution :
 /-- Its consequence judgment is exactly semantic entailment. -/
 theorem derives_iff_entails
     (signature : (ModallyCoveredTheory.{uTerm})ᵒᵖ)
-    (premises : Set (Set signature.unop.theory.Term))
-    (conclusion : Set signature.unop.theory.Term) :
+    (premises : Set (Set (SemanticTerm signature.unop.theory)))
+    (conclusion : Set (SemanticTerm signature.unop.theory)) :
     institution.Derives signature premises conclusion ↔
       Entails premises conclusion :=
   Iff.rfl
@@ -140,7 +149,7 @@ use exactly the same inverse-image map. -/
 theorem sentence_transport_eq_oslf_pullback
     {source target : (ModallyCoveredTheory.{uTerm})ᵒᵖ}
     (translation : source ⟶ target)
-    (predicate : Set source.unop.theory.Term) :
+    (predicate : Set (SemanticTerm source.unop.theory)) :
     predicateSentence.map translation predicate =
       (oslfModalFunctor.map translation).mapPred predicate :=
   rfl
@@ -150,7 +159,7 @@ theorem sentence_transport_eq_oslf_pullback
 /-- A premise is semantically derivable from itself. -/
 theorem premise_derives_itself
     (signature : (ModallyCoveredTheory.{uTerm})ᵒᵖ)
-    (predicate : Set signature.unop.theory.Term) :
+    (predicate : Set (SemanticTerm signature.unop.theory)) :
     institution.Derives signature {predicate} predicate :=
   institution.derives_of_mem signature (Set.mem_singleton predicate)
 
@@ -158,12 +167,13 @@ theorem premise_derives_itself
 inhabited state space. -/
 theorem empty_not_derivable_without_premises
     (signature : (ModallyCoveredTheory.{uTerm})ᵒᵖ)
-    (state : signature.unop.theory.Term) :
-    ¬ institution.Derives signature ∅ (∅ : Set signature.unop.theory.Term) := by
+    (state : SemanticTerm signature.unop.theory) :
+    ¬ institution.Derives signature ∅
+      (∅ : Set (SemanticTerm signature.unop.theory)) := by
   intro derives
   have universal :=
     (mem_semanticConsequence_empty_iff
-      (∅ : Set signature.unop.theory.Term)).mp derives
+      (∅ : Set (SemanticTerm signature.unop.theory))).mp derives
   exact universal state
 
 #print axioms semanticConsequence

@@ -397,8 +397,8 @@ def openEquationSetoid (theory : IGSLT)
 only syntactic equality. -/
 theorem openEquationSetoid_iff_eq_of_no_generators
     (theory : IGSLT)
-    (equationsEmpty :
-      theory.presentation.presentation.language.equations = [])
+    (equationFree :
+      theory.presentation.presentation.language.isEquationFree = true)
     {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
     {sort : LangSort theory.presentation.presentation.language}
     (left right : OpenTerm theory free bound sort) :
@@ -410,7 +410,7 @@ theorem openEquationSetoid_iff_eq_of_no_generators
     | rel left right step =>
         apply Subtype.ext
         exact (EquationSemantics.equationEquiv_iff_eq_of_no_generators
-          equationsEmpty left.1 right.1).mp
+          equationFree left.1 right.1).mp
             (Relation.EqvGen.rel _ _ step)
     | refl term => rfl
     | symm left right relation inductionHypothesis =>

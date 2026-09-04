@@ -1,0 +1,3 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryForeignResidualSpine
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.rho_afterSameColorBoundarySideForeign_of_stopCallback

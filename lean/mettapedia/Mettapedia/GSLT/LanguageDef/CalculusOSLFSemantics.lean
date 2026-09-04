@@ -56,8 +56,13 @@ calculus GSLT, not a second proof checker. -/
 def derivableNativeType (definition : ValidatedCalculusLanguageDef) :
     GSLTNativeType (proofSearchGSLT definition) where
   sort := ()
-  pred := fun goals =>
-    (proofSearchGSLT definition).MultiStep goals []
+  pred :=
+    invariantPredicate (proofSearchGSLT definition)
+      (fun goals => (proofSearchGSLT definition).MultiStep goals [])
+      (by
+        intro left right equal
+        subst right
+        rfl)
 
 /-- Satisfaction of the generated reachability native type is exactly
 inhabitation of the authored ordered derivation list. -/

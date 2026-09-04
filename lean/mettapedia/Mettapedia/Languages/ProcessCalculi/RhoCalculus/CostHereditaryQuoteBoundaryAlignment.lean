@@ -1455,7 +1455,7 @@ noncomputable def CostStaticRegionPlan.restrictedCanonicalRestoresTogether
     unfold declaration
     rw [costStaticReflectivePresentationDecl_eq_map]
     simp only [mapReflectivePresentation,
-      CostStaticColor.reflectiveSymbols_toPresentationSymbols]
+      CostStaticColor.reflectiveSymbols_toLanguageDefSymbolMap]
     rw [reflectiveIsQuoteConstructor_mapCostStatic]
     rw [show rhoCIGSLT.reflection.1 = rhoReflectionProfile from rfl]
     simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile]
@@ -1482,7 +1482,7 @@ noncomputable def CostStaticRegionPlan.restrictedCanonicalRestoresTogether
       unfold declaration
       rw [costStaticReflectivePresentationDecl_eq_map]
       simp only [mapReflectivePresentation,
-        CostStaticColor.reflectiveSymbols_toPresentationSymbols]
+        CostStaticColor.reflectiveSymbols_toLanguageDefSymbolMap]
       constructor
       · intro recognized
         apply congrArg (color.symbols rhoCIGSLT).constructor
@@ -1623,7 +1623,7 @@ noncomputable def CostStaticRegionPlan.restrictedThickenedCanonicalRestoresToget
     unfold declaration
     rw [costStaticReflectivePresentationDecl_eq_map]
     simp only [mapReflectivePresentation,
-      CostStaticColor.reflectiveSymbols_toPresentationSymbols]
+      CostStaticColor.reflectiveSymbols_toLanguageDefSymbolMap]
     rw [reflectiveIsQuoteConstructor_mapCostStatic]
     rw [show rhoCIGSLT.reflection.1 = rhoReflectionProfile from rfl]
     simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile]
@@ -1650,7 +1650,7 @@ noncomputable def CostStaticRegionPlan.restrictedThickenedCanonicalRestoresToget
       unfold declaration
       rw [costStaticReflectivePresentationDecl_eq_map]
       simp only [mapReflectivePresentation,
-        CostStaticColor.reflectiveSymbols_toPresentationSymbols]
+        CostStaticColor.reflectiveSymbols_toLanguageDefSymbolMap]
       constructor
       · intro recognized
         apply congrArg (color.symbols rhoCIGSLT).constructor
@@ -1923,7 +1923,7 @@ noncomputable def CostStaticRegionPlan.quoteCanonicalRestoresTogether_of_normali
     unfold declaration
     rw [costStaticReflectivePresentationDecl_eq_map]
     simp only [mapReflectivePresentation,
-      CostStaticColor.reflectiveSymbols_toPresentationSymbols]
+      CostStaticColor.reflectiveSymbols_toLanguageDefSymbolMap]
     rw [reflectiveIsQuoteConstructor_mapCostStatic]
     rw [show rhoCIGSLT.reflection.1 = rhoReflectionProfile from rfl]
     simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile]
@@ -1950,7 +1950,7 @@ noncomputable def CostStaticRegionPlan.quoteCanonicalRestoresTogether_of_normali
       unfold declaration
       rw [costStaticReflectivePresentationDecl_eq_map]
       simp only [mapReflectivePresentation,
-        CostStaticColor.reflectiveSymbols_toPresentationSymbols]
+        CostStaticColor.reflectiveSymbols_toLanguageDefSymbolMap]
       constructor
       · intro recognized
         apply congrArg (color.symbols rhoCIGSLT).constructor

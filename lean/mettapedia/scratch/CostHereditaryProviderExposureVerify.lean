@@ -1,0 +1,15 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderExposure
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
+#check @canonicalize_isObjectPattern
+#check @canonicalize_ne_subst_of_isObjectPattern
+#check @RhoCollapsingLeafExposure.normalize_eq
+#check @RhoCollapsingLeafExposure.isEmpty_of_normalize_ne
+#check @rho_normalize_eq_of_collapsingLeafExposureInDomain
+#check @rho_collapsingLeafExposureInDomain_of_leafRoutes
+#print axioms canonicalize_isObjectPattern
+#print axioms canonicalize_ne_subst_of_isObjectPattern
+#print axioms RhoCollapsingLeafExposure.normalize_eq
+#print axioms RhoCollapsingLeafExposure.isEmpty_of_normalize_ne
+#print axioms rho_normalize_eq_of_collapsingLeafExposureInDomain
+#print axioms rho_collapsingLeafExposureInDomain_of_leafRoutes

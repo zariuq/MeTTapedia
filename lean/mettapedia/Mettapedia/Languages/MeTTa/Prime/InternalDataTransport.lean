@@ -122,7 +122,7 @@ independent validation theorem. -/
 /-- The translation-kernel traversal and the structural GSLT traversal are the
 same constructor-only action when given the route's constructor map. -/
 theorem structural_mapPattern_eq_kernel
-    (symbols : PresentationSymbols) (term : Pattern) :
+    (symbols : LanguageDefSymbolMap) (term : Pattern) :
     Mettapedia.GSLT.LanguageDef.mapPattern symbols term =
       Mettapedia.Languages.MeTTa.Prime.DataTranslationKernel.mapPattern
         symbols.constructor term := by
@@ -235,7 +235,7 @@ theorem no_internal_identity_route_prime_to_zero :
     ¬ ∃ route :
         Mettapedia.Languages.MeTTa.Prime.LanguageDef.currentPrimePresentation ⟶
           Mettapedia.Languages.MeTTa.Prime.LanguageDef.currentZeroPresentation,
-      route.symbols = PresentationSymbols.id :=
+      route.symbols = LanguageDefSymbolMap.id :=
   Mettapedia.Languages.MeTTa.Prime.LanguageDef.no_identity_symbol_retraction
 
 end Mettapedia.Languages.MeTTa.Prime.InternalDataTransport

@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.StructuralPresentationCategory
+import Mettapedia.GSLT.LanguageDef.StructuralLanguageDefCategory
 
 /-!
 # Falsification controls for structural presentation coproducts
@@ -17,7 +17,7 @@ open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.StructuralCoproduct
 
-private def prefixedSymbols (tag : String) : PresentationSymbols where
+private def prefixedSymbols (tag : String) : LanguageDefSymbolMap where
   sort := fun name => tag ++ "sort:" ++ name
   constructor := fun name => tag ++ "constructor:" ++ name
   relation := fun name => tag ++ "relation:" ++ name
@@ -48,10 +48,10 @@ private def rootedRule : RewriteRule where
   left := .apply "input" []
   right := .apply "result" []
 
-private def collidingLeftSymbols : PresentationSymbols :=
+private def collidingLeftSymbols : LanguageDefSymbolMap :=
   prefixedSymbols "shared:"
 
-private def collidingRightSymbols : PresentationSymbols :=
+private def collidingRightSymbols : LanguageDefSymbolMap :=
   prefixedSymbols "shared:"
 
 /-- Constructor-rootedness alone does not prevent interference when the two

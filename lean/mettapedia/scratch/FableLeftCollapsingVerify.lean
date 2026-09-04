@@ -1,0 +1,31 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderLeftCollapsing
+
+/-!
+Kernel audit of `CostHereditaryProviderLeftCollapsing`: every declaration
+exists under its fully qualified name and rests only on Lean's three
+standard axioms.
+-/
+
+open Mettapedia.GSLT.LanguageDef
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+
+#check @Mettapedia.GSLT.LanguageDef.CostRegionTree.staticRootView_of_rootIsStatic
+#check @Mettapedia.GSLT.LanguageDef.CostRegionTree.rootIsStatic_eq_false_of_bvar
+#check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoCollapsingLeafExposure.rigidBVarOfSourceCanonicalAtBoundVariable
+#check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoCanonicalStaticPairSemanticCut.leftStaticEnclosingOfPlanStops
+#check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.rhoCanonicalRawStop_endpoints_of_leftCollapsing
+#check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.not_rhoCanonicalRawStop_endpoints_at_endpointMeasure
+#check @Mettapedia.Languages.ProcessCalculi.RhoCalculus.nonempty_rhoCanonicalStaticPairSemanticCut_leftCollapsing_of_routes
+
+#print axioms Mettapedia.GSLT.LanguageDef.CostRegionTree.staticRootView_of_rootIsStatic
+#print axioms Mettapedia.GSLT.LanguageDef.CostRegionTree.rootIsStatic_eq_false_of_bvar
+#print axioms
+  Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoCollapsingLeafExposure.rigidBVarOfSourceCanonicalAtBoundVariable
+#print axioms
+  Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoCanonicalStaticPairSemanticCut.leftStaticEnclosingOfPlanStops
+#print axioms
+  Mettapedia.Languages.ProcessCalculi.RhoCalculus.rhoCanonicalRawStop_endpoints_of_leftCollapsing
+#print axioms
+  Mettapedia.Languages.ProcessCalculi.RhoCalculus.not_rhoCanonicalRawStop_endpoints_at_endpointMeasure
+#print axioms
+  Mettapedia.Languages.ProcessCalculi.RhoCalculus.nonempty_rhoCanonicalStaticPairSemanticCut_leftCollapsing_of_routes

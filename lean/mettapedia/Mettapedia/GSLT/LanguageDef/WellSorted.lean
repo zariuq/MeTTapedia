@@ -54,25 +54,25 @@ theorem FreeTypeContext.mem_of_restrictTo_eq_some
   simp [FreeTypeContext.restrictTo, absent] at lookup
 
 /-- Apply a presentation's sort action to a free-variable assignment. -/
-def FreeTypeContext.map (symbols : PresentationSymbols)
+def FreeTypeContext.map (symbols : LanguageDefSymbolMap)
     (context : FreeTypeContext) : FreeTypeContext :=
   fun name => (context name).map (mapTypeExpr symbols)
 
 @[simp]
-theorem FreeTypeContext.map_empty (symbols : PresentationSymbols) :
+theorem FreeTypeContext.map_empty (symbols : LanguageDefSymbolMap) :
     FreeTypeContext.empty.map symbols = FreeTypeContext.empty := by
   funext name
   rfl
 
 @[simp]
 theorem FreeTypeContext.map_id (context : FreeTypeContext) :
-    context.map PresentationSymbols.id = context := by
+    context.map LanguageDefSymbolMap.id = context := by
   funext name
   cases value : context name <;>
     simp [FreeTypeContext.map, value]
 
 theorem FreeTypeContext.map_comp (context : FreeTypeContext)
-    (first second : PresentationSymbols) :
+    (first second : LanguageDefSymbolMap) :
     context.map (first.comp second) =
       (context.map first).map second := by
   funext name
@@ -144,7 +144,7 @@ def UsesBareCollection (rule : GrammarRule) : Prop :=
       [.simple parameterName (.collection collectionType elementType)]
 
 theorem usesBareCollection_mapGrammarRule_iff
-    (symbols : PresentationSymbols) (rule : GrammarRule) :
+    (symbols : LanguageDefSymbolMap) (rule : GrammarRule) :
     UsesBareCollection (mapGrammarRule symbols rule) ↔
       UsesBareCollection rule := by
   constructor
@@ -723,17 +723,17 @@ end
 /-- Forget an exact authored sort declaration to the established name-indexed
 sort used by the generic constructor-category API.  The membership proof is
 derived from the selected declaration; no sort name is re-authored. -/
-def authoredSortToLangSort (presentation : ValidatedLanguageDef)
-    (sort : StructuralMorphism.AuthoredSort presentation) :
+def declaredSortToLangSort (presentation : ValidatedLanguageDef)
+    (sort : StructuralMorphism.DeclaredSort presentation) :
     LangSort presentation.language := by
   refine ⟨sort.1.name, ?_⟩
   change sort.1.name ∈ presentation.language.types.map (·.name)
   exact List.mem_map.mpr ⟨sort.1, sort.2, rfl⟩
 
 @[simp]
-theorem authoredSortToLangSort_name (presentation : ValidatedLanguageDef)
-    (sort : StructuralMorphism.AuthoredSort presentation) :
-    (authoredSortToLangSort presentation sort).1 = sort.1.name :=
+theorem declaredSortToLangSort_name (presentation : ValidatedLanguageDef)
+    (sort : StructuralMorphism.DeclaredSort presentation) :
+    (declaredSortToLangSort presentation sort).1 = sort.1.name :=
   rfl
 
 /-! ## Groundness derived from sorting and scope -/
@@ -895,17 +895,17 @@ theorem mapLangSort_comp {first second third : ValidatedLanguageDef}
 
 /-- Mapping the name-indexed view of an exact authored sort agrees with
 mapping the authored declaration and then forgetting it to its name. -/
-theorem mapLangSort_authoredSortToLangSort
+theorem mapLangSort_declaredSortToLangSort
     {source target : ValidatedLanguageDef}
     (morphism : StructuralMorphism source target)
-    (sort : StructuralMorphism.AuthoredSort source) :
-    mapLangSort morphism (authoredSortToLangSort source sort) =
-      authoredSortToLangSort target (morphism.mapSort sort) := by
+    (sort : StructuralMorphism.DeclaredSort source) :
+    mapLangSort morphism (declaredSortToLangSort source sort) =
+      declaredSortToLangSort target (morphism.mapSort sort) := by
   apply Subtype.ext
   rfl
 
 private theorem isObjectPatternList_map_eq
-    (symbols : PresentationSymbols) (patterns : List Pattern)
+    (symbols : LanguageDefSymbolMap) (patterns : List Pattern)
     (pointwise : ∀ pattern ∈ patterns,
       isObjectPattern (mapPattern symbols pattern) =
         isObjectPattern pattern) :
@@ -924,7 +924,7 @@ private theorem isObjectPatternList_map_eq
 object-language shape.  In particular, it cannot turn a schema substitution
 or open collection tail into an object term. -/
 @[simp]
-theorem isObjectPattern_mapPattern (symbols : PresentationSymbols)
+theorem isObjectPattern_mapPattern (symbols : LanguageDefSymbolMap)
     (pattern : Pattern) :
     isObjectPattern (mapPattern symbols pattern) =
       isObjectPattern pattern := by
@@ -945,7 +945,7 @@ theorem isObjectPattern_mapPattern (symbols : PresentationSymbols)
       rw [isObjectPatternList_map_eq symbols elements inductionHypothesis]
 
 private theorem canonicalBinderMetadataList_map_eq
-    (symbols : PresentationSymbols) (patterns : List Pattern)
+    (symbols : LanguageDefSymbolMap) (patterns : List Pattern)
     (pointwise : ∀ pattern ∈ patterns,
       (mapPattern symbols pattern).hasCanonicalBinderMetadata =
         pattern.hasCanonicalBinderMetadata) :
@@ -964,7 +964,7 @@ private theorem canonicalBinderMetadataList_map_eq
 /-- Symbol renaming leaves locally nameless binder metadata unchanged. -/
 @[simp]
 theorem hasCanonicalBinderMetadata_mapPattern
-    (symbols : PresentationSymbols) (pattern : Pattern) :
+    (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
     (mapPattern symbols pattern).hasCanonicalBinderMetadata =
       pattern.hasCanonicalBinderMetadata := by
   induction pattern using Pattern.inductionOn with
@@ -991,7 +991,7 @@ theorem hasCanonicalBinderMetadata_mapPattern
         inductionHypothesis
 
 private theorem binderSafeListAt_mapPattern_of_constructor_injective
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (quoteConstructor : String) (depth : Nat) (patterns : List Pattern)
     (pointwise : ∀ pattern ∈ patterns, ∀ localDepth,
       binderSafeAt (symbols.constructor quoteConstructor) localDepth
@@ -1014,7 +1014,7 @@ private theorem binderSafeListAt_mapPattern_of_constructor_injective
 binder scope when the distinguished quotation constructor is renamed by the
 same action. -/
 theorem binderSafeAt_mapPattern_of_constructor_injective
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
     (quoteConstructor : String) (depth : Nat) (pattern : Pattern) :
     binderSafeAt (symbols.constructor quoteConstructor) depth
@@ -1061,7 +1061,7 @@ theorem binderSafeAt_mapPattern_of_constructor_injective
           quoteConstructor depth elements inductionHypothesis
 
 private theorem binderSafeListAt_eq_isWellScopedListAt_mapPattern
-    (symbols : PresentationSymbols) (quoteConstructor : String)
+    (symbols : LanguageDefSymbolMap) (quoteConstructor : String)
     (depth : Nat) (patterns : List Pattern)
     (pointwise : ∀ pattern ∈ patterns, ∀ localDepth,
       binderSafeAt quoteConstructor localDepth (mapPattern symbols pattern) =
@@ -1085,7 +1085,7 @@ its reflective scope check on the mapped term is exactly ordinary locally
 nameless scope.  This is the negative half needed for disjoint generated
 syntax fibers. -/
 theorem binderSafeAt_mapPattern_of_constructor_avoids
-    (symbols : PresentationSymbols) (quoteConstructor : String)
+    (symbols : LanguageDefSymbolMap) (quoteConstructor : String)
     (avoids : ∀ constructor, symbols.constructor constructor ≠ quoteConstructor)
     (depth : Nat) (pattern : Pattern) :
     binderSafeAt quoteConstructor depth (mapPattern symbols pattern) =
@@ -1128,7 +1128,7 @@ theorem binderSafeAt_mapPattern_of_constructor_avoids
           quoteConstructor depth elements inductionHypothesis
 
 @[simp]
-theorem parameterType?_mapTermParam (symbols : PresentationSymbols)
+theorem parameterType?_mapTermParam (symbols : LanguageDefSymbolMap)
     (parameter : TermParam) :
     parameterType? (mapTermParam symbols parameter) =
       (parameterType? parameter).map (mapTypeExpr symbols) := by
@@ -1147,7 +1147,7 @@ theorem parameterType?_mapTermParam (symbols : PresentationSymbols)
 
 @[simp]
 theorem matchesParameterRepresentation_map_iff
-    (symbols : PresentationSymbols) (parameter : TermParam)
+    (symbols : LanguageDefSymbolMap) (parameter : TermParam)
     (argument : Pattern) :
     MatchesParameterRepresentation (mapTermParam symbols parameter)
         (mapPattern symbols argument) ↔
@@ -1449,19 +1449,19 @@ theorem OpenTerm.map_pattern {source target : ValidatedLanguageDef}
 theorem ClosedTermWellSorted.map
     {source target : ValidatedLanguageDef}
     (morphism : StructuralMorphism source target)
-    {sourceSort : StructuralMorphism.AuthoredSort source}
-    {targetSort : StructuralMorphism.AuthoredSort target}
+    {sourceSort : StructuralMorphism.DeclaredSort source}
+    {targetSort : StructuralMorphism.DeclaredSort target}
     (mapsSort : morphism.mapSort sourceSort = targetSort)
     {pattern : Pattern}
     (closed : ClosedTermWellSorted source.language
-      (authoredSortToLangSort source sourceSort) pattern) :
+      (declaredSortToLangSort source sourceSort) pattern) :
     ClosedTermWellSorted target.language
-      (authoredSortToLangSort target targetSort)
+      (declaredSortToLangSort target targetSort)
       (mapPattern morphism.symbols pattern) := by
   have sortName :
       morphism.symbols.sort sourceSort.1.name = targetSort.1.name := by
     have mappedName := congrArg
-      (fun sort : StructuralMorphism.AuthoredSort target => sort.1.name)
+      (fun sort : StructuralMorphism.DeclaredSort target => sort.1.name)
       mapsSort
     simpa [StructuralMorphism.mapSort, mapTypeDecl] using mappedName
   have typed := closed.1.map morphism
@@ -1492,7 +1492,7 @@ theorem ClosedTermWellSorted.map
     simpa [ScopeSafe, ScopeSafeAt] using mappedTyped.isWellScopedAt
   exact ⟨mappedTyped,
     ground_of_closed_sorting
-      (sort := authoredSortToLangSort target targetSort)
+      (sort := declaredSortToLangSort target targetSort)
       mappedTyped object scopeSafe,
     canonical, object, scopeSafe⟩
 
@@ -1706,7 +1706,8 @@ theorem rho_parallel_hasSort
         category := "Proc"
         params := [.simple "ps" (TypeExpr.bag TypeExpr.proc)]
         syntaxPattern :=
-          [.terminal "{", .nonTerminal "ps", .separator "|", .terminal "}"] })
+          [.terminal "{", .nonTerminal "ps", .separator "|", .terminal "}"]
+        algebra? := some { flatten := true, unit := some "PZero" } })
     (parameterName := "ps")
   · simp [rhoCalc]
   · rfl

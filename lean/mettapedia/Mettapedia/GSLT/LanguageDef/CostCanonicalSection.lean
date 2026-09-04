@@ -209,7 +209,7 @@ theorem mapTypeExpr_decodeCostStaticTypeExpr (source : CIGSLT)
                   costBaseSortTag sort sourceSort).mp decodedSort
               subst sort
               simp [CostStaticColor.symbols, costBaseStaticSymbols,
-                costBasePresentationSymbols, mapTypeExpr]
+                costBaseLanguageDefSymbolMap, mapTypeExpr]
       | wrapped =>
           by_cases wrapped : sort = costWrappedSortName
           · subst sort
@@ -1123,7 +1123,7 @@ end
 
 /-- Constructor translation commutes with de Bruijn lifting.  This is the
 binder-sensitive ingredient of explicit-substitution transport. -/
-theorem mapPattern_liftBVars (symbols : PresentationSymbols)
+theorem mapPattern_liftBVars (symbols : LanguageDefSymbolMap)
     (cutoff shift : Nat) (pattern : Pattern) :
     mapPattern symbols (liftBVars cutoff shift pattern) =
       liftBVars cutoff shift (mapPattern symbols pattern) := by
@@ -1153,7 +1153,7 @@ theorem mapPattern_liftBVars (symbols : PresentationSymbols)
 
 /-- Constructor translation commutes with elimination of one locally
 nameless binder, including the lift performed beneath nested binders. -/
-theorem mapPattern_instantiateBVarAt (symbols : PresentationSymbols)
+theorem mapPattern_instantiateBVarAt (symbols : LanguageDefSymbolMap)
     (depth : Nat) (replacement body : Pattern) :
     mapPattern symbols (instantiateBVarAt depth replacement body) =
       instantiateBVarAt depth (mapPattern symbols replacement)
@@ -1190,7 +1190,7 @@ theorem mapPattern_instantiateBVarAt (symbols : PresentationSymbols)
       exact inductionHypothesis element membership depth
 
 @[simp]
-theorem mapPattern_instantiateBVar (symbols : PresentationSymbols)
+theorem mapPattern_instantiateBVar (symbols : LanguageDefSymbolMap)
     (replacement body : Pattern) :
     mapPattern symbols (instantiateBVar replacement body) =
       instantiateBVar (mapPattern symbols replacement)

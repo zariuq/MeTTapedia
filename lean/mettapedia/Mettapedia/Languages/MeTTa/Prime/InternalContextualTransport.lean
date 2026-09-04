@@ -118,7 +118,7 @@ theorem internalContextualTransport_comp
 def transportOpenTerm
     {source target : ContextualLanguage}
     (route : ContextualMorphism source target)
-    {sort : StructuralMorphism.AuthoredSort source.language}
+    {sort : StructuralMorphism.DeclaredSort source.language}
     (term : (fibre source).BaseEl sort) :
     (fibre target).BaseEl (route.route.mapSort sort) :=
   (translation route).mapBaseEl term
@@ -127,7 +127,7 @@ def transportOpenTerm
 theorem transportOpenTerm_pattern
     {source target : ContextualLanguage}
     (route : ContextualMorphism source target)
-    {sort : StructuralMorphism.AuthoredSort source.language}
+    {sort : StructuralMorphism.DeclaredSort source.language}
     (term : (fibre source).BaseEl sort) :
     (transportOpenTerm route term).1 =
       mapPattern route.route.symbols term.1 :=
@@ -137,7 +137,7 @@ theorem transportOpenTerm_pattern
 theorem transportOpenTerm_free_names
     {source target : ContextualLanguage}
     (route : ContextualMorphism source target)
-    {sort : StructuralMorphism.AuthoredSort source.language}
+    {sort : StructuralMorphism.DeclaredSort source.language}
     (term : (fibre source).BaseEl sort) :
     (transportOpenTerm route term).1.freeFvarNames =
       term.1.freeFvarNames := by
@@ -151,7 +151,7 @@ typing context. -/
 theorem transported_free_name_has_target_type
     {source target : ContextualLanguage}
     (route : ContextualMorphism source target)
-    {sort : StructuralMorphism.AuthoredSort source.language}
+    {sort : StructuralMorphism.DeclaredSort source.language}
     (term : (fibre source).BaseEl sort)
     {name : String}
     (membership :
@@ -164,7 +164,7 @@ after transport.  Constructor translation cannot grant variable authority. -/
 theorem absent_target_name_cannot_appear
     {source target : ContextualLanguage}
     (route : ContextualMorphism source target)
-    {sort : StructuralMorphism.AuthoredSort source.language}
+    {sort : StructuralMorphism.DeclaredSort source.language}
     (term : (fibre source).BaseEl sort)
     (name : String) (absent : target.context.free name = none) :
     name ∉ (transportOpenTerm route term).1.freeFvarNames := by

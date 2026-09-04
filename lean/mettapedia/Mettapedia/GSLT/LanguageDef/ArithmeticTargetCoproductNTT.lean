@@ -8,7 +8,7 @@ import Mettapedia.OSLF.Framework.ConstructorCategory
 # Operational and native-type gates for the arithmetic target coproduct
 
 The combined arithmetic target is exercised through the premise-aware
-contextual engine, not only through its presentation rows.  A single explicit
+contextual engine, not only through its combinedLanguage rows.  A single explicit
 relation environment supplies inhabited ExternalCallMachine and
 RadixDigitMachine transitions.  Exact component-versus-coproduct fibres and
 the generated spatial/modal structure are checked on both sides.
@@ -113,14 +113,14 @@ def combinedDemoRelationEnv : RelationEnv where
     else
       []
 
-private noncomputable def externalInverseSymbols : PresentationSymbols where
+private noncomputable def externalInverseSymbols : LanguageDefSymbolMap where
   sort := Function.invFun externalSymbols.sort
   constructor := Function.invFun externalSymbols.constructor
   relation := Function.invFun externalSymbols.relation
   equation := Function.invFun externalSymbols.equation
   rewrite := Function.invFun externalSymbols.rewrite
 
-private noncomputable def radixInverseSymbols : PresentationSymbols where
+private noncomputable def radixInverseSymbols : LanguageDefSymbolMap where
   sort := Function.invFun radixSymbols.sort
   constructor := Function.invFun radixSymbols.constructor
   relation := Function.invFun radixSymbols.relation
@@ -128,8 +128,8 @@ private noncomputable def radixInverseSymbols : PresentationSymbols where
   rewrite := Function.invFun radixSymbols.rewrite
 
 private theorem external_inverse_comp :
-    externalSymbols.comp externalInverseSymbols = PresentationSymbols.id := by
-  apply PresentationSymbols.ext
+    externalSymbols.comp externalInverseSymbols = LanguageDefSymbolMap.id := by
+  apply LanguageDefSymbolMap.ext
   · funext name
     exact Function.leftInverse_invFun
       compatibility.leftSymbolsInjective.sort name
@@ -147,8 +147,8 @@ private theorem external_inverse_comp :
       compatibility.leftSymbolsInjective.rewrite name
 
 private theorem radix_inverse_comp :
-    radixSymbols.comp radixInverseSymbols = PresentationSymbols.id := by
-  apply PresentationSymbols.ext
+    radixSymbols.comp radixInverseSymbols = LanguageDefSymbolMap.id := by
+  apply LanguageDefSymbolMap.ext
   · funext name
     exact Function.leftInverse_invFun
       compatibility.rightSymbolsInjective.sort name
@@ -269,7 +269,7 @@ private theorem external_relation_commutes
     (relation : String) (arguments : List Pattern)
     (tagged : (externalSymbols.relation relation).startsWith "E:" = true) :
     PremiseEvaluatorCommutesAt externalSymbols
-      ExternalCallMachine.externalCallLanguage presentation.language
+      ExternalCallMachine.externalCallLanguage validatedCombinedLanguage.language
       (engineBasePremises ExternalCallMachine.externalCallDemoRelationEnv)
       combinedOperationalBase (.relationQuery relation arguments) := by
   intro bindings
@@ -283,7 +283,7 @@ private theorem radix_relation_commutes
     (relation : String) (arguments : List Pattern)
     (tagged : (radixSymbols.relation relation).startsWith "R:" = true) :
     PremiseEvaluatorCommutesAt radixSymbols RadixDigitLanguageDef.language
-      presentation.language (engineBasePremises RadixDigitNTT.demoRelationEnv)
+      validatedCombinedLanguage.language (engineBasePremises RadixDigitNTT.demoRelationEnv)
       combinedOperationalBase (.relationQuery relation arguments) := by
   intro bindings
   simp only [combinedOperationalBase, mapPremise]
@@ -309,7 +309,7 @@ private theorem radix_relation_tagged (relation : String) :
 single combined evaluator. -/
 theorem external_rule_premises_commute :
     RulePremiseEvaluatorsCommute externalSymbols
-      ExternalCallMachine.externalCallLanguage presentation.language
+      ExternalCallMachine.externalCallLanguage validatedCombinedLanguage.language
       (engineBasePremises ExternalCallMachine.externalCallDemoRelationEnv)
       combinedOperationalBase := by
   intro rule ruleMembership premise premiseMembership
@@ -347,7 +347,7 @@ theorem external_rule_premises_commute :
 same combined evaluator. -/
 theorem radix_rule_premises_commute :
     RulePremiseEvaluatorsCommute radixSymbols RadixDigitLanguageDef.language
-      presentation.language (engineBasePremises RadixDigitNTT.demoRelationEnv)
+      validatedCombinedLanguage.language (engineBasePremises RadixDigitNTT.demoRelationEnv)
       combinedOperationalBase := by
   intro rule ruleMembership premise premiseMembership
   have relationForm : ∃ relation arguments,
@@ -376,7 +376,7 @@ theorem radix_rule_premises_commute :
 /-- Universal premise-aware contextual conservativity of ExternalCallMachine
 inside the composed operational theory. -/
 theorem external_contextual_exact (fuel : Nat) (term : Pattern) :
-    rewriteAt combinedOperationalBase presentation.language fuel
+    rewriteAt combinedOperationalBase validatedCombinedLanguage.language fuel
         (mapPattern externalSymbols term) =
       (rewriteAt
         (engineBasePremises ExternalCallMachine.externalCallDemoRelationEnv)
@@ -390,7 +390,7 @@ theorem external_contextual_exact (fuel : Nat) (term : Pattern) :
 /-- Universal premise-aware contextual conservativity of RadixDigitMachine
 inside the same composed operational theory. -/
 theorem radix_contextual_exact (fuel : Nat) (term : Pattern) :
-    rewriteAt combinedOperationalBase presentation.language fuel
+    rewriteAt combinedOperationalBase validatedCombinedLanguage.language fuel
         (mapPattern radixSymbols term) =
       (rewriteAt (engineBasePremises RadixDigitNTT.demoRelationEnv)
         RadixDigitLanguageDef.language fuel term).map
@@ -402,7 +402,7 @@ theorem radix_contextual_exact (fuel : Nat) (term : Pattern) :
 /-- Inhabited ExternalCall witness obtained through the universal operational
 coproduct theorem, including the exact ordered receipt. -/
 theorem external_operational_step_exact :
-    rewriteAt combinedOperationalBase presentation.language 1
+    rewriteAt combinedOperationalBase validatedCombinedLanguage.language 1
         (mapPattern externalSymbols externalStart) =
       [mapPattern externalSymbols externalDone] := by
   rw [external_contextual_exact]
@@ -412,7 +412,7 @@ theorem external_operational_step_exact :
 /-- Inhabited RadixDigit witness obtained through the universal operational
 coproduct theorem, including the exact ordered receipt. -/
 theorem radix_operational_step_exact :
-    rewriteAt combinedOperationalBase presentation.language 1
+    rewriteAt combinedOperationalBase validatedCombinedLanguage.language 1
         (mapPattern radixSymbols radixStart) =
       [mapPattern radixSymbols radixNext] := by
   rw [radix_contextual_exact]
@@ -423,7 +423,7 @@ theorem radix_operational_step_exact :
 inside the composed language under the combined primitive catalog. -/
 theorem external_contextual_fibre_exact :
     rewriteAt (engineBasePremises combinedDemoRelationEnv)
-        presentation.language 1 (mapPattern externalSymbols externalStart) =
+        validatedCombinedLanguage.language 1 (mapPattern externalSymbols externalStart) =
       (rewriteAt
         (engineBasePremises ExternalCallMachine.externalCallDemoRelationEnv)
         ExternalCallMachine.externalCallLanguage 1 externalStart).map
@@ -433,7 +433,7 @@ theorem external_contextual_fibre_exact :
 /-- The concrete ExternalCall fibre is inhabited and preserves its receipt. -/
 theorem external_contextual_step_exact :
     rewriteAt (engineBasePremises combinedDemoRelationEnv)
-        presentation.language 1 (mapPattern externalSymbols externalStart) =
+        validatedCombinedLanguage.language 1 (mapPattern externalSymbols externalStart) =
       [mapPattern externalSymbols externalDone] := by
   decide +kernel
 
@@ -441,7 +441,7 @@ theorem external_contextual_step_exact :
 inside the composed language under the combined primitive catalog. -/
 theorem radix_contextual_fibre_exact :
     rewriteAt (engineBasePremises combinedDemoRelationEnv)
-        presentation.language 1 (mapPattern radixSymbols radixStart) =
+        validatedCombinedLanguage.language 1 (mapPattern radixSymbols radixStart) =
       (rewriteAt
         (engineBasePremises RadixDigitNTT.demoRelationEnv)
         RadixDigitLanguageDef.language 1 radixStart).map
@@ -451,7 +451,7 @@ theorem radix_contextual_fibre_exact :
 /-- The concrete RadixDigit fibre is inhabited and preserves its receipt. -/
 theorem radix_contextual_step_exact :
     rewriteAt (engineBasePremises combinedDemoRelationEnv)
-        presentation.language 1 (mapPattern radixSymbols radixStart) =
+        validatedCombinedLanguage.language 1 (mapPattern radixSymbols radixStart) =
       [mapPattern radixSymbols radixNext] := by
   decide +kernel
 
@@ -459,46 +459,46 @@ theorem radix_contextual_step_exact :
 the coproduct. -/
 theorem external_terminal_remains_normal :
     rewriteAt (engineBasePremises combinedDemoRelationEnv)
-        presentation.language 1 (mapPattern externalSymbols externalDone) = [] := by
+        validatedCombinedLanguage.language 1 (mapPattern externalSymbols externalDone) = [] := by
   decide +kernel
 
 /-- OSLF synthesized for the ExternalCall configuration fibre of the composed
 language. -/
 def externalOSLF :=
-  langOSLFUsing combinedDemoRelationEnv presentation.language
+  langOSLFUsing combinedDemoRelationEnv validatedCombinedLanguage.language
     (externalSymbols.sort "Config")
 
 /-- OSLF synthesized for the RadixDigit configuration fibre of the composed
 language. -/
 def radixOSLF :=
-  langOSLFUsing combinedDemoRelationEnv presentation.language
+  langOSLFUsing combinedDemoRelationEnv validatedCombinedLanguage.language
     (radixSymbols.sort "Config")
 
 theorem external_galois :
     GaloisConnection
-      (langDiamondUsing combinedDemoRelationEnv presentation.language)
-      (langBoxUsing combinedDemoRelationEnv presentation.language) :=
-  langGaloisUsing combinedDemoRelationEnv presentation.language
+      (langDiamondUsing combinedDemoRelationEnv validatedCombinedLanguage.language)
+      (langBoxUsing combinedDemoRelationEnv validatedCombinedLanguage.language) :=
+  langGaloisUsing combinedDemoRelationEnv validatedCombinedLanguage.language
 
 theorem radix_galois :
     GaloisConnection
-      (langDiamondUsing combinedDemoRelationEnv presentation.language)
-      (langBoxUsing combinedDemoRelationEnv presentation.language) :=
-  langGaloisUsing combinedDemoRelationEnv presentation.language
+      (langDiamondUsing combinedDemoRelationEnv validatedCombinedLanguage.language)
+      (langBoxUsing combinedDemoRelationEnv validatedCombinedLanguage.language) :=
+  langGaloisUsing combinedDemoRelationEnv validatedCombinedLanguage.language
 
 /-- The generated native spatial structure retains the ExternalCall integer
 carrier crossing. -/
 theorem external_integer_crossing :
     (externalSymbols.constructor "external-call:exact-integer",
       externalSymbols.sort "Integer", externalSymbols.sort "Value") ∈
-        unaryCrossings presentation.language := by
+        unaryCrossings validatedCombinedLanguage.language := by
   decide +kernel
 
 /-- The generated native spatial structure retains the RadixDigit jump
 constructor crossing. -/
 theorem radix_jump_crossing :
     (radixSymbols.constructor "radix-digit:jump", radixSymbols.sort "Nat",
-      radixSymbols.sort "Instruction") ∈ unaryCrossings presentation.language := by
+      radixSymbols.sort "Instruction") ∈ unaryCrossings validatedCombinedLanguage.language := by
   decide +kernel
 
 /-- Negative native-type control: component tagging cannot invent a crossing
@@ -506,7 +506,7 @@ from ExternalCall stores directly to RadixDigit outcomes. -/
 theorem no_cross_component_store_outcome :
     (externalSymbols.constructor "external-call:invented-store-outcome",
       externalSymbols.sort "Store", radixSymbols.sort "Outcome") ∉
-        unaryCrossings presentation.language := by
+        unaryCrossings validatedCombinedLanguage.language := by
   decide +kernel
 
 #print axioms external_contextual_fibre_exact

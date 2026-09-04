@@ -355,7 +355,7 @@ def mapSelection {State : Type} (action : StructuralPatternAction State)
 /-! ## Existing structural transformations as actions -/
 
 /-- Presentation-symbol mapping as a structural action. -/
-def presentation (symbols : PresentationSymbols) :
+def presentation (symbols : LanguageDefSymbolMap) :
     StructuralPatternAction Unit where
   mapBVar _ index := index
   mapFVar _ name := name
@@ -365,33 +365,33 @@ def presentation (symbols : PresentationSymbols) :
   underSubstBody := id
   underSubstReplacement := id
 
-@[simp] theorem presentation_mapBVar (symbols : PresentationSymbols)
+@[simp] theorem presentation_mapBVar (symbols : LanguageDefSymbolMap)
     (index : Nat) : (presentation symbols).mapBVar () index = index := rfl
 
-@[simp] theorem presentation_mapFVar (symbols : PresentationSymbols)
+@[simp] theorem presentation_mapFVar (symbols : LanguageDefSymbolMap)
     (name : String) : (presentation symbols).mapFVar () name = name := rfl
 
-@[simp] theorem presentation_mapConstructor (symbols : PresentationSymbols)
+@[simp] theorem presentation_mapConstructor (symbols : LanguageDefSymbolMap)
     (constructor : String) :
     (presentation symbols).mapConstructor () constructor =
       symbols.constructor constructor := rfl
 
-@[simp] theorem presentation_underLambda (symbols : PresentationSymbols) :
+@[simp] theorem presentation_underLambda (symbols : LanguageDefSymbolMap) :
     (presentation symbols).underLambda () = () := rfl
 
 @[simp] theorem presentation_underMultiLambda
-    (symbols : PresentationSymbols) (arity : Nat) :
+    (symbols : LanguageDefSymbolMap) (arity : Nat) :
     (presentation symbols).underMultiLambda () arity = () := rfl
 
-@[simp] theorem presentation_underSubstBody (symbols : PresentationSymbols) :
+@[simp] theorem presentation_underSubstBody (symbols : LanguageDefSymbolMap) :
     (presentation symbols).underSubstBody () = () := rfl
 
 @[simp] theorem presentation_underSubstReplacement
-    (symbols : PresentationSymbols) :
+    (symbols : LanguageDefSymbolMap) :
     (presentation symbols).underSubstReplacement () = () := rfl
 
 @[simp]
-theorem presentation_map (symbols : PresentationSymbols) (pattern : Pattern) :
+theorem presentation_map (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
     (presentation symbols).map () pattern = mapPattern symbols pattern := by
   induction pattern using Pattern.inductionOn with
   | hbvar index => simp only [map, mapPattern, presentation_mapBVar]
@@ -416,7 +416,7 @@ theorem presentation_map (symbols : PresentationSymbols) (pattern : Pattern) :
       exact List.map_congr_left inductionHypothesis
 
 @[simp]
-theorem presentation_mapContext (symbols : PresentationSymbols)
+theorem presentation_mapContext (symbols : LanguageDefSymbolMap)
     (context : OneHoleContext) :
     (presentation symbols).mapContext () context =
       (CIGSLT.mapOneHoleContext symbols context, ()) := by
@@ -745,7 +745,7 @@ end StructuralPatternAction
 namespace Selects
 
 /-- Reflect a selected occurrence through a presentation-symbol map. -/
-theorem exists_preimage_mapPattern (symbols : PresentationSymbols)
+theorem exists_preimage_mapPattern (symbols : LanguageDefSymbolMap)
     {sourceRoot targetPayload : Pattern} {targetContext : OneHoleContext}
     (selected : Selects targetPayload targetContext
       (mapPattern symbols sourceRoot)) :
@@ -829,7 +829,7 @@ theorem exists_preimage_renameFVars (rename : String → String)
       payloadEquality⟩
 
 /-- Positive canary: a mapped occurrence retains the exact mapped zipper. -/
-def mapPattern (symbols : PresentationSymbols)
+def mapPattern (symbols : LanguageDefSymbolMap)
     {sourcePayload sourceRoot : Pattern} {sourceContext : OneHoleContext}
     (selected : Selects sourcePayload sourceContext sourceRoot) :
     Selects (Mettapedia.GSLT.LanguageDef.mapPattern symbols sourcePayload)

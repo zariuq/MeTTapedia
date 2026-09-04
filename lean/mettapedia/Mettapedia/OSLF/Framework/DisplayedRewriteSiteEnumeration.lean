@@ -3,7 +3,7 @@ import Mettapedia.OSLF.Framework.DisplayedLanguage
 /-!
 # Enumeration of displayed rewrite sites
 
-The full syntactic OSLF construction assigns a contextual modality to every
+The full source-indexed OSLF construction assigns a contextual modality to every
 physical subterm occurrence on the source side of every authored rewrite.
 This module makes that finite input executable without losing occurrence
 identity.  Equal subterms at different positions are emitted separately,

@@ -15,9 +15,9 @@ activation therefore runs the retained map directly; no checker is an
 argument of hot execution.  Staleness prevents activation but cannot destroy
 the prepared raw representation.
 
-An optional authored-receipt extension retains GSLT-IL elaboration and
+An optional semantic-receipt extension retains GSLT-IL elaboration and
 interpretation evidence above the runtime trace.  This layer is necessary:
-runtime-only traces cannot recover two distinct authored meanings that share
+runtime-only traces cannot recover two distinct source meanings that share
 one rho execution.  Likewise a target-only receipt cannot recover the native
 schedule/provenance distinction.  Both failures are proved rather than left
 as serialization advice.
@@ -252,31 +252,31 @@ def reindex
 
 end AdmittedExecutionModel
 
-/-! ## Authored GSLT-IL receipts over a runtime model -/
+/-! ## Source-semantic GSLT-IL receipts over a runtime model -/
 
-/-- An authored extension retains a source-level object in each complete
+/-- A semantic extension retains a source-level evidence object in each complete
 receipt while exposing the runtime trace produced by the admitted model.
 This is the implementation socket for elaboration worlds, typed derivations,
-route witnesses, or other proof-relevant authored provenance. -/
-structure AuthoredReceiptExtension
+route witnesses, or other proof-relevant source provenance. -/
+structure SemanticReceiptExtension
     {Value : Type uValue}
     {dependencies : DependencySystem}
     {revision : dependencies.Revision}
     {source target : IndexedObservedOperationalObject.{u, uValue} Value}
     (model : AdmittedExecutionModel dependencies revision source target) where
-  Authored : Type u
-  sourceTrace : Authored → ExecutionTrace source.operational
+  SourceEvidence : Type u
+  sourceTrace : SourceEvidence → ExecutionTrace source.operational
   Receipt : Type u
-  emit : Authored → Receipt
-  recover : Receipt → Authored
+  emit : SourceEvidence → Receipt
+  recover : Receipt → SourceEvidence
   recover_emit : Function.LeftInverse recover emit
   runtimeTrace : Receipt → ExecutionTrace target.operational
-  runtime_emit : ∀ authored,
-    runtimeTrace (emit authored) =
+  runtime_emit : ∀ evidence,
+    runtimeTrace (emit evidence) =
       ExecutionTrace.map model.admission.refinement.refinement
-        (sourceTrace authored)
+        (sourceTrace evidence)
 
-namespace AuthoredReceiptExtension
+namespace SemanticReceiptExtension
 
 variable {Value : Type uValue}
 variable {dependencies : DependencySystem}
@@ -284,24 +284,24 @@ variable {revision : dependencies.Revision}
 variable {source target : IndexedObservedOperationalObject.{u, uValue} Value}
 variable {model : AdmittedExecutionModel dependencies revision source target}
 
-theorem emit_injective (extension : AuthoredReceiptExtension model) :
+theorem emit_injective (extension : SemanticReceiptExtension model) :
     Function.Injective extension.emit :=
   extension.recover_emit.injective
 
-/-- If two authored objects have the same implemented runtime trace, no
-runtime-trace-only decoder can recover both.  Exact authored receipts must
+/-- If two source evidence objects have the same implemented runtime trace, no
+runtime-trace-only decoder can recover both.  Exact semantic receipts must
 retain the missing fibre coordinate. -/
 theorem no_runtime_only_recovery_of_collision
-    (extension : AuthoredReceiptExtension model)
-    {first second : extension.Authored}
+    (extension : SemanticReceiptExtension model)
+    {first second : extension.SourceEvidence}
     (different : first ≠ second)
     (collision : extension.runtimeTrace (extension.emit first) =
       extension.runtimeTrace (extension.emit second)) :
     ¬ ∃ recoverRuntime : ExecutionTrace target.operational →
-          extension.Authored,
-        ∀ authored,
-          recoverRuntime (extension.runtimeTrace (extension.emit authored)) =
-            authored := by
+          extension.SourceEvidence,
+        ∀ evidence,
+          recoverRuntime (extension.runtimeTrace (extension.emit evidence)) =
+            evidence := by
   rintro ⟨recoverRuntime, recovers⟩
   apply different
   calc
@@ -311,7 +311,7 @@ theorem no_runtime_only_recovery_of_collision
       congrArg recoverRuntime collision
     _ = second := recovers second
 
-end AuthoredReceiptExtension
+end SemanticReceiptExtension
 
 /-! ## Canonical worldwise Prime model -/
 
@@ -400,9 +400,9 @@ theorem receipt_worlds_adequate (Ground : Type)
 
 end Worldwise
 
-/-! ## Authored evidence retained above worldwise realization -/
+/-! ## Source evidence retained above worldwise realization -/
 
-namespace AuthoredWorldwise
+namespace SemanticWorldwise
 
 variable {program : Mettapedia.GSLT.LanguageDef.GSLTIL.Syntax.Program}
 variable {profile : Profile program}
@@ -433,13 +433,13 @@ def runtimeTrace (worlds : List (InterpretedRealization interpretation)) :
     ExecutionTrace (realizedWorldObject Ground source) :=
   ⟨PUnit.unit, PUnit.unit, worlds.map fun world => world.2.1⟩
 
-/-- Complete GSLT-IL receipts retain every authored elaboration world,
+/-- Complete GSLT-IL receipts retain every source elaboration world,
 interpretation witness, original rho world, and realized native world. -/
 def extension
     (dependencies : DependencySystem) (revision : dependencies.Revision) :
-    AuthoredReceiptExtension
+    SemanticReceiptExtension
       (Worldwise.model Ground dependencies revision source) where
-  Authored := List (InterpretedExecution interpretation)
+  SourceEvidence := List (InterpretedExecution interpretation)
   sourceTrace := sourceTrace
   Receipt := List (InterpretedRealization interpretation)
   emit := List.map realizeInterpreted
@@ -476,10 +476,10 @@ def extension
                 ExecutionTrace (realizedWorldObject Ground source)))
           tailWorlds
 
-/-- Two different authored meanings sharing one raw rho branch cannot be
-recovered from the runtime trace alone.  The authored receipt fibre is
+/-- Two different source meanings sharing one raw rho branch cannot be
+recovered from the runtime trace alone.  The semantic receipt fibre is
 therefore semantically necessary, not debugging metadata. -/
-theorem runtime_trace_cannot_recover_authored_ambiguity
+theorem runtime_trace_cannot_recover_source_ambiguity
     (world : RawBranchWorld source)
     (first second : profile.World command)
     (different : first ≠ second) :
@@ -489,11 +489,11 @@ theorem runtime_trace_cannot_recover_authored_ambiguity
     ¬ ∃ recoverRuntime :
           ExecutionTrace (realizedWorldObject Ground source) →
             List (InterpretedExecution constant),
-        ∀ authored,
+        ∀ evidence,
           recoverRuntime
               (runtimeTrace
                 (interpretation := constant)
-                (authored.map realizeInterpreted)) = authored := by
+                (evidence.map realizeInterpreted)) = evidence := by
   dsimp
   rintro ⟨recoverRuntime, recovers⟩
   let firstExecution := constantInterpretedExecution
@@ -524,7 +524,7 @@ theorem runtime_trace_cannot_recover_authored_ambiguity
     (List.cons.inj same).1
   exact different (congrArg Sigma.fst headEquality)
 
-end AuthoredWorldwise
+end SemanticWorldwise
 
 /-! ## A target-only receipt is provably insufficient -/
 
@@ -590,10 +590,10 @@ end TargetOnlyCanary
 #print axioms AdmittedExecutionModel.compileTrace_observationAgreement
 #print axioms AdmittedExecutionModel.stale_prevents_activation
 #print axioms AdmittedExecutionModel.comp_maps_traces
-#print axioms AuthoredReceiptExtension.no_runtime_only_recovery_of_collision
+#print axioms SemanticReceiptExtension.no_runtime_only_recovery_of_collision
 #print axioms Worldwise.compile_worlds
 #print axioms Worldwise.receipt_worlds_adequate
-#print axioms AuthoredWorldwise.runtime_trace_cannot_recover_authored_ambiguity
+#print axioms SemanticWorldwise.runtime_trace_cannot_recover_source_ambiguity
 #print axioms TargetOnlyCanary.no_exact_targetOnly_receipt
 
 end Mettapedia.Languages.MeTTa.Prime.PrimeAbstractImplementationModel

@@ -72,8 +72,10 @@ private def parseNatAux : List Char → Nat → Nat
 private def parseNat (s : String) : Nat := parseNatAux s.toList 0
 
 /-- Parse the positive decimal count required by MORK's `head` and `tail`
-sinks.  Their runtime constructors reject zero and non-decimal counts. -/
-private def parsePositiveNat? (s : String) : Option Nat :=
+sinks.  Their runtime constructors reject zero and non-decimal counts.  This
+syntax primitive is public so parser correspondence can include extrema
+validation rather than treating it as an opaque implementation detail. -/
+def parsePositiveNat? (s : String) : Option Nat :=
   if s.isEmpty then none
   else if s.toList.all fun c =>
       c = '0' || c = '1' || c = '2' || c = '3' || c = '4' ||
@@ -82,13 +84,46 @@ private def parsePositiveNat? (s : String) : Option Nat :=
     if count = 0 then none else some count
   else none
 
-/-- Parse a physical two-argument extrema sink. -/
-private def parseExtremaSink (isHead : Bool) (count body : Atom) : Option Sink :=
+/-- Parse a physical two-argument extrema sink.  This parser primitive is
+public so syntax-to-rule correspondence theorems can account for every sink
+form admitted by `parseSupportedSink`. -/
+def parseExtremaSink (isHead : Bool) (count body : Atom) : Option Sink :=
   match count with
   | .symbol digits => do
       let limit ← parsePositiveNat? digits
       if isHead then pure (.head limit body) else pure (.tail limit body)
   | _ => none
+
+/-- Successful extrema parsing preserves its authored body exactly. -/
+theorem parseExtremaSink_atom_eq_body
+    (isHead : Bool) (count body : Atom) (sink : Sink)
+    (parsed : parseExtremaSink isHead count body = some sink) :
+    sink.atom = body := by
+  cases isHead with
+  | false =>
+      cases count with
+      | symbol digits =>
+          cases limit : parsePositiveNat? digits with
+          | none => simp [parseExtremaSink, limit] at parsed
+          | some value =>
+              simp [parseExtremaSink, limit] at parsed
+              subst sink
+              rfl
+      | var name => simp [parseExtremaSink] at parsed
+      | grounded value => simp [parseExtremaSink] at parsed
+      | expression children => simp [parseExtremaSink] at parsed
+  | true =>
+      cases count with
+      | symbol digits =>
+          cases limit : parsePositiveNat? digits with
+          | none => simp [parseExtremaSink, limit] at parsed
+          | some value =>
+              simp [parseExtremaSink, limit] at parsed
+              subst sink
+              rfl
+      | var name => simp [parseExtremaSink] at parsed
+      | grounded value => simp [parseExtremaSink] at parsed
+      | expression children => simp [parseExtremaSink] at parsed
 
 /-- Try to extract an `ExecFact` from an atom.
     Recognises the shape `(exec (priority name) (, p₁ ... pₙ) (O s₁ ... sₙ))`.
@@ -158,6 +193,17 @@ def extractRawExecFact (a : Atom) : Option RawExecFact :=
   | .expression [.symbol "exec", loc, inputExpr, templateExpr] =>
       some ⟨a, loc, inputExpr, templateExpr⟩
   | _ => none
+
+/-- Successful extraction retains the exact scheduler-visible atom. -/
+theorem extractRawExecFact_atom_eq
+    {atom : Atom} {raw : RawExecFact}
+    (extracted : extractRawExecFact atom = some raw) :
+    raw.atom = atom := by
+  unfold extractRawExecFact at extracted
+  split at extracted <;> try contradiction
+  next _ =>
+    injection extracted with rawEqual
+    exact congrArg RawExecFact.atom rawEqual.symm
 
 /-- Parse a list of source factors from `(I src₁ src₂ ...)` body. -/
 def parseSourceFactors (args : List Atom) : List SourceFactor :=

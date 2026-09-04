@@ -19,17 +19,12 @@ quantifier scope ordering via monotonicity of the Galois connection.
 
 If predicate φ ⊆ ψ pointwise (scope ordering), then ◇φ ⊆ ◇ψ (modal preserves ordering).
 
-## Council
-
-- Meredith, Stay: hypercube ◇ composes with quantifier semantics via monotonicity
-- de Paiva: ◇ is a left adjoint, preserves ⊔, transports lattice inequalities
-- Martin-Löf: quantifier scope is a type-theoretic choice; reduction preserves the ordering
-- Bateson, Alexander: the pattern that connects operational theory to logical form
 -/
 
 namespace Mettapedia.Languages.GF.OSLFScopeComposition
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.CategoryBridge
 open Mettapedia.OSLF.QuantifiedFormula2
@@ -42,15 +37,23 @@ open Mettapedia.Languages.GF.SemanticKernelConfluence
 
 /-- ◇ preserves predicate entailment: if φ ⊆ ψ then ◇φ ⊆ ◇ψ. -/
 theorem diamond_preserves_entailment (lang : LanguageDef)
-    {φ ψ : Pattern → Prop} (h : ∀ p, φ p → ψ p) :
+    {φ ψ : EquationPredicate (langGSLT lang)} (h : ∀ p, φ p → ψ p) :
     ∀ p, langDiamond lang φ p → langDiamond lang ψ p :=
-  langDiamond_monotone lang h
+  by
+    intro p holds
+    rw [langDiamond_spec] at holds ⊢
+    obtain ⟨q, step, satisfies⟩ := holds
+    exact ⟨q, step, h q satisfies⟩
 
 /-- □ preserves predicate entailment: if φ ⊆ ψ then □φ ⊆ □ψ. -/
 theorem box_preserves_entailment (lang : LanguageDef)
-    {φ ψ : Pattern → Prop} (h : ∀ p, φ p → ψ p) :
+    {φ ψ : EquationPredicate (langGSLT lang)} (h : ∀ p, φ p → ψ p) :
     ∀ p, langBox lang φ p → langBox lang ψ p :=
-  langBox_monotone lang h
+  by
+    intro p holds
+    rw [langBox_spec] at holds ⊢
+    intro q step
+    exact h q (holds q step)
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Section 2: ◇ composes with scope ordering (the deep result)
@@ -65,14 +68,14 @@ theorem box_preserves_entailment (lang : LanguageDef)
     the evidence ordering of the two readings is preserved. The modal
     operator doesn't collapse or invert the scope preference. -/
 theorem diamond_scope_composition (lang : LanguageDef)
-    (scopeInverse sourceOrderScope : Pattern → Prop)
+    (scopeInverse sourceOrderScope : EquationPredicate (langGSLT lang))
     (h_ordering : ∀ p, scopeInverse p → sourceOrderScope p) :
     ∀ p, langDiamond lang scopeInverse p → langDiamond lang sourceOrderScope p :=
   diamond_preserves_entailment lang h_ordering
 
 /-- □ also composes with scope ordering. -/
 theorem box_scope_composition (lang : LanguageDef)
-    (scopeInverse sourceOrderScope : Pattern → Prop)
+    (scopeInverse sourceOrderScope : EquationPredicate (langGSLT lang))
     (h_ordering : ∀ p, scopeInverse p → sourceOrderScope p) :
     ∀ p, langBox lang scopeInverse p → langBox lang sourceOrderScope p :=
   box_preserves_entailment lang h_ordering
@@ -94,13 +97,17 @@ theorem diamond_scope_evidence_monotone
     {x y : String} (hne : x ≠ y) (φ : QFormula2)
     (P : _root_.Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence → Prop)
     (hP : Monotone P) :
-    let invPred := fun p => P (qsemE2 R I Dom env (.qexists y (.qforall x φ)) p)
-    let surfPred := fun p => P (qsemE2 R I Dom env (.qforall x (.qexists y φ)) p)
+    let invPred := saturatePredicate (langGSLT lang) fun p =>
+      P (qsemE2 R I Dom env (.qexists y (.qforall x φ)) p)
+    let surfPred := saturatePredicate (langGSLT lang) fun p =>
+      P (qsemE2 R I Dom env (.qforall x (.qexists y φ)) p)
     ∀ p, langDiamond lang invPred p → langDiamond lang surfPred p := by
   intro invPred surfPred
   apply diamond_scope_composition
   intro p h_inv
-  exact hP (scope_ordering_qsemE2 R I Dom env hne φ p) h_inv
+  rcases h_inv with ⟨representative, equivalent, satisfies⟩
+  exact ⟨representative, equivalent,
+    hP (scope_ordering_qsemE2 R I Dom env hne φ representative) satisfies⟩
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Section 4: OSLF rewrites and V1 target disjoint subtrees

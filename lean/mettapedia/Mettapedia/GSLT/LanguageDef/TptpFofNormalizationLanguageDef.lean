@@ -1,5 +1,9 @@
 import Mettapedia.GSLT.LanguageDef.TptpFofNormalizationSemantics
+import Mettapedia.GSLT.LanguageDef.TptpResolvedFofLanguageDef
+import Mettapedia.GSLT.LanguageDef.TptpFofNnfLanguageDef
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate
+import Mettapedia.GSLT.LanguageDef.CanonicalWire
+import Mettapedia.GSLT.LanguageDef.StructuralCategory
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-!
@@ -107,6 +111,24 @@ def negative (formula : Pattern) : Pattern :=
 def request (polarity : Bool) (formula : Pattern) : Pattern :=
   if polarity then positive formula else negative formula
 
+/-- Public, source-preserving normalization requests.  The recursive
+normalizer remains internal to the same authored relation; these constructors
+add provenance without introducing a second checking pass. -/
+def evidencePositive (formula : Pattern) : Pattern :=
+  a "tptp-fof-normalize:evidence-positive" [formula]
+def evidenceNegative (formula : Pattern) : Pattern :=
+  a "tptp-fof-normalize:evidence-negative" [formula]
+def resultPositive (source target : Pattern) : Pattern :=
+  a "tptp-fof-normalize:result-positive" [source, target]
+def resultNegative (source target : Pattern) : Pattern :=
+  a "tptp-fof-normalize:result-negative" [source, target]
+
+def evidenceRequest (polarity : Bool) (formula : Pattern) : Pattern :=
+  if polarity then evidencePositive formula else evidenceNegative formula
+
+def evidenceResult (polarity : Bool) (source target : Pattern) : Pattern :=
+  if polarity then resultPositive source target else resultNegative source target
+
 def mkRule (name : String) (context : List (String × String))
     (premises : List Premise) (left right : Pattern) : RewriteRule := {
   name := name
@@ -129,46 +151,48 @@ def leafRules : List RewriteRule := [
   mkRule "tptp-fof-normalize:negative-falsum" [] []
     (negative sourceFalsum) targetVerum,
   mkRule "tptp-fof-normalize:positive-predicate"
-    [("relation", "String"), ("arguments", "Terms")] []
+    [("relation", "TptpFofSymbol:PredicateHead"),
+     ("arguments", "TptpResolvedFof:Terms")] []
     (positive (sourcePredicate (v "relation") (v "arguments")))
     (targetPositive (v "relation") (v "arguments")),
   mkRule "tptp-fof-normalize:negative-predicate"
-    [("relation", "String"), ("arguments", "Terms")] []
+    [("relation", "TptpFofSymbol:PredicateHead"),
+     ("arguments", "TptpResolvedFof:Terms")] []
     (negative (sourcePredicate (v "relation") (v "arguments")))
     (targetNegative (v "relation") (v "arguments")),
   mkRule "tptp-fof-normalize:positive-equal"
-    [("left", "Term"), ("right", "Term")] []
+    [("left", "TptpResolvedFof:Term"), ("right", "TptpResolvedFof:Term")] []
     (positive (sourceEqual (v "left") (v "right")))
     (targetEqual (v "left") (v "right")),
   mkRule "tptp-fof-normalize:negative-equal"
-    [("left", "Term"), ("right", "Term")] []
+    [("left", "TptpResolvedFof:Term"), ("right", "TptpResolvedFof:Term")] []
     (negative (sourceEqual (v "left") (v "right")))
     (targetNotEqual (v "left") (v "right"))
 ]
 
 def unaryRules : List RewriteRule := [
   mkRule "tptp-fof-normalize:positive-not"
-    [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+    [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
     [congruence (negative (v "body")) (v "bodyResult")]
     (positive (sourceNot (v "body"))) (v "bodyResult"),
   mkRule "tptp-fof-normalize:negative-not"
-    [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+    [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
     [congruence (positive (v "body")) (v "bodyResult")]
     (negative (sourceNot (v "body"))) (v "bodyResult"),
   mkRule "tptp-fof-normalize:positive-all"
-    [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+    [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
     [congruence (positive (v "body")) (v "bodyResult")]
     (positive (sourceAll (v "body"))) (targetAll (v "bodyResult")),
   mkRule "tptp-fof-normalize:negative-all"
-    [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+    [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
     [congruence (negative (v "body")) (v "bodyResult")]
     (negative (sourceAll (v "body"))) (targetEx (v "bodyResult")),
   mkRule "tptp-fof-normalize:positive-ex"
-    [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+    [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
     [congruence (positive (v "body")) (v "bodyResult")]
     (positive (sourceEx (v "body"))) (targetEx (v "bodyResult")),
   mkRule "tptp-fof-normalize:negative-ex"
-    [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+    [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
     [congruence (negative (v "body")) (v "bodyResult")]
     (negative (sourceEx (v "body"))) (targetAll (v "bodyResult"))
 ]
@@ -178,7 +202,7 @@ def binaryRule (name : String) (polarity : Bool)
     (leftPolarity rightPolarity : Bool)
     (target : Pattern -> Pattern -> Pattern) : RewriteRule :=
   mkRule name
-    [("left", "ResolvedFormula"), ("right", "ResolvedFormula"),
+    [("left", "TptpResolvedFof:Formula"), ("right", "TptpResolvedFof:Formula"),
      ("leftResult", "NNFFormula"), ("rightResult", "NNFFormula")]
     [congruence (request leftPolarity (v "left")) (v "leftResult"),
      congruence (request rightPolarity (v "right")) (v "rightResult")]
@@ -190,7 +214,7 @@ def fourWayRule (name : String) (polarity : Bool)
     (target : Pattern -> Pattern -> Pattern -> Pattern -> Pattern) :
     RewriteRule :=
   mkRule name
-    [("left", "ResolvedFormula"), ("right", "ResolvedFormula"),
+    [("left", "TptpResolvedFof:Formula"), ("right", "TptpResolvedFof:Formula"),
      ("leftPositive", "NNFFormula"), ("leftNegative", "NNFFormula"),
      ("rightPositive", "NNFFormula"), ("rightNegative", "NNFFormula")]
     [congruence (positive (v "left")) (v "leftPositive"),
@@ -234,84 +258,110 @@ def binaryRules : List RewriteRule := [
         (targetOr rightNegative leftPositive))
 ]
 
-def rewrites : List RewriteRule := leafRules ++ unaryRules ++ binaryRules
-
-def terms : List GrammarRule := [
-  ctor "tptp-fof-resolved:term-variable" "Term" [("index", "Integer")],
-  ctor "tptp-fof-resolved:term-function" "Term"
-    [("function", "String"), ("arguments", "Terms")],
-  ctor "tptp-fof-resolved:terms-nil" "Terms" [],
-  ctor "tptp-fof-resolved:terms-cons" "Terms"
-    [("head", "Term"), ("tail", "Terms")],
-  ctor "tptp-fof-resolved:verum" "ResolvedFormula" [],
-  ctor "tptp-fof-resolved:falsum" "ResolvedFormula" [],
-  ctor "tptp-fof-resolved:predicate" "ResolvedFormula"
-    [("relation", "String"), ("arguments", "Terms")],
-  ctor "tptp-fof-resolved:equal" "ResolvedFormula"
-    [("left", "Term"), ("right", "Term")],
-  ctor "tptp-fof-resolved:not" "ResolvedFormula" [("body", "ResolvedFormula")],
-  ctor "tptp-fof-resolved:and" "ResolvedFormula"
-    [("left", "ResolvedFormula"), ("right", "ResolvedFormula")],
-  ctor "tptp-fof-resolved:or" "ResolvedFormula"
-    [("left", "ResolvedFormula"), ("right", "ResolvedFormula")],
-  ctor "tptp-fof-resolved:iff" "ResolvedFormula"
-    [("left", "ResolvedFormula"), ("right", "ResolvedFormula")],
-  ctor "tptp-fof-resolved:implies" "ResolvedFormula"
-    [("left", "ResolvedFormula"), ("right", "ResolvedFormula")],
-  ctor "tptp-fof-resolved:reverse-implies" "ResolvedFormula"
-    [("left", "ResolvedFormula"), ("right", "ResolvedFormula")],
-  ctor "tptp-fof-resolved:xor" "ResolvedFormula"
-    [("left", "ResolvedFormula"), ("right", "ResolvedFormula")],
-  ctor "tptp-fof-resolved:nor" "ResolvedFormula"
-    [("left", "ResolvedFormula"), ("right", "ResolvedFormula")],
-  ctor "tptp-fof-resolved:nand" "ResolvedFormula"
-    [("left", "ResolvedFormula"), ("right", "ResolvedFormula")],
-  ctor "tptp-fof-resolved:all" "ResolvedFormula" [("body", "ResolvedFormula")],
-  ctor "tptp-fof-resolved:ex" "ResolvedFormula" [("body", "ResolvedFormula")],
-  ctor "tptp-fof-nnf:verum" "NNFFormula" [],
-  ctor "tptp-fof-nnf:falsum" "NNFFormula" [],
-  ctor "tptp-fof-nnf:positive" "NNFFormula"
-    [("relation", "String"), ("arguments", "Terms")],
-  ctor "tptp-fof-nnf:negative" "NNFFormula"
-    [("relation", "String"), ("arguments", "Terms")],
-  ctor "tptp-fof-nnf:equal" "NNFFormula"
-    [("left", "Term"), ("right", "Term")],
-  ctor "tptp-fof-nnf:not-equal" "NNFFormula"
-    [("left", "Term"), ("right", "Term")],
-  ctor "tptp-fof-nnf:and" "NNFFormula"
-    [("left", "NNFFormula"), ("right", "NNFFormula")],
-  ctor "tptp-fof-nnf:or" "NNFFormula"
-    [("left", "NNFFormula"), ("right", "NNFFormula")],
-  ctor "tptp-fof-nnf:all" "NNFFormula" [("body", "NNFFormula")],
-  ctor "tptp-fof-nnf:ex" "NNFFormula" [("body", "NNFFormula")],
-  ctor "tptp-fof-normalize:positive" "NNFFormula"
-    [("formula", "ResolvedFormula")] (some .rewrite),
-  ctor "tptp-fof-normalize:negative" "NNFFormula"
-    [("formula", "ResolvedFormula")] (some .rewrite)
+def evidenceRules : List RewriteRule := [
+  mkRule "tptp-fof-normalize:evidence-positive"
+    [("source", "TptpResolvedFof:Formula"), ("target", "NNFFormula")]
+    [congruence (positive (v "source")) (v "target")]
+    (evidencePositive (v "source"))
+    (resultPositive (v "source") (v "target")),
+  mkRule "tptp-fof-normalize:evidence-negative"
+    [("source", "TptpResolvedFof:Formula"), ("target", "NNFFormula")]
+    [congruence (negative (v "source")) (v "target")]
+    (evidenceNegative (v "source"))
+    (resultNegative (v "source") (v "target"))
 ]
+
+def rewrites : List RewriteRule :=
+  leafRules ++ unaryRules ++ binaryRules ++ evidenceRules
+
+def normalizationTerms : List GrammarRule := [
+  ctor "tptp-fof-normalize:positive" "NNFFormula"
+    [("formula", "TptpResolvedFof:Formula")] (some .rewrite),
+  ctor "tptp-fof-normalize:negative" "NNFFormula"
+    [("formula", "TptpResolvedFof:Formula")] (some .rewrite),
+  ctor "tptp-fof-normalize:evidence-positive" "NormalizationResult"
+    [("formula", "TptpResolvedFof:Formula")] (some .rewrite),
+  ctor "tptp-fof-normalize:evidence-negative" "NormalizationResult"
+    [("formula", "TptpResolvedFof:Formula")] (some .rewrite),
+  ctor "tptp-fof-normalize:result-positive" "NormalizationResult"
+    [("source", "TptpResolvedFof:Formula"), ("target", "NNFFormula")],
+  ctor "tptp-fof-normalize:result-negative" "NormalizationResult"
+    [("source", "TptpResolvedFof:Formula"), ("target", "NNFFormula")]
+]
+
+/-- The normalizer literally extends the binder-resolved source presentation;
+it does not redeclare either its source or target carrier. -/
+def terms : List GrammarRule :=
+  TptpFofNnfLanguageDef.language.terms ++ normalizationTerms
 
 def language : LanguageDef := {
   name := "TPTPFOFNormalization"
-  types := [
-    { name := "Integer", carrier := .builtinInt },
-    { name := "String", carrier := .builtinString },
-    "Term", "Terms", "ResolvedFormula", "NNFFormula"]
+  types := TptpFofNnfLanguageDef.language.types ++
+    [("NormalizationResult" : TypeDecl)]
   terms := terms
   equations := []
   rewrites := rewrites
 }
 
-theorem rewrite_count : rewrites.length = 30 := by
+theorem source_types_are_exact_prefix :
+    language.types = TptpResolvedFofLanguageDef.language.types ++
+      [("NNFFormula" : TypeDecl), ("NormalizationResult" : TypeDecl)] := by
+  simp [language, TptpFofNnfLanguageDef.language, List.append_assoc]
+
+theorem source_terms_are_exact_prefix :
+    language.terms = TptpResolvedFofLanguageDef.language.terms ++
+      (TptpFofNnfLanguageDef.nnfTerms ++ normalizationTerms) := by
+  simp [language, terms, TptpFofNnfLanguageDef.language, List.append_assoc]
+
+theorem target_types_are_exact_prefix :
+    language.types = TptpFofNnfLanguageDef.language.types ++
+      [("NormalizationResult" : TypeDecl)] := by
+  rfl
+
+theorem target_terms_are_exact_prefix :
+    language.terms = TptpFofNnfLanguageDef.language.terms ++
+      normalizationTerms := by
+  rfl
+
+/-- The composed normalizer has no hidden dependency on the host integer
+carrier: binder indices are exactly the structural source indices. -/
+theorem host_integer_is_not_a_source_sort :
+    "Integer" ∉ language.typeNames := by
+  change "Integer" ∉
+    ["String", "TptpFofSymbol:FunctionHead",
+      "TptpFofSymbol:PredicateHead", "TptpResolvedFof:Index",
+      "TptpResolvedFof:Term",
+      "TptpResolvedFof:Terms", "TptpResolvedFof:Formula", "NNFFormula",
+      "NormalizationResult"]
+  simp
+
+theorem rewrite_count : rewrites.length = 32 := by
   decide
 
 @[simp] theorem language_rewrites : language.rewrites = rewrites := rfl
 
 @[simp] private theorem language_typeNames : language.typeNames =
-    ["Integer", "String", "Term", "Terms", "ResolvedFormula", "NNFFormula"] :=
+    ["String", "TptpFofSymbol:FunctionHead",
+      "TptpFofSymbol:PredicateHead", "TptpResolvedFof:Index",
+      "TptpResolvedFof:Term",
+      "TptpResolvedFof:Terms", "TptpResolvedFof:Formula", "NNFFormula",
+      "NormalizationResult"] :=
   rfl
 
 @[simp] private theorem language_constructorSignatures :
     RewriteValidationCertificate.constructorSignatures language = [
+      ("tptp-fof-symbol:function-plain", 1),
+      ("tptp-fof-symbol:function-defined", 1),
+      ("tptp-fof-symbol:function-system", 1),
+      ("tptp-fof-symbol:function-integer", 1),
+      ("tptp-fof-symbol:function-rational", 1),
+      ("tptp-fof-symbol:function-real", 1),
+      ("tptp-fof-symbol:function-distinct-object", 1),
+      ("tptp-fof-symbol:predicate-plain", 1),
+      ("tptp-fof-symbol:predicate-defined", 1),
+      ("tptp-fof-symbol:predicate-system", 1),
+      ("tptp-fof-resolved:index-zero", 0),
+      ("tptp-fof-resolved:index-succ", 1),
       ("tptp-fof-resolved:term-variable", 1),
       ("tptp-fof-resolved:term-function", 2),
       ("tptp-fof-resolved:terms-nil", 0),
@@ -342,11 +392,27 @@ theorem rewrite_count : rewrites.length = 30 := by
       ("tptp-fof-nnf:all", 1),
       ("tptp-fof-nnf:ex", 1),
       ("tptp-fof-normalize:positive", 1),
-      ("tptp-fof-normalize:negative", 1)] := by
+      ("tptp-fof-normalize:negative", 1),
+      ("tptp-fof-normalize:evidence-positive", 1),
+      ("tptp-fof-normalize:evidence-negative", 1),
+      ("tptp-fof-normalize:result-positive", 2),
+      ("tptp-fof-normalize:result-negative", 2)] := by
   rfl
 
 @[simp] private theorem language_constructorLabels :
     RewriteValidationCertificate.constructorLabels language = [
+      "tptp-fof-symbol:function-plain",
+      "tptp-fof-symbol:function-defined",
+      "tptp-fof-symbol:function-system",
+      "tptp-fof-symbol:function-integer",
+      "tptp-fof-symbol:function-rational",
+      "tptp-fof-symbol:function-real",
+      "tptp-fof-symbol:function-distinct-object",
+      "tptp-fof-symbol:predicate-plain",
+      "tptp-fof-symbol:predicate-defined",
+      "tptp-fof-symbol:predicate-system",
+      "tptp-fof-resolved:index-zero",
+      "tptp-fof-resolved:index-succ",
       "tptp-fof-resolved:term-variable",
       "tptp-fof-resolved:term-function",
       "tptp-fof-resolved:terms-nil",
@@ -377,7 +443,11 @@ theorem rewrite_count : rewrites.length = 30 := by
       "tptp-fof-nnf:all",
       "tptp-fof-nnf:ex",
       "tptp-fof-normalize:positive",
-      "tptp-fof-normalize:negative"] := by
+      "tptp-fof-normalize:negative",
+      "tptp-fof-normalize:evidence-positive",
+      "tptp-fof-normalize:evidence-negative",
+      "tptp-fof-normalize:result-positive",
+      "tptp-fof-normalize:result-negative"] := by
   rfl
 
 local macro "certify_normalization_row" : tactic =>
@@ -394,7 +464,8 @@ local macro "certify_normalization_row" : tactic =>
       language_typeNames, language_constructorSignatures,
       language_constructorLabels,
       typed, binaryRule, fourWayRule, mkRule, congruence, request,
-      positive, negative,
+      positive, negative, evidencePositive, evidenceNegative,
+      resultPositive, resultNegative, evidenceRequest, evidenceResult,
       sourceVerum, sourceFalsum, sourcePredicate, sourceEqual, sourceNot,
       sourceAnd, sourceOr, sourceIff, sourceImplies, sourceReverseImplies,
       sourceXor, sourceNor, sourceNand, sourceAll, sourceEx, targetVerum,
@@ -439,7 +510,8 @@ private theorem negativeFalsumRule_checked :
 private theorem positivePredicateRule_checked :
     RewriteValidationCertificate.check language
       (mkRule "tptp-fof-normalize:positive-predicate"
-        [("relation", "String"), ("arguments", "Terms")] []
+        [("relation", "TptpFofSymbol:PredicateHead"),
+         ("arguments", "TptpResolvedFof:Terms")] []
         (positive (sourcePredicate (v "relation") (v "arguments")))
         (targetPositive (v "relation") (v "arguments"))) = true := by
   certify_normalization_row
@@ -447,7 +519,8 @@ private theorem positivePredicateRule_checked :
 private theorem negativePredicateRule_checked :
     RewriteValidationCertificate.check language
       (mkRule "tptp-fof-normalize:negative-predicate"
-        [("relation", "String"), ("arguments", "Terms")] []
+        [("relation", "TptpFofSymbol:PredicateHead"),
+         ("arguments", "TptpResolvedFof:Terms")] []
         (negative (sourcePredicate (v "relation") (v "arguments")))
         (targetNegative (v "relation") (v "arguments"))) = true := by
   certify_normalization_row
@@ -455,7 +528,7 @@ private theorem negativePredicateRule_checked :
 private theorem positiveEqualRule_checked :
     RewriteValidationCertificate.check language
       (mkRule "tptp-fof-normalize:positive-equal"
-        [("left", "Term"), ("right", "Term")] []
+        [("left", "TptpResolvedFof:Term"), ("right", "TptpResolvedFof:Term")] []
         (positive (sourceEqual (v "left") (v "right")))
         (targetEqual (v "left") (v "right"))) = true := by
   certify_normalization_row
@@ -463,7 +536,7 @@ private theorem positiveEqualRule_checked :
 private theorem negativeEqualRule_checked :
     RewriteValidationCertificate.check language
       (mkRule "tptp-fof-normalize:negative-equal"
-        [("left", "Term"), ("right", "Term")] []
+        [("left", "TptpResolvedFof:Term"), ("right", "TptpResolvedFof:Term")] []
         (negative (sourceEqual (v "left") (v "right")))
         (targetNotEqual (v "left") (v "right"))) = true := by
   certify_normalization_row
@@ -471,7 +544,7 @@ private theorem negativeEqualRule_checked :
 private theorem positiveNotRule_checked :
     RewriteValidationCertificate.check language
       (mkRule "tptp-fof-normalize:positive-not"
-        [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+        [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
         [congruence (negative (v "body")) (v "bodyResult")]
         (positive (sourceNot (v "body"))) (v "bodyResult")) = true := by
   certify_normalization_row
@@ -479,7 +552,7 @@ private theorem positiveNotRule_checked :
 private theorem negativeNotRule_checked :
     RewriteValidationCertificate.check language
       (mkRule "tptp-fof-normalize:negative-not"
-        [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+        [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
         [congruence (positive (v "body")) (v "bodyResult")]
         (negative (sourceNot (v "body"))) (v "bodyResult")) = true := by
   certify_normalization_row
@@ -487,7 +560,7 @@ private theorem negativeNotRule_checked :
 private theorem positiveAllRule_checked :
     RewriteValidationCertificate.check language
       (mkRule "tptp-fof-normalize:positive-all"
-        [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+        [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
         [congruence (positive (v "body")) (v "bodyResult")]
         (positive (sourceAll (v "body")))
         (targetAll (v "bodyResult"))) = true := by
@@ -496,7 +569,7 @@ private theorem positiveAllRule_checked :
 private theorem negativeAllRule_checked :
     RewriteValidationCertificate.check language
       (mkRule "tptp-fof-normalize:negative-all"
-        [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+        [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
         [congruence (negative (v "body")) (v "bodyResult")]
         (negative (sourceAll (v "body")))
         (targetEx (v "bodyResult"))) = true := by
@@ -505,7 +578,7 @@ private theorem negativeAllRule_checked :
 private theorem positiveExRule_checked :
     RewriteValidationCertificate.check language
       (mkRule "tptp-fof-normalize:positive-ex"
-        [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+        [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
         [congruence (positive (v "body")) (v "bodyResult")]
         (positive (sourceEx (v "body")))
         (targetEx (v "bodyResult"))) = true := by
@@ -514,7 +587,7 @@ private theorem positiveExRule_checked :
 private theorem negativeExRule_checked :
     RewriteValidationCertificate.check language
       (mkRule "tptp-fof-normalize:negative-ex"
-        [("body", "ResolvedFormula"), ("bodyResult", "NNFFormula")]
+        [("body", "TptpResolvedFof:Formula"), ("bodyResult", "NNFFormula")]
         [congruence (negative (v "body")) (v "bodyResult")]
         (negative (sourceEx (v "body")))
         (targetAll (v "bodyResult"))) = true := by
@@ -626,6 +699,24 @@ private theorem negativeXorRule_checked :
             (targetOr rightNegative leftPositive))) = true := by
   certify_normalization_row
 
+private theorem evidencePositiveRule_checked :
+    RewriteValidationCertificate.check language
+      (mkRule "tptp-fof-normalize:evidence-positive"
+        [("source", "TptpResolvedFof:Formula"), ("target", "NNFFormula")]
+        [congruence (positive (v "source")) (v "target")]
+        (evidencePositive (v "source"))
+        (resultPositive (v "source") (v "target"))) = true := by
+  certify_normalization_row
+
+private theorem evidenceNegativeRule_checked :
+    RewriteValidationCertificate.check language
+      (mkRule "tptp-fof-normalize:evidence-negative"
+        [("source", "TptpResolvedFof:Formula"), ("target", "NNFFormula")]
+        [congruence (negative (v "source")) (v "target")]
+        (evidenceNegative (v "source"))
+        (resultNegative (v "source") (v "target"))) = true := by
+  certify_normalization_row
+
 local macro "validate_normalization_row" : tactic =>
   `(tactic|
     apply RewriteValidationCertificate.validateRewrite_eq_nil_of_check
@@ -660,36 +751,73 @@ local macro "validate_normalization_row" : tactic =>
     | exact positiveIffRule_checked
     | exact negativeIffRule_checked
     | exact positiveXorRule_checked
-    | exact negativeXorRule_checked)
+    | exact negativeXorRule_checked
+    | exact evidencePositiveRule_checked
+    | exact evidenceNegativeRule_checked)
 
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_concreteSyntaxAndRewrites
   all_goals try decide
   intro rewrite membership
   simp only [language_rewrites, rewrites, leafRules, unaryRules, binaryRules,
+    evidenceRules,
     List.mem_append, List.mem_cons, List.not_mem_nil, or_false] at membership
-  rcases membership with earlier | binary
-  · rcases earlier with leaf | unary
-    · rcases leaf with
+  rcases membership with earlier | wrapper
+  · rcases earlier with earlier | binary
+    · rcases earlier with leaf | unary
+      · rcases leaf with
         (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl) <;>
         validate_normalization_row
-    · rcases unary with (rfl | rfl | rfl | rfl | rfl | rfl) <;>
+      · rcases unary with (rfl | rfl | rfl | rfl | rfl | rfl) <;>
         validate_normalization_row
-  · rcases binary with
+    · rcases binary with
       (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
        rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl) <;>
       validate_normalization_row
+  · rcases wrapper with rfl | rfl
+    · exact RewriteValidationCertificate.validateRewrite_eq_nil_of_check
+        constructorLabels_nodup evidencePositiveRule_checked
+    · exact RewriteValidationCertificate.validateRewrite_eq_nil_of_check
+        constructorLabels_nodup evidenceNegativeRule_checked
 
 def validated : ValidatedLanguageDef where
   language := language
   valid := language_validate
 
+/-- The inert NNF target embeds literally into the executable normalizer.
+Identity symbol action is sufficient because the target rows are actual
+prefixes, rather than independently maintained copies. -/
+def targetInclusion :
+    StructuralMorphism TptpFofNnfLanguageDef.validated validated where
+  symbols := LanguageDefSymbolMap.id
+  mapsTypes declaration membership := by
+    rw [mapTypeDecl_id]
+    exact List.mem_append_left _ membership
+  mapsTerms declaration membership := by
+    rw [mapGrammarRule_id]
+    exact List.mem_append_left _ membership
+  mapsEquations declaration membership := by
+    change declaration ∈ TptpFofNnfLanguageDef.language.equations at membership
+    simp [TptpFofNnfLanguageDef.no_equations] at membership
+  mapsRewrites declaration membership := by
+    change declaration ∈ TptpFofNnfLanguageDef.language.rewrites at membership
+    simp [TptpFofNnfLanguageDef.no_rewrites] at membership
+
+/-- The source inclusion is the categorical composite through the actual NNF
+carrier.  This makes the shared intermediate object load-bearing. -/
+def sourceInclusion :
+    StructuralMorphism TptpResolvedFofLanguageDef.validated validated :=
+  StructuralMorphism.comp TptpFofNnfLanguageDef.resolvedInclusion
+    targetInclusion
+
 local macro "normalize_root" : tactic =>
   `(tactic|
     simp [rewriteAt, language_rewrites, rewrites, leafRules, unaryRules,
-      binaryRules, applyRuleUsing, matchPatternForRule_eq_syntactic,
+      binaryRules, evidenceRules, applyRuleUsing, matchPatternForRule_eq_syntactic,
       premisesUsing, premiseStepUsing, binaryRule, fourWayRule, mkRule,
-      congruence, positive, negative, request, sourceVerum, sourceFalsum,
+      congruence, positive, negative, request, evidencePositive,
+      evidenceNegative, resultPositive, resultNegative, evidenceRequest,
+      evidenceResult, sourceVerum, sourceFalsum,
       sourcePredicate, sourceEqual, sourceNot, sourceAnd, sourceOr, sourceIff,
       sourceImplies, sourceReverseImplies, sourceXor, sourceNor, sourceNand,
       sourceAll, sourceEx, targetVerum, targetFalsum, targetPositive,
@@ -703,9 +831,12 @@ local macro_rules
       `(tactic|
         simp only [positive, negative, a] at * <;>
         simp [*, rewriteAt, language_rewrites, rewrites, leafRules, unaryRules,
-          binaryRules, applyRuleUsing, matchPatternForRule_eq_syntactic,
+          binaryRules, evidenceRules, applyRuleUsing,
+          matchPatternForRule_eq_syntactic,
           premisesUsing, premiseStepUsing, binaryRule, fourWayRule, mkRule,
-          congruence, positive, negative, request, sourceVerum, sourceFalsum,
+          congruence, positive, negative, request, evidencePositive,
+          evidenceNegative, resultPositive, resultNegative, evidenceRequest,
+          evidenceResult, sourceVerum, sourceFalsum,
           sourcePredicate, sourceEqual, sourceNot, sourceAnd, sourceOr,
           sourceIff, sourceImplies, sourceReverseImplies, sourceXor, sourceNor,
           sourceNand, sourceAll, sourceEx, targetVerum, targetFalsum,
@@ -1014,6 +1145,24 @@ theorem negative_xor_rewriteAt_exact (fuel : Nat)
           (targetOr rightNegative leftPositive)] := by
   normalize_root_using leftPositiveExact, leftNegativeExact,
     rightPositiveExact, rightNegativeExact
+
+theorem positive_evidence_rewriteAt_exact (fuel : Nat)
+    (source target : Pattern)
+    (normalizationExact :
+      rewriteAt (engineBasePremises RelationEnv.empty) language fuel
+        (positive source) = [target]) :
+    rewriteAt (engineBasePremises RelationEnv.empty) language (fuel + 1)
+        (evidencePositive source) = [resultPositive source target] := by
+  normalize_root_using normalizationExact
+
+theorem negative_evidence_rewriteAt_exact (fuel : Nat)
+    (source target : Pattern)
+    (normalizationExact :
+      rewriteAt (engineBasePremises RelationEnv.empty) language fuel
+        (negative source) = [target]) :
+    rewriteAt (engineBasePremises RelationEnv.empty) language (fuel + 1)
+        (evidenceNegative source) = [resultNegative source target] := by
+  normalize_root_using normalizationExact
 
 /-! ## A representation-independent formula spine -/
 
@@ -1461,6 +1610,17 @@ structure SemanticPatternCodec where
   predicate : ∀ {arity : Nat},
     TptpFofNormalizationSemantics.PredicateSymbol arity -> Pattern
 
+/-- The canonical leaf codec is the codec of the literal binder-resolved
+source language.  This closes the representation seam between resolution and
+normalization instead of asking clients to choose a compatible lookalike. -/
+noncomputable def resolvedFofCodec : SemanticPatternCodec where
+  term := TptpResolvedFofLanguageDef.encodeTerm
+  terms := fun arguments =>
+    TptpResolvedFofLanguageDef.encodeTerms (List.ofFn arguments)
+  predicate := fun predicate =>
+    TptpFofSymbolLanguageDef.encodePredicateHead
+      ⟨predicate.kind, predicate.name⟩
+
 def semanticHeight {depth : Nat} :
     TptpFofNormalizationSemantics.Formula depth -> Nat
   | .verum | .falsum | .predicate _ _ | .equal _ _ => 1
@@ -1499,6 +1659,21 @@ def encodeSourceFormula (codec : SemanticPatternCodec) {depth : Nat} :
   | .all body => .all (encodeSourceFormula codec body)
   | .ex body => .ex (encodeSourceFormula codec body)
 
+/-- The generic normalizer's source encoding is definitionally tied to the
+actual binder-resolved carrier under the canonical codec. -/
+theorem resolvedFof_source_encoding_exact {depth : Nat}
+    (formula : TptpFofNormalizationSemantics.Formula depth) :
+    (encodeSourceFormula resolvedFofCodec formula).source =
+      TptpResolvedFofLanguageDef.encodeFormula formula := by
+  induction formula <;>
+    simp only [encodeSourceFormula, FormulaPattern.source,
+      TptpResolvedFofLanguageDef.encodeFormula, *] <;>
+    simp [resolvedFofCodec, sourceVerum, sourceFalsum, sourcePredicate,
+      sourceEqual, sourceNot, sourceAnd, sourceOr, sourceIff, sourceImplies,
+      sourceReverseImplies, sourceXor, sourceNor, sourceNand, sourceAll,
+      sourceEx, a] <;>
+    rfl
+
 def encodeNNFFormula (codec : SemanticPatternCodec) {depth : Nat} :
     LO.FirstOrder.Semiformula TptpFofNormalizationSemantics.language Empty
       depth -> Pattern
@@ -1522,6 +1697,31 @@ def encodeNNFFormula (codec : SemanticPatternCodec) {depth : Nat} :
       targetOr (encodeNNFFormula codec left) (encodeNNFFormula codec right)
   | .all body => targetAll (encodeNNFFormula codec body)
   | .ex body => targetEx (encodeNNFFormula codec body)
+
+/-- Under the canonical leaf codec, the executable normalizer emits exactly
+the encoding owned by the inert NNF target language. -/
+theorem resolvedFof_target_encoding_exact {depth : Nat}
+    (formula : LO.FirstOrder.Semiformula
+      TptpFofNormalizationSemantics.language Empty depth) :
+    encodeNNFFormula resolvedFofCodec formula =
+      TptpFofNnfLanguageDef.encodeFormula formula := by
+  induction formula with
+  | verum => rfl
+  | falsum => rfl
+  | rel relation arguments => cases relation <;> rfl
+  | nrel relation arguments => cases relation <;> rfl
+  | and left right leftHypothesis rightHypothesis =>
+      rw [encodeNNFFormula, leftHypothesis, rightHypothesis]
+      rfl
+  | or left right leftHypothesis rightHypothesis =>
+      rw [encodeNNFFormula, leftHypothesis, rightHypothesis]
+      rfl
+  | all body inductionHypothesis =>
+      rw [encodeNNFFormula, inductionHypothesis]
+      rfl
+  | ex body inductionHypothesis =>
+      rw [encodeNNFFormula, inductionHypothesis]
+      rfl
 
 theorem encodeSourceFormula_height (codec : SemanticPatternCodec)
     {depth : Nat}
@@ -1554,5 +1754,109 @@ theorem typed_rewriteAt_exact (codec : SemanticPatternCodec)
   rw [← encode_normalize_exact codec polarity formula]
   apply FormulaPattern.rewriteAt_exact
   simpa only [encodeSourceFormula_height] using enough
+
+/-- Canonical specialization of `typed_rewriteAt_exact`: the input is
+literally the output encoding of binder resolution. -/
+theorem resolvedFof_rewriteAt_exact {depth : Nat} (polarity : Bool)
+    (formula : TptpFofNormalizationSemantics.Formula depth) (fuel : Nat)
+    (enough : semanticHeight formula ≤ fuel) :
+    rewriteAt (engineBasePremises RelationEnv.empty) language fuel
+        (request polarity (TptpResolvedFofLanguageDef.encodeFormula formula)) =
+      [TptpFofNnfLanguageDef.encodeFormula
+        (TptpFofNormalizationSemantics.normalize polarity formula)] := by
+  rw [← resolvedFof_source_encoding_exact formula]
+  rw [typed_rewriteAt_exact resolvedFofCodec polarity formula fuel enough]
+  simp only [resolvedFof_target_encoding_exact]
+
+/-- The public normalization route returns the original encoded formula,
+polarity, and exact semantic NNF in one authored derivation.  No later replay
+is required to recover transformation provenance. -/
+theorem typed_evidence_rewriteAt_exact (codec : SemanticPatternCodec)
+    {depth : Nat} (polarity : Bool)
+    (formula : TptpFofNormalizationSemantics.Formula depth) (fuel : Nat)
+    (enough : semanticHeight formula ≤ fuel) :
+    rewriteAt (engineBasePremises RelationEnv.empty) language (fuel + 1)
+        (evidenceRequest polarity (encodeSourceFormula codec formula).source) =
+      [evidenceResult polarity (encodeSourceFormula codec formula).source
+        (encodeNNFFormula codec
+          (TptpFofNormalizationSemantics.normalize polarity formula))] := by
+  cases polarity with
+  | false =>
+      apply negative_evidence_rewriteAt_exact
+      exact typed_rewriteAt_exact codec false formula fuel enough
+  | true =>
+      apply positive_evidence_rewriteAt_exact
+      exact typed_rewriteAt_exact codec true formula fuel enough
+
+/-- Evidence-carrying canonical specialization for the composed public
+resolver-to-normalizer path. -/
+theorem resolvedFof_evidence_rewriteAt_exact {depth : Nat} (polarity : Bool)
+    (formula : TptpFofNormalizationSemantics.Formula depth) (fuel : Nat)
+    (enough : semanticHeight formula ≤ fuel) :
+    rewriteAt (engineBasePremises RelationEnv.empty) language (fuel + 1)
+        (evidenceRequest polarity
+          (TptpResolvedFofLanguageDef.encodeFormula formula)) =
+      [evidenceResult polarity
+        (TptpResolvedFofLanguageDef.encodeFormula formula)
+        (TptpFofNnfLanguageDef.encodeFormula
+          (TptpFofNormalizationSemantics.normalize polarity formula))] := by
+  rw [← resolvedFof_source_encoding_exact formula]
+  rw [typed_evidence_rewriteAt_exact resolvedFofCodec polarity formula fuel enough]
+  simp only [resolvedFof_target_encoding_exact]
+
+/-! ## Canonical checked artifact -/
+
+private theorem terms_supported :
+    language.terms.all CanonicalWire.grammarRuleSupported := by
+  decide +kernel
+
+private theorem rewrites_supported :
+    language.rewrites.all CanonicalWire.rewriteSupported := by
+  apply List.all_eq_true.mpr
+  intro rewrite membership
+  simp only [language_rewrites, rewrites, leafRules, unaryRules, binaryRules,
+    evidenceRules, List.mem_append, List.mem_cons, List.not_mem_nil, or_false]
+      at membership
+  rcases membership with earlier | wrapper
+  · rcases earlier with earlier | binary
+    · rcases earlier with leaf | unary
+      · rcases leaf with
+          (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl) <;>
+          decide +kernel
+      · rcases unary with (rfl | rfl | rfl | rfl | rfl | rfl) <;>
+          decide +kernel
+    · rcases binary with
+        (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+         rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl) <;>
+        decide +kernel
+  · rcases wrapper with (rfl | rfl) <;> decide +kernel
+
+theorem language_supported : CanonicalWire.languageSupported language := by
+  simp only [CanonicalWire.languageSupported, Bool.and_eq_true]
+  exact ⟨⟨rfl, terms_supported⟩, rewrites_supported⟩
+
+theorem wire_isSome :
+    (CanonicalWire.renderLanguage? language).isSome := by
+  rw [CanonicalWire.renderLanguage?_isSome_eq_supported]
+  exact language_supported
+
+def wire : String :=
+  (CanonicalWire.renderLanguage? language).getD ""
+
+def writeWire (path : System.FilePath) : IO Unit :=
+  IO.FS.writeFile path wire
+
+#print axioms language_validate
+#print axioms targetInclusion
+#print axioms sourceInclusion
+#print axioms host_integer_is_not_a_source_sort
+#print axioms resolvedFof_source_encoding_exact
+#print axioms resolvedFof_target_encoding_exact
+#print axioms typed_rewriteAt_exact
+#print axioms resolvedFof_rewriteAt_exact
+#print axioms typed_evidence_rewriteAt_exact
+#print axioms resolvedFof_evidence_rewriteAt_exact
+#print axioms language_supported
+#print axioms wire_isSome
 
 end Mettapedia.GSLT.LanguageDef.TptpFofNormalizationLanguageDef

@@ -30,6 +30,32 @@ def typingHead (carrier : String) : String :=
     ('$' :: 'o' :: 's' :: 'l' :: 'f' :: ':' :: 't' :: ':' ::
       carrier.toList)
 
+/-- Decode exactly the carrier-indexed typing-judgment namespace. -/
+def typingCarrier? (head : String) : Option String :=
+  match head.toList with
+  | '$' :: 'o' :: 's' :: 'l' :: 'f' :: ':' :: 't' :: ':' :: carrier =>
+      some (String.ofList carrier)
+  | _ => none
+
+@[simp]
+theorem typingCarrier?_typingHead (carrier : String) :
+    typingCarrier? (typingHead carrier) = some carrier := by
+  simp [typingCarrier?, typingHead]
+
+/-- A successfully decoded typing head is exactly the generated head of its
+reconstructed carrier name. -/
+theorem typingHead_of_typingCarrier?_eq_some {head carrier : String}
+    (decoded : typingCarrier? head = some carrier) :
+    typingHead carrier = head := by
+  unfold typingCarrier? at decoded
+  split at decoded
+  next suffix equation =>
+    cases decoded
+    rw [← String.ofList_toList (s := head), equation]
+    unfold typingHead
+    simp only [String.toList_ofList]
+  all_goals simp at decoded
+
 /-- Stable identifier of the per-carrier universe axiom. -/
 def axiomName (carrier : String) : String :=
   String.ofList
@@ -364,6 +390,8 @@ theorem foreign_carrier_lookup_fails :
 end Canary
 
 #print axioms typingHead_injective
+#print axioms typingCarrier?_typingHead
+#print axioms typingHead_of_typingCarrier?_eq_some
 #print axioms universeCode_has_arity_zero
 #print axioms lookupJudgment
 #print axioms universeAxiom_isValidIn

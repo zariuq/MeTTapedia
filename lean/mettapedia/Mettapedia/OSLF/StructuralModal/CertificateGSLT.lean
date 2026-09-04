@@ -54,7 +54,8 @@ system, not a second structural-modal semantics. -/
 theorem Claim.meaning_iff_richClaim (span : ReductionSpan Pattern)
     (claim : Claim) :
     claim.Meaning span ↔ (claim.toRichClaim span).Meaning :=
-  Iff.rfl
+  (satisfies_predicateNativeType_iff span
+    (satisfiesOver span claim.formula) claim.term).symm
 
 /-- The substantive theorem required of a CertificateGSLT language for native
 types.  `encode` may choose any readable judgment syntax, but every derivation

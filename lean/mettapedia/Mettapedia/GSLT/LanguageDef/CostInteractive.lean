@@ -18,7 +18,7 @@ namespace CIGSLT
 
 /-- The generated wrapped carrier, selected from the exact Cost language. -/
 def costWholeInteractingSort (source : CIGSLT) :
-    AuthoredSort source.costWholePresentation :=
+    DeclaredSort source.costWholePresentation :=
   ⟨TypeDecl.plain costWrappedSortName, by
     change List.Mem (TypeDecl.plain costWrappedSortName)
       source.costCoreLanguage.types
@@ -28,15 +28,15 @@ def costWholeInteractingSort (source : CIGSLT) :
 
 /-- The generated binary contact, selected from the exact Cost language. -/
 def costWholeContactConstructor (source : CIGSLT) :
-    AuthoredConstructor source.costWholePresentation :=
+    DeclaredConstructor source.costWholePresentation :=
   ⟨costContactConstructor, by
     change List.Mem costContactConstructor source.costCoreLanguage.terms
     apply List.mem_append_right
     simp [costCoreConstructors]⟩
 
 /-- The generated funded interaction, selected from the exact Cost language. -/
-def costWholeAuthoredRewrite (source : CIGSLT) :
-    AuthoredRewrite source.costWholePresentation :=
+def costWholeDeclaredRewrite (source : CIGSLT) :
+    DeclaredRewrite source.costWholePresentation :=
   ⟨source.costWholeRedexRewrite, by
     change List.Mem source.costWholeRedexRewrite
       [source.costWholeRedexRewrite]
@@ -50,7 +50,7 @@ def costWholeInteractivePresentation (source : CIGSLT) :
   presentation := source.costWholePresentation
   interactingSort := source.costWholeInteractingSort
   contactConstructor := source.costWholeContactConstructor
-  interactionRewrite := source.costWholeAuthoredRewrite
+  interactionRewrite := source.costWholeDeclaredRewrite
   contactRepresentation := .binary
   representsContact := by
     rfl

@@ -381,13 +381,13 @@ namespace CIGSLT
 
 /-- Intrinsic generated sort names for one exact continued presentation. -/
 abbrev GeneratedCostSort (source : CIGSLT) :=
-  CostSort (StructuralMorphism.AuthoredSort
+  CostSort (StructuralMorphism.DeclaredSort
     source.theory.presentation.presentation)
 
 /-- Intrinsic generated constructor names before restricting the wrapped
 summand to the declaration-derived hereditary closure. -/
 abbrev GeneratedCostConstructor (source : CIGSLT) :=
-  CostConstructor (StructuralMorphism.AuthoredConstructor
+  CostConstructor (StructuralMorphism.DeclaredConstructor
     source.theory.presentation.presentation)
 
 /-- Faithful wire rendering of one exact generated Cost sort namespace. -/
@@ -404,7 +404,7 @@ def renderGeneratedCostConstructor (source : CIGSLT) :
 theorem renderGeneratedCostSort_injective (source : CIGSLT) :
     Function.Injective source.renderGeneratedCostSort :=
   CostSort.render_injective _
-    (StructuralMorphism.authoredSortName_injective
+    (StructuralMorphism.declaredSortName_injective
       source.theory.presentation.presentation)
 
 theorem renderGeneratedCostConstructor_injective (source : CIGSLT) :
@@ -483,7 +483,7 @@ theorem renderDeclaredCostConstructor_ne_of_role_ne (source : CIGSLT)
 
 @[simp]
 theorem declaredCostConstructorRole_wrapped (source : CIGSLT)
-    (constructor : AuthoredConstructor
+    (constructor : DeclaredConstructor
       source.theory.presentation.presentation)
     (membership : constructor ∈
       source.continuationRetyping.wrappedConstructors) :
@@ -499,7 +499,7 @@ theorem declaredCostConstructorRole_apparatus (source : CIGSLT)
   rfl
 
 theorem declaredCostConstructorRole_base_of_nonprincipal (source : CIGSLT)
-    (constructor : AuthoredConstructor
+    (constructor : DeclaredConstructor
       source.theory.presentation.presentation)
     (notProgram : constructor ≠ source.cut.program.constructor)
     (notEnvironment : constructor ≠ source.cut.environment.constructor) :
@@ -508,7 +508,7 @@ theorem declaredCostConstructorRole_base_of_nonprincipal (source : CIGSLT)
   simp [declaredCostConstructorRole, notProgram, notEnvironment]
 
 theorem declaredCostConstructorRole_base_of_principal (source : CIGSLT)
-    (constructor : AuthoredConstructor
+    (constructor : DeclaredConstructor
       source.theory.presentation.presentation)
     (principal : constructor = source.cut.program.constructor ∨
       constructor = source.cut.environment.constructor) :
@@ -519,7 +519,7 @@ theorem declaredCostConstructorRole_base_of_principal (source : CIGSLT)
 /-- Every base constructor classified as static belongs to the exact
 hereditary non-principal fragment. -/
 theorem mem_wrappedConstructors_of_base_static (source : CIGSLT)
-    (constructor : AuthoredConstructor
+    (constructor : DeclaredConstructor
       source.theory.presentation.presentation)
     (role : source.declaredCostConstructorRole
         ⟨.base constructor, True.intro⟩ = .static .base) :

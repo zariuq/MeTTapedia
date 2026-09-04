@@ -144,7 +144,7 @@ theorem rho_mapLangSort_eq_nameSort (color : CostStaticColor)
       CostStaticColor.reflectiveSymbols, CostStaticColor.symbols,
       costBaseStaticReflectiveSymbols, costWrappedStaticReflectiveSymbols,
       costBaseStaticSymbols, costWrappedStaticSymbols,
-      costBasePresentationSymbols, rhoReflectivePresentation]
+      costBaseLanguageDefSymbolMap, rhoReflectivePresentation]
 
 /-- The authored rho reflective presentation is a member of the generated
 whole-Cost reflection profile at either colour. -/

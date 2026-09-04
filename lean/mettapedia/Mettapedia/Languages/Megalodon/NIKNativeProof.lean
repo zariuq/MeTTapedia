@@ -1,13 +1,14 @@
-import Mettapedia.GSLT.LanguageDef.NIKMetalogic
+import Mettapedia.GSLT.LanguageDef.NIK
 import Mettapedia.Languages.Megalodon.MathdataKernel
 
 /-!
 # Megalodon native proof objects at the NIK boundary
 
-This module presents the executable Mathdata proof kernel as a proof-relevant
-NIK authority.  The native certificate is Megalodon's own `Pf`, not an
-expanded trace.  The judgment exposes the normal form synthesized by the
-proof and required by the source proposition.
+This module presents the executable Mathdata proof and conversion kernels as
+native NIK services.  Megalodon's own `Pf` is an intrinsic proof object, not
+an external replay certificate or an expanded trace.  The judgment exposes
+the normal form synthesized by the proof and required by the source
+proposition.
 
 Conversion is the current fuel-bounded beta/eta/delta conversion implemented
 by `MathdataKernel.normalize`.  Failure to normalize is rejection; two
@@ -19,6 +20,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.Megalodon.NIKNativeProof
 
 open Mettapedia.GSLT.LanguageDef
+open Mettapedia.GSLT.LanguageDef.NIK
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.Languages.Megalodon.MathdataKernel
 
@@ -77,6 +79,25 @@ theorem authority :
       (fun claim => Nonempty (proofSystem.ProofFibre claim)) :=
   nativeKernel.authority
 
+/-! ## Canonical NIK service -/
+
+/-- The intrinsic Mathdata theoremhood target served by the native proof
+kernel.  This target is syntactic theoremhood in the selected Mathdata
+environment; a separate model-adequacy theorem is required before identifying
+it with validity in an Egal/HOTG model. -/
+def theoremTarget : AdmissionObject where
+  Carrier := Claim
+  Meaning := fun claim => Nonempty (proofSystem.ProofFibre claim)
+
+/-- Megalodon's native proof kernel enters NIK through the intrinsic-proof
+face.  It does not pass through the generic external-certificate service. -/
+def theoremService : NIK.Service theoremTarget :=
+  .nativeProof proofSystem nativeKernel (fun _ => Iff.rfl)
+
+@[simp] theorem theoremService_has_no_external_boundary :
+    NIK.Service.hasExternalCertificateBoundary theoremService = false :=
+  rfl
+
 /-! ## Decided beta/eta/delta conversion -/
 
 /-- Fuel-bounded conversion through a common successful normal form. -/
@@ -110,6 +131,40 @@ def decidedConversion (environment : Environment) (fuel : Nat) :
         | some rightNormal =>
             simp [eq_comm]
 
+/-- A first-class query for the native, fuel-bounded Mathdata conversion
+procedure. -/
+structure ConversionClaim where
+  environment : Environment
+  fuel : Nat
+  left : Tm
+  right : Tm
+deriving DecidableEq, Repr
+
+/-- The independently stated conversion target for a complete query. -/
+def conversionTarget : AdmissionObject where
+  Carrier := ConversionClaim
+  Meaning := fun claim =>
+    Converts claim.environment claim.fuel claim.left claim.right
+
+/-- The direct decision kernel obtained from Mathdata normalization. -/
+def conversionDecision :
+    KernelAuthority.Checker.DecisionKernel
+      ConversionClaim conversionTarget.Meaning where
+  decide claim :=
+    decideConversion claim.environment claim.fuel claim.left claim.right
+  correct claim :=
+    (decidedConversion claim.environment claim.fuel).correct
+      claim.left claim.right
+
+/-- Conversion is a direct native NIK decision service, with no submitted
+certificate language. -/
+def conversionService : NIK.Service conversionTarget :=
+  .directDecision conversionDecision
+
+@[simp] theorem conversionService_has_no_external_boundary :
+    NIK.Service.hasExternalCertificateBoundary conversionService = false :=
+  rfl
+
 /-! ## Positive and negative source-shaped witnesses -/
 
 def definitionConversionClaim : Claim where
@@ -126,6 +181,13 @@ theorem definition_conversion_native_accepted :
     nativeKernel.toChecker.check definitionConversionClaim
       definitionConversionProof = true :=
   definition_conversion_accepted
+
+/-- The canonical NIK service executes the same intrinsic proof kernel on the
+definition-bearing specimen. -/
+theorem theoremService_accepts_definition :
+    nativeKernel.decide definitionConversionClaim
+      definitionConversionProof = true :=
+  definition_conversion_native_accepted
 
 def opaqueIdentityClaim : Claim where
   environment := opaqueIdentityEnvironment
@@ -202,6 +264,16 @@ theorem beta_conversion_accepted :
     (decidedConversion {} 4).decide betaRedex (.named "x") = true := by
   simp [decidedConversion, decideConversion]
 
+/-- The canonical direct-decision service computes beta conversion without an
+external proof trace. -/
+theorem conversionService_accepts_beta :
+    conversionDecision.decide
+      { environment := {}
+        fuel := 4
+        left := betaRedex
+        right := .named "x" } = true :=
+  beta_conversion_accepted
+
 /-- Eta contraction is part of the same computed conversion relation. -/
 theorem eta_conversion_accepted :
     (decidedConversion {} 4).decide etaRedex (.named "f") = true := by
@@ -226,6 +298,15 @@ theorem distinct_opaque_names_rejected :
     (decidedConversion {} 4).decide (.named "x") (.named "y") = false := by
   simp [decidedConversion, decideConversion]
 
+/-- The same service rejects a genuinely distinct pair. -/
+theorem conversionService_rejects_distinct_names :
+    conversionDecision.decide
+      { environment := {}
+        fuel := 4
+        left := .named "x"
+        right := .named "y" } = false :=
+  distinct_opaque_names_rejected
+
 /-- Resource failure is fail-closed, including when both endpoints exhaust
 their fuel. -/
 theorem dual_resource_failure_rejected :
@@ -237,13 +318,21 @@ theorem dual_resource_failure_rejected :
 #print axioms nativeKernel
 #print axioms certificateEquivalence
 #print axioms authority
+#print axioms theoremService
+#print axioms theoremService_has_no_external_boundary
 #print axioms decidedConversion
+#print axioms conversionDecision
+#print axioms conversionService
+#print axioms conversionService_has_no_external_boundary
 #print axioms definition_conversion_native_accepted
+#print axioms theoremService_accepts_definition
 #print axioms opaque_identity_native_rejected
 #print axioms beta_conversion_accepted
+#print axioms conversionService_accepts_beta
 #print axioms eta_conversion_accepted
 #print axioms delta_conversion_accepted
 #print axioms distinct_opaque_names_rejected
+#print axioms conversionService_rejects_distinct_names
 #print axioms dual_resource_failure_rejected
 
 end Mettapedia.Languages.Megalodon.NIKNativeProof

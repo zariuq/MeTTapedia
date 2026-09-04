@@ -1,4 +1,5 @@
 import Mathlib.Logic.Function.Basic
+import Mathlib.Logic.Equiv.Basic
 
 /-!
 # Factorization through a projection
@@ -113,6 +114,32 @@ theorem factors_iff_constantOnFibers {A S V : Type*} {shadow : A → S}
   refine ⟨Factors.constantOnFibers, fun constant => ?_⟩
   refine ⟨fun s => invariant (Function.surjInv surjective s), fun a => ?_⟩
   exact constant _ _ (Function.surjInv_eq surjective (shadow a))
+
+/-! ## Change of ambient coordinates -/
+
+/-- Replacing the ambient carrier by an equivalent one preserves and reflects
+factorization when both the shadow and invariant are transported along that
+equivalence. -/
+theorem factors_precomp_equiv_iff
+    {A : Type uA} {B : Type*} {S : Type uS} {V : Type uV}
+    (equivalence : Equiv A B) (shadow : B → S) (invariant : B → V) :
+    Factors (shadow ∘ equivalence) (invariant ∘ equivalence) ↔
+      Factors shadow invariant := by
+  constructor
+  · rintro ⟨recover, recovers⟩
+    refine ⟨recover, fun value => ?_⟩
+    simpa using recovers (equivalence.symm value)
+  · rintro ⟨recover, recovers⟩
+    exact ⟨recover, fun value => recovers (equivalence value)⟩
+
+/-- Nonfactorization is invariant under the same equivalent change of ambient
+coordinates. -/
+theorem not_factors_precomp_equiv_iff
+    {A : Type uA} {B : Type*} {S : Type uS} {V : Type uV}
+    (equivalence : Equiv A B) (shadow : B → S) (invariant : B → V) :
+    (¬ Factors (shadow ∘ equivalence) (invariant ∘ equivalence)) ↔
+      ¬ Factors shadow invariant := by
+  rw [not_congr (factors_precomp_equiv_iff equivalence shadow invariant)]
 
 /-! ## Coarsening
 

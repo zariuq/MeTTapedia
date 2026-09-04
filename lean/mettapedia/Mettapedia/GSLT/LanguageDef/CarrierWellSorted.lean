@@ -192,9 +192,36 @@ mutual
       List Pattern → TypeExpr → Bool
     | [], _ => true
     | element :: elements, elementType =>
-        checkHasType language free bound element elementType &&
+      checkHasType language free bound element elementType &&
           checkElementsHaveTypes language free bound elements elementType
 end
+
+/-- Successful checking consumes exactly one argument for each authored
+constructor parameter.  This small inversion theorem is useful to clients
+that recover constructor spines from the generic executable checker. -/
+theorem checkArgumentsHaveTypes_length_eq
+    (language : LanguageDef) (free : FreeTypeContext)
+    (bound : List TypeExpr) (arguments : List Pattern)
+    (parameters : List TermParam)
+    (checked : checkArgumentsHaveTypes language free bound
+      arguments parameters = true) :
+    arguments.length = parameters.length := by
+  induction arguments generalizing parameters with
+  | nil =>
+      cases parameters with
+      | nil => rfl
+      | cons parameter parameters =>
+          simp [checkArgumentsHaveTypes] at checked
+  | cons argument arguments inductionHypothesis =>
+      cases parameters with
+      | nil => simp [checkArgumentsHaveTypes] at checked
+      | cons parameter parameters =>
+          cases equation : parameterType? parameter with
+          | none => simp [checkArgumentsHaveTypes, equation] at checked
+          | some expected =>
+              simp only [checkArgumentsHaveTypes, equation,
+                Bool.and_eq_true] at checked
+              simp [inductionHypothesis parameters checked.2]
 
 theorem checkArgumentsHaveTypes_sound_of
     {language : LanguageDef} {free : FreeTypeContext}
@@ -488,5 +515,6 @@ theorem non_builtin_carrier_negative :
 #print axioms checkHasType_sound
 #print axioms checkHasType_complete_of_object
 #print axioms checkHasType_eq_true_iff
+#print axioms checkArgumentsHaveTypes_length_eq
 
 end Mettapedia.GSLT.LanguageDef.CarrierWellSorted

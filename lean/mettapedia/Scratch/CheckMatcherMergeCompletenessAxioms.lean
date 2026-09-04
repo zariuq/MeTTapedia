@@ -1,0 +1,169 @@
+import Mettapedia.Languages.MeTTa.HE.MatcherMergeCompleteness
+
+open Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
+
+namespace Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
+
+private def solvedAliasSeed : Bindings := {
+  assignments := [("x", .symbol "a"), ("y", .symbol "a")]
+  equalities := []
+}
+
+private def solvedAliasSubst : Metta.Subst :=
+  [("x", .sym "a"), ("y", .sym "a")]
+
+private theorem solvedAliasSeed_congruence :
+    LeaBindingCongruence solvedAliasSeed
+      (Metta.Bindings.ofSubst solvedAliasSubst) := by
+  apply LeaBindingCongruence.of_rel
+  constructor
+  · intro key value
+    simp [solvedAliasSeed, solvedAliasSubst, Metta.Bindings.ofSubst]
+    aesop
+  · intro first second
+    simp [solvedAliasSeed, solvedAliasSubst, Metta.Bindings.ofSubst]
+
+private theorem solvedAliasHead_is_solved :
+    Metta.Unify.decomposeAll
+        [(Metta.Subst.apply solvedAliasSubst (.var "x"),
+          Metta.Subst.apply solvedAliasSubst (.var "y"))] = some [] := by
+  simp [solvedAliasSubst, Metta.Subst.apply, Metta.Subst.lookup,
+    Metta.Unify.decomposeAll, Metta.Unify.decomposeEq]
+
+private theorem solvedAliasHead_addEquality_not_structural :
+    ¬ LeaBindingStructuralCongruence
+      (solvedAliasSeed.addEquality "x" "y")
+      (Metta.Bindings.ofSubst solvedAliasSubst) := by
+  intro h
+  have hxy : "y" ∈ (solvedAliasSeed.addEquality "x" "y").eqClass "x" := by
+    decide
+  have := (h.classes "x" "y").mp hxy
+  simp [solvedAliasSubst, Metta.Bindings.ofSubst,
+    Metta.Bindings.eqClass, Metta.Bindings.eqClassAux,
+    Metta.Bindings.eqStep] at this
+
+end Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
+
+#print axioms satisfiedMergeRelCompleteBelow
+#print axioms heSatisfiedMatcherMergeRelExists_solutionSize
+#print axioms heSatisfiedMatcherMergeRelComplete_solutionSize
+#print axioms mergeEqualityClosureBoundSound_of_sound_matchers
+#print axioms mergeEqualityClosureBoundSound_of_outputBound
+#print axioms HEExpressionResidualFrontier.certificate_embeds_of_covered
+#print axioms matchListAccRel_observationExtension
+#print axioms matchEqualityClosureBoundSound_of_outputBound
+#print axioms matchListEqualityClosureBoundSound_of_outputBound
+#print axioms HELiveHiddenMatchResidualCertified.ofOutputBound
+#print axioms HELiveHiddenListMatchResidualCertified.ofOutputBound
+#print axioms HELiveHiddenMatchResidualCertified.ofLiveMerge
+#print axioms HELiveHiddenListMatchResidualCertified.ofLiveMerge
+#print axioms HELiveHiddenMatchResidualCertified.mono
+#print axioms HELiveHiddenListMatchResidualCertified.mono
+#print axioms HEProjectedTailHeadResidualSolutionPackage.liveMergeWithHeadTheory
+#print axioms HEProjectedTailHeadResidualSolutionPackage.liveMergeWithSolutions
+#print axioms HEProjectedTailHeadResidualSolutionPackage.assignmentConflictLiveMerge
+#print axioms HEProjectedTailHeadResidualSolutionPackage.assignmentReconcileLiveMerge
+#print axioms HEProjectedTailHeadResidualSolutionPackage.nonVarVarConflictLiveMerge
+#print axioms HEProjectedTailHeadResidualSolutionPackage.nonVarVarReconcileLiveMerge
+#print axioms HEProjectedTailHeadResidualSolutionPackage.equalityPairConflictLiveMerge
+#print axioms HEProjectedTailHeadResidualSolutionPackage.equalityClassConflictLiveMerge
+#print axioms reconcileList_satisfied_implies_last
+#print axioms LeaBindingStructuralCongruence.assignmentsSound_of_ofSubst_subset
+#print axioms LeaBindingStructuralCongruence.equalityClosureBound_of_ofSubst
+#print axioms HEProjectedTailHeadResidualSolutionPackage.nextSubst_subset_trace
+#print axioms HELiveHiddenMatchStructuralCertified.congruence
+#print axioms HELiveHiddenListMatchStructuralCertified.congruence
+#print axioms HELiveMatchMergeCoreResidualCertified.toCoreCongruent_of_structural
+#print axioms HELiveHiddenMatchStructuralCertified.equalityClosureBound
+#print axioms HELiveHiddenListMatchStructuralCertified.equalityClosureBound
+#print axioms HELiveHiddenMatchStructuralCertified.mono
+#print axioms HELiveHiddenListMatchStructuralCertified.mono
+#print axioms HEExpressionResidualFrontier.embedHiddenStructural_of_covered
+#print axioms HEExpressionResidualFrontier.embedHiddenListStructural_of_covered
+#print axioms HELiveMatchMergeCoreCongruentCertified.reindexRight
+#print axioms HEProjectedTailHeadResidualSolutionPackage.coreResidualOfCoreCongruent
+#print axioms HEProjectedTailHeadResidualSolutionPackage.toCertifiedStrongTailStateCore
+#print axioms HEProjectedTailHeadResidualSolutionPackage.toProjectedStrongTailStateCore
+#print axioms HEProjectedCertifiedListResidualState.exists_matchListAccCongruent_of_coveredCoreLiveHead
+#print axioms HEOriginalConstraintCoveredProjectedListState.exists_matchListAccCongruent_of_nonemptyCoreLiveHead
+#print axioms HELiveHiddenMatchResidualCertified.toAssignmentConflictMergeLive
+#print axioms HELiveHiddenListMatchResidualCertified.toAssignmentReconcileMergeLive
+#print axioms HELiveHiddenMatchResidualCertified.toEqualityPairConflictMergeLive
+#print axioms HELiveHiddenListMatchResidualCertified.toEqualityClassConflictMergeLive
+#print axioms HELiveHiddenMatchStructuralCertified.toAssignmentConflictCoreCongruent
+#print axioms HELiveHiddenListMatchStructuralCertified.toAssignmentReconcileCoreCongruent
+#print axioms HELiveHiddenMatchStructuralCertified.toNonVarVarConflictCoreCongruent
+#print axioms HELiveHiddenListMatchStructuralCertified.toNonVarVarReconcileCoreCongruent
+#print axioms HELiveHiddenMatchStructuralCertified.toEqualityPairConflictCoreCongruent
+#print axioms HELiveHiddenListMatchStructuralCertified.toEqualityClassConflictCoreCongruent
+#print axioms HEProjectedTailHeadResidualSolutionPackage.exists_coreResidualHead_of_hiddenCallbacks
+#print axioms HEProjectedLiveConflictCallbacksAt.toHidden
+#print axioms HESolutionSizeBoundedProjectedHiddenLiveConflictKernel.toHeadKernel
+#print axioms HEReconciliationMatcherCongruenceWitness.exists_liveAliasMerge_solutionSize
+#print axioms HEReconciliationMatcherCongruenceWitness.liveAliasMergeCongruence_of_certificates
+#print axioms HEReconciliationMatcherCongruenceWitness.exists_liveAliasMergeCongruent_solutionSize
+#print axioms HESatisfiedMergeCertified.toLive
+#print axioms exists_satisfiedMergeCertified_of_adds
+#print axioms HESatisfiedAddBindingCertified.fresh
+#print axioms HESatisfiedAddBindingCertified.same
+#print axioms HESatisfiedAddEqualityCertified.consistent
+#print axioms HESatisfiedAddBindingCertified.nonempty_ofLiveSingleton
+#print axioms HESatisfiedAddEqualityCertified.nonempty_ofLiveSingleton
+#print axioms HELiveHiddenMatchResidualCertified.nonempty_satisfiedAddBinding_of_conflict
+#print axioms HELiveHiddenListMatchResidualCertified.nonempty_satisfiedAddBinding_of_reconcile
+#print axioms HELiveHiddenMatchResidualCertified.nonempty_satisfiedAddEquality_of_pairConflict
+#print axioms HELiveHiddenListMatchResidualCertified.nonempty_satisfiedAddEquality_of_classConflict
+#print axioms HESatisfiedConflictAddCallbacks.merge
+#print axioms exists_heSolutionAtomsSizeBound
+#print axioms exists_HECoveredProjectedStateSolutionSizeBound
+#print axioms HECoveredProjectedStateSolutionSizeBound.assignmentConflictPair
+#print axioms HECoveredProjectedStateSolutionSizeBound.assignmentReconcileLists
+#print axioms HECoveredProjectedStateSolutionSizeBound.nonVarVarConflictPair
+#print axioms HECoveredProjectedStateSolutionSizeBound.nonVarVarReconcileLists
+#print axioms HECoveredProjectedStateSolutionSizeBound.equalityConflictPair
+#print axioms HECoveredProjectedStateSolutionSizeBound.equalityReconcileLists
+#print axioms HECoveredProjectedStateSolutionSizeBound.nestedExpression
+#print axioms HEOriginalConstraintCoveredProjectedListState.exists_matchListAcc_of_coreLiveHead_solutionSizeBounded
+#print axioms HESolutionSizeBoundedProjectedHeadKernel.matchListAcc
+#print axioms HESolutionSizeBoundedProjectedLiveConflictKernel.toLiveConflictKernel
+#print axioms HESolutionSizeBoundedProjectedLiveConflictKernel.toHeadKernel
+#print axioms exists_completeSatisfiedCertifiedMatcherMergeChain_of_local_progress_solutionSizeBounded
+#print axioms exists_matchRel_of_solution_solutionSize
+#print axioms exists_matchAtoms_of_solution_solutionSize
+#print axioms exists_matchAtoms_classValue_of_reconciliation_solutionSize
+#print axioms exists_matchAtoms_joinedClassValues_of_reconciliation_solutionSize
+#print axioms transientAlias_repaired_innerAlias_agrees
+#print axioms Metta.transientCollision_innerAlias_retained
+#print axioms Metta.transientCollision_permutation_innerAlias_retained
+#print axioms Metta.transientCollision_incompatible_rejected
+#print axioms addVarEquality_reconciliation_congruence_of_structural
+#print axioms HELiveHiddenMatchStructuralCertified.toAssignmentConflictMergeRealization
+#print axioms HELiveHiddenListMatchStructuralCertified.toAssignmentReconcileMergeRealization
+#print axioms HELiveHiddenMatchStructuralCertified.toEqualityPairMergeRealization
+#print axioms HELiveHiddenListMatchStructuralCertified.toEqualityClassMergeRealization
+#print axioms HEProjectedHiddenStructuralConflictCallbacksAt.toHidden
+#print axioms HESolutionSizeBoundedProjectedHiddenStructuralConflictKernel.toHidden
+#print axioms HEProjectedCertifiedListResidualState.exists_matchListAccCongruent_of_strongCoveredHead
+#print axioms HEProjectedTailHeadResidualPackage.exists_coreLiveVarNonVar_same_congruent
+#print axioms HEProjectedTailHeadResidualPackage.exists_coreLiveNonVarVar_same_congruent
+#print axioms HEProjectedTailHeadResidualPackage.exists_coreLiveHead_of_strongCallbacks
+#print axioms HEProjectedTailHeadResidualPackage.exists_coreLiveVarNonVar_congruent_of_split
+#print axioms HEProjectedTailHeadResidualPackage.exists_coreLiveNonVarVar_congruent_of_split
+#print axioms HEProjectedTailHeadResidualPackage.exists_coreLiveVarVar_congruent_of_split
+#print axioms solvedAlias_rawSubst_not_liveEqualityTarget
+#print axioms solvedAlias_repairedRebuild_retains_explicitEquality
+#print axioms leaClassValueRelEquiv_ofSubst_iff_substClassValueRel
+#print axioms LeaSubstClassValueRel.addEquality_he
+#print axioms LeaSubstClassValueRel.traceEntryRealized_of_nonvar
+#print axioms solvedAlias_liveEquality_preserves_valueProvenance
+#print axioms toLeaTTaAtom_ne_var_of_isVarB_false
+#print axioms assignment_mem_of_lookup_eq_some_public
+#print axioms HELiveHiddenMatchValueCertified.traceEntryRealized_of_nonvar
+#print axioms HELiveHiddenMatchValueCertified.traceEntryRealized_of_seed
+#print axioms HELiveHiddenMatchValueProgressCertified.toAssignmentConflictSolutionProgress
+#print axioms HELiveHiddenListMatchValueProgressCertified.toAssignmentReconcileSolutionProgress
+#print axioms HELiveHiddenMatchValueProgressCertified.toEqualityPairSolutionProgress
+#print axioms HELiveHiddenListMatchValueProgressCertified.toEqualityClassSolutionProgress
+#print axioms certifiedValueConflictProgress_of_hidden_value_inner
+#print axioms certifiedAliasConflictProgress_of_hidden_value_inner
+#print axioms exists_completeSatisfiedCertifiedMatcherMergeChain_of_hidden_value_inner

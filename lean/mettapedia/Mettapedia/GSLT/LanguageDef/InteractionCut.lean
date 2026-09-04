@@ -23,7 +23,7 @@ open WellSorted
 /-- A parameter position in one exact authored constructor. -/
 structure ConstructorParameter
     {presentation : ValidatedLanguageDef}
-    (constructor : AuthoredConstructor presentation) where
+    (constructor : DeclaredConstructor presentation) where
   index : Nat
   inBounds : index < constructor.1.params.length
 
@@ -32,7 +32,7 @@ namespace ConstructorParameter
 /-- The parameter declaration selected by a position. -/
 def parameter
     {presentation : ValidatedLanguageDef}
-    {constructor : AuthoredConstructor presentation}
+    {constructor : DeclaredConstructor presentation}
     (position : ConstructorParameter constructor) : TermParam :=
   constructor.1.params[position.index]'position.inBounds
 
@@ -51,7 +51,7 @@ def continuationResult? (parameter : TermParam) : Option TypeExpr :=
 interacting sort. -/
 structure ContinuationPosition
     (presentation : InteractivePresentation)
-    (constructor : AuthoredConstructor presentation.presentation)
+    (constructor : DeclaredConstructor presentation.presentation)
     extends ConstructorParameter constructor where
   hasInteractingResult :
     continuationResult? toConstructorParameter.parameter =
@@ -61,7 +61,7 @@ structure ContinuationPosition
 record that the subject is structurally carried by the contact constructor. -/
 inductive SubjectSelection
     {presentation : ValidatedLanguageDef}
-    (constructor : AuthoredConstructor presentation)
+    (constructor : DeclaredConstructor presentation)
     (schemaTerm : Pattern) where
   | absent
   | argument
@@ -76,7 +76,7 @@ namespace SubjectSelection
 /-- The selected nominal subject, when one is explicitly present. -/
 def pattern
     {presentation : ValidatedLanguageDef}
-    {constructor : AuthoredConstructor presentation}
+    {constructor : DeclaredConstructor presentation}
     {schemaTerm : Pattern} :
     SubjectSelection constructor schemaTerm → Option Pattern
   | .absent => none
@@ -123,7 +123,7 @@ theorem patternName?_eq_name {pattern : Pattern}
 metadata unchanged. -/
 @[simp]
 theorem patternName?_mapPattern {pattern : Pattern}
-    (symbols : PresentationSymbols)
+    (symbols : LanguageDefSymbolMap)
     (witness : ContinuationSchemaVariable pattern) :
     patternName? (mapPattern symbols pattern) = some witness.name := by
   cases witness <;>
@@ -153,7 +153,7 @@ uses the locally nameless substitution form directly, so the degenerate
 inductive ResidualRepresentation
     {presentation : ValidatedLanguageDef} : Pattern → Type where
   | constructor
-      (residual : AuthoredConstructor presentation)
+      (residual : DeclaredConstructor presentation)
       {contractum : Pattern}
       (represented : RepresentedBy residual.1 contractum) :
       ResidualRepresentation contractum
@@ -173,7 +173,7 @@ selected continuation.  A genuine introduction selects one of its authored
 constructor arguments.  A direct operand is exactly the continuation. -/
 inductive InteractionOperandForm
     {presentation : InteractivePresentation}
-    (constructor : AuthoredConstructor presentation.presentation)
+    (constructor : DeclaredConstructor presentation.presentation)
     (continuation : ContinuationPosition presentation constructor)
     (schemaTerm continuationPattern : Pattern) where
   | introduced
@@ -194,7 +194,7 @@ an ordinary introduction this is a position of that introduction; for a
 direct operand it is the corresponding position of the contact constructor. -/
 structure InteractionOperandProfile
     (presentation : InteractivePresentation) where
-  constructor : AuthoredConstructor presentation.presentation
+  constructor : DeclaredConstructor presentation.presentation
   schemaTerm : Pattern
   continuation : ContinuationPosition presentation constructor
   continuationPattern : Pattern
@@ -238,8 +238,8 @@ interactive presentation.  A derived gated theory may retain a retyped,
 heterogeneous copy below an administrative envelope while exposing a
 different homogeneous root contact. -/
 structure CoreContactPresentation (presentation : ValidatedLanguageDef) where
-  sort : AuthoredSort presentation
-  constructor : AuthoredConstructor presentation
+  sort : DeclaredSort presentation
+  constructor : DeclaredConstructor presentation
   representation : ContactRepresentation
   representsCore :
     coreContactRepresentation? sort.1 constructor.1 = some representation
@@ -506,21 +506,21 @@ end ContinuationStableContext
 /-! ## Rho instance and ordered controls -/
 
 private def rhoInputConstructor :
-    AuthoredConstructor rhoValidatedLanguageDef :=
+    DeclaredConstructor rhoValidatedLanguageDef :=
   ⟨rhoCalc.terms[5], List.getElem_mem (by simp [rhoCalc])⟩
 
 private def rhoOutputConstructor :
-    AuthoredConstructor rhoValidatedLanguageDef :=
+    DeclaredConstructor rhoValidatedLanguageDef :=
   ⟨rhoCalc.terms[4], List.getElem_mem (by simp [rhoCalc])⟩
 
 /-- The exact parallel constructor selected from `rhoCalc`. -/
 def rhoParallelConstructor :
-    AuthoredConstructor rhoValidatedLanguageDef :=
+    DeclaredConstructor rhoValidatedLanguageDef :=
   ⟨rhoCalc.terms[3], List.getElem_mem (by simp [rhoCalc])⟩
 
 /-- The exact quotation constructor selected from `rhoCalc`. -/
 def rhoQuoteConstructor :
-    AuthoredConstructor rhoValidatedLanguageDef :=
+    DeclaredConstructor rhoValidatedLanguageDef :=
   ⟨rhoCalc.terms[2], List.getElem_mem (by simp [rhoCalc])⟩
 
 private def rhoProgramIntroduction :

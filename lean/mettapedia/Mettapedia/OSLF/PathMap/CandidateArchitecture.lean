@@ -645,9 +645,7 @@ theorem realPrefix_exact_sound (enc : AtomEncoding)
 
     This means: the List evaluator's results, projected to Finset,
     compose correctly. The Finset view of `xs.flatMap f` equals
-    the Finset-level bind.
-
-    Council: Stay 95%, Riehl 93% — "one theorem stating the full chain" -/
+    the Finset-level bind. -/
 theorem toFinset_flatMap_comm (xs : List α) (f : α → List β) [DecidableEq α] [DecidableEq β] :
     (xs.flatMap f).toFinset = xs.toFinset.biUnion (fun a => (f a).toFinset) := by
   ext x; simp [List.mem_flatMap]

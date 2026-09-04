@@ -29,6 +29,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.ConstructorCategory
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 set_option maxRecDepth 10000
@@ -114,15 +115,22 @@ end
 abbrev ProjectCoreSNativeType := langNativeType projectCoreSyntaxLangKR "S"
 abbrev ProjectCoreQSNativeType := langNativeType projectCoreSyntaxLangKR "QS"
 
+private def projectCorePredicate (predicate : Pattern → Prop) :
+    EquationPredicate (langGSLT projectCoreSyntaxLangKR) :=
+  equationPredicateOfEquationFree (by rfl) predicate
+
 def existentialSentenceType : ProjectCoreSNativeType :=
-  { sort := "S", pred := fun p => containsLabel "ExistNP" p = true }
+  { sort := "S"
+  , pred := projectCorePredicate fun p => containsLabel "ExistNP" p = true }
 
 def progressiveSentenceType : ProjectCoreSNativeType :=
-  { sort := "S", pred := fun p => containsLabel "ProgrVP" p = true }
+  { sort := "S"
+  , pred := projectCorePredicate fun p => containsLabel "ProgrVP" p = true }
 
 def interrogativeSentenceType : ProjectCoreQSNativeType :=
   { sort := "QS"
-  , pred := fun p => containsLabel "UseQCl" p = true ∧ containsLabel "QuestCl" p = true }
+  , pred := projectCorePredicate fun p =>
+      containsLabel "UseQCl" p = true ∧ containsLabel "QuestCl" p = true }
 
 theorem existSomething_satisfies_existentialSentenceType :
     (langOSLF projectCoreSyntaxLangKR "S").satisfies
@@ -149,36 +157,45 @@ theorem projectCoreSyntax_no_reduces {p q : Pattern} :
   rintro ⟨_, h⟩
   cases h with
   | @rule _ _ _ r _ _ hr _ _ _ =>
-      have hnil : r ∈ ([] : List RewriteRule) := by
-        simp [projectCoreSyntaxLangKR, gfSyntaxLanguageDefFromList, gfFunsListToLanguageDef] at hr
-      cases hnil
+      have rewritesEmpty : projectCoreSyntaxLangKR.rewrites = [] := rfl
+      rw [rewritesEmpty] at hr
+      simp at hr
 
 theorem projectCoreSyntax_no_diamond (φ : Pattern → Prop) (p : Pattern) :
-    ¬ langDiamond projectCoreSyntaxLangKR φ p := by
+    ¬ langDiamond projectCoreSyntaxLangKR
+        (projectCorePredicate φ) p := by
   intro h
-  rcases (langDiamond_spec (lang := projectCoreSyntaxLangKR) (φ := φ) (p := p)).1 h with
+  rcases (langDiamond_spec (lang := projectCoreSyntaxLangKR)
+      (φ := projectCorePredicate φ) (p := p)).1 h with
     ⟨q, hred, _⟩
-  exact projectCoreSyntax_no_reduces hred
+  exact projectCoreSyntax_no_reduces
+    ((langSemanticReduces_iff_langReduces_of_equation_free
+      (by rfl) p q).mp hred)
 
 theorem projectCoreSyntax_vacuous_box (φ : Pattern → Prop) (p : Pattern) :
-    langBox projectCoreSyntaxLangKR φ p := by
+    langBox projectCoreSyntaxLangKR (projectCorePredicate φ) p := by
   rw [langBox_spec]
   intro q hred
-  exact False.elim (projectCoreSyntax_no_reduces hred)
+  exact False.elim (projectCoreSyntax_no_reduces
+    ((langSemanticReduces_iff_langReduces_of_equation_free
+      (by rfl) q p).mp hred))
 
 theorem existSomething_box_self :
     langBox projectCoreSyntaxLangKR
-      (fun q => q = existSomethingSentencePattern) existSomethingSentencePattern :=
+      (projectCorePredicate fun q => q = existSomethingSentencePattern)
+      existSomethingSentencePattern :=
   projectCoreSyntax_vacuous_box _ _
 
 theorem questionExist_box_self :
     langBox projectCoreSyntaxLangKR
-      (fun q => q = questionExistSentencePattern) questionExistSentencePattern :=
+      (projectCorePredicate fun q => q = questionExistSentencePattern)
+      questionExistSentencePattern :=
   projectCoreSyntax_vacuous_box _ _
 
 theorem progressiveHave_not_diamond_self :
     ¬ langDiamond projectCoreSyntaxLangKR
-      (fun q => q = progressiveHaveSentencePattern) progressiveHaveSentencePattern :=
+      (projectCorePredicate fun q => q = progressiveHaveSentencePattern)
+      progressiveHaveSentencePattern :=
   projectCoreSyntax_no_diamond _ _
 
 end Mettapedia.Languages.GF.GFProjectCoreNTTDiagnostics

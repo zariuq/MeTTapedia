@@ -14,7 +14,7 @@ The key idea is processual rather than taxonomic:
 - a set of candidate ethical commitments can arise in the `activeGoal` role,
 - their propositional contents induce a FOET choice point,
 - and dilemma transport theorems then move conflict information across
-  deontic, value, utilitarian, and virtue presentations.
+  deontic, value, utilitarian, and virtue theories.
 
 This is still an adapter layer, but it puts `ChoicePoint` into the live
 deliberation lane instead of leaving it disconnected from the WM bridge work.

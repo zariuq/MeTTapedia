@@ -2,6 +2,7 @@ import Mettapedia.Languages.Metamath.MM2CompressedByteScannerGSLT
 import Mettapedia.Languages.Metamath.MM2CompressedIndexCanonicality
 import Mettapedia.Languages.Metamath.MM2CompressedProofOccurrenceLedgerCanonicalHitBridge
 import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveGSLTNativeTypes
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2RuleScopedExecution
 
 /-!
 # Continuous compressed-proof public-boundary representation
@@ -203,6 +204,78 @@ theorem ProofByteReceipt.rejects_changed_index
   intro changedReceipt
   exact different (changedReceipt.index_eq receipt)
 
+/-! ## Source-synchronised `Z` save -/
+
+/-- One exact source-byte movement whose authored scanner result is `Z` save.
+The source phase and successor phase are retained explicitly so the later MM2
+segment cannot treat a save outside the completed-step boundary as valid. -/
+structure SaveByteReceipt (context : BoundaryContext)
+    (before after : ScannerBoundary) (occurrence : ByteOccurrence) : Prop where
+  owner_eq : occurrence.owner = context.proofOwner
+  occurrence_position_eq : occurrence.position = before.bytePosition
+  consumes_head : before.remainingBytes = occurrence.byte :: after.remainingBytes
+  word_position_eq : after.wordPosition = before.wordPosition
+  byte_position_eq : after.bytePosition = before.bytePosition + 1
+  phase_before : before.phase = .completed
+  phase_after : after.phase = .between
+  byte_is_z : occurrence.byte.toNat = 90
+  decoded : authoredOutcome before.phase occurrence.byte =
+    .decoded [.save] after.phase
+
+/-- A save receipt reconstructs the actual authored scanner transition. -/
+theorem SaveByteReceipt.sourceStep
+    {context : BoundaryContext} {before after : ScannerBoundary}
+    {occurrence : ByteOccurrence}
+    (receipt : SaveByteReceipt context before after occurrence) :
+    SourceStep (.request occurrence before.phase)
+      (.outcome occurrence (.decoded [.save] after.phase)) := by
+  have step := SourceStep.run occurrence before.phase
+  rw [receipt.decoded] at step
+  exact step
+
+/-- Canonical `Z` receipt.  The output boundary consumes exactly one byte and
+returns to the between-step phase without manufacturing an action index. -/
+theorem saveByteReceipt_of_z
+    (context : BoundaryContext) (before : ScannerBoundary)
+    (occurrence : ByteOccurrence) (remaining : List UInt8)
+    (ownerEqual : occurrence.owner = context.proofOwner)
+    (positionEqual : occurrence.position = before.bytePosition)
+    (headExact : before.remainingBytes = occurrence.byte :: remaining)
+    (phaseExact : before.phase = .completed)
+    (byteExact : occurrence.byte.toNat = 90) :
+    SaveByteReceipt context before
+      { wordPosition := before.wordPosition
+        bytePosition := before.bytePosition + 1
+        remainingBytes := remaining
+        phase := .between }
+      occurrence := by
+  refine
+    { owner_eq := ownerEqual
+      occurrence_position_eq := positionEqual
+      consumes_head := headExact
+      word_position_eq := rfl
+      byte_position_eq := rfl
+      phase_before := phaseExact
+      phase_after := rfl
+      byte_is_z := byteExact
+      decoded := ?_ }
+  rw [phaseExact]
+  simp [authoredOutcome, byteExact]
+
+/-- The same byte occurrence cannot be reinterpreted as `Z` from a different
+source phase. -/
+theorem SaveByteReceipt.rejects_changed_before_phase
+    {context : BoundaryContext} {before after : ScannerBoundary}
+    {occurrence : ByteOccurrence}
+    (receipt : SaveByteReceipt context before after occurrence)
+    (changed : ScannerPhase) (different : changed ≠ before.phase) :
+    ¬ SaveByteReceipt context { before with phase := changed } after
+      occurrence := by
+  intro changedReceipt
+  have changedCompleted : changed = .completed := changedReceipt.phase_before
+  have beforeCompleted : before.phase = .completed := receipt.phase_before
+  exact different (changedCompleted.trans beforeCompleted.symm)
+
 /-- Exact MM2 machine frontiers reconstructed from the source state. -/
 def machineRow
     {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
@@ -298,6 +371,119 @@ def sourceStackRows
     (ledger : NodeOccurrenceLedger state) : List Atom :=
   sourceStackRowsFrom proofOwner state ledger 0 state.stack
 
+/-- Stack rows depend only on the node table and occurrence ledger, not on
+the other machine-state fields. -/
+theorem sourceStackRowsFrom_eq_of_nodes_occurrences
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (proofOwner : Atom) (leftState rightState : MachineState source target)
+    (leftLedger : NodeOccurrenceLedger leftState)
+    (rightLedger : NodeOccurrenceLedger rightState)
+    (nodesExact : leftState.nodes = rightState.nodes)
+    (occurrencesExact : leftLedger.occurrences = rightLedger.occurrences)
+    (position : Nat) (stack : List Nat) :
+    sourceStackRowsFrom proofOwner leftState leftLedger position stack =
+      sourceStackRowsFrom proofOwner rightState rightLedger position stack := by
+  induction stack generalizing position with
+  | nil => rfl
+  | cons nodeId remaining induction =>
+      simp only [sourceStackRowsFrom]
+      rw [nodesExact, occurrencesExact]
+      split <;> rw [induction]
+
+/-- Stack encoding respects concatenation while advancing the physical stack
+position by the exact length of the encoded prefix. -/
+theorem sourceStackRowsFrom_append
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (proofOwner : Atom) (state : MachineState source target)
+    (ledger : NodeOccurrenceLedger state) (position : Nat)
+    (left right : List Nat) :
+    sourceStackRowsFrom proofOwner state ledger position (left ++ right) =
+      sourceStackRowsFrom proofOwner state ledger position left ++
+        sourceStackRowsFrom proofOwner state ledger (position + left.length)
+          right := by
+  induction left generalizing position with
+  | nil => simp [sourceStackRowsFrom]
+  | cons nodeId remaining induction =>
+      simp only [List.cons_append, sourceStackRowsFrom, List.length_cons]
+      split
+      · rw [induction]
+        rw [List.append_assoc]
+        have positionExact :
+            position + 1 + remaining.length =
+              position + (remaining.length + 1) := by
+          omega
+        rw [positionExact]
+      · rw [induction]
+        rw [List.append_assoc]
+        have positionExact :
+            position + 1 + remaining.length =
+              position + (remaining.length + 1) := by
+          omega
+        rw [positionExact]
+
+/-- Pushing one existing proof node appends exactly its compact and normal
+stack observations; every prior stack row is retained in order. -/
+theorem sourceStackRows_push
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (proofOwner : Atom) (state : MachineState source target)
+    (ledger : NodeOccurrenceLedger state) (nodeId : Nat)
+    (node : ProofNode source target) (sourceOccurrence : Atom)
+    (nodeLookup : state.nodes[nodeId]? = some node)
+    (occurrenceLookup : ledger.occurrences[nodeId]? = some sourceOccurrence)
+    (afterLedger : NodeOccurrenceLedger
+      ({ state with stack := state.stack ++ [nodeId] } :
+        MachineState source target))
+    (occurrencesExact : afterLedger.occurrences = ledger.occurrences) :
+    sourceStackRows proofOwner
+        ({ state with stack := state.stack ++ [nodeId] } :
+          MachineState source target)
+        afterLedger =
+      sourceStackRows proofOwner state ledger ++
+        [compressedStackRow proofOwner state.stack.length
+            (displayedProofOccurrence nodeId node sourceOccurrence),
+          normalStackRow proofOwner state.stack.length
+            (displayedProofOccurrence nodeId node sourceOccurrence)] := by
+  have afterOccurrenceLookup :
+      afterLedger.occurrences[nodeId]? = some sourceOccurrence := by
+    rw [occurrencesExact]
+    exact occurrenceLookup
+  unfold sourceStackRows
+  rw [sourceStackRowsFrom_append]
+  rw [sourceStackRowsFrom_eq_of_nodes_occurrences proofOwner _ state afterLedger
+    ledger rfl occurrencesExact]
+  simp [sourceStackRowsFrom, nodeLookup, afterOccurrenceLookup]
+
+theorem displayedHeap_eq_of_heap_nodes_occurrences
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (left right : MachineState source target)
+    (leftLedger : NodeOccurrenceLedger left)
+    (rightLedger : NodeOccurrenceLedger right)
+    (heapExact : left.heap = right.heap)
+    (nodesExact : left.nodes = right.nodes)
+    (occurrencesExact : leftLedger.occurrences = rightLedger.occurrences) :
+    displayedHeap left leftLedger = displayedHeap right rightLedger := by
+  unfold displayedHeap
+  rw [heapExact]
+  apply List.map_congr_left
+  intro entry _member
+  cases entry with
+  | assertion assertion => rfl
+  | proof nodeId =>
+      simp only [displayedHeapEntry]
+      rw [nodesExact, occurrencesExact]
+
+theorem sourceNodeRows_eq_of_nodes_occurrences
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (proofOwner : Atom) (left right : MachineState source target)
+    (leftLedger : NodeOccurrenceLedger left)
+    (rightLedger : NodeOccurrenceLedger right)
+    (nodesExact : left.nodes = right.nodes)
+    (occurrencesExact : leftLedger.occurrences = rightLedger.occurrences) :
+    sourceNodeRows proofOwner left leftLedger =
+      sourceNodeRows proofOwner right rightLedger := by
+  simp only [sourceNodeRows]
+  rw [nodesExact, occurrencesExact]
+
 /-- `Z` receipts starting at an explicit save occurrence. -/
 def sourceSaveRowsFrom
     {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
@@ -323,6 +509,22 @@ def sourceSaveRows
     (ledger : NodeOccurrenceLedger state) : List Atom :=
   sourceSaveRowsFrom context state ledger 0 state.saves
 
+theorem sourceSaveRowsFrom_eq_of_nodes_occurrences
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (context : BoundaryContext) (left right : MachineState source target)
+    (leftLedger : NodeOccurrenceLedger left)
+    (rightLedger : NodeOccurrenceLedger right)
+    (nodesExact : left.nodes = right.nodes)
+    (occurrencesExact : leftLedger.occurrences = rightLedger.occurrences)
+    (position : Nat) (saves : List Nat) :
+    sourceSaveRowsFrom context left leftLedger position saves =
+      sourceSaveRowsFrom context right rightLedger position saves := by
+  induction saves generalizing position with
+  | nil => rfl
+  | cons nodeId remaining induction =>
+      simp only [sourceSaveRowsFrom]
+      rw [nodesExact, occurrencesExact, induction]
+
 /-- Source-derived rows that persist while scanner and machine control move
 through one administrative target segment. -/
 def canonicalPassiveRows
@@ -334,6 +536,56 @@ def canonicalPassiveRows
     sourceNodeRows context.proofOwner state ledger ++
     sourceStackRows context.proofOwner state ledger ++
     sourceSaveRows context state ledger
+
+/-- A proof lookup changes only the stack display.  The complete passive row
+set gains exactly the compact and normal observations at the old frontier. -/
+theorem canonicalPassiveRows_push_mem_iff
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (context : BoundaryContext) (state : MachineState source target)
+    (ledger : NodeOccurrenceLedger state) (nodeId : Nat)
+    (node : ProofNode source target) (sourceOccurrence : Atom)
+    (nodeLookup : state.nodes[nodeId]? = some node)
+    (occurrenceLookup : ledger.occurrences[nodeId]? = some sourceOccurrence)
+    (afterLedger : NodeOccurrenceLedger
+      ({ state with stack := state.stack ++ [nodeId] } :
+        MachineState source target))
+    (occurrencesExact : afterLedger.occurrences = ledger.occurrences)
+    (row : Atom) :
+    row ∈ canonicalPassiveRows context
+          ({ state with stack := state.stack ++ [nodeId] } :
+            MachineState source target)
+          afterLedger ↔
+      row ∈ canonicalPassiveRows context state ledger ∨
+        row = compressedStackRow context.proofOwner state.stack.length
+          (displayedProofOccurrence nodeId node sourceOccurrence) ∨
+        row = normalStackRow context.proofOwner state.stack.length
+          (displayedProofOccurrence nodeId node sourceOccurrence) := by
+  let after : MachineState source target :=
+    { state with stack := state.stack ++ [nodeId] }
+  have heapExact : displayedHeap after afterLedger = displayedHeap state ledger :=
+    displayedHeap_eq_of_heap_nodes_occurrences after state afterLedger ledger
+      rfl rfl occurrencesExact
+  have nodesExact : sourceNodeRows context.proofOwner after afterLedger =
+      sourceNodeRows context.proofOwner state ledger :=
+    sourceNodeRows_eq_of_nodes_occurrences context.proofOwner after state
+      afterLedger ledger rfl occurrencesExact
+  have stackExact : sourceStackRows context.proofOwner after afterLedger =
+      sourceStackRows context.proofOwner state ledger ++
+        [compressedStackRow context.proofOwner state.stack.length
+            (displayedProofOccurrence nodeId node sourceOccurrence),
+          normalStackRow context.proofOwner state.stack.length
+            (displayedProofOccurrence nodeId node sourceOccurrence)] :=
+    sourceStackRows_push context.proofOwner state ledger nodeId node
+      sourceOccurrence nodeLookup occurrenceLookup afterLedger occurrencesExact
+  have savesExact : sourceSaveRows context after afterLedger =
+      sourceSaveRows context state ledger := by
+    unfold sourceSaveRows
+    exact sourceSaveRowsFrom_eq_of_nodes_occurrences context after state
+      afterLedger ledger rfl occurrencesExact 0 state.saves
+  change row ∈ canonicalPassiveRows context after afterLedger ↔ _
+  simp only [canonicalPassiveRows, heapExact, nodesExact, stackExact,
+    savesExact, List.mem_append, List.mem_cons, List.not_mem_nil, or_false]
+  aesop
 
 /-- Every verifier-dynamic row present at a public action boundary, derived
 from one source machine and its displayed occurrence ledger. -/
@@ -377,6 +629,19 @@ def directContextAtBoundary
       (directContextAtBoundary context state scanner index).nextStackPosition =
         state.stack.length + 1 := by
   exact ⟨rfl, rfl, rfl, rfl⟩
+
+/-- The direct handler's advanced machine row is exactly the public machine
+row of the source state after pushing one proof node. -/
+theorem directContextAtBoundary_nextMachineRow_eq_machineRow_push
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (context : BoundaryContext) (state : MachineState source target)
+    (scanner : ScannerBoundary) (index nodeId : Nat) :
+    (directContextAtBoundary context state scanner index).nextMachineRow =
+      machineRow context
+        ({ state with stack := state.stack ++ [nodeId] } :
+          MachineState source target) := by
+  simp [directContextAtBoundary, DirectProofContext.nextMachineRow, machineRow,
+    MM2CompressedIndexSpine.CanonicalIndexCode.ofNat_succ]
 
 /-- The scanner successor named by a proof-byte receipt is exactly the row
 emitted by the direct proof handler after it consumes the corresponding
@@ -439,6 +704,337 @@ def sourceProofRequestSpace
   canonicalDirectProofSpace
       (directContextAtBoundary context state scanner index) item ++
     sourceProofAdditionalRows context state ledger index item
+
+/-- The direct request merely separates its matched heap/node rows from the
+remaining passive display; it never drops a source-derived passive row. -/
+theorem canonicalPassiveRows_mem_sourceProofRequestSpace
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (context : BoundaryContext) (state : MachineState source target)
+    (ledger : NodeOccurrenceLedger state) (scanner : ScannerBoundary)
+    (index : Nat) (item : ProofOccurrence) {row : Atom}
+    (member : row ∈ canonicalPassiveRows context state ledger) :
+    row ∈ sourceProofRequestSpace context state ledger scanner index item := by
+  by_cases heapExact : row = heapProofRow context.proofOwner index item
+  · subst row
+    simp [sourceProofRequestSpace, canonicalDirectProofSpace,
+      directContextAtBoundary]
+  by_cases nodeExact :
+      row = MM2CompressedProofHeapEncoding.nodeRow context.proofOwner item
+  · subst row
+    simp [sourceProofRequestSpace, canonicalDirectProofSpace,
+      directContextAtBoundary]
+  apply List.mem_append_right
+  simp [sourceProofAdditionalRows, member, heapExact, nodeExact]
+
+/-! ## Passive-row inversion -/
+
+/-- The fixed constructor head of a source-derived dynamic row.  This small
+projection lets later matcher proofs distinguish persistent source data without
+decoding or reinterpreting its payload. -/
+def compressedDynamicRowHead? : Atom → Option String
+  | .expression (.symbol head :: _) => some head
+  | _ => none
+
+theorem compressedDynamicRowHead?_eq_some_iff
+    (row : Atom) (head : String) :
+    compressedDynamicRowHead? row = some head ↔
+      ∃ tail, row = .expression (.symbol head :: tail) := by
+  cases row with
+  | grounded value => simp [compressedDynamicRowHead?]
+  | symbol value => simp [compressedDynamicRowHead?]
+  | «var» value => simp [compressedDynamicRowHead?]
+  | expression atoms =>
+      cases atoms with
+      | nil => simp [compressedDynamicRowHead?]
+      | cons atom tail =>
+          cases atom with
+          | grounded value => simp [compressedDynamicRowHead?]
+          | symbol actual =>
+              simp only [compressedDynamicRowHead?, Option.some.injEq]
+              constructor
+              · intro equal
+                subst actual
+                exact ⟨tail, rfl⟩
+              · rintro ⟨candidateTail, equal⟩
+                cases equal
+                rfl
+          | «var» value => simp [compressedDynamicRowHead?]
+          | expression value => simp [compressedDynamicRowHead?]
+
+/-- Invert an arbitrary proof-pointer row in an occurrence heap.  The physical
+row recovers its exact heap position and the identity stored at that position;
+the separately paired node row retains formula and source occurrence. -/
+theorem heapProofRow_mem_heapProofRowsFrom_inverts
+    {Other : Type} (proofOwner : Atom) (start : Nat)
+    (heap : List (MM2CompressedProofHeapEncoding.HeapEntry Other))
+    (candidatePosition : Nat) (candidate : ProofOccurrence)
+    (member : heapProofRow proofOwner candidatePosition candidate ∈
+      heapProofRowsFrom proofOwner start heap) :
+    ∃ index actual,
+      heap[index]? = some (.occurrence actual) ∧
+        candidatePosition = start + index ∧
+        candidate.identity = actual.identity := by
+  induction heap generalizing start candidatePosition with
+  | nil => simp [heapProofRowsFrom] at member
+  | cons entry remaining induction =>
+      cases entry with
+      | occurrence actual =>
+          simp only [heapProofRowsFrom, List.mem_cons] at member
+          rcases member with own | tail
+          · have decoded :=
+              (heapProofRow_eq_iff proofOwner candidatePosition start
+                candidate actual).mp own
+            exact ⟨0, actual, by simp, by simpa using decoded.1, decoded.2⟩
+          · obtain ⟨index, found, lookup, positionEqual, identityEqual⟩ :=
+              induction (start := start + 1)
+                (candidatePosition := candidatePosition) tail
+            refine ⟨index + 1, found, ?_, ?_, identityEqual⟩
+            · simpa using lookup
+            · omega
+      | «opaque» value =>
+          obtain ⟨index, found, lookup, positionEqual, identityEqual⟩ :=
+            induction (start := start + 1)
+              (candidatePosition := candidatePosition)
+              (by simpa [heapProofRowsFrom] using member)
+          refine ⟨index + 1, found, ?_, ?_, identityEqual⟩
+          · simpa using lookup
+          · omega
+
+/-- Aligned source and occurrence lookups contribute their exact node row at
+the corresponding shifted position. -/
+theorem sourceNodeRow_mem_sourceNodeRowsFrom_of_getElem
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (proofOwner : Atom) (start : Nat)
+    (nodes : List (ProofNode source target)) (occurrences : List Atom)
+    (index : Nat) (node : ProofNode source target) (occurrence : Atom)
+    (nodeLookup : nodes[index]? = some node)
+    (occurrenceLookup : occurrences[index]? = some occurrence) :
+    MM2CompressedProofHeapEncoding.nodeRow proofOwner
+        (displayedProofOccurrence (start + index) node occurrence) ∈
+      sourceNodeRowsFrom proofOwner start nodes occurrences := by
+  induction nodes generalizing start occurrences index with
+  | nil => simp at nodeLookup
+  | cons head nodes induction =>
+      cases occurrences with
+      | nil => simp at occurrenceLookup
+      | cons headOccurrence occurrences =>
+          cases index with
+          | zero =>
+              simp only [List.getElem?_cons_zero, Option.some.injEq]
+                at nodeLookup occurrenceLookup
+              subst node
+              subst occurrence
+              simp [sourceNodeRowsFrom]
+          | succ index =>
+              simp only [List.getElem?_cons_succ]
+                at nodeLookup occurrenceLookup
+              have tail := induction (start := start + 1)
+                (occurrences := occurrences) (index := index) nodeLookup
+                occurrenceLookup
+              have positionEqual :
+                  start + Nat.succ index = start + 1 + index := by
+                omega
+              rw [positionEqual]
+              exact List.mem_cons_of_mem _ tail
+
+theorem sourceNodeRow_mem_sourceNodeRows_of_getElem
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (proofOwner : Atom) (state : MachineState source target)
+    (ledger : NodeOccurrenceLedger state) (nodeId : Nat)
+    (node : ProofNode source target) (occurrence : Atom)
+    (nodeLookup : state.nodes[nodeId]? = some node)
+    (occurrenceLookup : ledger.occurrences[nodeId]? = some occurrence) :
+    MM2CompressedProofHeapEncoding.nodeRow proofOwner
+        (displayedProofOccurrence nodeId node occurrence) ∈
+      sourceNodeRows proofOwner state ledger := by
+  simpa [sourceNodeRows] using
+    sourceNodeRow_mem_sourceNodeRowsFrom_of_getElem proofOwner 0 state.nodes
+      ledger.occurrences nodeId node occurrence nodeLookup occurrenceLookup
+
+/-- Invert an arbitrary node row in the pointwise source-node/occurrence
+display.  The complete proof occurrence is reconstructed from the source
+tables because the node-row encoder is injective. -/
+theorem nodeRow_mem_sourceNodeRowsFrom_inverts
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (proofOwner : Atom) (start : Nat)
+    (nodes : List (ProofNode source target)) (occurrences : List Atom)
+    (candidate : ProofOccurrence)
+    (member : MM2CompressedProofHeapEncoding.nodeRow proofOwner candidate ∈
+      sourceNodeRowsFrom proofOwner start nodes occurrences) :
+    ∃ index node occurrence,
+      nodes[index]? = some node ∧
+        occurrences[index]? = some occurrence ∧
+        candidate = displayedProofOccurrence (start + index) node occurrence := by
+  induction nodes generalizing start occurrences with
+  | nil => simp [sourceNodeRowsFrom] at member
+  | cons node nodes induction =>
+      cases occurrences with
+      | nil => simp [sourceNodeRowsFrom] at member
+      | cons occurrence occurrences =>
+          simp only [sourceNodeRowsFrom, List.mem_cons] at member
+          rcases member with own | tail
+          · have exactOccurrence :=
+              MM2CompressedProofHeapEncoding.nodeRow_injective proofOwner own
+            exact ⟨0, node, occurrence, by simp, by simp,
+              by simpa using exactOccurrence⟩
+          · obtain ⟨index, foundNode, foundOccurrence, nodeLookup,
+                occurrenceLookup, candidateExact⟩ :=
+              induction (start := start + 1) (occurrences := occurrences) tail
+            refine ⟨index + 1, foundNode, foundOccurrence, ?_, ?_, ?_⟩
+            · simpa using nodeLookup
+            · simpa using occurrenceLookup
+            · have positionEqual : start + (index + 1) = start + 1 + index := by
+                omega
+              rw [positionEqual]
+              exact candidateExact
+
+theorem heapProofRowsFrom_head
+    {Other : Type} (proofOwner : Atom) (position : Nat)
+    (heap : List (MM2CompressedProofHeapEncoding.HeapEntry Other)) :
+    ∀ row, row ∈ heapProofRowsFrom proofOwner position heap →
+      compressedDynamicRowHead? row = some "mm-compressed-heap-proof" := by
+  induction heap generalizing position with
+  | nil => simp [heapProofRowsFrom]
+  | cons entry remaining induction =>
+      cases entry with
+      | occurrence item =>
+          intro row member
+          simp only [heapProofRowsFrom, List.mem_cons] at member
+          rcases member with rfl | tail
+          · rfl
+          · exact induction (position + 1) row tail
+      | «opaque» value =>
+          intro row member
+          exact induction (position + 1) row
+            (by simpa [heapProofRowsFrom] using member)
+
+theorem assertionHeapRowsFrom_head
+    {source : SourcePrefix} (proofOwner : Atom) (position : Nat)
+    (heap : List (SourceGSLTCompressedTheorem.HeapEntry source)) :
+    ∀ row, row ∈ assertionHeapRowsFrom proofOwner position heap →
+      compressedDynamicRowHead? row =
+        some "mm-compressed-heap-assertion" := by
+  induction heap generalizing position with
+  | nil => simp [assertionHeapRowsFrom]
+  | cons entry remaining induction =>
+      cases entry with
+      | proof nodeId =>
+          intro row member
+          exact induction (position + 1) row
+            (by simpa [assertionHeapRowsFrom] using member)
+      | assertion assertion =>
+          intro row member
+          simp only [assertionHeapRowsFrom, List.mem_cons] at member
+          rcases member with rfl | tail
+          · rfl
+          · exact induction (position + 1) row tail
+
+theorem sourceNodeRowsFrom_head
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (proofOwner : Atom) (position : Nat)
+    (nodes : List (ProofNode source target)) (occurrences : List Atom) :
+    ∀ row, row ∈ sourceNodeRowsFrom proofOwner position nodes occurrences →
+      compressedDynamicRowHead? row = some "mm-compressed-node" := by
+  induction nodes generalizing position occurrences with
+  | nil => simp [sourceNodeRowsFrom]
+  | cons node nodes induction =>
+      cases occurrences with
+      | nil => simp [sourceNodeRowsFrom]
+      | cons occurrence occurrences =>
+          intro row member
+          simp only [sourceNodeRowsFrom, List.mem_cons] at member
+          rcases member with rfl | tail
+          · rfl
+          · exact induction (position + 1) occurrences row tail
+
+theorem sourceStackRowsFrom_head
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (proofOwner : Atom) (state : MachineState source target)
+    (ledger : NodeOccurrenceLedger state) (position : Nat) (stack : List Nat) :
+    ∀ row, row ∈ sourceStackRowsFrom proofOwner state ledger position stack →
+      compressedDynamicRowHead? row = some "mm-compressed-stack-cell" ∨
+        compressedDynamicRowHead? row = some "mm-stack-cell" := by
+  induction stack generalizing position with
+  | nil => simp [sourceStackRowsFrom]
+  | cons nodeId remaining induction =>
+      intro row member
+      simp only [sourceStackRowsFrom] at member
+      split at member
+      · simp only [List.cons_append, List.nil_append, List.mem_cons] at member
+        rcases member with rfl | rfl | tail
+        · exact Or.inl rfl
+        · exact Or.inr rfl
+        · exact induction (position + 1) row tail
+      · exact induction (position + 1) row
+          (by simpa only [List.nil_append] using member)
+
+theorem sourceSaveRowsFrom_head
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (context : BoundaryContext) (state : MachineState source target)
+    (ledger : NodeOccurrenceLedger state) (position : Nat) (saves : List Nat) :
+    ∀ row, row ∈ sourceSaveRowsFrom context state ledger position saves →
+      compressedDynamicRowHead? row =
+        some "mm-compressed-save-receipt" := by
+  induction saves generalizing position with
+  | nil => simp [sourceSaveRowsFrom]
+  | cons nodeId remaining induction =>
+      intro row member
+      simp only [sourceSaveRowsFrom] at member
+      split at member
+      · simp only [List.cons_append, List.nil_append, List.mem_cons] at member
+        rcases member with rfl | tail
+        · rfl
+        · exact induction (position + 1) row tail
+      · exact induction (position + 1) row
+          (by simpa only [List.nil_append] using member)
+
+/-- Every persistent source row belongs to one of the seven data families
+that may coexist at a public compressed-proof boundary. -/
+theorem canonicalPassiveRows_head_cases
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (context : BoundaryContext) (state : MachineState source target)
+    (ledger : NodeOccurrenceLedger state) {row : Atom}
+    (member : row ∈ canonicalPassiveRows context state ledger) :
+    compressedDynamicRowHead? row = some "mm-compressed-heap-proof" ∨
+      compressedDynamicRowHead? row = some "mm-compressed-heap-assertion" ∨
+      compressedDynamicRowHead? row = some "mm-compressed-node" ∨
+      compressedDynamicRowHead? row = some "mm-compressed-stack-cell" ∨
+      compressedDynamicRowHead? row = some "mm-stack-cell" ∨
+      compressedDynamicRowHead? row = some "mm-compressed-save-receipt" := by
+  simp only [canonicalPassiveRows, List.mem_append] at member
+  rcases member with (((heap | assertion) | node) | stack) | save
+  · exact Or.inl (heapProofRowsFrom_head context.proofOwner 0
+      (displayedHeap state ledger) row (by simpa [heapProofRows] using heap))
+  · exact Or.inr (Or.inl (assertionHeapRowsFrom_head context.proofOwner 0
+      state.heap row (by simpa [assertionHeapRows] using assertion)))
+  · exact Or.inr (Or.inr (Or.inl
+      (sourceNodeRowsFrom_head context.proofOwner 0 state.nodes
+        ledger.occurrences row (by simpa [sourceNodeRows] using node))))
+  · rcases sourceStackRowsFrom_head context.proofOwner state ledger 0
+        state.stack row (by simpa [sourceStackRows] using stack) with
+      compact | normal
+    · exact Or.inr (Or.inr (Or.inr (Or.inl compact)))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl normal))))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      (sourceSaveRowsFrom_head context state ledger 0 state.saves row
+        (by simpa [sourceSaveRows] using save))))))
+
+/-- Filtering the two rows already owned by the direct-hit slice preserves
+the same exhaustive head classification for the remaining source display. -/
+theorem sourceProofAdditionalRows_head_cases
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (context : BoundaryContext) (state : MachineState source target)
+    (ledger : NodeOccurrenceLedger state) (index : Nat)
+    (item : ProofOccurrence) {row : Atom}
+    (member : row ∈ sourceProofAdditionalRows context state ledger index item) :
+    compressedDynamicRowHead? row = some "mm-compressed-heap-proof" ∨
+      compressedDynamicRowHead? row = some "mm-compressed-heap-assertion" ∨
+      compressedDynamicRowHead? row = some "mm-compressed-node" ∨
+      compressedDynamicRowHead? row = some "mm-compressed-stack-cell" ∨
+      compressedDynamicRowHead? row = some "mm-stack-cell" ∨
+      compressedDynamicRowHead? row = some "mm-compressed-save-receipt" := by
+  exact canonicalPassiveRows_head_cases context state ledger
+    (List.mem_filter.mp member).1
 
 /-! ## Source boundary validity -/
 
@@ -550,6 +1146,67 @@ theorem SourceBoundaryWellFormed.execute
   | nil => exact wellFormed
   | cons head tail induction =>
       exact induction (wellFormed.actionStep head)
+
+/-- Scanner-synchronised source `Z` branch.  The byte decoder and semantic
+machine perform the same save action, the shared boundary invariant is
+preserved, the occurrence ledger is unchanged, and the heap receives the
+existing stack-top node identity without allocating or copying a node. -/
+theorem source_decoded_save_action_preserves_boundary
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    {context : BoundaryContext} {before after : MachineState source target}
+    (wellFormed : SourceBoundaryWellFormed context before)
+    (ledger : NodeOccurrenceLedger before) (proofPosition : Nat)
+    {scannerBefore scannerAfter : ScannerBoundary}
+    {occurrence : ByteOccurrence}
+    (receipt : SaveByteReceipt context scannerBefore scannerAfter occurrence)
+    (step : ActionStep before .save after) :
+    SourceStep (.request occurrence scannerBefore.phase)
+        (.outcome occurrence (.decoded [.save] scannerAfter.phase)) ∧
+      SourceBoundaryWellFormed context after ∧
+      (ActionStep.occurrenceLedger step proofPosition ledger).occurrences =
+        ledger.occurrences ∧
+      ∃ nodeId node,
+        before.stack.getLast? = some nodeId ∧
+        before.nodes[nodeId]? = some node ∧
+        after.nodes = before.nodes ∧
+        after.heap = before.heap ++ [.proof nodeId] ∧
+        after.saves = before.saves ++ [nodeId] := by
+  refine ⟨receipt.sourceStep, wellFormed.actionStep step, ?_, ?_⟩
+  · exact ActionStep.save_occurrenceLedger_unchanged step proofPosition ledger
+  · exact ActionStep.save_reuses_identity step
+
+/-- The displayed rich heap changes by exactly one proof occurrence under a
+source save.  The occurrence is recovered from the derivation ledger at the
+existing stack-top node; it is not supplied as target evidence. -/
+theorem displayedHeap_save_exact
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    {before after : MachineState source target}
+    (ledger : NodeOccurrenceLedger before) (proofPosition : Nat)
+    (step : ActionStep before .save after) :
+    ∃ nodeId node sourceOccurrence,
+      before.stack.getLast? = some nodeId ∧
+      before.nodes[nodeId]? = some node ∧
+      ledger.occurrences[nodeId]? = some sourceOccurrence ∧
+      displayedHeap after
+          (ActionStep.occurrenceLedger step proofPosition ledger) =
+        displayedHeap before ledger ++
+          [.occurrence
+            (displayedProofOccurrence nodeId node sourceOccurrence)] := by
+  cases step with
+  | save nodeId node stackTop nodeLookup =>
+      have nodeBound := (List.getElem?_eq_some_iff.mp nodeLookup).1
+      have occurrenceBound : nodeId < ledger.occurrences.length := by
+        rw [ledger.aligned]
+        exact nodeBound
+      let sourceOccurrence := ledger.occurrences[nodeId]'occurrenceBound
+      have occurrenceLookup :
+          ledger.occurrences[nodeId]? = some sourceOccurrence := by
+        rw [List.getElem?_eq_some_iff]
+        exact ⟨occurrenceBound, rfl⟩
+      refine ⟨nodeId, node, sourceOccurrence, stackTop, nodeLookup,
+        occurrenceLookup, ?_⟩
+      simp [ActionStep.occurrenceLedger, actionOccurrenceAtoms,
+        displayedHeap, displayedHeapEntry, nodeLookup, occurrenceLookup]
 
 /-! ## Exact dynamic ownership -/
 
@@ -998,6 +1655,128 @@ structure RepresentsRunningBoundary
     row ∈ space <->
       row ∈ canonicalBoundaryRows context state ledger scanner ++ staticFrame
 
+/-- Physical refinement of the public-boundary relation used by actual MORK
+execution.  The semantic relation identifies the rows; the permutation records
+their multiplicity without imposing a fictitious storage order.  Ordinary and
+compact-key duplicate freedom are retained separately because distinct atoms
+can denote the same physical MORK support cell. -/
+structure PhysicalRunningBoundary
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (context : BoundaryContext) (state : MachineState source target)
+    (ledger : NodeOccurrenceLedger state) (scanner : ScannerBoundary)
+    (staticFrame space : List Atom) : Prop where
+  semantic : RepresentsRunningBoundary context state ledger scanner
+    staticFrame space
+  rows_perm : space.Perm
+    (canonicalBoundaryRows context state ledger scanner ++ staticFrame)
+  list_nodup : space.Nodup
+  mork_nodup : MorkSupportNodup space
+
+namespace PhysicalRunningBoundary
+
+theorem canonical_with_frame_nodup
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    {context : BoundaryContext} {state : MachineState source target}
+    {ledger : NodeOccurrenceLedger state} {scanner : ScannerBoundary}
+    {staticFrame space : List Atom}
+    (represented : PhysicalRunningBoundary context state ledger scanner
+      staticFrame space) :
+    (canonicalBoundaryRows context state ledger scanner ++ staticFrame).Nodup :=
+  represented.rows_perm.nodup_iff.mp represented.list_nodup
+
+/-- The canonical presentation inherits compact-key duplicate freedom from
+every physical permutation representing it. -/
+theorem canonical_with_frame_mork_nodup
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    {context : BoundaryContext} {state : MachineState source target}
+    {ledger : NodeOccurrenceLedger state} {scanner : ScannerBoundary}
+    {staticFrame space : List Atom}
+    (represented : PhysicalRunningBoundary context state ledger scanner
+      staticFrame space) :
+    MorkSupportNodup
+      (canonicalBoundaryRows context state ledger scanner ++ staticFrame) := by
+  have physicalNodup : (space.map morkSupportKey).Nodup :=
+    represented.mork_nodup
+  unfold MorkSupportNodup
+  exact (represented.rows_perm.map morkSupportKey).nodup_iff.mp
+    physicalNodup
+
+/-- Canonical source rows occur exactly once at a physical boundary. -/
+theorem canonical_nodup
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    {context : BoundaryContext} {state : MachineState source target}
+    {ledger : NodeOccurrenceLedger state} {scanner : ScannerBoundary}
+    {staticFrame space : List Atom}
+    (represented : PhysicalRunningBoundary context state ledger scanner
+      staticFrame space) :
+    (canonicalBoundaryRows context state ledger scanner).Nodup :=
+  represented.canonical_with_frame_nodup.of_append_left
+
+/-- Static verifier rows occur exactly once at a physical boundary. -/
+theorem staticFrame_nodup
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    {context : BoundaryContext} {state : MachineState source target}
+    {ledger : NodeOccurrenceLedger state} {scanner : ScannerBoundary}
+    {staticFrame space : List Atom}
+    (represented : PhysicalRunningBoundary context state ledger scanner
+      staticFrame space) :
+    staticFrame.Nodup :=
+  represented.canonical_with_frame_nodup.of_append_right
+
+/-- Source-derived rows and admitted static rows are disjoint.  This is a
+multiplicity theorem, stronger than the dynamic/static membership argument. -/
+theorem canonical_static_disjoint
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    {context : BoundaryContext} {state : MachineState source target}
+    {ledger : NodeOccurrenceLedger state} {scanner : ScannerBoundary}
+    {staticFrame space : List Atom}
+    (represented : PhysicalRunningBoundary context state ledger scanner
+      staticFrame space) :
+    List.Disjoint (canonicalBoundaryRows context state ledger scanner)
+      staticFrame :=
+  represented.canonical_with_frame_nodup.disjoint
+
+/-- The physical relation retains the existing source-derived membership API. -/
+theorem exact_rows
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    {context : BoundaryContext} {state : MachineState source target}
+    {ledger : NodeOccurrenceLedger state} {scanner : ScannerBoundary}
+    {staticFrame space : List Atom}
+    (represented : PhysicalRunningBoundary context state ledger scanner
+      staticFrame space) (row : Atom) :
+    row ∈ space ↔
+      row ∈ canonicalBoundaryRows context state ledger scanner ++ staticFrame :=
+  represented.rows_perm.mem_iff
+
+/-- Executable-directive extraction respects the physical boundary
+permutation. -/
+theorem supportedFacts_perm
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    {context : BoundaryContext} {state : MachineState source target}
+    {ledger : NodeOccurrenceLedger state} {scanner : ScannerBoundary}
+    {staticFrame space : List Atom}
+    (represented : PhysicalRunningBoundary context state ledger scanner
+      staticFrame space) :
+    (cSupportedSourceExecFacts space).Perm
+      (cSupportedSourceExecFacts
+        (canonicalBoundaryRows context state ledger scanner ++ staticFrame)) := by
+  exact represented.rows_perm.filterMap extractSupportedSourceExecFact
+
+/-- Raw executable-shell extraction likewise respects physical row order. -/
+theorem rawFacts_perm
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    {context : BoundaryContext} {state : MachineState source target}
+    {ledger : NodeOccurrenceLedger state} {scanner : ScannerBoundary}
+    {staticFrame space : List Atom}
+    (represented : PhysicalRunningBoundary context state ledger scanner
+      staticFrame space) :
+    (cRawExecFacts space).Perm
+      (cRawExecFacts
+        (canonicalBoundaryRows context state ledger scanner ++ staticFrame)) := by
+  exact represented.rows_perm.filterMap extractRawExecFact
+
+end PhysicalRunningBoundary
+
 /-! ## Constructor, reflection, and negative controls -/
 
 theorem canonical_represents_running_boundary
@@ -1010,6 +1789,93 @@ theorem canonical_represents_running_boundary
     RepresentsRunningBoundary context state ledger scanner staticFrame
       (canonicalBoundaryRows context state ledger scanner ++ staticFrame) := by
   exact ⟨sourceWellFormed, clean, fun _ => Iff.rfl⟩
+
+/-- Canonically ordered rows instantiate the physical boundary once both
+ordinary and compact-key duplicate freedom have been established.  Those
+premises are intentionally explicit: source well-formedness alone does not
+rule out a representation collision. -/
+theorem canonical_physical_running_boundary
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    (context : BoundaryContext) (state : MachineState source target)
+    (ledger : NodeOccurrenceLedger state) (scanner : ScannerBoundary)
+    (staticFrame : List Atom)
+    (sourceWellFormed : SourceBoundaryWellFormed context state)
+    (clean : StaticFrame staticFrame)
+    (listNodup :
+      (canonicalBoundaryRows context state ledger scanner ++ staticFrame).Nodup)
+    (morkNodup : MorkSupportNodup
+      (canonicalBoundaryRows context state ledger scanner ++ staticFrame)) :
+    PhysicalRunningBoundary context state ledger scanner staticFrame
+      (canonicalBoundaryRows context state ledger scanner ++ staticFrame) := by
+  exact
+    { semantic := canonical_represents_running_boundary context state ledger
+        scanner staticFrame sourceWellFormed clean
+      rows_perm := .refl _
+      list_nodup := listNodup
+      mork_nodup := morkNodup }
+
+/-- A rule-scoped MORK step preserves both duplicate-freedom obligations of a
+physical boundary.  Re-establishing the source representation itself remains
+the branch-specific semantic obligation. -/
+theorem physical_boundary_ruleScoped_step_nodup
+    {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
+    {context : BoundaryContext} {state : MachineState source target}
+    {ledger : NodeOccurrenceLedger state} {scanner : ScannerBoundary}
+    {staticFrame space result : List Atom}
+    (represented : PhysicalRunningBoundary context state ledger scanner
+      staticFrame space)
+    (policy : UnsupportedExecPolicy)
+    (moved : cRuleScopedSourceWorkQueueStep policy space = some result) :
+    result.Nodup ∧ MorkSupportNodup result := by
+  cases policy with
+  | leaveInert =>
+      unfold cRuleScopedSourceWorkQueueStep at moved
+      cases selected : selectNextScheduled (cSupportedSourceExecFacts space) with
+      | none => simp [selected] at moved
+      | some directive =>
+          simp only [selected, Option.some.injEq] at moved
+          subst result
+          exact
+            ⟨cFireRuleScopedSourceExecFact_list_nodup space directive
+                represented.list_nodup,
+              cFireRuleScopedSourceExecFact_mork_nodup space directive
+                represented.mork_nodup⟩
+  | consume =>
+      unfold cRuleScopedSourceWorkQueueStep at moved
+      cases selected : selectNextScheduled (cRawExecFacts space) with
+      | none => simp [selected] at moved
+      | some raw =>
+          simp only [selected] at moved
+          cases decoded : decodeSupportedSourceExec raw with
+          | none =>
+              simp only [decoded, Option.some.injEq] at moved
+              subst result
+              exact
+                ⟨morkEraseSupport_list_nodup space raw.atom
+                    represented.list_nodup,
+                  morkEraseSupport_nodup space raw.atom
+                    represented.mork_nodup⟩
+          | some directive =>
+              simp only [decoded, Option.some.injEq] at moved
+              subst result
+              exact
+                ⟨cFireRuleScopedSourceExecFact_list_nodup space directive
+                    represented.list_nodup,
+                  cFireRuleScopedSourceExecFact_mork_nodup space directive
+                    represented.mork_nodup⟩
+
+/-- Membership equivalence alone loses physical multiplicity: the duplicated
+presentation and singleton presentation contain the same atoms but are not
+permutations. -/
+theorem duplicate_membership_is_not_physical (atom : Atom) :
+    (∀ row, row ∈ [atom, atom] ↔ row ∈ [atom]) ∧
+      ¬ [atom, atom].Perm [atom] := by
+  constructor
+  · intro row
+    simp
+  · intro perm
+    have lengths := perm.length_eq
+    simp at lengths
 
 theorem machineRow_mem_canonicalBoundaryRows
     {source : SourcePrefix} {target : ValidatedCalculusLanguageDef}
@@ -1110,6 +1976,17 @@ theorem represented_machineRow_source_derived
   dynamic_row_source_derived represented member (machineRow_isDynamic _ _)
 
 #print axioms canonical_represents_running_boundary
+#print axioms PhysicalRunningBoundary.canonical_with_frame_nodup
+#print axioms PhysicalRunningBoundary.canonical_with_frame_mork_nodup
+#print axioms PhysicalRunningBoundary.canonical_nodup
+#print axioms PhysicalRunningBoundary.staticFrame_nodup
+#print axioms PhysicalRunningBoundary.canonical_static_disjoint
+#print axioms PhysicalRunningBoundary.exact_rows
+#print axioms PhysicalRunningBoundary.supportedFacts_perm
+#print axioms PhysicalRunningBoundary.rawFacts_perm
+#print axioms canonical_physical_running_boundary
+#print axioms physical_boundary_ruleScoped_step_nodup
+#print axioms duplicate_membership_is_not_physical
 #print axioms ProofByteReceipt.sourceStep
 #print axioms proofByteReceipt_of_terminal
 #print axioms ProofByteReceipt.code_value
@@ -1117,9 +1994,25 @@ theorem represented_machineRow_source_derived
 #print axioms ProofByteReceipt.code_atom_eq_ofNat
 #print axioms ProofByteReceipt.index_eq
 #print axioms ProofByteReceipt.rejects_changed_index
+#print axioms SaveByteReceipt.sourceStep
+#print axioms saveByteReceipt_of_z
+#print axioms SaveByteReceipt.rejects_changed_before_phase
+#print axioms source_decoded_save_action_preserves_boundary
+#print axioms displayedHeap_save_exact
 #print axioms ProofByteReceipt.scannerRow_eq_resumedScanRow
 #print axioms SourceBoundaryWellFormed.actionStep
 #print axioms SourceBoundaryWellFormed.execute
+#print axioms sourceStackRowsFrom_eq_of_nodes_occurrences
+#print axioms sourceStackRowsFrom_append
+#print axioms sourceStackRows_push
+#print axioms displayedHeap_eq_of_heap_nodes_occurrences
+#print axioms sourceNodeRows_eq_of_nodes_occurrences
+#print axioms sourceSaveRowsFrom_eq_of_nodes_occurrences
+#print axioms canonicalPassiveRows_push_mem_iff
+#print axioms directContextAtBoundary_nextMachineRow_eq_machineRow_push
+#print axioms canonicalPassiveRows_mem_sourceProofRequestSpace
+#print axioms sourceNodeRow_mem_sourceNodeRowsFrom_of_getElem
+#print axioms sourceNodeRow_mem_sourceNodeRows_of_getElem
 #print axioms canonicalPassiveRows_all_dynamic
 #print axioms canonicalPassiveRows_no_supported
 #print axioms sourceProofAdditionalRows_no_supported

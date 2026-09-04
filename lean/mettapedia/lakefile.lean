@@ -60,3 +60,6 @@ lean_exe metamathNIKAudit where
 
 lean_exe checkRFC8259NativeForestExact where
   root := `Mettapedia.GSLT.Tools.CheckRFC8259NativeForestExact
+
+lean_exe sumoNativeSourceCheck where
+  root := `Mettapedia.Languages.SUMO.Native.SourceElaborationCheck

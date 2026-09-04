@@ -1,21 +1,20 @@
 /-
-# GF → OSLF Type-Checking Layer
+# GF syntax classification and OSLF semantic typing
 
 Connects GF abstract syntax trees to the OSLF type system at the
 theorem level. Provides:
 
 1. **Sort assignment**: every GF abstract tree gets an OSLF sort
-2. **Native types**: concrete (sort, predicate) pairs for GF terms
-3. **Type satisfaction**: proofs that GF terms satisfy their types
-4. **Parse disambiguation**: different abstract trees → different native types
+2. **Syntax classifiers**: constructor-sensitive predicates for parsing
+3. **Semantic native types**: equation-saturated predicates for OSLF
+4. **Parse disambiguation**: different abstract trees → different syntax classes
 5. **Multi-sorted examples**: exercising N, CN, NP, VP, S sorts
 
 ## Pipeline
 
 ```
-AbstractNode →[gfNodeCategory]→ String (sort)
-  →[gfNativeType]→ NativeTypeOf (sort, predicate)
-  →[gfSatisfiesType]→ (langOSLF gfLegacySemanticLanguageDef).satisfies p φ
+AbstractNode → Pattern → syntax classifier
+                         └→ equation saturation → OSLF native type
 ```
 
 ## References
@@ -37,6 +36,7 @@ open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.RewriteSystem
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 /-! ## Sort Assignment
 
@@ -76,39 +76,45 @@ theorem patternSort_of_apply (f : FunctionSig) (args : List AbstractNode)
   simp only [gfAbstractToPattern, patternSort, hFind, Option.map,
              gfFunctionSigToGrammarRule]
 
-/-! ## Native Types for GF
+/-! ## Syntax classifiers and semantic native types for GF
 
-A native type is a (sort, predicate) pair. For GF, the predicate
-identifies terms that were constructed by a specific grammar rule
-or that satisfy a modal property.
+Constructor shape is intensional syntax information.  It is useful while
+parsing, but it is not automatically an OSLF predicate: GF's equation
+`UseN(x) = x` deliberately identifies representatives with different outer
+constructors.  A semantic native type therefore contains an equation-invariant
+predicate, obtained either by proving invariance or by saturation.
 -/
 
-/-- A GF native type: a sort name and a predicate on patterns.
-    This is `NativeTypeOf (langOSLF gfLegacySemanticLanguageDef "S")`. -/
-abbrev GFNativeType := langNativeType gfLegacySemanticLanguageDef "S"
+/-- A constructor-sensitive type used by the GF parser and elaborator before
+quotient semantics.  This is intentionally not an OSLF native type. -/
+structure GFSyntaxType where
+  sort : String
+  pred : Pattern → Prop
+
+/-- A genuine GF OSLF native type: its predicate respects all authored GF
+equations. -/
+abbrev GFSemanticType := langNativeType gfLegacySemanticLanguageDef "S"
 
 /-- Bool check: was a pattern built by a specific grammar rule? -/
 def gfConstructorCheck (label : String) : Pattern → Bool
   | .apply f _ => f == label
   | _ => false
 
-/-- Build a native type that checks whether a pattern was built
-    by a specific grammar rule (identified by label). -/
-def gfConstructorType (sort : String) (label : String) : GFNativeType :=
+/-- Build an intensional syntax classifier for a grammar-rule constructor. -/
+def gfConstructorSyntaxType (sort : String) (label : String) : GFSyntaxType :=
   { sort := sort
     pred := fun p => gfConstructorCheck label p = true }
 
-/-- Build a native type from a sort and an arbitrary predicate. -/
-def gfPredicateType (sort : String) (φ : Pattern → Prop) : GFNativeType :=
-  { sort := sort, pred := φ }
+/-- Admit an arbitrary raw GF observation into OSLF by taking its least
+equation-invariant extension. -/
+def gfSemanticType (sort : String) (φ : Pattern → Prop) : GFSemanticType :=
+  { sort := sort
+    pred := saturatePredicate (langGSLT gfLegacySemanticLanguageDef) φ }
 
-/-- Type satisfaction: a pattern satisfies a native type iff
-    the predicate holds on it.
-
-    This follows from `langOSLF`'s definition:
-    `satisfies := fun t φ => φ t`. -/
-theorem gfSatisfiesType (p : Pattern) (nt : GFNativeType) :
-    (langOSLF gfLegacySemanticLanguageDef "S").satisfies p nt.pred ↔ nt.pred p :=
+/-- Semantic type satisfaction is application of the certified invariant
+predicate to an authored representative. -/
+theorem gfSatisfiesSemanticType (p : Pattern) (nt : GFSemanticType) :
+    (langOSLF gfLegacySemanticLanguageDef "S").satisfies p nt.pred ↔ nt.pred.1 p :=
   Iff.rfl
 
 /-! ## General Theorems about Constructor Types
@@ -146,13 +152,13 @@ theorem constructor_types_exclusive (l₁ l₂ : String) (h : l₁ ≠ l₂) (p 
   obtain ⟨args, rfl⟩ := (gfConstructorCheck_iff l₁ _).mp h₁
   simp [gfConstructorCheck, h]
 
-/-- Corollary: constructor type predicates are disjoint in the OSLF
-    type system. No pattern can satisfy two different constructor types. -/
-theorem constructor_types_disjoint (s₁ s₂ l₁ l₂ : String) (h : l₁ ≠ l₂) (p : Pattern) :
-    (langOSLF gfLegacySemanticLanguageDef "S").satisfies p (gfConstructorType s₁ l₁).pred →
-    ¬ (langOSLF gfLegacySemanticLanguageDef "S").satisfies p (gfConstructorType s₂ l₂).pred := by
+/-- Different constructor classifiers are disjoint at the syntax layer.  This
+must not be promoted to OSLF without an equation-invariance proof. -/
+theorem constructor_syntax_types_disjoint
+    (s₁ s₂ l₁ l₂ : String) (h : l₁ ≠ l₂) (p : Pattern) :
+    (gfConstructorSyntaxType s₁ l₁).pred p →
+    ¬ (gfConstructorSyntaxType s₂ l₂).pred p := by
   intro h₁ h₂
-  -- satisfies = pred applied to p
   change gfConstructorCheck l₁ p = true at h₁
   change gfConstructorCheck l₂ p = true at h₂
   have := constructor_types_exclusive l₁ l₂ h p h₁
@@ -185,37 +191,47 @@ theorem sort_independent_of_args (f : FunctionSig) (args₁ args₂ : List Abstr
     gfNodeCategory (.apply f args₁) = gfNodeCategory (.apply f args₂) := by
   simp [gfNodeCategory]
 
-/-- Diamond-constructor interaction: if a pattern satisfies ◇(constructor-check),
-    then it reduces to an apply-node with that constructor label.
-
-    This connects the modal layer (◇) with the type layer (constructor types):
-    behavioral properties (reachability) determine structural properties (shape). -/
-theorem diamond_constructor_implies_reduct (label : String) (p : Pattern)
+/-- Diamond applied to a saturated constructor observation reaches an equation
+class containing a representative with that constructor.  It does not claim
+that the operational target itself has that raw outer shape. -/
+theorem diamond_constructor_implies_equivalent_reduct (label : String) (p : Pattern)
     (h : langDiamond gfLegacySemanticLanguageDef
-      (fun q => gfConstructorCheck label q = true) p) :
-    ∃ q args, langReduces gfLegacySemanticLanguageDef p q ∧ q = .apply label args := by
+      (saturatePredicate (langGSLT gfLegacySemanticLanguageDef)
+        (fun q => gfConstructorCheck label q = true)) p) :
+    ∃ q representative args,
+      langSemanticReduces gfLegacySemanticLanguageDef p q ∧
+      (langGSLT gfLegacySemanticLanguageDef).Equiv q representative ∧
+      representative = .apply label args := by
   rw [langDiamond_spec] at h
-  obtain ⟨q, hred, hq⟩ := h
-  obtain ⟨args, rfl⟩ := (gfConstructorCheck_iff label q).mp hq
-  exact ⟨.apply label args, args, hred, rfl⟩
+  obtain ⟨q, hred, representative, equivalent, hshape⟩ := h
+  obtain ⟨args, representativeEq⟩ :=
+    (gfConstructorCheck_iff label representative).mp hshape
+  exact ⟨q, representative, args, hred, equivalent, representativeEq⟩
 
-/-- Box-constructor interaction: if a pattern satisfies □(constructor-check),
-    then ALL patterns that reduce TO it are apply-nodes with that label.
+/-- Box applied to a saturated constructor observation says every semantic
+predecessor has an equation-equivalent representative with that constructor.
 
     Box is the backward modality: □φ(p) ↔ ∀ q, q ⇝ p → φ(q).
-    This connects predecessor structure to constructor types. -/
-theorem box_constructor_means_all_predecessors (label : String) (p : Pattern)
+    The representative qualification is essential when equations erase a
+    wrapper such as `UseN`. -/
+theorem box_constructor_means_equivalent_predecessors (label : String) (p : Pattern)
     (h : langBox gfLegacySemanticLanguageDef
-      (fun q => gfConstructorCheck label q = true) p) :
-    ∀ q, langReduces gfLegacySemanticLanguageDef q p →
-      ∃ args, q = .apply label args := by
+      (saturatePredicate (langGSLT gfLegacySemanticLanguageDef)
+        (fun q => gfConstructorCheck label q = true)) p) :
+    ∀ q, langSemanticReduces gfLegacySemanticLanguageDef q p →
+      ∃ representative args,
+        (langGSLT gfLegacySemanticLanguageDef).Equiv q representative ∧
+        representative = .apply label args := by
   rw [langBox_spec] at h
   intro q hred
-  exact (gfConstructorCheck_iff label q).mp (h q hred)
+  obtain ⟨representative, equivalent, hshape⟩ := h q hred
+  obtain ⟨args, representativeEq⟩ :=
+    (gfConstructorCheck_iff label representative).mp hshape
+  exact ⟨representative, args, equivalent, representativeEq⟩
 
 /-! ## Type-Checking GF Terms
 
-Concrete examples showing GF abstract trees receiving OSLF types.
+Concrete examples separating GF syntax classes from semantic OSLF types.
 -/
 
 -- Helper: build GF abstract trees for common constructions
@@ -256,42 +272,39 @@ theorem sorts_differ_CN_NP : gfNodeCategory useN_house ≠ gfNodeCategory theHou
 theorem sorts_differ_NP_Cl : gfNodeCategory theHouse ≠ gfNodeCategory theHouseWalks := by
   decide
 
-/-! ### Native Type Examples -/
+/-! ### Syntax-classification examples -/
 
--- Type: "is a CN built by UseN"
-private def useN_Type : GFNativeType :=
-  gfConstructorType "CN" "UseN"
+-- Syntax class: "is a CN built by UseN"
+private def useN_SyntaxType : GFSyntaxType :=
+  gfConstructorSyntaxType "CN" "UseN"
 
--- Type: "is a CN built by AdjCN"
-private def adjCN_Type : GFNativeType :=
-  gfConstructorType "CN" "AdjCN"
+-- Syntax class: "is a CN built by AdjCN"
+private def adjCN_SyntaxType : GFSyntaxType :=
+  gfConstructorSyntaxType "CN" "AdjCN"
 
--- Type: "is an NP built by DetCN"
-private def detCN_Type : GFNativeType :=
-  gfConstructorType "NP" "DetCN"
+-- Syntax class: "is an NP built by DetCN"
+private def detCN_SyntaxType : GFSyntaxType :=
+  gfConstructorSyntaxType "NP" "DetCN"
 
--- Type: "is a Cl built by PredVP"
-private def predVP_Type : GFNativeType :=
-  gfConstructorType "Cl" "PredVP"
+-- Syntax class: "is a Cl built by PredVP"
+private def predVP_SyntaxType : GFSyntaxType :=
+  gfConstructorSyntaxType "Cl" "PredVP"
 
--- Satisfaction: UseN(house) satisfies useN_Type
-theorem useN_house_satisfies :
-    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
-      (gfAbstractToPattern useN_house) useN_Type.pred := by
+-- Classification: UseN(house) has the UseN syntax shape.
+theorem useN_house_has_syntax_type :
+    useN_SyntaxType.pred (gfAbstractToPattern useN_house) := by
   show gfConstructorCheck "UseN" (gfAbstractToPattern useN_house) = true
   simp [gfConstructorCheck, useN_house, mkApp1, house_tree, mkLeaf]
 
--- Satisfaction: theHouse satisfies detCN_Type
-theorem theHouse_satisfies :
-    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
-      (gfAbstractToPattern theHouse) detCN_Type.pred := by
+-- Classification: theHouse has the DetCN syntax shape.
+theorem theHouse_has_syntax_type :
+    detCN_SyntaxType.pred (gfAbstractToPattern theHouse) := by
   show gfConstructorCheck "DetCN" (gfAbstractToPattern theHouse) = true
   simp [gfConstructorCheck, theHouse, mkApp2, mkApp1, mkLeaf, useN_house, house_tree]
 
--- Satisfaction: theHouseWalks satisfies predVP_Type
-theorem theHouseWalks_satisfies :
-    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
-      (gfAbstractToPattern theHouseWalks) predVP_Type.pred := by
+-- Classification: theHouseWalks has the PredVP syntax shape.
+theorem theHouseWalks_has_syntax_type :
+    predVP_SyntaxType.pred (gfAbstractToPattern theHouseWalks) := by
   show gfConstructorCheck "PredVP" (gfAbstractToPattern theHouseWalks) = true
   simp [gfConstructorCheck, theHouseWalks, mkApp2, mkApp1, mkLeaf, theHouse, useN_house, house_tree]
 
@@ -301,8 +314,9 @@ theorem theHouseWalks_satisfies :
 - Parse 1: AdjCN(old, man) + walk → adjective reading
 - Parse 2: UseN(old) + ComplSlash(man, boats) → verb reading
 
-These get different native types because their CN subtrees
-are built by different constructors (AdjCN vs UseN).
+These get different syntax classes because their CN subtrees are built by
+different constructors (AdjCN vs UseN).  This is parser information; it is not
+an OSLF distinction when the equation theory identifies those representatives.
 -/
 
 -- Parse 1: the old man walks
@@ -334,46 +348,38 @@ theorem both_parses_sort_Cl :
 -- But the CN subtrees have different constructors:
 -- parse1 uses AdjCN, parse2 uses UseN
 theorem parse1_cn_is_AdjCN :
-    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
-      (gfAbstractToPattern parse1_cn) adjCN_Type.pred := by
+    adjCN_SyntaxType.pred (gfAbstractToPattern parse1_cn) := by
   show gfConstructorCheck "AdjCN" (gfAbstractToPattern parse1_cn) = true
   simp [gfConstructorCheck, parse1_cn, mkApp2, mkApp1, mkLeaf]
 
 theorem parse2_cn_is_UseN :
-    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
-      (gfAbstractToPattern parse2_cn) useN_Type.pred := by
+    useN_SyntaxType.pred (gfAbstractToPattern parse2_cn) := by
   show gfConstructorCheck "UseN" (gfAbstractToPattern parse2_cn) = true
   simp [gfConstructorCheck, parse2_cn, mkApp1, mkLeaf]
 
 -- parse1's CN does NOT satisfy the UseN type (it's AdjCN)
 theorem parse1_cn_not_UseN :
-    ¬ (langOSLF gfLegacySemanticLanguageDef "S").satisfies
-      (gfAbstractToPattern parse1_cn) useN_Type.pred := by
+    ¬ useN_SyntaxType.pred (gfAbstractToPattern parse1_cn) := by
   show ¬ (gfConstructorCheck "UseN" (gfAbstractToPattern parse1_cn) = true)
   simp [gfConstructorCheck, parse1_cn, mkApp2, mkApp1, mkLeaf]
 
 -- parse2's CN does NOT satisfy the AdjCN type (it's UseN)
 theorem parse2_cn_not_AdjCN :
-    ¬ (langOSLF gfLegacySemanticLanguageDef "S").satisfies
-      (gfAbstractToPattern parse2_cn) adjCN_Type.pred := by
+    ¬ adjCN_SyntaxType.pred (gfAbstractToPattern parse2_cn) := by
   show ¬ (gfConstructorCheck "AdjCN" (gfAbstractToPattern parse2_cn) = true)
   simp [gfConstructorCheck, parse2_cn, mkApp1, mkLeaf]
 
 /-- The disambiguation theorem: the two parses of "the old man ..."
-    produce patterns that satisfy different native type predicates.
+    produce patterns in different constructor-sensitive syntax classes.
 
     Parse 1's CN subtree satisfies AdjCN-type but not UseN-type.
     Parse 2's CN subtree satisfies UseN-type but not AdjCN-type.
-    Therefore they are distinguishable by the OSLF type system. -/
+    Therefore the parser can distinguish them before semantic quotienting. -/
 theorem garden_path_disambiguation :
-    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
-      (gfAbstractToPattern parse1_cn) adjCN_Type.pred ∧
-    ¬ (langOSLF gfLegacySemanticLanguageDef "S").satisfies
-      (gfAbstractToPattern parse1_cn) useN_Type.pred ∧
-    (langOSLF gfLegacySemanticLanguageDef "S").satisfies
-      (gfAbstractToPattern parse2_cn) useN_Type.pred ∧
-    ¬ (langOSLF gfLegacySemanticLanguageDef "S").satisfies
-      (gfAbstractToPattern parse2_cn) adjCN_Type.pred :=
+    adjCN_SyntaxType.pred (gfAbstractToPattern parse1_cn) ∧
+    ¬ useN_SyntaxType.pred (gfAbstractToPattern parse1_cn) ∧
+    useN_SyntaxType.pred (gfAbstractToPattern parse2_cn) ∧
+    ¬ adjCN_SyntaxType.pred (gfAbstractToPattern parse2_cn) :=
   ⟨parse1_cn_is_AdjCN, parse1_cn_not_UseN, parse2_cn_is_UseN, parse2_cn_not_AdjCN⟩
 
 -- The full sentence patterns are also different
@@ -409,14 +415,15 @@ then connecting to denotational semantics via soundness.
 example (h : checkLangUsing .empty gfLegacySemanticLanguageDef
     (gfAtomCheck_isName "house") 3
     (gfAbstractToPattern useN_house) (.dia (.atom "is_house")) = .sat) :
-    sem (langReduces gfLegacySemanticLanguageDef) (gfAtomSem_isName "house")
+    langFormulaSem gfLegacySemanticLanguageDef
+      (saturateAtomSemUsing .empty gfLegacySemanticLanguageDef
+        (gfAtomSem_isName "house"))
       (.dia (.atom "is_house")) (gfAbstractToPattern useN_house) :=
   gfAbstract_checkSat_sound (gfAtomCheck_isName_sound "house") h
 
 /-! ## Linguistic Theorems
 
-Theorems that capture genuinely interesting properties of natural language,
-proved within the GF → OSLF type-theoretic framework.
+Theorems about GF abstract syntax and its equation-respecting OSLF semantics.
 -/
 
 /-! ### Translation Invariance
@@ -425,26 +432,23 @@ GF's key architectural insight: abstract syntax is *language-independent*.
 English, Czech, Finnish — all share the same abstract trees.  Only the
 concrete syntax (linearization) differs.
 
-Since OSLF types are assigned to abstract trees (via `gfAbstractToPattern`),
-types are invariant under translation.  This is Montague's thesis made formal:
-**meaning (= type) is preserved by translation**.
+Because equation-respecting OSLF types are evaluated on the shared abstract
+tree (via `gfAbstractToPattern`), a concrete-language translation that retains
+that tree retains the type.  Linearization itself remains a distinct theorem.
 -/
 
-/-- Abstract trees are language-independent: the pattern (and therefore the
-    OSLF type) depends only on the abstract tree, not which concrete grammar
-    is used to linearize it.
-
-    Formally: for any two GF languages that share abstract syntax, the same
-    abstract tree produces the same OSLF pattern, and therefore satisfies
-    the same OSLF types.  Translation cannot change your type. -/
-theorem translation_preserves_type (tree : AbstractNode) (φ : Pattern → Prop) :
-    φ (gfAbstractToPattern tree) ↔ φ (gfAbstractToPattern tree) :=
-  Iff.rfl  -- trivially true because types live on abstract trees, QED
-
--- The deeper point: this is NOT trivial.  It's a *design theorem*.
--- It says the GF architecture guarantees type-preservation by construction.
--- Compare: in untyped string-based NLP, "bank" keeps its ambiguity
--- across translation, but there's no formal type to detect this.
+/-- If two concrete realizations retain the same GF abstract tree, every
+semantic native type has the same truth value.  The shared-tree premise is the
+actual GF translation invariant; no statement about source strings is hidden
+inside this theorem. -/
+theorem translation_preserves_semantic_type
+    (sourceTree targetTree : AbstractNode)
+    (sameAbstractTree : sourceTree = targetTree)
+    (nt : GFSemanticType) :
+    nt.pred.1 (gfAbstractToPattern sourceTree) ↔
+      nt.pred.1 (gfAbstractToPattern targetTree) := by
+  subst targetTree
+  exact Iff.rfl
 
 /-- Two abstract trees that differ structurally get different patterns. -/
 theorem structural_difference_detectable (t₁ t₂ : AbstractNode)
@@ -475,11 +479,15 @@ goes beyond linearized string matching.
     source form but the SAME abstract tree, so ◇(is_cat) still holds. -/
 theorem semantic_presence_is_structural (tree : AbstractNode) (name : String)
     (h : langDiamond gfLegacySemanticLanguageDef
-      (fun p => p = .fvar name) (gfAbstractToPattern tree)) :
-    ∃ q, langReduces gfLegacySemanticLanguageDef (gfAbstractToPattern tree) q ∧
-      q = .fvar name := by
+      (saturatePredicate (langGSLT gfLegacySemanticLanguageDef)
+        (fun p => p = Pattern.fvar name)) (gfAbstractToPattern tree)) :
+    ∃ q representative,
+      langSemanticReduces gfLegacySemanticLanguageDef (gfAbstractToPattern tree) q ∧
+      (langGSLT gfLegacySemanticLanguageDef).Equiv q representative ∧
+      representative = Pattern.fvar name := by
   rw [langDiamond_spec] at h
-  exact h
+  rcases h with ⟨q, hred, representative, equivalent, representativeEq⟩
+  exact ⟨q, representative, hred, equivalent, representativeEq⟩
 
 /-! ### Subcategorization as Type Theory
 
@@ -495,7 +503,8 @@ At the abstract syntax level, this means:
 - ComplSlash(SlashV2a(love), her) has category VP (gap filled)
 - SlashV2a(love) alone has category VPSlash (gap unfilled)
 
-The OSLF types distinguish these structurally.
+    GF syntax classifiers distinguish these structurally.  Semantic OSLF types
+    retain only distinctions invariant under the grammar's equations.
 -/
 
 /-- VP built from intransitive verb: constructor is "UseV" -/
@@ -506,7 +515,7 @@ private def complSlash_love_her := mkApp2 "ComplSlash" "VPSlash" "NP" "VP"
   (mkLeaf "her" "NP")
 
 /-- Intransitive and transitive VPs have different constructors,
-    therefore different OSLF types.  The grammar enforces that
+    therefore different syntax classes.  The grammar enforces that
     "walk" and "love her" are built differently. -/
 theorem subcat_V_vs_V2 :
     gfConstructorCheck "UseV" (gfAbstractToPattern useV_walk) = true ∧
@@ -517,7 +526,7 @@ theorem subcat_V_vs_V2 :
     simp [gfConstructorCheck, useV_walk, complSlash_love_her,
           mkApp1, mkApp2, mkLeaf]
 
-/-- The subcategorization frame of a VP is visible in its OSLF type:
+/-- The subcategorization frame of a VP is visible in its syntax class:
     you can always tell whether a VP was built from V or V2. -/
 theorem subcat_determines_type (vp : AbstractNode) :
     gfConstructorCheck "UseV" (gfAbstractToPattern vp) = true →
@@ -529,8 +538,8 @@ theorem subcat_determines_type (vp : AbstractNode) :
 "The meaning of a compound expression is determined by the meanings
 of its parts and the way they are combined."
 
-In our framework: the OSLF type of a compound expression is determined by
-the constructor (= the combining rule) and the parts (= the arguments).
+In the intensional GF view, the syntax class of a compound expression is
+determined by the constructor (= the combining rule) and the parts (= the arguments).
 Two expressions built with the same rule from the same parts get the
 same type.
 -/
@@ -538,7 +547,7 @@ same type.
 /-- Frege's principle for constructor types: the type depends on the
     constructor, not on the identity of the arguments (beyond their
     contribution to the pattern).  Same rule, same argument patterns
-    → same OSLF constructor type. -/
+    → same constructor syntax class. -/
 theorem frege_compositionality (f : FunctionSig)
     (args₁ args₂ : List AbstractNode) (label : String) :
     gfConstructorCheck label (gfAbstractToPattern (.apply f args₁)) =
@@ -546,8 +555,8 @@ theorem frege_compositionality (f : FunctionSig)
   simp [gfConstructorCheck]
 
 /-- Stronger Frege: if the argument patterns are the same, the entire
-    OSLF patterns are the same — so ALL type properties (not just
-    constructor type) are preserved. -/
+    patterns are the same — so all predicates (including semantic OSLF
+    predicates) are preserved. -/
 theorem frege_strong (f : FunctionSig)
     (args₁ args₂ : List AbstractNode)
     (hargs : args₁.map gfAbstractToPattern = args₂.map gfAbstractToPattern) :

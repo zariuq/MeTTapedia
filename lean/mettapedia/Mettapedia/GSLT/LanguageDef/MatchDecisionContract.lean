@@ -1,5 +1,6 @@
 import Mathlib.Data.List.Basic
 import Mathlib.Data.List.Infix
+import Mathlib.Data.Finset.Card
 
 /-!
 # The candidate-selection (match-decision) contract, as an algebra
@@ -935,5 +936,101 @@ example :
 end Examples
 
 end Shaped
+
+/-! ### Exact-key compiled-artifact repositories
+
+Candidate selection is normally invoked many times while an evaluation tree
+remains pinned to one source revision and one semantic authority.  Compilation
+may be shared across those invocations only when every input on which the
+compiled decision depends is identical.  The key below deliberately includes
+the ordered equation occurrences: changing order or multiplicity changes the
+key even when the underlying set of equations is unchanged.
+
+The small theorem in this section states the precise optimality available at
+this abstraction layer.  Among repositories that retain one artifact for each
+exact semantic key they cover, compiling the finite set of requested keys is
+cardinality-minimal.  This is a compilation-count theorem, not a claim about
+minimum bytes, latency, or machine instructions.
+-/
+
+section ArtifactRepository
+
+/-- Every authority on which a compiled match decision depends.  Equation
+occurrences are a list rather than a set so authored order and duplicates
+remain observable parts of the key. -/
+structure ArtifactKey
+    (Revision Semantics Mode Head Equation : Type*) where
+  revision : Revision
+  semantics : Semantics
+  mode : Mode
+  head : Head
+  arity : Nat
+  orderedEquations : List Equation
+deriving DecidableEq
+
+variable {Key : Type*} [DecidableEq Key]
+
+/-- The distinct exact keys demanded by a finite execution trace. -/
+def requiredArtifacts (requests : List Key) : Finset Key :=
+  requests.toFinset
+
+/-- A repository covers a trace when it contains an artifact for every exact
+key requested by that trace. -/
+def RepositoryCovers (requests : List Key) (repository : Finset Key) : Prop :=
+  requiredArtifacts requests ⊆ repository
+
+/-- Compiling once per distinct exact key. -/
+def compileOnceCost (requests : List Key) : Nat :=
+  (requiredArtifacts requests).card
+
+/-- The canonical exact-key repository covers every request. -/
+theorem requiredArtifacts_covers (requests : List Key) :
+    RepositoryCovers requests (requiredArtifacts requests) :=
+  Finset.Subset.rfl
+
+/-- Any exact-key repository covering the trace has at least as many entries
+as there are distinct requested keys. -/
+theorem repository_compile_lower_bound
+    (requests : List Key) (repository : Finset Key)
+    (h : RepositoryCovers requests repository) :
+    compileOnceCost requests ≤ repository.card := by
+  exact Finset.card_le_card h
+
+/-- Hence the compile-once repository attains the exact-key cardinality lower
+bound. -/
+theorem requiredArtifacts_cardinality_minimal
+    (requests : List Key) (repository : Finset Key)
+    (h : RepositoryCovers requests repository) :
+    (requiredArtifacts requests).card ≤ repository.card :=
+  repository_compile_lower_bound requests repository h
+
+private abbrev ExampleArtifactKey :=
+  ArtifactKey Nat Bool Nat Nat Nat
+
+private def artifactA : ExampleArtifactKey :=
+  { revision := 7
+    semantics := true
+    mode := 2
+    head := 11
+    arity := 2
+    orderedEquations := [20, 21, 20] }
+
+private def artifactDifferentRevision : ExampleArtifactKey :=
+  { artifactA with revision := 8 }
+
+private def artifactDifferentOrder : ExampleArtifactKey :=
+  { artifactA with orderedEquations := [20, 20, 21] }
+
+/-- Positive: repeated requests for one exact key require one compilation. -/
+example : compileOnceCost [artifactA, artifactA, artifactA] = 1 := by decide
+
+/-- Negative: a revision change is a genuinely different artifact key. -/
+example : compileOnceCost [artifactA, artifactDifferentRevision] = 2 := by
+  decide
+
+/-- Negative: authored equation order is not quotiented away. -/
+example : compileOnceCost [artifactA, artifactDifferentOrder] = 2 := by decide
+
+end ArtifactRepository
 
 end Mettapedia.GSLT.LanguageDef.MatchDecisionContract

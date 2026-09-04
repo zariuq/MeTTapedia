@@ -1,0 +1,5 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryBichromaticClosure
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoCanonicalPairBichromaticResult.nonempty_of_step
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoCanonicalPairBichromaticStep.toRecursiveNonempty
+#print axioms Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoCanonicalPairBichromaticStep.toTwoDepthNonempty

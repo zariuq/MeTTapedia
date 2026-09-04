@@ -347,6 +347,188 @@ theorem match_nonempty_iff_candidate_nonempty (model : Model)
   · rintro ⟨article⟩
     exact ⟨candidateToMatchArticle model article⟩
 
+/-! ## Complete exact frontiers and existence-only observation
+
+Candidate completeness alone licenses pruning before the authored matcher,
+but it does not license replacing matching by structural membership.  The
+additional exact-frontier certificate below says precisely when that stronger
+replacement is valid.  Template totality is separate again: a matching row
+need not emit an answer when checked template application can fail.
+
+These distinctions are the semantic boundary used by a runtime which lowers
+`collapse (once (match ...))` to an existence query.  The optimization does
+not reconstruct answers; it computes only the strictly coarser `AnyAlg`
+observation of a completed frontier.
+-/
+
+namespace ExistenceObserver
+
+open Mettapedia.GSLT.Dynamics.Collapse
+
+/-- Existence of at least one authored matcher occurrence, before applying a
+match template. -/
+def HasMatch (model : Model)
+    {SpaceName : Type uSpace} (world : RevisionedSpaces SpaceName)
+    (space : SpaceName) (pattern : Pattern) : Prop :=
+  ∃ candidate : CandidateOccurrence world space,
+    ∃ bindings : Bindings, ∃ occurrence : Nat,
+      occurrence < Multiset.count bindings
+        (model.matchAtoms pattern candidate.candidate)
+
+/-- A selected frontier is exact for one pattern when, on every selected
+occurrence, authored matching is equivalent to structural equality with that
+pattern.  This is stronger than candidate completeness and is intentionally
+sold separately. -/
+def CandidateExact (model : Model)
+    {SpaceName : Type uSpace} {world : RevisionedSpaces SpaceName}
+    {space : SpaceName} {pattern : Pattern}
+    (selector : CandidateSelector world space) : Prop :=
+  ∀ (candidate : CandidateOccurrence world space)
+    (_selected : selector candidate),
+    (∃ bindings : Bindings, ∃ occurrence : Nat,
+      occurrence < Multiset.count bindings
+        (model.matchAtoms pattern candidate.candidate)) ↔
+      candidate.candidate = pattern
+
+/-- The physical existence fact exposed by an exact candidate frontier. -/
+def FrontierContainsPattern
+    {SpaceName : Type uSpace} {world : RevisionedSpaces SpaceName}
+    {space : SpaceName} (pattern : Pattern)
+    (selector : CandidateSelector world space) : Prop :=
+  ∃ candidate : CandidateOccurrence world space,
+    Nonempty (selector candidate) ∧ candidate.candidate = pattern
+
+/-- Completeness supplies every true matcher occurrence; exactness turns the
+selected matcher question into structural membership.  Together they make
+frontier membership an exact existence observer. -/
+theorem hasMatch_iff_frontierContainsPattern (model : Model)
+    {SpaceName : Type uSpace} {world : RevisionedSpaces SpaceName}
+    {space : SpaceName} {pattern : Pattern}
+    {selector : CandidateSelector world space}
+    (complete : CandidateComplete model (pattern := pattern) selector)
+    (exact : CandidateExact model (pattern := pattern) selector) :
+    HasMatch model world space pattern ↔
+      FrontierContainsPattern pattern selector := by
+  constructor
+  · rintro ⟨candidate, bindings, occurrence, matched⟩
+    let selected := complete candidate bindings occurrence matched
+    exact ⟨candidate, ⟨selected⟩,
+      (exact candidate selected).mp ⟨bindings, occurrence, matched⟩⟩
+  · rintro ⟨candidate, ⟨selected⟩, equal⟩
+    obtain ⟨bindings, occurrence, matched⟩ :=
+      (exact candidate selected).mpr equal
+    exact ⟨candidate, bindings, occurrence, matched⟩
+
+/-- Existence of at least one visible result after checked template
+application. -/
+def HasMatchAnswer (model : Model)
+    {SpaceName : Type uSpace} (world : RevisionedSpaces SpaceName)
+    (space : SpaceName) (pattern template : Pattern) : Prop :=
+  ∃ result, Nonempty
+    (MatchArticle model space pattern template world world result)
+
+/-- Every authored matcher occurrence accepted by the frontier produces one
+checked template result.  A translation-time value certificate may establish
+this property; a computed, empty, or unresolved template may not. -/
+def TemplateTotalOnMatches (model : Model)
+    {SpaceName : Type uSpace} (world : RevisionedSpaces SpaceName)
+    (space : SpaceName) (pattern template : Pattern) : Prop :=
+  ∀ (candidate : CandidateOccurrence world space)
+    (bindings : Bindings) (occurrence : Nat),
+    occurrence < Multiset.count bindings
+      (model.matchAtoms pattern candidate.candidate) →
+    ∃ result, applyBindingsGround? bindings template = some result
+
+/-- Template totality is exactly the missing direction from matcher existence
+to visible-answer existence. -/
+theorem hasMatchAnswer_iff_hasMatch (model : Model)
+    {SpaceName : Type uSpace} {world : RevisionedSpaces SpaceName}
+    {space : SpaceName} {pattern template : Pattern}
+    (total : TemplateTotalOnMatches model world space pattern template) :
+    HasMatchAnswer model world space pattern template ↔
+      HasMatch model world space pattern := by
+  constructor
+  · rintro ⟨result, ⟨article⟩⟩
+    exact ⟨{
+      candidate := article.event.candidate
+      atomOccurrence := article.event.atomOccurrence
+      atomOccurrence_exists := article.event.atomOccurrence_exists },
+      article.event.bindings, article.event.matchOccurrence,
+      article.event.matchOccurrence_exists⟩
+  · rintro ⟨candidate, bindings, occurrence, matched⟩
+    obtain ⟨result, instantiated⟩ :=
+      total candidate bindings occurrence matched
+    exact ⟨result, ⟨{
+      readOnly := rfl
+      event := {
+        candidate := candidate.candidate
+        atomOccurrence := candidate.atomOccurrence
+        atomOccurrence_exists := candidate.atomOccurrence_exists
+        bindings := bindings
+        matchOccurrence := occurrence
+        matchOccurrence_exists := matched
+        instantiates := instantiated } }⟩⟩
+
+/-- The complete zero-observer law used by exact match-existence fusion.
+Absence may be concluded only after candidate completeness, selected-frontier
+exactness, and template totality have all been supplied. -/
+theorem noMatchAnswer_iff_frontierAbsent (model : Model)
+    {SpaceName : Type uSpace} {world : RevisionedSpaces SpaceName}
+    {space : SpaceName} {pattern template : Pattern}
+    {selector : CandidateSelector world space}
+    (complete : CandidateComplete model (pattern := pattern) selector)
+    (exact : CandidateExact model (pattern := pattern) selector)
+    (total : TemplateTotalOnMatches model world space pattern template) :
+    (¬ HasMatchAnswer model world space pattern template) ↔
+      (¬ FrontierContainsPattern pattern selector) := by
+  rw [hasMatchAnswer_iff_hasMatch model total,
+    hasMatch_iff_frontierContainsPattern model complete exact]
+
+/-- A list-level model of committed first-answer observation. -/
+def onceList {Answer : Type} : List Answer → List Answer
+  | [] => []
+  | answer :: _ => [answer]
+
+/-- `once` preserves precisely whether the completed answer stream is empty. -/
+theorem onceList_eq_nil_iff {Answer : Type} (answers : List Answer) :
+    onceList answers = [] ↔ answers = [] := by
+  cases answers <;> simp [onceList]
+
+/-- Unit-multiplicity observations are the occurrence stream emitted by an
+ordinary match enumerator. -/
+def unitObservations {Answer Receipt : Type}
+    (receipt : Receipt) (answers : List Answer) : List (Obs Answer Receipt) :=
+  answers.map fun answer => ⟨answer, 1, receipt⟩
+
+/-- `AnyAlg` returns false on a unit-occurrence stream exactly when the stream
+is empty. -/
+theorem anyUnit_eq_false_iff {Answer Receipt : Type}
+    (receipt : Receipt) (answers : List Answer) :
+    collapseWith (AnyAlg Answer Receipt) (unitObservations receipt answers) =
+        false ↔
+      answers = [] := by
+  cases answers <;> simp [unitObservations, collapseWith, foldStream, AnyAlg]
+
+/-- Reifying the committed first answer and comparing it with the empty list
+is exactly the `AnyAlg` observation of the complete stream.  The right side
+neither constructs nor determines the discarded answer values. -/
+theorem collectOnce_empty_iff_anyFalse {Answer Receipt : Type}
+    (receipt : Receipt) (answers : List Answer) :
+    collapseWith (Collect Answer Receipt)
+          (unitObservations receipt (onceList answers)) = [] ↔
+      collapseWith (AnyAlg Answer Receipt)
+          (unitObservations receipt answers) = false := by
+  have collectOnce :
+      collapseWith (Collect Answer Receipt)
+          (unitObservations receipt (onceList answers)) = onceList answers := by
+    simpa [unitObservations] using
+      (collect_is_legacy_collapse (Receipt := Receipt)
+        (onceList answers) receipt)
+  rw [collectOnce, anyUnit_eq_false_iff]
+  exact onceList_eq_nil_iff answers
+
+end ExistenceObserver
+
 /-! ## Patterned computation bind -/
 
 /-- One checked occurrence of binding a producer answer to a continuation
@@ -469,6 +651,43 @@ def selectAllCandidates_complete : CandidateComplete
     selectAllCandidates :=
   fun _ _ _ _ => ()
 
+/-- On the singleton closed world, selecting every row is also an exact
+frontier for the stored fact. -/
+def selectAllCandidates_exactForFact :
+    ExistenceObserver.CandidateExact
+      (structuralModel fun _ => 0) (pattern := fact)
+      selectAllCandidates := by
+  intro candidate _selected
+  constructor
+  · intro _matched
+    have occurs := candidate.atomOccurrence_exists
+    by_contra different
+    simp [worldAfterAdd, emptyWorld, addAtomWorld, different] at occurs
+  · intro equal
+    refine ⟨[], 0, ?_⟩
+    simp [equal, structuralModel, fact, matchPattern]
+    rw [matchArgs.eq_1]
+    simp
+
+/-- A complete selector for an open pattern is not thereby an exact
+structural-membership frontier: the variable pattern matches the stored fact
+without being structurally equal to it. -/
+theorem selectAllCandidates_not_exactForOpenPattern :
+    ¬ ExistenceObserver.CandidateExact
+      (structuralModel fun _ => 0) (pattern := anyPattern)
+      selectAllCandidates := by
+  intro frontierExact
+  let candidate : CandidateOccurrence worldAfterAdd false := {
+    candidate := matchFactAfterAdd.event.candidate
+    atomOccurrence := matchFactAfterAdd.event.atomOccurrence
+    atomOccurrence_exists := matchFactAfterAdd.event.atomOccurrence_exists }
+  have equal := (frontierExact candidate ()).mp
+    ⟨matchFactAfterAdd.event.bindings,
+      matchFactAfterAdd.event.matchOccurrence,
+      matchFactAfterAdd.event.matchOccurrence_exists⟩
+  change fact = anyPattern at equal
+  simp [fact, anyPattern] at equal
+
 /-- Negative selector canary: dropping every row violates completeness for the
 known matching occurrence. -/
 def selectNoCandidates : CandidateSelector worldAfterAdd false :=
@@ -554,5 +773,12 @@ theorem depthBlind_is_not_supportIndexed :
   decide
 
 end ABTBoundary
+
+#print axioms ExistenceObserver.hasMatch_iff_frontierContainsPattern
+#print axioms ExistenceObserver.hasMatchAnswer_iff_hasMatch
+#print axioms ExistenceObserver.noMatchAnswer_iff_frontierAbsent
+#print axioms ExistenceObserver.collectOnce_empty_iff_anyFalse
+#print axioms Canary.selectAllCandidates_exactForFact
+#print axioms Canary.selectAllCandidates_not_exactForOpenPattern
 
 end Mettapedia.Languages.MeTTa.MeTTaRevisionedQueryBindEval

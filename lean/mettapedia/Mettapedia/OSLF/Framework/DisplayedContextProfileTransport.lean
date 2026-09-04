@@ -21,7 +21,7 @@ namespace DisplayedContextProfile
 /-- Structural constructor mapping preserves rule-local free-variable
 support, including order and multiplicity. -/
 theorem mapPattern_preserves_freeFvarNames
-    (symbols : PresentationSymbols) (pattern : Pattern) :
+    (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
     (mapPattern symbols pattern).freeFvarNames = pattern.freeFvarNames := by
   induction pattern using Pattern.inductionOn with
   | hbvar => rfl
@@ -41,7 +41,7 @@ theorem mapPattern_preserves_freeFvarNames
 /-- Structural context mapping preserves the fixed-frame variable support
 exactly. -/
 theorem externalFreeFvarNames_mapOneHoleContext
-    (symbols : PresentationSymbols) (context : OneHoleContext) :
+    (symbols : LanguageDefSymbolMap) (context : OneHoleContext) :
     externalFreeFvarNames (CIGSLT.mapOneHoleContext symbols context) =
       externalFreeFvarNames context := by
   induction context with
@@ -149,7 +149,7 @@ private def context : OneHoleContext :=
   .apply "displayed-context-transport:pair"
     [.fvar "left"] .hole [.fvar "right"]
 
-private def renameConstructors : PresentationSymbols where
+private def renameConstructors : LanguageDefSymbolMap where
   sort := _root_.id
   constructor := fun name => "renamed:" ++ name
   relation := _root_.id

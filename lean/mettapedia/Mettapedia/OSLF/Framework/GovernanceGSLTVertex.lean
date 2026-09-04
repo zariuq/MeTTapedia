@@ -47,6 +47,13 @@ open Mettapedia.Logic.DDLPlus.DTSBridge
 open Mettapedia.OSLF.Framework.GovernanceInstance
 open Mettapedia.OSLF.Framework.GovNormCycle
 
+/-- Predicates used by the PyashCore semantic modalities.  The proof is tied
+to PyashCore's declared empty equation list, so extending that presentation
+with equations forces these observations to be revalidated. -/
+private def pyashPredicate (predicate : Pattern → Prop) :
+    GSLTTypeSynthesis.EquationPredicate (langGSLT pyashCore) :=
+  equationPredicateOfEquationFree (by rfl) predicate
+
 /-! ## §1 GovernanceDDLBundle
 
 A `GovernanceDDLBundle` packages everything needed for governance deontic
@@ -129,6 +136,7 @@ This embeds governance into the GSLT categorical framework. -/
     along the unique morphism in the unit preorder. -/
 def pyashCoreIdMorphism : ForwardMorphism pyashCore pyashCore where
   mapTerm := id
+  map_equiv := fun equivalent => equivalent
   forward_sim _ q hred := ⟨q, .single hred, rfl⟩
 
 /-- The governance (PyashCore) forward fiber: a degenerate fiber indexed by `Unit`
@@ -143,13 +151,15 @@ theorem governanceForwardFiber_oslf :
 
 /-- ◇ in the governance fiber = existence of a one-step successor. -/
 theorem governanceForwardFiber_diamond (φ : Pattern → Prop) (p : Pattern) :
-    langDiamond pyashCore φ p ↔ ∃ q, langReduces pyashCore p q ∧ φ q :=
-  langDiamond_spec pyashCore φ p
+    langDiamond pyashCore (pyashPredicate φ) p ↔
+      ∃ q, langSemanticReduces pyashCore p q ∧ φ q :=
+  langDiamond_spec pyashCore (pyashPredicate φ) p
 
 /-- □ in the governance fiber = all predecessors satisfy φ. -/
 theorem governanceForwardFiber_box (φ : Pattern → Prop) (p : Pattern) :
-    langBox pyashCore φ p ↔ ∀ q, langReduces pyashCore q p → φ q :=
-  langBox_spec pyashCore φ p
+    langBox pyashCore (pyashPredicate φ) p ↔
+      ∀ q, langSemanticReduces pyashCore q p → φ q :=
+  langBox_spec pyashCore (pyashPredicate φ) p
 
 /-! ## §4 Canonical Live Predicate
 
@@ -179,11 +189,12 @@ language-agnostic and applies to any language with a forward-closed live set. -/
     This function serves as the correct architectural hook; instantiation
     requires a different live predicate for a terminating language like PyashCore. -/
 def isGovLiveAccessibility
-    (hserial : ∀ p, isGovLive p → ∃ q, langReduces pyashCore p q)
-    (hclosed : ∀ p q, isGovLive p → langReduces pyashCore p q → isGovLive q) :
+    (hserial : ∀ p, isGovLive p → ∃ q, langSemanticReduces pyashCore p q)
+    (hclosed : ∀ p q, isGovLive p →
+      langSemanticReduces pyashCore p q → isGovLive q) :
     ClosedGovAccessibility where
   live   := isGovLive
-  step   := langReduces pyashCore
+  step   := langSemanticReduces pyashCore
   serial := hserial
   closed := hclosed
 

@@ -282,6 +282,164 @@ def matchDenseTerms :
 
 end
 
+/-! ## Closed-pattern decision boundary -/
+
+mutual
+
+/-- If the independently defined instantiator proves a source pattern closed,
+matching that pattern cannot extend the environment: it is exactly equality
+with the resulting ground term. -/
+theorem matchSource_of_instantiate_empty
+    (source : Term) (target expected : GroundTerm)
+    (environment : SourceEnvironment)
+    (closed : instantiateTerm emptySubstitution source = some expected) :
+    matchSource source target environment =
+      if expected = target then some environment else none := by
+  cases source with
+  | symbol name =>
+      simp only [instantiateTerm] at closed
+      cases closed
+      cases target <;> simp [matchSource]
+  | «variable» slot =>
+      simp [instantiateTerm, emptySubstitution] at closed
+  | string value =>
+      simp only [instantiateTerm] at closed
+      cases closed
+      cases target <;> simp [matchSource]
+  | integer value =>
+      simp only [instantiateTerm] at closed
+      cases closed
+      cases target <;> simp [matchSource]
+  | application head arguments =>
+      simp only [instantiateTerm] at closed
+      cases groundedEq : instantiateTerms emptySubstitution arguments with
+      | none => simp [groundedEq] at closed
+      | some grounded =>
+          simp [groundedEq] at closed
+          cases closed
+          cases target with
+          | symbol name => simp [matchSource]
+          | string value => simp [matchSource]
+          | integer value => simp [matchSource]
+          | application targetHead targetArguments =>
+              by_cases sameHead : head = targetHead
+              · subst targetHead
+                simpa [matchSource] using
+                  matchSourceTerms_of_instantiate_empty
+                    arguments targetArguments grounded environment groundedEq
+              · simp [matchSource, sameHead]
+
+/-- The list-shaped companion threads the unchanged environment across every
+closed child and decides exactly the equality of the complete argument list. -/
+theorem matchSourceTerms_of_instantiate_empty
+    (sources : Terms) (targets expected : GroundTerms)
+    (environment : SourceEnvironment)
+    (closed : instantiateTerms emptySubstitution sources = some expected) :
+    matchSourceTerms sources targets environment =
+      if expected = targets then some environment else none := by
+  cases sources with
+  | nil =>
+      simp only [instantiateTerms] at closed
+      cases closed
+      cases targets <;> simp [matchSourceTerms]
+  | cons sourceHead sourceTail =>
+      simp only [instantiateTerms] at closed
+      cases headEq : instantiateTerm emptySubstitution sourceHead with
+      | none => simp [headEq] at closed
+      | some expectedHead =>
+          cases tailEq : instantiateTerms emptySubstitution sourceTail with
+          | none => simp [headEq, tailEq] at closed
+          | some expectedTail =>
+              simp [headEq, tailEq] at closed
+              cases closed
+              cases targets with
+              | nil => simp [matchSourceTerms]
+              | cons targetHead targetTail =>
+                  rw [matchSourceTerms]
+                  rw [matchSource_of_instantiate_empty
+                    sourceHead targetHead expectedHead environment headEq]
+                  by_cases sameHead : expectedHead = targetHead
+                  · subst targetHead
+                    simp
+                    exact matchSourceTerms_of_instantiate_empty
+                      sourceTail targetTail expectedTail environment tailEq
+                  · simp [sameHead]
+
+end
+
+/-- A closed pattern can neither mint nor remove a binding. -/
+theorem matchSource_closed_preserves_environment
+    (source : Term) (target expected : GroundTerm)
+    (environment result : SourceEnvironment)
+    (closed : instantiateTerm emptySubstitution source = some expected)
+    (matched : matchSource source target environment = some result) :
+    result = environment := by
+  rw [matchSource_of_instantiate_empty
+    source target expected environment closed] at matched
+  split at matched <;> simp_all
+
+/-- Negative canary: a closed constructor mismatch remains a mismatch and
+does not become a vacuous success through compilation. -/
+example :
+    matchSource (.application [1] .nil)
+      (.application [2] .nil) emptySourceEnvironment = none := by
+  decide
+
+/-! The closed-pattern theorem is deliberately about ordinary matching.  An
+enriched gradual matcher with an authored wildcard has a different algebra:
+closed syntax need not factor through equality. -/
+
+private def isWildcardSymbol (wildcard : List UInt8) : GroundTerm → Bool
+  | .symbol name => name == wildcard
+  | _ => false
+
+mutual
+
+private def matchGroundWithWildcard (wildcard : List UInt8) :
+    GroundTerm → GroundTerm → Bool
+  | left, right =>
+      if isWildcardSymbol wildcard left || isWildcardSymbol wildcard right then
+        true
+      else
+        match left, right with
+        | .symbol expected, .symbol actual => expected == actual
+        | .string expected, .string actual => expected == actual
+        | .integer expected, .integer actual => expected == actual
+        | .application expectedHead expectedArguments,
+            .application actualHead actualArguments =>
+            expectedHead == actualHead &&
+              matchGroundTermsWithWildcard wildcard
+                expectedArguments actualArguments
+        | _, _ => false
+
+private def matchGroundTermsWithWildcard (wildcard : List UInt8) :
+    GroundTerms → GroundTerms → Bool
+  | .nil, .nil => true
+  | .cons expectedHead expectedTail, .cons actualHead actualTail =>
+      matchGroundWithWildcard wildcard expectedHead actualHead &&
+        matchGroundTermsWithWildcard wildcard expectedTail actualTail
+  | _, _ => false
+
+end
+
+private def nestedWildcardPattern : GroundTerm :=
+  .application [9] (.cons (.symbol [0]) .nil)
+
+private def nestedWildcardTarget : GroundTerm :=
+  .application [9] (.cons (.integer 7) .nil)
+
+/-- Positive boundary canary: a nested authored wildcard accepts a distinct
+closed target. -/
+example :
+    matchGroundWithWildcard [0] nestedWildcardPattern
+      nestedWildcardTarget = true := by
+  decide
+
+/-- Negative equality canary: the same gradual success cannot be justified by
+the ordinary closed-expression equality decision. -/
+example : nestedWildcardPattern ≠ nestedWildcardTarget := by
+  decide
+
 /-! ## Exact representation refinement -/
 
 mutual

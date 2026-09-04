@@ -31,6 +31,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine (RelationEnv)
 open Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv (empty_le)
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.HypercubeGSLTFunctor
 open Mettapedia.Languages.MeTTa.PeTTa.StageIndex
 open Mettapedia.Languages.MeTTa.PeTTa.OSLFPackage
@@ -47,6 +48,7 @@ open Mettapedia.Languages.MeTTa.PeTTa.OSLFInstance
 def pettaStageIdMorphism (s : PeTTaSpace) (_v _w : PeTTaStage) (_h : _v ≤ _w) :
     ForwardMorphism (pettaSpaceToLangDef s) (pettaSpaceToLangDef s) where
   mapTerm := id
+  map_equiv := fun equivalent => equivalent
   forward_sim _ q hred := ⟨q, .single hred, rfl⟩
 
 /-! ## §2 Forward Fiber over PeTTaStage -/
@@ -104,16 +106,22 @@ theorem pettaStageIdMorphism_mapTerm (s : PeTTaSpace) (v w : PeTTaStage)
 
 /-- ◇φ(p) at a given stage = ∃ q, p reduces (via stage's relEnv) to q ∧ φ(q). -/
 theorem pettaStageDiamond_spec (s : PeTTaSpace) (stage : PeTTaStage)
-    (φ : Pattern → Prop) (p : Pattern) :
+    (φ : EquationPredicate
+      (langGSLTUsing (pettaPkg stage s).relEnv (pettaPkg stage s).lang))
+    (p : Pattern) :
     langDiamondUsing (pettaPkg stage s).relEnv (pettaPkg stage s).lang φ p ↔
-    ∃ q, langReducesUsing (pettaPkg stage s).relEnv (pettaPkg stage s).lang p q ∧ φ q :=
+    ∃ q, langSemanticReducesUsing
+      (pettaPkg stage s).relEnv (pettaPkg stage s).lang p q ∧ φ.1 q :=
   langDiamondUsing_spec (pettaPkg stage s).relEnv (pettaPkg stage s).lang φ p
 
 /-- □φ(p) at a given stage = ∀ q, q reduces (via stage's relEnv) to p → φ(q). -/
 theorem pettaStageBox_spec (s : PeTTaSpace) (stage : PeTTaStage)
-    (φ : Pattern → Prop) (p : Pattern) :
+    (φ : EquationPredicate
+      (langGSLTUsing (pettaPkg stage s).relEnv (pettaPkg stage s).lang))
+    (p : Pattern) :
     langBoxUsing (pettaPkg stage s).relEnv (pettaPkg stage s).lang φ p ↔
-    ∀ q, langReducesUsing (pettaPkg stage s).relEnv (pettaPkg stage s).lang q p → φ q :=
+    ∀ q, langSemanticReducesUsing
+      (pettaPkg stage s).relEnv (pettaPkg stage s).lang q p → φ.1 q :=
   langBoxUsing_spec (pettaPkg stage s).relEnv (pettaPkg stage s).lang φ p
 
 /-! ## §6 Relation-Environment Refinement

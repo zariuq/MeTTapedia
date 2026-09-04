@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.DialectGluing
-import Mettapedia.GSLT.LanguageDef.StructuralPresentationCategory
+import Mettapedia.GSLT.LanguageDef.StructuralLanguageDefCategory
 
 /-!
 # Structural inclusion morphisms for dialect gluing
@@ -62,7 +62,7 @@ namespace Mettapedia.GSLT.LanguageDef.DialectGluingMorphisms
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.DialectGluing
-open Mettapedia.GSLT.LanguageDef.StructuralPresentationCategory
+open Mettapedia.GSLT.LanguageDef.StructuralLanguageDefCategory
 open Mettapedia.Languages.MeTTa
 open Mettapedia.Languages.MeTTa.Prime.NucleusDerivedModalTyping
 
@@ -432,7 +432,7 @@ def leftInclusionMorphism (name : String) (base : LanguageDef)
     (leftValid : left.validate = [])
     (gluedValid : (glue name base left right).validate = []) :
     StructuralMorphism ⟨left, leftValid⟩ ⟨glue name base left right, gluedValid⟩ where
-  symbols := PresentationSymbols.id
+  symbols := LanguageDefSymbolMap.id
   mapsTypes declaration membership := by
     rw [mapTypeDecl_id]
     exact List.mem_append_left _ membership
@@ -488,7 +488,7 @@ def rightInclusionMorphism (name : String) {base left right : LanguageDef}
     (rightValid : right.validate = [])
     (gluedValid : (glue name base left right).validate = []) :
     StructuralMorphism ⟨right, rightValid⟩ ⟨glue name base left right, gluedValid⟩ where
-  symbols := PresentationSymbols.id
+  symbols := LanguageDefSymbolMap.id
   mapsTypes declaration membership := by
     rw [mapTypeDecl_id]
     by_cases collision : declaration.name ∈ base.typeNames
@@ -672,7 +672,7 @@ The base → left leg already exists as
 def zeroToZeroWithChoiceMorphism :
     StructuralMorphism Prime.LanguageDef.currentZeroPresentation
       zeroWithChoiceValidated where
-  symbols := PresentationSymbols.id
+  symbols := LanguageDefSymbolMap.id
   mapsTypes declaration membership := by
     rw [mapTypeDecl_id]
     exact membership
@@ -863,14 +863,14 @@ private theorem agreementGlued_validate : agreementGlued.validate = [] := by
 private def renameSort (source target : String) (name : String) : String :=
   if name = source then target else name
 
-private def agreementLeftSymbols : PresentationSymbols :=
-  { PresentationSymbols.id with sort := renameSort "L" "TL" }
+private def agreementLeftSymbols : LanguageDefSymbolMap :=
+  { LanguageDefSymbolMap.id with sort := renameSort "L" "TL" }
 
-private def agreementRightSymbols : PresentationSymbols :=
-  { PresentationSymbols.id with sort := renameSort "R" "TR" }
+private def agreementRightSymbols : LanguageDefSymbolMap :=
+  { LanguageDefSymbolMap.id with sort := renameSort "R" "TR" }
 
-private def agreementMediatorSymbols : PresentationSymbols :=
-  { PresentationSymbols.id with
+private def agreementMediatorSymbols : LanguageDefSymbolMap :=
+  { LanguageDefSymbolMap.id with
     sort := fun name =>
       if name = "L" then "TL" else if name = "R" then "TR" else name }
 
@@ -981,7 +981,7 @@ private def agreementRightInclusion :
 private def agreementBaseIntoLeft :
     StructuralMorphism ⟨agreementBase, agreementBase_validate⟩
       ⟨agreementLeft, agreementLeft_validate⟩ where
-  symbols := PresentationSymbols.id
+  symbols := LanguageDefSymbolMap.id
   mapsTypes declaration membership := by
     rw [mapTypeDecl_id]
     change List.Mem declaration [TypeDecl.plain "B"] at membership
@@ -1003,7 +1003,7 @@ private def agreementBaseIntoLeft :
 private def agreementBaseIntoRight :
     StructuralMorphism ⟨agreementBase, agreementBase_validate⟩
       ⟨agreementRight, agreementRight_validate⟩ where
-  symbols := PresentationSymbols.id
+  symbols := LanguageDefSymbolMap.id
   mapsTypes declaration membership := by
     rw [mapTypeDecl_id]
     change List.Mem declaration [TypeDecl.plain "B"] at membership
@@ -1067,10 +1067,10 @@ theorem agreement_maps_agree_on_base :
     change List.Mem declaration [TypeDecl.plain "B"] at membership
     have head := List.mem_singleton.mp membership
     subst declaration
-    simp [StructuralMorphism.comp, PresentationSymbols.comp,
+    simp [StructuralMorphism.comp, LanguageDefSymbolMap.comp,
       agreementBaseIntoLeft, agreementBaseIntoRight, agreementLeftMap,
       agreementRightMap, agreementLeftSymbols, agreementRightSymbols,
-      renameSort, mapTypeDecl, PresentationSymbols.id, TypeDecl.plain]
+      renameSort, mapTypeDecl, LanguageDefSymbolMap.id, TypeDecl.plain]
   terms rule membership := by
     change List.Mem rule [] at membership
     cases membership
@@ -1107,17 +1107,17 @@ theorem agreement_mediator_triangles :
         at membership
       rcases List.mem_cons.mp membership with head | tail
       · subst declaration
-        simp [StructuralMorphism.comp, PresentationSymbols.comp,
+        simp [StructuralMorphism.comp, LanguageDefSymbolMap.comp,
           agreementLeftInclusion, agreementMediator, agreementLeftMap,
           agreementMediatorSymbols, agreementLeftSymbols, renameSort,
-          mapTypeDecl, leftInclusionMorphism, PresentationSymbols.id,
+          mapTypeDecl, leftInclusionMorphism, LanguageDefSymbolMap.id,
           TypeDecl.plain]
       · have head := List.mem_singleton.mp tail
         subst declaration
-        simp [StructuralMorphism.comp, PresentationSymbols.comp,
+        simp [StructuralMorphism.comp, LanguageDefSymbolMap.comp,
           agreementLeftInclusion, agreementMediator, agreementLeftMap,
           agreementMediatorSymbols, agreementLeftSymbols, renameSort,
-          mapTypeDecl, leftInclusionMorphism, PresentationSymbols.id,
+          mapTypeDecl, leftInclusionMorphism, LanguageDefSymbolMap.id,
           TypeDecl.plain]
     · change List.Mem declaration [] at membership; cases membership
     · change List.Mem declaration [] at membership; cases membership
@@ -1128,17 +1128,17 @@ theorem agreement_mediator_triangles :
         at membership
       rcases List.mem_cons.mp membership with head | tail
       · subst declaration
-        simp [StructuralMorphism.comp, PresentationSymbols.comp,
+        simp [StructuralMorphism.comp, LanguageDefSymbolMap.comp,
           agreementRightInclusion, agreementMediator, agreementRightMap,
           agreementMediatorSymbols, agreementRightSymbols, renameSort,
-          mapTypeDecl, rightInclusionMorphism, PresentationSymbols.id,
+          mapTypeDecl, rightInclusionMorphism, LanguageDefSymbolMap.id,
           TypeDecl.plain]
       · have head := List.mem_singleton.mp tail
         subst declaration
-        simp [StructuralMorphism.comp, PresentationSymbols.comp,
+        simp [StructuralMorphism.comp, LanguageDefSymbolMap.comp,
           agreementRightInclusion, agreementMediator, agreementRightMap,
           agreementMediatorSymbols, agreementRightSymbols, renameSort,
-          mapTypeDecl, rightInclusionMorphism, PresentationSymbols.id,
+          mapTypeDecl, rightInclusionMorphism, LanguageDefSymbolMap.id,
           TypeDecl.plain]
     · change List.Mem declaration [] at membership; cases membership
     · change List.Mem declaration [] at membership; cases membership

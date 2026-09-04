@@ -22,7 +22,7 @@ open WellSorted
 /-- Transport a schema pattern into the collision-free Cost base namespace. -/
 def costBaseSchemaPattern (pattern : Pattern) : Pattern :=
   mapPatternSchemaNames costSourceSchemaName
-    (mapPattern costBasePresentationSymbols pattern)
+    (mapPattern costBaseLanguageDefSymbolMap pattern)
 
 /-- The designated continuation metavariable survives constructor transport
 and receives the same collision-free schema-name action as its term. -/
@@ -32,16 +32,16 @@ def ContinuationSchemaVariable.costBase
   cases witness with
   | plain name =>
       simpa [costBaseSchemaPattern, mapPatternSchemaNames, mapPattern,
-        costBasePresentationSymbols] using
+        costBaseLanguageDefSymbolMap] using
         (ContinuationSchemaVariable.plain (costSourceSchemaName name))
   | abstraction binder name =>
       simpa [costBaseSchemaPattern, mapPatternSchemaNames, mapPattern,
-        costBasePresentationSymbols] using
+        costBaseLanguageDefSymbolMap] using
         (ContinuationSchemaVariable.abstraction
           (binder.map costSourceSchemaName) (costSourceSchemaName name))
   | multiAbstraction arity binders name =>
       simpa [costBaseSchemaPattern, mapPatternSchemaNames, mapPattern,
-        costBasePresentationSymbols] using
+        costBaseLanguageDefSymbolMap] using
         (ContinuationSchemaVariable.multiAbstraction arity
           (binders.map costSourceSchemaName) (costSourceSchemaName name))
 
@@ -72,9 +72,9 @@ theorem costBaseSchemaPattern_selected
 namespace CIGSLT
 
 /-- A source sort selected from the exact generated Cost presentation. -/
-def costBaseAuthoredSort (source : CIGSLT)
-    (sort : AuthoredSort source.theory.presentation.presentation) :
-    AuthoredSort source.costIGSLT.presentation.presentation :=
+def costBaseDeclaredSort (source : CIGSLT)
+    (sort : DeclaredSort source.theory.presentation.presentation) :
+    DeclaredSort source.costIGSLT.presentation.presentation :=
   ⟨{ sort.1 with name := costBaseSortName sort.1.name }, by
     change List.Mem { sort.1 with name := costBaseSortName sort.1.name }
       source.costCoreLanguage.types
@@ -85,10 +85,10 @@ def costBaseAuthoredSort (source : CIGSLT)
     exact List.mem_map.mpr ⟨sort.1, sort.2, rfl⟩⟩
 
 /-- A source constructor selected from the exact generated Cost presentation. -/
-def costBaseAuthoredConstructor (source : CIGSLT)
+def costBaseDeclaredConstructor (source : CIGSLT)
     (constructor :
-      AuthoredConstructor source.theory.presentation.presentation) :
-    AuthoredConstructor source.costIGSLT.presentation.presentation :=
+      DeclaredConstructor source.theory.presentation.presentation) :
+    DeclaredConstructor source.costIGSLT.presentation.presentation :=
   ⟨costBaseConstructor source.cut constructor.1, by
     change List.Mem (costBaseConstructor source.cut constructor.1)
       source.costCoreLanguage.terms
@@ -112,7 +112,7 @@ theorem representedBy_costBase
       · exact (usesBareCollection_costBaseConstructor_iff
           source.cut constructor).not.mpr notBare
       · simpa [costBaseSchemaPattern, mapPatternSchemaNames,
-          costBaseConstructor, costBasePresentationSymbols] using
+          costBaseConstructor, costBaseLanguageDefSymbolMap] using
             congrArg costBaseConstructorName labelEquality
       · simpa [costBaseSchemaPattern, mapPatternSchemaNames,
           costBaseConstructor] using arityEquality
@@ -151,9 +151,9 @@ def costBaseOperand (source : CIGSLT)
       isSelectedContinuation source.cut constructor.1
         continuation.index = true := by
     simpa using selected
-  let targetConstructor : AuthoredConstructor
+  let targetConstructor : DeclaredConstructor
       source.costIGSLT.presentation.presentation :=
-    source.costBaseAuthoredConstructor constructor
+    source.costBaseDeclaredConstructor constructor
   let targetContinuation : ContinuationPosition
       source.costIGSLT.presentation targetConstructor :=
     { index := continuation.index
@@ -184,14 +184,14 @@ def costBaseOperand (source : CIGSLT)
                 .apply (costBaseConstructorName label)
                   (mapPatternListSchemaNames costSourceSchemaName
                     (arguments.map
-                      (mapPattern costBasePresentationSymbols)))
+                      (mapPattern costBaseLanguageDefSymbolMap)))
               continuation := targetContinuation
               continuationPattern := costBaseSchemaPattern continuationPattern
               continuationVariable := continuationWitness.costBase
               subject := .absent
               form := .introduced (by
-                  dsimp [targetConstructor, costBaseAuthoredConstructor]
-                  simpa [costBaseSchemaPattern, costBasePresentationSymbols,
+                  dsimp [targetConstructor, costBaseDeclaredConstructor]
+                  simpa [costBaseSchemaPattern, costBaseLanguageDefSymbolMap,
                     mapPattern, mapPatternSchemaNames, List.map_map] using
                     (representedBy_costBase source constructor.1
                       (.apply label arguments) represented)) (by
@@ -245,7 +245,7 @@ theorem costBaseOperand_schemaTerm (source : CIGSLT)
       cases schemaTerm with
       | apply label arguments =>
           simp [costBaseOperand, costBaseSchemaPattern,
-            costBasePresentationSymbols, mapPattern, mapPatternSchemaNames]
+            costBaseLanguageDefSymbolMap, mapPattern, mapPatternSchemaNames]
       | bvar index => exact False.elim selectedArgument
       | fvar name => exact False.elim selectedArgument
       | lambda binder body => exact False.elim selectedArgument
@@ -326,7 +326,7 @@ theorem costBaseOperand_constructor (source : CIGSLT)
     (selected : isSelectedContinuation source.cut
       operand.constructor.1 operand.continuation.index = true) :
     (source.costBaseOperand operand selected).constructor =
-      source.costBaseAuthoredConstructor operand.constructor := by
+      source.costBaseDeclaredConstructor operand.constructor := by
   rcases operand with
     ⟨constructor, schemaTerm, continuation, continuationPattern,
       continuationWitness, subject, form⟩
@@ -519,8 +519,8 @@ private theorem coreContactRepresentation_costBaseConstructor
 
 theorem costBaseCore_representsCore (source : CIGSLT) :
     coreContactRepresentation?
-        (source.costBaseAuthoredSort source.cut.coreContact.sort).1
-        (source.costBaseAuthoredConstructor
+        (source.costBaseDeclaredSort source.cut.coreContact.sort).1
+        (source.costBaseDeclaredConstructor
           source.cut.coreContact.constructor).1 =
       some source.cut.coreContact.representation := by
   exact coreContactRepresentation_costBaseConstructor source
@@ -531,8 +531,8 @@ theorem costBaseCore_representsCore (source : CIGSLT) :
 Cost presentation. -/
 def costBaseCoreContact (source : CIGSLT) :
     CoreContactPresentation source.costIGSLT.presentation.presentation where
-  sort := source.costBaseAuthoredSort source.cut.coreContact.sort
-  constructor := source.costBaseAuthoredConstructor
+  sort := source.costBaseDeclaredSort source.cut.coreContact.sort
+  constructor := source.costBaseDeclaredConstructor
     source.cut.coreContact.constructor
   representation := source.cut.coreContact.representation
   representsCore := source.costBaseCore_representsCore
@@ -547,9 +547,9 @@ private theorem CutSourceShape.costBase
       (costBaseSchemaPattern core) := by
   cases shape with
   | binary binaryContact =>
-      simpa [costBaseCoreContact, costBaseAuthoredConstructor,
+      simpa [costBaseCoreContact, costBaseDeclaredConstructor,
         costBaseConstructor, costBaseSchemaPattern,
-        costBasePresentationSymbols, mapPattern, mapPatternSchemaNames,
+        costBaseLanguageDefSymbolMap, mapPattern, mapPatternSchemaNames,
         mapPatternListSchemaNames_eq_map] using
         (CutSourceShape.binary
           (contact := source.costBaseCoreContact)
@@ -558,14 +558,14 @@ private theorem CutSourceShape.costBase
           binaryContact)
   | collection context rest collectionContact =>
       simpa [costBaseCoreContact, costBaseSchemaPattern,
-        costBasePresentationSymbols, mapPattern, mapPatternSchemaNames,
+        costBaseLanguageDefSymbolMap, mapPattern, mapPatternSchemaNames,
         mapPatternListSchemaNames_eq_map, List.map_map] using
         (CutSourceShape.collection
           (contact := source.costBaseCoreContact)
           (program := costBaseSchemaPattern program)
           (environment := costBaseSchemaPattern environment)
           (mapPatternListSchemaNames costSourceSchemaName
-            (context.map (mapPattern costBasePresentationSymbols)))
+            (context.map (mapPattern costBaseLanguageDefSymbolMap)))
           (rest.map costSourceSchemaName) collectionContact)
 
 theorem costBaseCoreShape (source : CIGSLT) :
@@ -654,15 +654,15 @@ theorem costWholeRedexEnvelopeInSignature (source : CIGSLT) :
 
 /-- Base transport is injective on authored constructors.  Validation makes
 source labels unique, and the reserved Cost base prefix is injective. -/
-theorem costBaseAuthoredConstructor_injective (source : CIGSLT) :
-    Function.Injective source.costBaseAuthoredConstructor := by
+theorem costBaseDeclaredConstructor_injective (source : CIGSLT) :
+    Function.Injective source.costBaseDeclaredConstructor := by
   intro left right equality
   apply ContinuationRetypingPlan.authoredConstructorLabel_injective
     source.theory.presentation.presentation
   apply costBaseConstructorName_injective
-  simpa [costBaseAuthoredConstructor, costBaseConstructor] using
+  simpa [costBaseDeclaredConstructor, costBaseConstructor] using
     congrArg
-      (fun constructor : AuthoredConstructor source.costWholePresentation =>
+      (fun constructor : DeclaredConstructor source.costWholePresentation =>
         constructor.1.label) equality
 
 /-- The generated rule retains the transported ordered interaction core below
@@ -761,10 +761,10 @@ def costInteractionCut (source : CIGSLT) :
           simp only [costProgramOperand, costBaseCoreContact] at equality
           rw [costBaseOperand_constructor] at equality
           apply different
-          apply source.costBaseAuthoredConstructor_injective
-          change source.costBaseAuthoredConstructor
+          apply source.costBaseDeclaredConstructor_injective
+          change source.costBaseDeclaredConstructor
               source.cut.program.constructor =
-            source.costBaseAuthoredConstructor
+            source.costBaseDeclaredConstructor
               source.cut.coreContact.constructor at equality
           exact equality
     | direct kind binary ownedByContact atSide =>
@@ -775,7 +775,7 @@ def costInteractionCut (source : CIGSLT) :
         · exact binary
         · simp only [costProgramOperand, costBaseCoreContact]
           rw [costBaseOperand_constructor]
-          exact congrArg source.costBaseAuthoredConstructor ownedByContact
+          exact congrArg source.costBaseDeclaredConstructor ownedByContact
         · simp only [costProgramOperand]
           rw [costBaseOperand_continuation_index]
           exact atSide
@@ -790,10 +790,10 @@ def costInteractionCut (source : CIGSLT) :
           simp only [costEnvironmentOperand, costBaseCoreContact] at equality
           rw [costBaseOperand_constructor] at equality
           apply different
-          apply source.costBaseAuthoredConstructor_injective
-          change source.costBaseAuthoredConstructor
+          apply source.costBaseDeclaredConstructor_injective
+          change source.costBaseDeclaredConstructor
               source.cut.environment.constructor =
-            source.costBaseAuthoredConstructor
+            source.costBaseDeclaredConstructor
               source.cut.coreContact.constructor at equality
           exact equality
     | direct kind binary ownedByContact atSide =>
@@ -804,7 +804,7 @@ def costInteractionCut (source : CIGSLT) :
         · exact binary
         · simp only [costEnvironmentOperand, costBaseCoreContact]
           rw [costBaseOperand_constructor]
-          exact congrArg source.costBaseAuthoredConstructor ownedByContact
+          exact congrArg source.costBaseDeclaredConstructor ownedByContact
         · simp only [costEnvironmentOperand]
           rw [costBaseOperand_continuation_index]
           exact atSide
@@ -823,13 +823,13 @@ def costInteractionCut (source : CIGSLT) :
 @[simp]
 theorem costInteractionCut_program_constructor (source : CIGSLT) :
     source.costInteractionCut.program.constructor =
-      source.costBaseAuthoredConstructor source.cut.program.constructor := by
+      source.costBaseDeclaredConstructor source.cut.program.constructor := by
   simp [costInteractionCut, costProgramOperand]
 
 @[simp]
 theorem costInteractionCut_environment_constructor (source : CIGSLT) :
     source.costInteractionCut.environment.constructor =
-      source.costBaseAuthoredConstructor source.cut.environment.constructor := by
+      source.costBaseDeclaredConstructor source.cut.environment.constructor := by
   simp [costInteractionCut, costEnvironmentOperand]
 
 @[simp]
@@ -871,11 +871,11 @@ theorem costBaseConstructor_eq_program_iff (source : CIGSLT)
       costBaseConstructor source.cut source.cut.program.constructor.1
         at equality
     have mappedEquality :
-        source.costBaseAuthoredConstructor ⟨rule, membership⟩ =
-          source.costBaseAuthoredConstructor source.cut.program.constructor := by
+        source.costBaseDeclaredConstructor ⟨rule, membership⟩ =
+          source.costBaseDeclaredConstructor source.cut.program.constructor := by
       exact Subtype.ext equality
     exact congrArg Subtype.val
-      (source.costBaseAuthoredConstructor_injective mappedEquality)
+      (source.costBaseDeclaredConstructor_injective mappedEquality)
   · intro equality
     subst rule
     rw [costInteractionCut_program_constructor]
@@ -894,12 +894,12 @@ theorem costBaseConstructor_eq_environment_iff (source : CIGSLT)
       costBaseConstructor source.cut source.cut.environment.constructor.1
         at equality
     have mappedEquality :
-        source.costBaseAuthoredConstructor ⟨rule, membership⟩ =
-          source.costBaseAuthoredConstructor
+        source.costBaseDeclaredConstructor ⟨rule, membership⟩ =
+          source.costBaseDeclaredConstructor
             source.cut.environment.constructor := by
       exact Subtype.ext equality
     exact congrArg Subtype.val
-      (source.costBaseAuthoredConstructor_injective mappedEquality)
+      (source.costBaseDeclaredConstructor_injective mappedEquality)
   · intro equality
     subst rule
     rw [costInteractionCut_environment_constructor]
@@ -1075,7 +1075,7 @@ receives a wrapped copy at the next Cost layer. -/
 def costContinuationRetyping (source : CIGSLT) :
     ContinuationRetypingPlan source.costInteractionCut where
   residualCovered := by
-    change (show AuthoredConstructor
+    change (show DeclaredConstructor
         source.costIGSLT.presentation.presentation from
       source.costWholeContactConstructor) ∈
         continuationConstructors source.costInteractionCut
@@ -1087,7 +1087,7 @@ def costContinuationRetyping (source : CIGSLT) :
       rw [costInteractionCut_program_constructor] at labelEquality
       apply costBaseConstructorName_ne_apparatus
         source.cut.program.constructor.1.label "contact"
-      simpa [costBaseAuthoredConstructor, costBaseConstructor,
+      simpa [costBaseDeclaredConstructor, costBaseConstructor,
         costWholeContactConstructor, costContactConstructor,
         costContactConstructorName] using labelEquality.symm
     · intro equality
@@ -1096,7 +1096,7 @@ def costContinuationRetyping (source : CIGSLT) :
       rw [costInteractionCut_environment_constructor] at labelEquality
       apply costBaseConstructorName_ne_apparatus
         source.cut.environment.constructor.1.label "contact"
-      simpa [costBaseAuthoredConstructor, costBaseConstructor,
+      simpa [costBaseDeclaredConstructor, costBaseConstructor,
         costWholeContactConstructor, costContactConstructor,
         costContactConstructorName] using labelEquality.symm
 

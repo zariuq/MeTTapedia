@@ -47,7 +47,7 @@ def rhoPairFvarAPlan :
   .fvar (by
     simp [rhoCutOrderFree, FreeTypeContext.ofList, mapTypeExpr,
       CostStaticColor.symbols, costBaseStaticSymbols,
-      costBasePresentationSymbols])
+      costBaseLanguageDefSymbolMap])
 
 theorem rhoPairSourceReflectiveDecl_mem :
     rhoReflectivePresentation.toReflectivePresentationDecl ∈
@@ -242,7 +242,7 @@ theorem rhoPairQuoteReset_reached_childCanonical_ne :
     rhoPairQuoteResetRightReached.thinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       (by rfl) 0]
   simp [mapPattern, CostStaticColor.symbols, costBaseStaticSymbols,
-    costBasePresentationSymbols, costStaticReflectivePresentationDecl,
+    costBaseLanguageDefSymbolMap, costStaticReflectivePresentationDecl,
     costBaseReflectivePresentationDecl,
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,

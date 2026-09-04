@@ -30,33 +30,19 @@ formalization. Serves as a traceability matrix for review.
 ## Architecture Overview
 
 ```
-                    LanguageDef
+       (presentation, admitted interpretation)
                         |
-          authored rewrite rules
+          InterpretedPresentation.toGSLTUsing
                         |
-           ContextualStep.Step
-       (least generated relation)
+             equation-aware GSLT (E;R;E)
                         |
-       +----------------+----------------+
-       |                                 |
- langReduces (empty env)       langReducesUsing (explicit env)
-       |                                 |
-       +------ exact compiler bridge ----+
+             gsltSpan / semanticDiamond
+                        |   semanticBox
+                        |   semanticGalois
+                        v
+                    gsltOSLF
                         |
-             ContextualStep.rewriteAt
-             (explicit finite depth)
-                        |
-                langRewriteSystem
-                        |
-                    langSpan
-                   /        \
-            langDiamond    langBox
-                   \        /
-                 langGalois (automatic)
-                        |
-                   langOSLF
-              /       |       \
-         rhoOSLF  lambdaOSLF  petriOSLF
+                     rhoOSLF
 ```
 
 ## I. Core OSLF Framework (INPUT/OUTPUT)
@@ -80,25 +66,26 @@ formalization. Serves as a traceability matrix for review.
 
 ### Step-Future (◇)
 - Paper [MS] §3: "◇φ(p) = ∃q. p ⇝ q ∧ φ(q)"
-- Lean (hand-proven): `possiblyProp` (RhoCalculus/Reduction.lean:103)
-- Lean (derived): `derivedDiamond` (Framework/DerivedModalities.lean:143)
-- Lean (generic): `langDiamond` (Framework/TypeSynthesis.lean:93)
-- Bridge: `derived_diamond_eq_possiblyProp` (Framework/DerivedModalities.lean:208)
+- Lean (span construction): `derivedDiamond` (Framework/DerivedModalities.lean)
+- Lean (equation-quotient construction): `semanticDiamond`
+  (Framework/GSLTTypeSynthesis.lean)
+- Lean (LanguageDef specialization): `langDiamond`
+  (Framework/TypeSynthesis.lean)
 
 ### Step-Past (□)
 - Paper [MS] §3: "□φ(p) = ∀q. q ⇝ p → φ(q)"
-- Lean (hand-proven): `relyProp` (RhoCalculus/Reduction.lean:107)
-- Lean (derived): `derivedBox` (Framework/DerivedModalities.lean:151)
-- Lean (generic): `langBox` (Framework/TypeSynthesis.lean:101)
-- Bridge: `derived_box_eq_relyProp` (Framework/DerivedModalities.lean:216)
+- Lean (span construction): `derivedBox` (Framework/DerivedModalities.lean)
+- Lean (equation-quotient construction): `semanticBox`
+  (Framework/GSLTTypeSynthesis.lean)
+- Lean (LanguageDef specialization): `langBox`
+  (Framework/TypeSynthesis.lean)
 
 ### Galois Connection (◇ ⊣ □)
 - Paper [MS] §4: "The adjoint pair ◇ ⊣ □ forms a Galois connection."
-- Lean (hand-proven): `galois_connection` (RhoCalculus/Reduction.lean:113)
-- Lean (derived): `derived_galois` (Framework/DerivedModalities.lean:161)
-- Lean (generic): `langGalois` (Framework/TypeSynthesis.lean:108)
-- Lean (Mathlib): `rho_mathlib_galois` (Framework/RhoInstance.lean:117)
-- Bridge: `rho_galois_from_span` (Framework/DerivedModalities.lean:224)
+- Lean (span construction): `derived_galois` (Framework/DerivedModalities.lean)
+- Lean (equation quotient): `semanticGalois` (Framework/GSLTTypeSynthesis.lean)
+- Lean (LanguageDef specialization): `langGalois` (Framework/TypeSynthesis.lean)
+- Lean (rho specialization): `rho_mathlib_galois` (Framework/RhoInstance.lean)
 
 ## III. ρ-Calculus Concrete Layer
 
@@ -161,8 +148,6 @@ formalization. Serves as a traceability matrix for review.
 - Lean (legacy sort-wise wrappers): `predFibrationSortApprox`,
   `oslf_fibrationSortApprox`
 - Agreement theorem (discrete-base): `predFibration_presheafSortApprox_agreement`
-- Agreement theorem (concrete type-sorted instance):
-  `typeSortsOSLFFibrationUsing_presheafAgreement`
 - Agreement theorem (generic language-wrapper instance):
   `langOSLFFibrationUsing_presheafAgreement`
 - Agreement theorem (concrete language-wrapper instance):
@@ -220,7 +205,9 @@ formalization. Serves as a traceability matrix for review.
 ### 1. ρ-Calculus (rhoCalc)
 - Lean: `rhoCalc` (MeTTaIL/Syntax.lean)
 - OSLF: `rhoOSLF` (Framework/RhoInstance.lean:90)
-- Galois: proven via `galois_connection` and `rho_mathlib_galois`
+- Generated NTT: `rhoGeneratedNTT` (generic `generateNTT`), with
+  `rhoGeneratedNTT_sees_communication`
+- Galois: `rho_mathlib_galois`, specialized from `semanticGalois`
 - Diagnostics: 6 generic-engine examples and 8 generic-vs-specialized
   comparisons (Engine.lean); the comparison corpus includes disagreements and
   is not an adequacy certificate
@@ -232,20 +219,27 @@ formalization. Serves as a traceability matrix for review.
 - Canaries: 8 demos + capture-safety canaries 7-8
 
 ### 3. Petri Nets (petriNet)
-- Lean: `petriNet` (Framework/PetriNetInstance.lean)
+- Admitted presentation: `validatedPetriNet` with `petriNet_validate`
+  (Framework/PetriNetInstance.lean)
 - OSLF: `petriOSLF` (Framework/PetriNetInstance.lean)
+- Generated NTT: `petriGeneratedNTT` (generic `generateNTT`)
 - Galois: `petriGalois` (automatic from langGalois)
 - Canaries: 8 demos + proved dead marking `D_is_dead` + `AB_has_one_reduct`
+  + the equation-sensitive pair `petriNet_BA_semanticStep_DC` /
+    `petriNet_BA_not_rawStep_DC`
+  + generated-native-type inhabitation `petriNet_BA_satisfies_DC_nativeType`
+  + the same witness through the literal generic constructor,
+    `petriGeneratedNTT_accepts_BA_to_DC`
 
 ## VIII. Key Bridge Theorems (Traceability Matrix)
 
 | # | Theorem | File | Statement |
 |---|---------|------|-----------|
-| 1 | `galois_connection` | Reduction.lean:113 | hand-proven ◇ ⊣ □ for ρ-calc |
-| 2 | `derived_galois` | DerivedModalities.lean:161 | generic ◇ ⊣ □ from span |
-| 3 | `rho_galois_from_span` | DerivedModalities.lean:224 | ρ-calc Galois as corollary |
-| 4 | `langGalois` | TypeSynthesis.lean:108 | automatic for any LanguageDef |
-| 5 | `langModalAdjunction` | CategoryBridge.lean:162 | Galois → categorical Adjunction |
+| 1 | `derived_galois` | DerivedModalities.lean | generic ◇ ⊣ □ from span |
+| 2 | `semanticGalois` | GSLTTypeSynthesis.lean | ◇ ⊣ □ on equation-invariant predicates |
+| 3 | `rho_mathlib_galois` | RhoInstance.lean | rho specialization of semantic Galois |
+| 4 | `langGalois` | TypeSynthesis.lean | automatic for any LanguageDef |
+| 5 | `langModalAdjunction` | CategoryBridge.lean | Galois → categorical Adjunction |
 | 6 | `mem_rewriteAt_iff_stepAt` | ContextualStep.lean | bounded compiler exactness |
 | 7 | `exists_mem_rewriteAt_iff_step` | ContextualStep.lean | finite compiled witness iff least generated step |
 | 8 | `matchPattern_sound` | MatchSpec.lean:336 | executable → relational match |
@@ -317,10 +311,13 @@ open Mettapedia.OSLF
 #check @exists_mem_rewriteAt_iff_step
 #check @OSLFTypeSystem
 #check @RewriteSystem
-#check @langOSLF
-#check @langGalois
-#check @langDiamond
-#check @langBox
+#check @toOSLFUsing
+#check @rhoOSLF
+#check @presentedRhoQuotientEndpointRuntime
+#check @presentedRhoNormalizedSuccessorClasses_exact
+#check @semanticGalois
+#check @semanticDiamond
+#check @semanticBox
 #check @Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReducesAtUsing
 #check @Mettapedia.OSLF.Framework.ImageFinite.hm_converse_langReducesAtUsing
 #check @Mettapedia.OSLF.Framework.LangMorphism.sem_transfer_of_broadFragment
@@ -520,12 +517,18 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_patternPred_sigma_transport_via_prop12_pack
 #check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_patternPred_pi_transport_via_prop12_pack
 #check @Mettapedia.OSLF.Framework.BeckChevalleyOSLF.representable_patternPred_piSigma_transport_via_prop12_pack
-#check @possiblyProp
-#check @relyProp
-#check @galois_connection
 #check @rhoOSLF
+#check @rhoGeneratedNTT
+#check @rhoGeneratedNTT_sees_communication
 #check @lambdaOSLF
 #check @petriOSLF
+#check @petriNet_validate
+#check @validatedPetriNet
+#check @petriGeneratedNTT
+#check @petriNet_BA_semanticStep_DC
+#check @petriNet_BA_not_rawStep_DC
+#check @petriNet_BA_satisfies_DC_nativeType
+#check @petriGeneratedNTT_accepts_BA_to_DC
 #check @Mettapedia.OSLF.Framework.TinyMLInstance.tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph
 #check @Mettapedia.OSLF.Framework.TinyMLInstance.tinyML_commDiPathSemLiftPkg_of_liftEq
 #check @Mettapedia.OSLF.Framework.TinyMLInstance.tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
@@ -543,10 +546,7 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.Formula.checkLangUsing_sat_sound_sort_fiber
 #check @Mettapedia.OSLF.Formula.checkLangUsing_sat_sound_sort_fiber_mem_iff
 #check @checkLangUsing_sat_sound_proc_fiber
-#check @checkLangUsing_sat_sound_proc_fiber_using
-#check @checkLangUsing_sat_sound_proc_fiber_using_mem_iff
 #check @checkLang_sat_sound_proc_fiber
-#check @checkLang_sat_sound_proc_fiber_using
 #check @Mettapedia.OSLF.Formula.checkLangUsingWithPred_sat_sound_graphObj_dia
 #check @Mettapedia.OSLF.Formula.checkLangUsingWithPred_sat_sound_graphObj_box
 #check @sem_dia_eq_langDiamond
@@ -559,7 +559,7 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.coreMain_theorem1_canonical_contract
 #check @Mettapedia.OSLF.coreMain_theorem1_substitutability_forward
 #check @Mettapedia.OSLF.coreMain_theorem1_substitutability_imageFinite
-#check @Mettapedia.OSLF.coreMain_theorem1_langReduces_of_finite
+#check @Mettapedia.OSLF.coreMain_theorem1_langSemanticReduces_of_finite
 #check @Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalSCQuotRelOn
 #check @Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalSCQuotRelOn
 #check @Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.predFinite_rhoCoreCanonicalSCQuotRelOn
@@ -573,7 +573,7 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.CoreMainHMEndpointMap
 #check @Mettapedia.OSLF.coreMain_hm_endpoint_recommendation_map
 #check @Mettapedia.OSLF.coreMain_paper_parity_theorem_package
-#check @Mettapedia.OSLF.coreMain_paper_parity_theorem_package_langReduces_of_finite
+#check @Mettapedia.OSLF.coreMain_paper_parity_theorem_package_langSemanticReduces_of_finite
 #check @Mettapedia.OSLF.CoreMainPaperParityCanonicalPackage
 #check @Mettapedia.OSLF.coreMain_paper_parity_canonical_package
 -- Paper-parity M1+M2: Category instance + equivalence at representables
@@ -740,7 +740,7 @@ open Mettapedia.OSLF
 -- ZipperSpace: zipper-backed RelationalSpace
 #check @Mettapedia.OSLF.PathMap.ZipperExecution.ZipperSpace
 -- ZAM soundness: zipper-backed OSLF reduction = flat-env reduction
-#check @Mettapedia.OSLF.PathMap.ZipperExecution.zam_oslf_sound
+#check @Mettapedia.OSLF.PathMap.ZipperExecution.zam_semantic_reduction_sound
 #check @Mettapedia.OSLF.PathMap.ZipperExecution.zam_diamond_sound
 #check @Mettapedia.OSLF.PathMap.ZipperExecution.zam_box_sound
 -- FlatZipper: reference ZipperIterationSound instance (list-backed)

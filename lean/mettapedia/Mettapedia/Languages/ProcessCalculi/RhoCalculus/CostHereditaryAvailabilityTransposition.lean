@@ -43,7 +43,7 @@ private theorem rhoCostStatic_quoteIff_of_decodes
   rw [show rhoCIGSLT.reflection.1 = rhoReflectionProfile from rfl]
   rw [costStaticReflectivePresentationDecl_eq_map]
   simp only [mapReflectivePresentation,
-    CostStaticColor.reflectiveSymbols_toPresentationSymbols]
+    CostStaticColor.reflectiveSymbols_toLanguageDefSymbolMap]
   change
     ReflectiveContextSupport.isQuoteConstructor rhoReflectionProfile
         sourceConstructor = true ↔
@@ -144,7 +144,7 @@ theorem canonicalizeReifiedTargetFrame_availabilityTransposedAligned
     unfold declaration
     rw [costStaticReflectivePresentationDecl_eq_map]
     simp only [mapReflectivePresentation,
-      CostStaticColor.reflectiveSymbols_toPresentationSymbols]
+      CostStaticColor.reflectiveSymbols_toLanguageDefSymbolMap]
     rw [reflectiveIsQuoteConstructor_mapCostStatic]
     rw [show rhoCIGSLT.reflection.1 = rhoReflectionProfile from rfl]
     simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile]

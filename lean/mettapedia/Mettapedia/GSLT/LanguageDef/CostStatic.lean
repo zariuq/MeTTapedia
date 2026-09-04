@@ -163,20 +163,20 @@ theorem costWrappedReflectiveName_ne_base (wrapped base : String) :
   (costBaseReflectiveName_ne_wrapped base wrapped).symm
 
 /-- Uniform symbol action for the unchanged base copy of the static theory. -/
-def costBaseStaticSymbols : PresentationSymbols :=
-  { costBasePresentationSymbols with
+def costBaseStaticSymbols : LanguageDefSymbolMap :=
+  { costBaseLanguageDefSymbolMap with
     equation := costBaseEquationName }
 
 /-- Reflection-namespace action paired with the base static symbol action. -/
 def costBaseStaticReflectiveSymbols : ReflectiveSymbols where
-  toPresentationSymbols := costBaseStaticSymbols
+  toLanguageDefSymbolMap := costBaseStaticSymbols
   reflection :=
     { presentation := costBaseReflectiveName
       rule := costBaseReflectiveRuleName }
 
 /-- Uniform symbol action for the hereditary wrapped copy of the static
 theory.  Its sort action agrees exactly with `costWrappedTypeExpr`. -/
-def costWrappedStaticSymbols (theory : IGSLT) : PresentationSymbols where
+def costWrappedStaticSymbols (theory : IGSLT) : LanguageDefSymbolMap where
   sort := fun sort =>
     if sort = theory.presentation.interactingSort.1.name then
       costWrappedSortName
@@ -190,7 +190,7 @@ def costWrappedStaticSymbols (theory : IGSLT) : PresentationSymbols where
 /-- Reflection-namespace action paired with the wrapped static symbol action. -/
 def costWrappedStaticReflectiveSymbols (theory : IGSLT) :
     ReflectiveSymbols where
-  toPresentationSymbols := costWrappedStaticSymbols theory
+  toLanguageDefSymbolMap := costWrappedStaticSymbols theory
   reflection :=
     { presentation := costWrappedReflectiveName
       rule := costWrappedReflectiveRuleName }
@@ -199,7 +199,7 @@ def costWrappedStaticReflectiveSymbols (theory : IGSLT) :
 theorem mapTypeExpr_costBaseStaticSymbols (type : TypeExpr) :
     mapTypeExpr costBaseStaticSymbols type = costBaseTypeExpr type := by
   induction type <;>
-    simp_all [costBaseStaticSymbols, costBasePresentationSymbols,
+    simp_all [costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
       mapTypeExpr, costBaseTypeExpr]
 
 @[simp]
@@ -226,9 +226,9 @@ theorem mapTypeExpr_costWrappedStaticSymbols (theory : IGSLT)
 @[simp]
 theorem mapPattern_costBaseStaticSymbols (pattern : Pattern) :
     mapPattern costBaseStaticSymbols pattern =
-      mapPattern costBasePresentationSymbols pattern := by
+      mapPattern costBaseLanguageDefSymbolMap pattern := by
   induction pattern using Pattern.inductionOn <;>
-    simp_all [costBaseStaticSymbols, costBasePresentationSymbols,
+    simp_all [costBaseStaticSymbols, costBaseLanguageDefSymbolMap,
       mapPattern, List.map_inj_left]
 
 /-- The declaration-derived base equation candidate. -/
@@ -305,7 +305,7 @@ mutual
   closure nor any other schema-instantiation boundary. -/
   @[simp]
   theorem schemaHasNoCollectionRest_mapPattern
-      (symbols : PresentationSymbols) (pattern : Pattern) :
+      (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
       schemaHasNoCollectionRest (mapPattern symbols pattern) =
         schemaHasNoCollectionRest pattern := by
     cases pattern with
@@ -332,7 +332,7 @@ mutual
   /-- List companion to `schemaHasNoCollectionRest_mapPattern`. -/
   @[simp]
   theorem schemaListHasNoCollectionRest_map
-      (symbols : PresentationSymbols) (patterns : List Pattern) :
+      (symbols : LanguageDefSymbolMap) (patterns : List Pattern) :
       schemaListHasNoCollectionRest
           (patterns.map (mapPattern symbols)) =
         schemaListHasNoCollectionRest patterns := by
@@ -348,7 +348,7 @@ end
 renaming. -/
 @[simp]
 theorem schemaInstantiationStable_mapPattern
-    (symbols : PresentationSymbols) (pattern : Pattern) :
+    (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
     schemaInstantiationStable (mapPattern symbols pattern) =
       schemaInstantiationStable pattern := by
   simp [schemaInstantiationStable]
@@ -358,7 +358,7 @@ mutual
   presentation labels. -/
   @[simp]
   theorem isMatchCorrectAux_mapPattern
-      (symbols : PresentationSymbols) (pattern : Pattern) :
+      (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
       isMatchCorrectAux (mapPattern symbols pattern) =
         isMatchCorrectAux pattern := by
     cases pattern with
@@ -375,7 +375,7 @@ mutual
   /-- List companion to `isMatchCorrectAux_mapPattern`. -/
   @[simp]
   theorem isMatchCorrectListAux_map
-      (symbols : PresentationSymbols) (patterns : List Pattern) :
+      (symbols : LanguageDefSymbolMap) (patterns : List Pattern) :
       isMatchCorrectListAux (patterns.map (mapPattern symbols)) =
         isMatchCorrectListAux patterns := by
     cases patterns with
@@ -388,7 +388,7 @@ end
 /-- Public matcher-correctness invariance under structural symbol renaming. -/
 @[simp]
 theorem isMatchCorrect_mapPattern
-    (symbols : PresentationSymbols) (pattern : Pattern) :
+    (symbols : LanguageDefSymbolMap) (pattern : Pattern) :
     Pattern.isMatchCorrect (mapPattern symbols pattern) =
       Pattern.isMatchCorrect pattern := by
   exact isMatchCorrectAux_mapPattern symbols pattern
@@ -481,7 +481,7 @@ def ReflectivePresentationsRetypable {theory : IGSLT}
 tags back to the source declaration. -/
 theorem costBaseEquation_left (equation : Equation) :
     (costBaseEquation equation).left =
-      mapPattern costBasePresentationSymbols equation.left := by
+      mapPattern costBaseLanguageDefSymbolMap equation.left := by
   simp [costBaseEquation, mapEquation]
 
 /-- The wrapped candidate uses the wrapped constructor namespace

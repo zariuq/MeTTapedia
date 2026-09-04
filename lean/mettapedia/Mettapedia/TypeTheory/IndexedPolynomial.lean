@@ -456,7 +456,7 @@ tail occupies the unique recursive position. -/
 def cons {A : Type u} (head : A) (tail : ListP A) : ListP A :=
   .roll (.cons head) (consChildren tail)
 
-/-- Every presentation of the empty child assignment yields `nil`. -/
+/-- Every encoding of the empty child assignment yields `nil`. -/
 theorem roll_nil_eq_nil {A : Type u}
     (children :
       (position : (polynomial A).Position (base := .star) (index := .star)
@@ -469,7 +469,7 @@ theorem roll_nil_eq_nil {A : Type u}
   rw [childrenEqual]
   rfl
 
-/-- Every presentation of the singleton child assignment yields `cons`. -/
+/-- Every encoding of the singleton child assignment yields `cons`. -/
 theorem roll_cons_eq_cons {A : Type u} (head : A)
     (children :
       (position : (polynomial A).Position (base := .star) (index := .star)
@@ -1161,7 +1161,7 @@ assignment. -/
     roll_eq_refl point (reflChildren point) = rfl :=
   Subsingleton.elim _ _
 
-/-- Transport a reflexivity case to an arbitrary presentation of the same
+/-- Transport a reflexivity case to an arbitrary encoding of the same
 zero-child constructor. -/
 def motiveAtRoll {A : Type u}
     (motive : ∀ left right, Identity A left right → Sort v)

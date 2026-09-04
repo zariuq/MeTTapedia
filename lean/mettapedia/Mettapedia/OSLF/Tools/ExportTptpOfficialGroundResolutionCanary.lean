@@ -35,7 +35,7 @@ mutual
                 if language.terms.any fun rule =>
                     rule.label == head && rule.category == category &&
                       rule.params.isEmpty
-                then some head
+                then some s!"({head})"
                 else none
             | _ => none
     | .apply head arguments, expected => do

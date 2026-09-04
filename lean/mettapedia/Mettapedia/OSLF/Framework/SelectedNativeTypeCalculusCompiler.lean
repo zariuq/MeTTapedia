@@ -430,17 +430,20 @@ theorem middle_compiled_endpoints_distinct :
 /-- The admitted compiler output denotes one ordinary GSLT: object-language
 steps and proof-search steps are the two summands of its transition system. -/
 def middleCompiledTheory : Mettapedia.GSLT.GSLT :=
-  (definition (middleDemand .star)).toGSLTOfNoEquations
-    middle_definition_valid rfl
+  (definition (middleDemand .star)).toGSLTOfEquationFree
+    middle_definition_valid (by
+      rw [middle_definition_eq_contextual]
+      exact
+        SelectedNativeTypeContextualCalculus.Canary.middle_definition_equationFree)
 
 private theorem totalization_congr
     {first second : CalculusLanguageDef} (equality : first = second)
     (firstValid : first.isAdmitted = true)
-    (firstEquations : first.equations = [])
+    (firstEquationFree : first.toLanguageDef.isEquationFree = true)
     (secondValid : second.isAdmitted = true)
-    (secondEquations : second.equations = []) :
-    first.toGSLTOfNoEquations firstValid firstEquations =
-      second.toGSLTOfNoEquations secondValid secondEquations := by
+    (secondEquationFree : second.toLanguageDef.isEquationFree = true) :
+    first.toGSLTOfEquationFree firstValid firstEquationFree =
+      second.toGSLTOfEquationFree secondValid secondEquationFree := by
   subst second
   rfl
 

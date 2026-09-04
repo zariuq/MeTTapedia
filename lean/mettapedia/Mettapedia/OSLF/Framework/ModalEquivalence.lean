@@ -48,6 +48,7 @@ open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Framework.ConstructorFibration
 open Mettapedia.OSLF.Framework.DerivedModalities
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 open Mettapedia.OSLF.Framework.ToposReduction
 open CategoryTheory
 
@@ -68,43 +69,38 @@ which IS `di source (pb target)`. We make this explicit for documentation. -/
     This is the "fiber-level stepForward" — the same construction as GSLT's
     `stepForward` but at the Set level. Both compute the existential image
     of the pullback along the span, just in different settings (Set vs Category). -/
-theorem langDiamond_eq_di_pb (lang : LanguageDef) (φ : Pattern → Prop) :
-    langDiamond lang φ =
-    di (langSpan lang).source (pb (langSpan lang).target φ) := rfl
+theorem langDiamond_eq_di_pb (lang : LanguageDef)
+    (φ : EquationPredicate (langGSLT lang)) :
+    (langDiamond lang φ).1 =
+    di (langSpan lang).source (pb (langSpan lang).target φ.1) := by
+  funext source
+  apply propext
+  rw [langDiamond_spec]
+  constructor
+  · rintro ⟨target, step, holds⟩
+    exact ⟨⟨(source, target), step⟩, rfl, holds⟩
+  · rintro ⟨edge, sourceEq, holds⟩
+    exact ⟨edge.1.2, sourceEq ▸ edge.2, holds⟩
 
 /-- The OSLF box is Set-level `∀_tgt ∘ src*` applied to the reduction span. -/
-theorem langBox_eq_ui_pb (lang : LanguageDef) (φ : Pattern → Prop) :
-    langBox lang φ =
-    ui (langSpan lang).target (pb (langSpan lang).source φ) := rfl
+theorem langBox_eq_ui_pb (lang : LanguageDef)
+    (φ : EquationPredicate (langGSLT lang)) :
+    (langBox lang φ).1 =
+    ui (langSpan lang).target (pb (langSpan lang).source φ.1) := by
+  funext target
+  apply propext
+  rw [langBox_spec]
+  constructor
+  · intro holds edge targetEq
+    exact holds edge.1.1 (targetEq ▸ edge.2)
+  · intro holds source step
+    exact holds ⟨(source, target), step⟩ rfl
 
 /-- The modal Galois connection is an instance of composing the adjoint triple
     along the reduction span:
     `∃_src ⊣ src*` composed with `tgt* ⊣ ∀_tgt` gives `◇ ⊣ □`. -/
 theorem modal_galois_from_adjoint_triple (lang : LanguageDef) :
     GaloisConnection (langDiamond lang) (langBox lang) :=
-  langGalois lang
-
-/-! ## Reduction Span as Fiber Endomorphism
-
-The reduction span for a `LanguageDef` gives endomorphisms of the Proc fiber
-in the constructor fibration. The source and target maps both land in
-`Pattern → Prop` (the Proc fiber), making the modalities fiber endomorphisms.
-
-Since all fibers are `Pattern → Prop` (untyped AST), the modalities work
-uniformly across sorts. This simplifies the construction: no need to
-internalize the reduction span in the constructor category. -/
-
-/-- The modal operators are endomorphisms of any fiber (they don't depend on sort). -/
-theorem diamond_preserves_fiber (lang : LanguageDef)
-    (s : ConstructorObj lang) (φ : (constructorFibration lang).Sub s) :
-    langDiamond lang φ = langDiamond lang φ := rfl
-
-/-- The Galois connection holds at every fiber (not just Proc). -/
-theorem fiber_galois (lang : LanguageDef) (s : ConstructorObj lang) :
-    GaloisConnection
-      (langDiamond lang : (constructorFibration lang).Sub s →
-                          (constructorFibration lang).Sub s)
-      (langBox lang) :=
   langGalois lang
 
 /-! ## Constructor-Modal Interaction
@@ -134,24 +130,27 @@ variable (lang : LanguageDef)
     if `◇φ ≤ ψ` then `f*(◇φ) ≤ f*(ψ)` (pullback is monotone).
     This follows from `constructorPullback_mono`. -/
 theorem pullback_diamond_mono {s t : ConstructorObj lang}
-    (f : s ⟶ t) (φ ψ : Pattern → Prop) (h : langDiamond lang φ ≤ ψ) :
-    constructorPullback lang f (langDiamond lang φ) ≤
+    (f : s ⟶ t) (φ : EquationPredicate (langGSLT lang))
+    (ψ : Pattern → Prop) (h : (langDiamond lang φ).1 ≤ ψ) :
+    constructorPullback lang f (langDiamond lang φ).1 ≤
     constructorPullback lang f ψ :=
   constructorPullback_mono lang f h
 
 /-- Pullback preserves box monotonically. -/
 theorem pullback_box_mono {s t : ConstructorObj lang}
-    (f : s ⟶ t) (φ ψ : Pattern → Prop) (h : φ ≤ langBox lang ψ) :
+    (f : s ⟶ t) (φ : Pattern → Prop)
+    (ψ : EquationPredicate (langGSLT lang)) (h : φ ≤ (langBox lang ψ).1) :
     constructorPullback lang f φ ≤
-    constructorPullback lang f (langBox lang ψ) :=
+    constructorPullback lang f (langBox lang ψ).1 :=
   constructorPullback_mono lang f h
 
 /-- Direct image interacts with diamond via the adjunction:
     `∃f(◇φ) ≤ ψ ↔ ◇φ ≤ f*(ψ)` (from ∃f ⊣ f*). -/
 theorem directImage_diamond_adj {s t : ConstructorObj lang}
-    (f : s ⟶ t) (φ ψ : Pattern → Prop) :
-    constructorDirectImage lang f (langDiamond lang φ) ≤ ψ ↔
-    langDiamond lang φ ≤ constructorPullback lang f ψ :=
+    (f : s ⟶ t) (φ : EquationPredicate (langGSLT lang))
+    (ψ : Pattern → Prop) :
+    constructorDirectImage lang f (langDiamond lang φ).1 ≤ ψ ↔
+    (langDiamond lang φ).1 ≤ constructorPullback lang f ψ :=
   constructorDiPbAdj lang f _ _
 
 /-! ## Typing Actions for rhoCalc
@@ -178,7 +177,9 @@ open ConstructorCategory (rhoProcObj rhoNameObj nquoteMor pdropMor
     This is the composition of:
     1. The modal operator ◇ (behavioral: "can step to something satisfying φ")
     2. The sort change Proc → Name (structural: the term is now a name) -/
-def nquoteTypingAction : (Pattern → Prop) → (Pattern → Prop) :=
+def nquoteTypingAction :
+    EquationPredicate (langGSLT rhoCalc) →
+      EquationPredicate (langGSLT rhoCalc) :=
   langDiamond rhoCalc
 
 /-- The typing action of PDrop: maps Name predicates to Proc predicates via □.
@@ -187,7 +188,9 @@ def nquoteTypingAction : (Pattern → Prop) → (Pattern → Prop) :=
     This is the composition of:
     1. The modal operator □ (behavioral: "all predecessors satisfy α")
     2. The sort change Name → Proc (structural: the term is now a process) -/
-def pdropTypingAction : (Pattern → Prop) → (Pattern → Prop) :=
+def pdropTypingAction :
+    EquationPredicate (langGSLT rhoCalc) →
+      EquationPredicate (langGSLT rhoCalc) :=
   langBox rhoCalc
 
 /-- The composite typing action PDrop ∘ NQuote (Proc → Proc) is □ ∘ ◇.
@@ -195,7 +198,8 @@ def pdropTypingAction : (Pattern → Prop) → (Pattern → Prop) :=
     For `*(@(p))` where `p : (Proc, φ)`:
     1. `@(p) : (Name, ◇φ)` via NQuote
     2. `*(@(p)) : (Proc, □(◇φ))` via PDrop -/
-theorem pdropNquote_typing_action (φ : Pattern → Prop) :
+theorem pdropNquote_typing_action
+    (φ : EquationPredicate (langGSLT rhoCalc)) :
     pdropTypingAction (nquoteTypingAction φ) = langBox rhoCalc (langDiamond rhoCalc φ) :=
   rfl
 
@@ -204,7 +208,8 @@ theorem pdropNquote_typing_action (φ : Pattern → Prop) :
     For `@(*(n))` where `n : (Name, α)`:
     1. `*(n) : (Proc, □α)` via PDrop
     2. `@(*(n)) : (Name, ◇(□α))` via NQuote -/
-theorem nquotePdrop_typing_action (α : Pattern → Prop) :
+theorem nquotePdrop_typing_action
+    (α : EquationPredicate (langGSLT rhoCalc)) :
     nquoteTypingAction (pdropTypingAction α) = langDiamond rhoCalc (langBox rhoCalc α) :=
   rfl
 
@@ -228,8 +233,8 @@ theorem typing_action_galois :
 
     `NQuote*(◇φ)(p) = ◇φ(@(p))`
     = "there exists q such that @(p) ⇝ q and φ(q)". -/
-example (φ : Pattern → Prop) (p : Pattern) :
-    constructorPullback rhoCalc nquoteMor (nquoteTypingAction φ) p =
+example (φ : EquationPredicate (langGSLT rhoCalc)) (p : Pattern) :
+    constructorPullback rhoCalc nquoteMor (nquoteTypingAction φ).1 p =
     langDiamond rhoCalc φ (.apply "NQuote" [p]) := rfl
 
 /-- Direct image of NQuote pushes predicates to Name:
@@ -258,11 +263,13 @@ For now, we define the uniform typing action that applies ◇ to all arrows
 
     This is the modal component of the typing rule. The sort-specific
     classification (which arrows get ◇ vs □) is done in Phase D. -/
-def diamondAction (lang : LanguageDef) : (Pattern → Prop) → (Pattern → Prop) :=
+def diamondAction (lang : LanguageDef) :
+    EquationPredicate (langGSLT lang) → EquationPredicate (langGSLT lang) :=
   langDiamond lang
 
 /-- The box typing action for any LanguageDef. -/
-def boxAction (lang : LanguageDef) : (Pattern → Prop) → (Pattern → Prop) :=
+def boxAction (lang : LanguageDef) :
+    EquationPredicate (langGSLT lang) → EquationPredicate (langGSLT lang) :=
   langBox lang
 
 /-- Diamond and box form a Galois pair for any language. -/
@@ -284,12 +291,12 @@ reduction-graph edge whose target satisfies `φ`. -/
 theorem diamondAction_iff_constructor_graphStepForward
     (lang : LanguageDef)
     (s : ConstructorObj lang)
-    (φ : Pattern → Prop) (p : Pattern) :
+    (φ : EquationPredicate (langGSLT lang)) (p : Pattern) :
     diamondAction lang φ p ↔
       ∃ e :
         (reductionGraph (C := ConstructorObj lang) lang).Edge.obj (Opposite.op s),
         ((reductionGraph (C := ConstructorObj lang) lang).source.app (Opposite.op s) e).down = p ∧
-        φ (((reductionGraph (C := ConstructorObj lang) lang).target.app (Opposite.op s) e).down) := by
+        φ.1 (((reductionGraph (C := ConstructorObj lang) lang).target.app (Opposite.op s) e).down) := by
   simpa [diamondAction] using
     (langDiamond_iff_exists_graphStep
       (C := ConstructorObj lang) (lang := lang) (X := Opposite.op s) (φ := φ) (p := p))
@@ -300,12 +307,12 @@ validation against `φ`. -/
 theorem boxAction_iff_constructor_graphIncoming
     (lang : LanguageDef)
     (s : ConstructorObj lang)
-    (φ : Pattern → Prop) (p : Pattern) :
+    (φ : EquationPredicate (langGSLT lang)) (p : Pattern) :
     boxAction lang φ p ↔
       ∀ e :
         (reductionGraph (C := ConstructorObj lang) lang).Edge.obj (Opposite.op s),
         ((reductionGraph (C := ConstructorObj lang) lang).target.app (Opposite.op s) e).down = p →
-        φ (((reductionGraph (C := ConstructorObj lang) lang).source.app (Opposite.op s) e).down) := by
+        φ.1 (((reductionGraph (C := ConstructorObj lang) lang).source.app (Opposite.op s) e).down) := by
   simpa [boxAction] using
     (langBox_iff_forall_graphIncoming
       (C := ConstructorObj lang) (lang := lang) (X := Opposite.op s) (φ := φ) (p := p))

@@ -60,7 +60,8 @@ noncomputable def mettaSemE
     (W : State)
     (queryOfAtom : String → Pattern → Pattern)
     (φ : OSLFFormula) (p : Pattern) : BinaryEvidence :=
-  semE (langReducesUsing relEnv mettaFull) (wmEvidenceAtomSem W queryOfAtom) φ p
+  semE (langSemanticReducesUsing relEnv mettaFull)
+    (wmEvidenceAtomSem W queryOfAtom) φ p
 
 @[simp] theorem mettaSemE_atom
     (relEnv : RelationEnv)
@@ -83,7 +84,7 @@ theorem mettaSemE_atom_revision
   simpa [mettaSemE] using
     semE_wm_atom_revision
       (W₁ := W₁) (W₂ := W₂) (queryOfAtom := queryOfAtom)
-      (R := langReducesUsing relEnv mettaFull) (a := a) (p := p)
+      (R := langSemanticReducesUsing relEnv mettaFull) (a := a) (p := p)
 
 /-! ## 3. Formula -> StagedReflectivePresentation -/
 
