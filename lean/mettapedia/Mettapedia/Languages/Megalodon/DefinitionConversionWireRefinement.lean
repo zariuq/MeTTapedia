@@ -39,17 +39,17 @@ conversion declaration and generic side conditions intact. -/
 theorem definition_presentation_roundtrip :
     Mettapedia.GSLT.LanguageDef.InferenceCettaWire.decodeRuntimeInferenceLanguage
         (Mettapedia.GSLT.LanguageDef.InferenceCettaWire.encodeDefinition
-          presentation) =
-      some (RuntimeInferenceLanguage.ofDefinition presentation) :=
+          DefinitionConversionKernel.definition) =
+      some (RuntimeInferenceLanguage.ofDefinition DefinitionConversionKernel.definition) :=
   Mettapedia.GSLT.LanguageDef.InferenceCettaWire.decodeRuntimeInferenceLanguage_encodeDefinition
-    presentation
+    DefinitionConversionKernel.definition
 
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 5000000 in
 /-- Every fixed application carried by the concrete article belongs to the
 declared definition-conversion constructor vocabulary. -/
 theorem definition_identity_payloads_valid :
-    (RuntimeInferenceLanguage.ofDefinition presentation).proofPayloadsValid
+    (RuntimeInferenceLanguage.ofDefinition DefinitionConversionKernel.definition).proofPayloadsValid
         definitionIdentityArticle = true := by
   exact definition_identity_closed_payload
 
@@ -58,7 +58,7 @@ for the closed-payload runtime model consumed by CeTTa. -/
 theorem definition_identity_packet_accepted :
     checkPacket
         (encodeRuntimeInferenceLanguage
-          (RuntimeInferenceLanguage.ofDefinition presentation))
+          (RuntimeInferenceLanguage.ofDefinition DefinitionConversionKernel.definition))
         (encodePattern definitionIdentityGoal)
         (encodeRawProof definitionIdentityArticle) = some true := by
   rw [checkPacket_encode]
@@ -95,12 +95,12 @@ endpoint after crossing the physical carrier. -/
 theorem definition_identity_wrong_packet_rejected :
     checkPacket
         (encodeRuntimeInferenceLanguage
-          (RuntimeInferenceLanguage.ofDefinition presentation))
+          (RuntimeInferenceLanguage.ofDefinition DefinitionConversionKernel.definition))
         (encodePattern definitionIdentityWrongGoal)
         (encodeRawProof definitionIdentityArticle) = some false := by
   rw [checkPacket_encode]
   cases runtimeResult :
-      (RuntimeInferenceLanguage.ofDefinition presentation).checkRaw
+      (RuntimeInferenceLanguage.ofDefinition DefinitionConversionKernel.definition).checkRaw
         definitionIdentityWrongGoal definitionIdentityArticle with
   | false => rfl
   | true =>

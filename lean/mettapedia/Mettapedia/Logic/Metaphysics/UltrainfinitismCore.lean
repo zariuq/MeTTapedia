@@ -1,9 +1,8 @@
-import Foundation.FirstOrder.Ultraproduct
 import Mathlib.Order.Filter.Ultrafilter.Basic
 import Mettapedia.Logic.GunkyMereology
 
 /-!
-# The ultrainfinitist formal core: relative truth, the precise/open dial, Łoś transfer
+# The ultrainfinitist formal core: relative truth and the precise/open dial
 
 The wrapper layer the ultrainfinitism paper names as its missing formal core:
 
@@ -18,10 +17,9 @@ The wrapper layer the ultrainfinitism paper names as its missing formal core:
   `openFamily_iff_not_precise` is the dichotomy.
 * **Free vs principal** (`hyperfilter_pure_disagree`) — the free One affirms what every
   cofinite stage affirms while a finite coordinate-shadow denies it.
-* **Łoś transfer** (`ultraTrue_iff_uprod`, `ultrapower_elementary`) — ultrainfinitist
-  truth of a first-order sentence along a family IS truth in the ultraproduct; in
-  particular a structure is elementarily equivalent to all its ultrapowers. Thin
-  restatements of `LO.FirstOrder.models_Uprod` in the wrapper vocabulary.
+* **Łoś transfer** lives in `UltrainfinitismLosTransfer`, the only part that needs a
+  first-order library; this module depends on Mathlib ultrafilters alone, so the
+  operational core can import it without importing a first-order syntax.
 
 Invariance (`ultraTrue_map`): re-coordinatizing the index re-coordinatizes the One and
 changes nothing else — the indexed-One invariance the paper promises.
@@ -178,38 +176,4 @@ theorem openFamily_iff_nontrivial_proper (P : I → Prop) :
 
 end PowersetWeld
 
-/-! ## Łoś transfer -/
-
-section Los
-
-open LO FirstOrder FirstOrder.Structure
-
-variable {L : Language.{u}} {A : I → Type u} [(i : I) → Structure L (A i)]
-  [Nonempty I] [(i : I) → Nonempty (A i)]
-
-/-- **Łoś transfer**, wrapper form: ultrainfinitist truth of a first-order sentence
-along the family IS truth in the ultraproduct — the invariant bridge between the
-coordinates and the One. -/
-theorem ultraTrue_iff_uprod (𝓤 : Ultrafilter I) (φ : Sentence L) :
-    UltraTrue 𝓤 (fun i => A i ⊧ₘ φ) ↔ (Uprod A 𝓤) ⊧ₘ φ := by
-  rw [models_Uprod]
-  exact Iff.rfl
-
-/-- A structure is elementarily equivalent to every ultrapower of itself: the One built
-over constant coordinates validates exactly the coordinate's first-order truths. -/
-theorem ultrapower_elementary {B : Type u} [Structure L B] [Nonempty B]
-    (𝓤 : Ultrafilter I) (φ : Sentence L) :
-    (Uprod (fun _ : I => B) 𝓤) ⊧ₘ φ ↔ B ⊧ₘ φ := by
-  rw [← ultraTrue_iff_uprod]
-  constructor
-  · intro h
-    obtain ⟨_, hi⟩ := Ultrafilter.nonempty_of_mem (Filter.eventually_iff.mp h)
-    exact hi
-  · intro h
-    exact Filter.Eventually.of_forall fun _ => h
-
-end Los
-
 end Mettapedia.Logic.Metaphysics
-
-

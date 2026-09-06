@@ -364,30 +364,33 @@ theorem mapGrammarRule_costClosure_costBaseConstructor_of_principal
     · rw [environment]
       exact source.costClosureConstructorName_environment
   cases rule with
-  | mk label category parameters syntaxPattern evalPolicy =>
+  | mk label category parameters syntaxPattern evalPolicy algebra =>
       change
         ({ label := source.costClosureConstructorName
               (costBaseConstructor source.cut
                 ⟨label, category, parameters, syntaxPattern,
-                  evalPolicy⟩).label
+                  evalPolicy, algebra⟩).label
            category := source.costClosureSortName
               (costBaseConstructor source.cut
                 ⟨label, category, parameters, syntaxPattern,
-                  evalPolicy⟩).category
+                  evalPolicy, algebra⟩).category
            params := (costBaseConstructor source.cut
               ⟨label, category, parameters, syntaxPattern,
-                evalPolicy⟩).params.map
+                evalPolicy, algebra⟩).params.map
                 (mapTermParam source.costClosureSymbols)
            syntaxPattern := (costBaseConstructor source.cut
               ⟨label, category, parameters, syntaxPattern,
-                evalPolicy⟩).syntaxPattern
+                evalPolicy, algebra⟩).syntaxPattern
            evalPolicy? := (costBaseConstructor source.cut
               ⟨label, category, parameters, syntaxPattern,
-                evalPolicy⟩).evalPolicy? } : GrammarRule) =
+                evalPolicy, algebra⟩).evalPolicy?
+           algebra? := (costBaseConstructor source.cut
+              ⟨label, category, parameters, syntaxPattern,
+                evalPolicy, algebra⟩).algebra? } : GrammarRule) =
           costBaseConstructor source.costInteractionCut
             (costBaseConstructor source.cut
               ⟨label, category, parameters, syntaxPattern,
-                evalPolicy⟩)
+                evalPolicy, algebra⟩)
       rw [labelMap, parametersMap]
       rfl
 
@@ -483,7 +486,7 @@ theorem mapGrammarRule_costClosure_of_nonprincipal (source : CIGSLT)
   have evalPolicy := source.costCoreTerm_evalPolicy_eq_none constructor.1
     (by exact constructor.2)
   rcases constructor with ⟨⟨label, category, parameters, syntaxItems,
-    policy⟩, membership⟩
+    policy, algebra⟩, membership⟩
   simp only at labelMap syntaxPattern evalPolicy
   have parametersMap :
       parameters.map (mapTermParam source.costClosureSymbols) =
@@ -497,14 +500,16 @@ theorem mapGrammarRule_costClosure_of_nonprincipal (source : CIGSLT)
        category := source.costClosureSortName category
        params := parameters.map (mapTermParam source.costClosureSymbols)
        syntaxPattern := syntaxItems
-       evalPolicy? := policy } : GrammarRule) =
+       evalPolicy? := policy
+       algebra? := algebra } : GrammarRule) =
       { label := costWrappedConstructorName label
         category := if category = costWrappedSortName then
           costWrappedSortName else costBaseSortName category
         params := parameters.map
           (mapParameterType (costWrappedTypeExpr costWrappedSortName))
         syntaxPattern := []
-        evalPolicy? := none }
+        evalPolicy? := none
+        algebra? := algebra }
   rw [labelMap, parametersMap, syntaxPattern, evalPolicy]
   rfl
 

@@ -4,7 +4,7 @@ import Mathlib.CategoryTheory.Subfunctor.Basic
 /-!
 # Internal Presheaf Reduction Relation for OSLF
 
-This module packages the equation-saturated operational relation as a
+This module packages the modulo-equations operational relation as a
 subobject in a presheaf category.
 
 For any base category `C`, we use the constant presheaf on reduction pairs
@@ -52,7 +52,7 @@ def pairConstPresheaf (C : Type u) [CategoryTheory.Category.{v} C] :
   map_comp := by intro _ _ _ _ _; rfl
 
 /-- Internal OSLF reduction relation: the subfunctor of the constant
-pair-presheaf selecting exactly equation-saturated one-step reductions. -/
+pair-presheaf selecting exactly modulo-equations one-step reductions. -/
 def reductionSubfunctorUsing (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef) :
     CategoryTheory.Subfunctor (pairConstPresheaf (C := C)) where
@@ -94,7 +94,7 @@ def reductionTargetUsing (C : Type u) [CategoryTheory.Category.{v} C]
     rfl
 
 /-- Internal reduction graph object over `Psh(C)`:
-vertices are authored patterns and edges are equation-saturated reductions. -/
+vertices are authored patterns and edges are modulo-equations reductions. -/
 def reductionGraphUsing (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef) :
     InternalReductionGraph C where
@@ -132,7 +132,7 @@ theorem mem_reductionSubfunctorUsing_iff
   rfl
 
 /-- Endpoint characterization of the internal graph edges:
-there is an edge from `p` to `q` iff the equation-saturated relation holds. -/
+there is an edge from `p` to `q` iff the modulo-equations relation holds. -/
 theorem reductionGraphUsing_edge_endpoints_iff
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)

@@ -3,6 +3,7 @@ import Mettapedia.Logic.Metaphysics.MonadicSecondOrder
 import Mettapedia.Logic.Metaphysics.UltrainfinitismTwoSemantics
 import Mettapedia.Logic.Metaphysics.DedekindCategoricity
 import Mettapedia.Logic.Metaphysics.UltrainfinitismCore
+import Mettapedia.Logic.Metaphysics.UltrainfinitismLosTransfer
 import Mettapedia.Logic.Metaphysics.DialWeld
 
 /-!

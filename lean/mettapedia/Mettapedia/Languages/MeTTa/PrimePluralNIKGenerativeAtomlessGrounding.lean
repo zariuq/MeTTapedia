@@ -30,7 +30,7 @@ open Mettapedia.GSLT.LanguageDef.AtomlessBooleanFirstOrderDecision
 open Mettapedia.GSLT.LanguageDef.AtomlessBooleanFirstOrderNIKAuthority
 open Mettapedia.GSLT.LanguageDef.BooleanAlgebraIdentityDecision
 open Mettapedia.GSLT.LanguageDef.GenerativeCantorSemanticGrounding
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.GSLT.Ultrainfinite.GenerativeCantorAtomlessness
 
@@ -55,8 +55,8 @@ private abbrev primeAtomlessKind :=
 
 /-- Compose finite-stage semantic grounding with the retained atomless Prime
 authority. -/
-def stagedToPrime : AuthorityTranslation finiteStageContract primeContract :=
-  AuthorityTranslation.comp stagedToCold
+def stagedToPrime : CertifiedTranslation finiteStageContract primeContract :=
+  CertifiedTranslation.comp stagedToCold
     Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.atomlessInclusion
 
 @[simp] theorem stagedToPrime_mapKind :

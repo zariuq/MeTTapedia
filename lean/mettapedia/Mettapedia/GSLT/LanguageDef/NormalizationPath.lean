@@ -78,8 +78,9 @@ def normalizeFirstRunUsing
             simp
           have firstStep :
               (languageGSLTUsing relations language laws).Step term next :=
-            (langReducesUsing_iff_execUsing relations language term next).2
-              ⟨contextFuel, firstMember⟩
+            (TotalGSLT.languageGSLTUsing_step relations language laws term next).2
+              ((langReducesUsing_iff_execUsing relations language term next).2
+                ⟨contextFuel, firstMember⟩)
           let suffix := normalizeFirstRunUsing relations language laws
             contextFuel stepFuel next
           exact {

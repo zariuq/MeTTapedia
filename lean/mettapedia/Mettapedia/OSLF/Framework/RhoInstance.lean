@@ -40,7 +40,7 @@ def rhoOSLF : OSLFTypeSystem rhoRewriteSystem :=
   rhoInterpretedPresentation.toOSLFUsing defaultBasePremises
 
 /-- The generic GSLT-to-NTT construction instantiated on rho's explicitly
-interpreted, equation-saturated semantic presentation. -/
+interpreted, modulo-equations semantic presentation. -/
 def rhoGeneratedNTT : GeneratedNTT :=
   generateNTT rhoGSLT
 
@@ -74,7 +74,7 @@ theorem rhoGeneratedNTT_sees_communication :
         Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefSemanticAgreement.presentedClosedCommTarget).pred := by
   exact rhoOSLF_sees_communication
 
-/-- Negative control: static equation saturation does not manufacture a
+/-- Negative control: static closure under equations does not manufacture a
 free-drop reduction. -/
 theorem rhoOSLF_keeps_freeDrop_inert :
     ¬(gsltOSLF rhoGSLT).satisfies (S := ())

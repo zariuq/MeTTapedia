@@ -152,7 +152,7 @@ theorem theoryTranslation_conservative : theoryTranslation.Conservative where
 /-- Certificate-sensitive truth-table replay cannot commute with a target
 checker whose evidence fibre is `Unit`. -/
 theorem no_exact_authorityTranslation :
-    ¬ Nonempty (AuthorityTranslation equationalContract firstOrderContract) := by
+    ¬ Nonempty (CertifiedTranslation equationalContract firstOrderContract) := by
   rintro ⟨translation⟩
   have targetCertificateSubsingleton :
       Subsingleton

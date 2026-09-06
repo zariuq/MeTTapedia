@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 import Mettapedia.Languages.MeTTa.PrimePluralNIKSetCoreWaist
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceDependentPiExperiment
 
@@ -23,7 +23,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.MeTTa.PrimePluralNIKDependentPiWaist
 
 open Mettapedia.GSLT.LanguageDef.CheckerAuthorityFamily
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower
 open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceDependentPiExperiment
@@ -159,7 +159,7 @@ theorem dependentPi_varying_family_is_not_constant :
 contractum syntax trees. -/
 theorem dependentPi_external_validity_does_not_reflect_raw_syntax :
     ExtensionalFaces.ShallowValid.{u, v} /\
-      NativeDTT.source ≠ NativeDTT.target :=
+      ScopedDTT.source ≠ ScopedDTT.target :=
   ExtensionalFaces.extensional_validity_not_raw_reflection
 
 /-- A changed contractum remains semantically false after entering Prime. -/
@@ -208,7 +208,7 @@ theorem dependentPi_certificate_rejected_at_structural_kind :
 dependent computation into a rejected replay in the established Prime waist. -/
 theorem no_replay_breaking_dependentPi_to_prime :
     ¬ Exists fun translation :
-        AuthorityTranslation dependentPiContract.{u, v} primeContract =>
+        CertifiedTranslation dependentPiContract.{u, v} primeContract =>
       (primeContract.checker (translation.mapKind ())).check
         (translation.mapClaim () NIKProfile.canonicalCandidate)
         (translation.mapCertificate ()

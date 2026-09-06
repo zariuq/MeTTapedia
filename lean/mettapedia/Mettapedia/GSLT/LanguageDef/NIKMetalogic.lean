@@ -140,6 +140,26 @@ structure Comorphism
 
 namespace Comorphism
 
+/-- A signature-changing consequence route is determined by its signature
+functor and sentence translation.  Naturality and preservation are
+propositions and do not add a second notion of arrow identity. -/
+@[ext]
+theorem ext
+    {SourceSignature TargetSignature : Type uSignature}
+    [CategoryTheory.Category.{uHom} SourceSignature]
+    [CategoryTheory.Category.{uHom} TargetSignature]
+    {source : PiInstitution.{uSignature, uHom, uSentence} SourceSignature}
+    {target : PiInstitution.{uSignature, uHom, uSentence} TargetSignature}
+    {left right : Comorphism source target}
+    (signature : left.mapSignature = right.mapSignature)
+    (sentence : HEq left.mapSentence right.mapSentence) :
+    left = right := by
+  cases left
+  cases right
+  cases signature
+  cases sentence
+  rfl
+
 def identity
     {Signature : Type uSignature}
     [CategoryTheory.Category.{uHom} Signature]
@@ -4175,6 +4195,7 @@ end RefinementCanary
 /-! ## Axiom audit -/
 
 #print axioms SeparationSentence.rawNIK_does_not_determine_consequence
+#print axioms PiInstitution.Comorphism.ext
 #print axioms PiInstitution.Comorphism.comp
 #print axioms PiInstitution.TheoryHom.comp
 #print axioms PiInstitution.ProofCalculus.tagged_projection_not_injective

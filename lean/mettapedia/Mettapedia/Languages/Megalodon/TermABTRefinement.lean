@@ -303,8 +303,10 @@ theorem encode_shift (cutoff amount : Nat) (term : Tm) :
         Term.Fields.instantiateAt,
         inductionHypothesis]
 
-/-- Generic physical substitution computes Mathdata capture-avoiding
-substitution exactly. -/
+/-- Generic physical substitution computes the current Lean Mathdata
+term-substitution operation exactly. This algorithmic equality is not a
+cross-sort capture-avoidance theorem for arbitrary raw type abstractions;
+the Henkin semantic consumers retain their separate fragment premises. -/
 theorem encode_instantiateAt (depth : Nat) (replacement body : Tm) :
     encode (Tm.instantiateAt depth replacement body) =
       Term.instantiateAt depth (encode replacement) (encode body) := by

@@ -4,6 +4,7 @@ import Mettapedia.GSLT.LanguageDef.ValidatedInferenceExtension
 import Mettapedia.GSLT.LanguageDef.ExtensionComposition
 import Mettapedia.GSLT.LanguageDef.ExtensionGluing
 import Mettapedia.GSLT.LanguageDef.InferenceNewJudgmentConservativity
+import Mettapedia.GSLT.LanguageDef.InferenceRuleSupport
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificateExtension
 import Mettapedia.GSLT.LanguageDef.SourcePreservingCalculusCoproduct
 import Mettapedia.GSLT.LanguageDef.ExtendedLanguageDef
@@ -22,6 +23,7 @@ import Mettapedia.GSLT.LanguageDef.CompiledPlanOptimizationCertificate
 import Mettapedia.GSLT.LanguageDef.InferenceCompiledPlanLowering
 import Mettapedia.GSLT.LanguageDef.FiniteVariableFrameCompilation
 import Mettapedia.GSLT.LanguageDef.FiniteRuleIndexCompilation
+import Mettapedia.GSLT.LanguageDef.AdaptiveFiniteMapRefinement
 import Mettapedia.GSLT.LanguageDef.ExactRuleSelectorCompilation
 import Mettapedia.GSLT.LanguageDef.ChronologicalArticleCompilation
 import Mettapedia.GSLT.LanguageDef.ExactFrameProofCompilation
@@ -65,7 +67,16 @@ import Mettapedia.GSLT.LanguageDef.MatchDecisionContract
 import Mettapedia.GSLT.LanguageDef.MatchDecisionPrefixObservationCompilation
 import Mettapedia.GSLT.LanguageDef.CandidateSupersetVerificationAlgebra
 import Mettapedia.GSLT.LanguageDef.MatchDecisionVerificationReceipt
+import Mettapedia.GSLT.LanguageDef.MonotoneDecisionRefinement
 import Mettapedia.GSLT.LanguageDef.CompiledPlanDelayedBindingObservation
+import Mettapedia.GSLT.LanguageDef.CompiledAnswerEffectProgram
+import Mettapedia.GSLT.LanguageDef.CompiledAnswerEffectControl
+import Mettapedia.GSLT.LanguageDef.CompiledRecursiveAnswerProducer
+import Mettapedia.GSLT.LanguageDef.DelayedObservationAnswerEffectCompilation
+import Mettapedia.GSLT.LanguageDef.FlatTermViewCompilation
+import Mettapedia.GSLT.LanguageDef.FlatTermExistenceCompilation
+import Mettapedia.GSLT.LanguageDef.FlatTermDeadBindingCountCompilation
+import Mettapedia.GSLT.LanguageDef.ConjunctiveCountFoldCompilation
 import Mettapedia.GSLT.LanguageDef.TermObservationCoalgebra
 import Mettapedia.GSLT.LanguageDef.DelayedSourceBindingCompilation
 import Mettapedia.GSLT.LanguageDef.SupportRestrictedSourceViewCompilation

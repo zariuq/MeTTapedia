@@ -92,6 +92,16 @@ def RewritePath.length : {t u : S.Term} → S.RewritePath t u → Nat
   | _, _, .nil _ => 0
   | _, _, .cons _ rest => 1 + rest.length
 
+/-- A proof-relevant rewrite path is either empty, in which case its endpoints
+coincide, or exposes one semantic step followed by a retained suffix. -/
+theorem rewritePath_eq_or_first {source target : S.Term}
+    (path : S.RewritePath source target) :
+    source = target ∨
+      ∃ middle, S.Step source middle ∧ Nonempty (S.RewritePath middle target) := by
+  cases path with
+  | nil _ => exact Or.inl rfl
+  | cons first rest => exact Or.inr ⟨_, first, ⟨rest⟩⟩
+
 /-- A labeled rewrite step records which terms are involved -/
 structure LabeledStep where
   /-- Source term -/

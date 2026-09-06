@@ -234,13 +234,13 @@ def equationSetoid
       fun relation => Relation.EqvGen.symm _ _ relation,
       fun first second => Relation.EqvGen.trans _ _ _ first second⟩
 
-/-! ## Canonical equation-saturated operational theory -/
+/-! ## Canonical modulo-equations operational theory -/
 
 /-- The operational relation presented by a `LanguageDef`: one authored
 rewrite, with arbitrary equation changes of representative at both ends.
 Equations remain undirected; they expose redexes without being oriented into
 additional rewrite rules. -/
-def EquationSaturatedStep
+def StepModuloEquations
     (base : BasePremiseEvaluator) (language : LanguageDef)
     (source target : Pattern) : Prop :=
   ∃ redex contractum : Pattern,
@@ -248,13 +248,13 @@ def EquationSaturatedStep
       Step base language redex contractum ∧
         EquationEquiv base language contractum target
 
-/-- Equation saturation makes a change of source representative admissible. -/
-theorem equationSaturatedStep_resp_left
+/-- Closure under equations makes a change of source representative admissible. -/
+theorem stepModuloEquations_resp_left
     (base : BasePremiseEvaluator) (language : LanguageDef) :
     ∀ {source source' target : Pattern},
       EquationEquiv base language source source' →
-      EquationSaturatedStep base language source target →
-      ∃ target', EquationSaturatedStep base language source' target' ∧
+      StepModuloEquations base language source target →
+      ∃ target', StepModuloEquations base language source' target' ∧
         EquationEquiv base language target target' := by
   intro source source' target sourceEquivalent
   rintro ⟨redex, contractum, redexEquivalent, primitive, targetEquivalent⟩
@@ -264,13 +264,13 @@ theorem equationSaturatedStep_resp_left
       redexEquivalent
   · exact (equationSetoid base language).iseqv.refl target
 
-/-- Equation saturation makes a change of target representative admissible. -/
-theorem equationSaturatedStep_resp_right
+/-- Closure under equations makes a change of target representative admissible. -/
+theorem stepModuloEquations_resp_right
     (base : BasePremiseEvaluator) (language : LanguageDef) :
     ∀ {source target target' : Pattern},
-      EquationSaturatedStep base language source target →
+      StepModuloEquations base language source target →
       EquationEquiv base language target target' →
-      EquationSaturatedStep base language source target' := by
+      StepModuloEquations base language source target' := by
   intro source target target'
   rintro ⟨redex, contractum, redexEquivalent, primitive, targetEquivalent⟩
     equivalent
@@ -279,21 +279,21 @@ theorem equationSaturatedStep_resp_right
 
 /-- The canonical GSLT generated from a `LanguageDef` and one explicit premise
 boundary.  This is the single equation-respecting operational input to OSLF. -/
-def equationSaturatedGSLT
+def gsltModuloEquations
     (base : BasePremiseEvaluator) (language : LanguageDef) :
     Mettapedia.GSLT.GSLT where
   Term := Pattern
   equations := equationSetoid base language
-  rewrites := EquationSaturatedStep base language
-  rewrites_resp_left := equationSaturatedStep_resp_left base language
-  rewrites_resp_right := equationSaturatedStep_resp_right base language
+  rewrites := StepModuloEquations base language
+  rewrites_resp_left := stepModuloEquations_resp_left base language
+  rewrites_resp_right := stepModuloEquations_resp_right base language
 
 /-- Every authored primitive reduction embeds in the saturated relation. -/
-theorem step_to_equationSaturatedStep
+theorem step_to_stepModuloEquations
     {base : BasePremiseEvaluator} {language : LanguageDef}
     {source target : Pattern}
     (step : Step base language source target) :
-    EquationSaturatedStep base language source target :=
+    StepModuloEquations base language source target :=
   ⟨source, target,
     (equationSetoid base language).iseqv.refl source,
     step,
@@ -645,11 +645,11 @@ theorem equationEquiv_iff_eq_of_no_generators
 
 /-- An equation-free presentation is not a second operational semantics: its
 canonical saturated step is exactly its authored one-step relation. -/
-theorem equationSaturatedStep_iff_step_of_no_generators
+theorem stepModuloEquations_iff_step_of_no_generators
     {base : BasePremiseEvaluator} {language : LanguageDef}
     (free : language.isEquationFree = true)
     (source target : Pattern) :
-    EquationSaturatedStep base language source target ↔
+    StepModuloEquations base language source target ↔
       Step base language source target := by
   constructor
   · rintro ⟨redex, contractum, sourceEquivalent, primitive,
@@ -661,20 +661,20 @@ theorem equationSaturatedStep_iff_step_of_no_generators
       (equationEquiv_iff_eq_of_no_generators free contractum target).mp
         targetEquivalent
     simpa [sourceEq, targetEq] using primitive
-  · exact step_to_equationSaturatedStep
+  · exact step_to_stepModuloEquations
 
 /-- Consequently, the generated GSLT carries ordinary equality when the
 presentation is equation free. -/
-theorem equationSaturatedGSLT_equiv_iff_eq_of_no_generators
+theorem gsltModuloEquations_equiv_iff_eq_of_no_generators
     {base : BasePremiseEvaluator} {language : LanguageDef}
     (free : language.isEquationFree = true)
     (source target : Pattern) :
-    (equationSaturatedGSLT base language).Equiv source target ↔
+    (gsltModuloEquations base language).Equiv source target ↔
       source = target :=
   equationEquiv_iff_eq_of_no_generators free source target
 
-#print axioms equationSaturatedGSLT
-#print axioms equationSaturatedStep_iff_step_of_no_generators
-#print axioms equationSaturatedGSLT_equiv_iff_eq_of_no_generators
+#print axioms gsltModuloEquations
+#print axioms stepModuloEquations_iff_step_of_no_generators
+#print axioms gsltModuloEquations_equiv_iff_eq_of_no_generators
 
 end Mettapedia.GSLT.LanguageDef.EquationSemantics

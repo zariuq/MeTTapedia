@@ -5,7 +5,10 @@ This carrier generalizes the one-axis signature-indexed ABT to independent
 de Bruijn sorts.  Every variable leaf names its sort, and every constructor
 field records the list of variable sorts bound on entry.  Lift,
 substitution, unused-binder removal, and support checking act on one selected
-sort while leaving every other axis unchanged.
+sort while leaving every other axis unchanged. The selected-axis substitution
+does not weaken free variables of other sorts in an inserted replacement.
+Mixed-sort replacements instead use the simultaneous operation in
+`SortedABTSubstitution`; structural scope checks alone do not detect capture.
 
 Binder lists are retained as physical signature data rather than collapsed
 to a total depth.  This lets decoding and conformance reject a field that

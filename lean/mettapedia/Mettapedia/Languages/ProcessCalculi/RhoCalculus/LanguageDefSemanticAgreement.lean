@@ -317,7 +317,7 @@ theorem presentedRhoPrimitiveStep_iff
         (presentedRhoProcessEquiv source) (presentedRhoProcessEquiv target) :=
   Iff.rfl
 
-/-- Soundness of the generic equation-saturated rho step under the exact
+/-- Soundness of the generic modulo-equations rho step under the exact
 carrier equivalence. -/
 theorem presentedRhoStep_sound
     {source target : rhoReflectiveGSLT.Term}
@@ -331,7 +331,7 @@ theorem presentedRhoStep_sound
     presentedRhoEquations_sound targetEquation⟩
   exact (presentedRhoPrimitiveStep_iff redex contractum).mp primitive
 
-/-- Completeness of the generic equation-saturated rho step under the exact
+/-- Completeness of the generic modulo-equations rho step under the exact
 carrier equivalence. -/
 theorem presentedRhoStep_complete
     {source target : rhoReflectiveGSLT.Term}
@@ -623,7 +623,7 @@ theorem gsltOSLF_sees_communication :
   (satisfies_exactTargetNativeType_iff_step rhoReflectiveGSLT _ _).2
     presentedClosedCommSource_step
 
-/-- Negative operational canary: equation saturation does not invent a
+/-- Negative operational canary: closure under equations does not invent a
 rewrite from a free `Drop`. -/
 theorem gsltOSLF_keeps_freeDrop_inert :
     ¬(gsltOSLF rhoReflectiveGSLT).satisfies (S := ())

@@ -132,7 +132,7 @@ algebra is obtained only by quotienting these away (the move from principal to f
 ultrafilters). -/
 theorem not_isGunky_set {α : Type u} [Nonempty α] : ¬ IsGunky (Set α) := by
   rw [isGunky_iff_no_isAtom]
-  push_neg
+  push Not
   obtain ⟨x⟩ := (inferInstance : Nonempty α)
   exact ⟨{x}, isAtom_set_singleton x⟩
 
@@ -214,7 +214,7 @@ theorem isGunky_clopens_cantor : IsGunky (Clopens (ℕ → Bool)) := by
   -- a coordinate `n` not fixed by the cylinder
   obtain ⟨n, hn⟩ : ∃ n, n ∉ I := by
     by_contra hcon
-    push_neg at hcon
+    push Not at hcon
     exact Set.infinite_univ (hIfin.subset fun n _ => hcon n)
   -- the clopen "coordinate `n` equals `f n`"
   have hCclopen : IsClopen {g : ℕ → Bool | g n = f n} := by

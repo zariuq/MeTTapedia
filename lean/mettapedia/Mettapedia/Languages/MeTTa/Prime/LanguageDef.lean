@@ -219,9 +219,6 @@ def language : LanguageDef :=
        reflectedDemandRewrite] }
 
 set_option maxHeartbeats 1000000 in
-attribute [-simp] isolated Fin.Fin1.eq_one
-  LO.LogicalConnective.AndOrClosed.falsum
-  LO.LogicalConnective.AndOrClosed.verum in
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
   case htypes =>

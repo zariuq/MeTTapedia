@@ -7447,6 +7447,9 @@ structure CostStaticConstructorPreimage (source : CIGSLT)
   parametersMap :
     (source.materializeDeclaredCostConstructor constructor).params =
       sourceConstructor.1.params.map (mapTermParam (color.symbols source))
+  algebraMap :
+    (source.materializeDeclaredCostConstructor constructor).algebra? =
+      sourceConstructor.1.algebra?
 
 /-- The intrinsic generated constructor determines its authored static
 preimage uniquely.  The proof uses validated source-label uniqueness and the
@@ -7504,7 +7507,8 @@ def costStaticConstructorPreimage (source : CIGSLT)
               wrapped := wrapped
               labelMap := rfl
               categoryMap := rfl
-              parametersMap := ?_ }
+              parametersMap := ?_
+              algebraMap := rfl }
           exact costBaseConstructor_params_eq_map_of_mem_wrappedLabels source
             sourceConstructor.1 sourceConstructor.2 wrappedLabel
       | wrapped =>
@@ -7519,7 +7523,8 @@ def costStaticConstructorPreimage (source : CIGSLT)
               wrapped := declared
               labelMap := rfl
               categoryMap := ?_
-              parametersMap := ?_ }
+              parametersMap := ?_
+              algebraMap := rfl }
           · simp [CIGSLT.materializeDeclaredCostConstructor,
               costWrappedConstructor, CostStaticColor.symbols,
               costWrappedStaticSymbols]
@@ -13405,6 +13410,7 @@ theorem normalizedThickenedSkeletonRaw_equationEquiv
     {source : CIGSLT} {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     (node : CostStaticRegionNode source color targetFree)
+    (derivedStable : DerivedEquationMapCostStaticStable source color)
     (stable : SupportedEquationAmbientRenamingStable
       (profile := source.costWholeReflectionProfile)
       source.costWholeLanguage) :
@@ -13414,7 +13420,7 @@ theorem normalizedThickenedSkeletonRaw_equationEquiv
       (node.thinning.thickenAmbientBVars 0
         (mapPattern (color.symbols source) node.skeleton.1)) := by
   have normalized := normalizeCostStaticStratum_equationEquiv
-    source color node.skeleton
+    source color derivedStable node.skeleton
   have renamed := equationEquiv_renameAmbientBVarsAt stable
     node.thinning.toTargetIndex node.thinning.toTargetIndex_strictMono 0
       normalized

@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 import Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist
 import Mettapedia.Languages.Megalodon.SetOperationSemanticAuthority
 
@@ -22,7 +22,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist
 
 open Mettapedia.GSLT.LanguageDef.CheckerAuthorityFamily
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 
 universe u v

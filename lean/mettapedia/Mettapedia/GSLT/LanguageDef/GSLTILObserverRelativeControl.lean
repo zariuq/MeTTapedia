@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.Dynamics.ObserverRelativeControlFactorization
+import Mettapedia.GSLT.Dynamics.ObserverRelativeControlTransport
 import Mettapedia.GSLT.LanguageDef.GSLTILObservationControlContract
 
 /-!
@@ -27,6 +27,7 @@ open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.ObservationIndexedPruning
 open Mettapedia.GSLT.Dynamics
 open Mettapedia.GSLT.Dynamics.ObservationTransport
+open Mettapedia.GSLT.Dynamics.ObserverRelativeControlTransport
 
 universe uTerm uIdentity uGuard uView uScore uReceipt
 
@@ -77,10 +78,11 @@ def pullbackControl {source target : GSLT.{uTerm}}
       Identity Guard View Score) :
     ObserverRelativeControlFactorization
       (route.pullbackCollectedArchitecture targetDiscipline)
-      Identity Guard View Score where
-  occurrence := route.pullbackOccurrenceIndex control.occurrence
-  contract := route.pullbackContract control.contract
-  schedule := { readout := control.schedule.readout }
+      Identity Guard View Score :=
+  pullbackControlAlong
+    (route.pullbackCollectedArchitecture targetDiscipline)
+    (route.targetCollectedArchitecture targetDiscipline)
+    (mapEvent route.toOperationalTranslation) (fun value => value) control
 
 @[simp] theorem pullbackControl_demand
     {source target : GSLT.{uTerm}}
@@ -147,10 +149,8 @@ def mapEventChange {source target : GSLT.{uTerm}}
     (route : RepresentedOperationalRoute source target)
     {Receipt : Type uReceipt}
     (change : Change source.LabeledStep Receipt) :
-    Change target.LabeledStep Receipt where
-  source := change.source.map (mapEvent route.toOperationalTranslation)
-  target := change.target.map (mapEvent route.toOperationalTranslation)
-  receipt := change.receipt
+    Change target.LabeledStep Receipt :=
+  mapChange (mapEvent route.toOperationalTranslation) change
 
 /-- Map a source pruning ledger to target events.  Accounting is preserved by
 the additive action of `Multiset.map`; this does not claim that a noninjective
@@ -159,15 +159,8 @@ def mapEventPruning {source target : GSLT.{uTerm}}
     (route : RepresentedOperationalRoute source target)
     {Receipt : Type uReceipt}
     (pruning : PruningChange source.LabeledStep Receipt) :
-    PruningChange target.LabeledStep Receipt where
-  source := pruning.source.map (mapEvent route.toOperationalTranslation)
-  target := pruning.target.map (mapEvent route.toOperationalTranslation)
-  receipt := pruning.receipt
-  removed := pruning.removed.map (mapEvent route.toOperationalTranslation)
-  accounting := by
-    simpa using congrArg
-      (Multiset.map (mapEvent route.toOperationalTranslation))
-      pruning.accounting
+    PruningChange target.LabeledStep Receipt :=
+  mapPruning (mapEvent route.toOperationalTranslation) pruning
 
 @[simp] theorem mapEventPruning_removed
     {source target : GSLT.{uTerm}}
@@ -210,14 +203,11 @@ def mapAdmittedPruning
     {Receipt : Type uReceipt}
     (pruning :
       (route.pullbackControl targetDiscipline control).AdmittedPruning Receipt) :
-    control.AdmittedPruning Receipt where
-  val := route.mapEventPruning pruning.1
-  property := by
-    change control.contract.Preserves
-      (route.mapEventChange pruning.1.toChange)
-    exact
-      (route.pullbackControl_preserves_iff targetDiscipline control
-        pruning.1.toChange).1 pruning.2
+    control.AdmittedPruning Receipt :=
+  mapAdmittedPruningAlong
+    (route.pullbackCollectedArchitecture targetDiscipline)
+    (route.targetCollectedArchitecture targetDiscipline)
+    (mapEvent route.toOperationalTranslation) (fun value => value) control pruning
 
 @[simp] theorem mapAdmittedPruning_removed
     {source target : GSLT.{uTerm}}

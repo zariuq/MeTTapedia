@@ -159,7 +159,7 @@ The formalization has two layers:
 - `HasType`: typing judgment with substitutability and progress
 
 The rho specialization uses the same equation-invariant predicate frame and
-equation-saturated reduction construction as every other GSLT.
+modulo-equations reduction construction as every other GSLT.
 
 ## References
 

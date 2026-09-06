@@ -145,7 +145,7 @@ theorem checkRaw_erase_eq_decide
 
 /-- Intrinsic proof objects lower exactly to recursive raw-tree replay. -/
 def nativeToRaw (presentation : SoundPresentation Meaning) :
-    AuthorityTranslation (contract presentation) (rawContract presentation) where
+    CertifiedTranslation (contract presentation) (rawContract presentation) where
   mapKind := id
   mapSignature := id
   signature_commutes := by intro kind; cases kind; rfl
@@ -165,7 +165,7 @@ def nativeToRaw (presentation : SoundPresentation Meaning) :
 
 /-- Intrinsic proof objects lower exactly to chronological wire-DAG replay. -/
 def nativeToWire (presentation : SoundPresentation Meaning) :
-    AuthorityTranslation (contract presentation) (wireContract presentation) where
+    CertifiedTranslation (contract presentation) (wireContract presentation) where
   mapKind := id
   mapSignature := id
   signature_commutes := by intro kind; cases kind; rfl
@@ -195,8 +195,8 @@ formats. -/
 structure ShieldSpan (presentation : SoundPresentation Meaning) where
   raw : AuthorityContract (theory presentation)
   wire : AuthorityContract (theory presentation)
-  lowerRaw : AuthorityTranslation (contract presentation) raw
-  lowerWire : AuthorityTranslation (contract presentation) wire
+  lowerRaw : CertifiedTranslation (contract presentation) raw
+  lowerWire : CertifiedTranslation (contract presentation) wire
 
 /-- The canonical plural shield span for a semantic presentation. -/
 def shieldSpan (presentation : SoundPresentation Meaning) :

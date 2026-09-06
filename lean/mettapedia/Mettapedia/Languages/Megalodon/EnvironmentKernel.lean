@@ -11,9 +11,11 @@ proof-level type application to the polymorphic kernel.
 
 Type substitution is presented recursively over the complete Mathdata type
 and term syntax.  The compiler below produces its rule article and proves
-that the computed endpoint is Mathdata's operation; the sorted-ABT
+that the computed endpoint is the current Lean Mathdata operation; the sorted-ABT
 refinement then identifies that endpoint with substitution on the generic
-two-axis carrier.
+two-axis carrier. This endpoint parity does not itself prove cross-sort
+capture avoidance, mathematical soundness on arbitrary raw syntax, or
+equivalence with every external OCaml traversal case.
 -/
 
 set_option autoImplicit false
@@ -2370,6 +2372,8 @@ theorem compiled_term_shift_is_sortedABT
   rw [compileTermShift_result]
   exact SortedABTRefinement.encode_shift cutoff amount term
 
+/-- Exact parity with the current Lean term operation. Semantic qualification
+of mixed term/type replacements remains a separate fragment obligation. -/
 theorem compiled_term_substitution_is_sortedABT
     (index : Nat) (replacement body : MathdataKernel.Tm) :
     SortedABTRefinement.encode
@@ -2673,7 +2677,7 @@ theorem mathdata_accepts_implication_reuse_first :
     implicationReuseInitialEnvironment, implicationReuseFirstProof,
     implicationReuseProposition, implicationReuseTerm,
     implicationReuseTermDeclaration, implicationReuseTermName,
-    MathdataKernel.checkProposition, MathdataKernel.inferTerm,
+    MathdataKernel.inferTerm,
     MathdataKernel.normalize, MathdataKernel.deltaNormalize,
     MathdataKernel.Tm.normalize, MathdataKernel.Tm.normalizeOne,
     MathdataKernel.Environment.lookupTerm?, MathdataKernel.lookupTermList?]
@@ -2687,7 +2691,7 @@ theorem mathdata_accepts_implication_reuse_second :
     implicationReuseProposition, implicationReuseTerm,
     implicationReuseKnownDeclaration, implicationReuseTermDeclaration,
     implicationReuseKnownName, implicationReuseTermName,
-    MathdataKernel.checkProposition, MathdataKernel.inferTerm,
+    MathdataKernel.inferTerm,
     MathdataKernel.normalize, MathdataKernel.deltaNormalize,
     MathdataKernel.Tm.normalize, MathdataKernel.Tm.normalizeOne,
     MathdataKernel.Environment.lookupTerm?, MathdataKernel.lookupTermList?,
@@ -2706,7 +2710,7 @@ theorem mathdata_rejects_unknown_implication_reuse :
     implicationReuseProposition, implicationReuseTerm,
     implicationReuseKnownDeclaration, implicationReuseTermDeclaration,
     implicationReuseKnownName, implicationReuseTermName,
-    MathdataKernel.checkProposition, MathdataKernel.inferTerm,
+    MathdataKernel.inferTerm,
     MathdataKernel.normalize, MathdataKernel.deltaNormalize,
     MathdataKernel.Tm.normalize, MathdataKernel.Tm.normalizeOne,
     MathdataKernel.Environment.lookupTerm?, MathdataKernel.lookupTermList?,

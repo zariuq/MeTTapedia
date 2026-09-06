@@ -39,6 +39,25 @@ inductive ReflectiveAuthoredGeneratorWitness
 
 namespace ReflectiveAuthoredGeneratorWitness
 
+/-- Place a retained equation occurrence under an additional one-hole
+context.  This preserves the selected authored equation, derived collection
+law, or reflective declaration as data; only its surrounding position grows. -/
+def inContext {profile : ReflectionProfile} {base : BasePremiseEvaluator}
+    {language : LanguageDef} {left right : Pattern}
+    (outer : OneHoleContext) :
+    ReflectiveAuthoredGeneratorWitness profile base language left right →
+      ReflectiveAuthoredGeneratorWitness profile base language
+        (outer.fill left) (outer.fill right)
+  | .core (.equation inner witness) => by
+      rw [← OneHoleContext.fill_comp, ← OneHoleContext.fill_comp]
+      exact .core (.equation (outer.comp inner) witness)
+  | .core (.derived inner witness) => by
+      rw [← OneHoleContext.fill_comp, ← OneHoleContext.fill_comp]
+      exact .core (.derived (outer.comp inner) witness)
+  | .reflective inner declaration representatives => by
+      rw [← OneHoleContext.fill_comp, ← OneHoleContext.fill_comp]
+      exact .reflective (outer.comp inner) declaration representatives
+
 /-- Forget occurrence identity while retaining the explicit reflection
 profile in the proposition-valued semantics. -/
 def erase {profile : ReflectionProfile} {base : BasePremiseEvaluator}
@@ -112,7 +131,7 @@ def contractum {profile : ReflectionProfile} {base : BasePremiseEvaluator}
 def isEquation {profile : ReflectionProfile} {base : BasePremiseEvaluator}
     {language : LanguageDef} {left right : Pattern} :
     ReflectiveAuthoredGeneratorWitness profile base language left right → Bool
-  | .core _ => true
+  | .core witness => witness.isEquation
   | .reflective .. => false
 
 end ReflectiveAuthoredGeneratorWitness

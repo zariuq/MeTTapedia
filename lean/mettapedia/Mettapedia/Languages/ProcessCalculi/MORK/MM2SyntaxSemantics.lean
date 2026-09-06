@@ -1369,7 +1369,7 @@ private def canonicalProgramTailDerivation :
       have finalGap := canonicalFinalLineFeedGapDerivation before
       have signature := mm2StructuralSignatureAt 0 (by decide)
         ("MM2Program", "mm2:program-empty",
-          [.nonterminal "MM2FinalGap", .terminal .eof]) (by decide)
+          [.nonterminal "MM2FinalGap"]) (by decide)
       rw [canonicalProgramTailCST, canonicalProgramScalars]
       refine ParserPackDerivesAt.structural
         (resultSort := "MM2Program")
@@ -1377,7 +1377,7 @@ private def canonicalProgramTailDerivation :
         0 (mm2StructuralPositionValid 0 (by decide)) signature.1
           signature.2.1 ?_
       rw [signature.2.2]
-      exact .nonterminal finalGap (.terminal (.eof (by simp)) .nil)
+      exact .nonterminal finalGap .nil
   | before, atom :: rest, safe => by
       simp only [List.all_cons, Bool.and_eq_true] at safe
       let atomScalars := canonicalAtomScalars atom
@@ -1406,7 +1406,7 @@ private def canonicalProgramTailDerivation :
       have signature := mm2StructuralSignatureAt 1 (by decide)
         ("MM2Program", "mm2:program-cons",
           [.nonterminal "MM2Gap", .nonterminal "MM2Atom",
-           .nonterminal "MM2Program", .terminal .eof]) (by decide)
+           .nonterminal "MM2Program"]) (by decide)
       rw [canonicalProgramTailCST, canonicalProgramScalars]
       dsimp [atomScalars, restScalars] at gapDerivation atomExact restExact
       refine ParserPackDerivesAt.structural
@@ -1417,9 +1417,7 @@ private def canonicalProgramTailDerivation :
       rw [signature.2.2]
       exact .nonterminal gapDerivation
         (.nonterminal atomExact
-          (.nonterminal restExact
-            (.terminal (.eof (by
-              simp [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm])) .nil)))
+          (.nonterminal restExact .nil))
 
 /-- Every canonically rendered syntax-safe MM2 program has an exact
 whole-input derivation in the ParserPack generated from `mm2Syntax`. -/
@@ -1433,7 +1431,7 @@ theorem canonical_program_has_parser_derivation
       have finalGap := canonicalFinalGapEmptyDerivation [] 0
       have signature := mm2StructuralSignatureAt 0 (by decide)
         ("MM2Program", "mm2:program-empty",
-          [.nonterminal "MM2FinalGap", .terminal .eof]) (by decide)
+          [.nonterminal "MM2FinalGap"]) (by decide)
       refine ⟨?_⟩
       rw [canonicalProgramScalars, canonicalProgramCST]
       refine ParserPackDerivesAt.structural
@@ -1442,7 +1440,7 @@ theorem canonical_program_has_parser_derivation
         0 (mm2StructuralPositionValid 0 (by decide)) signature.1
           signature.2.1 ?_
       rw [signature.2.2]
-      exact .nonterminal finalGap (.terminal (.eof rfl) .nil)
+      exact .nonterminal finalGap .nil
   | cons atom rest =>
       simp only [List.all_cons, Bool.and_eq_true] at safe
       let atomScalars := canonicalAtomScalars atom
@@ -1468,7 +1466,7 @@ theorem canonical_program_has_parser_derivation
       have signature := mm2StructuralSignatureAt 1 (by decide)
         ("MM2Program", "mm2:program-cons",
           [.nonterminal "MM2Gap", .nonterminal "MM2Atom",
-           .nonterminal "MM2Program", .terminal .eof]) (by decide)
+           .nonterminal "MM2Program"]) (by decide)
       refine ⟨?_⟩
       simp only [canonicalProgramCST, canonicalProgramScalars, Nat.zero_add]
       dsimp [atomScalars, restScalars] at gapDerivation atomExact tailExact
@@ -1480,7 +1478,7 @@ theorem canonical_program_has_parser_derivation
       rw [signature.2.2]
       exact .nonterminal gapDerivation
         (.nonterminal atomExact
-          (.nonterminal tailExact (.terminal (.eof (by simp)) .nil)))
+          (.nonterminal tailExact .nil))
 
 /-- The complete reference parser recovers the canonical CST within the
 source-sensitive height bound certified for the generated MM2 ParserPack. -/

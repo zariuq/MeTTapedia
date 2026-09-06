@@ -151,6 +151,34 @@ def toCovered {source target : ProofRelevantGSLT.{u}}
     (earlier.comp later).mapTerm = later.mapTerm ∘ earlier.mapTerm :=
   rfl
 
+/-- Map a retained proof occurrence along a proof-relevant translation.  This
+operation belongs to the operational category itself: biform theories,
+observers, ledgers, and schedulers are consumers of the same event action. -/
+def mapEvent {source target : ProofRelevantGSLT.{u}}
+    (translation : Translation source target)
+    (event : source.Event) : target.Event where
+  source := translation.mapTerm event.source
+  target := translation.mapTerm event.target
+  evidence := translation.mapEvidence event.evidence
+
+@[simp]
+theorem mapEvent_id {system : ProofRelevantGSLT.{u}}
+    (event : system.Event) :
+    (Translation.id system).mapEvent event = event := by
+  cases event
+  rfl
+
+@[simp]
+theorem mapEvent_comp
+    {first middle last : ProofRelevantGSLT.{u}}
+    (earlier : Translation first middle)
+    (later : Translation middle last)
+    (event : first.Event) :
+    (Translation.comp earlier later).mapEvent event =
+      later.mapEvent (earlier.mapEvent event) := by
+  cases event
+  rfl
+
 end Translation
 
 /-! ## Exact evidence fibres -/

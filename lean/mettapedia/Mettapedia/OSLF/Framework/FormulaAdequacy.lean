@@ -9,7 +9,7 @@ system: string-valued observations and one transition family, with the
 step-past `box` as the predecessor-universal adjoint.  This module completes
 that bridge in three ways.
 
-* Over the equation-saturated step of a GSLT with an equation-invariant atom
+* Over the step modulo equations of a GSLT with an equation-invariant atom
   family, the reading on a language definition is the public one.
 * The whole language, `box` included, is the labeled Hennessy–Milner language
   over the two directions of the step: every OSLF formula translates to a
@@ -41,7 +41,7 @@ open Mettapedia.OSLF.Formula
 variable {S : GSLT}
 
 /-- The concrete system of an equation-invariant atom family over the
-equation-saturated step. -/
+step modulo equations. -/
 def concreteSystem (S : GSLT) (I : String → EquationPredicate S) : ConcreteSystem S where
   observes := fun atom => (I atom).1
   observes_resp := fun atom _ _ equivalent => (I atom).2 equivalent

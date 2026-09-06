@@ -766,24 +766,23 @@ theorem inferProof_rename (embedding : Embedding source target)
                   simp [sameProposition, renamedDifferent]
   | proofLam proposition body bodyIH =>
       simp only [renamePf, inferProof]
-      rw [embedding.checkProposition_rename,
-        embedding.normalize_rename]
-      cases propositionWellFormed :
-          checkProposition source typeDepth termContext proposition with
-      | false => simp
-      | true =>
-          cases normalization :
-              MathdataKernel.normalize source fuel proposition with
-          | none => rfl
-          | some normalized =>
-              simp only [Bool.not_true, Bool.false_eq_true, ↓reduceIte,
-                Option.map_some]
-              have mappedBody :=
-                bodyIH typeDepth termContext (normalized :: proofContext)
-              simp only [List.map_cons] at mappedBody
-              simp [mappedBody]
-              cases bodyResult : inferProof source fuel typeDepth termContext
-                  (normalized :: proofContext) body <;> rfl
+      rw [embedding.inferTerm_rename, embedding.normalize_rename]
+      cases propositionType : inferTerm source typeDepth termContext proposition with
+      | none => rfl
+      | some type =>
+          by_cases isProp : type = .prop
+          · subst type
+            cases normalization : MathdataKernel.normalize source fuel proposition with
+            | none => rfl
+            | some normalized =>
+                simp only [Option.map_some]
+                have mappedBody :=
+                  bodyIH typeDepth termContext (normalized :: proofContext)
+                simp only [List.map_cons] at mappedBody
+                simp [mappedBody]
+                cases bodyResult : inferProof source fuel typeDepth termContext
+                    (normalized :: proofContext) body <;> rfl
+          · simp [isProp]
   | termLam type body bodyIH =>
       simp only [renamePf, inferProof]
       cases wellFormed : type.plainWellFormed typeDepth with
@@ -1104,7 +1103,7 @@ theorem shadowing_changes_replay :
         definitionConversionProof definitionConversionGoal = true := by
   simp [shadowingEnvironment, opaqueIdentityEnvironment, checkProof,
     checkNormalizedProof, definitionConversionProof, definitionConversionGoal,
-    definitionConversionDomain, inferProof, checkProposition, inferTerm,
+    definitionConversionDomain, inferProof, inferTerm,
     MathdataKernel.normalize, deltaNormalize, Tm.normalize, Tm.normalizeOne,
     Environment.lookupTerm?, lookupTermList?, Tm.instantiate,
     Tm.instantiateAt, Tm.shift]

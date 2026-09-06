@@ -129,7 +129,7 @@ theorem checker_authority : checker.Authority Scope where
   sound := checker_sound
   complete := checker_complete
 
-def layer : BootstrapLayer Statement 1 where
+def «layer» : BootstrapLayer Statement 1 where
   Certificate := Certificate
   Scope := Scope
   Meaning := Meaning
@@ -145,7 +145,7 @@ def liftPriorClaim
   kind := claim.kind
   statement := .inl claim.statement
 
-def priorInclusion : AuthorityTranslation
+def priorInclusion : CertifiedTranslation
     priorLayer.toAuthorityContract layer.toAuthorityContract where
   mapKind := id
   mapSignature := fun _signature => layer.toTheoryFamily.signatureOf ()
@@ -191,7 +191,7 @@ def operationSourceSoundClaim
   kind := .sourceSound
   statement := .inr formula
 
-def operationToAtlas : AuthorityTranslation
+def operationToAtlas : CertifiedTranslation
     operationContract layer.toAuthorityContract where
   mapKind := id
   mapSignature := fun _signature => layer.toTheoryFamily.signatureOf ()
@@ -289,7 +289,7 @@ end Canary
 #print axioms checker_sound
 #print axioms checker_complete
 #print axioms scope_sound
-#print axioms layer
+#print axioms «layer»
 #print axioms priorInclusion
 #print axioms priorInclusion_conservative
 #print axioms operationToAtlas

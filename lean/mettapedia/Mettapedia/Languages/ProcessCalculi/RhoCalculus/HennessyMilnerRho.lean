@@ -7,7 +7,7 @@ import Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
 /-!
 # Finitely many successor classes, and adequacy for rho
 
-The equation-saturated step of the established rho GSLT reaches every
+The step modulo equations of the established rho GSLT reaches every
 spelling of every successor, so a closed process has unboundedly many
 successor representatives.  By the completeness of the canonical stepper it
 has finitely many successor classes: every saturated step lands in the class
@@ -84,7 +84,7 @@ theorem pattern_mem_of_mem_canonicalSuccessorList
   change pattern = target.1 at patternEquality
   rwa [← patternEquality]
 
-/-- Every enumerated canonical successor is a genuine equation-saturated
+/-- Every enumerated canonical successor is a genuine modulo-equations
 rho step from the authored input representative. -/
 theorem canonicalSuccessorList_sound
     {source target : RhoProcess}

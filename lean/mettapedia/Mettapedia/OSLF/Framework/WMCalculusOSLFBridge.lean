@@ -773,7 +773,7 @@ theorem wmFullCalc_decomposability_safety (v : WMFullVertex)
 
 /-! ## Section 13: Guarded Calculus — Galois Connections
 
-The guarded calculus uses the equation-saturated semantic relation generated
+The guarded calculus uses the modulo-equations semantic relation generated
 from `langReducesUsing relEnv`. The Galois connection
 ◇ ⊣ □ holds automatically at any RelationEnv via `langGaloisUsing`. -/
 

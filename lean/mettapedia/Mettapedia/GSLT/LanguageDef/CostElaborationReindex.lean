@@ -493,6 +493,21 @@ def map {source target : CIGSLT} (morphism : source.Morphism target)
       _ = (morphism.underlying.structural.structural.mapConstructor
             preimage.sourceConstructor).1.params.map
           (mapTermParam (color.symbols target)) := rfl
+  algebraMap := by
+    let sourceSymbols :=
+      morphism.underlying.structural.structural.symbols
+    let generatedSymbols := costLanguageDefSymbolMap sourceSymbols
+    calc
+      (target.materializeDeclaredCostConstructor
+          (morphism.mapDeclaredCostConstructor constructor)).algebra? =
+          (mapGrammarRule generatedSymbols
+            (source.materializeDeclaredCostConstructor constructor)).algebra? :=
+        congrArg GrammarRule.algebra?
+          (morphism.materialize_mapDeclaredCostConstructor constructor)
+      _ = (source.materializeDeclaredCostConstructor constructor).algebra? := rfl
+      _ = preimage.sourceConstructor.1.algebra? := preimage.algebraMap
+      _ = (morphism.underlying.structural.structural.mapConstructor
+            preimage.sourceConstructor).1.algebra? := rfl
 
 end CostStaticConstructorPreimage
 

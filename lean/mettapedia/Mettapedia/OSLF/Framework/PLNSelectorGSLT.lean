@@ -245,7 +245,7 @@ def plnSelectorOSLF :
   sortedGSLTOSLF
     (plnSelectorGSLT (Goal := Goal) (Fact := Fact)) PLNSelectorSort .Proc
 
-/-- Admit a selector observation through the common equation-saturation
+/-- Admit a selector observation through the common modulo-equations
 boundary. Equality equations make this extensionally the original predicate. -/
 def plnSelectorPredicate (predicate : PLNSelectorExpr Goal Fact → Prop) :
     EquationPredicate (plnSelectorGSLT (Goal := Goal) (Fact := Fact)) :=

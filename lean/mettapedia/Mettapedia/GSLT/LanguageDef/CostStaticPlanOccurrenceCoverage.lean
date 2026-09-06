@@ -55,6 +55,7 @@ def CostAuthoredGeneratorOrigin.sourceDeclaration
           .equation (CostEquationDeclarationOrigin.sourceEquation origin)
       | .reverse _ _ _ _ _ _ _ => fun origin =>
           .equation (CostEquationDeclarationOrigin.sourceEquation origin)
+  | .core (.derived _ lawWitness) => fun _ => .derived lawWitness.rule
   | .reflective _ _ _ => fun origin =>
       .reflective (CostReflectiveDeclarationOrigin.sourceDeclaration origin)
 

@@ -52,7 +52,7 @@ variable {SourceKind MiddleKind TargetKind : Type uKind}
 /-- Exact replay induces a map between the accepted-certificate fibres of a
 source claim and its translated target claim. -/
 def acceptedMap
-    (translation : AuthorityTranslation sourceContract targetContract)
+    (translation : CertifiedTranslation sourceContract targetContract)
     (kind : SourceKind) (claim : source.Claim kind) :
     AcceptedCertificateFibre (sourceContract.checker kind) claim ->
       AcceptedCertificateFibre
@@ -64,7 +64,7 @@ def acceptedMap
       exact accepted.2⟩
 
 @[simp] theorem acceptedMap_certificate
-    (translation : AuthorityTranslation sourceContract targetContract)
+    (translation : CertifiedTranslation sourceContract targetContract)
     (kind : SourceKind) (claim : source.Claim kind)
     (accepted :
       AcceptedCertificateFibre (sourceContract.checker kind) claim) :
@@ -75,12 +75,12 @@ def acceptedMap
 /-- Accepted-certificate transport follows composition of authority
 translations. -/
 theorem acceptedMap_comp
-    (earlier : AuthorityTranslation sourceContract middleContract)
-    (later : AuthorityTranslation middleContract targetContract)
+    (earlier : CertifiedTranslation sourceContract middleContract)
+    (later : CertifiedTranslation middleContract targetContract)
     (kind : SourceKind) (claim : source.Claim kind)
     (accepted :
       AcceptedCertificateFibre (sourceContract.checker kind) claim) :
-    acceptedMap (AuthorityTranslation.comp earlier later) kind claim accepted =
+    acceptedMap (CertifiedTranslation.comp earlier later) kind claim accepted =
       acceptedMap later (earlier.mapKind kind) (earlier.mapClaim kind claim)
         (acceptedMap earlier kind claim accepted) := by
   apply Subtype.ext
@@ -91,7 +91,7 @@ authority, not only its yes/no theorem set.  `certificate_bijective` is stated
 on accepted fibres so rejected wire decorations are not promoted into proof
 identity. -/
 structure ConservativeProofEmbedding
-    (translation : AuthorityTranslation sourceContract targetContract) : Prop where
+    (translation : CertifiedTranslation sourceContract targetContract) : Prop where
   kind_injective : Function.Injective translation.mapKind
   claim_injective : forall kind,
     Function.Injective (translation.mapClaim kind)
@@ -107,7 +107,7 @@ namespace ConservativeProofEmbedding
 /-- Fullness on accepted certificates reflects theorem scope.  This is why
 scope reflection need not be a redundant field of the embedding. -/
 theorem scope_reflecting
-    {translation : AuthorityTranslation sourceContract targetContract}
+    {translation : CertifiedTranslation sourceContract targetContract}
     (embedding : ConservativeProofEmbedding translation)
     (kind : SourceKind) (claim : source.Claim kind)
     (inTargetScope :
@@ -129,7 +129,7 @@ theorem scope_reflecting
 /-- Forgetting certificate identity from a conservative proof embedding yields
 a conservative heterogeneous theory translation. -/
 def toTheoryConservative
-    {translation : AuthorityTranslation sourceContract targetContract}
+    {translation : CertifiedTranslation sourceContract targetContract}
     (embedding : ConservativeProofEmbedding translation) :
     translation.toTheoryTranslation.Conservative where
   scope_reflecting := embedding.scope_reflecting
@@ -137,7 +137,7 @@ def toTheoryConservative
 
 /-- Translated claims have exactly the same theorem scope. -/
 theorem scope_iff
-    {translation : AuthorityTranslation sourceContract targetContract}
+    {translation : CertifiedTranslation sourceContract targetContract}
     (embedding : ConservativeProofEmbedding translation)
     (kind : SourceKind) (claim : source.Claim kind) :
     target.Scope (translation.mapKind kind)
@@ -151,7 +151,7 @@ In particular, when `claim` is the distinguished contradiction of a bootstrap
 profile, a conservative proof embedding transports syntactic consistency in
 both directions. -/
 theorem scope_rejection_iff
-    {translation : AuthorityTranslation sourceContract targetContract}
+    {translation : CertifiedTranslation sourceContract targetContract}
     (embedding : ConservativeProofEmbedding translation)
     (kind : SourceKind) (claim : source.Claim kind) :
     (¬ target.Scope (translation.mapKind kind)
@@ -161,7 +161,7 @@ theorem scope_rejection_iff
 
 /-- Translated claims have exactly the same independently supplied meaning. -/
 theorem meaning_iff
-    {translation : AuthorityTranslation sourceContract targetContract}
+    {translation : CertifiedTranslation sourceContract targetContract}
     (embedding : ConservativeProofEmbedding translation)
     (kind : SourceKind) (claim : source.Claim kind) :
     target.Meaning (translation.mapKind kind)
@@ -173,7 +173,7 @@ theorem meaning_iff
 /-- Accepted source and target proof fibres are equivalent, rather than merely
 equi-inhabited. -/
 noncomputable def acceptedFibreEquiv
-    {translation : AuthorityTranslation sourceContract targetContract}
+    {translation : CertifiedTranslation sourceContract targetContract}
     (embedding : ConservativeProofEmbedding translation)
     (kind : SourceKind) (claim : source.Claim kind) :
     AcceptedCertificateFibre (sourceContract.checker kind) claim ≃
@@ -186,7 +186,7 @@ noncomputable def acceptedFibreEquiv
 /-- Identity is a conservative proof embedding. -/
 def identity (contract :
     AuthorityContract.{uKind, uCertificate, uSignature, uClaim} source) :
-    ConservativeProofEmbedding (AuthorityTranslation.identity contract) where
+    ConservativeProofEmbedding (CertifiedTranslation.identity contract) where
   kind_injective := by intro left right equality; exact equality
   claim_injective := by
     intro kind left right equality
@@ -196,7 +196,7 @@ def identity (contract :
     constructor
     · intro left right equality
       simpa [acceptedMap,
-        AuthorityTranslation.identity] using equality
+        CertifiedTranslation.identity] using equality
     · intro targetAccepted
       exact ⟨targetAccepted, by
         apply Subtype.ext
@@ -208,11 +208,11 @@ def identity (contract :
 /-- Conservative proof embeddings compose.  Thus a chain through Pure,
 OpenTheory, MMB, or another exchange layer can be audited one arrow at a time. -/
 def comp
-    {earlier : AuthorityTranslation sourceContract middleContract}
-    {later : AuthorityTranslation middleContract targetContract}
+    {earlier : CertifiedTranslation sourceContract middleContract}
+    {later : CertifiedTranslation middleContract targetContract}
     (earlierEmbedding : ConservativeProofEmbedding earlier)
     (laterEmbedding : ConservativeProofEmbedding later) :
-    ConservativeProofEmbedding (AuthorityTranslation.comp earlier later) where
+    ConservativeProofEmbedding (CertifiedTranslation.comp earlier later) where
   kind_injective :=
     laterEmbedding.kind_injective.comp earlierEmbedding.kind_injective
   claim_injective := by
@@ -295,7 +295,7 @@ abbrev targetContract : AuthorityContract targetTheory where
 
 /-- A real representation change: Boolean claims become `0`/`1`, and Boolean
 certificates acquire a unit record field. -/
-def translation : AuthorityTranslation sourceContract targetContract where
+def translation : CertifiedTranslation sourceContract targetContract where
   mapKind := id
   mapSignature := fun _ => false
   signature_commutes := by intro kind; cases kind; rfl
@@ -379,7 +379,7 @@ abbrev erasedContract : AuthorityContract sourceTheory where
 
 /-- Both Boolean certificate occurrences are erased to the same unit value,
 even though every checker result and every meaning is preserved exactly. -/
-def erasingTranslation : AuthorityTranslation sourceContract erasedContract where
+def erasingTranslation : CertifiedTranslation sourceContract erasedContract where
   mapKind := id
   mapSignature := id
   signature_commutes := by intro kind; cases kind; rfl
@@ -463,7 +463,7 @@ abbrev targetContract : AuthorityContract targetTheory where
 /-- Every accepted certificate transports bijectively, but both Boolean claims
 are mapped to the same unit claim. -/
 def collapsingTranslation :
-    AuthorityTranslation sourceContract targetContract where
+    CertifiedTranslation sourceContract targetContract where
   mapKind := fun _ => .only
   mapSignature := id
   signature_commutes := by intro kind; cases kind; rfl

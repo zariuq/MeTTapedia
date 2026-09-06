@@ -392,7 +392,7 @@ def proofTerm : MathdataKernel.Pf :=
 theorem mathdata_kernel_accepts :
     MathdataKernel.inferProof {} 16 0 [] [] proofTerm = some goalTerm := by
   simp [proofTerm, goalTerm, theoremBody, forallDomain, forallBody, pType,
-    MathdataKernel.inferProof, MathdataKernel.checkProposition,
+    MathdataKernel.inferProof,
     MathdataKernel.inferTerm, MathdataKernel.normalize,
     MathdataKernel.deltaNormalize, MathdataKernel.Tm.normalize,
     MathdataKernel.Tm.normalizeOne, MathdataKernel.Tm.shift,

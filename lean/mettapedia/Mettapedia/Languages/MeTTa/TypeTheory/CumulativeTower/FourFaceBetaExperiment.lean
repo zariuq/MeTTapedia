@@ -298,7 +298,7 @@ theorem BetaClaim.setGraphValid
 
 end IntrinsicSTT
 
-/-! ## Face 1: faithful erasure into the cumulative-tower DTT fragment -/
+/-! ## Face 1: type-preserving erasure into the cumulative-tower DTT fragment -/
 
 namespace TowerDTT
 

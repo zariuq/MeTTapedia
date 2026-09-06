@@ -131,6 +131,37 @@ def sourceMatches (accepts : GroundFact Payload -> Bool)
       else
         sourceMatches accepts facts
 
+/-! ## Exact rigid-leaf aggregation -/
+
+/-- Full-coordinate equality for a ground query.  Provider rows outside this
+ground carrier—variables or other wildcard forms—must be excluded by the
+backend admission certificate before this observer is used. -/
+def exactCoordinate (query : GroundTerm) (fact : GroundFact Payload) : Bool :=
+  fact.coordinate == query
+
+/-- Occurrence count stored at the exact rigid leaf.  Filtering retains every
+duplicate occurrence; the result is a bag cardinality, not set membership. -/
+def rigidLeafCount (query : GroundTerm)
+    (facts : List (GroundFact Payload)) : Nat :=
+  (facts.filter (exactCoordinate query)).length
+
+/-- Reading an exact rigid leaf count is extensionally the same as scanning
+the complete ground provider and counting every accepted occurrence. -/
+theorem rigidLeafCount_eq_sourceMatchCount
+    (query : GroundTerm) (facts : List (GroundFact Payload)) :
+    rigidLeafCount query facts =
+      (sourceMatches (exactCoordinate query) facts).length := by
+  induction facts with
+  | nil => rfl
+  | cons fact facts inductionHypothesis =>
+      have tail :
+          (facts.filter (exactCoordinate query)).length =
+            (sourceMatches (exactCoordinate query) facts).length := by
+        simpa [rigidLeafCount] using inductionHypothesis
+      by_cases same : fact.coordinate = query <;>
+        simp [rigidLeafCount, sourceMatches, exactCoordinate, same,
+          tail]
+
 /-- Indexed provider semantics: inspect only root-compatible occurrences. -/
 def indexedMatches (query : Term)
     (accepts : GroundFact Payload -> Bool)
@@ -273,6 +304,27 @@ private def clauseRows : List (GroundFact String) :=
   [{ coordinate := .app "positive" (.ofList [.atom "p"]), payload := "p" },
    { coordinate := .app "negative" (.ofList [.atom "q"]), payload := "n" }]
 
+private def duplicateRows : List (GroundFact String) :=
+  [{ coordinate := .app "edge" (.ofList [.atom "a", .atom "b"]),
+      payload := "first" },
+   { coordinate := .app "edge" (.ofList [.atom "a", .atom "b"]),
+      payload := "second" },
+   { coordinate := .app "edge" (.ofList [.atom "a", .atom "c"]),
+      payload := "other" }]
+
+/-- Exact leaves count duplicate occurrences rather than quotienting them. -/
+example :
+    rigidLeafCount
+      (.app "edge" (.ofList [.atom "a", .atom "b"])) duplicateRows = 2 := by
+  decide
+
+/-- Absence of a rigid leaf is an exact zero observation. -/
+example :
+    rigidLeafCount
+      (.app "edge" (.ofList [.atom "missing", .atom "path"]))
+      duplicateRows = 0 := by
+  decide
+
 /-- A proof-like finite table retains both matching occurrences in source
 order. -/
 example :
@@ -296,5 +348,7 @@ example :
     useful [{ coordinate := .atom "same", payload := "left" },
       { coordinate := .atom "same", payload := "right" }] = false := by
   decide
+
+#print axioms rigidLeafCount_eq_sourceMatchCount
 
 end Mettapedia.GSLT.LanguageDef.FiniteGroundFactIndexCompilation

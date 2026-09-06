@@ -6,7 +6,7 @@ theorem level. Provides:
 
 1. **Sort assignment**: every GF abstract tree gets an OSLF sort
 2. **Syntax classifiers**: constructor-sensitive predicates for parsing
-3. **Semantic native types**: equation-saturated predicates for OSLF
+3. **Semantic native types**: modulo-equations predicates for OSLF
 4. **Parse disambiguation**: different abstract trees → different syntax classes
 5. **Multi-sorted examples**: exercising N, CN, NP, VP, S sorts
 
@@ -14,7 +14,7 @@ theorem level. Provides:
 
 ```
 AbstractNode → Pattern → syntax classifier
-                         └→ equation saturation → OSLF native type
+                         └→ closure under equations → OSLF native type
 ```
 
 ## References

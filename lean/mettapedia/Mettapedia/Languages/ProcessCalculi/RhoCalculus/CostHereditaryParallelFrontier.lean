@@ -2887,7 +2887,6 @@ theorem frontierForall2_plan_fuel
                     rhoReflectivePresentation.toReflectivePresentationDecl
                     ).parallelCollection elements none) := by
               simp_wf
-              omega
             omega
           exact frontierForall2_plan_fuel (fuel - 1) childPlan childAdmission
             childF childEq childEmbedding childMeasure

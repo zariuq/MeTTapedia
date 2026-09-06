@@ -97,7 +97,7 @@ theorem pyashCore_av_subset_pv {p q : Pattern}
 
 The OSLF modal operators have an important polarity distinction from DDLPlus:
 
-- `langDiamond` (◇) = step-FUTURE over the equation-saturated semantic step.
+- `langDiamond` (◇) = step-FUTURE over the modulo-equations semantic step.
   This matches DDLPlus `dia_a` when `av = langSemanticReduces`.
 - `langBox` (□) = step-PAST over the same semantic step.
   This is NOT DDLPlus `box_a` (which is future). It is the left-adjoint

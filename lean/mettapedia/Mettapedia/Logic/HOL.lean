@@ -1,6 +1,7 @@
 import Mettapedia.Logic.HOL.Syntax.Type
 import Mettapedia.Logic.HOL.Syntax.Term
 import Mettapedia.Logic.HOL.Embedding.SimpleSliceOfDependent
+import Mettapedia.Logic.HOL.Embedding.WeakTypeComprehension
 import Mettapedia.Logic.HOL.Embedding.ConversionPrice
 import Mettapedia.Logic.HOL.Embedding.ConversionEvidenceBridge
 import Mettapedia.Logic.HOL.Embedding.ContextualStructure
@@ -8,7 +9,18 @@ import Mettapedia.Logic.HOL.Embedding.ContextualHenkinSemantics
 import Mettapedia.Logic.HOL.Syntax.Subst
 import Mettapedia.Logic.HOL.Syntax.Closed
 import Mettapedia.Logic.HOL.Syntax.ConstMap
+import Mettapedia.Logic.HOL.Syntax.TypeSubstitution
+import Mettapedia.Logic.HOL.TypeSubstitutionDerivation
+import Mettapedia.Logic.HOL.TypeSubstitutionSemantics
+import Mettapedia.Logic.HOL.Syntax.TypeSubstitutionComposition
+import Mettapedia.Logic.HOL.TypeSubstitutionCompositionSemantics
+import Mettapedia.Logic.HOL.TypeSubstitutionModelCoherence
+import Mettapedia.Logic.HOL.FullDomainInstitution
+import Mettapedia.Logic.HOL.Semantics.LogicalRelationModel
+import Mettapedia.Logic.HOL.TypeDerivedSignature
+import Mettapedia.Logic.HOL.TypeDerivedSignatureExamples
 import Mettapedia.Logic.HOL.Derivation
+import Mettapedia.Logic.HOL.TransitionInvariant
 import Mettapedia.Logic.HOL.DerivationExtensionality
 import Mettapedia.Logic.HOL.Lindenbaum
 import Mettapedia.Logic.HOL.CanonicalTheory
@@ -28,6 +40,9 @@ import Mettapedia.Logic.HOL.Semantics.Satisfaction
 import Mettapedia.Logic.HOL.Semantics.ModelProperties
 import Mettapedia.Logic.HOL.Semantics.ModelPropertySoundness
 import Mettapedia.Logic.HOL.StandardAxiomProperties
+import Mettapedia.Logic.HOL.HenkinInstitution
+import Mettapedia.Logic.HOL.HenkinInstitutionDerivation
+import Mettapedia.Logic.HOL.HenkinInstitutionCanary
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkin
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinGeneral
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCanonical

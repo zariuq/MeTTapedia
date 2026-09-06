@@ -97,6 +97,31 @@ def checkHeStatementTrailingComment : Bool :=
   parseLineOk? he "(= (f a) b) ; trailing comment"
     (.defineEq (app "f" [sym "a"]) (sym "b"))
 
+def checkProgramCommentAtomBoundary : Bool :=
+  [he, petta].all fun spec =>
+    parseProgramOk? spec "a; comment\nb\n"
+      [(1, .fact (sym "a")), (2, .fact (sym "b"))]
+
+def checkSourceAtomCallSeparation : Bool :=
+  match parseSExprWithDetailed petta "f", parseSExprWithDetailed petta "(f)" with
+  | .ok (.atom "f"), .ok (.list [.atom "f"]) => true
+  | _, _ => false
+
+def checkSourceCommentSeparation : Bool :=
+  match parseSExprWithDetailed petta "; prelude\n(f a; comment\nb)" with
+  | .ok (.list [.atom "f", .atom "a", .atom "b"]) => true
+  | _ => false
+
+def checkSourceQuotedCommentKept : Bool :=
+  match parseSExprWithDetailed petta "(f \";\")" with
+  | .ok (.list [.atom "f", .atom "\";\""]) => true
+  | _ => false
+
+def checkSourceRefusesTwoForms : Bool :=
+  match parseSExprWithDetailed petta "a; comment\nb" with
+  | .error _ => true
+  | .ok _ => false
+
 def checkPeTTaSetFuelCommand : Bool :=
   parseLineOk? petta "(set-fuel 7)" (.setFuel 7)
 
@@ -258,6 +283,11 @@ def allChecks : List (String × Bool) :=
   , ("heEvalPrefixNewlineCommentForm", checkHeEvalPrefixNewlineCommentForm)
   , ("heStatementTrailingComment", checkHeStatementTrailingComment)
   , ("pettaSetFuelCommand", checkPeTTaSetFuelCommand)
+  , ("programCommentAtomBoundary", checkProgramCommentAtomBoundary)
+  , ("sourceAtomCallSeparation", checkSourceAtomCallSeparation)
+  , ("sourceCommentSeparation", checkSourceCommentSeparation)
+  , ("sourceQuotedCommentKept", checkSourceQuotedCommentKept)
+  , ("sourceRefusesTwoForms", checkSourceRefusesTwoForms)
   , ("heSetFuelFallsBackToFact", checkHeSetFuelFallsBackToFact)
   , ("heDefineTypeForm", checkHeDefineTypeForm)
   , ("pettaDefineTypeForm", checkPeTTaDefineTypeForm)
@@ -504,5 +534,6 @@ theorem missing_close_paren_program_error_of_check
 
 #eval allChecks
 #eval ("allChecksPass", allChecksPass)
+#guard allChecksPass
 
 end Algorithms.MeTTa.Simple.ParserConformance

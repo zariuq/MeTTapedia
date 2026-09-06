@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.InferenceRuntimeAdequacy
+import Mettapedia.GSLT.LanguageDef.CettaWireTerm
 
 /-!
 # Exact CeTTa carrier for inference languages and articles
@@ -8,11 +9,12 @@ carrier.  CeTTa consumes a distinct MeTTa-shaped carrier: quoted strings are
 different from symbols, lists are encoded by `LNil`/`LCons`, and inference
 packages use the `GInferenceLanguageV1` and `GProof` constructors.
 
-This module gives that physical carrier an independent datatype, total
-canonical encoders, fail-closed decoders, and round-trip theorems.  Both the
-logical `WInferenceLanguage` carrier and the CeTTa carrier decode to the same
-`RuntimeInferenceLanguage`; the bridge theorem below therefore states their exact
-semantic relationship without identifying their different syntaxes.
+This module instantiates the shared physical carrier with total canonical
+encoders, fail-closed decoders, and round-trip theorems for inference data.
+Both the logical `WInferenceLanguage` carrier and the CeTTa carrier decode to
+the same `RuntimeInferenceLanguage`; the bridge theorem below therefore states
+their exact semantic relationship without identifying their different
+syntaxes.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.InferenceCettaWire
@@ -22,58 +24,34 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.GSLT.LanguageDef.InferenceLanguageWire
 
-/-! ## Physical S-expression carrier -/
+/-! ## Shared physical carrier and algebraic-list compatibility surface -/
 
-/-- The distinctions retained by CeTTa's parsed S-expression carrier. -/
-inductive CettaTerm where
-  | symbol (name : String)
-  | string (value : String)
-  | natural (value : Nat)
-  | application (head : String) (arguments : List CettaTerm)
-deriving Repr
+abbrev CettaTerm := Mettapedia.GSLT.LanguageDef.CettaWire.Term
 
-mutual
+namespace CettaTerm
 
-/-- Render one physical carrier value using CeTTa's authored catalog syntax. -/
-def CettaTerm.render : CettaTerm → String
-  | .symbol name => name
-  | .string value => reprStr value
-  | .natural value => toString value
-  | .application head arguments =>
-      "(" ++ head ++ CettaTerm.renderArguments arguments ++ ")"
+abbrev symbol := Mettapedia.GSLT.LanguageDef.CettaWire.Term.symbol
+abbrev string := Mettapedia.GSLT.LanguageDef.CettaWire.Term.string
+abbrev natural := Mettapedia.GSLT.LanguageDef.CettaWire.Term.natural
+abbrev application := Mettapedia.GSLT.LanguageDef.CettaWire.Term.application
+abbrev render := Mettapedia.GSLT.LanguageDef.CettaWire.Term.render
 
-def CettaTerm.renderArguments : List CettaTerm → String
-  | [] => ""
-  | argument :: arguments =>
-      " " ++ argument.render ++ CettaTerm.renderArguments arguments
+end CettaTerm
 
-end
+def encodeList (encode : α → CettaTerm) (values : List α) : CettaTerm :=
+  Mettapedia.GSLT.LanguageDef.CettaWire.encodeList encode values
 
-/-! ## Exact algebraic-list carrier -/
-
-def encodeList (encode : α → CettaTerm) : List α → CettaTerm
-  | [] => .symbol "LNil"
-  | value :: values =>
-      .application "LCons" [encode value, encodeList encode values]
-
-def decodeList (decode : CettaTerm → Option α) :
-    CettaTerm → Option (List α)
-  | .symbol "LNil" => some []
-  | .application "LCons" [value, values] => do
-      let head ← decode value
-      let tail ← decodeList decode values
-      some (head :: tail)
-  | _ => none
+def decodeList (decode : CettaTerm → Option α)
+    (term : CettaTerm) : Option (List α) :=
+  Mettapedia.GSLT.LanguageDef.CettaWire.decodeList decode term
 
 theorem decodeList_encodeList (decode : CettaTerm → Option α)
     (encode : α → CettaTerm)
     (roundTrip : ∀ value, decode (encode value) = some value)
     (values : List α) :
-    decodeList decode (encodeList encode values) = some values := by
-  induction values with
-  | nil => rfl
-  | cons value values inductionHypothesis =>
-      simp [encodeList, decodeList, roundTrip, inductionHypothesis]
+    decodeList decode (encodeList encode values) = some values :=
+  Mettapedia.GSLT.LanguageDef.CettaWire.decodeList_encodeList
+    decode encode roundTrip values
 
 /-! ## Exact Pattern carrier -/
 

@@ -15,7 +15,7 @@ closes two precise compatibility seams between them:
 2. The internal OSLF reduction subfunctor supplies the rewrite relation of a
    full Meredith lambda theory.  On constant program terms, this relation is
    equivalent to both internal-subfunctor membership and the canonical
-   equation-saturated language step.
+   modulo-equations language step.
 
 The second result concerns reduction support.  It deliberately does not claim
 to preserve distinct derivation or rule-occurrence identities with the same

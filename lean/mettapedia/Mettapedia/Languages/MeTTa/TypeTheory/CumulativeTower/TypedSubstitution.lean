@@ -311,7 +311,7 @@ namespace Conv
 
 /-- Conversion lifts through any one-hole term constructor whose underlying
 one-step relation is closed under that constructor. -/
-private theorem mapCompatible
+theorem mapCompatible
     {rootRules : RootComputation Head}
     (wrap : Tm Head n → Tm Head m)
     (compatible : ∀ {left right : Tm Head n},
@@ -327,7 +327,7 @@ private theorem mapCompatible
   | trans left middle right first second ihFirst ihSecond =>
       exact .trans _ _ _ ihFirst ihSecond
 
-private theorem congPi
+theorem congPi
     {rootRules : RootComputation Head}
     {domain domain' : Tm Head n}
     {codomain codomain' : Tm Head (n + 1)}
@@ -340,7 +340,7 @@ private theorem congPi
     (mapCompatible (fun next => .pi domain' next)
       (fun step => .congPiCod step) codomainConversion)
 
-private theorem congSigma
+theorem congSigma
     {rootRules : RootComputation Head}
     {domain domain' : Tm Head n}
     {codomain codomain' : Tm Head (n + 1)}
@@ -353,7 +353,7 @@ private theorem congSigma
     (mapCompatible (fun next => .sigma domain' next)
       (fun step => .congSigmaCod step) codomainConversion)
 
-private theorem congId
+theorem congId
     {rootRules : RootComputation Head}
     {type type' left left' right right' : Tm Head n}
     (typeConversion : Conv headEq type type' rootRules)
@@ -369,14 +369,14 @@ private theorem congId
       (mapCompatible (fun next => .id type' left' next)
         (fun step => .congIdRight step) rightConversion))
 
-private theorem congLam
+theorem congLam
     {rootRules : RootComputation Head}
     {body body' : Tm Head (n + 1)}
     (conversion : Conv headEq body body' rootRules) :
     Conv headEq (.lam body) (.lam body') rootRules :=
   mapCompatible Tm.lam (fun step => .congLam step) conversion
 
-private theorem congApp
+theorem congApp
     {rootRules : RootComputation Head}
     {function function' argument argument' : Tm Head n}
     (functionConversion : Conv headEq function function' rootRules)
@@ -388,7 +388,7 @@ private theorem congApp
     (mapCompatible (fun next => .app function' next)
       (fun step => .congAppArg step) argumentConversion)
 
-private theorem congPair
+theorem congPair
     {rootRules : RootComputation Head}
     {first first' second second' : Tm Head n}
     (firstConversion : Conv headEq first first' rootRules)

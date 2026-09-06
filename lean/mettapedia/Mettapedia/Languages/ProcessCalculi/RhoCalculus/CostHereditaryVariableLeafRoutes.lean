@@ -410,7 +410,6 @@ theorem rhoBVarTowerSource_sameColor
                   have spineBound : sizeOf elements < sizeOf
                       (Pattern.collection collectionType elements none) := by
                     simp_wf
-                    omega
                   omega
                 obtain ⟨child⟩ := inductionHypothesis active.head level index
                   measureChild elementCanonical
@@ -421,7 +420,6 @@ theorem rhoBVarTowerSource_sameColor
                 have spineBound : sizeOf elements < sizeOf
                     (Pattern.collection collectionType elements none) := by
                   simp_wf
-                  omega
                 have beforeUnits : ∀ b ∈ active.beforeAbstracts,
                     canonicalize rhoReflectivePresentation.toReflectivePresentationDecl b =
                       .apply rhoReflectivePresentation.toReflectivePresentationDecl.parallelUnitConstructor
@@ -826,7 +824,6 @@ theorem rhoFVarTowerSource_sameColor
                   have spineBound : sizeOf elements < sizeOf
                       (Pattern.collection collectionType elements none) := by
                     simp_wf
-                    omega
                   omega
                 obtain ⟨child⟩ := inductionHypothesis active.head level name
                   measureChild elementCanonical
@@ -837,7 +834,6 @@ theorem rhoFVarTowerSource_sameColor
                 have spineBound : sizeOf elements < sizeOf
                     (Pattern.collection collectionType elements none) := by
                   simp_wf
-                  omega
                 have beforeUnits : ∀ b ∈ active.beforeAbstracts,
                     canonicalize rhoReflectivePresentation.toReflectivePresentationDecl b =
                       .apply rhoReflectivePresentation.toReflectivePresentationDecl.parallelUnitConstructor
@@ -1200,7 +1196,6 @@ theorem rhoProc_flipTarget_transfer
                         have spineBound : sizeOf elements < sizeOf
                             (Pattern.collection collectionType elements none) := by
                           simp_wf
-                          omega
                         omega
                       exact inductionHypothesis elementPlanProc .unit measureElement
                         (flipUnits element membership)
@@ -1232,7 +1227,6 @@ theorem rhoProc_flipTarget_transfer
                     have spineBound : sizeOf elements < sizeOf
                         (Pattern.collection collectionType elements none) := by
                       simp_wf
-                      omega
                     have contributorMem : contributor ∈ elements := by
                       rw [elementsEq]
                       exact List.mem_append_right _ (List.mem_cons_self)
@@ -1322,7 +1316,6 @@ theorem rhoProc_flipTarget_transfer
                     have spineBound : sizeOf elements < sizeOf
                         (Pattern.collection collectionType elements none) := by
                       simp_wf
-                      omega
                     have contributorMem : contributor ∈ elements := by
                       rw [elementsEq]
                       exact List.mem_append_right _ (List.mem_cons_self)
@@ -1714,7 +1707,6 @@ theorem rhoProc_applyBoundaryDescent
                 have spineBound : sizeOf elements < sizeOf
                     (Pattern.collection collectionType elements none) := by
                   simp_wf
-                  omega
                 have measureContributor : sizeOf contributor ≤ fuel := by
                   have contributorBound :=
                     List.sizeOf_lt_of_mem contributorMem

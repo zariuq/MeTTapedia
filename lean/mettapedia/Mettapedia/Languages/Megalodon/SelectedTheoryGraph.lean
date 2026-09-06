@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.NIKTheoryGraph
+import Mettapedia.GSLT.LanguageDef.CertificateTransportGraph
 import Mettapedia.Languages.Megalodon.SignatureEmbedding
 
 /-!
@@ -18,7 +18,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.Megalodon.SelectedTheoryGraph
 
-open Mettapedia.GSLT.LanguageDef.NIKTheoryGraph
+open Mettapedia.GSLT.LanguageDef.CertificateTransportGraph
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.Ultrainfinite
 open Mettapedia.Languages.Megalodon.MathdataKernel

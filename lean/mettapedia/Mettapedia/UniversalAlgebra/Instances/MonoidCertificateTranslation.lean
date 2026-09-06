@@ -1,5 +1,5 @@
 import Mettapedia.UniversalAlgebra.Instances.MonoidConservativeExtension
-import Mettapedia.UniversalAlgebra.NIK.ConstructiveAuthorityTranslation
+import Mettapedia.UniversalAlgebra.NIK.ConstructiveCertifiedTranslation
 
 /-!
 # Constructive certificate translation for a redundant monoid extension
@@ -139,15 +139,15 @@ def monoidToExtension :
 
 /-- The constructive occurrence map gives an exact all-input native authority
 translation back to monoids. -/
-def extensionAuthorityTranslation :
-    Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory.AuthorityTranslation
+def extensionCertifiedTranslation :
+    Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory.CertifiedTranslation
       (contract derivedExtension) (contract equationSystem) :=
   extensionToMonoid.authorityTranslation
 
 /-- The exact authority route is conservative because concrete certificate
 translations exist in both directions. -/
-theorem extensionAuthorityTranslation_conservative :
-    extensionAuthorityTranslation.toTheoryTranslation.Conservative :=
+theorem extensionCertifiedTranslation_conservative :
+    extensionCertifiedTranslation.toTheoryTranslation.Conservative :=
   extensionToMonoid.authorityTranslation_conservative monoidToExtension
 
 /-- The fourth equation occurrence as a one-node source certificate. -/

@@ -276,7 +276,7 @@ noncomputable def structuralModalPredicate (model : Model)
   ⟨structuralModalSatisfies model space spaceTerm formula, by
     intro source target equivalent
     have equal : source = target :=
-      (equationSaturatedGSLT_equiv_iff_eq_of_no_generators
+      (gsltModuloEquations_equiv_iff_eq_of_no_generators
         totalTheory_object_equationFree source target).mp equivalent
     subst target
     rfl⟩

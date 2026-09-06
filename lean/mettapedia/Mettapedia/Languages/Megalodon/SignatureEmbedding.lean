@@ -1042,23 +1042,22 @@ theorem inferProof_map (embedding : Embedding source target)
                   simp [sameProposition, mappedDifferent]
   | proofLam proposition body bodyIH =>
       simp only [mapPf, inferProof]
-      rw [embedding.checkProposition_map, embedding.normalize_map]
-      cases propositionWellFormed :
-          checkProposition source typeDepth termContext proposition with
-      | false => simp
-      | true =>
-          cases normalization :
-              MathdataKernel.normalize source fuel proposition with
-          | none => rfl
-          | some normalized =>
-              simp only [Bool.not_true, Bool.false_eq_true, ↓reduceIte,
-                Option.map_some]
-              have mappedBody :=
-                bodyIH typeDepth termContext (normalized :: proofContext)
-              simp only [List.map_cons] at mappedBody
-              simp [mappedBody]
-              cases bodyResult : inferProof source fuel typeDepth termContext
-                  (normalized :: proofContext) body <;> rfl
+      rw [embedding.inferTerm_map, embedding.normalize_map]
+      cases propositionType : inferTerm source typeDepth termContext proposition with
+      | none => rfl
+      | some type =>
+          cases type <;> try simp [mapTp]
+          case prop =>
+            cases normalization : MathdataKernel.normalize source fuel proposition with
+            | none => rfl
+            | some normalized =>
+                simp only [Option.map_some]
+                have mappedBody :=
+                  bodyIH typeDepth termContext (normalized :: proofContext)
+                simp only [List.map_cons] at mappedBody
+                simp [mappedBody]
+                cases bodyResult : inferProof source fuel typeDepth termContext
+                    (normalized :: proofContext) body <;> rfl
   | termLam type body bodyIH =>
       simp only [mapPf, inferProof, plainWellFormed_mapTp]
       cases wellFormed : type.plainWellFormed typeDepth with
@@ -1436,7 +1435,7 @@ theorem source_accepts :
     checkProof sourceEnvironment 16 0 [] [] proof goal = true := by
   simp [sourceEnvironment, proof, goal, domain, namedAtom, primitiveAtom,
     predicateType, checkProof, checkNormalizedProof, inferProof,
-    checkProposition, inferTerm, MathdataKernel.normalize, deltaNormalize,
+    inferTerm, MathdataKernel.normalize, deltaNormalize,
     Tm.normalize, Tm.normalizeOne, Environment.lookupTerm?, lookupTermList?,
     Tm.shift, Tm.instantiate, Tm.instantiateAt, Tp.plainWellFormed]
 
@@ -1497,7 +1496,7 @@ theorem wrong_primitive_rejects :
   simp [wrongPrimitiveEnvironment, targetEnvironment, sourceEnvironment,
     outsideTerm, signatureMap, prefixName, mapPf, mapTm, mapTp, mapTermDecl,
     proof, goal, domain, namedAtom, primitiveAtom, predicateType, checkProof,
-    checkNormalizedProof, inferProof, checkProposition, inferTerm,
+    checkNormalizedProof, inferProof, inferTerm,
     MathdataKernel.normalize, deltaNormalize, Tm.normalize, Tm.normalizeOne,
     Environment.lookupTerm?, lookupTermList?, Tm.shift, Tm.instantiate,
     Tm.instantiateAt, Tp.plainWellFormed]

@@ -2,6 +2,7 @@ import Mettapedia.TypeTheory.IndexedPolynomial
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RelationalInternalLanguage
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.IndexedFamilyDeclaration
 import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ConversionCoherence
+import Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ProofRelevantSubstitutionCoherence
 
 /-!
 # Native indexed-family semantics for Prime
@@ -182,6 +183,33 @@ def identityEliminateApp
       endpoint)
     equality
 
+@[simp] theorem rename_identityEliminateApp (renameMap : Ren n m)
+    (element point motive reflCase endpoint equality : Tower.Tm n) :
+    Presentation.rename renameMap
+        (identityEliminateApp element point motive reflCase endpoint equality) =
+      identityEliminateApp
+        (Presentation.rename renameMap element)
+        (Presentation.rename renameMap point)
+        (Presentation.rename renameMap motive)
+        (Presentation.rename renameMap reflCase)
+        (Presentation.rename renameMap endpoint)
+        (Presentation.rename renameMap equality) :=
+  rfl
+
+@[simp] theorem subst_identityEliminateApp
+    (substitution : Sub Tower.Head n m)
+    (element point motive reflCase endpoint equality : Tower.Tm n) :
+    Presentation.subst substitution
+        (identityEliminateApp element point motive reflCase endpoint equality) =
+      identityEliminateApp
+        (Presentation.subst substitution element)
+        (Presentation.subst substitution point)
+        (Presentation.subst substitution motive)
+        (Presentation.subst substitution reflCase)
+        (Presentation.subst substitution endpoint)
+        (Presentation.subst substitution equality) :=
+  rfl
+
 /-- `List : Π (A : U α), U α`. -/
 def listType : Tower.Tm 0 :=
   .pi (sortTm elementLevel) (sortTm elementLevel)
@@ -298,6 +326,44 @@ def IotaEvidence.substitute {left right : Tower.Tm n}
   | cons => exact .cons _ _ _ _ _ _
   | identity => exact .identity _ _ _ _
 
+/-- The unindexed data retained by an iota receipt.  Endpoints are computed
+from this code; keeping the code separate makes coherence of informative
+receipts reducible to ordinary equality rather than proof irrelevance. -/
+inductive IotaEvidenceCode (n : Nat) where
+  | nil (element motive nilCase consCase : Tower.Tm n)
+  | cons (element motive nilCase consCase head tail : Tower.Tm n)
+  | identity (element point motive reflCase : Tower.Tm n)
+  deriving DecidableEq
+
+def IotaEvidence.code :
+    {left right : Tower.Tm n} →
+      IotaEvidence n left right → IotaEvidenceCode n
+  | _, _, .nil element motive nilCase consCase =>
+      .nil element motive nilCase consCase
+  | _, _, .cons element motive nilCase consCase head tail =>
+      .cons element motive nilCase consCase head tail
+  | _, _, .identity element point motive reflCase =>
+      .identity element point motive reflCase
+
+/-- Receipt codes are complete: equal retained constructor data determines
+heterogeneously equal evidence, including its computed endpoints. -/
+theorem IotaEvidence.heq_of_code_eq
+    {left₁ right₁ left₂ right₂ : Tower.Tm n}
+    {first : IotaEvidence n left₁ right₁}
+    {second : IotaEvidence n left₂ right₂}
+    (encoded : first.code = second.code) : HEq first second := by
+  cases first <;> cases second <;>
+    simp_all [IotaEvidence.code]
+  case nil.nil =>
+    rcases encoded with ⟨rfl, rfl, rfl, rfl⟩
+    rfl
+  case cons.cons =>
+    rcases encoded with ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+    rfl
+  case identity.identity =>
+    rcases encoded with ⟨rfl, rfl, rfl, rfl⟩
+    rfl
+
 def proofRelevantIotaComputation :
     ProofRelevantRootComputation Tower.Head where
   Evidence := IotaEvidence _
@@ -307,6 +373,25 @@ def proofRelevantIotaComputation :
   substitute := by
     intro n m substitution left right step
     exact IotaEvidence.substitute step substitution
+
+/-- The authored List and identity computation receipts are stable under
+identity and composite substitutions.  In particular, the `J` computation
+rule is not merely available at closed terms: it is natural in its ambient
+context, as required of a dependent eliminator. -/
+def proofRelevantIotaSubstitutionCoherent :
+    proofRelevantIotaComputation.SubstitutionCoherent where
+  substitute_ids := by
+    intro n left right evidence
+    apply IotaEvidence.heq_of_code_eq
+    cases evidence <;>
+      simp [IotaEvidence.code, proofRelevantIotaComputation,
+        IotaEvidence.substitute]
+  substitute_comp := by
+    intro n m k later earlier left right evidence
+    apply IotaEvidence.heq_of_code_eq
+    cases evidence <;>
+      simp [IotaEvidence.code, proofRelevantIotaComputation,
+        IotaEvidence.substitute]
 
 /-- Definitional conversion sees only support; execution and authority retain
 the full `IotaEvidence` receipt above. -/
@@ -2867,6 +2952,22 @@ theorem iota_identity {element point motive reflCase : Tower.Tm n} :
       reflCase :=
   RootStep.declared ⟨.identity element point motive reflCase⟩
 
+/-- The native identity eliminator is an inhabited Martin-Löf-style
+capability: it is declared at its dependent type, computes on reflexivity,
+and its proof-relevant computation receipts commute with substitution. -/
+theorem martinLofIdentityEliminationContract
+    {element point motive reflCase : Tower.Tm n} :
+    rawSignature.typeOf? identityEliminateName =
+        some identityEliminateType ∧
+      proofRelevantIotaComputation.SubstitutionCoherent ∧
+      rules.computation.step
+        (identityEliminateApp element point motive reflCase point
+          (.refl point))
+        reflCase :=
+  ⟨typeOf_identityEliminate,
+    proofRelevantIotaSubstitutionCoherent,
+    iota_identity⟩
+
 /-! ### Axiom audit -/
 
 #print axioms eliminateAtParameters_hasType
@@ -2878,6 +2979,9 @@ theorem iota_identity {element point motive reflCase : Tower.Tm n} :
 #print axioms nilIotaReceipt
 #print axioms consIotaReceipt
 #print axioms identityIotaReceipt
+#print axioms IotaEvidence.heq_of_code_eq
+#print axioms proofRelevantIotaSubstitutionCoherent
+#print axioms martinLofIdentityEliminationContract
 #print axioms TypedIotaReceipt.InstanceAt.toReceipt
 #print axioms TypedIotaInstance.targetTyping
 #print axioms TypedIotaInstance.Adjusted.toReceipt

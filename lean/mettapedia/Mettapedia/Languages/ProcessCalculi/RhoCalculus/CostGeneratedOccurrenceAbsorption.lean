@@ -92,6 +92,9 @@ theorem contextualRepresentatives
       | equation context instanceWitness =>
           exact ReflectiveEquationSemantics.canonicalize_fill_congr
             absorption.declaration.1 context absorption.representatives
+      | derived context lawWitness =>
+          exact ReflectiveEquationSemantics.canonicalize_fill_congr
+            absorption.declaration.1 context absorption.representatives
   | reflective context declaration representatives =>
       exact ReflectiveEquationSemantics.canonicalize_fill_congr
         absorption.declaration.1 context absorption.representatives
@@ -241,20 +244,32 @@ def rhoCostGeneratorAbsorptionOfOrigin
   match witness, origin with
   | .core (.equation context instanceWitness), equationOrigin =>
       let declaration := costStaticReflectivePresentationDecl rhoCIGSLT
-        equationOrigin.color
+        (RhoCostEquationInstanceOrigin.color equationOrigin)
           rhoReflectivePresentation.toReflectivePresentationDecl
       { declaration := ⟨declaration, by
           exact costStaticReflectivePresentationDecl_mem rhoCIGSLT
-            equationOrigin.color
+            (RhoCostEquationInstanceOrigin.color equationOrigin)
             rhoReflectivePresentation.toReflectivePresentationDecl (by
               change rhoReflectivePresentation.toReflectivePresentationDecl ∈
                 rhoReflectionProfile.presentations
               simp [rhoReflectionProfile])⟩
         origin :=
-          ⟨equationOrigin.color, rfl⟩
+          ⟨(RhoCostEquationInstanceOrigin.color equationOrigin), rfl⟩
         representatives :=
           rhoCostEquationInstanceOrigin_representatives instanceWitness
             equationOrigin }
+  | .core (.derived context lawWitness), _ =>
+      let declaration := costStaticReflectivePresentationDecl rhoCIGSLT .base
+        rhoReflectivePresentation.toReflectivePresentationDecl
+      { declaration := ⟨declaration, by
+          exact costStaticReflectivePresentationDecl_mem rhoCIGSLT .base
+            rhoReflectivePresentation.toReflectivePresentationDecl (by
+              change rhoReflectivePresentation.toReflectivePresentationDecl ∈
+                rhoReflectionProfile.presentations
+              simp [rhoReflectionProfile])⟩
+        origin := ⟨.base, rfl⟩
+        representatives :=
+          rho_costDerivedInstance_canonicalize_eq lawWitness.erase }
   | .reflective context declaration representatives, reflectiveOrigin =>
       { declaration := declaration
         origin := reflectiveOrigin
@@ -354,8 +369,10 @@ end RhoCostDeclarationRegionPosition
 
 /-- Every exact generated rho occurrence has a local generated-reflective
 absorption certificate.  Ordinary equation occurrences are converted through
-the already-proved Quote/Drop table agreement; reflective occurrences retain
-their authored representative equality directly. -/
+the already-proved Quote/Drop table agreement, presentation-derived
+occurrences are bag permutations absorbed by the base canonicalizer, and
+reflective occurrences retain their authored representative equality
+directly. -/
 theorem nonempty_rhoCostGeneratorAbsorption
     {left right : Pattern}
     (witness : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
@@ -372,6 +389,20 @@ theorem nonempty_rhoCostGeneratorAbsorption
           obtain ⟨origin⟩ :=
             nonempty_rhoCostReflectiveDeclarationOrigin_of_mem membership
           exact ⟨⟨⟨declaration, membership⟩, origin, representatives⟩⟩
+      | derived context lawWitness =>
+          let declaration := costStaticReflectivePresentationDecl rhoCIGSLT .base
+            rhoReflectivePresentation.toReflectivePresentationDecl
+          have membership : declaration ∈
+              rhoCIGSLT.costWholeReflectionProfile.presentations := by
+            exact costStaticReflectivePresentationDecl_mem rhoCIGSLT .base
+              rhoReflectivePresentation.toReflectivePresentationDecl (by
+                change rhoReflectivePresentation.toReflectivePresentationDecl ∈
+                  rhoReflectionProfile.presentations
+                simp [rhoReflectionProfile])
+          obtain ⟨origin⟩ :=
+            nonempty_rhoCostReflectiveDeclarationOrigin_of_mem membership
+          exact ⟨⟨⟨declaration, membership⟩, origin,
+            rho_costDerivedInstance_canonicalize_eq lawWitness.erase⟩⟩
   | reflective context declaration representatives =>
       obtain ⟨origin⟩ :=
         nonempty_rhoCostReflectiveDeclarationOrigin_of_mem declaration.2

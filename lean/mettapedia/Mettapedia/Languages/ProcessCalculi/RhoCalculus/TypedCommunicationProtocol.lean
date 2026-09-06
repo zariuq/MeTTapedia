@@ -189,7 +189,7 @@ def target (data : ClosedCommData) : RhoProcess :=
   data.source.stepTarget data.rawStep
 
 /-- The direct typed COMM instance is an exact occurrence of the established
-equation-saturated rho system. -/
+modulo-equations rho system. -/
 noncomputable def occurrence (data : ClosedCommData) :
     RewriteOccurrence data.source data.target where
   redex := data.source

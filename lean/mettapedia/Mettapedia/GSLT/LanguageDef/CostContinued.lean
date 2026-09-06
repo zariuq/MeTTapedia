@@ -459,7 +459,7 @@ private theorem coreContactRepresentation_costBaseConstructor
         (costBaseConstructor source.cut constructor) =
       some representation := by
   rcases sort with ⟨sortName, carrier⟩
-  rcases constructor with ⟨label, category, parameters, syntaxPattern, policy⟩
+  rcases constructor with ⟨label, category, parameters, syntaxPattern, policy, algebra⟩
   by_cases categoryEquality : category = sortName
   · subst category
     simp only [coreContactRepresentation?] at represented
@@ -480,7 +480,7 @@ private theorem coreContactRepresentation_costBaseConstructor
               { label := label, category := sortName,
                 params := [.simple parameterName
                   (.collection collectionType elementType)],
-                syntaxPattern := syntaxPattern, evalPolicy? := policy }
+                syntaxPattern := syntaxPattern, evalPolicy? := policy, algebra? := algebra }
               0 parameterName collectionType elementType with
               ⟨mappedElementType, mappedShape⟩
             simp only [List.zipIdx_cons, List.map_cons]
@@ -499,13 +499,13 @@ private theorem coreContactRepresentation_costBaseConstructor
                 { label := label, category := sortName,
                   params := [.simple firstName firstType,
                     .simple secondName secondType],
-                  syntaxPattern := syntaxPattern, evalPolicy? := policy }
+                  syntaxPattern := syntaxPattern, evalPolicy? := policy, algebra? := algebra }
                 0 firstName firstType with ⟨mappedFirst, firstShape⟩
               rcases costBaseParameter_simple_shape source.cut
                 { label := label, category := sortName,
                   params := [.simple firstName firstType,
                     .simple secondName secondType],
-                  syntaxPattern := syntaxPattern, evalPolicy? := policy }
+                  syntaxPattern := syntaxPattern, evalPolicy? := policy, algebra? := algebra }
                 1 secondName secondType with ⟨mappedSecond, secondShape⟩
               simp only [List.zipIdx_cons, List.map_cons]
               rw [firstShape, secondShape]

@@ -445,7 +445,7 @@ def gfRGLSemantics : GFSemantics where
   equationSection := gfEquationSection
   atomQuery_injective := queryOfAtom_injective_name
 
-/-- Agreement: the configured reduction is the equation-saturated OSLF
+/-- Agreement: the configured reduction is the modulo-equations OSLF
 one-step relation. -/
 @[simp] theorem gfRGLSemantics_reduces :
     gfRGLSemantics.reduces = langSemanticReduces gfLegacySemanticLanguageDef := rfl

@@ -102,7 +102,7 @@ def toSharedPhysicalCertificate (presentation : SoundPresentation Meaning) :
 
 /-- Intrinsic proof objects lower exactly to shared physical replay. -/
 def nativeToSharedPhysical (presentation : SoundPresentation Meaning) :
-    AuthorityTranslation (contract presentation)
+    CertifiedTranslation (contract presentation)
       (sharedPhysicalContract presentation) where
   mapKind := id
   mapSignature := id
@@ -128,7 +128,7 @@ structure SharedPhysicalShieldTower
   ordinary : PhysicalShieldTower presentation
   sharedPhysical : AuthorityContract (theory presentation)
   lowerSharedPhysical :
-    AuthorityTranslation (contract presentation) sharedPhysical
+    CertifiedTranslation (contract presentation) sharedPhysical
 
 def sharedPhysicalShieldTower (presentation : SoundPresentation Meaning) :
     SharedPhysicalShieldTower presentation where

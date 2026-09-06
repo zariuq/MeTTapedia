@@ -325,7 +325,7 @@ def reachingNativeType (theory : GSLT)
   sort := ()
   pred := pathDiamond theory predicate
 
-/-- Inhabitation of a reaching native type retains an equation-saturated
+/-- Inhabitation of a reaching native type retains an modulo-equations
 finite path to a state satisfying its target predicate. -/
 theorem satisfies_reachingNativeType_iff (theory : GSLT)
     (predicate : EquationPredicate (pathGSLT theory))

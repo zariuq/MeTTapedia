@@ -170,7 +170,6 @@ private theorem boundary_getDecoration_weight_lt
   termination_by trees.weight
   decreasing_by
     simp [CostRegionBoundaryTrees.weight]
-    omega
 
 private theorem boundary_getEntry_weight_lt
     {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
@@ -219,7 +218,6 @@ private theorem argument_normalize_eq_of_unambiguous
   termination_by first.weight
   decreasing_by
     simp [CostRegionArgumentTrees.weight]
-    omega
 
 set_option maxRecDepth 5000
 set_option maxHeartbeats 300000
@@ -625,7 +623,6 @@ mutual
     termination_by small.weight
     decreasing_by
       all_goals simp [CostRegionArgumentTrees.weight]
-      all_goals omega
 
   /-- The tree theorem lifts pointwise through a homogeneous collection. -/
   theorem CostRegionElementTrees.normalize_patterns_eq_of_availableSuffix
@@ -660,7 +657,6 @@ mutual
     termination_by small.weight
     decreasing_by
       all_goals simp [CostRegionElementTrees.weight]
-      all_goals omega
 end
 
 end CostStaticRegionNode

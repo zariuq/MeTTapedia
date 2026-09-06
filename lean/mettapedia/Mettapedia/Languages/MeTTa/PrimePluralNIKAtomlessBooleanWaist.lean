@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.AtomlessBooleanEquationalEmbedding
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 import Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist
 
 /-!
@@ -22,7 +22,7 @@ open Mettapedia.GSLT.LanguageDef.AtomlessBooleanFirstOrderNIKAuthority
 open Mettapedia.GSLT.LanguageDef.AtomlessBooleanEquationalEmbedding
 open Mettapedia.GSLT.LanguageDef.BooleanAlgebraIdentityDecision
 open Mettapedia.GSLT.LanguageDef.BooleanAlgebraIdentityDecision.Canary
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceDependentPiExperiment
 
@@ -162,7 +162,7 @@ theorem equational_semantic_embedding_is_conservative :
 /-- The two proof disciplines remain observably different and therefore allow
 no exact evidence-erasing authority translation. -/
 theorem equational_authority_does_not_collapse_into_direct_decision :
-    ¬ Nonempty (AuthorityTranslation
+    ¬ Nonempty (CertifiedTranslation
       Mettapedia.GSLT.LanguageDef.BooleanAlgebraIdentityNIKAuthority.contract
       atomlessContract) :=
   no_exact_authorityTranslation

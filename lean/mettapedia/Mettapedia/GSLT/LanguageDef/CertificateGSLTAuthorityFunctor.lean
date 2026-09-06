@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTInterpretation
 
 /-!
@@ -33,7 +33,7 @@ open CategoryTheory
 open scoped CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
@@ -142,7 +142,7 @@ def contract {Meaning : Pattern -> Prop}
 /-- Bundle one generated theory and checker as an object of the heterogeneous
 authority category. -/
 def generatedAuthority {Meaning : Pattern -> Prop}
-    (presentation : SoundPresentation Meaning) : AuthorityObject where
+    (presentation : SoundPresentation Meaning) : CertifiedTheory where
   Kind := Unit
   family := theory presentation
   contract := contract presentation
@@ -164,7 +164,7 @@ same retained conclusion with the same submitted claim. -/
 def map {Meaning : Pattern -> Prop}
     {source target : SoundPresentation Meaning}
     (interpretation : Interpretation source.object target.object) :
-    AuthorityTranslation (contract source) (contract target) where
+    CertifiedTranslation (contract source) (contract target) where
   mapKind := id
   mapSignature := fun _ => ⟨target.object, rfl⟩
   signature_commutes := by intro kind; cases kind; rfl
@@ -221,14 +221,14 @@ theorem mapCertificate_comp {Meaning : Pattern -> Prop}
 /-- Semantically qualified CertificateGSLT presentations generate exact NIK
 authorities functorially. -/
 def generationFunctor (Meaning : Pattern -> Prop) :
-    CategoryTheory.Functor (SoundPresentation Meaning) AuthorityObject where
+    CategoryTheory.Functor (SoundPresentation Meaning) CertifiedTheory where
   obj := generatedAuthority
   map := by
     intro source target interpretation
     change Interpretation source.object target.object at interpretation
     exact map interpretation
   map_id presentation := by
-    apply NIKAuthorityCategory.AuthorityTranslation.ext_data
+    apply CertifiedTheoryCategory.CertifiedTranslation.ext_data
     · intro kind
       rfl
     · intro signature
@@ -241,7 +241,7 @@ def generationFunctor (Meaning : Pattern -> Prop) :
       cases kind
       exact heq_of_eq (mapCertificate_id certificate)
   map_comp earlier later := by
-    apply NIKAuthorityCategory.AuthorityTranslation.ext_data
+    apply CertifiedTheoryCategory.CertifiedTranslation.ext_data
     · intro kind
       rfl
     · intro signature

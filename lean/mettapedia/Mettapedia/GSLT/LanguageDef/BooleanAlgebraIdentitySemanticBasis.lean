@@ -68,7 +68,7 @@ def basisTranslation
     {B : Type uBasis} {C : Type vBasis}
     [BooleanAlgebra B] [Nontrivial B]
     [BooleanAlgebra C] [Nontrivial C] :
-    AuthorityTranslation (contract B) (contract C) where
+    CertifiedTranslation (contract B) (contract C) where
   mapKind := id
   mapSignature := id
   signature_commutes := by intro _arity; rfl
@@ -126,17 +126,17 @@ abbrev AtomicInfiniteBasis := Set Nat
 abbrev AtomlessInfiniteBasis := CantorAlgebra
 
 def finiteToAtomless :
-    AuthorityTranslation (contract FiniteBasis)
+    CertifiedTranslation (contract FiniteBasis)
       (contract AtomlessInfiniteBasis) :=
   basisTranslation
 
 def atomlessToFinite :
-    AuthorityTranslation (contract AtomlessInfiniteBasis)
+    CertifiedTranslation (contract AtomlessInfiniteBasis)
       (contract FiniteBasis) :=
   basisTranslation
 
 def atomicInfiniteToAtomless :
-    AuthorityTranslation (contract AtomicInfiniteBasis)
+    CertifiedTranslation (contract AtomicInfiniteBasis)
       (contract AtomlessInfiniteBasis) :=
   basisTranslation
 

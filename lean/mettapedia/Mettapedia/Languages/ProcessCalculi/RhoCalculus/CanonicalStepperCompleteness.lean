@@ -8,7 +8,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefRewriteSystem
 
 A runtime that keeps every process in canonical form steps only canonical
 representatives.  For that to be a faithful implementation of the
-equation-saturated step, every step from any representative must be matched,
+step modulo equations, every step from any representative must be matched,
 up to the equations, by a depth-one COMM on the canonical representative.
 This module proves that statement for closed rho processes.
 

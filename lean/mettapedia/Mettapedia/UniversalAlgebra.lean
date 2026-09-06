@@ -27,8 +27,8 @@ import Mettapedia.UniversalAlgebra.NIK.RejectedCertificate
 import Mettapedia.UniversalAlgebra.NIK.ConsequenceInvariance
 import Mettapedia.UniversalAlgebra.NIK.Simulation
 import Mettapedia.UniversalAlgebra.NIK.TheoryEquivalence
-import Mettapedia.UniversalAlgebra.NIK.ClassicalAuthorityTranslation
-import Mettapedia.UniversalAlgebra.NIK.ConstructiveAuthorityTranslation
+import Mettapedia.UniversalAlgebra.NIK.ClassicalCertifiedTranslation
+import Mettapedia.UniversalAlgebra.NIK.ConstructiveCertifiedTranslation
 import Mettapedia.UniversalAlgebra.NIK.Interpretation
 import Mettapedia.UniversalAlgebra.Instances.Monoid
 import Mettapedia.UniversalAlgebra.Instances.MonoidConservativeExtension

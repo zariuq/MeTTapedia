@@ -306,11 +306,15 @@ def proofKnownRule : RuleSchema :=
       (m "typeDepth") (m "termContext") (m "proofContext")
       (m "target"))
 
+/-- Prefix-polymorphic propositions are permitted at the theorem boundary,
+but a proof-lambda hypothesis must have ordinary type `Prop`. -/
 def proofImpIntroRule : RuleSchema :=
   rule "megalodon-theory-proof-imp-intro"
     ["primitives", "declarations", "signature", "known", "typeDepth",
       "termContext", "proofContext", "sourceDomain", "domain", "codomain"]
-    [ propositionRepresentative
+    [ hasType (m "primitives") (m "signature") (m "typeDepth")
+        (m "termContext") (m "sourceDomain") (a "MTpProp"),
+      propositionRepresentative
         (m "primitives") (m "declarations") (m "signature")
         (m "typeDepth") (m "termContext") (m "sourceDomain") (m "domain"),
       DefinitionConversionKernel.fullProves
@@ -475,14 +479,20 @@ def admitAxiomRule : RuleSchema :=
         [ m "primitives", m "declarations",
           a "MKnownCons" [m "identifier", m "proposition", m "known"] ]))
 
+/-- Formation of the declared proposition is checked independently of its
+proof. A reflexive representative permits prefix type quantification without
+requiring a chosen normal form; conversion remains the proof judgment's job. -/
 def admitTheoremRule : RuleSchema :=
   rule "megalodon-theory-admit-theorem"
-    ["primitives", "declarations", "known", "identifier", "proposition"]
-    [DefinitionConversionKernel.fullProves
-      (a "MFullEnvironment"
-        [m "primitives", m "declarations", m "known"])
-      (a "MNZero") (a "MTyCtxNil") (a "MPfCtxNil")
-      (m "proposition")]
+    ["primitives", "declarations", "signature", "known", "identifier", "proposition"]
+    [ propositionRepresentative
+        (m "primitives") (m "declarations") (m "signature")
+        (a "MNZero") (a "MTyCtxNil") (m "proposition") (m "proposition"),
+      DefinitionConversionKernel.fullProves
+        (a "MFullEnvironment"
+          [m "primitives", m "declarations", m "known"])
+        (a "MNZero") (a "MTyCtxNil") (a "MPfCtxNil")
+        (m "proposition") ]
     (admits
       (a "MFullEnvironment"
         [m "primitives", m "declarations", m "known"])
@@ -571,7 +581,7 @@ private theorem admissionTermDisjoint
   have disjoint := admissionExtension_disjoint
   unfold CalculusLanguageExtension.disjointFrom at disjoint
   simp only [Bool.and_eq_true] at disjoint
-  have fresh := List.all_eq_true.mp disjoint.1.1 newTerm newMember
+  have fresh := List.all_eq_true.mp disjoint.1.1.1.1.2 newTerm newMember
   intro equalLabels
   have collision :
       DefinitionConversionKernel.definition.toLanguageDef.terms.any
@@ -972,6 +982,12 @@ private theorem lookupAdditionalRule (id : String) (candidate : RuleSchema)
       some proofKnownRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
 
+@[simp] private theorem lookup_propositionPlainRule :
+    definition.lookupRule?
+        ({ value := "megalodon-theory-proposition-plain" } : RuleId) =
+      some propositionPlainRule :=
+  lookupAdditionalRule _ _ (by rfl) (by rfl)
+
 @[simp] private theorem lookup_projectNilRule :
     definition.lookupRule?
         ({ value := "megalodon-def-project-nil" } : RuleId) =
@@ -1122,11 +1138,27 @@ private def canaryKnownProofArticle : RawProof :=
       proofNode "megalodon-def-path-refl"
         [canaryDeclarations, canaryProposition] ]
 
+private def canaryPropositionFormationArticle : RawProof :=
+  proofNode "megalodon-theory-proposition-plain"
+    [ canaryPrimitiveTypes, canaryDeclarations, canarySignature,
+      a "MNZero", a "MTyCtxNil", canaryProposition, canaryProposition ]
+    [ proofNode "megalodon-def-project-definition"
+        [ canaryPrimitiveIdentifier, a "MTpProp", canaryProposition,
+          a "MDeclNil", a "MSigNil" ]
+        [proofNode "megalodon-def-project-nil" []],
+      proofNode "megalodon-theory-term-primitive"
+        [ canaryPrimitiveTypes, canarySignature, a "MNZero",
+          a "MTyCtxNil", a "MNZero", a "MTpProp" ]
+        [proofNode "megalodon-theory-primitive-type-zero"
+          [a "MTpProp", a "MPrimNil"]],
+      proofNode "megalodon-def-path-refl"
+        [canaryDeclarations, canaryProposition] ]
+
 private def canaryTheoremAdmissionArticle : RawProof :=
   proofNode "megalodon-theory-admit-theorem"
-    [ canaryPrimitiveTypes, canaryDeclarations, canaryAxiomKnown,
+    [ canaryPrimitiveTypes, canaryDeclarations, canarySignature, canaryAxiomKnown,
       canaryTheoremIdentifier, canaryProposition ]
-    [canaryKnownProofArticle]
+    [canaryPropositionFormationArticle, canaryKnownProofArticle]
 
 def canaryArticle : RawProof :=
   proofNode "megalodon-theory-checks-cons"
@@ -1160,20 +1192,21 @@ theorem ordered_primitive_axiom_theorem_accepted :
     checkRaw validated canaryGoal canaryArticle = true := by
   simp only [ canaryGoal, canaryArticle, canaryItems,
     canaryPrimitiveAdmissionArticle, canaryAxiomAdmissionArticle,
-    canaryTheoremAdmissionArticle, canaryKnownProofArticle, proofNode,
+    canaryTheoremAdmissionArticle, canaryPropositionFormationArticle,
+    canaryKnownProofArticle, proofNode,
     checkRaw, validated, instantiateRule? ]
   simp (config := { maxSteps := 12000000, decide := true })
     [ lookup_checksConsRule, lookup_checksNilRule,
       lookup_admitPrimitiveRule, lookup_admitAxiomRule,
       lookup_admitTheoremRule, lookup_primitiveAppendZeroRule,
       lookup_primitiveTypeZeroRule, lookup_typePrimitiveRule,
-      lookup_proofKnownRule, lookup_projectNilRule,
+      lookup_proofKnownRule, lookup_propositionPlainRule, lookup_projectNilRule,
       lookup_projectDefinitionRule, lookup_polyTypePlainRule,
       lookup_plainTypePropRule, lookup_knownHereRule, lookup_pathReflRule,
       checkRaw, checkRawChildren, instantiateRule?,
       checksConsRule, checksNilRule, admitPrimitiveRule, admitAxiomRule,
       admitTheoremRule, primitiveAppendZeroRule, primitiveTypeZeroRule,
-      typePrimitiveRule, proofKnownRule,
+      typePrimitiveRule, proofKnownRule, propositionPlainRule,
       PolymorphicKernel.plainPropRule, EnvironmentKernel.knownHereRule,
       DefinitionConversionKernel.pathReflRule,
       DefinitionConversionKernel.projectNilRule,
@@ -1201,7 +1234,7 @@ theorem ordered_primitive_axiom_theorem_accepted :
       canaryAxiomItem, canaryTheoremItem, canaryProposition,
       canaryPrimitiveIdentifier, canaryAxiomIdentifier,
       canaryTheoremIdentifier, primitiveTypeAt, primitiveAppendAt,
-      hasType, admits, checks, rule, ruleId, a, m]
+      hasType, propositionRepresentative, admits, checks, rule, ruleId, a, m]
 
 def wrongPrimitiveIndexItem : Pattern :=
   a "MTheoryPrimitive"
@@ -1243,13 +1276,15 @@ theorem skipped_primitive_index_rejected :
 
 def prematureTheoremArticle : RawProof :=
   proofNode "megalodon-theory-admit-theorem"
-    [ canaryPrimitiveTypes, canaryDeclarations, a "MKnownNil",
+    [ canaryPrimitiveTypes, canaryDeclarations, canarySignature, a "MKnownNil",
       canaryTheoremIdentifier, canaryProposition ]
-    [ canaryKnownProofArticle ]
+    [ canaryPropositionFormationArticle, canaryKnownProofArticle ]
 
 def prematureTheoremGoal : Pattern :=
   admits canaryPrimitiveEnvironment canaryTheoremItem
-    canaryAxiomEnvironment
+    (a "MFullEnvironment"
+      [canaryPrimitiveTypes, canaryDeclarations,
+        a "MKnownCons" [canaryTheoremIdentifier, canaryProposition, a "MKnownNil"]])
 
 set_option maxRecDepth 200000 in
 set_option maxHeartbeats 12000000 in
@@ -1258,16 +1293,285 @@ theorem theorem_before_axiom_rejected :
       prematureTheoremArticle = false := by
   simp only [ prematureTheoremGoal, prematureTheoremArticle,
     canaryKnownProofArticle,
-    canaryPrimitiveEnvironment, canaryAxiomEnvironment,
+    canaryPrimitiveEnvironment,
     canaryPrimitiveTypes, canaryDeclarations, canaryAxiomKnown,
     canaryTheoremItem, canaryTheoremIdentifier, canaryProposition,
     proofNode, checkRaw, validated, instantiateRule? ]
   simp (config := { maxSteps := 12000000, decide := true })
-    [ lookup_admitTheoremRule, checkRawChildren,
-      admitTheoremRule, admits, DefinitionConversionKernel.fullProves,
-      DefinitionConversionKernel.a,
+    [ lookup_admitTheoremRule, checkRaw, checkRawChildren, instantiateRule?,
+      admitTheoremRule, proofKnownRule, admits, propositionRepresentative,
+      DefinitionConversionKernel.fullProves,
+      DefinitionConversionKernel.reductionPath, EnvironmentKernel.knownMember,
+      DefinitionConversionKernel.a, EnvironmentKernel.a,
       instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
       instantiateSchemaAt?, lookupArgumentAt?,
       rule, ruleId, a, m]
+
+/-! ## Ordinary hypotheses and prefix-polymorphic theorem formation -/
+
+namespace FormationBoundary
+
+private def zero : Pattern := a "MNZero"
+private def one : Pattern := a "MNSucc" [zero]
+private def propType : Pattern := a "MTpProp"
+private def emptyTypes : Pattern := a "MTyCtxNil"
+private def emptyProofs : Pattern := a "MPfCtxNil"
+private def emptySignature : Pattern := a "MSigNil"
+private def emptyDeclarations : Pattern := a "MDeclNil"
+private def emptyPrimitives : Pattern := a "MPrimNil"
+private def emptyKnown : Pattern := a "MKnownNil"
+private def emptyEnvironment : Pattern :=
+  a "MFullEnvironment" [emptyPrimitives, emptyDeclarations, emptyKnown]
+
+/-- A well-formed ordinary proposition; no assertion of its truth is made. -/
+def body : Pattern := a "MTmAll" [propType, a "MTmVar" [zero]]
+
+/-- The same proposition under a legitimate prefix type quantifier. -/
+def prefixProposition : Pattern := a "MTmTypeAll" [body]
+
+private def bodyTypeArticle (depth : Pattern) : RawProof :=
+  proofNode "megalodon-theory-term-all"
+    [emptyPrimitives, emptySignature, depth, emptyTypes, propType, a "MTmVar" [zero]]
+    [ proofNode "megalodon-poly-type-prop" [depth],
+      proofNode "megalodon-theory-term-var-zero"
+        [emptyPrimitives, emptySignature, depth, emptyTypes, propType] ]
+
+private def bodyFormationArticle (depth : Pattern) : RawProof :=
+  proofNode "megalodon-theory-proposition-plain"
+    [emptyPrimitives, emptyDeclarations, emptySignature, depth, emptyTypes, body, body]
+    [ proofNode "megalodon-def-project-nil" [], bodyTypeArticle depth,
+      proofNode "megalodon-def-path-refl" [emptyDeclarations, body] ]
+
+private def prefixFormationArticle : RawProof :=
+  proofNode "megalodon-theory-proposition-type-all"
+    [emptyPrimitives, emptyDeclarations, emptySignature, zero, emptyTypes, body, body]
+    [bodyFormationArticle one]
+
+private def hypothesisArticle (depth proposition : Pattern) : RawProof :=
+  proofNode "megalodon-theory-proof-hyp-zero"
+    [emptyEnvironment, depth, emptyTypes, emptyProofs, proposition]
+
+private def ordinaryIdentityArticle (depth : Pattern) : RawProof :=
+  proofNode "megalodon-theory-proof-imp-intro"
+    [emptyPrimitives, emptyDeclarations, emptySignature, emptyKnown, depth,
+      emptyTypes, emptyProofs, body, body, body]
+    [bodyTypeArticle depth, bodyFormationArticle depth, hypothesisArticle depth body]
+
+/-- A correctly sized article attempts to use prefix-proposition evidence
+where the ordinary-`Prop` premise is required. -/
+private def prefixHypothesisArticle : RawProof :=
+  proofNode "megalodon-theory-proof-imp-intro"
+    [emptyPrimitives, emptyDeclarations, emptySignature, emptyKnown, zero,
+      emptyTypes, emptyProofs, prefixProposition, prefixProposition, prefixProposition]
+    [prefixFormationArticle, prefixFormationArticle, hypothesisArticle zero prefixProposition]
+
+private def identityBody : Pattern := a "MTmImp" [body, body]
+private def prefixIdentity : Pattern := a "MTmTypeAll" [identityBody]
+
+private def identityFormationArticle (depth : Pattern) : RawProof :=
+  proofNode "megalodon-theory-proposition-plain"
+    [emptyPrimitives, emptyDeclarations, emptySignature, depth, emptyTypes,
+      identityBody, identityBody]
+    [ proofNode "megalodon-def-project-nil" [],
+      proofNode "megalodon-theory-term-imp"
+        [emptyPrimitives, emptySignature, depth, emptyTypes, body, body]
+        [bodyTypeArticle depth, bodyTypeArticle depth],
+      proofNode "megalodon-def-path-refl" [emptyDeclarations, identityBody] ]
+
+private def prefixIdentityFormationArticle : RawProof :=
+  proofNode "megalodon-theory-proposition-type-all"
+    [emptyPrimitives, emptyDeclarations, emptySignature, zero, emptyTypes,
+      identityBody, identityBody]
+    [identityFormationArticle one]
+
+private def prefixIdentityProofArticle : RawProof :=
+  proofNode "megalodon-theory-proof-type-intro" [emptyEnvironment, zero, identityBody]
+    [ordinaryIdentityArticle one]
+
+private def theoremArticle : RawProof :=
+  proofNode "megalodon-theory-admit-theorem"
+    [emptyPrimitives, emptyDeclarations, emptySignature, emptyKnown,
+      canaryTheoremIdentifier, prefixIdentity]
+    [prefixIdentityFormationArticle, prefixIdentityProofArticle]
+
+private def theoremGoal : Pattern :=
+  admits emptyEnvironment (a "MTheoryTheorem" [canaryTheoremIdentifier, prefixIdentity])
+    (a "MFullEnvironment" [emptyPrimitives, emptyDeclarations,
+      a "MKnownCons" [canaryTheoremIdentifier, prefixIdentity, emptyKnown]])
+
+private def malformedProposition : Pattern := a "MTmImp" [prefixProposition, prefixProposition]
+private def unformedKnown : Pattern :=
+  a "MKnownCons" [canaryAxiomIdentifier, malformedProposition, emptyKnown]
+private def unformedEnvironment : Pattern :=
+  a "MFullEnvironment" [emptyPrimitives, emptyDeclarations, unformedKnown]
+
+private def unformedKnownProof : RawProof :=
+  proofNode "megalodon-theory-proof-known"
+    [emptyPrimitives, emptyDeclarations, unformedKnown, zero, emptyTypes, emptyProofs,
+      canaryAxiomIdentifier, malformedProposition, malformedProposition]
+    [ proofNode "megalodon-env-known-here"
+        [canaryAxiomIdentifier, malformedProposition, emptyKnown],
+      proofNode "megalodon-def-path-refl" [emptyDeclarations, malformedProposition] ]
+
+private def guardedTheoremArticle (formation proof : RawProof) : RawProof :=
+  proofNode "megalodon-theory-admit-theorem"
+    [emptyPrimitives, emptyDeclarations, emptySignature, unformedKnown,
+      canaryTheoremIdentifier, malformedProposition]
+    [formation, proof]
+
+private def guardedTheoremGoal : Pattern :=
+  admits unformedEnvironment
+    (a "MTheoryTheorem" [canaryTheoremIdentifier, malformedProposition])
+    (a "MFullEnvironment" [emptyPrimitives, emptyDeclarations,
+      a "MKnownCons" [canaryTheoremIdentifier, malformedProposition, unformedKnown]])
+
+@[simp] private theorem lookup_typeAllRule :
+    definition.lookupRule? (ruleId "megalodon-theory-term-all") = some typeAllRule :=
+  lookupAdditionalRule _ _ (by rfl) (by rfl)
+
+@[simp] private theorem lookup_typeVarZeroRule :
+    definition.lookupRule? (ruleId "megalodon-theory-term-var-zero") = some typeVarZeroRule :=
+  lookupAdditionalRule _ _ (by rfl) (by rfl)
+
+@[simp] private theorem lookup_typeImpRule :
+    definition.lookupRule? (ruleId "megalodon-theory-term-imp") = some typeImpRule :=
+  lookupAdditionalRule _ _ (by rfl) (by rfl)
+
+@[simp] private theorem lookup_propositionTypeAllRule :
+    definition.lookupRule? (ruleId "megalodon-theory-proposition-type-all") =
+      some propositionTypeAllRule :=
+  lookupAdditionalRule _ _ (by rfl) (by rfl)
+
+@[simp] private theorem lookup_proofHypZeroRule :
+    definition.lookupRule? (ruleId "megalodon-theory-proof-hyp-zero") = some proofHypZeroRule :=
+  lookupAdditionalRule _ _ (by rfl) (by rfl)
+
+@[simp] private theorem lookup_proofImpIntroRule :
+    definition.lookupRule? (ruleId "megalodon-theory-proof-imp-intro") = some proofImpIntroRule :=
+  lookupAdditionalRule _ _ (by rfl) (by rfl)
+
+@[simp] private theorem lookup_proofTypeIntroRule :
+    definition.lookupRule? (ruleId "megalodon-theory-proof-type-intro") = some proofTypeIntroRule :=
+  lookupAdditionalRule _ _ (by rfl) (by rfl)
+
+@[simp] private theorem lookup_propositionPlain :
+    definition.lookupRule? (ruleId "megalodon-theory-proposition-plain") =
+      some propositionPlainRule := lookup_propositionPlainRule
+
+@[simp] private theorem lookup_proofKnown :
+    definition.lookupRule? (ruleId "megalodon-theory-proof-known") =
+      some proofKnownRule := lookup_proofKnownRule
+
+@[simp] private theorem lookup_admitTheorem :
+    definition.lookupRule? (ruleId "megalodon-theory-admit-theorem") =
+      some admitTheoremRule := lookup_admitTheoremRule
+
+@[simp] private theorem lookup_projectNil :
+    definition.lookupRule? (ruleId "megalodon-def-project-nil") =
+      some DefinitionConversionKernel.projectNilRule := lookup_projectNilRule
+
+@[simp] private theorem lookup_plainProp :
+    definition.lookupRule? (ruleId "megalodon-poly-type-prop") =
+      some PolymorphicKernel.plainPropRule := lookup_plainTypePropRule
+
+@[simp] private theorem lookup_knownHere :
+    definition.lookupRule? (ruleId "megalodon-env-known-here") =
+      some EnvironmentKernel.knownHereRule := lookup_knownHereRule
+
+@[simp] private theorem lookup_pathRefl :
+    definition.lookupRule? (ruleId "megalodon-def-path-refl") =
+      some DefinitionConversionKernel.pathReflRule := lookup_pathReflRule
+
+attribute [local simp] zero one propType emptyTypes emptyProofs emptySignature
+  emptyDeclarations emptyPrimitives emptyKnown emptyEnvironment body prefixProposition
+  bodyTypeArticle bodyFormationArticle prefixFormationArticle hypothesisArticle
+  ordinaryIdentityArticle prefixHypothesisArticle identityBody prefixIdentity
+  identityFormationArticle prefixIdentityFormationArticle prefixIdentityProofArticle
+  theoremArticle theoremGoal malformedProposition unformedKnown unformedEnvironment
+  unformedKnownProof guardedTheoremArticle guardedTheoremGoal proofNode
+  typeAllRule typeVarZeroRule typeImpRule propositionPlainRule propositionTypeAllRule
+  proofHypZeroRule proofImpIntroRule proofTypeIntroRule proofKnownRule admitTheoremRule
+  PolymorphicKernel.plainPropRule DefinitionConversionKernel.projectNilRule
+  DefinitionConversionKernel.pathReflRule
+  DefinitionConversionKernel.projectSignature DefinitionConversionKernel.reductionPath
+  DefinitionConversionKernel.fullProves EnvironmentKernel.plainType
+  EnvironmentKernel.knownHereRule EnvironmentKernel.knownMember
+  EnvironmentKernel.rule EnvironmentKernel.ruleId EnvironmentKernel.m
+  PolymorphicKernel.plainType hasType propositionRepresentative admits
+  DefinitionConversionKernel.rule DefinitionConversionKernel.ruleId
+  DefinitionConversionKernel.a DefinitionConversionKernel.m
+  PolymorphicKernel.rule PolymorphicKernel.ruleId PolymorphicKernel.a PolymorphicKernel.m
+  EnvironmentKernel.a rule a m
+  checkRaw checkRawChildren instantiateRule? instantiateSchemas? instantiateSchema?
+  instantiateSchemasAt? instantiateSchemaAt? lookupArgumentAt? validated
+
+/-- A prefix-polymorphic proposition still has checked formation evidence. -/
+theorem prefix_formation_accepted :
+    checkRaw validated
+      (propositionRepresentative emptyPrimitives emptyDeclarations emptySignature
+        zero emptyTypes prefixProposition prefixProposition) prefixFormationArticle = true := by
+  simp (config := { decide := true })
+
+/-- A valid prefix-formation article cannot stand for ordinary-`Prop` typing. -/
+theorem prefix_formation_not_ordinary_type :
+    checkRaw validated
+      (hasType emptyPrimitives emptySignature zero emptyTypes prefixProposition propType)
+      prefixFormationArticle = false := by
+  simp (config := { decide := true })
+
+/-- Implication introduction retains an actual ordinary hypothesis proof. -/
+theorem ordinary_identity_accepted :
+    checkRaw validated
+      (DefinitionConversionKernel.fullProves emptyEnvironment zero emptyTypes emptyProofs
+        identityBody) (ordinaryIdentityArticle zero) = true := by
+  simp (config := { decide := true })
+
+/-- The malformed prefix hypothesis is rejected despite correct child count
+and genuine prefix-formation evidence. -/
+theorem prefix_hypothesis_rejected :
+    checkRaw validated
+      (DefinitionConversionKernel.fullProves emptyEnvironment zero emptyTypes emptyProofs
+        (a "MTmImp" [prefixProposition, prefixProposition])) prefixHypothesisArticle = false := by
+  simp (config := { decide := true })
+
+/-- Prefix quantification remains available at actual theorem admission. -/
+theorem prefix_theorem_admitted : checkRaw validated theoremGoal theoremArticle = true := by
+  simp (config := { decide := true })
+
+/-- Raw known-inventory lookup is not a theorem-formation judgment. This
+fixture deliberately does not claim that its initial inventory was admitted. -/
+theorem unformed_inventory_proof_accepted :
+    checkRaw validated
+      (DefinitionConversionKernel.fullProves unformedEnvironment zero emptyTypes emptyProofs
+        malformedProposition) unformedKnownProof = true := by
+  simp (config := { decide := true })
+
+/-- Every accepted article at this malformed-theorem boundary must discharge
+the distinct formation premise, not merely the raw proof premise. -/
+theorem theorem_requires_formation (formation proof : RawProof)
+    (accepted : checkRaw validated guardedTheoremGoal
+      (guardedTheoremArticle formation proof) = true) :
+    checkRaw validated
+      (propositionRepresentative emptyPrimitives emptyDeclarations emptySignature zero
+        emptyTypes malformedProposition malformedProposition) formation = true := by
+  simp (config := { decide := true }) at accepted ⊢
+  exact accepted.1
+
+/-- Even genuine proof evidence cannot replace the separate formation
+evidence required for document admission. Both children are supplied. -/
+theorem proof_without_formation_rejected :
+    checkRaw validated guardedTheoremGoal
+      (guardedTheoremArticle unformedKnownProof unformedKnownProof) = false := by
+  simp (config := { decide := true })
+
+#print axioms prefix_formation_accepted
+#print axioms ordinary_identity_accepted
+#print axioms prefix_hypothesis_rejected
+#print axioms prefix_theorem_admitted
+#print axioms unformed_inventory_proof_accepted
+#print axioms theorem_requires_formation
+#print axioms proof_without_formation_rejected
+
+end FormationBoundary
 
 end Mettapedia.Languages.Megalodon.TheoryAdmissionKernel

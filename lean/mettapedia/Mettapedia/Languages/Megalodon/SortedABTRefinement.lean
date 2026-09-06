@@ -6,12 +6,16 @@ import Mettapedia.Languages.Megalodon.MathdataKernel
 
 Megalodon terms have independent term-variable and type-variable de Bruijn
 axes.  This module lowers both axes to the generic sorted ABT carrier.  Term
-and type binders are retained as different field-signature entries, so the
-physical operations cannot shift or substitute the wrong variable family.
+and type binders are retained as different field-signature entries, so their
+variable axes remain distinct in the physical encoding.
 
 The lowering has a partial inverse, exact signature conformance, and
 commuting theorems for lift, substitution, unused-binder removal, and scope
-checking on both axes.
+checking on both axes. These equalities concern the current Lean Mathdata
+operations, not unrestricted cross-sort capture avoidance or equivalence to
+the external source checker. A term replacement carrying free type variables
+requires all-sort lifting under type binders; the separate Henkin semantic
+results retain their supported-syntax and typed-erasure premises.
 -/
 
 namespace Mettapedia.Languages.Megalodon.SortedABTRefinement

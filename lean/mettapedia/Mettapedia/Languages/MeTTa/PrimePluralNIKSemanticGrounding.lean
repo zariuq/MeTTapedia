@@ -26,7 +26,7 @@ namespace Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGrounding
 
 open Mettapedia.GSLT.LanguageDef.AtomlessBooleanFirstOrderDecision
 open Mettapedia.GSLT.LanguageDef.GenerativeCantorSemanticGrounding
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 
 universe u v
@@ -64,9 +64,9 @@ private abbrev atlasLayer :=
 /-! ## The retained set-core route into the full Prime waist -/
 
 /-- The external set-core authority enters the next retained Prime layer. -/
-def setCoreToDependentPi : AuthorityTranslation
+def setCoreToDependentPi : CertifiedTranslation
     setCoreContract dependentPiWaistContract :=
-  AuthorityTranslation.comp
+  CertifiedTranslation.comp
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetCoreWaist.setCoreInclusion
     Mettapedia.Languages.MeTTa.PrimePluralNIKDependentPiWaist.primeInclusion
 
@@ -79,9 +79,9 @@ theorem setCoreToDependentPi_conservative :
     Mettapedia.Languages.MeTTa.PrimePluralNIKDependentPiWaist.primeInclusion_conservative
 
 /-- Retain the same set-core authority through the Boolean-identity layer. -/
-def setCoreToBoolean : AuthorityTranslation
+def setCoreToBoolean : CertifiedTranslation
     setCoreContract booleanWaistContract :=
-  AuthorityTranslation.comp setCoreToDependentPi.{u, v}
+  CertifiedTranslation.comp setCoreToDependentPi.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist.primeInclusion
 
 theorem setCoreToBoolean_conservative :
@@ -93,8 +93,8 @@ theorem setCoreToBoolean_conservative :
     Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist.primeInclusion_conservative
 
 /-- The exact set-core authority route into the current full Prime waist. -/
-def setCoreToPrime : AuthorityTranslation setCoreContract primeContract :=
-  AuthorityTranslation.comp setCoreToBoolean.{u, v}
+def setCoreToPrime : CertifiedTranslation setCoreContract primeContract :=
+  CertifiedTranslation.comp setCoreToBoolean.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.priorInclusion
 
 theorem setCoreToPrime_conservative :
@@ -114,9 +114,9 @@ theorem setCoreToPrime_conservative :
 
 /-- Retain the exact finite-stage route while extending the atlas with a
 separate set-core lane. -/
-def stagedToExtendedAtlas : AuthorityTranslation
+def stagedToExtendedAtlas : CertifiedTranslation
     stagedContract atlasLayer.toAuthorityContract :=
-  AuthorityTranslation.comp
+  CertifiedTranslation.comp
     Mettapedia.GSLT.LanguageDef.GenerativeCantorBootstrapGrounding.stagedToAtlasModel
     Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGroundAtlas.priorInclusion
 
@@ -129,7 +129,7 @@ theorem stagedToExtendedAtlas_conservative :
     Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGroundAtlas.priorInclusion_conservative
 
 /-- The set-core guest's exact route into the extended atlas. -/
-def setCoreToExtendedAtlas : AuthorityTranslation
+def setCoreToExtendedAtlas : CertifiedTranslation
     setCoreContract atlasLayer.toAuthorityContract :=
   Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGroundAtlas.setCoreToAtlas
 

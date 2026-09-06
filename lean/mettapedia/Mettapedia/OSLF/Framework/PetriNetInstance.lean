@@ -374,7 +374,7 @@ def petriDCNativeType : GSLTNativeType (langGSLT petriNet) :=
   exactTargetNativeType (langGSLT petriNet) (marking [tokD, tokC])
 
 /-- The generic GSLT-to-NTT construction instantiated on the admitted Petri
-presentation's equation-saturated semantics. -/
+presentation's semantics modulo equations. -/
 def petriGeneratedNTT : GeneratedNTT :=
   generateNTT (langGSLT validatedPetriNet.language)
 

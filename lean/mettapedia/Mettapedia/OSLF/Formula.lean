@@ -161,7 +161,7 @@ def saturateAtomSemUsing (relEnv : RelationEnv) (lang : LanguageDef)
     (interpretation : AtomSem) : EquationAtomSemUsing relEnv lang :=
   fun atom => saturatePredicate (langGSLTUsing relEnv lang) (interpretation atom)
 
-/-- Every authored observation holds in its equation-saturated admission. -/
+/-- Every authored observation holds in its modulo-equations admission. -/
 theorem holds_saturateAtomSemUsing
     (relEnv : RelationEnv) (lang : LanguageDef) (interpretation : AtomSem)
     (atom : String) (term : Pattern) :
@@ -170,7 +170,7 @@ theorem holds_saturateAtomSemUsing
   intro holds
   exact ⟨term, (langGSLTUsing relEnv lang).equations.iseqv.refl term, holds⟩
 
-/-- Formula semantics over equation-saturated reduction is invariant whenever
+/-- Formula semantics over modulo-equations reduction is invariant whenever
 its atomic observations are invariant. -/
 theorem sem_equationInvariantUsing
     (relEnv : RelationEnv) (lang : LanguageDef)
@@ -233,7 +233,7 @@ def langFormulaSem (lang : LanguageDef) (I : EquationAtomSem lang) :
   langFormulaSemUsing RelationEnv.empty lang I
 
 /-- The semantic interpretation agrees pointwise with the ordinary relational
-formula semantics over the equation-saturated step relation. -/
+formula semantics over the step modulo equations relation. -/
 theorem langFormulaSemUsing_apply
     (relEnv : RelationEnv) (lang : LanguageDef)
     (I : EquationAtomSemUsing relEnv lang) (formula : OSLFFormula) (term : Pattern) :
@@ -1053,7 +1053,7 @@ theorem checkWithPred_sat_sound
 /-! ## Language-Level Checker with Predecessors
 
 These wrappers connect the executable predecessor-aware checker to the
-equation-saturated language semantics, enabling a non-trivial `.box` path. -/
+modulo-equations language semantics, enabling a non-trivial `.box` path. -/
 
 /-- Language-level predecessor-aware checker with explicit relation environment. -/
 def checkLangUsingWithPred (relEnv : RelationEnv) (lang : LanguageDef)

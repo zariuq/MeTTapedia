@@ -882,7 +882,7 @@ theorem coreMain_theorem1_substitutability_imageFinite
     hImageFinite hPredFinite
 
 /-- CoreMain-facing canonical Theorem-1 equivalence endpoint on the default
-equation-saturated semantic relation, under explicit finiteness of both the forward and
+modulo-equations semantic relation, under explicit finiteness of both the forward and
 predecessor images. -/
 theorem coreMain_theorem1_langSemanticReduces_of_finite
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
@@ -1034,7 +1034,7 @@ theorem coreMain_paper_parity_theorem_package
         (lang := lang) (relEnv := relEnv) (C := C) (X := X) (p := p) (r := r))
 
 /-- CoreMain-facing paper-parity theorem package specialized to the canonical
-equation-saturated semantic relation:
+modulo-equations semantic relation:
 returns Theorem-1 equivalence on the canonical relation plus the existing
 fragment and TOGL composition endpoint fields. -/
 theorem coreMain_paper_parity_theorem_package_langSemanticReduces_of_finite
@@ -1094,7 +1094,7 @@ theorem coreMain_paper_parity_theorem_package_langSemanticReduces_of_finite
     hImageFinite hPredFinite
 
 /-- Canonical CoreMain paper-parity contract record:
-packages the equation-saturated Theorem-1 endpoint, fragment-parametric full-route
+packages the modulo-equations Theorem-1 endpoint, fragment-parametric full-route
 comparison, and TOGL graph-composition law in one field-based API. -/
 structure CoreMainPaperParityCanonicalPackage
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)

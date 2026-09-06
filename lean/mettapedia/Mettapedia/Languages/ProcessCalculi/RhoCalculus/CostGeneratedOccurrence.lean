@@ -118,6 +118,8 @@ def RhoCostAuthoredGeneratorOrigin {left right : Pattern}
   match witness with
   | .core (.equation _ instanceWitness) =>
       RhoCostEquationInstanceOrigin instanceWitness
+  | .core (.derived _ lawWitness) =>
+      CostDerivedGeneratorOrigin rhoCIGSLT lawWitness.rule
   | .reflective _ declaration _ =>
       RhoCostReflectiveDeclarationOrigin declaration.1
 
@@ -135,6 +137,8 @@ theorem nonempty_rhoCostAuthoredGeneratorOrigin
       cases witness with
       | equation context instanceWitness =>
           exact nonempty_rhoCostEquationInstanceOrigin instanceWitness
+      | derived context lawWitness =>
+          exact ⟨⟨lawWitness.rule_mem⟩⟩
   | reflective context declaration representatives =>
       exact nonempty_rhoCostReflectiveDeclarationOrigin_of_mem declaration.2
 
@@ -145,16 +149,17 @@ def RhoCostAuthoredGeneratorOrigin.color
       ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
         rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
           rhoCIGSLT.costWholeLanguage left right} :
-    RhoCostAuthoredGeneratorOrigin witness → CostStaticColor :=
+    RhoCostAuthoredGeneratorOrigin witness → Option CostStaticColor :=
   match witness with
   | .core (.equation _ instanceWitness) =>
       match instanceWitness with
       | .forward _ _ _ _ _ _ _ => fun origin =>
-          RhoCostEquationDeclarationOrigin.color origin
+          some (RhoCostEquationDeclarationOrigin.color origin)
       | .reverse _ _ _ _ _ _ _ => fun origin =>
-          RhoCostEquationDeclarationOrigin.color origin
+          some (RhoCostEquationDeclarationOrigin.color origin)
+  | .core (.derived _ _) => fun _ => none
   | .reflective _ _ _ => fun origin =>
-      RhoCostReflectiveDeclarationOrigin.color origin
+      some (RhoCostReflectiveDeclarationOrigin.color origin)
 
 /-- Typed rho Cost occurrence with its exact unique rho declaration origin.
 This strengthens the generic carrier from an arbitrary authored source
@@ -211,7 +216,7 @@ def declarationColor
       rhoCIGSLT.costWholeLanguage targetFree targetBound (.base targetSort.1)
       left right}
     (occurrence : RhoCostTypedGeneratorOccurrence generator) :
-    CostStaticColor := occurrence.origin.color
+    Option CostStaticColor := occurrence.origin.color
 
 end RhoCostTypedGeneratorOccurrence
 

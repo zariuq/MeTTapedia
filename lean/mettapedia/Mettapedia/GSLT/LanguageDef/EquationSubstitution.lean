@@ -159,14 +159,16 @@ private theorem equationContextStep_fillDirect
 
 /-- If both root generator families survive support-aware substitution as
 single generators, then every contextual generator survives as one generator.
+The core family is the whole equation generator: authored instances and the
+laws the presentation derives.
 The transported context retains the exact quote-aware depth at its hole. -/
 theorem equationContextStep_substituteAt_of_generatorRoots
     {base : Mettapedia.OSLF.MeTTaIL.ContextualStep.BasePremiseEvaluator}
     {language : LanguageDef}
     {support : ContextSupport.Support}
     {assignment : ContextSupport.Assignment}
-    (equationInstancePreserves : ∀ availableDepth {left right},
-      EquationInstance base language left right →
+    (generatorPreserves : ∀ availableDepth {left right},
+      EquationGenerator base language left right →
         ReflectiveEquationContextStep profile base language
           (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth left)
@@ -197,7 +199,7 @@ theorem equationContextStep_substituteAt_of_generatorRoots
       | @inContext context redex contractum equationWitness =>
           let transported := ReflectiveContextSupport.substituteContextAt
             profile support assignment availableDepth context
-          have root := equationInstancePreserves transported.2 equationWitness
+          have root := generatorPreserves transported.2 equationWitness
           have filled := equationContextStep_fillDirect transported.1 root
           simpa only [ReflectiveContextSupport.substituteAt_fill] using filled
   | @reflectiveInContext context declaration left right membership representatives =>
@@ -207,9 +209,9 @@ theorem equationContextStep_substituteAt_of_generatorRoots
       have filled := equationContextStep_fillDirect transported.1 root
       simpa only [ReflectiveContextSupport.substituteAt_fill] using filled
 
-/-- Once root equation instances and reflective representative equalities are
-known to survive substitution at every quotation-aware depth, contextual
-closure survives automatically.  The structural context is transported by
+/-- Once root equation generators (authored instances and derived laws) and
+reflective representative equalities are known to survive substitution at
+every quotation-aware depth, contextual closure survives automatically.  The structural context is transported by
 `ReflectiveContextSupport.substituteContextAt`; no extra congruence policy is
 assumed. -/
 theorem equationContextStep_substituteAt_of_root
@@ -217,8 +219,8 @@ theorem equationContextStep_substituteAt_of_root
     {language : LanguageDef}
     {support : ContextSupport.Support}
     {assignment : ContextSupport.Assignment}
-    (equationInstancePreserves : ∀ availableDepth {left right},
-      EquationInstance base language left right →
+    (generatorPreserves : ∀ availableDepth {left right},
+      EquationGenerator base language left right →
         ReflectiveEquationEquiv profile base language
           (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth left)
@@ -249,7 +251,7 @@ theorem equationContextStep_substituteAt_of_root
       | @inContext context redex contractum equationWitness =>
           let transported := ReflectiveContextSupport.substituteContextAt
             profile support assignment availableDepth context
-          have root := equationInstancePreserves transported.2 equationWitness
+          have root := generatorPreserves transported.2 equationWitness
           have filled := ReflectiveEquationSemantics.equationEquiv_fill
             transported.1 root
           simpa only [ReflectiveContextSupport.substituteAt_fill] using filled
@@ -268,8 +270,8 @@ theorem equationEquiv_substituteAt_of_root
     {language : LanguageDef}
     {support : ContextSupport.Support}
     {assignment : ContextSupport.Assignment}
-    (equationInstancePreserves : ∀ availableDepth {left right},
-      EquationInstance base language left right →
+    (generatorPreserves : ∀ availableDepth {left right},
+      EquationGenerator base language left right →
         ReflectiveEquationEquiv profile base language
           (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth left)
@@ -297,7 +299,7 @@ theorem equationEquiv_substituteAt_of_root
   exact ReflectiveEquationSemantics.equationEquiv_map_of_contextStep
     (ReflectiveContextSupport.substituteAt profile support assignment
       availableDepth)
-    (equationContextStep_substituteAt_of_root equationInstancePreserves
+    (equationContextStep_substituteAt_of_root generatorPreserves
       reflectivePreserves availableDepth)
     equivalent
 
@@ -2339,11 +2341,30 @@ def DeclaredEquationSubstitutionStable (language : LanguageDef) : Prop :=
       ReflectiveEquationEquiv profile defaultBasePremises language
         (left.substitute assignment).1 (right.substitute assignment).1
 
+/-- Every presentation-derived collection law remains valid after one
+support-certified substitution.  This is a separate obligation from authored
+schema stability: a derived generator contains a sorting witness rather than
+matcher bindings. -/
+def DerivedEquationSubstitutionStable (language : LanguageDef) : Prop :=
+  ∀ {source target : FreeTypeContext} {support : ContextSupport.Support}
+    {bound : List TypeExpr} {type : TypeExpr}
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (left right : SupportSafeOpenPattern profile language source support bound type),
+    (∃ (context : OneHoleContext) (redex contractum : Pattern),
+      DerivedInstance language redex contractum ∧
+        left.term.1 = context.fill redex ∧
+        right.term.1 = context.fill contractum) →
+      ReflectiveEquationEquiv profile defaultBasePremises language
+        (left.substitute assignment).1 (right.substitute assignment).1
+
 /-- Exact language-level boundary needed to transport every generator of the
-support-safe contextual equation relation. -/
-def SupportedEquationSubstitutionStable (language : LanguageDef) : Prop :=
-  DeclaredEquationSubstitutionStable (profile := profile) language ∧
-    ReflectiveEquationSubstitutionStable (profile := profile) language
+support-safe contextual equation relation.  The three fields correspond
+exactly to its authored, presentation-derived, and reflective generator
+families. -/
+structure SupportedEquationSubstitutionStable (language : LanguageDef) : Prop where
+  authored : DeclaredEquationSubstitutionStable (profile := profile) language
+  derived : DerivedEquationSubstitutionStable (profile := profile) language
+  reflective : ReflectiveEquationSubstitutionStable (profile := profile) language
 
 /-! ## Naturality under ambient binder embeddings
 
@@ -2859,6 +2880,18 @@ def DeclaredEquationAmbientRenamingStable (language : LanguageDef) : Prop :=
         (ContextSubstitution.renameAmbientBVarsAt rename depth
           (context.fill contractum))
 
+/-- Presentation-derived collection laws remain valid after an
+order-preserving embedding of the ambient binder context. -/
+def DerivedEquationAmbientRenamingStable (language : LanguageDef) : Prop :=
+  ∀ (rename : Nat → Nat), StrictMono rename → ∀ (depth : Nat)
+    (context : OneHoleContext) {redex contractum : Pattern},
+    DerivedInstance language redex contractum →
+      ReflectiveEquationEquiv profile defaultBasePremises language
+        (ContextSubstitution.renameAmbientBVarsAt rename depth
+          (context.fill redex))
+        (ContextSubstitution.renameAmbientBVarsAt rename depth
+          (context.fill contractum))
+
 /-- Equality generated by one authored reflective presentation remains valid,
 up to that same authored equation relation, after an order-preserving ambient
 binder embedding.  This deliberately does not demand equality of the two
@@ -2951,11 +2984,12 @@ theorem reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
     (reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
       language valid profileValid rename depth context membership representatives)
 
-/-- Exact pair of generator obligations making the authored contextual
-equation setoid natural under ambient binder embeddings. -/
-def SupportedEquationAmbientRenamingStable (language : LanguageDef) : Prop :=
-  DeclaredEquationAmbientRenamingStable (profile := profile) language ∧
-    ReflectiveEquationAmbientRenamingStable (profile := profile) language
+/-- Exact generator obligations making the contextual equation setoid natural
+under ambient binder embeddings. -/
+structure SupportedEquationAmbientRenamingStable (language : LanguageDef) : Prop where
+  authored : DeclaredEquationAmbientRenamingStable (profile := profile) language
+  derived : DerivedEquationAmbientRenamingStable (profile := profile) language
+  reflective : ReflectiveEquationAmbientRenamingStable (profile := profile) language
 
 /-- The two ambient-renaming obligations cover exactly the constructors of
 one authored contextual equation generator. -/
@@ -2972,9 +3006,13 @@ theorem equationContextStep_renameAmbientBVarsAt
   | core coreStep =>
       cases coreStep with
       | inContext context equationWitness =>
-          exact stable.1 rename strict depth context equationWitness
+          cases equationWitness with
+          | inl authored =>
+              exact stable.authored rename strict depth context authored
+          | inr derived =>
+              exact stable.derived rename strict depth context derived
   | reflectiveInContext context membership representatives =>
-      exact stable.2 rename strict depth context membership representatives
+      exact stable.reflective rename strict depth context membership representatives
 
 /-- The full least authored equation equivalence is natural under every
 certified ambient binder embedding. -/
@@ -6058,12 +6096,18 @@ private theorem equationContextStep_substitute_of_eq
   | core coreStep =>
       cases coreStep with
       | @inContext context redex contractum equationWitness =>
-          apply stable.1 assignment left right
-          exact ⟨context, redex, contractum, equationWitness,
-            leftEquality, rightEquality⟩
+          cases equationWitness with
+          | inl authored =>
+              apply stable.authored assignment left right
+              exact ⟨context, redex, contractum, authored,
+                leftEquality, rightEquality⟩
+          | inr derived =>
+              apply stable.derived assignment left right
+              exact ⟨context, redex, contractum, derived,
+                leftEquality, rightEquality⟩
   | @reflectiveInContext context declaration reflectedLeft reflectedRight
       membership representatives =>
-      apply stable.2 assignment membership left right
+      apply stable.reflective assignment membership left right
       rw [leftEquality, rightEquality]
       exact canonicalize_fill_congr declaration context representatives
 

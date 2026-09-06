@@ -63,7 +63,7 @@ theorem langReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
     (activeRules_subset_of_le h)
     hred
 
-/-- Equation-saturated one-step reduction is monotone along the hypercube
+/-- Modulo-equations one-step reduction is monotone along the hypercube
 weakness order.  Hypercube vertex presentations have no equation generators,
 so this is the identity-equivalence specialization of the semantic relation. -/
 theorem langSemanticReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)

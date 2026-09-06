@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.CostRegionTree
 import Mettapedia.GSLT.LanguageDef.CostRegionNormalization
+import Mettapedia.GSLT.LanguageDef.CostElaborationTransport
 import Mettapedia.GSLT.LanguageDef.WellSortedFillInversion
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.EquationSubstitution
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
@@ -27,6 +28,7 @@ open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.MatchSpec
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
 
@@ -2301,6 +2303,259 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
             Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
             Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
 
+/-- The only source rho declaration represented by one bare collection is
+parallel composition.  This local inversion is used before the public
+declaration-level version later in the file. -/
+private theorem rho_sourceBareRule_eq_parallel
+    {rule : GrammarRule} (membership : rule ∈ rhoCalc.terms)
+    {parameterName : String} {collectionType : CollType}
+    {elementType : TypeExpr}
+    (parameterShape : rule.params =
+      [.simple parameterName (.collection collectionType elementType)]) :
+    rule = rhoCalc.terms[3] := by
+  change rule ∈ [rhoCalc.terms[0], rhoCalc.terms[1], rhoCalc.terms[2],
+    rhoCalc.terms[3], rhoCalc.terms[4], rhoCalc.terms[5]] at membership
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at membership
+  rcases membership with first | second | third | fourth | fifth | sixth
+  · subst rule
+    simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+      TypeExpr.baseType] at parameterShape
+  · subst rule
+    simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+      TypeExpr.baseType] at parameterShape
+  · subst rule
+    simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+      TypeExpr.baseType] at parameterShape
+  · subst rule
+    rfl
+  · subst rule
+    simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+      TypeExpr.baseType] at parameterShape
+  · subst rule
+    simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+      TypeExpr.baseType] at parameterShape
+
+/-- Retagging rho constructors deliberately leaves the source collection
+algebra metadata untouched, while every generated constructor name lies in
+the reserved Cost namespace.  Consequently the raw generated language has no
+self-contained algebra declaration: its flattening and unit laws are supplied
+by the corresponding reflective canonical section. -/
+private theorem rho_costAlgebraRule_false
+    {rule : GrammarRule} {kind : CollType} {algebra : CollectionAlgebra}
+    (algebraRule : EquationSemantics.AlgebraRule
+      rhoCIGSLT.costWholeLanguage rule kind algebra) : False := by
+  obtain ⟨parameterName, parameterShape⟩ := algebraRule.selfSorted
+  have bare : UsesBareCollection rule :=
+    ⟨parameterName, kind, .base rule.category, parameterShape⟩
+  have coreMembership : rule ∈ rhoCIGSLT.costCoreLanguage.terms := by
+    simpa only [rhoCIGSLT.costWholeLanguage_terms] using algebraRule.authored
+  obtain ⟨constructor, materializes⟩ :=
+    rhoCIGSLT.exists_declaredCostConstructor_of_mem rule coreMembership
+  have materializedBare : UsesBareCollection
+      (rhoCIGSLT.materializeDeclaredCostConstructor constructor) := by
+    rw [materializes]
+    exact bare
+  obtain ⟨color, role⟩ :=
+    rhoCIGSLT.exists_static_role_of_materialize_usesBareCollection constructor
+      materializedBare
+  let preimage := costStaticConstructorPreimage rhoCIGSLT color constructor role
+  obtain ⟨sourceParameterName, sourceCollectionType, sourceElementType,
+      sourceShape⟩ := preimage.source_usesBareCollection role materializedBare
+  have sourceRuleEquality : preimage.sourceConstructor.1 = rhoCalc.terms[3] :=
+    rho_sourceBareRule_eq_parallel preimage.sourceConstructor.2 sourceShape
+  have targetAlgebra : rule.algebra? = rhoCalc.terms[3].algebra? := by
+    calc
+      rule.algebra? =
+          (rhoCIGSLT.materializeDeclaredCostConstructor constructor).algebra? :=
+        congrArg GrammarRule.algebra? materializes.symm
+      _ = preimage.sourceConstructor.1.algebra? := preimage.algebraMap
+      _ = rhoCalc.terms[3].algebra? :=
+        congrArg GrammarRule.algebra? sourceRuleEquality
+  have algebraEquality :
+      algebra = { flatten := true, unit := some "PZero" } := by
+    have declared := algebraRule.declared
+    rw [targetAlgebra] at declared
+    simpa [rhoCalc] using declared.symm
+  obtain ⟨unitRule, unitMembership, unitLabel, _unitCategory, _unitParams⟩ :=
+    algebraRule.unitAuthored "PZero" (by simp [algebraEquality])
+  have unitCoreMembership : unitRule ∈ rhoCIGSLT.costCoreLanguage.terms := by
+    simpa only [rhoCIGSLT.costWholeLanguage_terms] using unitMembership
+  obtain ⟨suffix, prefixed⟩ :=
+    rhoCIGSLT.costCoreTerm_label_has_costPrefix unitRule unitCoreMembership
+  rw [unitLabel] at prefixed
+  have characters := congrArg String.toList prefixed
+  simp at characters
+
+/-- No generated rho constructor can declare a set carrier.  Bare collection
+declarations in either Cost colour reflect to the sole bare source
+constructor, rho parallel composition, whose carrier is a bag. -/
+private theorem rho_costCollectionCarrierRule_hashSet_false
+    {rule : GrammarRule}
+    (carrier : EquationSemantics.CollectionCarrierRule
+      rhoCIGSLT.costWholeLanguage rule .hashSet) : False := by
+  obtain ⟨parameterName, elementType, parameterShape⟩ := carrier.selfSorted
+  have bare : UsesBareCollection rule :=
+    ⟨parameterName, .hashSet, elementType, parameterShape⟩
+  have coreMembership : rule ∈ rhoCIGSLT.costCoreLanguage.terms := by
+    simpa only [rhoCIGSLT.costWholeLanguage_terms] using carrier.authored
+  obtain ⟨constructor, materializes⟩ :=
+    rhoCIGSLT.exists_declaredCostConstructor_of_mem rule coreMembership
+  have materializedBare : UsesBareCollection
+      (rhoCIGSLT.materializeDeclaredCostConstructor constructor) := by
+    rw [materializes]
+    exact bare
+  obtain ⟨color, role⟩ :=
+    rhoCIGSLT.exists_static_role_of_materialize_usesBareCollection constructor
+      materializedBare
+  let preimage := costStaticConstructorPreimage rhoCIGSLT color constructor role
+  obtain ⟨sourceParameterName, sourceCollectionType, sourceElementType,
+      sourceShape⟩ := preimage.source_usesBareCollection role materializedBare
+  have sourceRuleEquality : preimage.sourceConstructor.1 = rhoCalc.terms[3] :=
+    rho_sourceBareRule_eq_parallel preimage.sourceConstructor.2 sourceShape
+  have mappedShape := preimage.parametersMap
+  rw [materializes, parameterShape, sourceShape] at mappedShape
+  have collectionTypeEquality : sourceCollectionType = .hashSet := by
+    have shape : sourceParameterName = parameterName ∧
+        sourceCollectionType = .hashSet ∧
+        mapTypeExpr (color.symbols rhoCIGSLT) sourceElementType = elementType := by
+      simpa [mapTermParam, mapTypeExpr] using mappedShape.symm
+    exact shape.2.1
+  subst sourceCollectionType
+  rw [sourceRuleEquality] at sourceShape
+  simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+    TypeExpr.baseType] at sourceShape
+
+/-- A generated rho derived-law edge remains a single reflective edge after
+ambient binder renaming.  Bag permutation is absorbed by either generated rho
+canonicalizer; set laws are absent and raw generated algebra laws are ruled
+out by `rho_costAlgebraRule_false`. -/
+private theorem rho_costDerivedEquationContextStep_renameAmbientBVarsAt
+    (rename : Nat → Nat) (depth : Nat) (context : OneHoleContext)
+    {redex contractum : Pattern}
+    (derived : EquationSemantics.DerivedInstance
+      rhoCIGSLT.costWholeLanguage redex contractum) :
+    ReflectiveEquationSemantics.ReflectiveEquationContextStep
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage
+      (ContextSubstitution.renameAmbientBVarsAt rename depth
+        (context.fill redex))
+      (ContextSubstitution.renameAmbientBVarsAt rename depth
+        (context.fill contractum)) := by
+  cases derived with
+  | bagPerm _ _ permutation =>
+      let declaration := costStaticReflectivePresentationDecl rhoCIGSLT .base
+        rhoReflectivePresentation.toReflectivePresentationDecl
+      have membership : declaration ∈
+          rhoCIGSLT.costWholeReflectionProfile.presentations := by
+        simpa [declaration] using
+          costStaticReflectivePresentationDecl_mem rhoCIGSLT .base
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            rhoReflectivePresentation_mem_source
+      apply reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
+        (profile := rhoCIGSLT.costWholeReflectionProfile)
+        rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate
+        rhoCIGSLT.costWholeReflectionProfile_validate rename depth context
+        membership
+      simpa [declaration, costStaticReflectivePresentationDecl_eq_map,
+        mapReflectivePresentation, rhoReflectivePresentation] using
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_permutation
+          declaration permutation
+  | setPerm carrier _ _ =>
+      exact False.elim (rho_costCollectionCarrierRule_hashSet_false carrier)
+  | setDedup carrier _ =>
+      exact False.elim (rho_costCollectionCarrierRule_hashSet_false carrier)
+  | flatten algebraRule _ _ =>
+      exact False.elim (rho_costAlgebraRule_false algebraRule)
+  | singleton algebraRule _ _ =>
+      exact False.elim (rho_costAlgebraRule_false algebraRule)
+  | unitElim algebraRule _ _ =>
+      exact False.elim (rho_costAlgebraRule_false algebraRule)
+  | emptyUnit algebraRule _ _ =>
+      exact False.elim (rho_costAlgebraRule_false algebraRule)
+
+/-- Every presentation-derived law of the generated rho Cost language is a
+bag permutation, and the base static Quote/Drop canonicalizer absorbs it:
+set laws are absent and raw generated algebra laws are ruled out. -/
+theorem rho_costDerivedInstance_canonicalize_eq
+    {redex contractum : Pattern}
+    (derived : EquationSemantics.DerivedInstance
+      rhoCIGSLT.costWholeLanguage redex contractum) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT .base
+          rhoReflectivePresentation.toReflectivePresentationDecl) redex =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT .base
+          rhoReflectivePresentation.toReflectivePresentationDecl) contractum := by
+  cases derived with
+  | bagPerm _ _ permutation =>
+      let declaration := costStaticReflectivePresentationDecl rhoCIGSLT .base
+        rhoReflectivePresentation.toReflectivePresentationDecl
+      simpa [declaration, costStaticReflectivePresentationDecl_eq_map,
+        mapReflectivePresentation, rhoReflectivePresentation] using
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_permutation
+          declaration permutation
+  | setPerm carrier _ _ =>
+      exact False.elim (rho_costCollectionCarrierRule_hashSet_false carrier)
+  | setDedup carrier _ =>
+      exact False.elim (rho_costCollectionCarrierRule_hashSet_false carrier)
+  | flatten algebraRule _ _ =>
+      exact False.elim (rho_costAlgebraRule_false algebraRule)
+  | singleton algebraRule _ _ =>
+      exact False.elim (rho_costAlgebraRule_false algebraRule)
+  | unitElim algebraRule _ _ =>
+      exact False.elim (rho_costAlgebraRule_false algebraRule)
+  | emptyUnit algebraRule _ _ =>
+      exact False.elim (rho_costAlgebraRule_false algebraRule)
+
+/-- Presentation-derived generated-rho laws are natural under every
+order-preserving ambient binder embedding. -/
+theorem rho_costDerivedEquationAmbientRenamingStable :
+    DerivedEquationAmbientRenamingStable
+      (profile := rhoCIGSLT.costWholeReflectionProfile)
+      rhoCIGSLT.costWholeLanguage := by
+  intro rename _strict depth context redex contractum derived
+  exact Relation.EqvGen.rel _ _
+    (rho_costDerivedEquationContextStep_renameAmbientBVarsAt
+      rename depth context derived)
+
+/-- Proof-relevant transport of each source rho derived-law occurrence into a
+selected Cost colour.  The source occurrence remains data, while the target
+meaning is witnessed by that colour's reflective canonical section. -/
+def rho_derivedGeneratorMapCostStatic (color : CostStaticColor) :
+    DerivedGeneratorMapCostStatic rhoCIGSLT color := by
+  intro left right witness
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+    rhoReflectivePresentation.toReflectivePresentationDecl
+  have membership : declaration ∈
+      rhoCIGSLT.costWholeReflectionProfile.presentations := by
+    simpa [declaration] using
+      costStaticReflectivePresentationDecl_mem rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl
+        rhoReflectivePresentation_mem_source
+  apply ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.reflective
+    .hole ⟨declaration, membership⟩
+  apply canonicalize_eq_mapCostStatic rhoCIGSLT color
+    rhoReflectivePresentation.toReflectivePresentationDecl
+    rhoReflectivePresentation_mem_source
+  have sourceCanonical :
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          rhoReflectivePresentation left =
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          rhoReflectivePresentation right := by
+    simpa only [CanonicalMatch.derivedCanonicalize_eq,
+      OneHoleContext.fill_hole] using
+      LanguageDefSemanticAgreement.rhoEquationContextStep_canonicalize_eq
+        (ReflectiveEquationSemantics.ReflectiveEquationContextStep.core
+          (EquationSemantics.EquationContextStep.inContext .hole
+            (.inr witness.erase)))
+  exact sourceCanonical
+
+/-- Support-level corollary of the proof-relevant derived-law translator. -/
+theorem rho_derivedEquationMapCostStaticStable (color : CostStaticColor) :
+    DerivedEquationMapCostStaticStable rhoCIGSLT color :=
+  DerivedGeneratorMapCostStatic.toDerivedEquationStable
+    (rho_derivedGeneratorMapCostStatic color)
+
 /-- The generated ordinary rho equation table is natural under every
 order-preserving ambient binder embedding.  Each equation instance is first
 identified with its matching generated reflective edge, after which the
@@ -2323,11 +2578,12 @@ and reflective declaration tables. -/
 theorem rho_costSupportedEquationAmbientRenamingStable :
     SupportedEquationAmbientRenamingStable (profile := rhoCIGSLT.costWholeReflectionProfile)
       rhoCIGSLT.costWholeLanguage :=
-  ⟨rho_costDeclaredEquationAmbientRenamingStable,
-    reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
+  { authored := rho_costDeclaredEquationAmbientRenamingStable
+    derived := rho_costDerivedEquationAmbientRenamingStable
+    reflective := reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
       (profile := rhoCIGSLT.costWholeReflectionProfile)
       rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate
-        rhoCIGSLT.costWholeReflectionProfile_validate⟩
+        rhoCIGSLT.costWholeReflectionProfile_validate }
 
 /-- Every generated rho equation generator remains one generated equation
 generator after an arbitrary ambient binder embedding.  Ordinary generated
@@ -2346,16 +2602,19 @@ theorem rho_costEquationContextStepAmbientRenamingStable
   | core coreStep =>
       cases coreStep with
       | inContext context instanceWitness =>
-          obtain ⟨fuel, bounded⟩ := instanceWitness
-          obtain ⟨declaration, membership, representatives⟩ :=
-            rho_costEquationInstanceAt_canonicalize_eq bounded
-          exact
-            reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
-              (profile := rhoCIGSLT.costWholeReflectionProfile)
-              rhoCIGSLT.costWholeLanguage
-              rhoCIGSLT.costWholeLanguage_validate
-              rhoCIGSLT.costWholeReflectionProfile_validate
-              rename depth context membership representatives
+          rcases instanceWitness with authored | derived
+          · obtain ⟨fuel, bounded⟩ := authored
+            obtain ⟨declaration, membership, representatives⟩ :=
+              rho_costEquationInstanceAt_canonicalize_eq bounded
+            exact
+              reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
+                (profile := rhoCIGSLT.costWholeReflectionProfile)
+                rhoCIGSLT.costWholeLanguage
+                rhoCIGSLT.costWholeLanguage_validate
+                rhoCIGSLT.costWholeReflectionProfile_validate
+                rename depth context membership representatives
+          · exact rho_costDerivedEquationContextStep_renameAmbientBVarsAt
+              rename depth context derived
   | reflectiveInContext context membership representatives =>
       exact
         reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
@@ -2409,6 +2668,7 @@ theorem rho_costStaticMappedThickenedGeneratorFiberAction
       (mapPattern (color.symbols rhoCIGSLT) left.term.1)
       (mapPattern (color.symbols rhoCIGSLT) right.term.1) := by
     apply equationContextStep_mapCostStatic rhoCIGSLT color
+    · exact rho_derivedEquationMapCostStaticStable color
     exact generator
   have thickened := rho_costEquationContextStepAmbientRenamingStable
     thinning.toTargetIndex 0 mapped

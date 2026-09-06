@@ -145,14 +145,9 @@ structure CompiledStructuralProduction where
 
 def compileStructuralRule?
     (literalScalars? : String → Option (List Nat))
-    (startSort : String) (rule : CompiledRule) :
+    (_startSort : String) (rule : CompiledRule) :
     Option CompiledStructuralProduction := do
-  let bodyItems ← compileStructuralItems? literalScalars? rule.atoms
-  let items :=
-    if rule.source.category == startSort then
-      bodyItems ++ [.terminal .eof]
-    else
-      bodyItems
+  let items ← compileStructuralItems? literalScalars? rule.atoms
   pure {
     label := rule.source.label
     resultSort := rule.source.category
@@ -173,6 +168,48 @@ structure CompiledParserPackPlan where
   lexical : CompiledLexicalPack
   structural : List CompiledStructuralProduction
   deriving DecidableEq, Repr
+
+/-- Native states distinguish `pp-def` from the administrative
+`pp-entry (pp-def ...)`.  No authored category name can collide with entry. -/
+inductive ParserPackState where
+  | definition (resultSort : String)
+  | entry (startSort : String)
+  deriving DecidableEq, Repr
+
+/-- The one administrative entry row uses `pa-slot 0`, returning the
+authored start CST rather than wrapping it in a fabricated source node. -/
+structure SyntheticEntryProduction where
+  resultState : ParserPackState
+  label : String
+  items : List PackItem
+  resultSlot : Nat
+  deriving DecidableEq, Repr
+
+def compileSyntheticEntry (startSort : String) : SyntheticEntryProduction := {
+  resultState := .entry startSort
+  label := "language-def-parser-pack:whole-source"
+  items := [.nonterminal startSort, .terminal .eof]
+  resultSlot := 0
+}
+
+/-- The entry is derived separately from the authored production vector.
+Adding it cannot change an authored row's occurrence index or multiplicity. -/
+def CompiledParserPackPlan.entryProduction
+    (plan : CompiledParserPackPlan) : SyntheticEntryProduction :=
+  compileSyntheticEntry plan.lexical.startSort
+
+theorem synthetic_entry_fresh (startSort category : String) :
+    (compileSyntheticEntry startSort).resultState ≠
+      ParserPackState.definition category := by
+  simp [compileSyntheticEntry]
+
+/-- Start-category selection affects only the administrative entry, never
+the body of an authored rule. -/
+theorem compileStructuralRule_start_independent
+    (literalScalars? : String → Option (List Nat))
+    (leftStart rightStart : String) (rule : CompiledRule) :
+    compileStructuralRule? literalScalars? leftStart rule =
+      compileStructuralRule? literalScalars? rightStart rule := rfl
 
 def compileParserPackPlan?
     (literalScalars? : String → Option (List Nat))
@@ -401,6 +438,18 @@ inductive StructuralItemsCompile
         (.nonterminal parameter resultSort parserRef :: atoms)
         (.nonterminal resultSort :: tailItems)
 
+/-- Literal expansion cannot manufacture an EOF item.  EOF is an
+administrative whole-input test, not a scalar spelling or recursive call. -/
+theorem StructuralItemsCompile.no_eof
+    {literalScalars? : String → Option (List Nat)}
+    {atoms : List StructuralAtom} {items : List PackItem}
+    (compilation : StructuralItemsCompile literalScalars? atoms items) :
+    PackItem.terminal TerminalMatcher.eof ∉ items := by
+  induction compilation with
+  | nil => simp
+  | terminal decoded tail ih => simpa using ih
+  | nonterminal tail ih => simpa using ih
+
 /-- Successful list compilation yields exact pointwise expansion evidence. -/
 def StructuralItemsCompile.of_compilation
     (literalScalars? : String → Option (List Nat)) :
@@ -457,10 +506,7 @@ structure StructuralRuleCompileView
   bodyItems : List PackItem
   body_compiled :
     compileStructuralItems? literalScalars? rule.atoms = some bodyItems
-  items_exact : production.items =
-    if rule.source.category = startSort then
-      bodyItems ++ [.terminal .eof]
-    else bodyItems
+  items_exact : production.items = bodyItems
   label_exact : production.label = rule.source.label
   resultSort_exact : production.resultSort = rule.source.category
   source_exact : production.source = rule.source
@@ -480,8 +526,8 @@ instance StructuralRuleCompileView.instSubsingleton
     cases right
     simp_all
 
-/-- Expose the exact body expansion and administrative EOF decision made by
-one successful rule compilation. -/
+/-- Expose the exact body expansion.  Authored productions never receive an
+administrative EOF check, including recursive uses of the start category. -/
 def StructuralRuleCompileView.of_compilation
     (literalScalars? : String → Option (List Nat)) (startSort : String)
     (rule : CompiledRule) (production : CompiledStructuralProduction)
@@ -512,6 +558,17 @@ def StructuralRuleCompileView.itemCompilation
       rule production) :
     StructuralItemsCompile literalScalars? rule.atoms view.bodyItems :=
   StructuralItemsCompile.of_compilation literalScalars? view.body_compiled
+
+theorem compileStructuralRule_no_eof
+    {literalScalars? : String → Option (List Nat)} {startSort : String}
+    {rule : CompiledRule} {production : CompiledStructuralProduction}
+    (compiled : compileStructuralRule? literalScalars? startSort rule =
+      some production) :
+    PackItem.terminal TerminalMatcher.eof ∉ production.items := by
+  let view := StructuralRuleCompileView.of_compilation
+    literalScalars? startSort rule production compiled
+  rw [view.items_exact]
+  exact view.itemCompilation.no_eof
 
 theorem StructuralRulesCompile.of_compilation
     (literalScalars? : String → Option (List Nat)) (startSort : String) :
@@ -821,7 +878,7 @@ recovers the same canonical compilation view used in the forward direction. -/
       agreement.structuralRuleView occurrence := by
   apply Subsingleton.elim
 
-/-- Appending EOF at the start sort does not manufacture a child slot. -/
+/-- Appending an administrative EOF check does not manufacture a child slot. -/
 theorem nonterminalSlots_append_eof (items : List PackItem) :
     nonterminalSlots (items ++ [.terminal .eof]) =
       nonterminalSlots items := by
@@ -1034,33 +1091,6 @@ inductive ScalarSequenceMatchesAt (input : List Nat) :
       (rest : ScalarSequenceMatchesAt input codepoints (start + 1) stop) :
       ScalarSequenceMatchesAt input (codepoint :: codepoints) start stop
 
-/-- Source-side completion evidence corresponding to the target compiler's
-administrative EOF item.  The branch is explicit evidence rather than a
-type-level `if`, so start and non-start production behavior remains visible
-to recursive translations and NTT analysis. -/
-inductive SourceProductionFinish (startSort category : String)
-    (input : List Nat) (stop : Nat) : Type where
-  | start (categoryIsStart : category = startSort)
-      (atEnd : stop = input.length) :
-      SourceProductionFinish startSort category input stop
-  | nonstart (categoryIsNotStart : category ≠ startSort) :
-      SourceProductionFinish startSort category input stop
-
-instance SourceProductionFinish.instSubsingleton
-    (startSort category : String) (input : List Nat) (stop : Nat) :
-    Subsingleton (SourceProductionFinish startSort category input stop) := by
-  constructor
-  intro left right
-  cases left with
-  | start leftCategory leftEnd =>
-      cases right with
-      | start rightCategory rightEnd => rfl
-      | nonstart rightCategory => exact False.elim (rightCategory leftCategory)
-  | nonstart leftCategory =>
-      cases right with
-      | start rightCategory rightEnd => exact False.elim (leftCategory rightCategory)
-      | nonstart rightCategory => rfl
-
 /-! ## Independent source-plan semantics -/
 
 set_option autoImplicit true in
@@ -1092,9 +1122,7 @@ mutual
         (ruleLabel_exact :
           (rules.get ⟨position, valid⟩).source.label = ruleLabel)
         (body : SourcePlanItemsDeriveAt literalScalars? profile rules input
-          (rules.get ⟨position, valid⟩).atoms start stop children)
-        (finish : SourceProductionFinish profile.startSort
-          (rules.get ⟨position, valid⟩).source.category input stop) :
+          (rules.get ⟨position, valid⟩).atoms start stop children) :
         SourcePlanDerivesAt literalScalars? profile rules input
           resultSort start stop (.node ruleLabel start stop children)
 
@@ -1411,8 +1439,8 @@ def ParserPackItemsDeriveAt.append
   | .nonterminal head rest, right =>
       .nonterminal head (ParserPackItemsDeriveAt.append rest right)
 
-/-- Append the compiler's zero-width EOF check to a completed start-sort
-body. -/
+/-- Append a zero-width EOF check to an item body at the whole-input
+boundary.  Ordinary authored productions do not call this operation. -/
 def ParserPackItemsDeriveAt.appendEOF
     {profile : ParserProfileLayer} {plan : CompiledParserPackPlan}
     {input : List Nat} {items : List PackItem}
@@ -1542,7 +1570,7 @@ theorem ParserPackItemsDeriveAt.stripEOF_height_le
               simp only [ParserPackItemsDeriveAt.height]
               omega
 
-/-- Transporting a start-production body and removing its administrative EOF
+/-- Transporting an entry item body and removing its administrative EOF
 suffix yields a derivation strictly smaller than the enclosing structural
 step. -/
 theorem ParserPackItemsDeriveAt.stripEOF_castItems_height_lt_succ
@@ -1787,7 +1815,7 @@ mutual
           (resultSortEq.trans sourceResultSort)
           (labelEq.trans sourceRuleLabel) targetMatched
     | .structural (children := children) position sourceValid sourceResultSort
-        sourceRuleLabel body finish => by
+        sourceRuleLabel body => by
         let compilation := agreement.structuralCompilation
         let sourceOccurrence : ListOccurrence rules := ⟨position, sourceValid⟩
         let targetValid : position < plan.structural.length :=
@@ -1802,19 +1830,7 @@ mutual
             ParserPackItemsDeriveAt profile plan input
               (plan.structural.get targetOccurrence).items
               start stop children := by
-          cases finish with
-          | start isStart atEnd =>
-              have itemsEq :
-                  (plan.structural.get targetOccurrence).items =
-                    view.bodyItems ++ [.terminal .eof] := by
-                simpa only [if_pos isStart] using view.items_exact
-              exact (targetBody.appendEOF atEnd).castItems itemsEq.symm
-          | nonstart isNotStart =>
-              have itemsEq :
-                  (plan.structural.get targetOccurrence).items =
-                    view.bodyItems := by
-                simpa only [if_neg isNotStart] using view.items_exact
-              exact targetBody.castItems itemsEq.symm
+          exact targetBody.castItems view.items_exact.symm
         have targetResultSortEq :
             (plan.structural.get targetOccurrence).resultSort =
               (rules.get sourceOccurrence).source.category := by
@@ -1932,57 +1948,16 @@ mutual
             (plan.structural.get targetOccurrence).label =
               (rules.get sourceOccurrence).source.label := by
           exact view.label_exact
-        have itemsEq : (plan.structural.get targetOccurrence).items =
-              if (rules.get sourceOccurrence).source.category =
-                  profile.startSort then
-                view.bodyItems ++ [.terminal .eof]
-              else view.bodyItems := view.items_exact
-        by_cases isStart :
-            (rules.get sourceOccurrence).source.category = profile.startSort
-        · have startItemsEq :
-              (plan.structural.get targetOccurrence).items =
-                view.bodyItems ++ [.terminal .eof] := by
-            simpa only [if_pos isStart] using itemsEq
-          let bodyWithEOF : ParserPackItemsDeriveAt profile plan input
-              (view.bodyItems ++ [.terminal .eof]) start stop children :=
-            body.castItems startItemsEq
-          let stripped := bodyWithEOF.stripEOF view.bodyItems
-          let sourceBody := reflectSourcePlanItems agreement
-            view.itemCompilation stripped.1
-          have finish : SourceProductionFinish profile.startSort
-              (rules.get sourceOccurrence).source.category input stop := by
-            exact .start isStart stripped.2.down
-          exact SourcePlanDerivesAt.structural position sourceValid
-            (targetResultSortRowEq.symm.trans targetResultSort)
-            (targetRuleLabelRowEq.symm.trans targetRuleLabel) sourceBody finish
-        · have nonstartItemsEq :
-              (plan.structural.get targetOccurrence).items =
-                view.bodyItems := by
-            simpa only [if_neg isStart] using itemsEq
-          let bodyWithoutEOF : ParserPackItemsDeriveAt profile plan input
-              view.bodyItems start stop children :=
-            body.castItems nonstartItemsEq
-          let sourceBody := reflectSourcePlanItems agreement
-            view.itemCompilation bodyWithoutEOF
-          have finish : SourceProductionFinish profile.startSort
-              (rules.get sourceOccurrence).source.category input stop := by
-            exact .nonstart isStart
-          exact SourcePlanDerivesAt.structural position sourceValid
-            (targetResultSortRowEq.symm.trans targetResultSort)
-            (targetRuleLabelRowEq.symm.trans targetRuleLabel) sourceBody finish
+        let bodyWithoutEOF : ParserPackItemsDeriveAt profile plan input
+            view.bodyItems start stop children :=
+          body.castItems view.items_exact
+        let sourceBody := reflectSourcePlanItems agreement
+          view.itemCompilation bodyWithoutEOF
+        exact SourcePlanDerivesAt.structural position sourceValid
+          (targetResultSortRowEq.symm.trans targetResultSort)
+          (targetRuleLabelRowEq.symm.trans targetRuleLabel) sourceBody
   termination_by derivation => (derivation.height, 0)
   decreasing_by
-    · change Prod.Lex (fun left right : Nat => left < right)
-        (fun left right : Nat => left < right)
-        ((bodyWithEOF.stripEOF view.bodyItems).1.height,
-          (rules.get sourceOccurrence).atoms.length)
-        (body.height + 1, 0)
-      apply Prod.Lex.left
-      have strippedSmaller :=
-        bodyWithEOF.stripEOF_height_le view.bodyItems
-      have castHeight : bodyWithEOF.height = body.height :=
-        ParserPackItemsDeriveAt.height_castItems startItemsEq body
-      omega
     · change Prod.Lex (fun left right : Nat => left < right)
         (fun left right : Nat => left < right)
         (bodyWithoutEOF.height,
@@ -1990,7 +1965,7 @@ mutual
         (body.height + 1, 0)
       apply Prod.Lex.left
       have castHeight : bodyWithoutEOF.height = body.height :=
-        ParserPackItemsDeriveAt.height_castItems nonstartItemsEq body
+        ParserPackItemsDeriveAt.height_castItems view.items_exact body
       omega
 
   /-- Reflect target item execution through exact atom-expansion evidence.
@@ -2073,41 +2048,21 @@ theorem reflectSourcePlanDerivation_preserve
         reflectSourcePlanDerivation]
       apply congrArg
       apply classCSTRecognition_unique
-  | structural position valid resultSortExact ruleLabelExact body finish bodyIH =>
+  | structural position valid resultSortExact ruleLabelExact body bodyIH =>
       cases resultSortExact
       cases ruleLabelExact
-      cases finish with
-      | start isStart atEnd =>
-        simp only [preserveSourcePlanDerivation,
-          reflectSourcePlanDerivation]
-        split
-        · congr 1
-          change reflectSourcePlanItems agreement
-              (agreement.structuralRuleViewAtPosition position valid
-                (agreement.structuralCompilation.targetValid position
-                  valid)).itemCompilation _ = body
-          simpa [ParserPackItemsDeriveAt.stripEOF_appendEOF] using
-            bodyIH (agreement.structuralRuleViewAtPosition position valid
-              (agreement.structuralCompilation.targetValid position
-                valid)).itemCompilation
-        · rename_i contrary
-          exact False.elim <| contrary <| by simpa using isStart
-      | nonstart isNotStart =>
-        simp only [preserveSourcePlanDerivation,
-          reflectSourcePlanDerivation]
-        split
-        · rename_i contrary
-          exact False.elim <| isNotStart <| by simpa using contrary
-        · congr 1
-          change reflectSourcePlanItems agreement
-              (agreement.structuralRuleViewAtPosition position valid
-                (agreement.structuralCompilation.targetValid position
-                  valid)).itemCompilation _ = body
-          rw [ParserPackItemsDeriveAt.castItems_cancel]
-          exact
-            bodyIH (agreement.structuralRuleViewAtPosition position valid
-              (agreement.structuralCompilation.targetValid position
-                valid)).itemCompilation
+      simp only [preserveSourcePlanDerivation,
+        reflectSourcePlanDerivation]
+      congr 1
+      change reflectSourcePlanItems agreement
+          (agreement.structuralRuleViewAtPosition position valid
+            (agreement.structuralCompilation.targetValid position
+              valid)).itemCompilation _ = body
+      rw [ParserPackItemsDeriveAt.castItems_cancel]
+      exact
+        bodyIH (agreement.structuralRuleViewAtPosition position valid
+          (agreement.structuralCompilation.targetValid position
+            valid)).itemCompilation
   | nil =>
       cases ‹StructuralItemsCompile literalScalars? [] _›
       simp [preserveSourcePlanItems, reflectSourcePlanItems]
@@ -2168,55 +2123,21 @@ mutual
     | .structural position valid resultSortExact ruleLabelExact body =>
         by
           simp only [reflectSourcePlanDerivation]
-          split
-          · simp only [preserveSourcePlanDerivation]
-            congr 1
-            rename_i isStart
-            let compilation := agreement.structuralCompilation
-            let sourceValid := compilation.sourceValid position valid
-            let view := agreement.structuralRuleViewAtPosition
-              position sourceValid valid
-            have itemsEq :
-                (plan.structural.get ⟨position, valid⟩).items =
-                  view.bodyItems ++ [.terminal .eof] := by
-              simpa only [if_pos isStart] using view.items_exact
-            let bodyWithEOF : ParserPackItemsDeriveAt profile plan input
-                (view.bodyItems ++ [.terminal .eof]) _ _ _ :=
-              body.castItems itemsEq
-            let stripped := bodyWithEOF.stripEOF view.bodyItems
-            have strippedSmaller : stripped.1.height < body.height + 1 :=
-              ParserPackItemsDeriveAt.stripEOF_castItems_height_lt_succ
-                itemsEq body
-            have bodyRoundtrip := preserveSourcePlanItems_reflect agreement
-              view.itemCompilation stripped.1
-            have restored :=
-              ParserPackItemsDeriveAt.appendEOF_stripEOF
-                view.bodyItems bodyWithEOF
-            change ((preserveSourcePlanItems agreement view.itemCompilation
-                (reflectSourcePlanItems agreement view.itemCompilation
-                  stripped.1)).appendEOF stripped.2.down).castItems _ = body
-            rw [bodyRoundtrip, restored]
-            apply ParserPackItemsDeriveAt.castItems_cancel
-          · simp only [preserveSourcePlanDerivation]
-            congr 1
-            rename_i isNotStart
-            let compilation := agreement.structuralCompilation
-            let sourceValid := compilation.sourceValid position valid
-            let view := agreement.structuralRuleViewAtPosition
-              position sourceValid valid
-            have itemsEq :
-                (plan.structural.get ⟨position, valid⟩).items =
-                  view.bodyItems := by
-              simpa only [if_neg isNotStart] using view.items_exact
-            let bodyWithoutEOF : ParserPackItemsDeriveAt profile plan input
-                view.bodyItems _ _ _ := body.castItems itemsEq
-            have bodyRoundtrip := preserveSourcePlanItems_reflect agreement
-              view.itemCompilation bodyWithoutEOF
-            change (preserveSourcePlanItems agreement view.itemCompilation
-                (reflectSourcePlanItems agreement view.itemCompilation
-                  bodyWithoutEOF)).castItems _ = body
-            rw [bodyRoundtrip]
-            apply ParserPackItemsDeriveAt.castItems_cancel
+          simp only [preserveSourcePlanDerivation]
+          congr 1
+          let compilation := agreement.structuralCompilation
+          let sourceValid := compilation.sourceValid position valid
+          let view := agreement.structuralRuleViewAtPosition
+            position sourceValid valid
+          let bodyWithoutEOF : ParserPackItemsDeriveAt profile plan input
+              view.bodyItems _ _ _ := body.castItems view.items_exact
+          have bodyRoundtrip := preserveSourcePlanItems_reflect agreement
+            view.itemCompilation bodyWithoutEOF
+          change (preserveSourcePlanItems agreement view.itemCompilation
+              (reflectSourcePlanItems agreement view.itemCompilation
+                bodyWithoutEOF)).castItems _ = body
+          rw [bodyRoundtrip]
+          apply ParserPackItemsDeriveAt.castItems_cancel
   termination_by (target.height, 0)
 
   /-- The item-vector translation is likewise inverse on every target proof
@@ -2272,7 +2193,7 @@ end
 /-- The recursively generated ParserPack derivations have exactly the same
 proof fibres as the independently authored scannerless plan.  The equivalence
 retains physical rule positions, recursive alternatives, CST occurrences, and
-the start-production EOF witness. -/
+the exact recursive source evidence. -/
 def sourcePlanDerivationEquiv
     {literalScalars? : String → Option (List Nat)}
     {profile : ParserProfileLayer} {rules : List CompiledRule}
@@ -2320,12 +2241,90 @@ abbrev SourcePlanRootDerives
     profile.startSort 0 input.length tree
 
 /-- Whole-target execution starts at the plan's authored start sort and must
-consume the complete scalar input. -/
+consume the complete scalar input.  This is the transparent CST observation
+of the synthetic entry; `parserPackRootEntryEquiv` retains its execution
+evidence without inserting a new authored CST node. -/
 abbrev ParserPackRootDerives
     (profile : ParserProfileLayer) (plan : CompiledParserPackPlan)
     (input : List Nat) (tree : CST) : Type :=
   ParserPackDerivesAt profile plan input plan.lexical.startSort
     0 input.length tree
+
+set_option autoImplicit true in
+/-- Execution of the distinct whole-input entry.  Its item semantics checks
+EOF after the selected start derivation and its slot action returns that
+same tree.  Recursive nonterminals still address authored definitions only. -/
+inductive ParserPackEntryDerivesAt
+    (profile : ParserProfileLayer) (plan : CompiledParserPackPlan)
+    (input : List Nat) : ParserPackState → Nat → CST → Type where
+  | apply
+      (body : ParserPackItemsDeriveAt profile plan input
+        plan.entryProduction.items 0 stop [tree]) :
+      ParserPackEntryDerivesAt profile plan input
+        plan.entryProduction.resultState stop tree
+
+theorem ParserPackEntryDerivesAt.stop_eq_length
+    {profile : ParserProfileLayer} {plan : CompiledParserPackPlan}
+    {input : List Nat} {state : ParserPackState} {stop : Nat} {tree : CST}
+    (derivation : ParserPackEntryDerivesAt profile plan input state stop tree) :
+    stop = input.length := by
+  cases derivation with
+  | apply body =>
+      cases body with
+      | nonterminal head rest =>
+          cases rest with
+          | terminal matched rest =>
+              cases matched with
+              | eof atEnd =>
+                  cases rest
+                  exact atEnd
+
+/-- A strict prefix cannot finish the whole-input entry, even if it is a
+valid derivation of the authored start category. -/
+theorem synthetic_entry_rejects_trailing_input
+    {profile : ParserProfileLayer} {plan : CompiledParserPackPlan}
+    {input : List Nat} {state : ParserPackState} {stop : Nat} {tree : CST}
+    (trailing : stop < input.length) :
+    IsEmpty (ParserPackEntryDerivesAt profile plan input state stop tree) := by
+  constructor
+  intro derivation
+  have ended := derivation.stop_eq_length
+  omega
+
+/-- Entry execution and the full-span authored-root observation have exactly
+the same proof fibres.  No row occurrence, child derivation or CST span is
+discarded; only the unique administrative EOF evidence is inserted/removed. -/
+def parserPackRootEntryEquiv
+    (profile : ParserProfileLayer) (plan : CompiledParserPackPlan)
+    (input : List Nat) (tree : CST) :
+    ParserPackRootDerives profile plan input tree ≃
+      ParserPackEntryDerivesAt profile plan input
+        plan.entryProduction.resultState input.length tree where
+  toFun derivation := .apply (.nonterminal derivation
+    (.terminal (.eof rfl) .nil))
+  invFun derivation := by
+    cases derivation with
+    | apply body =>
+        cases body with
+        | nonterminal head rest =>
+            cases rest with
+            | terminal matched rest =>
+                cases matched with
+                | eof atEnd =>
+                    cases rest
+                    exact head
+  left_inv derivation := rfl
+  right_inv derivation := by
+    cases derivation with
+    | apply body =>
+        cases body with
+        | nonterminal head rest =>
+            cases rest with
+            | terminal matched rest =>
+                cases matched with
+                | eof atEnd =>
+                    cases rest
+                    rfl
 
 /-- Exact whole-input proof-fibre equivalence at the authored start sort. -/
 def sourcePlanRootDerivationEquiv
@@ -2345,6 +2344,20 @@ def sourcePlanRootDerivationEquiv
   exact sourcePlanDerivationEquiv (input := input) agreement
     profile.startSort 0 input.length tree
 
+/-- The composed source-to-entry theorem exposes the native administrative
+step while preserving the independently stated whole-source proof fibre. -/
+def sourcePlanEntryDerivationEquiv
+    {literalScalars? : String → Option (List Nat)}
+    {profile : ParserProfileLayer} {rules : List CompiledRule}
+    {plan : CompiledParserPackPlan} {input : List Nat}
+    (agreement : ParserPackPlanAgreement literalScalars? profile rules plan)
+    (tree : CST) :
+    SourcePlanRootDerives literalScalars? profile rules input tree ≃
+      ParserPackEntryDerivesAt profile plan input
+        plan.entryProduction.resultState input.length tree :=
+  (sourcePlanRootDerivationEquiv agreement tree).trans
+    (parserPackRootEntryEquiv profile plan input tree)
+
 /-- A structural target occurrence retains its authored source row at the
 same physical position. -/
 theorem CompiledStructuralProduction.source_get
@@ -2356,6 +2369,97 @@ theorem CompiledStructuralProduction.source_get
   exact ListOccurrence.get_map occurrence (fun row => row.source)
 
 /-! ## Positive and negative calibration -/
+
+private def recursiveStartProfile : ParserProfileLayer := {
+  name := "RecursiveStart"
+  startSort := "S"
+  classes := []
+  states := []
+}
+
+private def recursiveStartBinding : Binding := {
+  literalRef := fun token => some token
+  lexicalSortRef := fun _ => none
+  categoryRef := id
+  ruleRef := id
+}
+
+private def recursiveStartEmpty : GrammarRule := {
+  label := "s-empty"
+  category := "S"
+  params := []
+  syntaxPattern := []
+}
+
+private def recursiveStartCons : GrammarRule := {
+  label := "s-cons"
+  category := "S"
+  params := [.simple "left" (.base "S")]
+  syntaxPattern := [.nonTerminal "left", .terminal "a"]
+}
+
+private def recursiveStartRules : List CompiledRule := [
+  (compileRule? recursiveStartBinding recursiveStartEmpty).get (by decide),
+  (compileRule? recursiveStartBinding recursiveStartCons).get (by decide)]
+
+private def recursiveStartScalars (token : String) : Option (List Nat) :=
+  if token = "a" then some [97] else none
+
+private def recursiveStartPlan : CompiledParserPackPlan :=
+  (compileParserPackPlan? recursiveStartScalars recursiveStartProfile
+    recursiveStartRules).get (by decide)
+
+private def recursiveStartAgreement :
+    ParserPackPlanAgreement recursiveStartScalars recursiveStartProfile
+      recursiveStartRules recursiveStartPlan :=
+  .of_compilation (by rfl)
+
+private def recursiveStartTree : Nat → CST
+  | 0 => .node "s-empty" 0 0 []
+  | n + 1 => .node "s-cons" 0 (n + 1) [recursiveStartTree n]
+
+/-- Arbitrarily many left-recursive calls to the authored start category can
+finish before the end of the surrounding input.  Each selected rule and its
+recursive child remain in the proof-relevant source derivation. -/
+private def recursiveStartPrefix (input : List Nat) (length : Nat)
+    (scalars : ∀ index < length, input[index]? = some 97) :
+    SourcePlanDerivesAt recursiveStartScalars recursiveStartProfile
+      recursiveStartRules input "S" 0 length (recursiveStartTree length) := by
+  induction length with
+  | zero =>
+      exact .structural 0 (by decide) rfl rfl .nil
+  | succ length ih =>
+      refine .structural 1 (by decide) rfl rfl ?_
+      refine .nonterminal (ih (fun index bound => scalars index (by omega))) ?_
+      exact .terminal rfl (.cons (scalars length (by omega)) (.nil _)) .nil
+
+/-- The whole-input entry accepts a left-recursive start derivation with two
+proper-prefix uses of that same start category.  Per-production EOF would
+reject even the innermost empty derivation in this specimen. -/
+theorem recursive_start_entry_positive :
+    Nonempty (ParserPackEntryDerivesAt recursiveStartProfile recursiveStartPlan
+      [97, 97] (.entry "S") 2 (recursiveStartTree 2)) := by
+  have source := recursiveStartPrefix [97, 97] 2 (by
+    intro index bound
+    interval_cases index <;> rfl)
+  exact ⟨parserPackRootEntryEquiv _ _ _ _
+    (preserveSourcePlanDerivation recursiveStartAgreement source)⟩
+
+/-- A successfully parsed prefix is not whole-input success.  The same
+recursive grammar recognizes `a` within `ab`, but entry cannot finish there. -/
+theorem recursive_start_prefix_not_whole_input :
+    Nonempty (ParserPackDerivesAt recursiveStartProfile recursiveStartPlan
+      [97, 98] "S" 0 1 (recursiveStartTree 1)) ∧
+      IsEmpty (ParserPackEntryDerivesAt recursiveStartProfile recursiveStartPlan
+        [97, 98] (.entry "S") 1 (recursiveStartTree 1)) := by
+  constructor
+  · have source := recursiveStartPrefix [97, 98] 1 (by
+      intro index bound
+      have indexZero : index = 0 := by omega
+      subst index
+      rfl)
+    exact ⟨preserveSourcePlanDerivation recursiveStartAgreement source⟩
+  · exact synthetic_entry_rejects_trailing_input (by decide)
 
 private def exampleProfile : ParserProfileLayer := {
   name := "Example"
@@ -2412,5 +2516,11 @@ theorem complement_lexical_occurrence_rejects_exclusion :
       simp [ParserProfileLayer.ClassEvidence,
         ParserProfileLayer.classAccepts?, ParserProfileLayer.class?,
         LexicalClassKind.accepts, exampleProfile] at evidence
+
+#print axioms compileStructuralRule_no_eof
+#print axioms synthetic_entry_fresh
+#print axioms sourcePlanEntryDerivationEquiv
+#print axioms recursive_start_entry_positive
+#print axioms recursive_start_prefix_not_whole_input
 
 end Mettapedia.GSLT.Parsing.ClassAwareParserPackCorrespondence

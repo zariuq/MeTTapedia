@@ -162,7 +162,7 @@ def stagedContract : AuthorityContract stagedTheory where
   scopeAuthority := fun _kind => stagedDecisionKernel.authority
 
 /-- Transport staged semantics into the ordinary cold Cantor carrier. -/
-def stagedToCold : AuthorityTranslation stagedContract contract where
+def stagedToCold : CertifiedTranslation stagedContract contract where
   mapKind := id
   mapSignature := id
   signature_commutes := by intro _kind; rfl
@@ -179,7 +179,7 @@ def stagedToCold : AuthorityTranslation stagedContract contract where
 
 /-- Transport cold Cantor semantics back to its exhaustive finite-stage
 presentation. -/
-def coldToStaged : AuthorityTranslation contract stagedContract where
+def coldToStaged : CertifiedTranslation contract stagedContract where
   mapKind := id
   mapSignature := id
   signature_commutes := by intro _kind; rfl
