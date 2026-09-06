@@ -331,7 +331,7 @@ theorem coloredCompiler_compatible {Ground : Type u}
   · exact OperationalSchedule.receipt_ofIndexed coloring.toSchedule
   · change (OperationalSchedule.ofIndexed coloring.toSchedule).workSpan =
       ⟨events.length, coloring.indexWaves.length⟩
-    rw [OperationalSchedule.workSpan_ofIndexed]
+    refine (OperationalSchedule.workSpan_ofIndexed coloring.toSchedule).trans ?_
     apply WorkSpan.ext
     · exact coloring.work_eq_event_count
     · exact coloring.span_eq_colour_count

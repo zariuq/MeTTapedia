@@ -437,8 +437,9 @@ theorem DependentProduct.application_reindex
           (function.reindex morphism))
         (argument.reindex morphism) := by
   apply Term.ext
-  simp only [Term.cast_code, DependentProduct.application, Term.reindex,
-    Presentation.subst]
+  rw [Term.cast_code]
+  simp only [DependentProduct.application, Term.reindex, Presentation.subst]
+  rw [Term.cast_code]
 
 /-! ## Judgment-indexed structural computation -/
 

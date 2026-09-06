@@ -301,7 +301,7 @@ lemma fundamental_cycle_property
     -- h_path connects f' and g' using (insert e tree_edges) \ {e_witness}
     -- This is exactly R ∪ S because e ≠ e_witness
     have h_path_RS : ReflTransGen (fun x y => R x y ∨ S x y) f' g' := by
-      apply ReflTransGen.mono _ h_path
+      refine ReflTransGen.mono ?_ _ _ h_path
       intro x y h
       obtain ⟨e', he', hne, hx, hy⟩ := h
       simp only [Finset.mem_insert] at he'
@@ -350,7 +350,7 @@ lemma fundamental_cycle_property
 
     -- 5. f' ~> x in R
     have h_f'x_tree : ReflTransGen (fun x y => ∃ e' ∈ tree_edges, e' ≠ e ∧ e' ∈ x.1 ∧ e' ∈ y.1) f' x := by
-      apply ReflTransGen.mono _ h_f'x
+      refine ReflTransGen.mono ?_ _ _ h_f'x
       rintro a b ⟨e', htree, hne, ha, hb⟩
       exact ⟨e', htree, by rintro rfl; exact he_notin htree, ha, hb⟩
 
@@ -429,7 +429,7 @@ lemma fundamental_cycle_property
 
     rw [← h_y_eq_u] at h_g'u
     have h_yg'_tree : ReflTransGen (fun x y => ∃ e' ∈ tree_edges, e' ≠ e ∧ e' ∈ x.1 ∧ e' ∈ y.1) g' y := by
-      apply ReflTransGen.mono _ h_g'u
+      refine ReflTransGen.mono ?_ _ _ h_g'u
       rintro a b ⟨e', htree, hne, ha, hb⟩
       exact ⟨e', htree, by rintro rfl; exact he_notin htree, ha, hb⟩
 

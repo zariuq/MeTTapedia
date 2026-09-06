@@ -224,7 +224,11 @@ theorem shippedAfter_ignores_reward_annotations {Key : Type*} [DecidableEq Key]
 inductive ChoiceSynapse where
   | target
   | distractor
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype ChoiceSynapse where
+  elems := {.target, .distractor}
+  complete := by intro x; cases x <;> simp
 
 @[simp]
 theorem ChoiceSynapse.target_ne_distractor :

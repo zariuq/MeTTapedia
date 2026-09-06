@@ -32,7 +32,11 @@ open Mettapedia.GSLT.Ultrainfinite.DoctrineFactorization
 inductive Capability where
   | finiteStageGeneration
   | nonprincipalPerspective
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype Capability where
+  elems := { .finiteStageGeneration, .nonprincipalPerspective }
+  complete x := by cases x <;> simp
 
 inductive Profile where
   | generative

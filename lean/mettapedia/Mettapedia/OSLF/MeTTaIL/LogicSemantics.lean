@@ -825,6 +825,7 @@ theorem satisfyDatalogAtom_mem_arity_ground_atom
   simp [groundDatalogTerms, groundTuplePatterns] at hlen
   refine ⟨tuple, htupleMem, ?_, ?_⟩
   · simp [Grounding.groundAtom, datalogAtomToArityLP, hrel, hlen]
+    rfl
   · rw [groundDatalogAtom_argsList_eq]
     exact hterms
 
@@ -1024,6 +1025,7 @@ theorem satisfyDatalogBody_mem_arity_ground_atom
   simp [groundDatalogTerms, groundTuplePatterns] at hlen
   refine ⟨tuple, htupleMem, ?_, ?_⟩
   · simp [Grounding.groundAtom, datalogAtomToArityLP, hrel, hlen]
+    rfl
   · rw [groundDatalogAtom_argsList_eq]
     exact hterms
 
@@ -1156,6 +1158,7 @@ theorem instantiateDatalogAtom?_groundAtom_eq
     have hlen := congrArg List.length hterms
     simp [groundDatalogTerms, groundTuplePatterns] at hlen
     simp [Grounding.groundAtom, datalogAtomToArityLP, hlen]
+    rfl
   have hargsList :
       arityGroundAtomArgsList
           ((DatalogBindings.toArityGrounding bindings).groundAtom

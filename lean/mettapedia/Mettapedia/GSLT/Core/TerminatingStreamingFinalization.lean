@@ -404,7 +404,7 @@ theorem finishPath_length
     (state : State) :
     (finishPath stream finalizer state).length = 2 := by
   unfold finishPath
-  rw [Mettapedia.GSLT.ClassifierLowering.transportTarget_length]
+  erw [Mettapedia.GSLT.ClassifierLowering.transportTarget_length]
   rfl
 
 #print axioms realization

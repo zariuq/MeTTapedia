@@ -281,6 +281,7 @@ theorem denote_ext {Γ : Ctx Base} {τ : Ty Base} (t : Term Const Γ τ) :
         | vz => rfl
         | vs v => exact h v
       simp only [hbody]
+      rfl
   | ex φ ihφ =>
       intro ρ₁ ρ₂ h
       simp only [denote]
@@ -292,6 +293,7 @@ theorem denote_ext {Γ : Ctx Base} {τ : Ty Base} (t : Term Const Γ τ) :
         | vz => rfl
         | vs v => exact h v
       simp only [hbody]
+      rfl
 
 theorem denote_rename {Γ : Ctx Base} {τ : Ty Base}
     (t : Term Const Γ τ) :
@@ -315,14 +317,19 @@ theorem denote_rename {Γ : Ctx Base} {τ : Ty Base}
   | bot => intro Δ r ρ; rfl
   | and φ ψ ihφ ihψ =>
       intro Δ r ρ; simp only [rename, denote, ihφ r ρ, ihψ r ρ]
+      rfl
   | or φ ψ ihφ ihψ =>
       intro Δ r ρ; simp only [rename, denote, ihφ r ρ, ihψ r ρ]
+      rfl
   | imp φ ψ ihφ ihψ =>
       intro Δ r ρ; simp only [rename, denote, ihφ r ρ, ihψ r ρ]
+      rfl
   | not φ ihφ =>
       intro Δ r ρ; simp only [rename, denote, ihφ r ρ]
+      rfl
   | eq t u iht ihu =>
       intro Δ r ρ; simp only [rename, denote, iht r ρ, ihu r ρ]
+      rfl
   | all φ ihφ =>
       intro Δ r ρ
       have hbody : ∀ d, M.denote (rename (Rename.lift r) φ) (M.extend ρ d)
@@ -334,6 +341,7 @@ theorem denote_rename {Γ : Ctx Base} {τ : Ty Base}
           _ = M.denote φ (M.extend (fun v => ρ (r v)) d) :=
               M.denote_ext φ (by intro σ' v; cases v <;> rfl)
       simp only [rename, denote, hbody]
+      rfl
   | ex φ ihφ =>
       intro Δ r ρ
       have hbody : ∀ d, M.denote (rename (Rename.lift r) φ) (M.extend ρ d)
@@ -345,6 +353,7 @@ theorem denote_rename {Γ : Ctx Base} {τ : Ty Base}
           _ = M.denote φ (M.extend (fun v => ρ (r v)) d) :=
               M.denote_ext φ (by intro σ' v; cases v <;> rfl)
       simp only [rename, denote, hbody]
+      rfl
 
 /-- Weakened terms ignore the newest valuation entry. -/
 theorem denote_weaken {Γ : Ctx Base} {σ τ : Ty Base}
@@ -382,14 +391,19 @@ theorem denote_subst {Γ : Ctx Base} {τ : Ty Base}
   | bot => intro Δ σs ρ; rfl
   | and φ ψ ihφ ihψ =>
       intro Δ σs ρ; simp only [subst, denote, ihφ σs ρ, ihψ σs ρ]
+      rfl
   | or φ ψ ihφ ihψ =>
       intro Δ σs ρ; simp only [subst, denote, ihφ σs ρ, ihψ σs ρ]
+      rfl
   | imp φ ψ ihφ ihψ =>
       intro Δ σs ρ; simp only [subst, denote, ihφ σs ρ, ihψ σs ρ]
+      rfl
   | not φ ihφ =>
       intro Δ σs ρ; simp only [subst, denote, ihφ σs ρ]
+      rfl
   | eq t u iht ihu =>
       intro Δ σs ρ; simp only [subst, denote, iht σs ρ, ihu σs ρ]
+      rfl
   | all φ ihφ =>
       intro Δ σs ρ
       have hbody : ∀ d, M.denote (subst (Subst.lift σs) φ) (M.extend ρ d)
@@ -405,6 +419,7 @@ theorem denote_subst {Γ : Ctx Base} {τ : Ty Base}
               | vz => rfl
               | vs v => exact M.denote_weaken (σs v) ρ d
       simp only [subst, denote, hbody]
+      rfl
   | ex φ ihφ =>
       intro Δ σs ρ
       have hbody : ∀ d, M.denote (subst (Subst.lift σs) φ) (M.extend ρ d)
@@ -420,6 +435,7 @@ theorem denote_subst {Γ : Ctx Base} {τ : Ty Base}
               | vz => rfl
               | vs v => exact M.denote_weaken (σs v) ρ d
       simp only [subst, denote, hbody]
+      rfl
 
 /-- The single substitution-denotation lemma: instantiating the top variable
 denotes to extending the valuation by the denoted term. -/

@@ -272,7 +272,8 @@ theorem keepProof_ne_flipProof : keepProof ≠ flipProof := by
   have mapped := congrArg
     (fun refinement : IndexedRefinement proofObject proofObject =>
       refinement.mapExecution (first := ()) (last := ()) true) equal
-  simp [keepProof, flipProof] at mapped
+  change true = false at mapped
+  cases mapped
 
 /-- Endpoint-only semantic admission forgets the execution-witness action. -/
 theorem endpoint_shadows_equal :

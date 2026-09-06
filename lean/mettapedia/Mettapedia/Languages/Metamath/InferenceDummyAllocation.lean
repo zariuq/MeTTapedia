@@ -143,7 +143,6 @@ theorem hyp_vars_declared {fr : Metamath.Spec.Frame}
         rw [← himg]
         simp only [hypToMarioFormula]
         rw [hvrW']
-        rfl
       rw [hform] at hvr
       have : vr = vrW := by
         rcases List.mem_singleton.mp hvr with heq

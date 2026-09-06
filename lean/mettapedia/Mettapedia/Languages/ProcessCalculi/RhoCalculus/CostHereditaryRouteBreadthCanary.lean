@@ -374,6 +374,7 @@ def rhoBreadthBaseDropPreimage :
   costStaticConstructorPreimage rhoCIGSLT .base rhoBreadthBaseDropDeclared
     rhoBreadthBaseDropRole
 
+set_option backward.isDefEq.respectTransparency false in
 theorem rhoBreadthBaseDrop_notBare :
     ¬ UsesBareCollection rhoBreadthBaseDropPreimage.sourceConstructor.1 := by
   simp [rhoBreadthBaseDropPreimage, costStaticConstructorPreimage,
@@ -394,6 +395,7 @@ def rhoBreadthBaseQuotePreimage :
   costStaticConstructorPreimage rhoCIGSLT .base rhoBreadthBaseQuoteDeclared
     rhoBreadthBaseQuoteRole
 
+set_option backward.isDefEq.respectTransparency false in
 theorem rhoBreadthBaseQuote_notBare :
     ¬ UsesBareCollection rhoBreadthBaseQuotePreimage.sourceConstructor.1 := by
   simp [rhoBreadthBaseQuotePreimage, costStaticConstructorPreimage,
@@ -446,6 +448,7 @@ private theorem rhoBreadthRedexA_typed :
       rhoBreadthRedexA (.base (costBaseSortName "Name")) :=
   rhoBreadthBaseQuote_typed _ (rhoBreadthBaseDrop_typed _ rhoBreadthA_typed)
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem rhoBreadthRedexA_wellSorted :
     ReflectiveWellSorted.OpenPatternWellSorted
       rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
@@ -520,6 +523,7 @@ theorem rhoBreadthBaseRedexANode_skeleton_pattern :
           [.fvar (costRegionSourceVariableName "a")]] := by
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The typed base Quote/Drop frame over `a` and its structural source
 variable meet at one retained semantic atom. -/
 noncomputable def rhoBreadthBaseRedexANodeSemanticAtomJoin :
@@ -647,6 +651,7 @@ private def rhoBreadthWrappedDropPreimage :
   costStaticConstructorPreimage rhoCIGSLT .wrapped
     rhoBreadthWrappedDropDeclared rhoBreadthWrappedDropRole
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem rhoBreadthWrappedDrop_notBare :
     ¬ UsesBareCollection
       rhoBreadthWrappedDropPreimage.sourceConstructor.1 := by
@@ -669,6 +674,7 @@ noncomputable def rhoBreadthLeftProcessPlan :
           (.apply (costWrappedConstructorName "PDrop") [] .hole [])))
       .nil
 
+set_option backward.isDefEq.respectTransparency false in
 private def rhoBreadthWrappedFvarAPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .wrapped rhoCutOrderFree
       (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .wrapped []) []
@@ -694,6 +700,7 @@ private def rhoBreadthRightProcessPlan :
           (.apply (costWrappedConstructorName "PDrop") [] .hole [])))
       .nil
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem rhoBreadthWrappedProc_wellSorted (process : Pattern)
     (typed : HasType rhoCIGSLT.costWholeLanguage rhoCutOrderFree [] process
       (.base costWrappedSortName))
@@ -755,6 +762,7 @@ def rhoBreadthRightProcessNode :
     rhoBreadthRightProcessPlan
     (by unfold rhoBreadthRightProcessPlan; rfl)
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem rhoBreadthWrappedNameType :
     (.base (costBaseSortName "Name") : TypeExpr) =
       mapTypeExpr (CostStaticColor.wrapped.symbols rhoCIGSLT)
@@ -827,6 +835,7 @@ theorem rhoBreadthValues_assignment_sourceVariable
       .fvar name := by
   simp [TypedCostRegionBoundaryTable.Values.assignment]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The left wrapped frame receives the hereditary normal form of its unique
 opposite-colour child at the exact proof-relevant boundary slot. -/
 theorem rhoBreadthLeftProcessHereditaryValues_boundaryAssignment :
@@ -897,6 +906,7 @@ theorem rhoBreadthProcess_canonicalFrame
     CostStaticColor.symbols_constructor, CostStaticColor.constructorTag,
     costWrappedConstructorName]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The two wrapped process siblings restore to the same compact drop of `a`
 at the independently constructed common semantic apex.  The left atom is a
 certified foreign boundary; the right atom is a direct source variable; only
@@ -1125,6 +1135,7 @@ theorem rhoBreadthOutputFirstParam :
     rhoIGSLT, rhoInteractivePresentation, TypeDecl.plain,
     TypeExpr.name, TypeExpr.proc, TypeExpr.baseType]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem rhoBreadthOutputSecondParam :
     costBaseParameter rhoInteractionCut rhoCalc.terms[4]
       (TermParam.simple "q" TypeExpr.proc, 0 + 1) =

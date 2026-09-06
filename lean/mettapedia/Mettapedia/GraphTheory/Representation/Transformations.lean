@@ -269,10 +269,10 @@ theorem matrixToIncidence_commutes {n : Nat}
     let occurrence := entries.get column
     have sourceEndpoint :
         source = occurrence.source ∨ source = occurrence.target := by
-      simpa [matrixToIncidence, entries, occurrence] using sourceCell
+      simpa [matrixToIncidence, entries, occurrence] using! sourceCell
     have targetEndpoint :
         target = occurrence.source ∨ target = occurrence.target := by
-      simpa [matrixToIncidence, entries, occurrence] using targetCell
+      simpa [matrixToIncidence, entries, occurrence] using! targetCell
     have occurrenceMember : occurrence ∈ entries := List.get_mem entries column
     have occurrenceEta :
         EdgeList.Edge.mk occurrence.source occurrence.target = occurrence := by

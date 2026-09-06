@@ -2247,6 +2247,7 @@ noncomputable def quotePlanStops_commonRestorationApex_of_canonicalDrops
   exact CostStaticAtomKeyCospan.CommonRestorationApex.reindex
     leftEndpointEq.symm rightEndpointEq.symm namesApex
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Two reached authored Quotes close in their parent semantic cospan when
 their unique process arguments have the same selected-colour canonical form.
 The recursive argument apex is formed at quote depth zero and then lifted

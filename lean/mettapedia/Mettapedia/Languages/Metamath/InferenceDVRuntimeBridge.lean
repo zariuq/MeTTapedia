@@ -191,6 +191,7 @@ theorem dvOKSemantics_proofFacing_of_raw
 
 /-! ## Exact DV bridge -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Independent generated DV semantics agrees exactly with the live verifier
 under the three explicit representation invariants.  No totality condition is
 added beyond the global exact-correspondence premise; the DV computation itself

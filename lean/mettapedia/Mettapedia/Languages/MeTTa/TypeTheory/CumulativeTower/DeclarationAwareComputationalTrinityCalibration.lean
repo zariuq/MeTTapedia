@@ -170,6 +170,7 @@ theorem realizeLogical_term_code (logical : LogicCarrier) :
   cases logical with
   | mk query derivation =>
       simp [realizeLogical, IntrinsicFormedTyping.nativeGoal]
+      rfl
 
 /-! ## A concrete dependent-function run -/
 

@@ -285,7 +285,7 @@ retains both branches. -/
 theorem generic_list_lifting_retains_two_occurrences :
     (liftedChoiceProvider.run ListExample.singletonUnit).answers.card = 2 := by
   change (liftedChoiceProvider.answers ListExample.singletonUnit).card = 2
-  rw [FiniteEvidenceProvider.answers_card]
+  erw [FiniteEvidenceProvider.answers_card]
   change Fintype.card (Bool × PUnit) = 2
   decide
 
@@ -401,10 +401,7 @@ noncomputable def readerLifting : CompositionalLifting (fun Object : Type u =>
         left_inv := by
           intro pointwise
           funext position
-          cases occurrence : pointwise position with
-          | mk middle evidence =>
-              cases evidence
-              simp [occurrence]
+          rfl
         right_inv := by
           rintro ⟨middle, first, second⟩
           rfl }

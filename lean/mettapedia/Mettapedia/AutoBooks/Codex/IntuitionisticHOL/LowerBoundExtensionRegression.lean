@@ -101,6 +101,7 @@ def model : SemilocalModel BaseSort Const where
     intro σ f
     apply propext
     simp [extent]
+    rfl
   truth_ex := by
     intro σ f
     apply propext
@@ -124,8 +125,8 @@ theorem goodEnv_extend {ρ : Env Γ} (hρ : GoodEnv ρ) {σ : Ty BaseSort}
     GoodEnv (ApplicativeStructure.Env.extend model.toApplicativeStructure ρ x) := by
   intro τ v
   cases v with
-  | vz => simpa using hx
-  | vs v => simpa using hρ v
+  | vz => exact hx
+  | vs v => exact hρ v
 
 /-- Terms over good environments evaluate to good values. -/
 theorem eval_good {Γ : Ctx BaseSort} (ρ : Env Γ) (hρ : GoodEnv ρ) :
@@ -157,6 +158,8 @@ theorem good_implies_extent {τ : Ty BaseSort} {x : Carrier τ} (hx : Good x) :
   | base b =>
       rcases hx with rfl
       simp [extent]
+      intro impossible
+      cases impossible
   | arr σ τ =>
       trivial
 
@@ -204,6 +207,8 @@ theorem not_supportsLowerBoundExtension :
   have hbad := h ⊤ collapseEnv badElem hρ badCollapseTerm
   have hbadExtent : model.extent badElem := by
     simp [badElem, model, extent]
+    intro impossible
+    cases impossible
   have hworseExtent :
       model.extent (SemilocalModel.eval model extendedCollapseEnv badCollapseTerm) :=
     hbad (by
@@ -211,6 +216,7 @@ theorem not_supportsLowerBoundExtension :
       exact And.intro hbadExtent trivial)
   rw [eval_badCollapseTerm] at hworseExtent
   simp [model, extent] at hworseExtent
+  exact hworseExtent rfl
 
 theorem not_supportsUniformRelativization :
     ¬ SemilocalModel.SupportsUniformRelativization model := by

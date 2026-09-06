@@ -201,11 +201,11 @@ lemma card_tokens_ab (G : EulerGraph k) (a b : Fin k) :
   -- Show the image equals S
   have himg : (Finset.univ : Finset (Fin (G a b))).map emb = S := by
     ext ⟨a', b', c'⟩
-    simp only [Finset.mem_map, Finset.mem_univ, true_and, Finset.mem_filter, edgeSrc, edgeTgt,
-      hS_def, emb]
+    change _ ∈ Finset.map emb Finset.univ ↔ _ ∈ Finset.filter _ Finset.univ
+    simp only [Finset.mem_map, Finset.mem_filter, Finset.mem_univ, true_and]
+    change (∃ c, (⟨a, b, c⟩ : edgeTok G) = ⟨a', b', c'⟩) ↔ a' = a ∧ b' = b
     constructor
     · rintro ⟨c, hc⟩
-      simp only [Function.Embedding.coeFn_mk] at hc
       have h1 : a = a' := congrArg Sigma.fst hc
       have h2 : b = b' := by
         subst h1
@@ -228,7 +228,7 @@ theorem edgePairCount_of_isEulerTrail (G : EulerGraph k) (s t : Fin k)
   -- Rewrite as a filter through f, then use bijectivity
   have heq : (Finset.univ.filter (fun i => edgeSrc (f i) = a ∧ edgeTgt (f i) = b)) =
       (Finset.univ.filter ((fun e => edgeSrc e = a ∧ edgeTgt e = b) ∘ f)) := by
-    ext i; simp [Function.comp]
+    rfl
   rw [heq, card_filter_comp_bijective f hf.bijective, card_tokens_ab]
 
 /-! ## Fin-level source/target lemmas -/

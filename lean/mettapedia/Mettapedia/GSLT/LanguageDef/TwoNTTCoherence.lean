@@ -277,10 +277,10 @@ theorem same_payload_distinct_semantic_ntt_observation :
     gsltDiamond (oneStepDenotation ())
       (fun candidate => candidate = true) false := by
   constructor
-  · rw [gsltDiamond_spec]
+  · erw [gsltDiamond_spec]
     rintro ⟨target, step, _⟩
     exact step.elim
-  · rw [gsltDiamond_spec]
+  · erw [gsltDiamond_spec]
     exact ⟨true, ⟨rfl, rfl⟩, rfl⟩
 
 end Mettapedia.GSLT.LanguageDef.TwoNTTCoherence

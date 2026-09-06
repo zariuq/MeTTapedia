@@ -391,8 +391,7 @@ histories are reachable and have equal scheduler score, but their first
 events differ. -/
 theorem lengthScheduler_not_supports_beginsLeft :
     ¬ lengthScheduler.SupportsPolicy beginsLeft := by
-  rw [lengthScheduler.supportsPolicy_iff_constantOnReadoutFibers]
-  intro constant
+  intro supported
   have leftReachable :
       provenanceArchitecture.domain.contains
         [Canary.Event.left, Canary.Event.right] :=
@@ -401,7 +400,8 @@ theorem lengthScheduler_not_supports_beginsLeft :
       provenanceArchitecture.domain.contains
         [Canary.Event.right, Canary.Event.left] :=
     ⟨[Canary.Event.right, Canary.Event.left], rfl⟩
-  have impossible := constant leftReachable rightReachable rfl
+  have impossible := (lengthScheduler.supportsPolicy_iff_constantOnReadoutFibers beginsLeft).mp
+    supported leftReachable rightReachable rfl
   simp [beginsLeft] at impossible
 
 /- A collector that rejects every history yields no collected path, while

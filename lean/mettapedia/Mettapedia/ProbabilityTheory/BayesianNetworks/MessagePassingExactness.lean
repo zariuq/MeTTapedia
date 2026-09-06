@@ -216,7 +216,9 @@ theorem twoFactorChain_factorToVar_threeRounds_exact
               hwg
               hfg hNbrs
               (Function.update x w x_w)
-          simpa using! congrArg
+          have hProp' := (congrArg (σ₂.varToFactor w g)
+            (Function.update_self w x_w x)).symm.trans hProp
+          exact congrArg
             (fun z =>
               fg.potential g
                 (VariableElimination.Factor.extend
@@ -224,7 +226,7 @@ theorem twoFactorChain_factorToVar_threeRounds_exact
                   v hvg
                   (singletonOtherScopeAssign (fg := fg) g v w hLeafG x_w)
                   (x v)) * z)
-            hProp
+            hProp'
 
 /-- The three-round chain theorem repackaged at the actual VE factor layer:
 the propagated subtree message is `sumOut` of the product of the local factor

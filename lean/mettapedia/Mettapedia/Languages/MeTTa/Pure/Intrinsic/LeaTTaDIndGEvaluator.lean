@@ -8610,7 +8610,8 @@ theorem interpretFuel_eval_embedded_unify_success_eq_of_gt_instantiate
           ([] : Stack) atom pattern template elseAtom b mb rootBnd
           hmatch hmerge hloop])
   rw [hdriver, hstate]
-  simp [interpretFuel, hstack, finItem, isFinal, finalPair, hnotEmpty]
+  simp [interpretFuel, hstack, finItem, isFinal]
+  exact filtered_final_singleton (Metta.instantiate rootBnd template) rootBnd hnotEmpty
 
 /-- Fuel-driver lift for successful embedded `unify` against a binder variable.
 
@@ -8740,6 +8741,9 @@ theorem interpretFuel_eval_embedded_unify_var_success_eq_of_gt
     simp [finItem, isFinal, finalPair]
     rw [interpretFuel.eq_1]
     simp [hnotEmpty]
+    exact filtered_final_singleton
+      (Metta.instantiate [Metta.BindingRel.val binder atom] template)
+      [Metta.BindingRel.val binder atom] hnotEmpty
   rw [hdriver, hsecond]
 
 /-- Environment-generic fuel-driver lift for successful embedded `unify`.
@@ -9054,7 +9058,11 @@ theorem interpretFuel_eval_embedded_unify_fallback_eq_of_gt
       interpretStack1_unify_fallback_eq_of_matchAtoms_nil
         env fuel st [] atom pattern template elseAtom [] hmatch
   rw [hdriver, hstate]
-  simp [interpretFuel, hstack, finItem, isFinal, finalPair, Metta.instantiate_nil, hnotEmpty]
+  simp [interpretFuel, hstack, finItem, isFinal]
+  have filtered := filtered_final_singleton elseAtom []
+    (by rw [Metta.instantiate_nil]; exact hnotEmpty)
+  erw [Metta.instantiate_nil] at filtered
+  exact filtered
 
 /-- Exact fuel-driver lift for embedded `unify` when the local matcher has no results.
 
@@ -9107,7 +9115,11 @@ theorem interpretFuel_eval_embedded_unify_fallback_eq
       interpretStack1_unify_fallback_eq_of_matchAtoms_nil
         kernelCoreEnv fuel st [] atom pattern template elseAtom [] hmatch
   rw [hdriver, hstate]
-  simp [interpretFuel, hstack, finItem, isFinal, finalPair, Metta.instantiate_nil, hnotEmpty]
+  simp [interpretFuel, hstack, finItem, isFinal]
+  have filtered := filtered_final_singleton elseAtom []
+    (by rw [Metta.instantiate_nil]; exact hnotEmpty)
+  erw [Metta.instantiate_nil] at filtered
+  exact filtered
 
 /-- Environment-generic, binding-threaded exact fuel-driver lift for embedded
 `unify` fallback.  The grounding-table hypothesis is the only environment
@@ -9162,7 +9174,8 @@ theorem interpretFuel_eval_embedded_unify_fallback_eq_of_gt_instantiate
       interpretStack1_unify_fallback_eq_of_matchAtoms_nil
         env fuel st [] atom pattern template elseAtom b hmatch
   rw [hdriver, hstate]
-  simp [interpretFuel, hstack, finItem, isFinal, finalPair, hnotEmpty]
+  simp [interpretFuel, hstack, finItem, isFinal]
+  exact filtered_final_singleton elseAtom b hnotEmpty
 
 /-- Binding-threaded exact fuel-driver lift for embedded `unify` fallback.
 
@@ -9214,7 +9227,8 @@ theorem interpretFuel_eval_embedded_unify_fallback_eq_of_instantiate
       interpretStack1_unify_fallback_eq_of_matchAtoms_nil
         kernelCoreEnv fuel st [] atom pattern template elseAtom b hmatch
   rw [hdriver, hstate]
-  simp [interpretFuel, hstack, finItem, isFinal, finalPair, hnotEmpty]
+  simp [interpretFuel, hstack, finItem, isFinal]
+  exact filtered_final_singleton elseAtom b hnotEmpty
 
 /-- Full `mettaEval` lift for embedded `unify` fallback.
 
@@ -11408,6 +11422,7 @@ theorem interpretFuel_kernelEnv_is_bad_root_selfExtra
   rw [hstepExpanded, hnonfinalsExpanded]
   simpa [interpretFuel] using hqueryWorldExpanded
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Exact `queryOp` readout for the finite-control `is-bad` root in states with
 no local rules. -/
 private theorem queryOp_kernelEnv_is_bad_eq
@@ -11452,9 +11467,10 @@ private theorem queryOp_kernelEnv_is_bad_eq
                 isBadRulePair.1 isBadRulePair.2).2 }) := by
     rfl
   simp only [List.foldl_cons, List.foldl_nil]
-  rw [hstep, hitems, hcounter]
+  erw [hstep, hitems, hcounter]
   simp
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Exact `queryOp` readout for `is-bad` with a closed incoming value
 environment.  The private freshened names remain existential, while the
 incoming bindings and counter transition are literal. -/
@@ -11499,7 +11515,7 @@ private theorem queryOp_kernelEnv_is_bad_eq_from_closed
                 isBadRulePair.1 isBadRulePair.2).2 }) := by
     rfl
   simp only [List.foldl_cons, List.foldl_nil]
-  rw [hstep, hitems, hcounter]
+  erw [hstep, hitems, hcounter]
   simp
 
 /-- A private variable outside a closed value environment contributes no
@@ -15758,6 +15774,7 @@ theorem interpretFuel_eval_nf_readouts_eq_true_contains_state
   simpa [it, out, evalItemNil, atomToStack_eval, finalPair, evalResult,
     finItem, mBool, Metta.instantiate_nil] using hharvest
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Exact executable `==` readout on two `nf` fragment outputs in the
 stdlib-extended kernel environment. -/
 theorem interpretFuel_kernelEnv_eval_nf_readouts_eq_true_eq_state
@@ -21278,6 +21295,7 @@ private theorem queryOpItems_conv_eq
   rw [hmerge]
   simp [hloop, hresult']
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem queryOp_kernelDefControlEnv_conv_eq
     (sig : DIndGArtifactSig) (rawLeft rawRight : DIndGArtifactTerm) :
     let target := convQuery sig rawLeft rawRight
@@ -21336,7 +21354,7 @@ private theorem queryOp_kernelDefControlEnv_conv_eq
     kernelDefControlEnv St.init.world target (by rfl) (by rfl)]
   rw [hCand]
   simp only [List.nil_append, List.foldl_cons, List.foldl_nil]
-  rw [hstep, hitems, hcounter]
+  erw [hstep, hitems, hcounter]
   simp [rootBnd]
 
 theorem interpretFuel_kernelDefControlEnv_conv_root_eq
@@ -22177,7 +22195,7 @@ private theorem mettaEval_kernelDefControlEnv_embedded_unify_var_success_true_pa
     simpa [mExpr, mSym, mVar] using hRootNotSelf
   simp only [Metta.instantiate_nil, mVar, List.foldl_cons, List.foldl_nil,
     List.nil_append] at hmem
-  rw [hRootNotNotReducible, hRootNotSelf'] at hmem
+  erw [hRootNotNotReducible, hRootNotSelf'] at hmem
   simp only [Bool.false_eq_true, false_or, if_false] at hmem
   have hmemRaw := mem_of_mem_prioritizeSemanticResults hmem
   rcases List.mem_map.mp hmemRaw with
@@ -23043,6 +23061,7 @@ theorem kernelDefControlEnv_if_declName_eq_self_applicationPlanCorresponds_of_wo
       (mExpr "==" [declNameAtom name, declNameAtom name]) thenA elseA condTail
       (by simpa [mExpr, mSym] using hCondTypes) policy
 
+set_option backward.isDefEq.respectTransparency false in
 theorem interpretFuel_kernelDefControlEnv_declName_eq_self_true_eq
     (fuel : Nat) (st : St)
     (name : Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax.DeclName)
@@ -23073,6 +23092,7 @@ theorem interpretFuel_kernelDefControlEnv_declName_eq_self_true_eq
   rw [interpretFuel_done]
   simp [interpretFuel]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem interpretFuel_kernelDefControlEnv_eq_true_eq_state
     (fuel : Nat) (st : St) (a b : Metta.Atom)
     (hWorld : st.world = St.init.world)
@@ -23099,6 +23119,7 @@ theorem interpretFuel_kernelDefControlEnv_eq_true_eq_state
   rw [interpretFuel_done]
   simp [interpretFuel]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem interpretFuel_kernelDefControlEnv_eq_false_eq_state
     (fuel : Nat) (st : St) (a b : Metta.Atom)
     (hWorld : st.world = St.init.world)
@@ -23125,6 +23146,7 @@ theorem interpretFuel_kernelDefControlEnv_eq_false_eq_state
   rw [interpretFuel_done]
   simp [interpretFuel]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Scheduler-level grounded equality with an arbitrary incoming closed
 theory.  Closed operands make the grounded dispatch binding-inert, while the
 final Boolean carries the incoming theory literally. -/
@@ -23166,6 +23188,7 @@ theorem interpretFuel_kernelDefControlEnv_eq_false_eq_state_from
   rw [interpretFuel_done]
   simp [interpretFuel]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Scheduler-level successful grounded equality with an arbitrary incoming
 closed theory. -/
 theorem interpretFuel_kernelDefControlEnv_eq_true_eq_state_from
@@ -24959,6 +24982,7 @@ theorem mettaEval_kernelDefControlEnv_declName_eq_self_true_eq
     (declNameAtom name) (declNameAtom name) true hWorld
     (declNameAtom_isError_false name) (declNameAtom_isError_false name) hroot
 
+set_option backward.isDefEq.respectTransparency false in
 theorem interpretFuel_kernelDefControlEnv_termAtom_eq_self_true_eq
     (fuel : Nat) (st : St) (raw : DIndGArtifactTerm)
     (hWorld : st.world = St.init.world) :
@@ -38835,6 +38859,7 @@ private theorem queryOpFold_nf_def_pre_eq
     queryOpItems_nf_indG_zero_iota_on_def_eq_nil,
     Metta.Minimal.freshenRuleAvoiding_counter]
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem queryOp_kernelDefControlEnv_nf_def_eq
     (st : St) (sig : DIndGArtifactSig)
     (name : Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax.DeclName)
@@ -38912,7 +38937,7 @@ private theorem queryOp_kernelDefControlEnv_nf_def_eq
           world := st.world })
   rw [hpre]
   simp only [List.foldl_cons, List.foldl_nil, Metta.Minimal.queryOpFoldStep]
-  rw [hitems]
+  erw [hitems]
   rw [Metta.Minimal.freshenRuleAvoiding_counter]
   simp [root, m, f, coreB, counter]
 
@@ -38999,6 +39024,7 @@ theorem interpretFuel_kernelDefControlEnv_nf_def_root_eq
   rw [interpretFuel, hstep]
   simp [interpretFuel, hfinal, hpair, hnotEmpty, root, m, f, coreB, counter, st']
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem queryOp_kernelDefControlEnv_primary_def_body_of_eq
     (st : St)
     (name : Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax.DeclName)
@@ -39084,10 +39110,11 @@ private theorem queryOp_kernelDefControlEnv_primary_def_body_of_eq
   rw [hCand]
   simp only [List.nil_append, List.foldl_cons, List.foldl_nil]
   simp only [Metta.Minimal.queryOpFoldStep]
-  rw [hDDef]
+  erw [hDDef]
   rw [Metta.Minimal.freshenRuleAvoiding_counter]
   simp
 
+set_option backward.isDefEq.respectTransparency false in
 theorem interpretFuel_kernelDefControlEnv_primary_def_body_of_root_eq
     {fuel : Nat} {st : St}
     (name : Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax.DeclName)
@@ -39464,6 +39491,7 @@ private theorem queryOpFold_nf_def_body_of_pre_eq
     queryOpItems_nf_indG_zero_iota_on_def_body_of_eq_nil,
     Metta.Minimal.freshenRuleAvoiding_counter]
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem queryOp_kernelDefControlEnv_nf_def_body_of_eq
     (st : St) (sig : DIndGArtifactSig)
     (name : Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax.DeclName)
@@ -39533,7 +39561,7 @@ private theorem queryOp_kernelDefControlEnv_nf_def_body_of_eq
           world := st.world })
   rw [hpre]
   simp only [List.foldl_cons, List.foldl_nil, Metta.Minimal.queryOpFoldStep]
-  rw [hDef]
+  erw [hDef]
   rw [Metta.Minimal.freshenRuleAvoiding_counter]
   simp
 
@@ -39577,6 +39605,7 @@ private theorem queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
   rw [hFresh]
   simp [hMatch]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem interpretFuel_kernelDefControlEnv_nf_def_body_of_root_eq
     {fuel : Nat} {st : St} (sig : DIndGArtifactSig)
     (name : Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax.DeclName)
@@ -39904,6 +39933,7 @@ private theorem queryOp_kernelDefControlEnv_nf_app_eq
     hDef, Metta.Minimal.freshenRuleAvoiding_counter]
   simp [Nat.add_assoc]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem interpretFuel_kernelDefControlEnv_nf_app_root_eq
     {fuel : Nat} {st : St} (sig : DIndGArtifactSig)
     (rawFn rawArg : DIndGArtifactTerm)
@@ -40229,6 +40259,7 @@ private theorem queryOp_kernelDefControlEnv_nf_indG_eq
     hDef, Metta.Minimal.freshenRuleAvoiding_counter]
   simp [Nat.add_assoc]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem interpretFuel_kernelDefControlEnv_nf_indG_root_eq
     {fuel : Nat} {st : St} (sig : DIndGArtifactSig)
     (familyName : DeclName)
@@ -41586,6 +41617,7 @@ private theorem queryOpItems_def_body_of_ddef_eq
       [evalResult [] root m]
   simp [defBodyOfDDefRulePair, hmatch, hmerge, hloop, hresult, root, m]
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem queryOp_kernelDefControlEnv_def_body_of_ddef_eq
     (st : St)
     (rest : DIndGArtifactSig)
@@ -41634,7 +41666,7 @@ private theorem queryOp_kernelDefControlEnv_def_body_of_ddef_eq
     kernelDefControlEnv st.world target hStatic hImports]
   rw [hCand]
   simp only [List.foldl_cons, List.foldl_nil, Metta.Minimal.queryOpFoldStep]
-  rw [hitems]
+  erw [hitems]
   rw [Metta.Minimal.freshenRuleAvoiding_counter]
   simp [root, m, f, coreB]
 
@@ -42006,6 +42038,7 @@ private theorem queryOpItems_let_eq
   rw [hmatch]
   simp [hmerge, hloop, hresult, root, m]
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem queryOp_kernelDefControlEnv_let_eq
     (st : St) (binder : String) (atom template : Metta.Atom)
     (hStatic : st.world.selfExtra = [])
@@ -42047,7 +42080,7 @@ private theorem queryOp_kernelDefControlEnv_let_eq
     kernelDefControlEnv st.world target hStatic hImports]
   rw [hCand]
   simp only [List.foldl_cons, List.foldl_nil, Metta.Minimal.queryOpFoldStep]
-  rw [hitems]
+  erw [hitems]
   rw [Metta.Minimal.freshenRuleAvoiding_counter]
   simp [root, m, f, coreB]
 
@@ -42265,6 +42298,7 @@ private theorem interpretFuel_kernelDefControlEnv_let_root_selfExtra
   rw [hstepExpanded, hnonfinalsExpanded]
   simpa [interpretFuel] using hqueryWorldExpanded
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem interpretFuel_kernelDefControlEnv_let_root_eq_with_keyed_ambient
     {fuel : Nat} {st : St}
     (binder : String) (atom template : Metta.Atom)
@@ -42388,7 +42422,7 @@ private theorem interpretFuel_kernelDefControlEnv_let_root_eq_with_keyed_ambient
       kernelDefControlEnv st.world target hStatic hImports]
     rw [hCand]
     simp only [List.foldl_cons, List.foldl_nil, Metta.Minimal.queryOpFoldStep]
-    rw [hitems]
+    erw [hitems]
     rw [Metta.Minimal.freshenRuleAvoiding_counter]
     simp [st']
   have hstep :
@@ -51490,6 +51524,7 @@ private theorem queryOpFold_nf_pi_pre_eq
     queryOpItems_nf_con_on_pi_eq_nil,
     Metta.Minimal.freshenRuleAvoiding_counter, Nat.add_assoc]
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem queryOp_kernelDefControlEnv_nf_pi_eq
     (st : St) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm)
@@ -51576,7 +51611,7 @@ private theorem queryOp_kernelDefControlEnv_nf_pi_eq
       , { counter := st.counter + nfPiCandidatePre.length + 5, world := st.world })
   rw [hpre]
   simp only [nfPiCandidatePost]
-  rw [show ([(nfPiRuleLhs, nfPiRuleRhs), nfLamRulePair, nfBadRulePair] ++
+  erw [show ([(nfPiRuleLhs, nfPiRuleRhs), nfLamRulePair, nfBadRulePair] ++
       [nfIndGZeroIotaRulePair, nfDefRulePair]) =
       [(nfPiRuleLhs, nfPiRuleRhs), nfLamRulePair, nfBadRulePair,
         nfIndGZeroIotaRulePair, nfDefRulePair] by rfl]
@@ -52091,6 +52126,7 @@ private theorem queryOpFold_nf_lam_pre_eq
     queryOpItems_nf_pi_on_lam_eq_nil,
     Metta.Minimal.freshenRuleAvoiding_counter, Nat.add_assoc]
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem queryOp_kernelDefControlEnv_nf_lam_eq
     (st : St) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm)
@@ -52173,7 +52209,7 @@ private theorem queryOp_kernelDefControlEnv_nf_lam_eq
       , { counter := st.counter + nfLamCandidatePre.length + 4, world := st.world })
   rw [hpre]
   simp only [nfLamCandidatePost]
-  rw [show ([nfLamRulePair, nfBadRulePair] ++
+  erw [show ([nfLamRulePair, nfBadRulePair] ++
       [nfIndGZeroIotaRulePair, nfDefRulePair]) =
       [nfLamRulePair, nfBadRulePair, nfIndGZeroIotaRulePair, nfDefRulePair] by rfl]
   simp only [List.foldl_cons, List.foldl_nil, Metta.Minimal.queryOpFoldStep]
@@ -69325,6 +69361,7 @@ def inferSrtTypeEvalItemRaw : Item :=
               , Metta.Atom.expr [Metta.Atom.sym "Srt", Metta.Atom.sym "type"] ] ]) []
     bnd := [] }
 
+set_option backward.isDefEq.respectTransparency false in
 /-- One LeaTTa interpreter pass consumes the concrete `infer (Srt type)` query
 and returns the internal rule binding evidence together with `Srt kind`. -/
 theorem kernelCoreEnv_infer_interpretFuel :
@@ -69932,6 +69969,7 @@ def inferSrtTypeWithPropToType0WitnessEvalItemRaw : Item :=
               , Metta.Atom.expr [Metta.Atom.sym "Srt", Metta.Atom.sym "type"] ] ]) []
     bnd := [] }
 
+set_option backward.isDefEq.respectTransparency false in
 theorem kernelCoreEnv_infer_interpretFuel_raw_withPropToType0Witness :
     interpretFuel kernelCoreEnv 1 St.init
         [inferSrtTypeWithPropToType0WitnessEvalItemRaw] [] =
@@ -70517,6 +70555,7 @@ def inferSrtKindWithPropToType0WitnessEvalItemRaw : Item :=
               , Metta.Atom.expr [Metta.Atom.sym "Srt", Metta.Atom.sym "kind"] ] ]) []
     bnd := [] }
 
+set_option backward.isDefEq.respectTransparency false in
 theorem kernelCoreEnv_infer_interpretFuel_raw_srt_kind_withPropToType0Witness :
     interpretFuel kernelCoreEnv 1 St.init
         [inferSrtKindWithPropToType0WitnessEvalItemRaw] [] =
@@ -71130,6 +71169,7 @@ def inferBadWithPropToType0WitnessEvalItemRaw (reason : String) : Item :=
               , Metta.Atom.expr [Metta.Atom.sym "Bad", Metta.Atom.sym reason] ] ]) []
     bnd := [] }
 
+set_option backward.isDefEq.respectTransparency false in
 theorem kernelCoreEnv_infer_interpretFuel_raw_bad_withPropToType0Witness
     (reason : String) :
     interpretFuel kernelCoreEnv 1 St.init
@@ -71674,6 +71714,7 @@ theorem infer_con_withPropToType0Witness_raw_notEmbedded
         , Metta.Atom.expr [Metta.Atom.sym "Con", declNameAtom name] ]) = false := by
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 theorem kernelCoreEnv_infer_interpretFuel_explicit_con_withPropToType0Witness
     (name : DeclName) :
     interpretFuel kernelCoreEnv 1 St.init
@@ -71782,6 +71823,7 @@ private theorem infer_withPropToType0Witness_raw_notEmbedded
         , termAtom raw ]) = false := by
   cases raw <;> rfl
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem kernelCoreEnv_infer_interpretFuel_explicit_notReducible_of_queryOp
     (raw : DIndGArtifactTerm)
     (hQuery :
@@ -87293,9 +87335,9 @@ private theorem convSoundCicStage3RawArtifactSig_namedReadoutFuelFalseAt_three_o
         (by simpa [nxBinder, nyBinder, stNamed] using
           hStatic0 rawLeft rawRight)
         (by simpa [nxBinder, nyBinder, stNamed, Nat.add_assoc] using hRun) with
-    ⟨_nx, _nxBnd, _ny, _nyBnd, _stBefore, _tailTemplateEnv,
-      _tailRecursiveEnv, _tailPartBnd, _tailStPart, _tailPairs,
-      _tailStRoot, _tailRoot, _tailRootBnd, _tailStBefore, _tailRecBnd,
+    ⟨_nx, _nxBnd, _seed, _branchState, _ny, _nyBnd,
+      _tailPartBnd, _tailStPart, _tailPairs, _tailStRoot, _tailRoot,
+      _tailRootBnd, _tailStBefore, _tailRecBnd,
       _hLeft, _hRight, _hTailTrace, _hTailRootMem, _hTailNotNR,
       _hTailNotSelf, hTailRec⟩
   exact mettaEval_zero_true_pair_false hTailRec
@@ -87475,9 +87517,9 @@ private theorem convSoundCicStage3RawArtifactSig_namedReadoutUseSiteFuelFalseAt_
           simpa [nxBinder, nyBinder, stNamed] using
             hStatic0 hLeft hRight)
         (by simpa [nxBinder, nyBinder, stNamed, Nat.add_assoc] using hRun) with
-    ⟨_nx, _nxBnd, _ny, _nyBnd, _stBefore, _tailTemplateEnv,
-      _tailRecursiveEnv, _tailPartBnd, _tailStPart, _tailPairs,
-      _tailStRoot, _tailRoot, _tailRootBnd, _tailStBefore, _tailRecBnd,
+    ⟨_nx, _nxBnd, _seed, _branchState, _ny, _nyBnd,
+      _tailPartBnd, _tailStPart, _tailPairs, _tailStRoot, _tailRoot,
+      _tailRootBnd, _tailStBefore, _tailRecBnd,
       _hLeft, _hRight, _hTailTrace, _hTailRootMem, _hTailNotNR,
       _hTailNotSelf, hTailRec⟩
   exact mettaEval_zero_true_pair_false hTailRec
@@ -88629,6 +88671,7 @@ theorem conv_sound_cicStage3RawArtifactSig_of_mid_fuel_false_obligations_tail_va
         hMidFalse)
       hNamedObligations hTailValues hExtract
 
+set_option backward.isDefEq.respectTransparency false in
 theorem infer_core_mettaEval_readout_of_queryOp_notReducible
     (sig : DIndGArtifactSig) (raw : DIndGArtifactTerm)
     (hQuery :
@@ -89155,6 +89198,7 @@ def inferSrtKindEvalItemRaw : Item :=
               , Metta.Atom.expr [Metta.Atom.sym "Srt", Metta.Atom.sym "kind"] ] ]) []
     bnd := [] }
 
+set_option backward.isDefEq.respectTransparency false in
 theorem kernelCoreEnv_infer_interpretFuel_raw_srt_kind :
     interpretFuel kernelCoreEnv 1 St.init [inferSrtKindEvalItemRaw] [] =
       ([(termAtom (.bad "kind-is-topsort"), inferSrtKindRuleBindings)],
@@ -90564,9 +90608,16 @@ private theorem mettaEval_kernelDefControlEnv_is_bad_closed_non_error_fuel_one_e
     mettaEval kernelDefControlEnv (0 + 1) st []
       (Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) = _
   let hPolicy := kernelDefControlEnv_is_bad_exactPolicy st a hTypes.isBad
+  have hIsBadTypes : getTypes kernelDefControlEnv
+      (typePrep st.world (.sym "is-bad")) =
+        [.expr [.sym "->", .sym "Atom", .sym "Bool"]] := by
+    simpa [OperatorTypesPinned, mExpr, mSym] using hTypes.isBad
+  have hPlan : ApplicationPlanCorresponds []
+      (.selected hPolicy.decision.selectedType hPolicy.selected_eq) :=
+    hPolicy.applicationPlanCorresponds hIsBadTypes
   rw [mettaEval_eq_evaluateExpectedApplication_of_selected
     kernelDefControlEnv 0 st "is-bad" [a]
-      hPolicy.decision.selectedType (by simp [Metta.Atom.isError]) hPolicy.selected_eq]
+      hPolicy.decision.selectedType (by simp [Metta.Atom.isError]) hPolicy.selected_eq hPlan]
   simp only [evaluateExpectedApplication, evaluateExpectedApplicationFrom,
     hPolicy.argumentPolicies_eq,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
@@ -90697,9 +90748,16 @@ private theorem mettaEval_kernelDefControlEnv_is_bad_closed_non_error_fuel_two_e
     mettaEval kernelDefControlEnv (1 + 1) st []
       (Metta.Atom.expr [Metta.Atom.sym "is-bad", a]) = _
   let hPolicy := kernelDefControlEnv_is_bad_exactPolicy st a hTypes.isBad
+  have hIsBadTypes : getTypes kernelDefControlEnv
+      (typePrep st.world (.sym "is-bad")) =
+        [.expr [.sym "->", .sym "Atom", .sym "Bool"]] := by
+    simpa [OperatorTypesPinned, mExpr, mSym] using hTypes.isBad
+  have hPlan : ApplicationPlanCorresponds []
+      (.selected hPolicy.decision.selectedType hPolicy.selected_eq) :=
+    hPolicy.applicationPlanCorresponds hIsBadTypes
   rw [mettaEval_eq_evaluateExpectedApplication_of_selected
     kernelDefControlEnv 1 st "is-bad" [a]
-      hPolicy.decision.selectedType (by simp [Metta.Atom.isError]) hPolicy.selected_eq]
+      hPolicy.decision.selectedType (by simp [Metta.Atom.isError]) hPolicy.selected_eq hPlan]
   simp only [evaluateExpectedApplication, evaluateExpectedApplicationFrom,
     hPolicy.argumentPolicies_eq,
     List.zip_cons_cons, List.zip_nil_right, List.foldl_cons, List.foldl_nil]
@@ -91441,14 +91499,14 @@ private theorem convSoundCicStage3RawArtifactSig_namedReadout_runFuel_five_to_se
           (outBnd := outBnd) hStatic hWorld
           (by
             simpa [nxBinder, nyBinder, stNamed, Nat.add_assoc] using hRun) with
-      ⟨nx, _nxBnd, ny, _nyBnd, _stBefore, tailStBefore,
-        tailValueEnv, _tailTemplateEnv, _tailPartBnd, _tailStPart,
-        _tailPairs, _tailStRoot, _tailRoot, _tailRootBnd, _tailRecBnd,
+      ⟨nx, _nxBnd, seed, _stBefore, ny, _nyBnd, tailStBefore,
+        tailValueEnv, _tailPartBnd, _tailRootBnd, _tailStPart,
+        _tailPairs, _tailStRoot, _tailRoot, _tailRecBnd, _matchBindings,
         _hWorldBefore, hWorldTailBefore, _hLeftValue, _hNxNoErr,
-        _hRightValue, _hNyNoErr, _hTailShape, _hTailPartBnd,
+        _hRightValue, _hNyNoErr, _hTailPartBnd,
         _hTailTrace, _hTailRootMem, _hTailRootEq, _hTailInst,
         _hTailMerge, _hTailLoop, _hTailTemplateEq, _hTailRec,
-        hTailValue⟩
+        _hTailValueEnv, hTailValue⟩
     rcases List.mem_map.mp hTailValue with ⟨⟨a, tailBnd⟩, hTailPair, ha⟩
     dsimp at ha
     subst a
@@ -91468,14 +91526,14 @@ private theorem convSoundCicStage3RawArtifactSig_namedReadout_runFuel_five_to_se
           (outBnd := outBnd) hStatic hWorld
           (by
             simpa [nxBinder, nyBinder, stNamed, Nat.add_assoc] using hRun) with
-      ⟨nx, _nxBnd, ny, _nyBnd, stBefore, tailStBefore,
-        tailValueEnv, _tailTemplateEnv, _tailPartBnd, _tailStPart,
-        _tailPairs, _tailStRoot, _tailRoot, _tailRootBnd, _tailRecBnd,
+      ⟨nx, _nxBnd, seed, stBefore, ny, _nyBnd, tailStBefore,
+        tailValueEnv, _tailPartBnd, _tailRootBnd, _tailStPart,
+        _tailPairs, _tailStRoot, _tailRoot, _tailRecBnd, _matchBindings,
         _hWorldBefore, hWorldTailBefore, hLeftValue, hNxNoErr,
-        hRightValue, hNyNoErr, _hTailShape, _hTailPartBnd,
+        hRightValue, hNyNoErr, _hTailPartBnd,
         _hTailTrace, _hTailRootMem, _hTailRootEq, _hTailInst,
         _hTailMerge, _hTailLoop, _hTailTemplateEq, _hTailRec,
-        hTailValue⟩
+        _hTailValueEnv, hTailValue⟩
     have hLeftReadout :
         CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft nx :=
       hExtract
@@ -91517,14 +91575,14 @@ private theorem convSoundCicStage3RawArtifactSig_namedReadout_runFuel_five_to_se
           (outBnd := outBnd) hStatic hWorld
           (by
             simpa [nxBinder, nyBinder, stNamed, Nat.add_assoc] using hRun) with
-      ⟨nx, _nxBnd, ny, _nyBnd, stBefore, tailStBefore,
-        tailValueEnv, _tailTemplateEnv, _tailPartBnd, _tailStPart,
-        _tailPairs, _tailStRoot, _tailRoot, _tailRootBnd, _tailRecBnd,
+      ⟨nx, _nxBnd, seed, stBefore, ny, _nyBnd, tailStBefore,
+        tailValueEnv, _tailPartBnd, _tailRootBnd, _tailStPart,
+        _tailPairs, _tailStRoot, _tailRoot, _tailRecBnd, _matchBindings,
         _hWorldBefore, hWorldTailBefore, hLeftValue, hNxNoErr,
-        hRightValue, hNyNoErr, _hTailShape, _hTailPartBnd,
+        hRightValue, hNyNoErr, _hTailPartBnd,
         _hTailTrace, _hTailRootMem, _hTailRootEq, _hTailInst,
         _hTailMerge, _hTailLoop, _hTailTemplateEq, _hTailRec,
-        hTailValue⟩
+        _hTailValueEnv, hTailValue⟩
     have hLeftReadout :
         CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft nx :=
       hExtract

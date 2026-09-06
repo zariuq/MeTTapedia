@@ -638,7 +638,8 @@ def duplicateSource : SourceProgram Nat String where
 
 theorem positive_recognized :
     (SingleValuedDispatch.recognize source).isSome = true := by
-  simp [SingleValuedDispatch.recognize, source, shape,
+  dsimp +instances only [source, shape]
+  simp [SingleValuedDispatch.recognize,
     Mettapedia.GSLT.LanguageDef.MonotoneUniqueIndexCompilation.recognize,
     effectSupported,
     Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength]
@@ -647,7 +648,8 @@ theorem positive_recognized :
 
 theorem duplicate_rejected :
     SingleValuedDispatch.recognize duplicateSource = none := by
-  simp [SingleValuedDispatch.recognize, duplicateSource, shape,
+  dsimp +instances only [duplicateSource, shape]
+  simp [SingleValuedDispatch.recognize,
     Mettapedia.GSLT.LanguageDef.MonotoneUniqueIndexCompilation.recognize,
     effectSupported,
     Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength]

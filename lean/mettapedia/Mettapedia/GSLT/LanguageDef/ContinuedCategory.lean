@@ -827,9 +827,7 @@ def comp {first second third : CIGSLT}
         _ = compositeNormalized.1 := rfl
     rw [inputEquality, outputEquality] at fiberNaturality
     apply Subtype.ext
-    simpa [compositeMapped, compositeNormalized, compositeStructural,
-      IGSLT.Morphism.comp, InteractiveMorphism.comp]
-      using congrArg (fun mapped => mapped.1) fiberNaturality
+    exact congrArg (fun mapped => mapped.1) fiberNaturality
   quoteFaithful := by
     intro leftKey rightKey equality
     have nestedEquality :

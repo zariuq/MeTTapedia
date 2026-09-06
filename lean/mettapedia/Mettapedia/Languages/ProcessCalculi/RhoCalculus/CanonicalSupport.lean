@@ -1121,7 +1121,9 @@ def rhoContextualOpenSection :
     intro free bound sort term name membership
     change name ∈
       (rhoCanonicalizeReflectiveOpenTerm term).1.freeFvarNames at membership
-    rw [rhoCanonicalizeReflectiveOpenTerm_pattern] at membership
+    have membership : name ∈ (Canonical.canonicalize term.1).freeFvarNames :=
+      (congrArg (fun pattern => name ∈ pattern.freeFvarNames)
+        (rhoCanonicalizeReflectiveOpenTerm_pattern term)).mp membership
     rw [← CanonicalMatch.derivedCanonicalize_eq term.1] at membership
     exact (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.mem_freeFvarNames_canonicalize_iff
       rhoReflectivePresentation name term.1).mp membership
@@ -1131,8 +1133,8 @@ def rhoContextualOpenSection :
       (rhoCanonicalizeReflectiveOpenTerm
         (term.recontextualizeFree preserves)).1 =
       (rhoCanonicalizeReflectiveOpenTerm term).1
-    simp only [rhoCanonicalizeReflectiveOpenTerm_pattern,
-      ReflectiveWellSorted.OpenTerm.recontextualizeFree_pattern]
+    exact (rhoCanonicalizeReflectiveOpenTerm_pattern _).trans
+      (rhoCanonicalizeReflectiveOpenTerm_pattern term).symm
   preservesReflectiveSupport := by
     intro free bound sort term support available binderImage safe
     exact rhoCanonicalizeOpenTerm_preservesReflectiveSupport term.toCore

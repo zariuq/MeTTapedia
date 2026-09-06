@@ -279,6 +279,7 @@ def rightTableIndex : Fin rightNode.boundaryTable.entries.length :=
   ⟨0, by
     change 0 < rightPlan.boundaryTable.entries.length
     decide⟩
+set_option backward.isDefEq.respectTransparency false in
 
 theorem leftTableIndex_boundary :
     (leftChildren.getEntry leftTableIndex).boundary = leftBoundary := by
@@ -286,6 +287,7 @@ theorem leftTableIndex_boundary :
   change leftPlan.boundaryTable.entries.get _ =
     leftPlan.boundaryTable.entries.get _
   congr 1
+set_option backward.isDefEq.respectTransparency false in
 
 theorem rightTableIndex_boundary :
     (rightChildren.getEntry rightTableIndex).boundary = rightBoundary := by
@@ -567,6 +569,7 @@ theorem right_common_source_frame
       simp [Pattern.renameFVars, CostStaticAtomKeyCospan.reifyNameWith,
         selected]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Endpoint-keyed form before common-cospan reification. -/
 theorem left_endpoint_frame_keyed
     (leftSlot : Fin leftEnvironment.atomCount)
@@ -601,6 +604,7 @@ theorem left_endpoint_frame_keyed
     canonicalizeByDepths, canonicalizeListByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Exposed endpoint-keyed companion. -/
 theorem right_endpoint_frame_keyed
     (rightSlot : Fin rightEnvironment.atomCount)
@@ -632,6 +636,7 @@ theorem right_endpoint_frame_keyed
     canonicalizeByDepths, canonicalizeListByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The sealed endpoint has the expected keyed source canonical form before
 constructor mapping and ambient-binder reinsertion. -/
 theorem left_source_frame_keyed
@@ -667,6 +672,7 @@ theorem left_source_frame_keyed
     canonicalizeListByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Exposed source-frame companion. -/
 theorem right_source_frame_keyed
     (rightSlot : Fin rightEnvironment.atomCount)
@@ -697,6 +703,7 @@ theorem right_source_frame_keyed
   simp [rhoReflectivePresentation, canonicalizeByDepths,
     canonicalizeListByDepths,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
+set_option backward.isDefEq.respectTransparency false in
 
 theorem left_common_frame_canonical
     (leftSlot : Fin leftEnvironment.atomCount)
@@ -752,6 +759,7 @@ theorem left_common_frame_canonical
       simp only [List.map_cons, List.map_nil]
       rw [canonicalize_quote_drop declaration dropNeQuote]
       simp [canonicalize]
+set_option backward.isDefEq.respectTransparency false in
 
 theorem right_common_frame_canonical
     (rightSlot : Fin rightEnvironment.atomCount)
@@ -803,6 +811,7 @@ theorem right_common_frame_canonical
       rw [canonicalize_apply_of_ne_quote declaration dropNeQuote]
       simp [canonicalize]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The keyed canonicalizer exposes the sealed-side boundary as the rigid
 drop of its common semantic name. -/
 theorem left_common_frame_keyed
@@ -868,6 +877,7 @@ theorem left_common_frame_keyed
       simp [canonicalizeByAt, canonicalizeListByAt, quoteEq, dropEq,
         Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Exposed-side keyed canonical form. -/
 theorem right_common_frame_keyed
     (rightSlot : Fin rightEnvironment.atomCount)
@@ -943,6 +953,7 @@ theorem exists_aligned_views :
         CanonicalRootAligned declaration leftPattern rightPattern := by
   exact ⟨.base, leftView, rightView, endpoint_roots_aligned⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Raw canonical equality fails for the concrete same-colour static views. -/
 theorem aligned_views_not_frame_canonical :
     ¬ RhoMatchedStaticFramesCanonical leftView rightView := by
@@ -1052,6 +1063,7 @@ noncomputable def aligned_views_have_restoration_apex_via_alignment :
   RhoMatchedStaticFramesApex.ofRestorationAligned leftView rightView
     aligned_views_have_restoration_alignment
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The same reachable pair refuting raw frame canonicality nevertheless has
 the semantic common-restoration apex required by generator alignment. -/
 theorem aligned_views_have_restoration_apex :

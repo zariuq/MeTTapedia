@@ -66,7 +66,7 @@ theorem runtime_mode_comp_coherence
         (Mode2Skeleton.ModeHom.runtimeMap f)
         (Mode2Skeleton.ModeHom.runtimeMap g)) ψ =
       mapPred (comp f g) ψ := by
-  simp [Mode2Skeleton.ModeHom.comp, LanguageEqCategory.comp, mapPred]
+  rfl
 
 /-- Eq-category law bundle agrees with direct functorial pullback statement. -/
 theorem eqCategory_law_bundle_agrees

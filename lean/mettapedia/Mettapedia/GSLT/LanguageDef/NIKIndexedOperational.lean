@@ -369,16 +369,10 @@ instance pushforwardLift_isStronglyCocartesian
       CategoryTheory.CategoryOfElements.homMk _ _ tailRoute (by
         change (acceptedFunctor diagram).map tailRoute
             ((acceptedFunctor diagram).map route object.2) = targetObject.2
-        calc
-          _ = (acceptedFunctor diagram).map
-                (CategoryTheory.CategoryStruct.comp route tailRoute) object.2 :=
-              (CategoryTheory.Functor.map_comp_apply
-                (acceptedFunctor diagram) route tailRoute object.2).symm
-          _ = (acceptedFunctor diagram).map candidate.val object.2 := by
-              exact congrArg
-                (fun arrow => (acceptedFunctor diagram).map arrow object.2)
-                baseEq
-          _ = targetObject.2 := candidate.property)
+        exact (CategoryTheory.Functor.map_comp_apply
+          (acceptedFunctor diagram) route tailRoute object.2).symm.trans
+          ((congrArg (fun arrow => (acceptedFunctor diagram).map arrow object.2)
+            baseEq).trans candidate.property))
     have mediatorLift :
         (acceptedProjection diagram).IsHomLift tailRoute mediator := by
       change (acceptedProjection diagram).IsHomLift

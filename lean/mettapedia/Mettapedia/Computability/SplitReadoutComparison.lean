@@ -113,7 +113,7 @@ def canonicalBridge {Source Target : Type u}
     · change readout.canonicalize (readout.representative target) =
         readout.representative target
       unfold SplitReadout.canonicalize
-      rw [readout.observe_representative]
+      exact congrArg readout.representative (readout.observe_representative target)
     · exact readout.observe_representative target
   faithful := by
     intro context left right leftCanonical rightCanonical sameObservation

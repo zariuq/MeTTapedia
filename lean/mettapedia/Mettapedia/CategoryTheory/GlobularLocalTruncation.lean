@@ -233,12 +233,14 @@ def falseNextInFiber (horizon : Nat) :
       (horizonCell horizon) (horizonCell horizon) := by
   refine ⟨falseNextCell horizon, ?_⟩
   simp [tower, boundary, horizonCell]
+  rfl
 
 def trueNextInFiber (horizon : Nat) :
     (tower horizon).BoundaryFiber horizon
       (horizonCell horizon) (horizonCell horizon) := by
   refine ⟨trueNextCell horizon, ?_⟩
   simp [tower, boundary, horizonCell]
+  rfl
 
 /-- The two cells immediately above the horizon are distinct. -/
 theorem nextCells_distinct (horizon : Nat) :

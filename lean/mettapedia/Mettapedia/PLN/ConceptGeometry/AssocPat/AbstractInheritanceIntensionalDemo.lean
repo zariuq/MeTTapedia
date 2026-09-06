@@ -861,7 +861,7 @@ theorem posExtPingu_mem_penguinBirdStampedEvidence :
           (baseInterpretation.meaning Concept.bird)).map
             (DualConcept.posExtEmbedding (Obj := Creature) (Attr := Concept)) := by
     exact Finset.mem_map.mpr ⟨Creature.pingu, hPosExt, by
-      simp [DualConcept.posExtEmbedding]⟩
+      rfl⟩
   apply Finset.mem_union.mpr
   left
   apply Finset.mem_union.mpr
@@ -890,7 +890,7 @@ theorem posExtPingu_mem_birdBirdStampedEvidence :
           (baseInterpretation.meaning Concept.bird)).map
             (DualConcept.posExtEmbedding (Obj := Creature) (Attr := Concept)) := by
     exact Finset.mem_map.mpr ⟨Creature.pingu, hPosExt, by
-      simp [DualConcept.posExtEmbedding]⟩
+      rfl⟩
   apply Finset.mem_union.mpr
   left
   apply Finset.mem_union.mpr
@@ -921,7 +921,7 @@ theorem posIntBird_mem_penguinBirdStampedEvidence :
           (baseInterpretation.meaning Concept.bird)).map
             (DualConcept.posIntEmbedding (Obj := Creature) (Attr := Concept)) := by
     exact Finset.mem_map.mpr ⟨Concept.bird, hPosInt, by
-      simp [DualConcept.posIntEmbedding]⟩
+      rfl⟩
   apply Finset.mem_union.mpr
   left
   apply Finset.mem_union.mpr
@@ -949,7 +949,7 @@ theorem posIntBird_mem_birdBirdStampedEvidence :
           (baseInterpretation.meaning Concept.bird)).map
             (DualConcept.posIntEmbedding (Obj := Creature) (Attr := Concept)) := by
     exact Finset.mem_map.mpr ⟨Concept.bird, hPosInt, by
-      simp [DualConcept.posIntEmbedding]⟩
+      rfl⟩
   apply Finset.mem_union.mpr
   left
   apply Finset.mem_union.mpr

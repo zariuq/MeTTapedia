@@ -45,7 +45,7 @@ local instance instEmpiricalDecidableHolSatisfies (φ : ClosedFormula Const) :
 
 /-- Empirical `ProbHOL` model space induced by the raw model type itself, equipped
 with the discrete measurable structure in which every set is measurable. -/
-noncomputable def empiricalModelSpace
+noncomputable abbrev empiricalModelSpace
     (_W : Multiset (HenkinModel.{u, v, w} Base Const)) :
     ModelSpace Base Const where
   Idx := HenkinModel.{u, v, w} Base Const

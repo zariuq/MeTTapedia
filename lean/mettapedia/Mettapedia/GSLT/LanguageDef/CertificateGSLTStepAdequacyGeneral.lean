@@ -2022,7 +2022,7 @@ private theorem mapped_find?_fixed_none (source : DirectTraceLanguage)
   simp only [decide_eq_true_eq, rewriteStepRule_id]
   intro idEq
   have valueEq : ("step-rewrite-" ++ rewrite.name : String) =
-      fixedId.value := congrArg RuleId.value idEq
+      fixedId.value := congrArg RuleId.value (of_decide_eq_true idEq)
   have lengthEq := congrArg String.length valueEq
   rw [length_step_rewrite_id] at lengthEq
   omega

@@ -210,7 +210,7 @@ example : IsReducible' Space.empty GroundedDispatch.none
 example : IsValue' Space.empty GroundedDispatch.none
     (.expression [.symbol "S", .symbol "Z"]) := by
   apply IsValue'.constructor_app
-  · intro fuel; simp [queryEquations, Space.empty]
+  · intro fuel; cases fuel <;> simp [queryEquations, Space.empty]
   · rfl
   · rfl
   · intro a ha; simp at ha; exact ha ▸ .symbol "Z"

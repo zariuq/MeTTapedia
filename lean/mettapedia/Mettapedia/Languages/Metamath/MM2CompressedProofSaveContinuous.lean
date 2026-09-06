@@ -4328,6 +4328,7 @@ theorem canonicalPassiveRow_mem_save_fire
     | exact Or.inr ⟨_, rfl, fun substitution _ =>
         instantiate_saveMachineTemplate_ne_of_avoids substitution row avoids⟩
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem instantiate_afterSaveScanTemplate_ne_completed_scanner
     (context : BoundaryContext) (scanner : ScannerBoundary)
     (completed : scanner.phase = .completed) (substitution : Subst) :

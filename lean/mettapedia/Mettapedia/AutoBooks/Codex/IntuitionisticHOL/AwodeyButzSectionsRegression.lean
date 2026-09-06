@@ -75,7 +75,10 @@ theorem false_not_mem_trueRestriction_range :
   intro hfalse
   rcases hfalse with ⟨x, hx⟩
   rcases x with ⟨b, hb⟩
-  cases b <;> simp [trueOpen, trueSectionOn, EtaleSpace.SectionOn.toLocalSection] at hb hx
+  change b = true at hb
+  subst b
+  change true = false at hx
+  cases hx
 
 theorem sectionPresheaf_obj_top :
     reflEtale.sectionPresheaf.obj (Opposite.op ⊤) = reflEtale.SectionOn ⊤ := rfl

@@ -777,11 +777,11 @@ lemma toggles_even (d₀ : RS.D) (v : V) :
     have heq : (RS.faceOrbit d₀).filter
             (fun d => (RS.atV v d + RS.atV v (RS.phi d) : ZMod 2) = 1)
             = RS.togglesOn v d₀ := by
-      ext d
-      simp only [togglesOn, atV, Finset.mem_filter, decide_eq_true_eq]
-      by_cases h1 : RS.vertOf d = v <;> by_cases h2 : RS.vertOf (RS.phi d) = v
-      <;> simp [h1, h2]
-      <;> try decide
+      unfold togglesOn
+      apply Finset.filter_congr
+      intro d _
+      by_cases h1 : RS.vertOf d = v <;> by_cases h2 : RS.vertOf (RS.rho (RS.alpha d)) = v
+      <;> simp [atV, phi, h1, h2]
     rw [← heq]
     exact this
   have h0 : ((RS.togglesOn v d₀).card : ZMod 2) = 0 := by rw [← hsum_as_card]; exact hperm
@@ -915,8 +915,7 @@ lemma toggles_biject_edges_internal (PG : PlanarGeometry V E) (d₀ : PG.toRotat
       intro h
       -- From h : decide True = decide (PG.toRotationSystem.vertOf (PG.toRotationSystem.phi d) = v), derive PG.toRotationSystem.vertOf (PG.toRotationSystem.phi d) = v
       have hcontra : PG.toRotationSystem.vertOf (PG.toRotationSystem.phi d) = v := by
-        simp at h
-        exact h
+        exact of_decide_eq_true h.symm
       -- This would make alpha d also at v
       have hvα : PG.toRotationSystem.vertOf (PG.toRotationSystem.alpha d) = v := by
         have : PG.toRotationSystem.vertOf (PG.toRotationSystem.phi d) = PG.toRotationSystem.vertOf (PG.toRotationSystem.alpha d) := vert_phi_eq_vert_alpha (RS := PG.toRotationSystem) d
@@ -939,8 +938,7 @@ lemma toggles_biject_edges_internal (PG : PlanarGeometry V E) (d₀ : PG.toRotat
       intro h
       -- From h : decide (PG.toRotationSystem.vertOf d = v) = decide True, derive PG.toRotationSystem.vertOf d = v
       have hcontra : PG.toRotationSystem.vertOf d = v := by
-        simp at h
-        exact h
+        exact of_decide_eq_true h
       -- Contradicts no_self_loops
       exact PG.toRotationSystem.no_self_loops d (hcontra.trans hvα.symm)
 

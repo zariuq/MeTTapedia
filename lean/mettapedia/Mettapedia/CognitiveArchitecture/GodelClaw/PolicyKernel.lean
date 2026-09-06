@@ -15,7 +15,10 @@ inductive ContextTier where
   | pub     -- Public
   | fam     -- Family
   | priv    -- Private
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype ContextTier :=
+  ⟨{.pub, .fam, .priv}, by intro x; cases x <;> simp⟩
 
 def ContextTier.rank : ContextTier → ℕ
   | .pub => 0
@@ -40,13 +43,20 @@ theorem ContextTier.secMax_comm (a b : ContextTier) :
 theorem ContextTier.secMax_idem (a : ContextTier) :
     a.secMax a = a := by simp [secMax]
 
+theorem ContextTier.secMax_assoc (a b c : ContextTier) :
+    (a.secMax b).secMax c = a.secMax (b.secMax c) := by
+  cases a <;> cases b <;> cases c <;> decide
+
 /-! ## Integrity Tier -/
 
 inductive IntegrityTier where
   | untrusted
   | reviewed
   | trusted
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype IntegrityTier :=
+  ⟨{.untrusted, .reviewed, .trusted}, by intro x; cases x <;> simp⟩
 
 def IntegrityTier.rank : IntegrityTier → ℕ
   | .untrusted => 0
@@ -64,6 +74,10 @@ theorem IntegrityTier.intMin_comm (a b : IntegrityTier) :
 
 theorem IntegrityTier.intMin_idem (a : IntegrityTier) :
     a.intMin a = a := by simp [intMin]
+
+theorem IntegrityTier.intMin_assoc (a b c : IntegrityTier) :
+    (a.intMin b).intMin c = a.intMin (b.intMin c) := by
+  cases a <;> cases b <;> cases c <;> decide
 
 /-! ## Flow Label -/
 
@@ -87,10 +101,9 @@ theorem FlowLabel.join_idem (a : FlowLabel) :
 
 theorem FlowLabel.join_assoc (a b c : FlowLabel) :
     (a.join b).join c = a.join (b.join c) := by
-  simp only [join, ContextTier.secMax, IntegrityTier.intMin]
-  cases a.secrecy <;> cases b.secrecy <;> cases c.secrecy <;>
-    cases a.integrity <;> cases b.integrity <;> cases c.integrity <;>
-    simp [ContextTier.rank, IntegrityTier.rank] <;> omega
+  exact congrArg₂ FlowLabel.mk
+    (ContextTier.secMax_assoc a.secrecy b.secrecy c.secrecy)
+    (IntegrityTier.intMin_assoc a.integrity b.integrity c.integrity)
 
 /-! ## Channel Mapping -/
 
@@ -102,7 +115,10 @@ inductive Channel where
   | internal
   | api
   | moltbook
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype Channel :=
+  ⟨{.telegramPublic, .telegramFamily, .telegramDm, .terminal, .internal, .api, .moltbook}, by intro x; cases x <;> simp⟩
 
 def Channel.defaultContext : Channel → ContextTier
   | .telegramPublic | .api | .moltbook => .pub
@@ -120,7 +136,7 @@ theorem IntegrityTier.fromContext_rank_mono {a b : ContextTier}
     (h : a.rank ≤ b.rank) :
     (fromContext a).rank ≤ (fromContext b).rank := by
   cases a <;> cases b <;>
-    simp [fromContext, IntegrityTier.rank, ContextTier.rank] at * <;> omega
+    simp [fromContext, IntegrityTier.rank, ContextTier.rank] at *
 
 /-- Context-to-integrity is injective. -/
 theorem IntegrityTier.fromContext_injective :

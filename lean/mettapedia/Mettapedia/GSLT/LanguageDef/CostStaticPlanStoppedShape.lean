@@ -273,10 +273,10 @@ theorem CostStaticRegionPlan.nonempty_shapedContextInventoryView
                 simp [frame, CostStaticRegionPlan.abstractPattern,
                   OneHoleContext.fill, active.abstracts_eq])
               entryEmbedding := by
-                rw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
+                erw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
                 exact inventory.entryEmbedding.comp active.entryEmbedding
               skeletonComposed := by
-                rw [CostStaticPlanContextView.skeletonContext_liftSkeleton]
+                erw [CostStaticPlanContextView.skeletonContext_liftSkeleton]
                 exact CostStaticPlanSkeletonComposed.comp
                   (.apply _ _ _ .hole) inventory.skeletonComposed }⟩
   | .lambda binderName inner, _, _, _, _, _, pattern, payload, _, plan,
@@ -305,10 +305,10 @@ theorem CostStaticRegionPlan.nonempty_shapedContextInventoryView
                 simp [frame, CostStaticRegionPlan.abstractPattern,
                   OneHoleContext.fill])
               entryEmbedding := by
-                rw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
+                erw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
                 exact inventory.entryEmbedding
               skeletonComposed := by
-                rw [CostStaticPlanContextView.skeletonContext_liftSkeleton]
+                erw [CostStaticPlanContextView.skeletonContext_liftSkeleton]
                 exact CostStaticPlanSkeletonComposed.comp
                   (.lambda _ .hole) inventory.skeletonComposed }⟩
   | .multiLambda arity binderNames inner, _, _, _, _, _, pattern, payload,
@@ -338,10 +338,10 @@ theorem CostStaticRegionPlan.nonempty_shapedContextInventoryView
                 simp [frame, CostStaticRegionPlan.abstractPattern,
                   OneHoleContext.fill])
               entryEmbedding := by
-                rw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
+                erw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
                 exact inventory.entryEmbedding
               skeletonComposed := by
-                rw [CostStaticPlanContextView.skeletonContext_liftSkeleton]
+                erw [CostStaticPlanContextView.skeletonContext_liftSkeleton]
                 exact CostStaticPlanSkeletonComposed.comp
                   (.multiLambda _ _ .hole) inventory.skeletonComposed }⟩
   | .substBody inner replacement, _, _, _, _, _, pattern, payload, _, plan,
@@ -396,10 +396,10 @@ theorem CostStaticRegionPlan.nonempty_shapedContextInventoryView
                 simp [frame, CostStaticRegionPlan.abstractPattern,
                   OneHoleContext.fill, active.abstracts_eq])
               entryEmbedding := by
-                rw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
+                erw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
                 exact inventory.entryEmbedding.comp active.entryEmbedding
               skeletonComposed := by
-                rw [CostStaticPlanContextView.skeletonContext_liftSkeleton]
+                erw [CostStaticPlanContextView.skeletonContext_liftSkeleton]
                 exact CostStaticPlanSkeletonComposed.comp
                   (.collection _ _ _ _ .hole)
                   inventory.skeletonComposed }⟩

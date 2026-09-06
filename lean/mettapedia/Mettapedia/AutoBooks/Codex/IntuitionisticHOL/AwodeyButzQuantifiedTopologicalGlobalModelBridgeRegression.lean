@@ -57,6 +57,7 @@ def Carrier : Ty BaseSort → Type
   | .base _ => PUnit
   | .arr σ τ => Carrier σ → Carrier τ
 
+set_option backward.isDefEq.respectTransparency false in
 def model : GlobalModel BaseSort Const where
   toApplicativeStructure :=
     { Carrier := Carrier
@@ -122,7 +123,8 @@ theorem truthEval_forallPropVar_ne_top :
       SemilocalModel.formulaTruth, SemilocalModel.eval, model] using htop
   have hfalse :=
     (hiff.mpr trivial) False
-  simp [ApplicativeStructure.Env.extend, Carrier, SimpleTy.toTy] at hfalse
+  change False at hfalse
+  exact hfalse
 
 theorem not_derivable_forallPropVar :
     ¬ Derivable (Base := BaseSort) (Const := Const) []

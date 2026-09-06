@@ -13280,13 +13280,7 @@ theorem nestedExpressionLiveAssignment_positiveOracle :
         (by simp [DeclMatchSpec.Atom.isVarB]))
   have hchildMerge : childMatched ∈
       mergeBindings Bindings.empty childMatched 2 := by
-    have hchildEq : childMatched =
-        Bindings.empty.assign "y" (.symbol "a") := by
-      simp [childMatched, Bindings.empty, Bindings.assign,
-        Bindings.isBound, Bindings.lookup]
-    rw [hchildEq, mergeBindings_single_assign]
-    simp [addVarBinding, Bindings.empty, Bindings.classValues,
-      Bindings.lookup]
+    decide +kernel
   let hlist : DeclMatchSpec.MatchListAccRel
       [.var "y"] [.symbol "a"] Bindings.empty childMatched :=
     DeclMatchSpec.MatchListAccRel.cons hchildMatch hchildMerge

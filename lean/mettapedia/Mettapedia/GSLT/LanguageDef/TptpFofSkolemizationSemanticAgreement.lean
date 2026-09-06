@@ -141,6 +141,7 @@ noncomputable def matrixDerivation {sourceDepth targetDepth : Nat}
           (matrixDerivation environment right free.2)
   | .all _, impossible => False.elim impossible
   | .ex _, impossible => False.elim impossible
+set_option backward.isDefEq.respectTransparency false in
 
 theorem matrixTargetPattern_semantic_exact
     {sourceDepth targetDepth : Nat}

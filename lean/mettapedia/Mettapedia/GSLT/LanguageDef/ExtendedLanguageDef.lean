@@ -222,7 +222,8 @@ theorem final_layer_is_not_erased :
     threeLayers.extension ≠ threeEmptyLayers.extension := by
   intro equal
   have judgmentsEqual := congrArg (fun payload => payload.2.judgments) equal
-  simp [threeLayers, threeEmptyLayers, marker, ProofCalculus.empty] at judgmentsEqual
+  change marker.judgments = [] at judgmentsEqual
+  contradiction
 
 end ExtendedLanguageDefSyntaxCanary
 

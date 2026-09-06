@@ -360,7 +360,7 @@ theorem max_choice_does_not_preserve_route_append :
       (occurrenceBag (falseRoute.append trueRoute)) 0).mp lowCombined
   have highInCombined :
       1 ∈ occurrenceBag (falseRoute.append trueRoute) := by
-    rw [occurrenceBag_append]
+    erw [occurrenceBag_append]
     simp [occurrenceBag]
   have impossible := maximal.2 1 highInCombined
   simp [rank] at impossible

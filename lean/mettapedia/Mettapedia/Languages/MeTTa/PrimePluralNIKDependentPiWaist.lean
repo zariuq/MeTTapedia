@@ -159,7 +159,7 @@ theorem dependentPi_varying_family_is_not_constant :
 contractum syntax trees. -/
 theorem dependentPi_external_validity_does_not_reflect_raw_syntax :
     ExtensionalFaces.ShallowValid.{u, v} /\
-      NativeDTT.source ≠ NativeDTT.target :=
+      ScopedDTT.source ≠ ScopedDTT.target :=
   ExtensionalFaces.extensional_validity_not_raw_reflection
 
 /-- A changed contractum remains semantically false after entering Prime. -/

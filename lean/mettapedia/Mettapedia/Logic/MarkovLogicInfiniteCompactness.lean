@@ -136,7 +136,8 @@ theorem isProjectiveMeasureFamily_of_tendsto_stageProbabilityFamily
       (fun n => stageProbabilityFamily E M ξ (φ n) J) := by
     funext n
     apply ProbabilityMeasure.toMeasure_injective
-    simpa [stageProbabilityFamily, r] using
+    rw [ProbabilityMeasure.toMeasure_map]
+    exact
       (Mettapedia.Logic.MarkovLogicInfiniteProjective.RegionExhaustion.isProjectiveMeasureFamily_stageMarginal
         E M ξ (φ n) (I := I) (J := J) hJI).symm
   have hMapI :

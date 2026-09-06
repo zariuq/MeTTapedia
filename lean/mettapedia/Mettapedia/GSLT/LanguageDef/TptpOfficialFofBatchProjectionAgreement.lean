@@ -203,7 +203,10 @@ private theorem mismatched_projection_rule_has_no_match
         skolem cnf) = [] := by
   rw [matchPatternForRule_eq_syntactic]
   cases withRefinement <;> cases sourceWithRefinement <;>
-  simp [TptpOfficialFofBatchProjectionLanguageDef.mkProjectionRule,
+  simp [TptpOfficialFofBatchProjectionLanguageDef.projection_typeContext,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_premises,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_left,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_right,
     concreteSourceFofInput, projectionRequest, sourceFofInput,
     sourceOccurrence, plainRole, refinedRole, tokenLowerWord,
     TptpOfficialFofBatchProjectionLanguageDef.a,
@@ -308,7 +311,10 @@ private theorem matching_projection_pair_plain_exact
   rcases entry with ⟨code, polarity⟩
   cases polarity <;>
   simp [projectionPair,
-    TptpOfficialFofBatchProjectionLanguageDef.mkProjectionRule,
+    TptpOfficialFofBatchProjectionLanguageDef.projection_typeContext,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_premises,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_left,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_right,
     concreteSourceFofInput, projectionRequest, targetRequest,
     sourceFofInput, sourceOccurrence, sourceDigest, batchOccurrence, plainRole,
     refinedRole, tokenLowerWord,
@@ -337,7 +343,10 @@ private theorem matching_projection_pair_refined_exact
   rcases entry with ⟨code, polarity⟩
   cases polarity <;>
   simp [projectionPair,
-    TptpOfficialFofBatchProjectionLanguageDef.mkProjectionRule,
+    TptpOfficialFofBatchProjectionLanguageDef.projection_typeContext,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_premises,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_left,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_right,
     concreteSourceFofInput, projectionRequest, targetRequest,
     sourceFofInput, sourceOccurrence, sourceDigest, batchOccurrence, plainRole,
     refinedRole, tokenLowerWord,
@@ -486,7 +495,10 @@ local macro_rules
     simp_all [
       matchPatternForRule_eq_syntactic,
       premisesUsing, premiseStepUsing,
-      TptpOfficialFofBatchProjectionLanguageDef.mkProjectionRule,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_typeContext,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_premises,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_left,
+      TptpOfficialFofBatchProjectionLanguageDef.projection_right,
       projectionRequest, targetRequest, sourceFofInput,
       sourceOccurrence, sourceDigest, batchOccurrence, plainRole,
       refinedRole, tokenLowerWord,

@@ -303,7 +303,8 @@ theorem interpretFuel_pending_one :
   rw [interpretFuel_succ_of witnessEnv 0 St.init St.init pendingItem []
         [pendingFinished] [] (interpretStack1_pendingItem 0),
       interpretFuel_allFinal witnessEnv _ (by simp [pendingFinished_isFinal]) 0 St.init _]
-  simp [pendingFinished, isFinal, finalPair, emptyA, Metta.instantiate_nil]
+  simp [pendingFinished, isFinal, finalPair, emptyA, Metta.instantiate_nil,
+    List.filter_cons]
   rfl
 
 /-- Fuel is observable on an unfinished queue: budgets `0` and `1` disagree. -/

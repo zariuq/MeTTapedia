@@ -475,8 +475,8 @@ private theorem matcher_mono_local : ∀ n : Nat,
             simp [hvalues] at hx ⊢
             exact hx
         | cons first rest =>
-            simp only [hvalues, Bindings.valuesConsistent] at hx ⊢
-            by_cases hclass : rest.all (fun value => value == first) = true
+            simp only [hvalues] at hx ⊢
+            by_cases hclass : Bindings.valuesConsistent (first :: rest) = true
             · rw [if_pos hclass] at hx ⊢
               by_cases hsame : first = val
               · have hbeq : (first == val) = true := by simp [hsame]
@@ -495,13 +495,13 @@ private theorem matcher_mono_local : ∀ n : Nat,
             simp [hvalues] at hx ⊢
             exact hx
         | cons first rest =>
-            simp only [hvalues, Bindings.valuesConsistent] at hx ⊢
-            by_cases hall : rest.all (fun value => value == first) = true
+            simp only [hvalues] at hx ⊢
+            by_cases hall : Bindings.valuesConsistent (first :: rest) = true
             · rw [if_pos hall] at hx ⊢
               exact hx
             · rw [if_neg hall] at hx ⊢
               cases rest with
-              | nil => simp at hall
+              | nil => simp [Bindings.valuesConsistent] at hall
               | cons second tail =>
                   cases tail with
                   | nil =>
@@ -1080,8 +1080,8 @@ private theorem matcherAssignmentsNonVar :
             subst out
             exact AssignmentValuesNonVar.assign hb hval
         | cons first rest =>
-            simp only [hvalues, Bindings.valuesConsistent] at h
-            by_cases hclass : rest.all (fun value => value == first) = true
+            simp only [hvalues] at h
+            by_cases hclass : Bindings.valuesConsistent (first :: rest) = true
             · rw [if_pos hclass] at h
               split at h
               · simp at h
@@ -1108,15 +1108,15 @@ private theorem matcherAssignmentsNonVar :
             rcases h with ⟨_, rfl⟩
             exact hcandidate
         | cons first rest =>
-            simp only [candidate, hvalues, Bindings.valuesConsistent] at h
-            by_cases hclass : rest.all (fun value => value == first) = true
+            simp only [candidate, hvalues] at h
+            by_cases hclass : Bindings.valuesConsistent (first :: rest) = true
             · rw [if_pos hclass] at h
               simp at h
               subst out
               exact hcandidate
             · rw [if_neg hclass] at h
               cases rest with
-              | nil => simp at hclass
+              | nil => simp [Bindings.valuesConsistent] at hclass
               | cons second tail =>
                   cases tail with
                   | nil =>
@@ -1382,8 +1382,8 @@ private theorem matcherAssignmentsNodup :
             subst out
             exact AssignmentKeysNodup.assign hb
         | cons first rest =>
-            simp only [hvalues, Bindings.valuesConsistent] at h
-            by_cases hclass : rest.all (fun value => value == first) = true
+            simp only [hvalues] at h
+            by_cases hclass : Bindings.valuesConsistent (first :: rest) = true
             · rw [if_pos hclass] at h
               split at h
               · simp at h
@@ -1410,15 +1410,15 @@ private theorem matcherAssignmentsNodup :
             rcases h with ⟨_, rfl⟩
             exact hcandidate
         | cons first rest =>
-            simp only [candidate, hvalues, Bindings.valuesConsistent] at h
-            by_cases hclass : rest.all (fun value => value == first) = true
+            simp only [candidate, hvalues] at h
+            by_cases hclass : Bindings.valuesConsistent (first :: rest) = true
             · rw [if_pos hclass] at h
               simp at h
               subst out
               exact hcandidate
             · rw [if_neg hclass] at h
               cases rest with
-              | nil => simp at hclass
+              | nil => simp [Bindings.valuesConsistent] at hclass
               | cons second tail =>
                   cases tail with
                   | nil =>

@@ -542,8 +542,7 @@ formed `witness` inherits formed `feature`, so every witness extent object is
 also a feature extent object in the generated 2x2 table. -/
 theorem witnessFeatureFormedInheritanceTable_noWitnessOnly :
     witnessFeatureFormedInheritanceTable.witnessOnly = 0 := by
-  simpa [witnessFeatureFormedInheritanceTable,
-    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.AbstractInheritance.formedConceptInheritanceTable] using
+  exact
     Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Interpretation.toFiniteWitnessFeatureTable_witnessOnly_eq_zero_of_inherits
       (I := Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation
         Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport
@@ -617,8 +616,7 @@ theorem witnessFeature_formedConcept_assocLogRatio_eq_veQueryScore :
           [⟨MembershipConcept.witness, true⟩] : ℝ) /
             FiniteWitnessFeatureTable.veWeight
               witnessFeatureFormedInheritanceTable []) := by
-  simpa [witnessFeatureFormedInheritanceTable,
-    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.AbstractInheritance.formedConceptInheritanceTable] using
+  exact
     Mettapedia.KR.ConceptGeometry.IntensionalInheritance.AbstractInheritance.finiteInheritanceLogRatioBits_formedConceptInterpretation_eq_veQueryScore
       (G := Mettapedia.KR.ConceptOntology.EvidenceGate.positiveSupport)
       (M := witnessImpliesFeatureMemberEvidence)

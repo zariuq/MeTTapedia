@@ -1372,13 +1372,13 @@ noncomputable def expectedRewardBit (ex : SupervisedLearningProblem) (h : ex.Hyp
   | _ => false
 
 /-- A presentation is consistent with a hypothesis iff any displayed label matches it. -/
-def labelConsistent (ex : SupervisedLearningProblem) (h : ex.Hyp) (p : Presentation ex) : Prop :=
+abbrev labelConsistent (ex : SupervisedLearningProblem) (h : ex.Hyp) (p : Presentation ex) : Prop :=
   match p.2 with
   | none => True
   | some v => v = ex.label h p.1
 
 /-- One-step consistency condition for a *new* percept, given the current history and chosen action. -/
-def stepConsistent (ex : SupervisedLearningProblem) (h : ex.Hyp)
+abbrev stepConsistent (ex : SupervisedLearningProblem) (h : ex.Hyp)
     (hist : BayesianAgents.Core.History ex.V (Percept ex)) (a : ex.V) (x : Percept ex) : Prop :=
   x.2 = ex.expectedRewardBit h hist a ∧ ex.labelConsistent h x.1
 

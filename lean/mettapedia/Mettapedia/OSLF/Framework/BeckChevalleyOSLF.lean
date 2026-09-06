@@ -113,6 +113,7 @@ theorem presheaf_beckChevalley_square_direct
     (Mettapedia.GSLT.Topos.beckChevalleyPresheaf
       (C := C) pi1 pi2 f g hpb φ)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Representable-object Beck–Chevalley corollary for predicates obtained from
 `Pattern → Prop` via `languageSortFiber_ofPatternPred`.
 
@@ -151,6 +152,7 @@ theorem representable_patternPred_beckChevalley
     (φ := Mettapedia.OSLF.Framework.CategoryBridge.languageSortFiber_ofPatternPred_subobject
       lang s seed φ hNat)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Σ-facing representable Beck–Chevalley wrapper on the canonical
 predicate-fiber object (`Pattern → Prop` lifted to `Sub(y(s))`).
 
@@ -187,6 +189,7 @@ theorem representable_patternPred_sigma_beckChevalley
     (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)).symm
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Σ-facing representable transport wrapper:
 left-adjoint (`∃`) law over the canonical predicate object, routed through the
 Prop-12 ΠΣ rule pack endpoint. -/
@@ -241,6 +244,7 @@ theorem representable_patternPred_sigma_transport_via_prop12_pack
         (ψ := ψ))
   exact hSigmaEta
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Π-facing representable transport wrapper:
 right-adjoint (`∀`) law over the same canonical predicate object.
 
@@ -289,6 +293,7 @@ theorem representable_patternPred_pi_transport_via_prop12_pack
           lang s seed φ hNat))
   exact hPiEta
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Π-facing representable transport wrapper:
 right-adjoint (`∀`) law over the same canonical predicate object.
 
@@ -319,6 +324,7 @@ theorem representable_patternPred_pi_transport
     (lang := lang) (s := s) (seed := seed) (φ := φ) (hNat := hNat)
     (f := f) (χ := χ)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Unified representable Π/Σ transport endpoint over the canonical predicate
 object, with both adjoint laws routed through the Prop-12 ΠΣ rule pack. -/
 theorem representable_patternPred_piSigma_transport_via_rulePack
@@ -402,6 +408,7 @@ theorem representable_patternPred_piSigma_transport_via_rulePack
         )
   exact ⟨hSigmaEta, hPiEta⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Unified representable Π/Σ transport endpoint over the canonical predicate
 object, with both adjoint laws routed through the Prop-12 ΠΣ rule pack. -/
 theorem representable_patternPred_piSigma_transport_via_prop12_pack
@@ -443,6 +450,7 @@ theorem representable_patternPred_piSigma_transport_via_prop12_pack
       (C := ConstructorObj lang))
     (f := f) (χ := χ) (ψ := ψ)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Packaged representable Π/Σ transport API on the canonical predicate object:
 includes Σ-Beck-Chevalley transport plus Σ/Π adjoint transport laws, all routed
 through the Prop-12 predicate-fibration rule pack exports. -/
@@ -785,6 +793,7 @@ theorem commPbSemantic_apply (q : Pattern) (φ : Pattern → Prop) (pBody : Patt
 theorem commDiSemantic_apply (q : Pattern) (ψ : Pattern → Prop) (r : Pattern) :
     commDiSemantic q ψ r = (∃ p, semanticCommSubst p q = r ∧ ψ p) := rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Representable-fiber Beck-Chevalley instance specialized to the
 COMM substitution direct image predicate `commDi q φ`.
 
@@ -821,6 +830,7 @@ theorem representable_commDi_patternPred_beckChevalley
     (hNat := hNatComm) (pi1 := pi1) (pi2 := pi2)
     (f := f) (g := g) (hpb := hpb) (hf := hf) (hpi2 := hpi2)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Derived COMM representable Beck–Chevalley corollary from the named
 structural lifting condition.
 
@@ -865,6 +875,7 @@ theorem representable_commDi_patternPred_beckChevalley_of_lifting
     (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- `representable_commDi_patternPred_beckChevalley` with naturality derived via
 the path-based lifting constructor (`commDiWitnessLifting_of_pathSemLift`). -/
 theorem representable_commDi_patternPred_beckChevalley_of_pathSemLift
@@ -916,6 +927,7 @@ theorem representable_commDi_patternPred_beckChevalley_of_pathSemLift
     (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- `representable_commDi_patternPred_beckChevalley` with naturality derived via
 canonical path-semantics closure (`PathSemClosedPred`).
 
@@ -967,6 +979,7 @@ theorem representable_commDi_patternPred_beckChevalley_of_pathSemClosed
     (pi1 := pi1) (pi2 := pi2) (f := f) (g := g)
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Package form of `representable_commDi_patternPred_beckChevalley_of_pathSemClosed`. -/
 theorem representable_commDi_patternPred_beckChevalley_of_pathSemLiftPkg
     (lang : LanguageDef) (s : LangSort lang)
@@ -1042,6 +1055,7 @@ theorem commDi_diamond_graph_step_iff
         ((Mettapedia.OSLF.Framework.ToposReduction.reductionGraphUsing
           (C := C) relEnv lang).target.app X e).down ∧ φ u from ⟨u, hu, hφ⟩))
 
+set_option backward.isDefEq.respectTransparency false in
 /-- One-step composition theorem: representable COMM-BC plus graph-`◇` form.
 
 This packages the representable Beck–Chevalley specialization for COMM
@@ -1098,6 +1112,7 @@ theorem representable_commDi_bc_and_graphDiamond
         (C := ConstructorObj lang) (relEnv := relEnv) (lang := lang)
         (X := X) (q := q) (p := p) (φ := φ) hInvariant)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- `representable_commDi_bc_and_graphDiamond` with naturality synthesized from
 `commDiWitnessLifting`. -/
 theorem representable_commDi_bc_and_graphDiamond_of_lifting
@@ -1154,6 +1169,7 @@ theorem representable_commDi_bc_and_graphDiamond_of_lifting
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)
     (relEnv := relEnv) (hInvariant := hInvariant) (X := X) (p := p)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- `representable_commDi_bc_and_graphDiamond` with naturality derived via the
 path-based lifting constructor (`commDiWitnessLifting_of_pathSemLift`). -/
 theorem representable_commDi_bc_and_graphDiamond_of_pathSemLift
@@ -1221,6 +1237,7 @@ theorem representable_commDi_bc_and_graphDiamond_of_pathSemLift
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)
     (relEnv := relEnv) (hInvariant := hInvariant) (X := X) (p := p)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- `representable_commDi_bc_and_graphDiamond` with naturality derived via
 canonical path-semantics closure (`PathSemClosedPred`).
 
@@ -1295,6 +1312,7 @@ theorem representable_commDi_bc_and_graphDiamond_of_pathSemClosed
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)
     (relEnv := relEnv) (hInvariant := hInvariant) (X := X) (p := p)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Package form of `representable_commDi_bc_and_graphDiamond_of_pathSemClosed`. -/
 theorem representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
     (lang : LanguageDef) (s : LangSort lang)
@@ -1353,6 +1371,7 @@ theorem representable_commDi_bc_and_graphDiamond_of_pathSemLiftPkg
     (hpb := hpb) (hf := hf) (hpi2 := hpi2)
     (relEnv := relEnv) (hInvariant := hInvariant) (X := X) (p := p)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Specialized rho-Proc version of the path-lift BC+graph theorem, consuming
 the concrete package `rho_proc_pathSemLift_pkg`. -/
 theorem rhoProc_commDi_bc_and_graphDiamond_of_pathSemLift_pkg

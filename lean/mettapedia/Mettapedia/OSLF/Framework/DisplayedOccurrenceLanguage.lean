@@ -192,14 +192,15 @@ noncomputable def reindexSelection
   position := fun sourcePosition =>
     ⟨sourcePosition.val, by
       simp [DisplayedOccurrenceLanguage.atSelection,
-        DisplayedRewriteSite.mapSelection]⟩
+        DisplayedRewriteSite.mapSelection]
+      exact sourcePosition.isLt⟩
   position_strictMono := fun less => less
   siteAt := by
     intro sourcePosition
     change
       (selection.map (DisplayedRewriteSite.map morphism)).get _ =
         DisplayedRewriteSite.map morphism (selection.get sourcePosition)
-    rw [List.get_eq_getElem, List.get_eq_getElem, List.getElem_map]
+    exact List.getElem_map _
 
 /-- Appending a compilation delta gives the canonical occurrence-preserving
 inclusion: old positions and their declaration names remain stable. -/

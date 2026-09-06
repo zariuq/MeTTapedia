@@ -1298,8 +1298,8 @@ noncomputable def languageSortPredicateFibration (lang : LanguageDef) :
   Sub := fun s => languageSortFiber lang s.as
   frame := by
     intro s
-    dsimp [languageSortFiber, languagePresheafLambdaTheory]
-    infer_instance
+    exact (languagePresheafLambdaTheory lang).fibration.frame
+      (languageSortRepresentableObj lang s.as)
 
 /-- Concrete rho process sort object in the canonical presheaf λ-theory lift. -/
 noncomputable def rhoProcRepresentableObj :

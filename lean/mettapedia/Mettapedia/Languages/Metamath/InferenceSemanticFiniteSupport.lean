@@ -99,6 +99,7 @@ theorem renameFormula_subst (ρ : MarioVR → MarioVR)
   cases formula with
   | mk typecode expression =>
       simp [renameFormula, Metamath.Formula.subst, renameExpr_subst]
+      rfl
 
 /-- A renamed variable formula is the variable formula of the renamed
 reference when the renaming preserves typecodes. -/
@@ -107,6 +108,7 @@ theorem renameFormula_vhyp {ρ : MarioVR → MarioVR}
     renameFormula ρ (Metamath.VR.vhyp v) =
       Metamath.VR.vhyp (ρ v) := by
   simp [renameFormula, Metamath.VR.vhyp, renameExpr, renameSym, htype v]
+  rfl
 
 @[simp] theorem renameSym_id (symbol : Metamath.Sym) :
     renameSym id symbol = symbol := by
@@ -123,6 +125,7 @@ theorem renameFormula_vhyp {ρ : MarioVR → MarioVR}
     renameFormula id formula = formula := by
   cases formula
   simp [renameFormula]
+  rfl
 
 /-! ## Transport of disjointness -/
 

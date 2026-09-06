@@ -308,7 +308,7 @@ def collapsedOperation : sourceObject ⟶ readoutObject where
   preserves := by
     intro cell meaningful
     change 0 < constructorCount (mapGenerators collapseDuplicate cell)
-    rw [constructorCount_mapGenerators]
+    erw [constructorCount_mapGenerators]
     exact meaningful
 
 def retainedOperation : sourceObject ⟶ readoutObject where

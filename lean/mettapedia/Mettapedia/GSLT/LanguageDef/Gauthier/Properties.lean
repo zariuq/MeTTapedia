@@ -752,7 +752,8 @@ theorem loopWiden_succ_step (fuel : Nat) (body : Prog) (loopY acc : AbsVal) (ste
          next
        else
          analyzeFuel.loopWiden fuel body loopY steps next) := by
-  simp [loopWiden_succ, loopWidenStep]
+  change _ = _
+  exact loopWiden_succ fuel body loopY acc steps
 
 theorem loopWidenStep_rank_le (fuel : Nat) (body : Prog) (loopY acc : AbsVal) :
     acc.widenRank <= (loopWidenStep fuel body loopY acc).widenRank := by
@@ -937,7 +938,8 @@ theorem loop2Widen_succ_step (fuel : Nat) (f g : Prog) (accX accY : AbsVal) (ste
          next
        else
          analyzeFuel.loop2Widen fuel f g steps next.1 next.2) := by
-  simp [loop2Widen_succ, loop2WidenStep]
+  change _ = _
+  exact loop2Widen_succ fuel f g accX accY steps
 
 theorem loop2WidenStep_pair_rank_le (fuel : Nat) (f g : Prog) (accX accY : AbsVal) :
     accX.pairWidenRank accY <=

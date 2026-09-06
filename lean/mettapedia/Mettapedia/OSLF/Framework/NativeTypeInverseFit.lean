@@ -144,14 +144,14 @@ theorem selfFit_isClassifying (blue : ValidatedCalculusLanguageDef) :
       change CalculusStructuralMorphism.comp
           (CalculusStructuralMorphism.id blue) first.arrow =
         other.embedding at firstCommutes
-      rw [structural_id_comp] at firstCommutes
+      erw [structural_id_comp] at firstCommutes
       exact firstCommutes
     have secondArrow : second.arrow = other.embedding := by
       have secondCommutes := second.commutes
       change CalculusStructuralMorphism.comp
           (CalculusStructuralMorphism.id blue) second.arrow =
         other.embedding at secondCommutes
-      rw [structural_id_comp] at secondCommutes
+      erw [structural_id_comp] at secondCommutes
       exact secondCommutes
     exact firstArrow.trans secondArrow.symm
 

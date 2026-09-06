@@ -48,7 +48,8 @@ noncomputable def matrixRealization (n : Nat) :
     intro graph query
     change graph.cell query.1 query.2 =
       decide ((AdjacencyMatrix.denote graph).Adj query.1 query.2)
-    simp [AdjacencyMatrix.denote]
+    simp only [AdjacencyMatrix.denote]
+    exact Bool.decide_eq_true.symm
 
 /-- State observation is independent of whether the matrix read has already
 occurred. -/

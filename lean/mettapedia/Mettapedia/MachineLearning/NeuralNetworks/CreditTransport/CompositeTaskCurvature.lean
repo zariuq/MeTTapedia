@@ -108,7 +108,11 @@ inductive TGADTaskSite
   | nextResidueTwo
   | nextResidueThree
   | nextResidueFive
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype TGADTaskSite where
+  elems := { .primary, .operatorBag, .lengthBucket, .nextSign, .nextLogBucket, .nextResidueTwo, .nextResidueThree, .nextResidueFive }
+  complete x := by cases x <;> simp
 
 /-- Exact-real idealization of the source weights.  The next-term heads are
 inactive when their target is unavailable. -/

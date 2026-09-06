@@ -187,6 +187,7 @@ theorem current_exact_compiles_scheduled
       [RealizedWorld.scheduled (compileFamilyExecution pairExecution)] :=
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Stale exact evidence compiles as the original raw rho branch at a current
 implementation revision. -/
 theorem stale_exact_compiles_raw

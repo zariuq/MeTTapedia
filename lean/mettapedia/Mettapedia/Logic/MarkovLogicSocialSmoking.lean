@@ -89,7 +89,11 @@ inductive SocialClauseId where
   | smokesCancerBob
   | friendsInfluenceAB
   | evidenceSmokesA
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype SocialClauseId where
+  elems := {.smokesCancerAlice, .smokesCancerBob, .friendsInfluenceAB, .evidenceSmokesA}
+  complete value := by cases value <;> simp
 
 /-! ### Named ground atoms -/
 
@@ -464,7 +468,10 @@ theorem social_queryMass_smokesBob_eq_three :
   simp only [CountableMLNSemantics.queryMass, GroundMLN.toCountableMLNSemantics,
              constraintQueryHolds, satisfiesConstraints]
   rw [tsum_eq_sum (s := Finset.univ) (fun W hW => (hW (Finset.mem_univ W)).elim)]
-  exact social_sum_smokesBob_aux
+  convert social_sum_smokesBob_aux using 1
+  congr 1
+  funext world
+  congr 1
 
 theorem social_queryMass_cancerBob_eq_four :
     (clauseMassSemantics socialGroundMLN socialFullSupport).queryMass cancerBobQuery = 4 := by
@@ -474,7 +481,10 @@ theorem social_queryMass_cancerBob_eq_four :
   simp only [CountableMLNSemantics.queryMass, GroundMLN.toCountableMLNSemantics,
              constraintQueryHolds, satisfiesConstraints]
   rw [tsum_eq_sum (s := Finset.univ) (fun W hW => (hW (Finset.mem_univ W)).elim)]
-  exact social_sum_cancerBob_aux
+  convert social_sum_cancerBob_aux using 1
+  congr 1
+  funext world
+  congr 1
 
 theorem social_queryProb_smokesBob_eq_three_fifths :
     (clauseMassSemantics socialGroundMLN socialFullSupport).queryProb smokesBobQuery =

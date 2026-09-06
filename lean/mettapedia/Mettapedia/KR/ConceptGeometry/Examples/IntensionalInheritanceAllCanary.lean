@@ -488,7 +488,7 @@ theorem toyObservation_penguinBird_prior_eq_generated_ve_ratio :
         FiniteWitnessFeatureTable.veWeight toyObservationPenguinBirdTable [] := by
   letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType (Multiset ToyMembershipObservation) :=
     Mettapedia.PLN.WorldModel.PLNWorldModelAdditive.multisetEvidenceType ToyMembershipObservation
-  simpa [toyObservationContext, toyObservationInterpretation, toyObservationPenguinBirdTable] using
+  exact
     Mettapedia.KR.ConceptGeometry.IntensionalInheritance.ObservationEncoderBridge.finitePriorProb_inducedContext_eq_veWeight_ratio
       (S := toyObservationEncoder)
       (G := gate)
@@ -512,7 +512,7 @@ theorem toyObservation_penguinBird_ext_eq_generated_bp_ratio :
           FiniteWitnessFeatureTable.featureMessage toyObservationPenguinBirdTable true := by
   letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType (Multiset ToyMembershipObservation) :=
     Mettapedia.PLN.WorldModel.PLNWorldModelAdditive.multisetEvidenceType ToyMembershipObservation
-  simpa [toyObservationContext, toyObservationInterpretation, toyObservationPenguinBirdTable] using
+  exact
     Mettapedia.KR.ConceptGeometry.IntensionalInheritance.ObservationEncoderBridge.finiteExtensionalProb_inducedContext_eq_bp_ratio
       (S := toyObservationEncoder)
       (G := gate)
@@ -545,7 +545,7 @@ theorem toyObservation_birdFly_score_eq_generated_ve_query_score :
           FiniteWitnessFeatureTable.veWeight toyObservationBirdFlyTable []) := by
   letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType (Multiset ToyMembershipObservation) :=
     Mettapedia.PLN.WorldModel.PLNWorldModelAdditive.multisetEvidenceType ToyMembershipObservation
-  simpa [toyObservationContext, toyObservationInterpretation, toyObservationBirdFlyTable] using
+  exact
     Mettapedia.KR.ConceptGeometry.IntensionalInheritance.ObservationEncoderBridge.finitePointwiseLogRatioBits_inducedContext_eq_ve_query_score
       (S := toyObservationEncoder)
       (G := gate)

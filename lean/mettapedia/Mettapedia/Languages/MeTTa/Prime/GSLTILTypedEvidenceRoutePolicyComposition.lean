@@ -75,21 +75,12 @@ def compose
   run := laterRealization.run
   agrees := by
     intro policy history
-    calc
-      laterRealization.run policy
-          (((TypedEvidenceRoute.comp earlier later).atCommand command).mapHistory
-            history) =
-        laterRealization.run policy
-          ((later.atCommand (earlier.mapCommand command)).mapHistory
-            ((earlier.atCommand command).mapHistory history)) :=
-        congrArg (laterRealization.run policy)
-          (atCommand_comp_mapHistory earlier later command history)
-      _ = earlierRealization.run policy
-          ((earlier.atCommand command).mapHistory history) :=
-        laterRealization.agrees policy
-          ((earlier.atCommand command).mapHistory history)
-      _ = family.decide policy history :=
-        earlierRealization.agrees policy history
+    exact
+      (congrArg (laterRealization.run policy)
+        (atCommand_comp_mapHistory earlier later command history)).trans
+        ((laterRealization.agrees policy
+          ((earlier.atCommand command).mapHistory history)).trans
+          (earlierRealization.agrees policy history))
 
 /-- Two retained executable realizations therefore witness support of their
 composite route. -/
@@ -193,21 +184,11 @@ def composeFromReachedSuffix
     let reached : ReachedHistory earlier command :=
       ⟨(earlier.atCommand command).mapHistory sourceHistory,
         ⟨sourceHistory, rfl⟩⟩
-    calc
-      reachedSuffix.run policy
-          (((TypedEvidenceRoute.comp earlier later).atCommand command).mapHistory
-            sourceHistory) =
-        reachedSuffix.run policy
-          (suffixReadoutOnReached earlier later command reached) :=
-        congrArg (reachedSuffix.run policy)
-          (atCommand_comp_mapHistory earlier later command sourceHistory)
-      _ = (reachedResidualFamily earlierRealization).decide policy reached :=
-        reachedSuffix.agrees policy reached
-      _ = earlierRealization.run policy
-          ((earlier.atCommand command).mapHistory sourceHistory) :=
-        rfl
-      _ = family.decide policy sourceHistory :=
-        earlierRealization.agrees policy sourceHistory
+    exact
+      (congrArg (reachedSuffix.run policy)
+        (atCommand_comp_mapHistory earlier later command sourceHistory)).trans
+        ((reachedSuffix.agrees policy reached).trans
+          (earlierRealization.agrees policy sourceHistory))
 
 /-- **Exact reached-image composition theorem.**  Composite support is
 equivalent to suffix support on the histories the prefix can actually reach.
@@ -365,7 +346,7 @@ theorem embedFirstRoute_not_history_surjective :
   have headsEqual :
       (embedFirstRoute.atCommand ()).mapWorld head = secondWorld :=
     (List.cons.inj mapsToSecond).1
-  rw [embedFirstRoute_mapWorld] at headsEqual
+  erw [embedFirstRoute_mapWorld] at headsEqual
   exact sourceWorlds_distinct headsEqual
 
 inductive ConstantPolicy where

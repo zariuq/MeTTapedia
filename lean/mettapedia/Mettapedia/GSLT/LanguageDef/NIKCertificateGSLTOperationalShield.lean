@@ -156,8 +156,9 @@ def nativeToRaw (presentation : SoundPresentation Meaning) :
     intro kind claim certificate
     cases kind
     rcases certificate with ⟨actual, proof⟩
+    let : Decidable (actual = claim) := (inferInstance : DecidableEq Pattern) actual claim
     change checkRaw presentation.object.definition claim proof.close.erase =
-      decide (actual = claim)
+      decide ((actual : Pattern) = (claim : Pattern))
     exact checkRaw_erase_eq_decide proof.close claim
   meaning_preserved := by
     intro _kind _claim meaningful
@@ -176,13 +177,17 @@ def nativeToWire (presentation : SoundPresentation Meaning) :
     intro kind claim certificate
     cases kind
     rcases certificate with ⟨actual, proof⟩
+    let : Decidable (actual = claim) := (inferInstance : DecidableEq Pattern) actual claim
+    let : Decidable ((articleOfDerivation proof.close).target = claim) :=
+      (inferInstance : DecidableEq Pattern) (articleOfDerivation proof.close).target claim
     change
-      (decide ((articleOfDerivation proof.close).target = claim) &&
+      (decide ((articleOfDerivation proof.close).target = (claim : Pattern)) &&
           checkWireArticle presentation.object.definition
             (articleOfDerivation proof.close)) =
-        decide (actual = claim)
+        decide ((actual : Pattern) = (claim : Pattern))
     rw [checkWireArticle_articleOfDerivation]
     simp [articleOfDerivation]
+    rfl
   meaning_preserved := by
     intro _kind _claim meaningful
     exact meaningful
@@ -222,6 +227,7 @@ theorem compiled_replays_agree
         (articleOfDerivation proof.close))
   rw [checkRaw_erase_eq_decide, checkWireArticle_articleOfDerivation]
   simp [articleOfDerivation]
+  rfl
 
 /-- Every intrinsic closed derivation compiles to accepted raw-tree and
 wire-DAG evidence at its exact conclusion. -/
@@ -236,7 +242,7 @@ theorem compiled_pair_accepts
   · change checkRaw presentation.object.definition claim proof.close.erase = true
     exact checkRaw_erase proof.close
   · change
-      (decide ((articleOfDerivation proof.close).target = claim) &&
+      (decide ((articleOfDerivation proof.close).target = (claim : Pattern)) &&
         checkWireArticle presentation.object.definition
           (articleOfDerivation proof.close)) = true
     rw [checkWireArticle_articleOfDerivation]

@@ -90,7 +90,11 @@ end FiniteFlow
 
 inductive FlowNode where
   | root | left | right | x | y | rejected
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype FlowNode where
+  elems := {.root, .left, .right, .x, .y, .rejected}
+  complete := by intro x; cases x <;> simp
 
 open FlowNode
 

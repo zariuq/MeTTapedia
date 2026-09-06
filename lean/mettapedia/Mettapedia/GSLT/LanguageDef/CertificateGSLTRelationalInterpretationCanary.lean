@@ -37,16 +37,14 @@ private def targetRule : RuleSchema :=
     conclusion := judgmentB }
 
 private def sourcePresentation : CalculusLanguageDef :=
-  { language := LanguageDef.empty "relational-interpretation-source"
-    calculus :=
-      { judgments := [{ head := "rel-canary-A", arity := 0 }]
-        rules := [sourceRule] } }
+  CalculusLanguageDef.extend (LanguageDef.empty "relational-interpretation-source")
+    { judgments := [{ head := "rel-canary-A", arity := 0 }]
+      rules := [sourceRule] }
 
 private def targetPresentation : CalculusLanguageDef :=
-  { language := LanguageDef.empty "relational-interpretation-target"
-    calculus :=
-      { judgments := [{ head := "rel-canary-B", arity := 0 }]
-        rules := [targetRule] } }
+  CalculusLanguageDef.extend (LanguageDef.empty "relational-interpretation-target")
+    { judgments := [{ head := "rel-canary-B", arity := 0 }]
+      rules := [targetRule] }
 
 private theorem emptyLanguage_validate (name : String) :
     (LanguageDef.empty name).validate = [] := by
@@ -54,7 +52,7 @@ private theorem emptyLanguage_validate (name : String) :
     simp [LanguageDef.empty, LanguageDef.typeNames]
 
 private theorem sourcePresentation_valid :
-    sourceCalculusLanguageDef.isValid = true := by
+    sourcePresentation.isValid = true := by
   simp [sourcePresentation, CalculusLanguageDef.isValid,
     CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
     CalculusLanguageDef.hasValidLocalRules, CalculusLanguageDef.ruleIds, emptyLanguage_validate,
@@ -71,7 +69,7 @@ private theorem sourcePresentation_valid :
   decide
 
 private theorem targetPresentation_valid :
-    targetCalculusLanguageDef.isValid = true := by
+    targetPresentation.isValid = true := by
   simp [targetPresentation, CalculusLanguageDef.isValid,
     CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
     CalculusLanguageDef.hasValidLocalRules, CalculusLanguageDef.ruleIds, emptyLanguage_validate,

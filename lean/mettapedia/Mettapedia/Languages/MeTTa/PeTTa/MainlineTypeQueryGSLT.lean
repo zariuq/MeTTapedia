@@ -668,10 +668,8 @@ def queryGSLT : GSLT where
     exact step
 
 def stepDecision : EffectiveStructure.StepDecision queryGSLT where
-  decideStep source target := decide (MachineStep source target)
-  correct := by
-    intro source target
-    exact decide_eq_true_iff
+  decideStep := fun (source target : Machine) => decide (MachineStep source target)
+  correct := fun (source target : Machine) => decide_eq_true_iff
 
 /-- The OSLF-generated exact-target NTT accepts exactly one successful
 mainline type-query transition. -/
@@ -679,9 +677,9 @@ theorem decideStep_iff_ntt (source target : Machine) :
     stepDecision.decideStep source target = true ↔
       (gsltOSLF queryGSLT).satisfies source
         (exactTargetNativeType queryGSLT target).pred := by
-  rw [stepDecision.correct]
-  exact (satisfies_exactTargetNativeType_iff_step
-    queryGSLT source target).symm
+  exact (stepDecision.correct source target).trans
+    (satisfies_exactTargetNativeType_iff_step
+      queryGSLT source target).symm
 
 /-! ## Discriminating query canaries -/
 

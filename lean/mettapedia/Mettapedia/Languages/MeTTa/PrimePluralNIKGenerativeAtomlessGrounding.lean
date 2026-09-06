@@ -198,16 +198,14 @@ atomless claim as a structural DTT claim. -/
 theorem staged_route_does_not_land_at_structuralDTT :
     not (stagedToPrime.{u, v}.mapKind () =
       Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.structuralDTTKind) := by
-  simpa [Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.structuralDTTKind]
-    using staged_route_does_not_land_in_prior.{u, v}
+  exact staged_route_does_not_land_in_prior.{u, v}
       Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist.structuralDTTKind
 
 /-- The same separation holds for the selected dependent-Pi authority. -/
 theorem staged_route_does_not_land_at_selectedDependentPi :
     not (stagedToPrime.{u, v}.mapKind () =
       Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.selectedDependentPiKind) := by
-  simpa [Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.selectedDependentPiKind]
-    using staged_route_does_not_land_in_prior.{u, v}
+  exact staged_route_does_not_land_in_prior.{u, v}
       Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist.selectedDependentPiKind
 
 /-- Model evidence does not acquire source-calculus soundness merely by

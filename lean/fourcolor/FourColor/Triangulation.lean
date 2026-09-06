@@ -187,7 +187,7 @@ lemma exists_dot_one_of_ne_zero (u : Color) (h : u ≠ 0) :
   rcases u with ⟨u₁, u₂⟩
   have hcoords : u₁ ≠ 0 ∨ u₂ ≠ 0 := by
     by_contra hnot
-    push_neg at hnot
+    push Not at hnot
     rcases hnot with ⟨h₁, h₂⟩
     have : (u₁, u₂) = ((0, 0) : Color) := by simpa [h₁, h₂]
     exact h this
@@ -887,7 +887,9 @@ lemma support₁_after_toggle {E : Type*} [Fintype E] [DecidableEq E]
     -- In F₂: 0+1=1≠0 and 1+1=0, so (x e).fst + 1 ≠ 0 ↔ (x e).fst = 0
     have : (x e).fst = 0 ∨ (x e).fst = 1 := by
       rcases (x e).fst with ⟨v, hv⟩
-      interval_cases v <;> simp
+      interval_cases v
+      · exact Or.inl rfl
+      · exact Or.inr rfl
     rcases this with h0 | h1
     · simp [he, hγ, h0, Finset.mem_union, Finset.mem_sdiff]
     · simp [he, hγ, h1, Finset.mem_union, Finset.mem_sdiff]
@@ -919,7 +921,9 @@ lemma support₂_after_toggle {E : Type*} [Fintype E] [DecidableEq E]
       simp [faceBoundaryChain, indicatorChain, he]
     have : (x e).snd = 0 ∨ (x e).snd = 1 := by
       rcases (x e).snd with ⟨v, hv⟩
-      interval_cases v <;> simp
+      interval_cases v
+      · exact Or.inl rfl
+      · exact Or.inr rfl
     rcases this with h0 | h1
     · simp [he, hγ, h0, Finset.mem_union, Finset.mem_sdiff]
     · simp [he, hγ, h1, Finset.mem_union, Finset.mem_sdiff]

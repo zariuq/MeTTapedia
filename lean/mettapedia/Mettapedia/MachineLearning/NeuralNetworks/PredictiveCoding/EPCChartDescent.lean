@@ -143,7 +143,7 @@ theorem concaveEnergy_descent_moves_away_from_critical_point :
 theorem identityChart_JJt_quadratic :
     ⟪(1 : ℝ),
       chartJJtApply (ContinuousLinearEquiv.refl ℝ ℝ) (1 : ℝ)⟫_ℝ = 1 := by
-  norm_num [chartJJtApply]
+  norm_num [chartJJtApply, ContinuousLinearMap.adjoint_id]
 
 #print axioms chart_pushed_errorFlow_strict_descent
 #print axioms chartJJt_apply_eq_zero_iff

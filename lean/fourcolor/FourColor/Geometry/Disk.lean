@@ -278,7 +278,10 @@ lemma add_preserves_zeroBoundary
 
 @[simp] lemma zmod2_ne_zero_iff_eq_one (a : ZMod 2) : a ≠ 0 ↔ a = 1 := by
   constructor
-  · intro hne; fin_cases a <;> simp_all
+  · intro hne
+    fin_cases a
+    · exact (hne rfl).elim
+    · rfl
   · intro h1; simp [h1]
 
 @[simp] lemma fst_add_apply (x y : E → Color) (e : E) : 
@@ -410,7 +413,7 @@ lemma orthogonality_peel_step
     · -- strict descent on support
       have := aggregated_toggle_strict_descent_at_subset_support
         (G := G) (S₀ := S₀) hS₀_internal he0_int hx he0_supp hsubset hin
-      simpa [x'] using this
+      exact this
 
     · -- definitional equality
       rfl

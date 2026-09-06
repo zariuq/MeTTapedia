@@ -104,7 +104,7 @@ theorem operation_receipts_distinct
     (fun result : (target Meaning).Carrier => result.face) equal
   cases facesEqual
 
-def family
+abbrev family
     {Claim : Type uClaim} {Meaning : Claim -> Prop}
     (kernel : Checker.DecisionKernel Claim Meaning) :
     RecognizedFamily Face (source Claim) (target Meaning) where
@@ -167,7 +167,7 @@ def directRequest
           simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at required
           rcases required with rfl | rfl <;> trivial
         · intro _qualified
-          simp
+          simp [id]
     | thinBoundary =>
         constructor
         · intro impossible
@@ -201,7 +201,7 @@ def boundaryRequest
           simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at required
           rcases required with rfl | rfl <;> trivial
         · intro _qualified
-          simp
+          simp [id]
   candidates_nonempty := by simp
 
 def directSelection

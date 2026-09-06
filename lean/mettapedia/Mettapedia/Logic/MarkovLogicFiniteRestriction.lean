@@ -108,5 +108,6 @@ theorem restricted_queryProb_eq_full_queryProb_of_finite_support
     exact totalMass_eq_restrictedTotalMass_of_finiteSupport M hs
   simp [restrictedMassSemantics, CountableMLNSemantics.toMassSemantics,
     MassSemantics.queryProb, hmass, htotal]
+  rfl
 
 end Mettapedia.Logic.MarkovLogicFiniteRestriction

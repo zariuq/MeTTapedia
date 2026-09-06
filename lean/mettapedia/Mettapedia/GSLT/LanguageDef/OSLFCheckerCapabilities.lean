@@ -97,10 +97,10 @@ theorem equationOnly_underlying_modal_maps_match_discrete :
         gsltBox discreteNoRewriteGSLT predicate target) := by
   constructor
   · intro predicate source
-    rw [gsltDiamond_spec, gsltDiamond_spec]
+    erw [gsltDiamond_spec, gsltDiamond_spec]
     simp [GSLT.Step, equationOnlyGSLT, discreteNoRewriteGSLT]
   · intro predicate target
-    rw [gsltBox_spec, gsltBox_spec]
+    erw [gsltBox_spec, gsltBox_spec]
     simp [GSLT.Step, equationOnlyGSLT, discreteNoRewriteGSLT]
 
 /-- Nevertheless their structural equation judgments differ. -/

@@ -49,7 +49,7 @@ def ClaimKind.tag : ClaimKind → Char
 /-- Carrier-indexed constructor name in one reserved claim namespace. -/
 def claimLabel (kind : ClaimKind) (carrier : String) : String :=
   String.ofList
-    ("$oslf:claim:".toList ++ kind.tag :: ':' :: carrier.toList)
+    (['$', 'o', 's', 'l', 'f', ':', 'c', 'l', 'a', 'i', 'm', ':'] ++ kind.tag :: ':' :: carrier.toList)
 
 /-- Decode exactly the generated contextual-claim namespace. -/
 def decodeClaimLabel? (name : String) : Option (ClaimKind × String) :=
@@ -68,7 +68,9 @@ def decodeClaimLabel? (name : String) : Option (ClaimKind × String) :=
 @[simp]
 theorem decodeClaimLabel?_claimLabel (kind : ClaimKind) (carrier : String) :
     decodeClaimLabel? (claimLabel kind carrier) = some (kind, carrier) := by
-  cases kind <;> simp [decodeClaimLabel?, claimLabel, ClaimKind.tag]
+  cases kind <;>
+    simp only [decodeClaimLabel?, claimLabel, String.toList_ofList, ClaimKind.tag]
+  all_goals simp
 
 /-- Successful claim decoding reconstructs the exact generated label. -/
 theorem claimLabel_of_decodeClaimLabel?_eq_some
@@ -101,7 +103,7 @@ theorem claimLabel_ne_of_kind_ne
 /-- Bridge-rule identifier for one carrier. -/
 def bridgeRuleName (carrier : String) : String :=
   String.ofList
-    ("$oslf:contextual-typing:".toList ++ carrier.toList)
+    (['$', 'o', 's', 'l', 'f', ':', 'c', 'o', 'n', 't', 'e', 'x', 't', 'u', 'a', 'l', '-', 't', 'y', 'p', 'i', 'n', 'g', ':'] ++ carrier.toList)
 
 theorem bridgeRuleName_injective : Function.Injective bridgeRuleName := by
   intro first second equality
@@ -182,7 +184,9 @@ def liftTypingRule (carrier : String) : RuleSchema where
 
 theorem liftTypingRule_locallyValid (carrier : String) :
     RuleSchema.isLocallyValid (liftTypingRule carrier) = true := by
-  simp [liftTypingRule, lowerSequent, encodeContext, gamma, delta,
+  dsimp only [liftTypingRule, RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
+    RuleSchema.occurrences, RuleSchema.patterns]
+  simp [lowerSequent, encodeContext, gamma, delta,
     ContextualInferenceCanonicalContext.premise,
     ContextualInferenceCanonicalContext.sequent,
     ContextualInferenceCanonicalContext.claim,
@@ -386,82 +390,7 @@ def definition : CalculusLanguageDef :=
     [carrierA.name, carrierB.name]
 
 theorem definition_valid : definition.isValid = true := by
-  have validate : definition.toLanguageDef.validate = [] := by
-    apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-      simp [definition, apply, extension, contextExtension, carrierExtension,
-        ContextualInferenceCanonicalContext.extension,
-        ContextualInferenceCanonicalContext.contextCodeTerm,
-        ContextualInferenceCanonicalContext.nilRule,
-        ContextualInferenceCanonicalContext.consRule,
-        ContextualInferenceCanonicalContext.premise,
-        ContextualInferenceCanonicalContext.sequent,
-        ContextualInferenceCanonicalContext.claim,
-        claimTermsFor, claimTerms, variableClaimTerm, typingClaimTerm,
-        reductionClaimTerm, formulaType, contextType, emptyContextTerm,
-        extendContextTerm, source, sourceLanguage, carrierA, carrierB,
-        CarrierTypingLanguageDef.definition,
-        CarrierTypingLanguageDef.calculus,
-        CarrierTypingLanguageDef.judgments,
-        CarrierTypingLanguageDef.axioms,
-        CarrierUniverseSignature.language,
-        CarrierUniverseSignature.terms,
-        CarrierUniverseSignature.termsFor,
-        CarrierUniverseSignature.rule,
-        CarrierUniverseSignature.label,
-        CarrierUniverseSignature.Code.tag,
-        claimLabel, ClaimKind.tag,
-        CalculusLanguageExtension.comp,
-        CalculusLanguageExtension.apply,
-        LanguageDef.typeNames, TypeDecl.plain,
-        TermParam.typeExpr, TypeExpr.baseNames]
-  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
-  rw [validate]
-  simp [definition, apply, extension, contextExtension, carrierExtension,
-    ContextualInferenceCanonicalContext.extension,
-    ContextualInferenceCanonicalContext.contextCodeTerm,
-    ContextualInferenceCanonicalContext.nilRule,
-    ContextualInferenceCanonicalContext.consRule,
-    ContextualInferenceCanonicalContext.premise,
-    ContextualInferenceCanonicalContext.sequent,
-    ContextualInferenceCanonicalContext.claim,
-    claimTermsFor, claimTerms, bridgeRules, liftTypingRule,
-    lowerSequent, encodeContext, gamma, delta, typingClaim,
-    variableClaimTerm, typingClaimTerm, reductionClaimTerm,
-    formulaType, contextType, emptyContextTerm, extendContextTerm,
-    contextualJudgment, source, sourceLanguage, carrierA, carrierB,
-    CarrierTypingLanguageDef.definition,
-    CarrierTypingLanguageDef.calculus,
-    CarrierTypingLanguageDef.judgments,
-    CarrierTypingLanguageDef.axioms,
-    CarrierTypingLanguageDef.judgment,
-    CarrierTypingLanguageDef.universeAxiom,
-    CarrierTypingLanguageDef.typingHead,
-    CarrierTypingLanguageDef.axiomName,
-    CarrierUniverseSignature.language,
-    CarrierUniverseSignature.terms,
-    CarrierUniverseSignature.termsFor,
-    CarrierUniverseSignature.rule,
-    CarrierUniverseSignature.label,
-    CarrierUniverseSignature.Code.tag,
-    claimLabel, ClaimKind.tag, bridgeRuleName,
-    CalculusLanguageExtension.comp,
-    CalculusLanguageExtension.apply,
-    CalculusLanguageDef.ruleIds,
-    CalculusLanguageDef.judgmentSignatureValid,
-    CalculusLanguageDef.judgmentHeads,
-    CalculusLanguageDef.conversionDeclarationValid,
-    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
-    RuleSchema.occurrences, RuleSchema.patterns,
-    patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
-    patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
-    fixedConstructorListsValid, languageHasConstructorArity,
-    Pattern.isWellScoped, Pattern.isWellScopedAt,
-    Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
-    Pattern.hasCanonicalBinderMetadataList, Pattern.zipHead,
-    Pattern.mapHead, Pattern.evalHead, LanguageDef.typeNames, TypeDecl.plain]
-  decide
+  decide +kernel
 
 /-- The context bridge retains the carrier coordinate. -/
 theorem carrier_claims_distinct :

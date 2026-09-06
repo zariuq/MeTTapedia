@@ -38,7 +38,7 @@ namespace EvidenceHplus
     simpa using he
   · rintro ⟨b, hb, rfl⟩
     refine ⟨OrderDual.ofDual b, ?_, rfl⟩
-    simpa using hb
+    exact hb
 
 @[simp] lemma neg_image_toDual_preimage (S : Set EvidenceHplus) :
     BinaryEvidence.neg '' (OrderDual.toDual ⁻¹' S)
@@ -50,7 +50,7 @@ namespace EvidenceHplus
     simpa using he
   · rintro ⟨b, hb, rfl⟩
     refine ⟨OrderDual.ofDual b, ?_, rfl⟩
-    simpa using hb
+    exact hb
 
 @[simp] lemma image_toDual_preimage {β} (f : BinaryEvidence → β) (S : Set EvidenceHplus) :
     f '' (OrderDual.toDual ⁻¹' S) = (fun b : EvidenceHplus => f (OrderDual.ofDual b)) '' S := by
@@ -61,7 +61,7 @@ namespace EvidenceHplus
     simpa using he
   · rintro ⟨b, hb, rfl⟩
     refine ⟨OrderDual.ofDual b, ?_, rfl⟩
-    simpa using hb
+    exact hb
 
 @[simp] lemma pos_sInf_toDual_preimage (S : Set EvidenceHplus) :
     (sInf (OrderDual.toDual ⁻¹' S)).pos =
@@ -124,6 +124,7 @@ noncomputable instance : Semigroup EvidenceHplus where
 noncomputable instance : CommSemigroup EvidenceHplus where
   mul_comm := hplus_comm
 
+set_option backward.isDefEq.respectTransparency false in
 /-- hplus distributes over sSup in the **dual** lattice. -/
 lemma hplus_sSup_right (a : EvidenceHplus) (S : Set EvidenceHplus) :
     a * sSup S = ⨆ b ∈ S, a * b := by

@@ -96,34 +96,112 @@ theorem count_append_singleton {α : Type _} [BEq α] (a x : α) (l : List α) :
 it syntactically so that the restriction is checkable by computation, rather than
 by assuming the property we need. -/
 
-/-- Mirror of the derived `BEq Ground`, written with explicit equations so that
-`simp` can reduce it; `ground_beq_eq` shows it IS the derived instance. -/
-def groundBeq : Ground → Ground → Bool
-  | .int a, .int b => a == b
-  | .float a, .float b => a == b
-  | .str a, .str b => a == b
-  | .bool a, .bool b => a == b
-  | .unit, .unit => true
-  | .error a, .error b => a == b
-  | .external a b, .external c d => (a == c) && (b == d)
-  | _, _ => false
+/-! Float-freeness follows the complete stored payload, including nested
+binding objects and the atoms held by value assignments. -/
+mutual
+  def storedGroundFloatFree : Metta.StoredGround → Bool
+    | .float _ => false
+    | .bindings bindings => storedBindingsFloatFree bindings
+    | _ => true
+  def storedAtomFloatFree : Metta.StoredAtom → Bool
+    | .gnd ground => storedGroundFloatFree ground
+    | .expr atoms => storedAtomsFloatFree atoms
+    | _ => true
+  def storedAtomsFloatFree : List Metta.StoredAtom → Bool
+    | [] => true
+    | atom :: atoms => storedAtomFloatFree atom && storedAtomsFloatFree atoms
+  def storedBindingFloatFree : Metta.StoredBinding → Bool
+    | .val _ atom => storedAtomFloatFree atom
+    | .eq _ _ => true
+  def storedBindingsFloatFree : List Metta.StoredBinding → Bool
+    | [] => true
+    | binding :: bindings => storedBindingFloatFree binding && storedBindingsFloatFree bindings
+end
+
+mutual
+  theorem storedGround_beq_iff {right : Metta.StoredGround}
+      (free : storedGroundFloatFree right = true) (left : Metta.StoredGround) :
+      Metta.StoredGround.beq left right = true ↔ left = right := by
+    cases right <;> cases left <;>
+      simp_all [storedGroundFloatFree, Metta.StoredGround.beq]
+    exact storedBindings_beq_iff free _
+  termination_by sizeOf right
+
+  theorem storedAtom_beq_iff {right : Metta.StoredAtom}
+      (free : storedAtomFloatFree right = true) (left : Metta.StoredAtom) :
+      Metta.StoredAtom.beq left right = true ↔ left = right := by
+    cases right <;> cases left <;>
+      simp_all [storedAtomFloatFree, Metta.StoredAtom.beq]
+    · exact storedGround_beq_iff free _
+    · exact storedAtoms_beq_iff free _
+  termination_by sizeOf right
+
+  theorem storedAtoms_beq_iff {right : List Metta.StoredAtom}
+      (free : storedAtomsFloatFree right = true) (left : List Metta.StoredAtom) :
+      Metta.StoredAtom.beqList left right = true ↔ left = right := by
+    cases right <;> cases left <;>
+      simp_all [storedAtomsFloatFree, Metta.StoredAtom.beqList]
+    rw [storedAtom_beq_iff free.1, storedAtoms_beq_iff free.2]
+  termination_by sizeOf right
+
+  theorem storedBinding_beq_iff {right : Metta.StoredBinding}
+      (free : storedBindingFloatFree right = true) (left : Metta.StoredBinding) :
+      Metta.StoredBinding.beq left right = true ↔ left = right := by
+    cases right <;> cases left <;>
+      simp_all [storedBindingFloatFree, Metta.StoredBinding.beq]
+    rw [storedAtom_beq_iff free]
+    exact fun _ => Iff.rfl
+  termination_by sizeOf right
+
+  theorem storedBindings_beq_iff {right : List Metta.StoredBinding}
+      (free : storedBindingsFloatFree right = true) (left : List Metta.StoredBinding) :
+      Metta.StoredBinding.beqList left right = true ↔ left = right := by
+    cases right <;> cases left <;>
+      simp_all [storedBindingsFloatFree, Metta.StoredBinding.beqList]
+    rw [storedBinding_beq_iff free.1, storedBindings_beq_iff free.2]
+  termination_by sizeOf right
+end
+
+/-- Reducible structural equality, including grounded binding snapshots. -/
+abbrev groundBeq : Ground → Ground → Bool := Ground.beq
+
+private theorem storedBindings_beqList_eq_beq
+    (left right : List Metta.StoredBinding) :
+    Metta.StoredBinding.beqList left right = (left == right) := by
+  induction left generalizing right with
+  | nil => cases right <;> simp [Metta.StoredBinding.beqList]
+  | cons binding bindings ih =>
+      cases right with
+      | nil => simp [Metta.StoredBinding.beqList]
+      | cons other others =>
+          simp only [Metta.StoredBinding.beqList, BEq.beq, List.beq]
+          exact congrArg (Metta.StoredBinding.beq binding other && ·) (ih others)
 
 theorem ground_beq_eq (g₁ g₂ : Ground) : (g₁ == g₂) = groundBeq g₁ g₂ := by
-  cases g₁ <;> cases g₂ <;> rfl
+  cases g₁ <;> cases g₂ <;> first | rfl | exact (storedBindings_beqList_eq_beq _ _).symm
 
-/-- A grounded payload whose host equality is an equality test: everything except
-`Float`, whose IEEE semantics makes `nan` differ from itself and identifies
-`0.0` with `-0.0`. -/
+/-- A payload contains no float, including within stored binding values. -/
 def groundFloatFree : Ground → Bool
   | .float _ => false
+  | .bindings bindings => storedBindingsFloatFree bindings
   | _ => true
 
 theorem ground_beq_self {g : Ground} (h : groundFloatFree g = true) : (g == g) = true := by
-  cases g <;> simp_all [ground_beq_eq, groundBeq, groundFloatFree]
+  cases g <;> simp_all [ground_beq_eq, groundBeq, Ground.beq,
+    groundFloatFree, storedBindings_beq_iff]
 
 theorem ground_eq_of_beq {g₁ g₂ : Ground} (h₂ : groundFloatFree g₂ = true)
     (h : (g₁ == g₂) = true) : g₁ = g₂ := by
-  cases g₁ <;> cases g₂ <;> simp_all [ground_beq_eq, groundBeq, groundFloatFree]
+  cases g₁ <;> cases g₂ <;> simp_all [ground_beq_eq, groundBeq,
+    Ground.beq, groundFloatFree, storedBindings_beq_iff]
+
+/-- Nested bindings with ordinary integer values belong to the lawful fragment. -/
+example : groundFloatFree (.bindings [.val "x"
+    (.gnd (.bindings [.val "y" (.gnd (.int 1))]))]) = true := rfl
+
+/-- Hiding a float inside a binding object does not bypass the restriction. -/
+example (value : Float) : groundFloatFree (.bindings [.val "x"
+    (.gnd (.bindings [.val "y" (.gnd (.float value))]))]) = false := rfl
 
 -- Float-freeness is defined mutually with its list companion, in the same shape
 -- as LeaTTa's `Atom.beq`/`Atom.beqList`, so the recursion is structural on the
@@ -176,7 +254,9 @@ theorem atom_beq_self {a : Atom} (h : atomFloatFree a = true) : Atom.beq a a = t
   induction a with
   | sym s => simp [Atom.beq]
   | var v => simp [Atom.beq]
-  | gnd g => exact ground_beq_self (by simpa [atomFloatFree] using h)
+  | gnd g =>
+      simpa only [Atom.beq, ← ground_beq_eq] using
+        ground_beq_self (by simpa [atomFloatFree] using h)
   | expr xs ih =>
       refine beqList_self_of_pointwise xs (fun x hx => ih x hx ?_)
       have hxs : atomListFloatFree xs = true := by simpa [atomFloatFree] using h
@@ -206,7 +286,7 @@ theorem atom_eq_of_beq {a : Atom} (ha : atomFloatFree a = true) :
       cases x with
       | gnd g' =>
           have := ground_eq_of_beq (g₁ := g') (by simpa [atomFloatFree] using ha)
-            (by simpa [Atom.beq] using hx)
+            (by simpa only [Atom.beq, ← ground_beq_eq] using hx)
           rw [this]
       | _ => simp [Atom.beq] at hx
   | expr xs ih =>
@@ -225,7 +305,7 @@ theorem atom_eq_of_beq {a : Atom} (ha : atomFloatFree a = true) :
       cases x with
       | expr ys =>
           have := beqList_eq_of_pointwise xs (fun b hb => ih b hb (hpt b hb)) ys
-            (by simpa [Atom.beq] using hx)
+            (by simpa only [Atom.beq, ← ground_beq_eq] using hx)
           rw [this]
       | _ => simp [Atom.beq] at hx
 

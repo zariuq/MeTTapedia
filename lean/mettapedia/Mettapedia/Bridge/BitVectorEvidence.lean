@@ -204,7 +204,7 @@ theorem completions_card (v : PartialVector n) :
     left_inv := fun ⟨u, hu⟩ => by
       simp only [completions, mem_filter, mem_univ, true_and] at hu
       simp only [toFun, invFun, Subtype.mk.injEq]
-      exact fillUnknown_extractUnknown v u hu
+      exact Subtype.ext (fillUnknown_extractUnknown v u hu)
     right_inv := fun f => by
       simp only [toFun, invFun]
       exact extractUnknown_fillUnknown v f

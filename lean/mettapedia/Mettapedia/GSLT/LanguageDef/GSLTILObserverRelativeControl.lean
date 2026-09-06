@@ -266,8 +266,7 @@ theorem pullbackControl_comp_occurrence
       ).occurrence.identify event =
       (earlier.pullbackControl (later.pullbackObservation discipline)
         (later.pullbackControl discipline control)).occurrence.identify event := by
-  simp only [pullbackControl_occurrence_identify,
-    toOperationalTranslation_comp, mapEvent_comp]
+  erw [pullbackControl_occurrence_identify]
 
 /-- Client observation pullback respects composition at the same boundary. -/
 theorem pullbackControl_comp_observe

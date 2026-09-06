@@ -65,7 +65,7 @@ theorem vz_extensionSubstitution {C : Cwf.{u, v, w, w'}}
       (cast_heq _ (C.vz (C.tySub A substitution))))
 
 /-- Reindex a bundled type object. -/
-def reindexObject {C : Cwf.{u, v, w, w'}} {Γ Δ : C.Ctx}
+abbrev reindexObject {C : Cwf.{u, v, w, w'}} {Γ Δ : C.Ctx}
     (substitution : C.Sub Γ Δ) (A : TypeOver C Δ) : TypeOver C Γ where
   val := C.tySub A.val substitution
 
@@ -121,39 +121,17 @@ theorem extensionSubstitution_naturality
       C.compS morphism.substitution
         (extensionSubstitution substitution A.val) := by
   apply TypeOver.substitution_ext
-  · calc
-      C.compS (C.wk B.val)
-          (C.compS (extensionSubstitution substitution B.val)
-            (reindexArrow substitution morphism).substitution) =
-          C.compS
-            (C.compS (C.wk B.val)
-              (extensionSubstitution substitution B.val))
-            (reindexArrow substitution morphism).substitution :=
-        (C.comp_assoc _ _ _).symm
-      _ = C.compS
-            (C.compS substitution
-              (C.wk (C.tySub B.val substitution)))
-            (reindexArrow substitution morphism).substitution := by
-        rw [wk_extensionSubstitution]
-      _ = C.compS substitution
-            (C.compS (C.wk (C.tySub B.val substitution))
-              (reindexArrow substitution morphism).substitution) :=
-        C.comp_assoc _ _ _
-      _ = C.compS substitution
-            (C.wk (C.tySub A.val substitution)) := by
-        have pulledOver := (reindexArrow substitution morphism).over
-        change C.compS (C.wk (C.tySub B.val substitution))
-            (reindexArrow substitution morphism).substitution =
-          C.wk (C.tySub A.val substitution) at pulledOver
-        exact congrArg (fun base => C.compS substitution base) pulledOver
-      _ = C.compS
-            (C.compS (C.wk B.val) morphism.substitution)
-            (extensionSubstitution substitution A.val) := by
-        rw [morphism.over, wk_extensionSubstitution]
-      _ = C.compS (C.wk B.val)
-            (C.compS morphism.substitution
-              (extensionSubstitution substitution A.val)) :=
-        C.comp_assoc _ _ _
+  · trans C.compS substitution (C.wk (C.tySub A.val substitution))
+    · erw [← C.comp_assoc, wk_extensionSubstitution, C.comp_assoc]
+      have pulledOver := (reindexArrow substitution morphism).over
+      change C.compS (C.wk (C.tySub B.val substitution))
+          (reindexArrow substitution morphism).substitution =
+        C.wk (C.tySub A.val substitution) at pulledOver
+      exact congrArg
+        (fun base : C.Sub (C.ext Γ (C.tySub A.val substitution)) Γ =>
+          C.compS substitution base) pulledOver
+    · symm
+      erw [← C.comp_assoc, morphism.over, wk_extensionSubstitution]
   · have liftedVariableTypes :
         C.tySub (C.tySub B.val (C.wk B.val))
             (extensionSubstitution substitution B.val) =
@@ -311,6 +289,9 @@ theorem families_extensionSubstitution_apply
     (point : Σ γ : Γ, A (substitution γ)) :
     extensionSubstitution (C := familiesCwf) substitution A point =
       ⟨substitution point.1, point.2⟩ := rfl
+
+local instance : Category.{0} (TypeOver familiesCwf Bool) :=
+  TypeOver.instCategory (C := familiesCwf) (Γ := Bool)
 
 /-- Reindexing Boolean negation along the unique map from `Bool` to the
 one-point context remains non-identity. -/

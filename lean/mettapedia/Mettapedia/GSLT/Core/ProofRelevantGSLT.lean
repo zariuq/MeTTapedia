@@ -313,6 +313,8 @@ theorem boolToOption_distinguishes_occurrences :
         (sourceTarget := ()) false ≠
       boolToOption.toTranslation.mapEvidence true := by
   simp [boolToOption, boolToOptionUnderlying, boolOptionEquiv]
+  intro equality
+  nomatch equality
 
 /-- Collapsing the two Boolean occurrences to one unit occurrence cannot be
 an exact proof-fibre translation, even though the two semantic GSLTs have the

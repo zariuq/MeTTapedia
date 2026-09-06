@@ -623,7 +623,9 @@ theorem operation_natural
 families. -/
 def natToInt : Hom naturalRealization integerRealization where
   map := fun _ value => Int.ofNat value
-  source_natural := by simp [naturalRealization, integerRealization]
+  source_natural := by
+    intro kind value
+    rfl
   operation_natural := operation_natural
 
 abbrev Tree := ConstructionTree demoPresentation ()

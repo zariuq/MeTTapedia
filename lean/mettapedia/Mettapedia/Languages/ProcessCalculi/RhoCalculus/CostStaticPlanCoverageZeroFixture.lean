@@ -73,6 +73,7 @@ def rhoCoverageZeroRedexPlan :
           (.apply (costBaseConstructorName "NQuote") [] .hole [])))
       .nil
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The zero-name collapse as a source-language reflective occurrence
 between the two decoration skeletons. -/
 def rhoCoverageZeroCollapseWitness :

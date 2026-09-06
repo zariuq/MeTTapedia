@@ -700,6 +700,8 @@ theorem runtimeRecordFixture_weights :
     runtimeRootCount, runtimeRecordFixture, runtimeRecordAlphaOne,
     runtimeRecordAlphaTwo, runtimeRecordBeta]
   simp
+  change (1 : ℚ) + 1 = 2
+  norm_num
 
 theorem runtimeRecordFixture_histogram :
     runtimeAllRecordHistogram 4 runtimeRecordFixture = [0, 1 / 2, 1 / 2, 1] := by
@@ -807,7 +809,7 @@ theorem targetAgnostic_lookup_mixes_unrelated_roots :
     runtimeWeightedRowsHistogram, runtimeTargetAgnosticRows,
     runtimeNearestRowsHistogram, runtimeNearestRows, runtimeMinimum?,
     runtimeSquaredDistance, runtimeTargetARows, runtimeTargetBRows,
-    List.range_succ]
+    List.range_succ, List.insertionSort, List.orderedInsert]
 
 def runtimeCrowdedFlatRows : List RuntimeWeightedStateActionRow :=
   [ { key := [0], action := 1, weight := 1 / 3 }

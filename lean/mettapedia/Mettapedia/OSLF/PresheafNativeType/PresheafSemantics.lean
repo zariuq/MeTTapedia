@@ -416,9 +416,8 @@ def constructorPredFiberFunctorDual (lang : LanguageDef) :
       intro φ
       funext p
       apply propext
-      simpa [constructorReindexDualOrderHom, CategoryTheory.CategoryStruct.id] using
-        congrArg (fun χ : Pattern → Prop => χ p)
-          (constructorReindex_id lang (Opposite.unop X) (show Pattern → Prop from φ))
+      exact Iff.of_eq (congrArg (fun χ : Pattern → Prop => χ p)
+          (constructorReindex_id lang (Opposite.unop X) (show Pattern → Prop from φ)))
     map_comp := by
       intro X Y Z f g
       apply CategoryTheory.Cat.ext
@@ -426,10 +425,9 @@ def constructorPredFiberFunctorDual (lang : LanguageDef) :
       intro φ
       funext p
       apply propext
-      simpa [constructorReindexDualOrderHom, CategoryTheory.CategoryStruct.comp] using
-        congrArg (fun χ : Pattern → Prop => χ p)
+      exact Iff.of_eq (congrArg (fun χ : Pattern → Prop => χ p)
           (constructorReindex_comp lang (Quiver.Hom.unop g) (Quiver.Hom.unop f)
-            (show Pattern → Prop from φ)) }
+            (show Pattern → Prop from φ))) }
 
 /-- Concrete Mathlib Grothendieck native-type category over constructor sorts. -/
 abbrev ConstructorGrothendieckDual (lang : LanguageDef) : Type :=
@@ -456,7 +454,7 @@ theorem constructorNativeType_obj_roundtrip {lang : LanguageDef}
     (A : ConstructorNativeType lang) :
     grothObj_to_constructorNativeType (constructorNativeType_toGrothObj A) = A := by
   cases A
-  simp [constructorNativeType_toGrothObj, grothObj_to_constructorNativeType]
+  rfl
 
 /-- Turn a constructor-transport morphism into a concrete Grothendieck morphism
 on the scoped reversed-base direction (`B → A`). -/
@@ -471,8 +469,7 @@ def constructorNativeTypeHom_to_grothHom {lang : LanguageDef}
           (show OrderDual (Pattern → Prop) from constructorReindex lang h.sortMap B.pred) ≤
             (show OrderDual (Pattern → Prop) from A.pred) := by
         exact h.predLe
-      simpa [constructorPredFiberFunctorDual, constructorNativeType_toGrothObj,
-        constructorReindexDualOrderHom] using hdual }
+      exact hdual }
 
 /-- Recover a constructor-transport morphism from a concrete Grothendieck morphism
 on the same scoped reversed-base direction (`B → A`). -/
@@ -487,9 +484,7 @@ def grothHom_to_constructorNativeTypeHom {lang : LanguageDef}
             constructorReindex lang
               (Quiver.Hom.unop (CategoryTheory.Grothendieck.Hom.base k)) B.pred) ≤
             (show OrderDual (Pattern → Prop) from A.pred) := by
-        simpa [constructorPredFiberFunctorDual, constructorNativeType_toGrothObj,
-          constructorReindexDualOrderHom] using
-          (CategoryTheory.Grothendieck.Hom.fiber k).down.down
+        exact (CategoryTheory.Grothendieck.Hom.fiber k).down.down
       exact hdual }
 
 /-- Scoped morphism roundtrip:

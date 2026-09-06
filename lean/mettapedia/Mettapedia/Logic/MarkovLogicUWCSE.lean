@@ -64,7 +64,11 @@ deriving DecidableEq
 inductive UWPerson where
   | p335  -- professor, Faculty
   | p429  -- student, Post_Quals
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype UWPerson where
+  elems := { .p335, .p429 }
+  complete x := by cases x <;> simp
 
 /-! ## Fintype for mixed-arity ground atoms -/
 
@@ -151,7 +155,11 @@ inductive UWClauseId where
   -- BinaryEvidence
   | evStudent429
   | evProfessor335
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype UWClauseId where
+  elems := { .advStudent_33, .advStudent_34, .advStudent_43, .advStudent_44, .advProf_33, .advProf_34, .advProf_43, .advProf_44, .mutExcl_3, .mutExcl_4, .noSelf_3, .noSelf_4, .evStudent429, .evProfessor335 }
+  complete x := by cases x <;> simp
 
 /-- The UW-CSE micro-slice ground MLN: 14 hard clauses.
 
@@ -555,7 +563,12 @@ theorem uwcse_queryMass_advisedBy_eq_one :
   simp only [CountableMLNSemantics.queryMass, GroundMLN.toCountableMLNSemantics,
              constraintQueryHolds, satisfiesConstraints]
   rw [tsum_eq_sum (s := Finset.univ) (fun W hW => (hW (Finset.mem_univ W)).elim)]
-  exact uwcse_sum_advisedBy_eq_one
+  convert uwcse_sum_advisedBy_eq_one using 1
+  apply Finset.sum_congr rfl
+  intro world _
+  by_cases holds : ∀ c ∈ advisedBy429_335Query, world c.fst = c.snd
+  · erw [if_pos holds, if_pos holds]
+  · erw [if_neg holds, if_neg holds]
 
 theorem uwcse_queryProb_advisedBy_eq_half :
     (clauseMassSemantics uwcseGroundMLN uwcseFullSupport).queryProb

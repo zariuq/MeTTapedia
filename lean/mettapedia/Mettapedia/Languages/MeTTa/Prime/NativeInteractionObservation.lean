@@ -353,7 +353,7 @@ def beginsAtCheap : List (Occurrence loopPresentation) → Bool
 policy that distinguishes their authenticated sites. -/
 theorem eventCountScheduler_not_supports_sitePolicy :
     ¬ eventCountScheduler.SupportsPolicy beginsAtCheap := by
-  rw [eventCountScheduler.supportsPolicy_iff_constantOnReadoutFibers]
+  erw [eventCountScheduler.supportsPolicy_iff_constantOnReadoutFibers]
   intro constant
   have cheapMember := loopArchitecture.observed_container_mem cheapComputation
   have dearMember := loopArchitecture.observed_container_mem dearComputation

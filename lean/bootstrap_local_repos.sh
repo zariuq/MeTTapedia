@@ -15,6 +15,7 @@ clone_or_sync_repo() {
 
   if [ -e "$dest" ]; then
     echo "skip $rel_path: already exists"
+    return
   else
     mkdir -p "$(dirname "$dest")"
     git clone --branch "$branch" "$origin_url" "$dest"
@@ -38,10 +39,14 @@ clone_or_sync_repo() {
     git -C "$dest" checkout -B "$work_branch" "$pinned_rev"
     echo "pinned $rel_path -> $work_branch @ ${pinned_rev:0:12}"
   fi
+
+  if [ "$cloned_now" -eq 1 ]; then
+    python3 "$script_dir/upgrades/4.33.1/replay.py" "$rel_path" --apply
+  fi
 }
 
-# Integration repos are pinned to the exact revisions that the root Mettapedia
-# build was verified against; standalone repos track their active branches.
+# Every editable dependency starts at an exact base revision and receives the
+# recorded Lean migration patch. Existing checkouts are preserved.
 clone_or_sync_repo "externals/Foundation" "mettapedia" \
   "85314e340ea03e62c38a78e2d24c0643578d10ee" "mettapedia" \
   "git@github.com:zariuq/Foundation.git" \
@@ -76,9 +81,22 @@ clone_or_sync_repo "externals/mm-lean4" "verified-mm-latest" \
   "https://github.com/digama0/mm-lean4.git"
 
 clone_or_sync_repo "standalone/mm-lean4" "verified-mm-latest" \
-  "" "" \
+  "54801711a39ebfedab9700c8989deee30196a948" "mettapedia-4.33.1" \
   "git@github.com:zariuq/mm-lean4.git" \
   "https://github.com/digama0/mm-lean4.git"
 clone_or_sync_repo "standalone/ks-foundations-of-inference" "main" \
-  "" "" \
+  "0072878914cfbc012ccb6ce1d2f1f8840e2b2c6a" "mettapedia-4.33.1" \
   "git@github.com:zariuq/ks-foundations-of-inference.git"
+
+clone_or_sync_repo "externals/TauCeti" "main" \
+  "afb1aacb3632d3236eee756ea1683290c07270a3" "mettapedia-4.33.1" \
+  "git@github.com:zariuq/TauCeti.git" \
+  "https://github.com/TauCetiProject/TauCeti.git"
+
+clone_or_sync_repo "externals/LeaTTa" "fix/collapse-bare-tuple" \
+  "26d05f0663a1083085565b2e161a683542df53a8" "mettapedia-4.33.1" \
+  "git@github.com:zariuq/LeaTTa.git"
+
+clone_or_sync_repo "externals/LeaTTa-vanilla" "main" \
+  "40316f04b9a19dd4e948f1158b804434805752b1" "mettapedia-4.33.1" \
+  "git@github.com:zariuq/LeaTTa.git"

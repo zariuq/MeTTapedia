@@ -473,7 +473,7 @@ theorem toFreeGSLT_step_of_no_weights (empty : graded.weights = [])
       langReducesUsing RelationEnv.empty graded.toLanguageDef source
           target ∧
         after = before := by
-  rw [graded.toFreeGSLT_step_iff laws]
+  apply (graded.toFreeGSLT_step_iff laws).trans
   constructor
   · rintro ⟨rule, root, accumulated⟩
     dsimp only at accumulated

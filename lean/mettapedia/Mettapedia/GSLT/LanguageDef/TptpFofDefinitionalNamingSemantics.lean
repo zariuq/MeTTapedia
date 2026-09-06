@@ -552,6 +552,7 @@ def nameAccumulate? {depth : Nat} (source : Source.Formula depth)
   | .all _ | .ex _ => none
 termination_by sizeOf source
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The linear accumulator computes exactly the independent postorder naming
 semantics.  Reversing its ledgers once yields the canonical output. -/
 theorem nameAccumulate?_exact {depth : Nat} (source : Source.Formula depth)
@@ -859,6 +860,7 @@ def Output.Satisfied {Domain : Type}
       definition.Satisfied target values) /\
     evalReference target values output.root
 
+set_option backward.isDefEq.respectTransparency false in
 theorem translateTerm_value_exact {Domain : Type}
     (target : LO.FirstOrder.Structure language Domain)
     {depth : Nat} (values : Fin depth -> Domain)

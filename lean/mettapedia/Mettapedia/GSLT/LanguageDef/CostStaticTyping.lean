@@ -1328,8 +1328,14 @@ mutual
               rw [argumentsEquality]
               exact argumentsTyped
             constructor
-            · simp only [ContinuationRetypingPlan.generatedLanguage,
-                List.mem_append, List.mem_map] at membership
+            · change rule ∈
+                  theory.presentation.presentation.language.terms.map
+                    (costBaseConstructor cut) ++
+                  plan.wrappedConstructors.map (fun constructor =>
+                    costWrappedConstructor (theory := theory) constructor.1)
+                at membership
+              rw [List.mem_append] at membership
+              simp only [List.mem_map] at membership
               rcases membership with
                 ⟨sourceRule, _sourceMembership, equality⟩ |
                 ⟨wrappedRule, wrappedMembership, equality⟩

@@ -154,7 +154,7 @@ theorem no_morphism_from_singleton_to_empty
   have sourceMember :
       DisplayedRewriteSite.map morphism.structural site ∈
         DisplayedRewriteSite.mapSelection morphism.structural [site] := by
-    simp [DisplayedRewriteSite.mapSelection]
+    exact List.mem_map.mpr ⟨site, List.mem_singleton_self _, rfl⟩
   have targetMember := morphism.mapsSelected _ sourceMember
   exact List.not_mem_nil targetMember
 

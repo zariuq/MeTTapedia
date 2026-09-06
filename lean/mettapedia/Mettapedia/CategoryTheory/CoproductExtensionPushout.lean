@@ -178,7 +178,8 @@ theorem collapsedIndependentUnits_not_colimit :
   have rightTriangle := universal.fac separated WalkingSpan.right
   change (𝟙 (Unit : Type)) ≫ mediator = (↾(fun _ : Unit => false)) at leftTriangle
   change (𝟙 (Unit : Type)) ≫ mediator = (↾(fun _ : Unit => true)) at rightTriangle
-  rw [Category.id_comp] at leftTriangle rightTriangle
+  have leftTriangle := (Category.id_comp mediator).symm.trans leftTriangle
+  have rightTriangle := (Category.id_comp mediator).symm.trans rightTriangle
   have leftValue := ConcreteCategory.congr_hom leftTriangle ()
   have rightValue := ConcreteCategory.congr_hom rightTriangle ()
   change mediator () = false at leftValue

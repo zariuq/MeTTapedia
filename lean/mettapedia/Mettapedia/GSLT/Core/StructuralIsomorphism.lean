@@ -254,6 +254,7 @@ def freeDocument {source target : GSLT}
   termEquiv := Equiv.listEquivOfEquiv isomorphism.termEquiv
   equiv_iff := by
     intro left right
+    change List source.Term at left right
     constructor
     · intro equivalent
       have mappedBack := isomorphism.symm.map_documentEquiv equivalent
@@ -269,6 +270,7 @@ def freeDocument {source target : GSLT}
     · exact isomorphism.map_documentEquiv
   step_iff := by
     intro left right
+    change List source.Term at left right
     constructor
     · intro step
       have mappedBack := isomorphism.symm.map_documentStep step
@@ -288,6 +290,7 @@ def freeDocument {source target : GSLT}
   apply ext
   apply Equiv.ext
   intro document
+  change List system.Term at document
   change List.map (fun term : system.Term => term) document = document
   simp
 
@@ -299,6 +302,7 @@ theorem freeDocument_trans {first second third : GSLT}
   apply ext
   apply Equiv.ext
   intro document
+  change List first.Term at document
   change List.map (fun term => later.termEquiv (earlier.termEquiv term)) document =
     List.map later.termEquiv (List.map earlier.termEquiv document)
   rw [List.map_map]

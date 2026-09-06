@@ -828,8 +828,8 @@ theorem betaLiftedFromRaw_trace :
           SyntacticJudgmentalPi.TowerExamples.identityBody.code
           universeZero.code)] := by
   unfold betaLiftedFromRaw
-  rw [BidirectionalStepTyping.PathTyping.liftCertified_trace]
-  rfl
+  exact (BidirectionalStepTyping.PathTyping.liftCertified_trace (display := universeOneDisplay)
+    (source := betaSource) (target := betaTarget) betaPathTyping).trans rfl
 
 /-- The typed conversion is nontrivial: its displayed endpoint codes are not
 equal in the host theory. -/

@@ -274,6 +274,16 @@ def certify? [BEq Key] [Hashable Key]
       else
         none
 
+theorem certify?_isSome [BEq Key] [Hashable Key]
+    (source : SourceProgram Key Value) :
+    (certify? source).isSome =
+      ((recognize source.shape).isSome &&
+        Mettapedia.Util.LinearHash.allDistinct (source.entries.map Prod.fst)) := by
+  unfold certify?
+  split
+  · simp_all
+  · split <;> simp_all
+
 /-- The executable uniqueness check carries the ordinary `Nodup` invariant
 needed by the semantic cardinality theorem. -/
 theorem admitted_keys_nodup [BEq Key] [Hashable Key]
@@ -365,7 +375,8 @@ private def grammarProgram : SourceProgram String Nat :=
     queries := ["expression", "missing", "term"] }
 
 example : (certify? grammarProgram).isSome = true := by
-  simp [certify?, grammarProgram, admittedShape, recognize, effectSupported,
+  rw [certify?_isSome]
+  simp [grammarProgram, admittedShape, recognize, effectSupported,
     Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength]
   decide
 
@@ -397,9 +408,9 @@ private def duplicateProgram : SourceProgram String Nat :=
 
 /-- Duplicate insertion is rejected rather than silently overwriting. -/
 example : (certify? duplicateProgram).isSome = false := by
-  simp [certify?, duplicateProgram, grammarProgram, admittedShape, recognize,
-    effectSupported,
-    Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength]
+  rw [certify?_isSome]
+  simp [duplicateProgram, grammarProgram, admittedShape, recognize,
+    effectSupported, Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength]
   decide
 
 private def wideCarrierProgram : SourceProgram Nat String :=

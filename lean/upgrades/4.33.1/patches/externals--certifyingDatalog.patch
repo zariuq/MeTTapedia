@@ -1,0 +1,452 @@
+diff --git a/CertifyingDatalog/GraphValidation/Dfs.lean b/CertifyingDatalog/GraphValidation/Dfs.lean
+index 65f1f44a5208cbbcd8a9c0939a3368fd22cee524..eb19c3a34e874d91eb3f088eaa52f1367a14ad49 100644
+--- a/CertifyingDatalog/GraphValidation/Dfs.lean
++++ b/CertifyingDatalog/GraphValidation/Dfs.lean
+@@ -243,7 +243,11 @@ section Dfs
+       cond := state.cond
+       stack := state.stack.prependPredecessor a (Walk.mem_predecessors_of_nonempty state.nonempty state.is_front h)
+       fastStack := state.fastStack.insert a
+-      stacks_eq := by simp [Walk.prependPredecessor, Walk.mem_walk_iff, ←state.stacks_eq]; grind
++      stacks_eq := by
++        intro node
++        change node ∈ a :: state.stack.1 ↔ node ∈ state.fastStack.insert a
++        simp only [List.mem_cons, HashSet.mem_insert]
++        exact or_congr (eq_comm.trans beq_iff_eq.symm) (state.stacks_eq node)
+       nonempty := Walk.nonempty_prependPredecessor (Walk.mem_predecessors_of_nonempty state.nonempty state.is_front h)
+       is_front := by simp [Walk.prependPredecessor]
+ 
+diff --git a/CertifyingDatalog/GraphValidation/Validation.lean b/CertifyingDatalog/GraphValidation/Validation.lean
+index 7848c7c23e1258c86218ebd8fa06d4bf7c34272e..4f68e3126364e747f14de0790b00338de90f4593 100644
+--- a/CertifyingDatalog/GraphValidation/Validation.lean
++++ b/CertifyingDatalog/GraphValidation/Validation.lean
+@@ -116,7 +116,8 @@ namespace Graph
+   theorem checkValidityIsOkIffAcyclicAndAllValid (G : Graph (GroundAtom τ)) (kb : KnowledgeBase τ) :
+     G.checkValidity kb.prog.toSymbolSequenceMap kb.db = Except.ok () ↔ G.isAcyclic ∧ ∀ a ∈ G.vertices, G.locallyValid_for_kb kb a := by
+     unfold checkValidity
+-    rw [dfs_semantics]
++    refine (dfs_semantics G
++      (fun node => G.check_local_validity kb.prog.toSymbolSequenceMap kb.db node)).trans ?_
+     unfold NodeCondition.true
+     simp only [and_congr_right_iff]
+     intro _
+diff --git a/CertifyingDatalog/GraphValidation/Walks.lean b/CertifyingDatalog/GraphValidation/Walks.lean
+index d23960b2115b2a13f2a978dcdd950280cc4b1681..6e6b1006fae03cf51062f973a51d9fbd817da4aa 100644
+--- a/CertifyingDatalog/GraphValidation/Walks.lean
++++ b/CertifyingDatalog/GraphValidation/Walks.lean
+@@ -70,7 +70,7 @@ namespace Walk
+   @[simp]
+   theorem mem_singleton {G : Graph A} {a y : A} {h : a ∈ G.vertices} :
+       y ∈ Walk.singleton G a h ↔ y = a := by
+-    simp [singleton, mem_walk_iff]
++    exact List.mem_singleton
+ 
+   def isCycle {G: Graph A} (w : Walk G): Prop :=
+     if h: w.val.length < 2
+@@ -261,7 +261,12 @@ theorem mem_of_mem_successors {G : Graph A} {w : Walk G} {a : A} :
+     rw [← List.getElem_zero this2]
+     unfold Walk.tail
+     simp only [List.getElem_tail, Nat.zero_add]
+-    apply w.prop.right 1 (by simp)
++    have lengthBound : 1 < w.val.length := by
++      simp only [Walk.tail, List.length_tail] at this2
++      omega
++    have edge := w.prop.right 1 (by simp) lengthBound
++    have tailFirst := List.getElem_tail (l := w.val) (i := 0) (h := by simpa only [List.length_tail] using Nat.sub_pos_of_lt lengthBound)
++    exact (congrArg (fun target => w.val[0] ∈ G.predecessors target) tailFirst).mpr edge
+ 
+   theorem take_walk {G : Graph A} {walk : Walk G} {n : ℕ} :
+       (walk.1.take n).isWalk G := by
+@@ -303,16 +308,17 @@ theorem mem_of_mem_successors {G : Graph A} {w : Walk G} {a : A} :
+     rw [takeUntil_head_same]
+ 
+   lemma takeUntil_getLast_is_target {G : Graph A} (w : Walk G) (a : A) (mem : a ∈ w.val) : (w.takeUntil a).val.getLast (by apply takeUnil_ne_of_ne; intro contra; rw [contra] at mem; simp at mem) = a := by
+-    unfold takeUntil
+-    rw [List.getLast_eq_getElem]
+-    unfold Walk.take
+-    rw [List.getElem_take]
+-    simp [List.length_take_of_le (by
+-      show w.val.idxOf a + 1 ≤ w.val.length
+-      apply Nat.succ_le_of_lt
+-      rw [List.idxOf_lt_length_iff]
+-      exact mem
+-    )]
++    have listResult (l : List A) (member : a ∈ l) :
++        (l.take (l.idxOf a + 1)).getLast (by
++          intro empty
++          have lengthZero := congrArg List.length empty
++          simp only [List.length_take, List.length_nil] at lengthZero
++          have positive := List.length_pos_of_mem member
++          omega) = a := by
++      rw [List.getLast_eq_getElem, List.getElem_take]
++      simp [List.length_take_of_le (Nat.succ_le_of_lt
++        (List.idxOf_lt_length_iff.mpr member)), member]
++    exact listResult w.val mem
+ 
+   def concat {G: Graph A} (w1 w2: Walk G) (w1_neq : w1.val ≠ []) (w2_neq : w2.val ≠ []) (h : w1.val.getLast w1_neq = w2.val.head w2_neq) : Walk G := ⟨w1.val++w2.tail.1, by
+     by_cases h' : w2.tail.1 = []
+@@ -331,21 +337,23 @@ theorem mem_of_mem_successors {G : Graph A} {w : Walk G} {a : A} :
+       · intro contra; unfold tail at h; simp [contra] at h
+       · intro contra; simp [contra] at h
+     )).isCycle := by
+-    simp only [isCycle, prependPredecessor, List.length_cons, Fin.zero_eta, List.get_eq_getElem,
+-      Fin.val_zero, List.getElem_cons_zero, Nat.pred_eq_sub_one, Nat.add_one_sub_one,
+-      dite_then_false, not_lt, Nat.reduceLeDiff]
+-    have : (w.tail.takeUntil (w.val.head neq)).val.length - 1 + 1 = (w.tail.takeUntil (w.val.head neq)).val.length := by
+-      rw [Nat.sub_one_add_one_eq_of_pos]
+-      apply List.length_pos_of_ne_nil
+-      apply takeUnil_ne_of_ne
+-      intro contra; rw [contra] at h; simp at h
+-    have get_cons := @List.getElem_cons_succ _ (w.val.head neq) (w.tail.takeUntil (w.val.head neq)).val ((w.tail.takeUntil (w.val.head neq)).val.length - 1) (by rw [this]; simp)
+-    use (by grind)
+-    simp only [this] at get_cons
+-    rw [get_cons]
+-    have applied_takeUntil_getLast_is_target := w.tail.takeUntil_getLast_is_target (w.val.head neq) h
+-    rw [← List.getLast_eq_getElem, applied_takeUntil_getLast_is_target]
+-    grind
++    let cyclePrefix := w.tail.takeUntil (w.val.head neq)
++    have cyclePrefixNonempty : cyclePrefix.val ≠ [] :=
++      takeUnil_ne_of_ne w.tail (List.ne_nil_of_mem h) _
++    have last : cyclePrefix.val.getLast cyclePrefixNonempty = w.val.head neq :=
++      takeUntil_getLast_is_target w.tail _ h
++    have lengthPositive : 0 < cyclePrefix.val.length := List.length_pos_of_ne_nil cyclePrefixNonempty
++    unfold isCycle
++    split
++    · rename_i short
++      change cyclePrefix.val.length + 1 < 2 at short
++      omega
++    · have listResult (l : List A) (nonempty : l ≠ []) (a : A)
++          (last : l.getLast nonempty = a) :
++          a = (a :: l)[(a :: l).length - 1] := by
++        rw [← List.getLast_eq_getElem (h := by simp), List.getLast_cons nonempty]
++        exact last.symm
++      exact listResult cyclePrefix.val cyclePrefixNonempty (w.val.head neq) last
+ 
+   theorem drop_until_isWalk_of_isWalk {G : Graph A} {w : Walk G} {a : A} :
+       (List.drop_until w.1 a).isWalk G := by
+@@ -516,6 +524,7 @@ namespace Graph
+             simp only [eq]
+             simp only [eq, List.getLast_singleton] at w_last_c
+             simp [w_last_c]
++            rfl
+         unfold Walk.concat
+         simp only [this]
+         unfold Walk.singleton
+@@ -726,9 +735,13 @@ namespace Graph
+     let w' := w.prependPredecessor b bmem
+     have hw' : w'.1 ≠ [] := by simp[w', Walk.prependPredecessor]
+     have hb' : b ∈ (w'.tail.takeUntil (w'.1.head hw')).predecessors := by
+-      have := Walk.takeUnil_ne_of_ne w hw b
+-      simpa [w', Walk.prependPredecessor, Walk.tail, Walk.predecessors, this,
+-        List.head?_eq_some_head, Walk.takeUntil_head_same, hw, ha]
++      have sameTail : w'.tail = w := rfl
++      have sameHead : w'.1.head hw' = b := rfl
++      have membership : b ∈ (w.takeUntil b).predecessors := by
++        rw [Walk.takeUntil_predecessors_same w hw b]
++        exact bmem
++      exact (show b ∈ (w'.tail.takeUntil (w'.1.head hw')).predecessors from
++        sameTail ▸ sameHead ▸ membership)
+     have := Walk.isCycle_of_head_in_tail w' hw' (by simp [w', Walk.prependPredecessor, Walk.tail, ←Walk.mem_walk_iff, hb])
+     let cyc := (w'.tail.takeUntil (w'.1.head hw')).prependPredecessor b hb'
+     simp only [reachableFromCycle]
+diff --git a/CertifyingDatalog/OrderedGraphValidation.lean b/CertifyingDatalog/OrderedGraphValidation.lean
+index 818c52cc681092a95c72bf2c265700283a2a5bae..dec8a05dc4b84a4c428a8d7030e0721c68eb5fc6 100644
+--- a/CertifyingDatalog/OrderedGraphValidation.lean
++++ b/CertifyingDatalog/OrderedGraphValidation.lean
+@@ -165,9 +165,7 @@ namespace OrderedProofGraph
+       · rw [r_apply]
+         simp
+         intro a _
+-        simp only [CDTree.root]
+-        unfold toProofTreeSkeleton
+-        simp only [Fin.getElem_fin]
++        exact (congrArg CDTree.root (toProofTreeSkeleton.eq_def valid ⟨a, lt_trans (G.prop root a (by assumption)) root.isLt⟩)).symm
+       · rw [List.forall_iff_forall_mem]
+         simp only [Fin.getElem_fin, List.mem_attach, forall_const,
+           Subtype.forall, List.mem_map, true_and, Subtype.exists, forall_exists_index]
+diff --git a/CertifyingDatalog/TreeValidation.lean b/CertifyingDatalog/TreeValidation.lean
+index 874e25bc7653711af12a08b9dcce14c15295985b..b10c27812fb6f3ada7b87e5a96a1731b21981a0c 100644
+--- a/CertifyingDatalog/TreeValidation.lean
++++ b/CertifyingDatalog/TreeValidation.lean
+@@ -3,7 +3,7 @@ import CertifyingDatalog.Datalog
+ import CertifyingDatalog.Unification
+ 
+ section SymbolSequenceMap
+-def SymbolSequenceMap (τ : Signature) [DecidableEq τ.vars] [DecidableEq τ.constants] [DecidableEq τ.relationSymbols] [Hashable τ.constants] [Hashable τ.vars] [Hashable τ.relationSymbols] :=
++abbrev SymbolSequenceMap (τ : Signature) [DecidableEq τ.vars] [DecidableEq τ.constants] [DecidableEq τ.relationSymbols] [Hashable τ.constants] [Hashable τ.vars] [Hashable τ.relationSymbols] :=
+   Std.HashMap (List τ.relationSymbols) (List (Rule τ))
+ 
+ variable {τ: Signature} [DecidableEq τ.vars] [DecidableEq τ.constants] [DecidableEq τ.relationSymbols] [Hashable τ.constants] [Hashable τ.vars] [Hashable τ.relationSymbols]
+diff --git a/CertifyingDatalog/Unification.lean b/CertifyingDatalog/Unification.lean
+index 684e8a31005e073c44157058299e333c5502777c..63e2bbcfe92e165a60b99d6c4c9dd7a134dfe411 100644
+--- a/CertifyingDatalog/Unification.lean
++++ b/CertifyingDatalog/Unification.lean
+@@ -67,20 +67,20 @@ section TermMatching
+           apply extend_subset_self h
+ 
+     lemma matchTermYieldsSubs [DecidableEq τ.vars] [DecidableEq τ.constants] {s: Substitution τ} {t: Term τ} {c: τ.constants} (h : (s.matchTerm t c).isSome) : ((s.matchTerm t c).get h).applyTerm t = c := by
+-      simp only [matchTerm, decide_implies, dite_eq_ite, Bool.if_true_right, Bool.decide_eq_true,
+-        Option.not_isSome] at h ⊢
+       cases t with
+       | constant c' =>
+-        simp only [Option.get_ite]
+-        cases Decidable.em (c = c') with
+-        | inl eq =>
+-          simp only [eq]
+-          unfold applyTerm
+-          simp
+-        | inr neq =>
+-          simp [neq] at h
++          by_cases equality : c = c'
++          · subst c'
++            simp [matchTerm, applyTerm]
++          · simp [matchTerm, equality] at h
+       | variableDL v =>
+-        simp [Option.filter, extend, applyTerm] at h ⊢
++          have accepted : ((s v).isNone || decide (s v = some c)) = true := by
++            simpa [matchTerm, extend] using h
++          have matched : s.matchTerm (.variableDL v) c = some (s.extend v c) := by
++            simp [matchTerm, Option.filter, extend, accepted]
++          have result := Option.get_of_eq_some h matched
++          exact (congrArg (fun replacement : Substitution τ =>
++            replacement.applyTerm (.variableDL v)) result).trans (by simp [applyTerm, extend])
+ 
+     lemma matchTermIsMinimal [DecidableEq τ.vars] [DecidableEq τ.constants] {s: Substitution τ} {t: Term τ} {c: τ.constants} (h : (s.matchTerm t c).isSome) : ∀ s' : Substitution τ, s ⊆ s' ∧ s'.applyTerm t = c -> ((s.matchTerm t c).get h) ⊆ s' := by
+       intro s' ⟨subset, apply_t⟩
+diff --git a/lake-manifest.json b/lake-manifest.json
+index e891dabd0f31678e465ffcbc2db56c4a224e5d6e..520f6ee861f1872002d6a949144205dd8e408f11 100644
+--- a/lake-manifest.json
++++ b/lake-manifest.json
+@@ -1,96 +1,117 @@
+-{"version": "1.2.0",
+- "packagesDir": ".lake/packages",
+- "packages":
+- [{"url": "https://github.com/leanprover-community/mathlib4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "fabf563a7c95a166b8d7b6efca11c8b4dc9d911f",
+-   "name": "mathlib",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": false,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/plausible",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "63045536fe95024e6c18fc7b48e03f506701c5bc",
+-   "name": "plausible",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/LeanSearchClient",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "c5d5b8fe6e5158def25cd28eb94e4141ad97c843",
+-   "name": "LeanSearchClient",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/import-graph",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "5c7542ed018c78194f1e2b903eaf6a792b74c03d",
+-   "name": "importGraph",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/ProofWidgets4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "24b0d9dc081c5423f8eec7e866c441e5184f29d9",
+-   "name": "proofwidgets",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/aesop",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "e3cb2f741431ce31bf73549fb52316a57368b06f",
+-   "name": "aesop",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/quote4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "f46324995fca5f0483b742e4eb4daec7f4ee50d2",
+-   "name": "Qq",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/batteries",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fa08db58b30eb033edcdab331bba000827f9f785",
+-   "name": "batteries",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover/lean4-cli",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover",
+-   "rev": "92564e5770e4d09f2d86dfbf8ada1e9c715b384c",
+-   "name": "Cli",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"}],
+- "name": "certifyingDatalog",
+- "lakeDir": ".lake",
+- "fixedToolchain": false}
++{
++  "version": "1.2.0",
++  "packagesDir": ".lake/packages",
++  "packages": [
++    {
++      "url": "https://github.com/leanprover-community/mathlib4",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "name": "mathlib",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "inherited": false,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/plausible",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "b7eb3304aeae834b12dda98993a37f6a41f6f0bb",
++      "name": "plausible",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/LeanSearchClient",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "5f4d51b81cbd3f6b32b156bfad9056621a040404",
++      "name": "LeanSearchClient",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/import-graph",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "16f02aa7642864af59f1ff0e384a015994db9118",
++      "name": "importGraph",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/ProofWidgets4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4be2e3d5087eeb272cf5a8853b8f9dd025ef5957",
++      "name": "proofwidgets",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/aesop",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "3448c0bcc5ce01b2d1546e483ec3620e32df3d0e",
++      "name": "aesop",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/quote4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "92c15be17b7caf78c2ad767ec40f89052d908d81",
++      "name": "Qq",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/batteries",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4488d40d070b9700d4d5a6aa342f0d40c31b2a2d",
++      "name": "batteries",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover/lean4-cli",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover",
++      "rev": "6130a47896ce867c6a4a55373441e59e565bad0f",
++      "name": "Cli",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "v4.33.0",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    }
++  ],
++  "name": "certifyingDatalog",
++  "lakeDir": ".lake",
++  "fixedToolchain": false
++}
+diff --git a/lakefile.lean b/lakefile.lean
+index 21a649cfc9bd5fe456cc977d083df7899e9c0935..78436faf3b081a5fc3364537d817b68b4bcec0d8 100644
+--- a/lakefile.lean
++++ b/lakefile.lean
+@@ -10,7 +10,7 @@ lean_lib «CertifyingDatalog» {
+ }
+ 
+ require mathlib from git
+-  "https://github.com/leanprover-community/mathlib4"@"v4.31.0"
++  "https://github.com/leanprover-community/mathlib4"@"0df444a360eaa60ab8c11dca51a86af692955474"
+ 
+ @[default_target]
+ lean_exe «certifyingDatalog» where
+diff --git a/lean-toolchain b/lean-toolchain
+index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+--- a/lean-toolchain
++++ b/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.31.0
++leanprover/lean4:v4.33.1

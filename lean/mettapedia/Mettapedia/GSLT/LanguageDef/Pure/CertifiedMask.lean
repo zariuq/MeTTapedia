@@ -191,9 +191,8 @@ theorem identityInitialNode_completes :
     identityInitialNode.Completes betaRootIdentityTerm := by
   refine ⟨identityInitialNode_reached,
     (betaAtomicRoot betaRootIdentityGoal).encode betaRootIdentityTerm, ?_⟩
-  simpa [identityInitialNode] using
-    betaRoot_wellFormed_reachable identityBudgetOK
-      betaRootIdentity_wellFormed identityCostFits
+  exact betaRoot_wellFormed_reachable identityBudgetOK
+    betaRootIdentity_wellFormed identityCostFits
 
 theorem betaViabilityStateTest_negative :
     (betaViabilityStateTest betaRootIdentityGoal).test identityInitialNode = false := by

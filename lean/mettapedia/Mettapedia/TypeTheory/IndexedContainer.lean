@@ -82,6 +82,7 @@ def list : IndexedContainer Unit where
 def listFinitary : Finitary list where
   positionFintype := fun {output} length => by
     cases output
+    change Nat at length
     change Fintype (Fin length)
     infer_instance
 

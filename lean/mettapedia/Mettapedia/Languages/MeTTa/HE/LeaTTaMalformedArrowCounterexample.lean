@@ -120,7 +120,7 @@ theorem repaired_mixed_arrows_emit_only_valid_return :
     Metta.Minimal.getTypes.eq_10 _ _ _ (by simp)]
   simp [operatorTypes, noDirect, sourceAtoms,
     Metta.Minimal.typeInferenceAvoid, Metta.Atom.vars,
-    Metta.Minimal.freshenArgumentTypes,
+    Metta.Minimal.cartesian, Metta.Minimal.freshenArgumentTypes,
     Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
     Metta.Minimal.matchApplicationTypeArguments, Metta.instantiate_nil,
     bareArrow, validNullaryArrow]

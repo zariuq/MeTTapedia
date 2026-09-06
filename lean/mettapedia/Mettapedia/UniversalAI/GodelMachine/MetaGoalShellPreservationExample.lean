@@ -305,8 +305,7 @@ theorem trustTriangle_exact_metaGoal_closure_example
       newMeasure := μ₂
       oldDLR := hμ₁
       newDLR := hμ₂ }
-  let goals : ProtectedWMGoals closure.proto.seed := by
-    simpa [closure, trustTriangleClosure] using trustTriangleProtectedGoals
+  let goals : ProtectedWMGoals closure.proto.seed := trustTriangleProtectedGoals
   have hAgree :
       SpecAgreesOnRegion (triangleChainSpec wt wc₁) (triangleChainSpec wt wc₂)
         ((triangleChainSpec wt wc₁).iterExpandRegion closure.proto.seed closure.closureDepth) := by

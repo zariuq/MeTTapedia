@@ -1622,9 +1622,9 @@ theorem seededUnifyOrder_leattaUnifyMettaCallStepExt_counter0 :
       (emittedMerged := seededUnifyOrderLeaMerged)
       hmatchHE hmergeHE hloopHE hmatchLea hmergeLea hloopLea hbindingsEq
       hno hkeys hfresh (by simp [atomDepth])
-  simpa [seededUnifyOrderHEMerged, Bindings.applyDefault, Bindings.apply,
-    Bindings.resolve, Bindings.resolveAtomAux, Bindings.hasAssignedVar,
-    Bindings.hasAssignedVarAux, Bindings.isBound, Bindings.lookup] using hstep
+  have applied : seededUnifyOrderHEMerged.applyDefault (.var "x") = .symbol "a" := by
+    decide +kernel
+  simpa only [applied] using hstep
 
 theorem leattaUnifyMettaCallStep_sound
     {space : Space} {d : GroundedDispatch} {fuel : Nat}
@@ -2777,17 +2777,19 @@ theorem queryEquationsAgainstVisible_unaryIdentity_counter0_mem_atFuel
           , equalities := [] } : Bindings)
         (var ++ "#" ++ Nat.repr 0) [var ++ "#" ++ Nat.repr 0] 100 = false := by
     simpa [Bindings.hasLoop] using hloopRaw
-  exact
-    ⟨⟨hloopFrom,
-        by
-          change
-            Bindings.empty.assign (var ++ "#" ++ Nat.repr 0) (.symbol value) ∈
-              addVarBinding Bindings.empty (var ++ "#" ++ Nat.repr 0)
-                (.symbol value) (extraFuel + 1)
-          rw [addVarBinding_fresh
-            (by simp [Bindings.empty, Bindings.lookup]) rfl extraFuel]
-          simp⟩,
-      hloopFrom⟩
+  have member :
+      Bindings.empty.assign (var ++ "#" ++ Nat.repr 0) (.symbol value) ∈
+        addVarBinding Bindings.empty (var ++ "#" ++ Nat.repr 0)
+          (.symbol value) (extraFuel + 1) := by
+    rw [addVarBinding_fresh
+      (by simp [Bindings.empty, Bindings.lookup]) rfl extraFuel]
+    simp
+  refine ⟨({ assignments := [(var ++ "#" ++ Nat.repr 0, Atom.symbol value)], equalities := [] } : Bindings), ⟨⟨hloopFrom, member⟩, ?_⟩, ?_⟩
+  · intro name atom hmem
+    have pairEq := List.mem_singleton.mp hmem
+    cases pairEq
+    exact hloopFrom
+  · simp [hloopFrom]
 
 /-- Fuel-10 specialization of
 `queryEquationsAgainstVisible_unaryIdentity_counter0_mem_atFuel`, preserved for
@@ -2828,17 +2830,19 @@ theorem queryEquations_unaryIdentity_counter0_mem_atFuel
           , equalities := [] } : Bindings)
         (var ++ "#" ++ Nat.repr 0) [var ++ "#" ++ Nat.repr 0] 100 = false := by
     simpa [Bindings.hasLoop] using hloopRaw
-  exact
-    ⟨⟨hloopFrom,
-        by
-          change
-            Bindings.empty.assign (var ++ "#" ++ Nat.repr 0) (.symbol value) ∈
-              addVarBinding Bindings.empty (var ++ "#" ++ Nat.repr 0)
-                (.symbol value) (extraFuel + 1)
-          rw [addVarBinding_fresh
-            (by simp [Bindings.empty, Bindings.lookup]) rfl extraFuel]
-          simp⟩,
-      hloopFrom⟩
+  have member :
+      Bindings.empty.assign (var ++ "#" ++ Nat.repr 0) (.symbol value) ∈
+        addVarBinding Bindings.empty (var ++ "#" ++ Nat.repr 0)
+          (.symbol value) (extraFuel + 1) := by
+    rw [addVarBinding_fresh
+      (by simp [Bindings.empty, Bindings.lookup]) rfl extraFuel]
+    simp
+  refine ⟨({ assignments := [(var ++ "#" ++ Nat.repr 0, Atom.symbol value)], equalities := [] } : Bindings), ⟨⟨hloopFrom, member⟩, ?_⟩, ?_⟩
+  · intro name atom hmem
+    have pairEq := List.mem_singleton.mp hmem
+    cases pairEq
+    exact hloopFrom
+  · simp [hloopFrom]
 
 /-- Fuel-10 specialization of `queryEquations_unaryIdentity_counter0_mem_atFuel`,
 preserved for the official `MettaCall` wrapper at counter 0. -/

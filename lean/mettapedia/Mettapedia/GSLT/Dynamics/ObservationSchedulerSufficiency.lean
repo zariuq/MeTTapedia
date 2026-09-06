@@ -111,7 +111,7 @@ theorem workOnly_retains_container :
 /-- The full work/span readout supports a span-maximizing policy. -/
 theorem full_supports_spanSelection :
     full.SupportsMaxSelection WorkSpan.span := by
-  rw [ObservationDiscipline.supportsMaxSelection_iff]
+  apply (ObservationDiscipline.supportsMaxSelection_iff _ _).2
   intro first second sameReadout
   change first = second at sameReadout
   exact congrArg WorkSpan.span sameReadout
@@ -120,7 +120,7 @@ theorem full_supports_spanSelection :
 work-maximizing policy. -/
 theorem workOnly_supports_workSelection :
     workOnly.SupportsMaxSelection WorkSpan.work := by
-  rw [ObservationDiscipline.supportsMaxSelection_iff]
+  apply (ObservationDiscipline.supportsMaxSelection_iff _ _).2
   intro first second sameReadout
   exact sameReadout
 

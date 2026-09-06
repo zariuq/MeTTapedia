@@ -187,7 +187,7 @@ def Scwf.toCwf (S : Scwf.{u, v, w, w'}) : Cwf.{u, v, w, w'} where
 
 /-- The dependent set-families model: contexts are types, types are families,
 terms are sections. -/
-def familiesCwf : Cwf.{w + 1, w, w + 1, w} where
+abbrev familiesCwf : Cwf.{w + 1, w, w + 1, w} where
   Ctx := Type w
   Sub Γ Δ := Γ → Δ
   idS _ := fun γ => γ

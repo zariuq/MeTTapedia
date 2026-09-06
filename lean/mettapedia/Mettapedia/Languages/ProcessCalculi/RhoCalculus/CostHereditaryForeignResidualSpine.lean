@@ -46,6 +46,7 @@ open RhoStaticNonBoundaryPlanStopCommonApex
 
 namespace RhoReachedPlanPairCommonApex
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Turn an alignment of reached-plan abstracts into the fixed parent-cospan
 apex while routing rigid free variables through occurrence evidence in both
 parent skeletons.  The callback is consulted only at genuine plan stops. -/
@@ -340,6 +341,7 @@ arm of `StopWithFvars`.
 
 The residual therefore rests on a **single** callback. -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- **The foreign residual from one stop callback.**
 
 Same reduction as `rho_afterSameColorBoundarySideForeign_of_callbacks`, with

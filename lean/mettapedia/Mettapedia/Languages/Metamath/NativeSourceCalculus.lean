@@ -213,35 +213,15 @@ theorem sourceLanguage_validate : sourceLanguage.validate = [] := by
       LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
       TypeExpr.baseNames]
 
+set_option maxRecDepth 10000 in
+set_option maxHeartbeats 2000000 in
 theorem generatedDefinition_valid : generatedDefinition.isValid = true := by
   have generatedLanguageValidate :
       generatedDefinition.toLanguageDef.validate = [] := by
     exact sourceLanguage_validate
   unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [generatedLanguageValidate]
-  simp [generatedDefinition, staticConstructors,
-    sourceVocabulary, sourceDigest,
-    sourceRevision, constructorRule, dataType, targetHypotheses,
-    rFloat, sFloat, tFloat, theoremRSEssential, theoremSTEssential,
-    hypothesisRule, assertionRules, axiomSyllogism, rsEssential,
-    stEssential, rule, app, provesPattern, identityPattern, formulaPattern,
-    atomPattern, atomListPattern, substitutionJudgment,
-    contextJudgment, substitutionPattern, identityBindingsPattern,
-    bindingPattern, contextPattern, substitutionRuleId, contextRuleId,
-    SourceHypothesis.formula, SourceHypothesis.label,
-    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
-    CalculusLanguageDef.judgmentHeads, RuleSchema.isValidIn,
-    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
-    RuleSchema.occurrences, RuleSchema.patterns,
-    patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
-    patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    CalculusLanguageDef.judgmentSchemaValid, CalculusLanguageDef.lookupJudgment?,
-    fixedConstructorsValid, fixedConstructorListsValid,
-    languageHasConstructorArity, Pattern.zipHead, Pattern.mapHead,
-    Pattern.evalHead, Pattern.isWellScoped, Pattern.isWellScopedAt,
-    Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
-    Pattern.hasCanonicalBinderMetadataList]
-  decide
+  decide +kernel
 
 /-- The complete native slice as one GSLT. -/
 def totalTheory : GSLT :=
@@ -263,29 +243,13 @@ def targetRawProof : RawProof :=
 
 def targetGoal : Pattern := provesPattern targetFormula
 
-local macro "native_check_core" : tactic =>
-  `(tactic|
-    simp [checkRaw, checkRawChildren, validatedDefinition,
-      generatedDefinition, targetHypotheses, rFloat, sFloat, tFloat,
-      theoremRSEssential, theoremSTEssential, hypothesisRule,
-      assertionRules, axiomSyllogism, rsEssential, stEssential, rule,
-      app, sourceRevision, sourceDigest, provesPattern, identityPattern,
-      formulaPattern, atomPattern,
-      atomListPattern, substitutionJudgment, contextJudgment,
-      substitutionPattern, identityBindingsPattern, bindingPattern,
-      contextPattern, substitutionRuleId, contextRuleId,
-      SourceHypothesis.formula, SourceHypothesis.label, rawNode,
-      instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
-      argumentValidAt, instantiateSchema?, instantiateSchemaAt?,
-      instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
-      Pattern.isGroundAt, Pattern.isGroundListAt,
-      Pattern.hasCanonicalBinderMetadata,
-      Pattern.hasCanonicalBinderMetadataList])
 
+set_option maxRecDepth 10000 in
+set_option maxHeartbeats 2000000 in
 theorem targetRawProof_checked :
     checkRaw validatedDefinition targetGoal targetRawProof = true := by
   simp only [targetRawProof, targetGoal, targetFormula]
-  native_check_core
+  decide +kernel
 
 theorem targetRawProof_exact_derivation :
     ∃ derivation : Derivation validatedDefinition targetGoal,
@@ -521,12 +485,16 @@ def missingContextProof : RawProof :=
     (targetHypotheses.map (fun hypothesis => rawNode hypothesis.label) ++
       [rawNode (substitutionRuleId axiomSyllogism)])
 
+set_option maxRecDepth 10000 in
+set_option maxHeartbeats 2000000 in
 example : checkRaw validatedDefinition targetGoal wrongPremiseOrderProof = false := by
   simp only [wrongPremiseOrderProof, targetGoal, targetFormula]
-  native_check_core
+  decide +kernel
 
+set_option maxRecDepth 10000 in
+set_option maxHeartbeats 2000000 in
 example : checkRaw validatedDefinition targetGoal missingContextProof = false := by
   simp only [missingContextProof, targetGoal, targetFormula]
-  native_check_core
+  decide +kernel
 
 end Mettapedia.Languages.Metamath.NativeSourceCalculus

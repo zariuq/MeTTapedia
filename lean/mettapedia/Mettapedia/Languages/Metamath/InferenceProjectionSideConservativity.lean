@@ -309,8 +309,8 @@ position. -/
   | nil => rfl
   | cons head tail =>
       simp [restrictSideDerivationList, DerivationList.erase,
-        erase_restrictSideDerivation hreflects,
-        erase_restrictSideDerivationList hreflects]
+        erase_restrictSideDerivation hreflects]
+      exact erase_restrictSideDerivationList hreflects _ tail
 
 end
 

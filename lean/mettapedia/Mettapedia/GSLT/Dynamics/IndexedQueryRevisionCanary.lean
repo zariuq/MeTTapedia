@@ -46,7 +46,7 @@ private def sourceTargetTranslation : Translation sourceTheory targetTheory wher
   mapObservation := id
   step_map := by
     intro revision source target step
-    simpa [sourceTheory, targetTheory] using step
+    exact step
   query_natural := fun _ _ => rfl
 
 private def stageTheory : Nat → QueryableTheory

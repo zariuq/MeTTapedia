@@ -934,6 +934,7 @@ theorem scan_missing_rewriteAt_exact (fuel : Nat)
   rw [rewriteAt_eq_root_filter, scanRootRules]
   scan_row_simp
 
+set_option maxHeartbeats 1000000 in
 theorem scan_cons_rewriteAt_exact (fuel : Nat)
     (target requested remaining seen name input origin formulas membership
       result : Pattern)

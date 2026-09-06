@@ -565,7 +565,7 @@ def laws : ModalCwFLaws modes cwf where
   lockSub_modal_comp := by intros; exact HEq.rfl
   boxTy_id := by
     intro mode context type
-    simp [cwf]
+    exact HEq.rfl
   boxTy_comp := by
     intro first middle last earlier later context direct nested sameType
     simpa [cwf] using sameType
@@ -578,7 +578,7 @@ def quotation :
     intro high low modality admitted context type term
     exact term
   introduce_sub := by intros; simp [cwf, laws]
-  introduce_id := by intros; simp [cwf]
+  introduce_id := by intros; exact HEq.rfl
 
 def splicing : SelectedSpliceTermStructure modes cwf laws selected where
   splice := by
@@ -586,8 +586,8 @@ def splicing : SelectedSpliceTermStructure modes cwf laws selected where
     exact code
   splice_sub := by
     intros
-    simp [cwf, laws, ModalCwF.castTm]
-  splice_id := by intros; simp [cwf]
+    exact HEq.rfl
+  splice_id := by intros; exact HEq.rfl
 
 def beta :
     SelectedQuoteSpliceBeta modes cwf laws selected quotation splicing where
@@ -614,7 +614,7 @@ theorem bool_comparison_not_loses :
         PUnit.unit trivial
         (context := PUnit) (type := Bool))).LosesProgramInformation := by
   rw [Mettapedia.Computability.SplitReadoutComparison.not_loses_iff_faithful]
-  rw [beta.faithful_iff_quote_splice
+  erw [beta.faithful_iff_quote_splice
     (high := PUnit.unit) (low := PUnit.unit) PUnit.unit trivial]
   exact eta.quote_splice
     (high := PUnit.unit) (low := PUnit.unit) PUnit.unit trivial

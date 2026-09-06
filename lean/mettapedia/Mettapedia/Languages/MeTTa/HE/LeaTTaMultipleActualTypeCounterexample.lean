@@ -1,6 +1,7 @@
 import MettaHyperonFull.Minimal.Interpreter
 import MettaHyperonFull.Proofs.BindingLaws
 import MettaHyperonFull.Proofs.Substitution
+import MettaHyperonFull.Proofs.TypeSoundness
 
 /-!
 # Multiple-actual-type failure counterexample
@@ -68,45 +69,45 @@ private theorem C_does_not_match_E :
     Metta.Minimal.matchType [] (.sym "C") (.sym "E") = none := by
   rfl
 
-private theorem u_matches_B :
-    Metta.Minimal.matchType [] (.var "u") (.sym "B") =
-      some [.val "u" (.sym "B")] := by
-  have hloop : Metta.Bindings.hasLoop [.val "u" (.sym "B")] = false :=
+private theorem u_matches_B {name : String} :
+    Metta.Minimal.matchType [] (.var name) (.sym "B") =
+      some [.val name (.sym "B")] := by
+  have hloop : Metta.Bindings.hasLoop [.val name (.sym "B")] = false :=
     Metta.Bindings.hasLoop_singleton_val_of_not_mem _ _
       (by simp [Metta.Atom.vars])
-  have hmatch : Metta.matchAtoms (.var "u") (.sym "B") =
-      [[.val "u" (.sym "B")]] := by
+  have hmatch : Metta.matchAtoms (.var name) (.sym "B") =
+      [[.val name (.sym "B")]] := by
     simp [Metta.matchAtoms, Metta.matchAtomsWith, Metta.Subst.occurs, hloop]
-  have hmerge : Metta.Bindings.merge [] [.val "u" (.sym "B")] =
-      [[.val "u" (.sym "B")]] := by
+  have hmerge : Metta.Bindings.merge [] [.val name (.sym "B")] =
+      [[.val name (.sym "B")]] := by
     simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
       Metta.Bindings.addVarBinding, Metta.Bindings.classValues,
       Metta.Bindings.lookupVal, Metta.Bindings.addValRaw,
       Metta.Bindings.removeVal]
-  have huUndefined : ((.var "u" : Metta.Atom) == .sym "%Undefined%") = false := rfl
-  have huAtom : ((.var "u" : Metta.Atom) == .sym "Atom") = false := rfl
+  have huUndefined : ((.var name : Metta.Atom) == .sym "%Undefined%") = false := rfl
+  have huAtom : ((.var name : Metta.Atom) == .sym "Atom") = false := rfl
   have hBUndefined : ((.sym "B" : Metta.Atom) == .sym "%Undefined%") = false := rfl
   have hBAtom : ((.sym "B" : Metta.Atom) == .sym "Atom") = false := rfl
   simp [Metta.Minimal.matchType, Metta.Minimal.matchReduced,
     hmatch, hmerge, hloop, huUndefined, huAtom, hBUndefined, hBAtom]
 
-private theorem u_matches_C :
-    Metta.Minimal.matchType [] (.var "u") (.sym "C") =
-      some [.val "u" (.sym "C")] := by
-  have hloop : Metta.Bindings.hasLoop [.val "u" (.sym "C")] = false :=
+private theorem u_matches_C {name : String} :
+    Metta.Minimal.matchType [] (.var name) (.sym "C") =
+      some [.val name (.sym "C")] := by
+  have hloop : Metta.Bindings.hasLoop [.val name (.sym "C")] = false :=
     Metta.Bindings.hasLoop_singleton_val_of_not_mem _ _
       (by simp [Metta.Atom.vars])
-  have hmatch : Metta.matchAtoms (.var "u") (.sym "C") =
-      [[.val "u" (.sym "C")]] := by
+  have hmatch : Metta.matchAtoms (.var name) (.sym "C") =
+      [[.val name (.sym "C")]] := by
     simp [Metta.matchAtoms, Metta.matchAtomsWith, Metta.Subst.occurs, hloop]
-  have hmerge : Metta.Bindings.merge [] [.val "u" (.sym "C")] =
-      [[.val "u" (.sym "C")]] := by
+  have hmerge : Metta.Bindings.merge [] [.val name (.sym "C")] =
+      [[.val name (.sym "C")]] := by
     simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
       Metta.Bindings.addVarBinding, Metta.Bindings.classValues,
       Metta.Bindings.lookupVal, Metta.Bindings.addValRaw,
       Metta.Bindings.removeVal]
-  have huUndefined : ((.var "u" : Metta.Atom) == .sym "%Undefined%") = false := rfl
-  have huAtom : ((.var "u" : Metta.Atom) == .sym "Atom") = false := rfl
+  have huUndefined : ((.var name : Metta.Atom) == .sym "%Undefined%") = false := rfl
+  have huAtom : ((.var name : Metta.Atom) == .sym "Atom") = false := rfl
   have hCUndefined : ((.sym "C" : Metta.Atom) == .sym "%Undefined%") = false := rfl
   have hCAtom : ((.sym "C" : Metta.Atom) == .sym "Atom") = false := rfl
   simp [Metta.Minimal.matchType, Metta.Minimal.matchReduced,
@@ -121,6 +122,7 @@ theorem detailed_argument_failure_keeps_every_actual :
           { position := 1, expected := .sym "A", actual := .sym "B" }
           [{ position := 1, expected := .sym "A", actual := .sym "C" }] := by
   simp [Metta.Minimal.typeCheckArgsDetailedOutcome,
+    Metta.Minimal.typeCheckArgsDetailedOutcomeScoped,
     Metta.Minimal.scanActualTypes, argumentTypePrep, argument_types,
     Metta.Minimal.typeInferenceAvoid,
     Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
@@ -195,6 +197,7 @@ theorem mixed_latent_errors_are_block_prepended :
         { position := 2, expected := .sym "A", actual := .sym "D" }
         [{ position := 1, expected := .sym "B", actual := .sym "C" }] := by
   simp [Metta.Minimal.typeCheckArgsDetailedOutcome,
+    Metta.Minimal.typeCheckArgsDetailedOutcomeScoped,
     Metta.Minimal.scanActualTypes, symbolTypePrep, mixed_types, bad_types,
     Metta.Minimal.typeInferenceAvoid, Metta.Minimal.freshenTypeCandidate,
     Metta.Minimal.renameAllVars, Metta.instantiate_nil,
@@ -239,6 +242,7 @@ theorem three_argument_error_blocks_are_reverse_positional :
         [{ position := 2, expected := .sym "A", actual := .sym "D" },
          { position := 1, expected := .sym "B", actual := .sym "C" }] := by
   simp [Metta.Minimal.typeCheckArgsDetailedOutcome,
+    Metta.Minimal.typeCheckArgsDetailedOutcomeScoped,
     Metta.Minimal.scanActualTypes, symbolTypePrep, first_types, middle_types,
     last_types, Metta.Minimal.typeInferenceAvoid,
     Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
@@ -252,6 +256,7 @@ theorem first_matching_actual_supplies_one_binding :
       Metta.Minimal.World.empty [.var "u"] 0 [] [.sym "multi-a"] =
       .success [.val "u" (.sym "B")] [] := by
   simp [Metta.Minimal.typeCheckArgsDetailedOutcome,
+    Metta.Minimal.typeCheckArgsDetailedOutcomeScoped,
     Metta.Minimal.scanActualTypes, argumentTypePrep, argument_types,
     Metta.Minimal.typeInferenceAvoid, Metta.Minimal.freshenTypeCandidate,
     Metta.Minimal.renameAllVars, Metta.instantiate_nil,
@@ -307,6 +312,7 @@ private theorem candidate_block_second_signature_failure :
       .failure
         { position := 2, expected := .sym "C", actual := .sym "D" } [] := by
   simp [Metta.Minimal.typeCheckArgsDetailedOutcome,
+    Metta.Minimal.typeCheckArgsDetailedOutcomeScoped,
     Metta.Minimal.scanActualTypes, symbolTypePrep,
     candidate_block_a_types, candidate_block_b_types,
     Metta.Minimal.typeInferenceAvoid, Metta.Minimal.freshenTypeCandidate,
@@ -323,8 +329,6 @@ theorem selector_preserves_candidate_error_block_order :
       .exhausted
         [.incorrectArity,
           .badArgument 2 (.sym "C") (.sym "D")] false := by
-  have notGetType :
-      ((.sym "block-f" : Metta.Atom) == .sym "get-type") = false := rfl
   rw [Metta.Minimal.selectFunctionType,
     symbolTypePrep, candidate_block_function_types]
   simp [Metta.Minimal.scanFunctionTypeCandidates,
@@ -332,7 +336,7 @@ theorem selector_preserves_candidate_error_block_order :
     candidate_block_second_signature_failure,
     Metta.Minimal.FunctionTypeScanOutcome.prependError,
     Metta.Minimal.FunctionTypeScanOutcome.prependErrors,
-    Metta.Minimal.TypeCheckArgsError.toFunctionTypeError, notGetType]
+    Metta.Minimal.TypeCheckArgsError.toFunctionTypeError]
 
 /-! ## Dependent return types expose the discarded successful branch
 
@@ -366,8 +370,8 @@ private theorem dependent_function_types :
   simp [dependentEnv, dependentArrow, Metta.Minimal.MinEnv.ofAtomsGT,
     Std.HashMap.getD_insert, Std.HashMap.getD_emptyWithCapacity]
 
-private theorem u_bound_to_B_does_not_match_C :
-    Metta.Minimal.matchType [.val "u" (.sym "B")] (.sym "C") (.var "u") =
+private theorem u_bound_to_B_does_not_match_C {name : String} :
+    Metta.Minimal.matchType [.val name (.sym "B")] (.sym "C") (.var name) =
       none := by
   simp [Metta.Minimal.matchType, Metta.Minimal.matchReduced,
     Metta.matchAtoms, Metta.matchAtomsWith, Metta.Bindings.merge,
@@ -377,42 +381,42 @@ private theorem u_bound_to_B_does_not_match_C :
     Metta.Unify.decomposeAll, Metta.Unify.decomposeEq,
     Metta.Atom.size, Metta.Atom.beq, BEq.beq]
 
-private theorem instantiate_u_bound_to_B :
-    Metta.instantiate [.val "u" (.sym "B")] (.var "u") = .sym "B" := by
+private theorem instantiate_u_bound_to_B {name : String} :
+    Metta.instantiate [.val name (.sym "B")] (.var name) = .sym "B" := by
   exact Metta.instantiate_singleton_val_var_of_not_mem
-    "u" (.sym "B") (by simp [Metta.Atom.vars])
+    name (.sym "B") (by simp [Metta.Atom.vars])
 
-private theorem u_bound_to_C_matches_C :
-    Metta.Minimal.matchType [.val "u" (.sym "C")] (.sym "C") (.var "u") =
-      some [.val "u" (.sym "C")] := by
-  have hloop : Metta.Bindings.hasLoop [.val "u" (.sym "C")] = false :=
+private theorem u_bound_to_C_matches_C {name : String} :
+    Metta.Minimal.matchType [.val name (.sym "C")] (.sym "C") (.var name) =
+      some [.val name (.sym "C")] := by
+  have hloop : Metta.Bindings.hasLoop [.val name (.sym "C")] = false :=
     Metta.Bindings.hasLoop_singleton_val_of_not_mem _ _
       (by simp [Metta.Atom.vars])
-  have hmatch : Metta.matchAtoms (.sym "C") (.var "u") =
-      [[.val "u" (.sym "C")]] := by
+  have hmatch : Metta.matchAtoms (.sym "C") (.var name) =
+      [[.val name (.sym "C")]] := by
     simp [Metta.matchAtoms, Metta.matchAtomsWith, Metta.Subst.occurs, hloop]
   have hvalues :
-      Metta.Bindings.classValues [.val "u" (.sym "C")] "u" =
+      Metta.Bindings.classValues [.val name (.sym "C")] name =
         [.sym "C"] := by
     simp
   have hunify :
       Metta.Bindings.unifyValues ([.sym "C"] ++ [.sym "C"]) = some [] := by
     simp [Metta.Bindings.unifyValues, Metta.Unify.unifyRounds,
       Metta.Unify.decomposeAll, Metta.Unify.decomposeEq, Metta.Atom.size]
-  have hadd : Metta.Bindings.addVarBinding [.val "u" (.sym "C")]
-      "u" (.sym "C") = [[.val "u" (.sym "C")]] :=
+  have hadd : Metta.Bindings.addVarBinding [.val name (.sym "C")]
+      name (.sym "C") = [[.val name (.sym "C")]] :=
     Metta.Bindings.addVarBinding_nochange
       (by intro name h; cases h) hvalues (by simp) hunify
-  have hmerge : Metta.Bindings.merge [.val "u" (.sym "C")]
-      [.val "u" (.sym "C")] = [[.val "u" (.sym "C")]] := by
+  have hmerge : Metta.Bindings.merge [.val name (.sym "C")]
+      [.val name (.sym "C")] = [[.val name (.sym "C")]] := by
     simpa [Metta.Bindings.merge, Metta.Bindings.mergeOne] using hadd
   simp [Metta.Minimal.matchType, Metta.Minimal.matchReduced,
     Metta.Atom.beq, BEq.beq, hmatch, hmerge, hloop]
 
-private theorem instantiate_u_bound_to_C :
-    Metta.instantiate [.val "u" (.sym "C")] (.var "u") = .sym "C" := by
+private theorem instantiate_u_bound_to_C {name : String} :
+    Metta.instantiate [.val name (.sym "C")] (.var name) = .sym "C" := by
   exact Metta.instantiate_singleton_val_var_of_not_mem
-    "u" (.sym "C") (by simp [Metta.Atom.vars])
+    name (.sym "C") (by simp [Metta.Atom.vars])
 
 /-- The detailed argument worker commits to the first successful actual type,
 discarding the later successful `C` presentation. -/
@@ -421,6 +425,7 @@ theorem dependent_argument_scan_commits_to_first_actual :
       Metta.Minimal.World.empty [.var "u"] 0 [] [.sym "multi-a"] =
       .success [.val "u" (.sym "B")] [] := by
   simp [Metta.Minimal.typeCheckArgsDetailedOutcome,
+    Metta.Minimal.typeCheckArgsDetailedOutcomeScoped,
     Metta.Minimal.scanActualTypes, argumentTypePrep, dependent_argument_types,
     Metta.Minimal.typeInferenceAvoid, Metta.Minimal.freshenTypeCandidate,
     Metta.Minimal.renameAllVars, Metta.instantiate_nil,
@@ -461,28 +466,52 @@ theorem dependent_argument_branches_keep_both_presentations :
       Metta.Minimal.World.empty [.var "u"] 0 [] [.sym "multi-a"] =
       ⟨[[.val "u" (.sym "B")], [.val "u" (.sym "C")]], []⟩ := by
   simp [Metta.Minimal.typeCheckArgsBranches,
+    Metta.Minimal.typeCheckArgsBranchesScoped,
     Metta.Minimal.scanActualTypeBranches, argumentTypePrep,
     dependent_argument_types, Metta.Minimal.typeInferenceAvoid,
     Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
     Metta.instantiate_nil, u_matches_B, u_matches_C]
 
-/-- W11 selection canary: return filtering rejects `u := B`, backtracks
-inside applicability, and selects the later `u := C` presentation. -/
+/-- W11 selection canary: the signature receives its private presentation,
+then return filtering rejects `B`, backtracks inside applicability, and selects
+`C` for the same fresh variable. -/
 theorem repaired_dependent_candidate_selects_later_viable_presentation :
     Metta.Minimal.selectFunctionTypeForExpected dependentEnv
       Metta.Minimal.World.empty (.sym "dependent-f") [.sym "multi-a"]
         (.sym "C") =
       .selected
-        ⟨dependentArrow, [.var "u"], .var "u", [.val "u" (.sym "C")]⟩ := by
+        ⟨.expr [.sym "->", .var "#####u#1", .var "#####u#1"],
+          [.var "#####u#1"], .var "#####u#1", [.val "#####u#1" (.sym "C")]⟩ := by
   have operatorPrep : Metta.Minimal.typePrep Metta.Minimal.World.empty
       (.sym "dependent-f") = .sym "dependent-f" :=
     symbolTypePrep "dependent-f"
-  rw [Metta.Minimal.selectFunctionTypeForExpected, operatorPrep,
-    dependent_function_types]
-  simp [Metta.Minimal.scanFunctionTypeCandidatesForExpected, dependentArrow,
-    dependent_argument_branches_keep_both_presentations,
-    Metta.Minimal.scanExpectedReturnBranches,
-    u_bound_to_B_does_not_match_C, u_bound_to_C_matches_C,
-    instantiate_u_bound_to_B]
+  have fresh : Metta.Minimal.freshenFunctionTypeCandidates dependentEnv
+      (.expr [.sym "dependent-f", .sym "multi-a"]) [.sym "multi-a"]
+      (.sym "C") [dependentArrow] =
+      [.expr [.sym "->", .var "#####u#1", .var "#####u#1"]] := by
+    simp [Metta.Minimal.freshenFunctionTypeCandidates,
+      Metta.Minimal.freshenFunctionTypeCandidatesAvoiding,
+      Metta.Minimal.functionTypeSelectionAvoiding,
+      Metta.Minimal.functionTypeSelectionAvoid,
+      Metta.Minimal.applicationTypeInferenceScope,
+      Metta.Minimal.typeInferenceAvoid, Metta.Minimal.freshenTypeCandidate,
+      Metta.Minimal.renameAllVars, Metta.Minimal.captureAvoidingName,
+      Metta.Minimal.avoidancePrefix, dependentEnv, dependentArrow,
+      Metta.Minimal.MinEnv.ofAtomsGT, Metta.Atom.vars]
+    decide
+  apply Metta.selectFunctionTypeForExpected_singleton_fresh_arrow_selected
+    dependentEnv Metta.Minimal.World.empty "dependent-f" [.sym "multi-a"]
+    [.var "#####u#1"] dependentArrow (.var "#####u#1") (.sym "C")
+    [.val "#####u#1" (.sym "C")]
+    [[.val "#####u#1" (.sym "B")], [.val "#####u#1" (.sym "C")]] []
+    [.badReturn (.sym "C") (.sym "B")]
+    (by simpa [operatorPrep] using dependent_function_types) fresh rfl
+  · simp [Metta.Minimal.typeCheckArgsBranchesScoped,
+      Metta.Minimal.scanActualTypeBranches, argumentTypePrep,
+      dependent_argument_types, Metta.Minimal.freshenTypeCandidate,
+      Metta.Minimal.renameAllVars, Metta.instantiate_nil, u_matches_B, u_matches_C]
+  · simp [Metta.Minimal.scanExpectedReturnBranches,
+      u_bound_to_B_does_not_match_C, u_bound_to_C_matches_C,
+      instantiate_u_bound_to_B]
 
 end Mettapedia.Languages.MeTTa.HE.LeaTTaMultipleActualTypeCounterexample

@@ -89,7 +89,11 @@ inductive Theory where
   | sufficient
   | redundantEntity
   | insufficient
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype Theory where
+  elems := {.sufficient, .redundantEntity, .insufficient}
+  complete := by intro value; cases value <;> simp
 
 /-- Both explanatory theories meet the declared obligation.  The third is not
 eligible merely because it mentions fewer entities. -/

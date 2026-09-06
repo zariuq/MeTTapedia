@@ -1136,6 +1136,7 @@ theorem rho_processPlan_frontier_crossTies
   exact CostStaticAtomKeyCospan.CommonRestorationApex.reindex leftEndpointEq
     rightEndpointEq subplanApex
 
+set_option backward.isDefEq.respectTransparency false in
 /-- A paired authored quotation reached under a foreign declaration has a
 common restoration apex once every strictly smaller argument stop has one.
 The proof coordinates the only root-changing Quote/Drop case through the

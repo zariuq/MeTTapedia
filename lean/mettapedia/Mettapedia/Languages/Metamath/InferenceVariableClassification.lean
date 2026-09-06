@@ -32,6 +32,7 @@ theorem varsInExpr_toOperationalExpr_eq_runtimeVarsIn
   simp [ConstantHeadedFormula.toRuntime, Metamath.Kernel.toExpr,
     Metamath.Verify.Formula.varsIn, Metamath.Spec.varsInExpr,
     Metamath.Kernel.toSym, Metamath.Kernel.varNames]
+  simp only [Function.comp_def, Metamath.Kernel.toSym]
   induction body with
   | nil => rfl
   | cons symbol body ih =>

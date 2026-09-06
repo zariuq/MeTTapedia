@@ -241,7 +241,7 @@ private inductive Field where
   | apartness
 deriving DecidableEq
 
-private def fieldInventory : Inventory Field where
+private abbrev fieldInventory : Inventory Field where
   keys := [.binder, .body, .support, .apartness]
   nodup := by decide
 

@@ -195,8 +195,7 @@ def identity (contract :
     intro kind claim
     constructor
     · intro left right equality
-      simpa [acceptedMap,
-        AuthorityTranslation.identity] using equality
+      exact equality
     · intro targetAccepted
       exact ⟨targetAccepted, by
         apply Subtype.ext

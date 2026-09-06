@@ -206,7 +206,7 @@ theorem collectPursesAux_map_toTerm :
           cases stack with
           | nil => simpa [collectPursesAux, RawCostTerm.isActivePurse] using tail
           | cons head stackTail =>
-              simp [collectPursesAux, RawIndexedPurse.toTerm,
+              simp [List.filter_cons, collectPursesAux, RawIndexedPurse.toTerm,
                 RawCostTerm.isActivePurse, tail]
       | nil => simpa [collectPursesAux, RawCostTerm.isActivePurse] using tail
       | signed proc sig =>
@@ -230,7 +230,7 @@ theorem collectPursesAux_map_toLocated :
       | purse location stack =>
           cases stack with
           | nil =>
-              simpa [collectPursesAux, decodeRawConfig, decodeCostTerm,
+              simpa [List.filterMap_cons, collectPursesAux, decodeRawConfig, decodeCostTerm,
                 decodeCostStack, CostTerm.activeLocatedPurse?] using tail
           | cons head stackTail =>
               have prefixed := congrArg
@@ -238,20 +238,20 @@ theorem collectPursesAux_map_toLocated :
                   RawIndexedPurse.toLocated
                     ⟨start, location, head, stackTail⟩ ::ₘ purses)
                 tail
-              simpa [collectPursesAux, decodeRawConfig, decodeCostTerm,
+              simpa [List.filterMap_cons, collectPursesAux, decodeRawConfig, decodeCostTerm,
                 decodeCostStack, CostTerm.activeLocatedPurse?,
                 RawIndexedPurse.toLocated] using prefixed
       | nil =>
-          simpa [collectPursesAux, decodeRawConfig, decodeCostTerm,
+          simpa [List.filterMap_cons, collectPursesAux, decodeRawConfig, decodeCostTerm,
             CostTerm.activeLocatedPurse?] using tail
       | signed proc sig =>
-          simpa [collectPursesAux, decodeRawConfig, decodeCostTerm,
+          simpa [List.filterMap_cons, collectPursesAux, decodeRawConfig, decodeCostTerm,
             CostTerm.activeLocatedPurse?] using tail
       | par left right =>
-          simpa [collectPursesAux, decodeRawConfig, decodeCostTerm,
+          simpa [List.filterMap_cons, collectPursesAux, decodeRawConfig, decodeCostTerm,
             CostTerm.activeLocatedPurse?] using tail
       | drop name =>
-          simpa [collectPursesAux, decodeRawConfig, decodeCostTerm,
+          simpa [List.filterMap_cons, collectPursesAux, decodeRawConfig, decodeCostTerm,
             CostTerm.activeLocatedPurse?] using tail
 
 @[simp]

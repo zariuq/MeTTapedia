@@ -109,6 +109,7 @@ theorem bagToSupport_multiplicity_collision :
     simp at cardEqual
   · classical
     simp
+    rfl
 
 end Mettapedia.GSLT.Dynamics.AnswerEffects
 

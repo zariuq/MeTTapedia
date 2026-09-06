@@ -106,17 +106,15 @@ omit [DecidableEq Atom] in
 theorem infiniteQueryIndicatorGamble_nonneg
     (q : ConstraintQuery Atom) (ω : InfiniteWorld Atom) :
     0 ≤ infiniteQueryIndicatorGamble q ω := by
-  by_cases h : satisfiesConstraints ω q
-  · simp [infiniteQueryIndicatorGamble, h]
-  · simp [infiniteQueryIndicatorGamble, h]
+  rw [infiniteQueryIndicatorGamble_apply]
+  split <;> norm_num
 
 omit [DecidableEq Atom] in
 theorem infiniteQueryIndicatorGamble_le_one
     (q : ConstraintQuery Atom) (ω : InfiniteWorld Atom) :
     infiniteQueryIndicatorGamble q ω ≤ 1 := by
-  by_cases h : satisfiesConstraints ω q
-  · simp [infiniteQueryIndicatorGamble, h]
-  · simp [infiniteQueryIndicatorGamble, h]
+  rw [infiniteQueryIndicatorGamble_apply]
+  split <;> norm_num
 
 omit [DecidableEq Atom] in
 theorem infiniteQueryIndicatorGamble_mem_Icc
@@ -130,9 +128,12 @@ theorem infiniteQueryIndicatorGamble_eq_one_iff
     (q : ConstraintQuery Atom) (ω : InfiniteWorld Atom) :
     infiniteQueryIndicatorGamble q ω = 1 ↔
       ω ∈ infiniteQueryEvent q := by
-  by_cases h : satisfiesConstraints ω q
-  · simp [infiniteQueryIndicatorGamble, infiniteQueryEvent, h]
-  · simp [infiniteQueryIndicatorGamble, infiniteQueryEvent, h]
+  change (if satisfiesConstraints ω q then (1 : ℝ) else 0) = 1 ↔
+    satisfiesConstraints ω q
+  split <;> rename_i h
+  · exact ⟨fun _ => h, fun _ => rfl⟩
+  · exact ⟨fun equality => False.elim (zero_ne_one equality),
+      fun impossible => False.elim (h impossible)⟩
 
 omit [DecidableEq Atom] in
 theorem precisePrevision_infiniteQueryIndicatorGamble_nonneg
@@ -291,7 +292,7 @@ theorem dlrQueryOutcomeLowerEnvelope_le_completion
     (X : Gamble Bool) :
     lowerEnvelope (dlrQueryOutcomeCredalSet M q) X ≤
       dlrQueryOutcomePrevision M q μ X := by
-  simpa using
+  exact
     finiteLowerEnvelopePrevision_le_completion
       (dlrQueryOutcomeCredalSet M q)
       (⟨dlrQueryOutcomePrevision M q μ,
@@ -328,7 +329,7 @@ theorem dlrQueryOutcomeCompletion_le_upperEnvelope
     (X : Gamble Bool) :
     dlrQueryOutcomePrevision M q μ X ≤
       upperEnvelope (dlrQueryOutcomeCredalSet M q) X := by
-  simpa using
+  exact
     finiteCompletion_le_upperEnvelopePrevision
       (dlrQueryOutcomeCredalSet M q)
       (⟨dlrQueryOutcomePrevision M q μ,
@@ -1964,7 +1965,7 @@ theorem finiteVolumeAssignmentMarginalPrevision_precise
 /-- The genuine all-finite-regions cylinder system for infinite Boolean worlds:
 windows are finite regions, locals are assignments on those regions, and
 restriction is ordinary restriction of assignments. -/
-def dlrAllRegionsCylinderSystem (Atom : Type*) [DecidableEq Atom] :
+abbrev dlrAllRegionsCylinderSystem (Atom : Type*) [DecidableEq Atom] :
     ProjectiveCylinderSystem (Region Atom) (InfiniteWorld Atom) where
   Local Λ := LocalAssignment Atom Λ
   project Λ ω := worldRestriction Λ ω
@@ -3508,7 +3509,7 @@ theorem dlrAllRegionsCylinderSystem_cylinderPrevision_finiteVolumeWorldPrevision
 region `Λ` is the set of finite-dimensional marginal previsions induced by DLR
 completions on `Λ`.  A full global precise-prevision inhabitant is supplied by a
 separate weak*/expectation adapter theorem. -/
-def dlrAllRegionsProjectiveSpec
+abbrev dlrAllRegionsProjectiveSpec
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId) :
     ProjectiveLocalCredalSpec (Region Atom) (InfiniteWorld Atom) where
   cylinders := dlrAllRegionsCylinderSystem Atom
@@ -3929,10 +3930,7 @@ theorem dlrAllRegionsProjectiveSpec_cylinderNaturalExtension_localGamble_eq_lowe
     (finite_credalRange_bddBelow (dlrRegionCredalSet M Λ) X)
     (dlrAllRegionsProjectiveSpec_cylinderCompletionLocalGamble_bddBelow M Λ X)
     hExact
-  rw [h]
-  change lowerEnvelope (dlrRegionCredalSet M Λ) X =
-    lowerEnvelope (dlrRegionCredalSet M Λ) X
-  rfl
+  exact h
 
 /-- On finite local regions, the all-regions DLR cylinder upper envelope of an
 arbitrary local gamble is exactly the upper envelope of the DLR region credal
@@ -3960,10 +3958,7 @@ theorem dlrAllRegionsProjectiveSpec_cylinderUpperEnvelope_localGamble_eq_upperEn
     (finite_credalRange_bddAbove (dlrRegionCredalSet M Λ) X)
     (dlrAllRegionsProjectiveSpec_cylinderCompletionLocalGamble_bddAbove M Λ X)
     hExact
-  rw [h]
-  change upperEnvelope (dlrRegionCredalSet M Λ) X =
-    upperEnvelope (dlrRegionCredalSet M Λ) X
-  rfl
+  exact h
 
 /-- On finite local regions, the all-regions DLR cylinder natural extension of
 an arbitrary local gamble is the infimum over DLR completions' local prevision
@@ -5603,10 +5598,10 @@ theorem dlrAllRegionsProjectiveSpec_projectiveLimit_exists_endpointPairReadout_l
             Phi ((dlrAllRegionsProjectiveSpec M).cylinders.cylinderGamble Λ X)) / 2 := by
   set S : ProjectiveLocalCredalSpec (Region Atom) (InfiniteWorld Atom) :=
     dlrAllRegionsProjectiveSpec M with hSdef
-  haveI : Fintype (S.cylinders.Local Λ) := by
-    rw [hSdef]; exact inferInstanceAs (Fintype (LocalAssignment Atom Λ))
-  haveI : Nonempty (S.cylinders.Local Λ) := by
-    rw [hSdef]; exact inferInstanceAs (Nonempty (LocalAssignment Atom Λ))
+  letI : Fintype (S.cylinders.Local Λ) := inferInstanceAs
+    (Fintype ((dlrAllRegionsProjectiveSpec M).cylinders.Local Λ))
+  letI : Nonempty (S.cylinders.Local Λ) := inferInstanceAs
+    (Nonempty ((dlrAllRegionsProjectiveSpec M).cylinders.Local Λ))
   have hExact : S.localCredalExactAt Λ :=
     dlrAllRegionsProjectiveSpec_localCredalExactAt_of_marginal_eq
       M toPrecise hMarginal Λ

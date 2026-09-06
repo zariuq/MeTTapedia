@@ -239,7 +239,11 @@ inductive BeliefRegime where
   | fixedLinearDistortion
   | varyingObservationNoise
   | finiteBimodalDecision
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype BeliefRegime where
+  elems := {.stationaryIndependentGaussian, .positiveProcessDrift, .knownObservationOverlap, .fixedLinearDistortion, .varyingObservationNoise, .finiteBimodalDecision}
+  complete value := by cases value <;> simp
 
 /-- Belief policies licensed by the regime theory. -/
 inductive BeliefPolicy where

@@ -648,7 +648,8 @@ private theorem horizontalConstraint_certificate :
       maps_base := ?_
       orthogonal_kernel := ?_ }
   · simp [horizontalBase]
-  · norm_num [horizontalConstraint, horizontalBase]
+  · change horizontalBase 0 = 2
+    simp [horizontalBase]
   · intro residual hresidual
     change residual 0 = 0 at hresidual
     simp [horizontalBase, EuclideanSpace.inner_single_left,

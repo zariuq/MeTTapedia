@@ -221,9 +221,9 @@ private def rhoParallelSingletonBVarElementPlan (outer : OneHoleContext) :
   apply CostStaticRegionPlan.bvar 0
   · rw [boundEq]
     change
-      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base
+      getElem? (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base
         (([.base "Proc"] : List TypeExpr).map
-          (mapTypeExpr (CostStaticColor.base.symbols rhoCIGSLT))))[0]? =
+          (mapTypeExpr (CostStaticColor.base.symbols rhoCIGSLT)))) 0 =
         some (.base "Proc")
     rw [CostStaticBinderThinning.sourceContextOfTarget_map]
     rfl

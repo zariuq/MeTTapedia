@@ -1,87 +1,98 @@
 name = "Mettapedia"
 version = "0.1.0"
 defaultTargets = ["Mettapedia"]
-# Lean 4 can fail to create its default thread pool under the project's 6GB ulimit.
-# For reproducible builds in this environment, force single-threaded elaboration.
-weakLeanArgs = ["-j", "1"]
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "0df444a360eaa60ab8c11dca51a86af692955474"
+
+[[require]]
+name = "TauCeti"
+path = "../externals/TauCeti"
+
+[[require]]
+name = "ordered_semigroups"
+path = "../externals/ordered_semigroups"
+
+[[require]]
+name = "Foundation"
+path = "../externals/Foundation"
+
+[[require]]
+name = "exchangeability"
+path = "../externals/exchangeability"
+
+[[require]]
+name = "provenance"
+path = "../externals/provenance"
+
+[[require]]
+name = "borel_det"
+path = "Mettapedia/SetTheory/BorelDeterminacy"
+
+[[require]]
+name = "catLogic"
+path = "Mettapedia/CategoricalLogic"
+
+[[require]]
+name = "Metatheory"
+path = "../externals/Metatheory"
+
+[[require]]
+name = "MettaHyperonFull"
+path = "../externals/LeaTTa"
+
+[[require]]
+name = "algorithms"
+path = "../algorithms"
+
+[[require]]
+name = "mettail_core"
+path = "../batteries/mettail-core"
+
+[[require]]
+name = "gf_core"
+path = "../batteries/gf-core"
+
+[[require]]
+name = "certifyingDatalog"
+path = "../externals/certifyingDatalog"
+
+[[require]]
+name = "«mm-lean4»"
+path = "../standalone/mm-lean4"
+
+[[require]]
+name = "lean4lean"
+path = "../externals/lean4lean"
+
+[[require]]
+name = "«ks-foundations-of-inference-lean»"
+path = "../standalone/ks-foundations-of-inference"
 
 [[lean_lib]]
 name = "Mettapedia"
+needs = ["@/primeMotivationSources"]
 
 [[lean_exe]]
 name = "mettapedia"
 root = "Main"
 
-# Mathlib dependency
-# NOTE: batteries comes automatically as a transitive dependency - do NOT add it separately
-[[require]]
-name = "mathlib"
-scope = "leanprover-community"
-rev = "v4.28.0"
+[[lean_exe]]
+name = "metamathNIKAudit"
+root = "Mettapedia.Languages.Metamath.DatabaseNIKAudit"
 
-# Eric Luap's OrderedSemigroups (pinned fork)
-[[require]]
-name = "ordered_semigroups"
-git = "https://github.com/zariuq/OrderedSemigroups.git"
-rev = "63e9c6c3457420c16749837102966a5c32f27825"
+[[lean_exe]]
+name = "checkRFC8259NativeForestExact"
+root = "Mettapedia.GSLT.Tools.CheckRFC8259NativeForestExact"
 
-# Foundation (Lean 4.28.0 release-cached fork)
-[[require]]
-name = "Foundation"
-git = "https://github.com/zariuq/Foundation.git"
-rev = "v4.28.0"
+[[lean_exe]]
+name = "sumoNativeSourceCheck"
+root = "Mettapedia.Languages.SUMO.Native.SourceElaborationCheck"
 
-# Exchangeability (pinned fork, branch `mettapedia`; includes ForMathlib support library)
-[[require]]
-name = "exchangeability"
-git = "https://github.com/zariuq/exchangeability.git"
-rev = "98f6c86e6131df562cc2f715c2e93b70b978c689"
-
-# Provenance semiring library (pinned fork)
-[[require]]
-name = "provenance"
-git = "https://github.com/zariuq/provenance-lean.git"
-rev = "79aca19592af945e08f2d204dc1545a13849af3f"
-
-# BorelDeterminacy (local dependency)
-[[require]]
-name = "borel_det"
-path = "Mettapedia/SetTheory/BorelDeterminacy"
-
-# CategoricalLogic (local dependency)
-[[require]]
-name = "catLogic"
-path = "Mettapedia/CategoricalLogic"
-
-# Metatheory (pinned fork)
-[[require]]
-name = "Metatheory"
-git = "https://github.com/zariuq/Metatheory.git"
-rev = "5ebc2dcecf05787432a18f96d6202518b3d5a8db"
-
-# Pure algorithm checker kernels (Init-only)
-[[require]]
-name = "algorithms"
-path = "../algorithms"
-
-# Shared batteries-only MeTTaIL executable core
-[[require]]
-name = "mettail_core"
-path = "../batteries/mettail-core"
-
-# GFCore — GF ↔ Lean AST bridge (shared with algorithms)
-[[require]]
-name = "gf_core"
-path = "../batteries/gf-core"
-
-# CertifyingDatalog (Tantow et al., ITP 2025) — pinned fork
-[[require]]
-name = "certifyingDatalog"
-git = "https://github.com/zariuq/CertifyingDatalog.git"
-rev = "a269a8fdd097afad2a12081a04263214762faf1b"
-
-# Verified Metamath checker with execution-indexed run chronology
-[[require]]
-name = "mm-lean4"
-git = "https://github.com/zariuq/mm-lean4.git"
-rev = "deaf4bfcfc9e9b75fe41b2f1366034d1542862cd"
+[[input_dir]]
+name = "primeMotivationSources"
+path = "../../MettaKernel/Curriculum/PrimeMotivation"
+text = true
+filter = {extension = ["metta"]}

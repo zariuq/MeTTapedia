@@ -168,7 +168,7 @@ theorem proofCheck_receipts_distinct
 
 /-! ## The recognized proof-kernel family -/
 
-def proofKernelFamily
+abbrev proofKernelFamily
     {Claim : Type uClaim} {guest : NativeProofSystem.{uClaim, uProof} Claim}
     (kernel : NativeProofKernel guest) :
     RecognizedFamily ProofKernelFace

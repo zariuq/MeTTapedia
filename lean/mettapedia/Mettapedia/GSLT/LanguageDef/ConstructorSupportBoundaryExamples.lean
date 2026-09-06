@@ -66,6 +66,7 @@ private theorem raw_equationStep_static :
     EquationSemantics.EquationContextStep defaultBasePremises
       boundaryLanguage rawMatchedSource staticConstructor := by
   apply EquationSemantics.EquationContextStep.inContext .hole
+  apply Or.inl
   refine ⟨0, EquationSemantics.EquationInstanceAt.forward
     (equation := erasingEquation)
     (initialBindings := principalBindings)
@@ -81,6 +82,7 @@ private theorem raw_equationStep_principal :
     EquationSemantics.EquationContextStep defaultBasePremises
       boundaryLanguage rawMatchedSource interactionPrincipal := by
   apply EquationSemantics.EquationContextStep.inContext .hole
+  apply Or.inl
   refine ⟨0, EquationSemantics.EquationInstanceAt.forward
     (equation := revealingEquation)
     (initialBindings := principalBindings)

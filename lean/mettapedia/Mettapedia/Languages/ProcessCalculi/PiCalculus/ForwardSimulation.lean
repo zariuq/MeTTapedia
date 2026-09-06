@@ -581,6 +581,7 @@ theorem applySubst_fvar_rhoPar_comm (y z : String) (P Q : Pattern)
 
 /-! ## Encoding commutes with free-variable substitution -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Core lemma: fvar→fvar substitution on encoding equals encoding of π-substituted process.
 
     `applySubst [(y, .fvar z)] (encode Q n v) = encode (Q.substitute y z) n v`
@@ -625,13 +626,13 @@ theorem encode_rf_subst_fvar {Q : Process} (hrf : RestrictionFree Q)
     congr 1; congr 1
     · -- Channel: .fvar x through substitution
       by_cases hxy : x = y
-      · rw [hxy, SubstEnv.find_extend_empty_eq]; simp
-      · rw [SubstEnv.find_extend_empty_ne (Ne.symm hxy)]; simp [hxy]
+      · erw [hxy, SubstEnv.find_extend_empty_eq]; simp
+      · erw [SubstEnv.find_extend_empty_ne (Ne.symm hxy)]; simp [hxy]
     · -- Payload: PDrop(.fvar w) through substitution
       congr 1; congr 1; congr 1
       by_cases hyw : w = y
-      · rw [hyw, SubstEnv.find_extend_empty_eq]; simp
-      · rw [SubstEnv.find_extend_empty_ne (Ne.symm hyw)]; simp [hyw]
+      · erw [hyw, SubstEnv.find_extend_empty_eq]; simp
+      · erw [SubstEnv.find_extend_empty_ne (Ne.symm hyw)]; simp [hyw]
   | nu _ _ => exact absurd hrf id
   | replicate _ _ _ => exact absurd hrf id
 
@@ -1006,7 +1007,7 @@ private theorem encode_rf_rhoNoLiteralQuote {P : Process}
       simp only [encode, rhoInput, piNameToRhoName]
       change rhoNoLiteralQuoteList [.fvar x, .lambda none (closeFVar 0 y (encode Q n v))] = true
       simp [rhoNoLiteralQuoteList, rhoNoLiteralQuote]
-      simpa [rhoNoLiteralQuote_closeFVar] using ih hrf n
+      exact (rhoNoLiteralQuote_closeFVar 0 y (encode Q n v)).trans (ih hrf n)
   | output x z =>
       simp [encode, rhoOutput, rhoDrop, piNameToRhoName, rhoNoLiteralQuote, rhoNoLiteralQuoteList]
   | nu _ _ => exact absurd hrf id

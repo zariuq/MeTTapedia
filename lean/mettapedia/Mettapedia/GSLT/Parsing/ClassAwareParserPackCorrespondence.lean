@@ -2071,6 +2071,7 @@ theorem reflectSourcePlanDerivation_preserve
       cases ruleLabelExact
       simp only [preserveSourcePlanDerivation,
         reflectSourcePlanDerivation]
+      erw [reflectSourcePlanDerivation]
       apply congrArg
       apply classCSTRecognition_unique
   | structural position valid resultSortExact ruleLabelExact body finish bodyIH =>

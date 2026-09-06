@@ -131,7 +131,8 @@ theorem cavity_not_automatically_proper :
         ⟨fun _ : Unit => 0, fun _ _ => 2⟩).Proper := by
   intro hproper
   have hdiag := hproper.diag_pos (i := ())
-  norm_num [Proper, cavity] at hdiag
+  change (0 : ℝ) < 1 - 2 at hdiag
+  norm_num at hdiag
 
 /-- Returning the destination message instead of removing it doubles that
 edge's information.  This concrete fixture separates a cavity update from
@@ -147,7 +148,13 @@ theorem naive_return_edge_double_counts :
   dsimp
   constructor
   · exact cavity_add_left _ _
-  · apply GaussianInformation.ext' <;> funext <;> norm_num
+  · apply GaussianInformation.ext'
+    · funext _
+      change (2 : ℝ) + 5 + 2 = 9
+      norm_num
+    · funext _ _
+      change (3 : ℝ) + 7 + 3 = 13
+      norm_num
 
 end GaussianInformation
 

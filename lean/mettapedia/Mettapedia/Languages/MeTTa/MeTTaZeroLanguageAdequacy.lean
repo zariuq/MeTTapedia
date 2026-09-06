@@ -171,11 +171,13 @@ theorem query_rewrite_bag_adequate (model : Model) (space : model.Space)
     [rewriteStepWithPremisesUsing, applyRuleWithPremisesUsing,
       applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
       builtinRelationTuples, relationEnv, semanticRelationEnv, language,
-      definition,
+      definition, Mettapedia.GSLT.LanguageDef.ExtendedLanguageDef.addLayer,
       queryRewrite, evaluationRewrite,
       queryRequestPattern, queryAnswerPattern, evaluationRequestPattern,
       evaluationAnswerPattern, metavariable, matchPatternForRule,
-      matchPatternForRuleUsing, applyBindingsForRule,
+      matchPatternForRuleUsing,
+      OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?, applyBindingsForRule,
       applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
       applyBindings]
   change (queryRowResults spaceTerm pattern template
@@ -198,11 +200,13 @@ theorem evaluation_rewrite_bag_adequate (model : Model) (space : model.Space)
     [rewriteStepWithPremisesUsing, applyRuleWithPremisesUsing,
       applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
       builtinRelationTuples, relationEnv, semanticRelationEnv, language,
-      definition,
+      definition, Mettapedia.GSLT.LanguageDef.ExtendedLanguageDef.addLayer,
       queryRewrite, evaluationRewrite,
       queryRequestPattern, queryAnswerPattern, evaluationRequestPattern,
       evaluationAnswerPattern, metavariable, matchPatternForRule,
-      matchPatternForRuleUsing, applyBindingsForRule,
+      matchPatternForRuleUsing,
+      OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?, applyBindingsForRule,
       applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
       applyBindings]
   change (evaluationRowResults spaceTerm subject
@@ -624,7 +628,9 @@ theorem executeNativePlanned_query (relEnv : RelationEnv)
   simp (config := { maxSteps := 100000 })
     [applyRuleWithPremisesUsing, language_rewrites, evaluationRewrite,
       evaluationRequestPattern, queryRequestPattern, matchPatternForRule,
-      matchPatternForRuleUsing, matchPattern]
+      matchPatternForRuleUsing,
+      OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?, matchPattern]
 
 /-- The evaluation head index removes only the impossible query rule. -/
 theorem executeNativePlanned_evaluate (relEnv : RelationEnv)
@@ -638,7 +644,9 @@ theorem executeNativePlanned_evaluate (relEnv : RelationEnv)
   simp (config := { maxSteps := 100000 })
     [applyRuleWithPremisesUsing, language_rewrites, queryRewrite,
       queryRequestPattern, evaluationRequestPattern, matchPatternForRule,
-      matchPatternForRuleUsing, matchPattern]
+      matchPatternForRuleUsing,
+      OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?, matchPattern]
 
 /-- The fallback path is definitionally the complete generic engine. -/
 theorem executeNativePlanned_unknown (relEnv : RelationEnv) :

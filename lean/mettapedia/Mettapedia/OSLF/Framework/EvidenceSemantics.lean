@@ -207,19 +207,19 @@ theorem langSemE_equationInvariantUsing
   | bot => simp [EvidenceEquationInvariant, semE]
   | atom atom => exact (interpretation atom).2
   | and first second firstIH secondIH =>
-      intro left right equivalent
+      refine fun {left right : Pattern} equivalent => ?_
       simp only [semE_and]
       rw [firstIH equivalent, secondIH equivalent]
   | or first second firstIH secondIH =>
-      intro left right equivalent
+      refine fun {left right : Pattern} equivalent => ?_
       simp only [semE_or]
       rw [firstIH equivalent, secondIH equivalent]
   | imp first second firstIH secondIH =>
-      intro left right equivalent
+      refine fun {left right : Pattern} equivalent => ?_
       simp only [semE_imp]
       rw [firstIH equivalent, secondIH equivalent]
   | dia body bodyIH =>
-      intro left right equivalent
+      refine fun {left right : Pattern} equivalent => ?_
       simp only [semE_dia]
       apply le_antisymm
       · apply iSup_le
@@ -264,7 +264,7 @@ theorem langSemE_equationInvariantUsing
                   (fun atom term => (interpretation atom).1 term) body candidate.val)
               ⟨target', step'⟩
   | box body bodyIH =>
-      intro left right equivalent
+      refine fun {left right : Pattern} equivalent => ?_
       simp only [semE_box]
       apply le_antisymm
       · apply le_iInf

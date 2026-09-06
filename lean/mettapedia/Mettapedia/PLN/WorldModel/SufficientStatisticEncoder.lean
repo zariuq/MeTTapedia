@@ -2194,8 +2194,8 @@ noncomputable def gaussianConjugatePosteriorModel
           rw [hn0, hs0]
           field_simp [ne_of_gt prior.κ₀_pos]
           ring)
-    · simp
-    · simp
+    · simp; rfl
+    · simp; rfl
     · simpa [aggregate_zero] using
         (show (posterior prior (0 : NormalGammaEvidence)).β₀ = prior.β₀ by
           have hn0 : ((0 : NormalGammaEvidence).n : ℝ) = 0 := by

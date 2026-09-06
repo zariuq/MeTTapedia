@@ -136,6 +136,24 @@ public theorem byteSlice_forIn_except_yield {state error : Type}
   rw [Nat.sub_self, Nat.add_zero]
   rfl
 
+/-- A state encoding with a left inverse transports an exception-aware fold,
+including its error result, without changing the sequence of steps. -/
+public theorem foldlM_except_encode_state {item source target error : Type}
+    (items : List item) (step : source → item → Except error source)
+    (encode : source → target) (decode : target → source)
+    (decode_encode : ∀ state, decode (encode state) = state)
+    (initial : source) :
+    items.foldlM (fun state item => (step (decode state) item).map encode)
+        (encode initial) =
+      (items.foldlM step initial).map encode := by
+  induction items generalizing initial with
+  | nil => rfl
+  | cons item items ih =>
+      simp only [List.foldlM_cons, decode_encode]
+      cases h : step initial item with
+      | error failure => rfl
+      | ok next => exact ih next
+
 theorem loop_exit {β : Type} (s : ByteSlice)
     (f' : UInt8 → β → Id (ForInStep β)) (P : UInt8 → β → Bool)
     (d g : UInt8 → β → β)

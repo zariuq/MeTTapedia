@@ -32,11 +32,11 @@ GF ParseEng → GFCore.Atom → atomToLP → LP.GroundAtom gfSig
 
 - van Emden & Kowalski, 1976 (T_P operator)
 - Lloyd, Foundations of Logic Programming, Ch. 2 (least Herbrand model)
-- Council session 2026-03-22 (GFCore→LP bridge design)
 -/
 
 namespace Mettapedia.Languages.GF
 
+open Mettapedia.PLN.Evidence
 open Mettapedia.Logic.LP
 open GFCore
 

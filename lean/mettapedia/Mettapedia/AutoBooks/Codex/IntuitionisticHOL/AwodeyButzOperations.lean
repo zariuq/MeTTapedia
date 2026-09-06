@@ -291,13 +291,14 @@ def pullback (f : C(Y, X)) {W : Opens X} (s : E.SectionOn W) :
     (pair s t).snd = t := by
   ext x
   simp [snd, pair, prodSnd, Function.Pullback.snd]
+  rfl
 
 @[simp] theorem pair_fst_snd (s : (prod E F).SectionOn U) :
     pair s.fst s.snd = s := by
   ext x
   apply Subtype.ext
   apply Prod.ext <;> simp [pair, fst, snd, prodFst, prodSnd, Function.Pullback.fst,
-    Function.Pullback.snd]
+    Function.Pullback.snd] <;> rfl
 
 end SectionOn
 

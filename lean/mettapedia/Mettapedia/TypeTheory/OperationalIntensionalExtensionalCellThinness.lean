@@ -105,6 +105,7 @@ theorem semantic_factor_history_identified :
       interpretCell.{u} factorIdentityCell := by
   rw [interpret_factorRoundTrip]
   simp [factorIdentityCell, interpretCell, semanticCellAlgebra]
+  rfl
 
 /-- The forward factor comparison survives the thin reflection as an
 inhabited, necessarily subsingleton cell fibre. -/

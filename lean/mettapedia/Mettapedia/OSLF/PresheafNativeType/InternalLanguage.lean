@@ -447,7 +447,7 @@ theorem imageComprehension_galois_key {G F : Cᵒᵖ ⥤ Type v}
         simp [Subfunctor.toFunctor]
     }
   · ext U x
-    simp [Subfunctor.ι, TypeCat.Fun.coe_mk]
+    rfl
 
 /-- Reverse Galois direction: factoring through `φ.ι` implies `range(p) ≤ φ`.
     If `p = lift ≫ φ.ι`, then `range(p) ⊆ range(φ.ι) = φ`. -/

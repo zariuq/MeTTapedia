@@ -306,7 +306,7 @@ theorem completed_exact_fibres_not_equivalent :
     cases equivalence.symm true
     rfl
   have falseEqualsTrue : false = true := by
-    simpa using congrArg equivalence.toFun preimagesEqual
+    exact equivalence.symm.injective preimagesEqual
   exact Bool.false_ne_true falseEqualsTrue
 
 /-- Forget every branch, occurrence, and evidence distinction. -/

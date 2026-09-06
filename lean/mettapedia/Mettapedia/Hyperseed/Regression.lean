@@ -32,18 +32,30 @@ open scoped ENNReal
 
 inductive AgentObservation where
   | pulse
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype AgentObservation where
+  elems := {.pulse}
+  complete x := by cases x <;> simp
 
 inductive AgentQuery where
   | sensedSignal
   | readyToAct
   | awareReady
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype AgentQuery where
+  elems := {.sensedSignal, .readyToAct, .awareReady}
+  complete x := by cases x <;> simp
 
 inductive AgentSignal where
   | external
   | introspection
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype AgentSignal where
+  elems := {.external, .introspection}
+  complete x := by cases x <;> simp
 
 def unitPositiveEvidence : BinaryEvidence :=
   { pos := 1, neg := 0 }

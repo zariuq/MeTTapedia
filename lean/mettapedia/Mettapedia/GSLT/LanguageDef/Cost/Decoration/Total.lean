@@ -111,19 +111,11 @@ instance pushforwardLift_isStronglyCocartesian
         change CostElaborationBase.decorationFunctor.map next
             (CostElaborationBase.decorationFunctor.map morphism object.2) =
           destination.2
-        calc
-          _ = CostElaborationBase.decorationFunctor.map
-                (CategoryTheory.CategoryStruct.comp morphism next) object.2 :=
-              (CategoryTheory.Functor.map_comp_apply
-                CostElaborationBase.decorationFunctor morphism next
-                object.2).symm
-          _ = CostElaborationBase.decorationFunctor.map composite.val
-                object.2 := by
-              exact congrArg
-                (fun arrow =>
-                  CostElaborationBase.decorationFunctor.map arrow object.2)
-                baseEquality
-          _ = destination.2 := composite.property)
+        exact ((CategoryTheory.Functor.map_comp_apply
+          CostElaborationBase.decorationFunctor morphism next object.2).symm.trans
+            (congrArg (fun arrow =>
+              CostElaborationBase.decorationFunctor.map arrow object.2) baseEquality)).trans
+          composite.property)
     have factorLift : projection.IsHomLift next factor := by
       change projection.IsHomLift (projection.map factor) factor
       infer_instance

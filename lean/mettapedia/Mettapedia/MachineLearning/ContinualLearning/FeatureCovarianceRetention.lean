@@ -205,6 +205,7 @@ theorem runUpdatedChanges_eq_runBaseChanges
 
 /-! ## Positive and negative executable boundaries -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- A nontrivial update supported on the unseen second feature is exactly
 covariance-null for data occupying only the first feature. -/
 theorem unseenSecondFeature_nontrivial_safeUpdate :
@@ -238,6 +239,7 @@ theorem identityFeatures_covarianceNull_iff_zero
       update = 0 := by
   simp [uncenteredCovariance]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Approximate covariance annihilation alone does not control feature-space
 drift.  In one dimension, scaling the feature by `epsilon` and the update by
 its reciprocal makes the covariance residual equal `epsilon` while the

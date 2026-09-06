@@ -395,7 +395,7 @@ def Derivation.height : {source target : Pattern} →
   | _, _, .openMatrix _ name definitions introduced =>
       max (max name.height definitions.height) introduced.height + 1
 
-set_option maxHeartbeats 5000000 in
+set_option maxHeartbeats 8000000 in
 theorem Derivation.rewriteAt_exact {source target : Pattern}
     (derivation : Derivation source target) (fuel : Nat)
     (enough : derivation.height ≤ fuel) :

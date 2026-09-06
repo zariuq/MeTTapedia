@@ -138,6 +138,8 @@ theorem simpleArgument_of_fiberEquation
       WellSorted.AvailableOpenPattern.reindexFiber_pattern,
       CostRegionTree.originalArgument_pattern,
       CostRegionTree.originalAvailableOpenPattern_pattern]
+    exact (CostRegionTree.originalArgument_pattern right (.simple name declared)
+      True.intro rightParameterType rightCanonical rightObject rightScope).symm
   rw [leftEndpoint, rightEndpoint] at packed
   exact packed
 

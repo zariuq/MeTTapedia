@@ -227,7 +227,7 @@ lemma mem_fiberPrefixSubset_iff
       xs ⟨0, Nat.zero_lt_succ N⟩ = a ∧
       (∀ j : Fin ys.length,
         xs ⟨j.1 + 1, Nat.succ_lt_succ (Nat.lt_of_lt_of_le j.2 hN)⟩ = ys.get j) := by
-  simp [fiberPrefixSubset]
+  exact Finset.mem_filter
 
 /-- The exact-prefix subset is the `wordAnchorFiberTarget` specialization of the
 mixed-row fixed-complement subset, for any chosen anchor row `i`. -/
@@ -636,6 +636,8 @@ lemma transCount_eq_transCount_trajPrefix_add_transCount_trajDrop
       by
         intro i j hij
         exact Fin.ext (by simpa using congrArg Fin.val hij)⟩
+  have dropEmb_apply (j : Fin (N - n)) :
+      dropEmb j = (⟨j.val + n, by have hj := j.isLt; omega⟩ : Fin N) := rfl
   have hsplit :
       (S.filter (fun i : Fin N => i.1 < n)).card +
           (S.filter (fun i : Fin N => ¬ i.1 < n)).card = S.card := by
@@ -715,7 +717,7 @@ lemma transCount_eq_transCount_trajPrefix_add_transCount_trajDrop
         omega⟩
       have hji : dropEmb j = i := by
         ext
-        simp [dropEmb, j, Nat.sub_add_cancel hge]
+        simp [dropEmb_apply, j, Nat.sub_add_cancel hge]
       refine Finset.mem_map.2 ?_
       refine ⟨j, ?_, by simpa using hji⟩
       simp only [Finset.mem_filter, Finset.mem_univ, true_and]
@@ -723,7 +725,7 @@ lemma transCount_eq_transCount_trajPrefix_add_transCount_trajDrop
       · calc
           trajDrop (k := k) n h xs (Fin.castSucc j)
               = xs (Fin.castSucc (dropEmb j)) := by
-                  simp [trajDrop, dropEmb, j]
+                  simp [trajDrop, dropEmb_apply, j]
           _ = xs (Fin.castSucc i) := by rw [hji]
           _ = a := hpair.1
       · calc
@@ -734,7 +736,7 @@ lemma transCount_eq_transCount_trajPrefix_add_transCount_trajDrop
                         have hj := j.2
                         omega⟩ : Fin (N + 1)) = Fin.succ (dropEmb j) := by
                     ext
-                    simp [dropEmb]
+                    simp [dropEmb_apply]
                     omega
                   calc
                     trajDrop (k := k) n h xs (Fin.succ j)
@@ -757,14 +759,14 @@ lemma transCount_eq_transCount_trajPrefix_add_transCount_trajDrop
         · calc
             xs (Fin.castSucc (dropEmb j))
                 = trajDrop (k := k) n h xs (Fin.castSucc j) := by
-                    simp [trajDrop, dropEmb]
+                    simp [trajDrop, dropEmb_apply]
             _ = a := hj.1
         · have hidx :
               (⟨j.1 + 1 + n, by
                 have hj' := j.2
                 omega⟩ : Fin (N + 1)) = Fin.succ (dropEmb j) := by
             ext
-            simp [dropEmb]
+            simp [dropEmb_apply]
             omega
           calc
             xs (Fin.succ (dropEmb j))
@@ -1450,7 +1452,7 @@ lemma mem_prefixTrajSet_iff
       xs ⟨0, Nat.zero_lt_succ N⟩ = a ∧
       (∀ j : Fin ys.length,
         xs ⟨j.1 + 1, Nat.succ_lt_succ (Nat.lt_of_lt_of_le j.2 hN)⟩ = ys.get j) := by
-  simp [prefixTrajSet, trajFinset]
+  exact Finset.mem_filter.trans (and_iff_right (Finset.mem_univ xs))
 
 lemma prefixTrajSet_eq_singleton_wordTraj
     (a : Fin k) (ys : List (Fin k)) :

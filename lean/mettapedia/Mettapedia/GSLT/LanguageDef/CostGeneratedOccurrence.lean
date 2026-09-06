@@ -4,11 +4,11 @@ import Mettapedia.GSLT.LanguageDef.ReflectiveEquationOccurrence
 /-!
 # Authored origins of generated Cost occurrences
 
-Every ordinary or reflective generator in a Cost language is one of the two
-static images of an authored source declaration.  This module retains that
-origin in `Type` and proves coverage for the proof-relevant occurrence layer.
-Equation and reflection remain distinct until a later semantic normalization
-span evaluates them.
+Every equation, collection law, or reflective generator in a Cost language
+retains its authored declaration origin. This module keeps that origin in
+`Type` and proves coverage for the proof-relevant occurrence layer. Collection
+laws retain their declaring constructor and its static copy; equations and
+reflection retain their respective declaration tables.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef
@@ -37,6 +37,68 @@ structure CostReflectiveDeclarationOrigin (source : CIGSLT)
     source.reflection.1.presentations
   target_eq : target = costStaticReflectivePresentationDecl source color
     sourceDeclaration
+
+/-- Administrative constructors cannot license a bare collection law. -/
+theorem costApparatusConstructor_not_collection
+    (constructor : CostApparatusConstructor) (interactingSort : String) :
+    ¬ ∃ name kind elementType,
+      (constructor.grammarRule interactingSort).params =
+        [.simple name (.collection kind elementType)] := by
+  cases constructor <;>
+    simp [CostApparatusConstructor.grammarRule, costSignatureUnitConstructor,
+      costSignatureProductConstructor, costSignedConstructor,
+      costTokenStackEmptyConstructor, costTokenStackConsConstructor,
+      costFundingConstructor, costContactConstructor]
+
+/-- The exact generated constructor licensing a collection law. Its intrinsic
+identity retains the source constructor and whether the copy is base or wrapped.
+The collection shape excludes every administrative constructor. -/
+structure CostCollectionDeclarationOrigin (source : CIGSLT)
+    (target : GrammarRule) where
+  constructor : source.DeclaredCostConstructor
+  target_eq : source.materializeDeclaredCostConstructor constructor = target
+  collection : ∃ name kind elementType,
+    target.params = [.simple name (.collection kind elementType)]
+
+def CostCollectionDeclarationOrigin.color
+    {source : CIGSLT} {target : GrammarRule}
+    (origin : CostCollectionDeclarationOrigin source target) : CostStaticColor := by
+  rcases origin with ⟨⟨constructor, declared⟩, target_eq, collection⟩
+  cases constructor with
+  | base _ => exact .base
+  | wrapped _ => exact .wrapped
+  | apparatus constructor =>
+      apply False.elim
+      apply costApparatusConstructor_not_collection constructor
+        source.theory.presentation.interactingSort.1.name
+      subst target
+      exact collection
+
+/-- Recover the exact authored constructor, including its declaration membership. -/
+def CostCollectionDeclarationOrigin.sourceConstructor
+    {source : CIGSLT} {target : GrammarRule}
+    (origin : CostCollectionDeclarationOrigin source target) :
+    StructuralMorphism.DeclaredConstructor source.theory.presentation.presentation := by
+  rcases origin with ⟨⟨constructor, declared⟩, target_eq, collection⟩
+  cases constructor with
+  | base constructor => exact constructor
+  | wrapped constructor => exact constructor
+  | apparatus constructor =>
+      apply False.elim
+      apply costApparatusConstructor_not_collection constructor
+        source.theory.presentation.interactingSort.1.name
+      subst target
+      exact collection
+
+theorem nonempty_costCollectionDeclarationOrigin
+    (source : CIGSLT) {left right : Pattern}
+    (witness : EquationSemantics.DerivedGeneratorWitness
+      source.costWholeLanguage left right) :
+    Nonempty (CostCollectionDeclarationOrigin source witness.declaration) := by
+  obtain ⟨constructor, target_eq⟩ :=
+    source.exists_declaredCostConstructor_of_mem witness.declaration
+      (by simpa only [source.costWholeLanguage_terms] using witness.declaration_mem)
+  exact ⟨⟨constructor, target_eq, witness.declaration_collection⟩⟩
 
 /-- Membership in the generated equation table has a retained two-colour
 authored origin. -/
@@ -94,9 +156,8 @@ theorem nonempty_costEquationInstanceOrigin
       target_eq =>
       exact nonempty_costEquationDeclarationOrigin_of_mem source equation.2
 
-/-- Authored two-colour provenance selected by either form of a
-proof-relevant generated Cost generator.  The match deliberately preserves
-the equation/reflection distinction. -/
+/-- Authored two-colour provenance selected by a proof-relevant generated
+Cost generator, preserving equations, collection laws, and reflection. -/
 def CostAuthoredGeneratorOrigin (source : CIGSLT)
     {left right : Pattern}
     (witness : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
@@ -105,6 +166,8 @@ def CostAuthoredGeneratorOrigin (source : CIGSLT)
   match witness with
   | .core (.equation _ instanceWitness) =>
       CostEquationInstanceOrigin source instanceWitness
+  | .core (.derived _ lawWitness) =>
+      CostCollectionDeclarationOrigin source lawWitness.declaration
   | .reflective _ declaration _ =>
       CostReflectiveDeclarationOrigin source declaration.1
 
@@ -122,6 +185,8 @@ theorem nonempty_costAuthoredGeneratorOrigin
       cases witness with
       | equation context instanceWitness =>
           exact nonempty_costEquationInstanceOrigin source instanceWitness
+      | derived context lawWitness =>
+          exact nonempty_costCollectionDeclarationOrigin source lawWitness
   | reflective context declaration representatives =>
       exact nonempty_costReflectiveDeclarationOrigin_of_mem source
         declaration.2
@@ -140,14 +205,16 @@ def CostAuthoredGeneratorOrigin.color
           CostEquationDeclarationOrigin.color origin
       | .reverse _ _ _ _ _ _ _ => fun origin =>
           CostEquationDeclarationOrigin.color origin
+  | .core (.derived _ _) => fun origin =>
+      CostCollectionDeclarationOrigin.color origin
   | .reflective _ _ _ => fun origin =>
       CostReflectiveDeclarationOrigin.color origin
 
 /-- A typed generated Cost edge together with its exact proof-relevant
 occurrence and authored two-colour declaration origin.
 
-Endpoint typing is carried by the indexed `OpenTerm`s.  Equation versus
-reflection, equation orientation, bindings, redex context, source
+Endpoint typing is carried by the indexed `OpenTerm`s. Equation, collection
+law, or reflection provenance, equation orientation, bindings, redex context, source
 declaration, and static colour all remain available before support erasure. -/
 structure CostTypedGeneratorOccurrence
     (source : CIGSLT)
@@ -209,5 +276,10 @@ def declarationColor
     CostStaticColor := occurrence.origin.color
 
 end CostTypedGeneratorOccurrence
+
+#print axioms costApparatusConstructor_not_collection
+#print axioms nonempty_costCollectionDeclarationOrigin
+#print axioms nonempty_costAuthoredGeneratorOrigin
+#print axioms nonempty_costTypedGeneratorOccurrence
 
 end Mettapedia.GSLT.LanguageDef

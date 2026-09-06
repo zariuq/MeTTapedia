@@ -468,21 +468,25 @@ def product {Left : Type u} {Right : Type v}
           (right.elaboration.quote value.2).map Sum.inr
       elaborate_quote := by
         rintro ⟨leftValue, rightValue⟩
+        generalize hleft : left.elaboration.quote leftValue = leftQuote
+        generalize hright : right.elaboration.quote rightValue = rightQuote
+        change List left.generators.Term at leftQuote
+        change List right.generators.Term at rightQuote
         change pairOptions
           (left.elaboration.elaborate
             (MixedDocument.left
-              ((left.elaboration.quote leftValue).map Sum.inl ++
-                (right.elaboration.quote rightValue).map Sum.inr)))
+              (leftQuote.map Sum.inl ++
+                rightQuote.map Sum.inr)))
           (right.elaboration.elaborate
             (MixedDocument.right
-              ((left.elaboration.quote leftValue).map Sum.inl ++
-                (right.elaboration.quote rightValue).map Sum.inr))) =
+              (leftQuote.map Sum.inl ++
+                rightQuote.map Sum.inr))) =
             some (leftValue, rightValue)
         rw [MixedDocument.left_append, MixedDocument.right_append,
           MixedDocument.left_map_inl, MixedDocument.left_map_inr,
           MixedDocument.right_map_inl, MixedDocument.right_map_inr]
         simp only [List.append_nil, List.nil_append]
-        rw [left.elaboration.elaborate_quote,
+        rw [← hleft, ← hright, left.elaboration.elaborate_quote,
           right.elaboration.elaborate_quote]
         rfl }
   emptyPayload := (left.emptyPayload, right.emptyPayload)

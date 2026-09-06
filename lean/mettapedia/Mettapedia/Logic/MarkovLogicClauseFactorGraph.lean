@@ -27,7 +27,7 @@ open Mettapedia.ProbabilityTheory.BayesianNetworks
 abbrev ConstraintQuery (Atom : Type*) := List (Sigma fun _ : Atom => Bool)
 
 /-- A Boolean valuation satisfies a finite constraint list if it matches every listed atom value. -/
-def satisfiesConstraints {Atom : Type*} (W : AtomValuation Atom) (constraints : ConstraintQuery Atom) : Prop :=
+abbrev satisfiesConstraints {Atom : Type*} (W : AtomValuation Atom) (constraints : ConstraintQuery Atom) : Prop :=
   ∀ c ∈ constraints, W c.1 = c.2
 
 instance satisfiesConstraintsDecidable {Atom : Type*}
@@ -138,14 +138,15 @@ lemma weightOfConstraints_eq_queryMass
         constraints := by
   classical
   rw [weightOfConstraints_eq_worldWeight_sum]
-  unfold CountableMLNSemantics.queryMass constraintQueryHolds satisfiesConstraints
+  unfold CountableMLNSemantics.queryMass
+  dsimp only [toCountableMLNSemantics]
+  unfold constraintQueryHolds
   rw [tsum_eq_sum (s := (Finset.univ : Finset (AtomValuation Atom)))
     (fun W hW => (hW (Finset.mem_univ W)).elim)]
   refine Finset.sum_congr rfl ?_
   intro W _
   -- Structure projections + Decidable instance mismatch
-  simp only [toCountableMLNSemantics]
-  split_ifs <;> rfl
+  congr 1
 
 omit [DecidableEq ClauseId] in
 lemma veQueryWeight_eq_worldWeight_sum
@@ -156,7 +157,8 @@ lemma veQueryWeight_eq_worldWeight_sum
     VariableElimination.veQueryWeight (fg := compiledClauseFactorGraph M support) constraints =
       ∑ W : AtomValuation Atom,
         if satisfiesConstraints W constraints then M.worldWeight support W else 0 := by
-  simpa using weightOfConstraints_eq_worldWeight_sum M support constraints
+  exact (VariableElimination.veQueryWeight_eq_weightOfConstraints (compiledClauseFactorGraph M support) constraints).trans
+    (weightOfConstraints_eq_worldWeight_sum M support constraints)
 
 omit [DecidableEq ClauseId] in
 lemma veQueryWeight_eq_queryMass
@@ -168,7 +170,8 @@ lemma veQueryWeight_eq_queryMass
       CountableMLNSemantics.queryMass
         (M.toCountableMLNSemantics (Query := ConstraintQuery Atom) support constraintQueryHolds)
         constraints := by
-  simpa using weightOfConstraints_eq_queryMass M support constraints
+  exact (VariableElimination.veQueryWeight_eq_weightOfConstraints (compiledClauseFactorGraph M support) constraints).trans
+    (weightOfConstraints_eq_queryMass M support constraints)
 
 omit [DecidableEq ClauseId] in
 /-- The compiled clause factor-graph partition function agrees with total MLN mass. -/

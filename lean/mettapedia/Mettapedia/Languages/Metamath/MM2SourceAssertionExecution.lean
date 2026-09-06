@@ -193,6 +193,7 @@ theorem theoremCandidate_is_not_native :
     isNativeAxiomCandidate theoremCandidate = false := by
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 theorem mixedCandidates_emit_only_axiom_plan :
     nativeAssertionPublicationRows (.symbol "source")
         [axiomCandidate, theoremCandidate] =

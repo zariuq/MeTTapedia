@@ -664,6 +664,7 @@ theorem source_not_prenex : Not (Prenex source) := by
   | matrix quantifierFree =>
       simp [source, QuantifierFree] at quantifierFree
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The left prefix is retained first.  Shifting the left matrix under the
 right universal changes its bound occurrence from index zero to index one,
 which is the capture-avoidance canary. -/

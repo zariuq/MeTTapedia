@@ -56,6 +56,8 @@ theorem compiledJoint_eq_restrictedWorldWeight
   classical
   unfold compiledFactorGraph FactorGraph.unnormalizedJoint restrictedWorldWeight configOfWorld
   simp [FactorGraph.restrictToScope]
+  change M.worldWeight w.val ^ Fintype.card Unit = M.worldWeight w.val
+  simp
 
 /-- Query mass of the compiled factor graph, evaluated against the restricted query truth. -/
 noncomputable def compiledQueryMass
@@ -137,6 +139,7 @@ theorem compiled_queryProb_eq_restricted_queryProb
     (compiledMassSemantics M hs).queryProb q = (restrictedMassSemantics M hs).queryProb q := by
   simp [compiledMassSemantics, restrictedMassSemantics, MassSemantics.queryProb,
     compiledQueryMass_eq_restrictedQueryMass, compiledPartition_eq_restrictedTotalMass]
+  rfl
 
 omit [DecidableEq World] in
 theorem compiled_queryProb_eq_full_queryProb_of_finite_support

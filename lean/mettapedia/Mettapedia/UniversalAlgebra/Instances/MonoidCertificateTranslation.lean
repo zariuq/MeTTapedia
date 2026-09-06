@@ -80,6 +80,7 @@ def derivedEquationCertificate : AcceptedCertificate monoidInterface
       · rw [List.ofFn_succ, List.ofFn_succ, List.ofFn_zero]
         rfl
       · trivial) children
+set_option backward.isDefEq.respectTransparency false in
 
 @[simp] theorem derivedEquationCertificate_nodeCount :
     derivedEquationCertificate.nodeCount = 3 := by
@@ -173,6 +174,7 @@ def addedOccurrenceCertificate :
   change derivedEquationCertificate.nodeCount = 3
   exact derivedEquationCertificate_nodeCount
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The structural compiler transports the added occurrence to a valid base
 certificate with the same conclusion. -/
 theorem compiled_addedOccurrence_valid :

@@ -230,8 +230,7 @@ theorem cut_surjective (u : α) : Function.Surjective (cut u) := by
 noncomputable instance (c : α) : HeytingFrame (Set.Iic c) := by
   refine Order.Frame.ofMinimalAxioms ?_
   refine
-    { toCompleteLattice := inferInstance
-      inf_sSup_le_iSup_inf := ?_ }
+    { inf_sSup_le_iSup_inf := ?_ }
   intro a s
   show ((a ⊓ sSup s : Set.Iic c) : α) ≤ ((⨆ b ∈ s, a ⊓ b : Set.Iic c) : Set.Iic c)
   show a.1 ⊓ sSup ((fun x : Set.Iic c => x.1) '' s) ≤
@@ -509,7 +508,7 @@ noncomputable def relativize (M : SemilocalModel Base Const) (u : M.Omega) :
 @[simp] theorem formulaTruth_relativize (M : SemilocalModel Base Const)
     (u : M.Omega) (ρ : Env M Γ) (φ : Formula Const Γ) :
     formulaTruth (M.relativize u) ρ φ = IicFrame.cut u (formulaTruth M ρ φ) := by
-  rw [formulaTruth, formulaTruth, eval_relativize]
+  erw [formulaTruth, formulaTruth, eval_relativize]
   rfl
 
 @[simp] theorem coe_formulaTruth_relativize (M : SemilocalModel Base Const)
@@ -526,7 +525,7 @@ noncomputable def relativize (M : SemilocalModel Base Const) (u : M.Omega) :
   | nil =>
       exact (IicFrame.cut_top u).symm
   | cons φ Δ ih =>
-      rw [antecedentTruth, antecedentTruth, formulaTruth_relativize, ih]
+      erw [antecedentTruth, antecedentTruth, formulaTruth_relativize, ih]
       exact (IicFrame.cut_inf u (formulaTruth M ρ φ) (antecedentTruth M ρ Δ)).symm
 
 @[simp] theorem coe_antecedentTruth_relativize (M : SemilocalModel Base Const)
@@ -585,25 +584,21 @@ theorem supportsLowerBoundExtension_relativize
       exact hρ t
     have hv' : v.1 ≤ M.extent ((M.relativize u).eval ρ t) :=
       le_trans hv inf_le_left
-    simpa [eval_relativize] using hv'
+    exact (congrArg (fun value => v.1 ≤ M.extent value)
+      (eval_relativize M u ρ t)).mp hv'
   have hstep :
       M.extent d ⊓ v.1 ≤
         M.extent
           (eval M (ApplicativeStructure.Env.extend M.toApplicativeStructure ρ d) t) := by
     exact h v.1 ρ d hρbase t
-  show
-      (((M.relativize u).extent d ⊓ v : Set.Iic u).1 ≤
-        ((M.relativize u).extent
-          ((M.relativize u).eval
-            (ApplicativeStructure.Env.extend M.toApplicativeStructure ρ d) t)).1)
-  rw [eval_relativize]
-  simp [relativize, IicFrame.cut, inf_left_comm, inf_comm]
-  calc
-    u ⊓ (v.1 ⊓ M.extent d) ≤ v.1 ⊓ M.extent d := inf_le_right
-    _ = M.extent d ⊓ v.1 := by ac_rfl
-    _ ≤
-        M.extent
-          (eval M (ApplicativeStructure.Env.extend M.toApplicativeStructure ρ d) t) := hstep
+  change (M.extent d ⊓ u) ⊓ v.1 ≤
+    M.extent (eval (M.relativize u)
+      (ApplicativeStructure.Env.extend M.toApplicativeStructure ρ d) t) ⊓ u
+  apply le_inf
+  · rw [eval_relativize M u
+      (ApplicativeStructure.Env.extend M.toApplicativeStructure ρ d) t]
+    exact (inf_le_inf_right v.1 inf_le_left).trans hstep
+  · exact inf_le_left.trans inf_le_right
 
 theorem supportsUniformRelativization_of_supportsLowerBoundExtension
     (M : SemilocalModel Base Const)

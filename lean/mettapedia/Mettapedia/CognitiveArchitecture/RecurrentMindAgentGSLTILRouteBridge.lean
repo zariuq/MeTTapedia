@@ -152,8 +152,10 @@ theorem premise_service_is_located_costed_and_not_self_funding (cycle : Nat) :
   · change sourceOccurrence cycle ∈
       occurrencePrefix portfolioStepAuthority portfolioClaim
         portfolioExecution (schedulerEpoch cycle + 1)
-    rw [occurrencePrefix]
-    simp [sourceOccurrence]
+    exact (congrArg (fun occurrences => sourceOccurrence cycle ∈ occurrences)
+      (Mettapedia.GSLT.Dynamics.RecurrentOccurrenceRoute.occurrencePrefix.eq_def
+        portfolioStepAuthority portfolioClaim portfolioExecution (schedulerEpoch cycle + 1))).mpr
+      (List.mem_append_right _ (List.mem_cons_self))
   · exact (recurringPremiseReceipt cycle).exactChoice
   · exact (recurringPremiseReceipt cycle).exactCost
   · exact ⟨(recurringPremiseReceipt cycle).engineFunding⟩

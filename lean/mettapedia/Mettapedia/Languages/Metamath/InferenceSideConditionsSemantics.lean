@@ -4530,7 +4530,11 @@ private theorem dvOK_instantiates (substitution : FiniteSubstitution)
     formal, metavariable, argumentsValidAt, argumentValidAt,
     instantiateSchemas?, instantiateSchemasAt?, instantiateSchema?,
     instantiateSchemaAt?, lookupArgumentAt?, dvLists, dvListsHead, dvOK,
-    dvOKHead, encodeFrame, EncodedDVPairs, EncodedNames]
+    dvOKHead, encodeFrame, EncodedNames]
+  exact ⟨encodedDVPairs_isGroundAt 0 _,
+    encodedDVPairs_hasCanonicalBinderMetadata _,
+    encodedDVPairs_isGroundAt 0 _,
+    encodedDVPairs_hasCanonicalBinderMetadata _⟩
 
 private theorem dvOK_derivable (substitution : FiniteSubstitution)
     (callerFrame calleeFrame : RuntimeFrame)

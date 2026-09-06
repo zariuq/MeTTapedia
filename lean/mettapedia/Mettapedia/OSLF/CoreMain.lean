@@ -534,6 +534,7 @@ theorem coreMain_nativeType_id_piSigmaOmegaProp_canary
     Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.id_piSigmaOmegaProp_translation_endpoint
       L S predicateFamily φ ψ
 
+set_option backward.isDefEq.respectTransparency false in
 /-- CoreMain-facing canonical representable Π/Σ transport endpoint routed
 through the Prop-12 ΠΣ predicate-rule pack. -/
 theorem coreMain_representable_patternPred_piSigma_transport_via_rulePack
@@ -585,6 +586,7 @@ theorem coreMain_representable_patternPred_piSigma_transport_via_rulePack
       (hPiSigmaPack := hPiSigmaPack)
       (f := f) (χ := χ) (ψ := ψ)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- CoreMain-facing canonical representable Π/Σ transport endpoint routed
 through the Prop-12 ΠΣ predicate-rule pack. -/
 theorem coreMain_representable_patternPred_piSigma_transport_via_prop12_pack

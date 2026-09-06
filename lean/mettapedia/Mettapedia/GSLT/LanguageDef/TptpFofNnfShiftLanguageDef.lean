@@ -582,7 +582,7 @@ local macro "shift_root" : tactic =>
       termsRequest, termsResult, formulaRequest, formulaResult, indexZero,
       indexSucc, termVariable, termFunction, termsNil, termsCons, verum,
       falsum, positive, negative, equal, notEqual, and, or, all, ex, a, v,
-      matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
+      matchPattern, matchArgs, mergeBindings, applyBindingsForRule_eq_syntactic,
       applyBindings])
 
 local syntax "shift_root_using " term,* : tactic
@@ -601,7 +601,7 @@ local macro_rules
           formulaResult, indexZero, indexSucc, termVariable, termFunction,
           termsNil, termsCons, verum, falsum, positive, negative, equal,
           notEqual, and, or, all, ex, a, v, matchPattern, matchArgs,
-          mergeBindings, applyBindingsForRule, applyBindings])
+          mergeBindings, applyBindingsForRule_eq_syntactic, applyBindings])
 
 theorem index_zero_at_zero_exact (fuel : Nat) :
     rewriteAt (engineBasePremises RelationEnv.empty) language (fuel + 1)

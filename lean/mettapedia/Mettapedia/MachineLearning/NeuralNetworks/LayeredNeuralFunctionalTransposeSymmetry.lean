@@ -307,7 +307,7 @@ theorem layeredNeuralFunctionalAttention_singleSquareTranspose
           (Sum.inl (row, column)) channel
     rw [rowSliceAttention_transpose_single]
     rw [columnSliceAttention_transpose_single]
-    rw [pointWeightAttention_transport]
+    rw [pointWeightAttention_transport (singleSquareTransposeEquiv layer) queries keys values (Sum.inl (row, column)) channel]
     ring
   · exact nomatch empty
 

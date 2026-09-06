@@ -48,14 +48,14 @@ theorem evidencePathUnit_mul (grade : EvidenceHplus) :
     evidencePathUnit * grade = grade := by
   change OrderDual.toDual
       (BinaryEvidence.zero + OrderDual.ofDual grade) = grade
-  simpa using congrArg OrderDual.toDual
+  exact congrArg OrderDual.toDual
     (BinaryEvidence.zero_hplus (OrderDual.ofDual grade))
 
 theorem mul_evidencePathUnit (grade : EvidenceHplus) :
     grade * evidencePathUnit = grade := by
   change OrderDual.toDual
       (OrderDual.ofDual grade + BinaryEvidence.zero) = grade
-  simpa using congrArg OrderDual.toDual
+  exact congrArg OrderDual.toDual
     (BinaryEvidence.hplus_zero (OrderDual.ofDual grade))
 
 /-- Lift an existing PLN scorer directly into quantale-valued scheduling.

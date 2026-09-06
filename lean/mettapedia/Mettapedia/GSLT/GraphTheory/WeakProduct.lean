@@ -94,7 +94,6 @@ def WeakProduct (D₁ D₂ : GraphModel) : GraphModel where
         | inl x₂ =>
           simp at h
           have hc := D₁.coding.injective h
-          simp at hc
           -- For full proof: need to show a₁ = a₂ given projectLeft a₁ = projectLeft a₂
           -- This requires the full i-flattening construction
           sorry
@@ -105,7 +104,6 @@ def WeakProduct (D₁ D₂ : GraphModel) : GraphModel where
         | inr y₂ =>
           simp at h
           have hc := D₂.coding.injective h
-          simp at hc
           sorry
   }
 

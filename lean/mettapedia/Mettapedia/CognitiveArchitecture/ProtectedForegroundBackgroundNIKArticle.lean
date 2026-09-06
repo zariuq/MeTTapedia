@@ -43,8 +43,13 @@ noncomputable section
 
 /-! ## Exact semantic--physical input and result binding -/
 
-abbrev WorkspaceTheory : Theory :=
-  deterministicTheory workspaceStep observeWorkspace
+abbrev WorkspaceTheory : Theory where
+  World := Workspace
+  Revision := Work
+  Query := Unit
+  Observation := WorkspaceView
+  Step item source target := target = workspaceStep source item
+  query state _request := observeWorkspace state
 
 abbrev Article :=
   Claim WorkspaceTheory Unit Nat PhysicalPayload Nat Nat
@@ -218,6 +223,7 @@ theorem useful_protected_article_accepted :
   simp [protectedChecker, boundChecker, Checker.conjunction,
     physical_article_accepted, useful_binding_accepted,
     useful_progress_accepted]
+  exact physical_article_accepted
 
 theorem useful_protected_article_meaning :
     ProtectedMeaning (backend := replayableParallelBackend) physicalClaim :=
@@ -367,7 +373,6 @@ theorem rewindAdmissionDecision_reflects (claim : EventClaim WorkspaceTheory) :
       Admitted rewindParallelBackend claim := by
   simp [rewindAdmissionDecision, Admitted, rewindParallelBackend,
     CanonicalRewindPair]
-  exact Iff.rfl
 
 def rewindAdmission : AdmissionAuthority rewindParallelBackend :=
   Mettapedia.GSLT.Dynamics.ReplayableParallelAdmission.ofBooleanDecision

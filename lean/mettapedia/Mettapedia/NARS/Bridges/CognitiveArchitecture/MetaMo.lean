@@ -41,7 +41,11 @@ inductive ControlCoordinate where
   | conceptPriority
   | conceptUsefulness
   | attentionThreshold
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype ControlCoordinate where
+  elems := {.eventPriority, .conceptPriority, .conceptUsefulness, .attentionThreshold}
+  complete := by intro x; cases x <;> simp
 
 /-- A nonnegative control-intensity profile. The generic pointwise module in
 `MetaMo.Basic` provides its `QModule` structure. -/

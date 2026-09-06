@@ -809,6 +809,8 @@ theorem rankedTensorChain4_completeReverseForce_all_one :
     norm_num [rankedTensorChain4FeedforwardMatrix,
       rankedTensorChain4TerminalForce, Matrix.one_apply, Matrix.mulVec,
       dotProduct, Fin.sum_univ_succ]
+  intro coordinate
+  exact Nat.ne_of_lt coordinate.isLt
 
 /-- Boundary fixture: frozen-state complete reverse transport equals BP. -/
 theorem rankedTensorChain4_frozen_completeReverse_eq_bp :

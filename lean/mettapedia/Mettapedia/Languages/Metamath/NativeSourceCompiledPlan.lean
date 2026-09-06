@@ -48,21 +48,8 @@ theorem validatedPresentation_lowers :
     (lowerValidatedDefinition? validatedDefinition).isSome = true := by
   rw [lowerValidatedDefinition?_isSome]
   change generatedDefinition.rules.all admittedRuleSupported = true
-  set_option maxRecDepth 100000 in
-    simp [targetHypotheses, rFloat, sFloat, tFloat,
-      theoremRSEssential, theoremSTEssential, hypothesisRule, assertionRules,
-      axiomSyllogism, rsEssential, stEssential, rule, admittedRuleSupported,
-      applicationPatternSupported, applicationPatternsSupported,
-      patternsSupported, patternSupported, physicalName?, stringBytes,
-      textEncodable?, bytesNulFree, bytesNonempty, provesPattern,
-      identityPattern, formulaPattern, atomPattern, atomListPattern, app,
-      substitutionJudgment, contextJudgment, substitutionPattern,
-      identityBindingsPattern, bindingPattern, contextPattern,
-      substitutionRuleId, contextRuleId, sourceRevision, sourceDigest,
-      SourceHypothesis.formula, SourceHypothesis.label,
-      String.utf8EncodeChar_eq_utf8EncodeCharFast,
-      String.utf8EncodeCharFast,
-      show UInt32.size = 4294967296 from rfl]
+  set_option maxRecDepth 10000 in
+    decide +kernel
 
 theorem generatedPresentation_lowers :
     (lowerDefinition? generatedDefinition).isSome = true := by

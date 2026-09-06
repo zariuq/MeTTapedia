@@ -124,12 +124,12 @@ theorem aggregateDistinctGaussian_inclusion_exclusion
         (aggregateDistinctGaussian right contribution) := by
   apply GaussianEvidence.extensionality
   · ext i j
-    simpa [aggregateDistinctGaussian, GaussianEvidence.add] using
+    exact
       (Finset.sum_union_inter
         (s₁ := left) (s₂ := right)
         (f := fun event ↦ (contribution event).precision i j))
   · funext i
-    simpa [aggregateDistinctGaussian, GaussianEvidence.add] using
+    exact
       (Finset.sum_union_inter
         (s₁ := left) (s₂ := right)
         (f := fun event ↦ (contribution event).naturalParameter i))
@@ -144,11 +144,11 @@ theorem aggregateDistinctGaussian_union_of_disjoint
         (aggregateDistinctGaussian right contribution) := by
   apply GaussianEvidence.extensionality
   · ext i j
-    simpa [aggregateDistinctGaussian, GaussianEvidence.add] using
+    exact
       (Finset.sum_union hdisjoint
         (f := fun event ↦ (contribution event).precision i j))
   · funext i
-    simpa [aggregateDistinctGaussian, GaussianEvidence.add] using
+    exact
       (Finset.sum_union hdisjoint
         (f := fun event ↦ (contribution event).naturalParameter i))
 
@@ -168,9 +168,8 @@ theorem scalarEvidence_reuse_doubleCounting :
       (((zeroScalarEvidence.update unitScalarEvidence).update unitScalarEvidence).update
         zeroScalarEvidence).naturalParameter = fun _ => 2 := by
   constructor
-  ·
-    norm_num [GaussianEvidence.update, GaussianEvidence.add,
-      zeroScalarEvidence, unitScalarEvidence, Matrix.one_apply]
+  · change (0 : ℝ) + 1 + 1 + 0 = 2
+    norm_num
   · funext i
     fin_cases i
     norm_num [GaussianEvidence.update, GaussianEvidence.add,

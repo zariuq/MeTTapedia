@@ -129,28 +129,28 @@ theorem sliceBytes_eq_sliceList (s : ByteSlice) :
 theorem toLabel_eq_fold (bs : ByteSlice) :
     Metamath.Verify.toLabel bs =
       (((sliceBytes bs).foldl
-          (fun (r : MProd Bool String) c =>
+          (fun (r : Prod Bool String) c =>
             ⟨if Metamath.Verify.isLabelChar c then r.fst else false,
               r.snd.push (Metamath.Verify.uint8ToChar c)⟩)
           ⟨true, ""⟩).fst,
         ((sliceBytes bs).foldl
-          (fun (r : MProd Bool String) c =>
+          (fun (r : Prod Bool String) c =>
             ⟨if Metamath.Verify.isLabelChar c then r.fst else false,
               r.snd.push (Metamath.Verify.uint8ToChar c)⟩)
           ⟨true, ""⟩).snd) := by
   have hrun : Metamath.Verify.toLabel bs =
-      (fun (r : MProd Bool String) => (r.fst, r.snd))
-        (ByteSlice.forIn (m := Id) bs (⟨true, ""⟩ : MProd Bool String)
+      (fun (r : Prod Bool String) => (r.fst, r.snd))
+        (ByteSlice.forIn (m := Id) bs (⟨true, ""⟩ : Prod Bool String)
           (fun c r =>
             if Metamath.Verify.isLabelChar c = true then
               pure (ForInStep.yield
                 (⟨r.fst, r.snd.push (Metamath.Verify.uint8ToChar c)⟩ :
-                  MProd Bool String))
+                  Prod Bool String))
             else
               pure (ForInStep.yield
                 (⟨false, r.snd.push (Metamath.Verify.uint8ToChar c)⟩ :
-                  MProd Bool String)))) := rfl
-  rw [hrun, byteSlice_forIn_yield (β := MProd Bool String) bs _
+                  Prod Bool String)))) := rfl
+  rw [hrun, byteSlice_forIn_yield (β := Prod Bool String) bs _
     (fun c r =>
       ⟨if Metamath.Verify.isLabelChar c then r.fst else false,
         r.snd.push (Metamath.Verify.uint8ToChar c)⟩)
@@ -164,7 +164,7 @@ theorem toLabel_eq_fold (bs : ByteSlice) :
 theorem toLabel_fold_fst (bytes : List UInt8) :
     ∀ (ok₀ : Bool) (s₀ : String),
       (bytes.foldl
-          (fun (r : MProd Bool String) c =>
+          (fun (r : Prod Bool String) c =>
             ⟨if Metamath.Verify.isLabelChar c then r.fst else false,
               r.snd.push (Metamath.Verify.uint8ToChar c)⟩)
           ⟨ok₀, s₀⟩).fst =
@@ -182,7 +182,7 @@ theorem toLabel_fold_fst (bytes : List UInt8) :
 theorem toLabel_fold_snd (bytes : List UInt8) :
     ∀ (ok₀ : Bool) (s₀ : String),
       (bytes.foldl
-          (fun (r : MProd Bool String) c =>
+          (fun (r : Prod Bool String) c =>
             ⟨if Metamath.Verify.isLabelChar c then r.fst else false,
               r.snd.push (Metamath.Verify.uint8ToChar c)⟩)
           ⟨ok₀, s₀⟩).snd =
@@ -235,7 +235,7 @@ theorem eqArray_fold_spec (arr : ByteArray) :
     ∀ (bytes : List UInt8) (k : Nat) (ok : Bool),
       k + bytes.length ≤ arr.size →
       ((foldWithExit
-          (fun c (r : MProd Nat Bool) => !(arr[r.fst]! == c))
+          (fun c (r : Prod Nat Bool) => !(arr[r.fst]! == c))
           (fun _ r => ⟨r.fst, false⟩)
           (fun _ r => ⟨r.fst + 1, r.snd⟩) bytes ⟨k, ok⟩).snd = true ↔
         (ok = true ∧
@@ -282,18 +282,18 @@ theorem eqArray_true_iff (bs : ByteSlice) (arr : ByteArray) :
   have hrun : bs.eqArray arr =
       (if bs.size ≠ arr.size then false
        else
-        (ByteSlice.forIn (m := Id) bs (⟨0, true⟩ : MProd Nat Bool)
+        (ByteSlice.forIn (m := Id) bs (⟨0, true⟩ : Prod Nat Bool)
           (fun b r =>
             if arr[r.fst]! ≠ b then
-              pure (ForInStep.done (⟨r.fst, false⟩ : MProd Nat Bool))
+              pure (ForInStep.done (⟨r.fst, false⟩ : Prod Nat Bool))
             else
               pure (ForInStep.yield
-                (⟨r.fst + 1, r.snd⟩ : MProd Nat Bool)))).snd) := rfl
+                (⟨r.fst + 1, r.snd⟩ : Prod Nat Bool)))).snd) := rfl
   have hlistlen : arr.data.toList.length = arr.size := rfl
   by_cases hsize : bs.size = arr.size
   · rw [hrun, if_neg (by simp [hsize])]
-    rw [byteSlice_forIn_exit (β := MProd Nat Bool) bs _
-      (fun c (r : MProd Nat Bool) => !(arr[r.fst]! == c))
+    rw [byteSlice_forIn_exit (β := Prod Nat Bool) bs _
+      (fun c (r : Prod Nat Bool) => !(arr[r.fst]! == c))
       (fun _ r => ⟨r.fst, false⟩)
       (fun _ r => ⟨r.fst + 1, r.snd⟩)
       (fun c r => by

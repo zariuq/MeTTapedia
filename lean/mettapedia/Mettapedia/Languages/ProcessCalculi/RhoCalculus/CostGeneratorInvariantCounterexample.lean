@@ -85,7 +85,7 @@ private theorem rhoCutOrderBaseDropZero_typed :
   · exact rhoCIGSLT.costBaseConstructor_mem_costWhole _ (rhoRule_mem 1)
   · rw [usesBareCollection_costBaseConstructor_iff]
     simp [UsesBareCollection, rhoCalc, TypeExpr.name, TypeExpr.proc,
-      TypeExpr.baseType]
+      TypeExpr.baseType, List.getElem_cons_zero, List.getElem_cons_succ]
   · rw [rho_costBaseDropConstructor_params]
     exact .cons (by trivial) rfl rhoCutOrderZero_typed .nil
 
@@ -97,7 +97,7 @@ private theorem rhoCutOrderRedex_typed :
   · exact rhoCIGSLT.costBaseConstructor_mem_costWhole _ (rhoRule_mem 2)
   · rw [usesBareCollection_costBaseConstructor_iff]
     simp [UsesBareCollection, rhoCalc, TypeExpr.name, TypeExpr.proc,
-      TypeExpr.baseType]
+      TypeExpr.baseType, List.getElem_cons_zero, List.getElem_cons_succ]
   · rw [rho_costBaseQuoteConstructor_params]
     exact .cons (by trivial) rfl rhoCutOrderBaseDropZero_typed .nil
 
@@ -130,7 +130,7 @@ private theorem rhoCutOrderWrappedDrop_typed (name : Pattern)
   · exact rhoCutOrderWrappedDrop_mem
   · rw [usesBareCollection_costWrappedConstructor_iff]
     simp [UsesBareCollection, rhoCalc, TypeExpr.name, TypeExpr.proc,
-      TypeExpr.baseType]
+      TypeExpr.baseType, List.getElem_cons_zero, List.getElem_cons_succ]
   · rw [rho_costWrappedDropConstructor_params]
     exact .cons (by trivial) rfl typed .nil
 
@@ -286,10 +286,10 @@ private def rhoCutOrderWrappedDropPreimage :
 private theorem rhoCutOrderWrappedDrop_notBare :
     ¬ UsesBareCollection
       rhoCutOrderWrappedDropPreimage.sourceConstructor.1 := by
-  simp [rhoCutOrderWrappedDropPreimage, costStaticConstructorPreimage,
-    rhoCutOrderWrappedDropDeclared, rhoCutOrderDropConstructor,
-    UsesBareCollection, rhoCalc, TypeExpr.name, TypeExpr.proc,
-    TypeExpr.baseType]
+  change ¬ ∃ parameterName collectionType elementType,
+    ([TermParam.simple "n" (.base "Name")] : List TermParam) =
+      [.simple parameterName (.collection collectionType elementType)]
+  simp
 
 private def rhoCutOrderWrappedFvarPlan (outer : OneHoleContext)
     (name : String)
@@ -300,10 +300,7 @@ private def rhoCutOrderWrappedFvarPlan (outer : OneHoleContext)
       (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .wrapped [])
       [] outer (.fvar name) (.base "Name") :=
   .fvar (by
-    simpa [mapTypeExpr, CostStaticColor.symbols,
-      costWrappedStaticSymbols, rhoCIGSLT, rhoIGSLT,
-      rhoInteractivePresentation, rhoCalc, TypeDecl.plain,
-      show "Name" ≠ "Proc" by decide] using lookup)
+    exact lookup)
 
 private def rhoCutOrderWrappedDropFvarPlan (outer : OneHoleContext)
     (name : String)
@@ -353,10 +350,7 @@ private theorem rhoCutOrderRedex_wellSorted :
         (.base "Name"))
       rhoCutOrderRedex := by
   refine ⟨⟨?_, rfl, rfl, ?_⟩, ?_⟩
-  · simpa [mapTypeExpr, CostStaticColor.symbols,
-      costWrappedStaticSymbols, rhoCIGSLT, rhoIGSLT,
-      rhoInteractivePresentation, rhoCalc, TypeDecl.plain,
-      show "Name" ≠ "Proc" by decide] using rhoCutOrderRedex_typed
+  · exact rhoCutOrderRedex_typed
   · simp [ScopeSafeAt, rhoCutOrderRedex, rhoCutOrderBaseQuote,
       rhoCutOrderBaseDrop, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
@@ -520,10 +514,10 @@ private def rhoCutOrderBaseDropPreimage :
 
 private theorem rhoCutOrderBaseDrop_notBare :
     ¬ UsesBareCollection rhoCutOrderBaseDropPreimage.sourceConstructor.1 := by
-  simp [rhoCutOrderBaseDropPreimage, costStaticConstructorPreimage,
-    rhoCutOrderBaseDropDeclared, rhoCutOrderDropConstructor,
-    UsesBareCollection, rhoCalc, TypeExpr.name, TypeExpr.proc,
-    TypeExpr.baseType]
+  change ¬ ∃ parameterName collectionType elementType,
+    ([TermParam.simple "n" (.base "Name")] : List TermParam) =
+      [.simple parameterName (.collection collectionType elementType)]
+  simp
 
 private def rhoCutOrderBaseQuotePreimage :
     CostStaticConstructorPreimage rhoCIGSLT .base
@@ -533,10 +527,10 @@ private def rhoCutOrderBaseQuotePreimage :
 
 private theorem rhoCutOrderBaseQuote_notBare :
     ¬ UsesBareCollection rhoCutOrderBaseQuotePreimage.sourceConstructor.1 := by
-  simp [rhoCutOrderBaseQuotePreimage, costStaticConstructorPreimage,
-    rhoCutOrderBaseQuoteDeclared, rhoCutOrderBaseQuoteConstructor,
-    UsesBareCollection, rhoCalc, TypeExpr.name, TypeExpr.proc,
-    TypeExpr.baseType]
+  change ¬ ∃ parameterName collectionType elementType,
+    ([TermParam.simple "p" (.base "Proc")] : List TermParam) =
+      [.simple parameterName (.collection collectionType elementType)]
+  simp
 
 private def rhoCutOrderBaseFvarPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
@@ -773,11 +767,11 @@ private theorem sortPatterns_pair_eq_of_le (left right : Pattern)
     sortPatterns [left, right] = [left, right] := by
   let relation : Pattern → Pattern → Prop :=
     fun first second => patternCode first ≤ patternCode second
-  letI : Std.Total relation :=
+  let : Std.Total relation :=
     ⟨fun first second => Nat.le_total (patternCode first) (patternCode second)⟩
-  letI : IsTrans Pattern relation :=
+  let : IsTrans Pattern relation :=
     ⟨fun _ _ _ firstLe secondLe => Nat.le_trans firstLe secondLe⟩
-  letI : Std.Antisymm relation :=
+  let : Std.Antisymm relation :=
     ⟨fun first second firstLe secondLe =>
       patternCode_injective (Nat.le_antisymm firstLe secondLe)⟩
   apply List.mergeSort_eq_self
@@ -914,10 +908,7 @@ private theorem rhoCutOrderWrappedNameType :
     (.base (costBaseSortName "Name") : TypeExpr) =
       mapTypeExpr (CostStaticColor.wrapped.symbols rhoCIGSLT)
         (.base "Name") := by
-  simp [mapTypeExpr, CostStaticColor.symbols,
-    costWrappedStaticSymbols, rhoCIGSLT, rhoIGSLT,
-    rhoInteractivePresentation, rhoCalc, TypeDecl.plain,
-    show "Name" ≠ "Proc" by decide]
+  rfl
 
 noncomputable def rhoCutOrderBoundaryChild :
     CostRegionTree rhoCIGSLT rhoCutOrderFree
@@ -1024,7 +1015,10 @@ private theorem rhoCutOrderLeftTree_normalize :
       rhoCutOrderParallel
         [rhoCutOrderWrappedDrop (.fvar "a"),
           rhoCutOrderWrappedDrop (.fvar "0")] := by
-  unfold rhoCutOrderLeftTree CostRegionTree.normalize
+  unfold rhoCutOrderLeftTree
+  refine (CostRegionTree.normalize_static_pattern
+    (fun node values => node.normalizeWithReflective values)
+    rhoCutOrderLeftNode rhoCutOrderLeftChildren).trans ?_
   change rhoCutOrderLeftNode.normalizeRawWith
       rhoCutOrderLeftChildren.normalizeValues = _
   unfold CostStaticRegionNode.normalizeRawWith
@@ -1032,13 +1026,14 @@ private theorem rhoCutOrderLeftTree_normalize :
     rhoCutOrderLeftNode_normalizedThickenedSkeletonRaw]
   simp [TypedCostRegionBoundaryTable.Values.restoreSupportedSkeleton,
     rhoCutOrderLeftValues_boundaryAssignment,
-    values_assignment_sourceVariable,
     ReflectiveContextSupport.substitute,
     ReflectiveContextSupport.substituteAt,
     rhoCutOrderWrappedDrop_notQuote,
     show rhoCutOrderLeftNode.targetBound.length = 0 by rfl,
     Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero,
     rhoCutOrderParallel, rhoCutOrderWrappedDrop]
+  exact values_assignment_sourceVariable rhoCutOrderLeftNode.boundaryTable
+    rhoCutOrderLeftChildren.normalizeValues "a"
 
 private noncomputable def rhoCutOrderLeftElaboration :
     CostOpenElaboration rhoCIGSLT rhoCutOrderLeft :=

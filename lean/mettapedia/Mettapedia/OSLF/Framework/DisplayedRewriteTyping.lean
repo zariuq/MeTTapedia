@@ -270,7 +270,9 @@ private theorem positiveLanguage_valid : positiveLanguage.validate = [] := by
     change List.Mem rewrite [identityRewrite] at membership
     have equality := List.mem_singleton.mp membership
     subst rewrite
-    simp [LanguageDef.validateRewrite, positiveLanguage, identityRewrite,
+    simp only [LanguageDef.validateRewrite, positiveLanguage, identityRewrite]
+    simp only [List.flatMap_nil, List.nil_append]
+    simp [
       termConstant, termType, LanguageDef.validatePatternConstructors,
       LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
       LanguageDef.patternBinderNames, Pattern.constructorRefs,
@@ -292,7 +294,9 @@ private theorem negativeLanguage_valid : negativeLanguage.validate = [] := by
     change List.Mem rewrite [mismatchedRewrite] at membership
     have equality := List.mem_singleton.mp membership
     subst rewrite
-    simp [LanguageDef.validateRewrite, negativeLanguage, mismatchedRewrite,
+    simp only [LanguageDef.validateRewrite, negativeLanguage, mismatchedRewrite]
+    simp only [List.flatMap_nil, List.nil_append]
+    simp [
       termConstant, valueConstant, termType, valueType,
       LanguageDef.validatePatternConstructors,
       LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,

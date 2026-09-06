@@ -189,8 +189,11 @@ theorem restarting_state_changes_output :
       (generator.runFrom 0 [()]).2.comp (generator.runFrom 0 [()]).2 := by
   intro equality
   have typeRows := congrArg CalculusLanguageExtension.newTypes equality
-  simp [generator, runFrom, CalculusLanguageExtension.comp,
-    CalculusLanguageExtension.empty, stateName, TypeDecl.plain] at typeRows
+  have names := congrArg (List.map TypeDecl.name) typeRows
+  change ["incremental-calculus:", "incremental-calculus:s"] =
+    ["incremental-calculus:", "incremental-calculus:"] at names
+  exact (by decide : ["incremental-calculus:", "incremental-calculus:s"] ≠
+    ["incremental-calculus:", "incremental-calculus:"]) names
 
 end Canary
 

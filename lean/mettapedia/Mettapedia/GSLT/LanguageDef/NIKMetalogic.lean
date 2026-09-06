@@ -1593,7 +1593,6 @@ def ContextMap.comp {first second third : ContextBase}
     change later.map (earlier.map
         (first.comp earlierSubstitution laterSubstitution)) = _
     rw [earlier.map_comp, later.map_comp]
-    rfl
 
 /-- One guest's contextual judgment.  Claims and accepted proof objects
 reindex contravariantly along substitutions.  The projection law says that
@@ -1980,7 +1979,7 @@ distinct occurrences. -/
 theorem swap_moves_first_occurrence :
     fibre.reindexAccepted swap (0 : Fin 2) = (1 : Fin 2) := by
   change swap.toFun (0 : Fin 2) = (1 : Fin 2)
-  simp [swap]
+  exact Equiv.swap_apply_left _ _
 
 /-- Positive two-axis witness: tag enrichment and the nontrivial resource
 swap commute. -/
@@ -2907,6 +2906,7 @@ theorem emission_does_not_control_execution
       unitEmission.emit value (successor.run value) = () ∧
       resultEmission.emit value (successor.run value) = Nat.succ value := by
   simp [successor, unitEmission, resultEmission]
+  rfl
 
 end AdmissionCanary
 
@@ -4084,8 +4084,7 @@ theorem evidenceRefinement_not_full_of_missing_evidence
   have baseEquality : evidenceArrow.val = route := by
     have underlyingEquality := congrArg
       (fun arrow => arrow.val) mappedArrow
-    simpa [evidenceRefinement, CategoryTheory.CategoryOfElements.map,
-      claimArrow] using underlyingEquality
+    exact underlyingEquality
   apply missingEvidence
   rw [← baseEquality]
   exact evidenceArrow.property

@@ -2655,7 +2655,7 @@ theorem boundedMeasurableNaturalExtensionPrevision_hasExactDominatingPreciseEnve
   · rcases hC with ⟨P, hP⟩
     refine ⟨P, ?_⟩
     intro X
-    rw [boundedMeasurableNaturalExtensionPrevision_apply]
+    change boundedMeasurableLowerEnvelope C X ≤ P X
     exact boundedMeasurableLowerEnvelope_le_of_mem C X
       (boundedMeasurableCredalRange_bddBelow C X) hP
   · intro X
@@ -3896,7 +3896,7 @@ theorem ofPMFPrevision_map_apply
     ofPMFPrevision (PMF.map f p) X =
       ofPMFPrevision p (fun ω => X (f ω)) := by
   classical
-  rw [ofPMFPrevision_apply, ofPMFPrevision_apply]
+  change (∑ γ, ((PMF.map f p) γ).toReal * X γ) = ∑ ω, (p ω).toReal * X (f ω)
   have hmap : ∀ γ : Γ,
       ((PMF.map f p) γ).toReal =
         ∑ ω : Ω, (if γ = f ω then (p ω).toReal else 0) := by
@@ -4057,7 +4057,7 @@ theorem ofFiniteProbabilityMeasurePrevision_indicator
         (fun ω => if ω ∈ S then (1 : ℝ) else 0) =
       (μ S).toReal := by
   classical
-  rw [ofFiniteProbabilityMeasurePrevision_apply]
+  change (∑ ω, (μ ({ω} : Set Ω)).toReal * (if ω ∈ S then 1 else 0)) = (μ S).toReal
   have hsingleton_ne_top : ∀ ω : Ω, μ ({ω} : Set Ω) ≠ ⊤ := by
     intro ω
     have hle : μ ({ω} : Set Ω) ≤ μ Set.univ :=
@@ -7857,8 +7857,7 @@ theorem globalNaturalExtensionPrevision_exists_dominatingPreciseCompletion_touch
       P ∈ dominatingPreciseCompletions
         (S.globalNaturalExtensionPrevision hNonempty hBdd) ∧
       P X = S.globalNaturalExtension X := by
-  simpa [globalNaturalExtensionPrevision, globalNaturalExtension] using
-    exists_dominatingPreciseCompletion_touching
+  exact exists_dominatingPreciseCompletion_touching
       (S.globalNaturalExtensionPrevision hNonempty hBdd) X
 
 /-- Every compatible global completion is below the packaged global upper
@@ -8606,7 +8605,7 @@ theorem globalNaturalExtensionPrevision_exists_dominatingStrictEndpointPairReado
       hNonempty hBddBelow
   have hLower :
       L X = S.globalNaturalExtension X := by
-    simp [L, globalNaturalExtensionPrevision, globalNaturalExtension]
+    rfl
   have hUpper :
       L.conjugate X = upperEnvelope S.projectiveLimitCredalSet X := by
     dsimp [L]
@@ -10190,9 +10189,7 @@ theorem globalNaturalExtensionPrevision_dominates_localLower_on_cylinder
     S.localLower i X ≤
       S.toCredalSpec.globalNaturalExtensionPrevision hGlobal hBdd
         (S.cylinders.cylinderGamble i X) := by
-  simpa [ProjectiveLocalCredalSpec.globalNaturalExtensionPrevision,
-    ProjectiveLocalCredalSpec.globalNaturalExtension] using
-    S.globalNaturalExtension_dominates_localLower_on_cylinder hGlobal i X
+  exact S.globalNaturalExtension_dominates_localLower_on_cylinder hGlobal i X
 
 /-- Least-committal property of the generated projective natural extension.
 

@@ -111,7 +111,7 @@ Build the assumptions interface from any FOET model that satisfies the sentence-
 This is the key step that makes the ontology connection *non-decorative*:
 `Entails` will now genuinely depend on the theory-as-a-set.
 -/
-@[reducible] def assumptionsOfModels (hM : Models semantics () theory) : Assumptions := by
+theorem assumptionsOfModels (hM : Models semantics () theory) : Assumptions := by
   classical
   refine
     { EssPPA_valid := ?_

@@ -1807,6 +1807,7 @@ private noncomputable def concretePropHimpSection
   rw [globalSectionOfPoint_apply]
   exact P.decodeProp_encodeProp _
 
+set_option backward.isDefEq.respectTransparency false in
 noncomputable def concreteOnePointHeytingSectionWitness
     (laws : PropCarrierHeytingLaws M) :
     OnePointHeytingSectionWitness M :=
@@ -1980,6 +1981,7 @@ noncomputable def concreteOnePointHeytingSectionWitness
             P.decodeProp ((concretePropMeetSection (M := M) a b).toContinuousMap ())
         exact hleft }
 
+set_option backward.isDefEq.respectTransparency false in
 @[simp] theorem concreteOnePointHeytingSectionWitness_propMeet_eq_propMeetOfPoint
     (laws : PropCarrierHeytingLaws M)
     (a b :
@@ -1996,6 +1998,7 @@ noncomputable def concreteOnePointHeytingSectionWitness
   exact (concreteOnePointHeytingAlgebraWitness_decode_propMeetOfPoint
     (M := M) laws a b).symm
 
+set_option backward.isDefEq.respectTransparency false in
 @[simp] theorem concreteOnePointHeytingSectionWitness_propJoin_eq_propJoinOfPoint
     (laws : PropCarrierHeytingLaws M)
     (a b :
@@ -2012,6 +2015,7 @@ noncomputable def concreteOnePointHeytingSectionWitness
   exact (concreteOnePointHeytingAlgebraWitness_decode_propJoinOfPoint
     (M := M) laws a b).symm
 
+set_option backward.isDefEq.respectTransparency false in
 @[simp] theorem concreteOnePointHeytingSectionWitness_propHimp_eq_propHimpOfPoint
     (laws : PropCarrierHeytingLaws M)
     (a b :

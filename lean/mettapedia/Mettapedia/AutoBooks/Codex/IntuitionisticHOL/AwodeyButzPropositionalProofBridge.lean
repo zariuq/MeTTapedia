@@ -146,7 +146,9 @@ def toFormula :
 
 @[simp] theorem toFormula_atom (t : SimpleTerm Base Const Γ .prop) :
     toFormula (.atom t : SimplePropFormula Base Const Γ) = SimpleTerm.toTerm t :=
-  by simp [toFormula]
+  by
+    simp [toFormula]
+    rfl
 
 @[simp] theorem toFormula_top :
     toFormula (.top : SimplePropFormula Base Const Γ) = (.top : Formula Const (SimpleTy.toCtx Γ)) :=

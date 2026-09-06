@@ -84,11 +84,15 @@ abbrev spec :=
 executable exact-shape recognizer. -/
 private theorem recognitionSucceeded :
     (SingleValuedDispatch.recognize source).isSome = true := by
-  simp [SingleValuedDispatch.recognize, source, entries, shape, nodeSpecs,
-    Mettapedia.GSLT.LanguageDef.MonotoneUniqueIndexCompilation.recognize,
-    effectSupported, allDistinct_eq_eraseDupsLength]
-  simp only [List.eraseDups_cons, List.filter]
-  decide
+  have distinct : allDistinct (source.entries.map fun entry => entry.1) = true := by
+    change allDistinct ["statement_const", "statement_var", "statement_disjoint",
+      "statement_float", "statement_essential", "statement_axiom",
+      "statement_theorem_normal", "statement_theorem_compressed",
+      "statement_include", "statement_block"] = true
+    rw [allDistinct_eq_eraseDupsLength]
+    decide +kernel
+  simp only [SingleValuedDispatch.recognize, distinct]
+  rfl
 
 /-- Exact source-label uniqueness licenses the record index.  The witness is
 the recognizer's own proof-bearing result, not a parallel certificate. -/
@@ -183,12 +187,13 @@ record.  Ordinary source lookup remains available outside admission. -/
 theorem duplicate_label_refused :
     spec.recognize duplicateSource = none := by
   change SingleValuedDispatch.recognize duplicateSource = none
-  simp [SingleValuedDispatch.recognize, duplicateSource, constantSpec,
-    variableSpec, shape,
-    Mettapedia.GSLT.LanguageDef.MonotoneUniqueIndexCompilation.recognize,
-    effectSupported, allDistinct_eq_eraseDupsLength]
-  simp only [List.eraseDups_cons, List.filter]
-  decide
+  have duplicate : allDistinct (duplicateSource.entries.map fun entry => entry.1) = false := by
+    change allDistinct ["statement_const", "statement_const"] = false
+    rw [allDistinct_eq_eraseDupsLength]
+    decide +kernel
+  simp only [SingleValuedDispatch.recognize, duplicate, Bool.false_eq_true,
+    dite_false]
+  rfl
 
 end MetamathOperationRecordFusion
 

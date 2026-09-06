@@ -49,6 +49,7 @@ def reifyOperationalSubstitution (callerActiveNames : List String)
       reifyOperationalSubstitution callerActiveNames specSubstitution
         hypotheses
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The finite key list is exactly the floating-hypothesis list, including its
 authored order. -/
 theorem reifyOperationalSubstitution_keys

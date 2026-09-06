@@ -284,9 +284,9 @@ theorem toMeasure_apply {Ω : Type*} [MeasurableSpace Ω]
                μ.val (⨆ i, f i) = ∑' i, μ.val (f i))
     {s : Set Ω} (hs : MeasurableSet s) :
     toMeasure μ cox h_sigma s = μ.val s := by
-  -- Mark `cox` as used to avoid linter warnings.
-  have _ := cox.combine_comm 0 0
-  simp [toMeasure, Measure.ofMeasurable_apply, hs]
+  apply Measure.ofMeasurable_apply (mU := ?_) s hs
+  intro f _ hpair
+  exact h_sigma f (fun i j hij => hpair hij)
 
 /-! ## Translation invariance and Haar measure -/
 

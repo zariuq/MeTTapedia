@@ -409,6 +409,7 @@ theorem bagToSupport_not_faithful : Not bagToSupport.{0}.Faithful := by
         bagToSupport.{0}.map ({(), ()} : Multiset Unit) := by
     classical
     simp
+    rfl
   have impossible : ({()} : Multiset Unit) = {(), ()} :=
     faithful sameImage
   have cardEquality := congrArg Multiset.card impossible
@@ -429,6 +430,7 @@ theorem no_bag_recovery_from_support :
         bagToSupport.{0}.map ({(), ()} : Multiset Unit) := by
     classical
     simp
+    rfl
   rw [sameSupport, two] at one
   have cardEquality := congrArg Multiset.card one
   simp at cardEquality

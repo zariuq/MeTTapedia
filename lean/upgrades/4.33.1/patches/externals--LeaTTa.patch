@@ -1,0 +1,1001 @@
+diff --git a/MeTTaIL/Semantics/Eval.lean b/MeTTaIL/Semantics/Eval.lean
+index 4f0fc5962af592a210b33bfab62b0775b1d479a8..ae791b1fa3ba8e753871fb742fd5daa9adec584a 100644
+--- a/MeTTaIL/Semantics/Eval.lean
++++ b/MeTTaIL/Semantics/Eval.lean
+@@ -69,4 +69,17 @@ theorem eval_fixed_of_normal (p : Presentation) (t : AST) (h : IsNormal p t) (fu
+   simp only [IsNormal] at h
+   simp only [eval, h]
+ 
++/-- Splitting the fuel preserves the normalizer's result, including early termination. -/
++theorem eval_add (p : Presentation) (first second : Nat) (t : AST) :
++    eval p (first + second) t = eval p second (eval p first t) := by
++  induction first generalizing t with
++  | zero => simp only [Nat.zero_add, eval]
++  | succ first ih =>
++      simp only [Nat.succ_add, eval]
++      cases h : oneStep p t with
++      | none =>
++          cases second <;> simp only [eval, h]
++      | some next =>
++          simpa only [h] using ih next
++
+ end MeTTaIL
+diff --git a/MeTTaILProofs/CPDecide.lean b/MeTTaILProofs/CPDecide.lean
+index 3a12e42ed1fb6594150fc4e65ab3615246ed378b..c6d721160b49933da94e420779d35a70393ba5cd 100644
+--- a/MeTTaILProofs/CPDecide.lean
++++ b/MeTTaILProofs/CPDecide.lean
+@@ -67,7 +67,7 @@ theorem rstep_subst {R : List (FOTerm × FOTerm)} (ρ : Nat → FOTerm) {s s' :
+ theorem rstepMany_subst {R : List (FOTerm × FOTerm)} (ρ : Nat → FOTerm) {s s' : FOTerm}
+     (h : Relation.ReflTransGen (Rstep R) s s') :
+     Relation.ReflTransGen (Rstep R) (subst ρ s) (subst ρ s') :=
+-  Relation.ReflTransGen.lift (subst ρ) (fun _ _ hab => rstep_subst ρ hab) h
++  Relation.ReflTransGen.lift (subst ρ) (fun _ _ hab => rstep_subst ρ hab) _ _ h
+ 
+ /-- Joinability is closed under substitution. -/
+ theorem joinable_subst {R : List (FOTerm × FOTerm)} (ρ : Nat → FOTerm) {a b : FOTerm}
+diff --git a/MeTTaILProofs/CPRuntime.lean b/MeTTaILProofs/CPRuntime.lean
+index 49e5763201fe62647e9c695e0f2445c4b1767953..d3c7f459870a42f26c9c00b6a8d1193bccc9a920 100644
+--- a/MeTTaILProofs/CPRuntime.lean
++++ b/MeTTaILProofs/CPRuntime.lean
+@@ -418,7 +418,7 @@ theorem RstepMany_to_RewStep (hν : Function.Injective ν) {R : List (FOTerm ×
+     (hvars : ∀ l r, (l, r) ∈ R → ∀ n ∈ r.varsOf, n ∈ l.varsOf) {s s' : FOTerm}
+     (h : Relation.ReflTransGen (Rstep R) s s') :
+     Relation.ReflTransGen (RewStep (embPres ν R)) (emb ν s) (emb ν s') :=
+-  Relation.ReflTransGen.lift (emb ν) (fun _ _ hab => Rstep_to_RewStep ν hν hvars hab) h
++  Relation.ReflTransGen.lift (emb ν) (fun _ _ hab => Rstep_to_RewStep ν hν hvars hab) _ _ h
+ 
+ /-- Backward simulation lifted to many steps: a runtime reduction sequence out of an embedded term stays in
+     the embedded fragment and comes from a first-order reduction sequence. -/
+diff --git a/MeTTaILProofs/ConditionalCP.lean b/MeTTaILProofs/ConditionalCP.lean
+index daac47e5da827dccc772fc3c6e7d9e15a6ec2d76..a3673d4ef6896793ce08bc96dbe290b03b079636 100644
+--- a/MeTTaILProofs/ConditionalCP.lean
++++ b/MeTTaILProofs/ConditionalCP.lean
+@@ -73,7 +73,7 @@ theorem CRstepN_le_succ (R : List CRule) :
+   | k + 1 => fun h => by
+       obtain ⟨p, rule, σ, hmem, hsub, hconds, heq⟩ := h
+       exact ⟨p, rule, σ, hmem, hsub,
+-        fun c hc => (hconds c hc).mono (fun _ _ hab => CRstepN_le_succ R k hab), heq⟩
++        fun c hc => Relation.ReflTransGen.mono (fun _ _ hab => CRstepN_le_succ R k hab) _ _ (hconds c hc), heq⟩
+ 
+ /-- A step at level `m` is a step at any higher level `n`. -/
+ theorem CRstepN_mono (R : List CRule) {m n : Nat} (hmn : m ≤ n) {t t' : FOTerm}
+@@ -85,7 +85,7 @@ theorem CRstepN_mono (R : List CRule) {m n : Nat} (hmn : m ≤ n) {t t' : FOTerm
+ /-- A reduction sequence at level `m` is a reduction sequence at any higher level. -/
+ theorem crstepN_many_mono (R : List CRule) {m n : Nat} (hmn : m ≤ n) {t t' : FOTerm}
+     (h : Relation.ReflTransGen (CRstepN R m) t t') : Relation.ReflTransGen (CRstepN R n) t t' :=
+-  h.mono (fun _ _ hab => CRstepN_mono R hmn hab)
++  Relation.ReflTransGen.mono (fun _ _ hab => CRstepN_mono R hmn hab) _ _ h
+ 
+ /-- Any level-`n` step is a conditional step. -/
+ theorem crstep_of_levelN (R : List CRule) {n : Nat} {t t' : FOTerm} (h : CRstepN R n t t') :
+@@ -94,7 +94,7 @@ theorem crstep_of_levelN (R : List CRule) {n : Nat} {t t' : FOTerm} (h : CRstepN
+ /-- A level-`n` reduction sequence is a conditional reduction sequence. -/
+ theorem crstepMany_of_levelN (R : List CRule) {n : Nat} {t t' : FOTerm}
+     (h : Relation.ReflTransGen (CRstepN R n) t t') : Relation.ReflTransGen (CRstep R) t t' :=
+-  h.mono (fun _ _ hab => crstep_of_levelN R hab)
++  Relation.ReflTransGen.mono (fun _ _ hab => crstep_of_levelN R hab) _ _ h
+ 
+ /-! ### Context congruence
+ 
+@@ -130,7 +130,7 @@ theorem crstep_context_gen (R : List CRule) {t : FOTerm} {p : Pos} {s a a' : FOT
+ theorem crstepMany_context (R : List CRule) {t : FOTerm} {p : Pos} {s s' : FOTerm}
+     (h : subAt t p = some s) (hsteps : Relation.ReflTransGen (CRstep R) s s') :
+     Relation.ReflTransGen (CRstep R) (repAt t p s) (repAt t p s') :=
+-  Relation.ReflTransGen.lift (repAt t p ·) (fun _ _ hst => crstep_context_gen R h hst) hsteps
++  Relation.ReflTransGen.lift (repAt t p ·) (fun _ _ hst => crstep_context_gen R h hst) _ _ hsteps
+ 
+ /-! ### Bounding the level of a reduction, and firing a rule
+ 
+diff --git a/MeTTaILProofs/ConditionalCPRuntime.lean b/MeTTaILProofs/ConditionalCPRuntime.lean
+index d1f76e345c71ffe3b60392a2eccf0ad6e6bea958..4ad7f00a2a6bf631b5b7ccb05a0158787c81a88c 100644
+--- a/MeTTaILProofs/ConditionalCPRuntime.lean
++++ b/MeTTaILProofs/ConditionalCPRuntime.lean
+@@ -59,7 +59,7 @@ theorem reflTransGen_eq_of_squeeze {r1 r2 : α → α → Prop}
+     | refl => exact .refl
+     | tail _ hstep ih => exact ih.trans (h21 _ _ hstep)
+   · intro h
+-    exact h.mono (fun _ _ hab => h12 _ _ hab)
++    exact ReflTransGen.mono (fun _ _ hab => h12 _ _ hab) _ _ h
+ 
+ /-- Joinability transfers across relations with equal reflexive-transitive closures. -/
+ theorem joinable_of_reflTransGen_eq {r1 r2 : α → α → Prop}
+@@ -95,19 +95,19 @@ to show a congruence step (which reduces a subterm and rebuilds the context) is
+ theorem rewStepMany_arg (p : Presentation) {l : Label} {pre post : List AST} {a a' : AST}
+     (h : ReflTransGen (RewStep p) a a') :
+     ReflTransGen (RewStep p) (.sexp l (pre ++ a :: post)) (.sexp l (pre ++ a' :: post)) :=
+-  ReflTransGen.lift (fun x => AST.sexp l (pre ++ x :: post)) (fun _ _ hst => RewStep.arg hst) h
++  ReflTransGen.lift (fun x => AST.sexp l (pre ++ x :: post)) (fun _ _ hst => RewStep.arg hst) _ _ h
+ 
+ /-- A reduction sequence lifts under the body of a `Subst` context. -/
+ theorem rewStepMany_substB (p : Presentation) {r : AST} {v : DottedPath} {b b' : AST}
+     (h : ReflTransGen (RewStep p) b b') :
+     ReflTransGen (RewStep p) (.subst b r v) (.subst b' r v) :=
+-  ReflTransGen.lift (fun x => AST.subst x r v) (fun _ _ hst => RewStep.substB hst) h
++  ReflTransGen.lift (fun x => AST.subst x r v) (fun _ _ hst => RewStep.substB hst) _ _ h
+ 
+ /-- A reduction sequence lifts under the replacement of a `Subst` context. -/
+ theorem rewStepMany_substR (p : Presentation) {b : AST} {v : DottedPath} {r r' : AST}
+     (h : ReflTransGen (RewStep p) r r') :
+     ReflTransGen (RewStep p) (.subst b r v) (.subst b r' v) :=
+-  ReflTransGen.lift (fun x => AST.subst b x v) (fun _ _ hst => RewStep.substR hst) h
++  ReflTransGen.lift (fun x => AST.subst b x v) (fun _ _ hst => RewStep.substR hst) _ _ h
+ 
+ /-- A semantic congruence premise lifts to the matching `sexp` argument context. -/
+ theorem sexpArgCong_squeeze_of_inner {base : Presentation} {lab : Label}
+diff --git a/MeTTaILProofs/CriticalPairs.lean b/MeTTaILProofs/CriticalPairs.lean
+index 4fbbb01caa01d9168615f5dd627362815c214837..3030655e03a2e4e761d0d21d2966b5fbbf928ac3 100644
+--- a/MeTTaILProofs/CriticalPairs.lean
++++ b/MeTTaILProofs/CriticalPairs.lean
+@@ -292,7 +292,7 @@ theorem rstep_context_gen {R : List (FOTerm × FOTerm)} {t : FOTerm} {p : Pos} {
+ theorem rstepMany_context {R : List (FOTerm × FOTerm)} {t : FOTerm} {p : Pos} {s s' : FOTerm}
+     (h : subAt t p = some s) (hsteps : Relation.ReflTransGen (Rstep R) s s') :
+     Relation.ReflTransGen (Rstep R) (repAt t p s) (repAt t p s') :=
+-  Relation.ReflTransGen.lift (repAt t p ·) (fun _ _ hst => rstep_context_gen h hst) hsteps
++  Relation.ReflTransGen.lift (repAt t p ·) (fun _ _ hst => rstep_context_gen h hst) _ _ hsteps
+ 
+ /-! ### Reducing every copy of a variable
+ 
+diff --git a/MeTTaILProofs/DistributiveLaw.lean b/MeTTaILProofs/DistributiveLaw.lean
+index 3e448c1f1306262e55f11da933348a7178c54bd0..0f91046f27ad97b28d14714ba1b6b3dce3322f6b 100644
+--- a/MeTTaILProofs/DistributiveLaw.lean
++++ b/MeTTaILProofs/DistributiveLaw.lean
+@@ -202,13 +202,11 @@ def composeMonad : Monad C where
+     have S5 := S.μ.naturality (l.δ.app ((T : C ⥤ C).obj ((T : C ⥤ C).obj X)))
+     have R2 := (S.μ.naturality ((T : C ⥤ C).map (l.δ.app ((T : C ⥤ C).obj X)))).symm
+     have R4 := S.μ.naturality (T.μ.app ((T : C ⥤ C).obj X))
+-    erw [Category.assoc, Category.assoc]
+-    erw [reassoc_of% S1, Category.assoc, reassoc_of% S2]
+-    erw [reassoc_of% S3, Category.assoc, Category.assoc, reassoc_of% S4]
+-    erw [Category.assoc, reassoc_of% S5, S6]
+-    erw [reassoc_of% R1, Category.assoc, reassoc_of% R2]
+-    erw [reassoc_of% R3, Category.assoc, Category.assoc, reassoc_of% R4]
+-    rfl
++    erw [reassoc_of% S1, reassoc_of% S2]
++    erw [reassoc_of% S3, reassoc_of% S4]
++    erw [reassoc_of% S5, S6]
++    erw [reassoc_of% R1, reassoc_of% R2]
++    erw [reassoc_of% R3, reassoc_of% R4]
+   left_unit := by
+     intro X
+     simp only [composeμ, composeη, NatTrans.comp_app, whiskerLeft_app, whiskerRight_app,
+diff --git a/MeTTaILProofs/LambdaConfluence.lean b/MeTTaILProofs/LambdaConfluence.lean
+index d78c06c44154be0ae6c69e4325b52e329ff741d8..e43a122cd4eb536f5c09bd8a36ee1c2cbfc40491 100644
+--- a/MeTTaILProofs/LambdaConfluence.lean
++++ b/MeTTaILProofs/LambdaConfluence.lean
+@@ -280,17 +280,17 @@ open Relation
+ /-- Reduction under `lam` lifts to the reflexive-transitive closure. -/
+ theorem reflTransGen_step_lam {ty : Ty} {b b' : Tm} (h : ReflTransGen Step b b') :
+     ReflTransGen Step (.lam ty b) (.lam ty b') :=
+-  ReflTransGen.lift (Tm.lam ty) (fun _ _ hs => Step.lam hs) h
++  ReflTransGen.lift (Tm.lam ty) (fun _ _ hs => Step.lam hs) _ _ h
+ 
+ /-- Reduction on the left of an application lifts to the closure. -/
+ theorem reflTransGen_step_appL {f f' a : Tm} (h : ReflTransGen Step f f') :
+     ReflTransGen Step (.app f a) (.app f' a) :=
+-  ReflTransGen.lift (fun x => Tm.app x a) (fun _ _ hs => Step.appL hs) h
++  ReflTransGen.lift (fun x => Tm.app x a) (fun _ _ hs => Step.appL hs) _ _ h
+ 
+ /-- Reduction on the right of an application lifts to the closure. -/
+ theorem reflTransGen_step_appR {f a a' : Tm} (h : ReflTransGen Step a a') :
+     ReflTransGen Step (.app f a) (.app f a') :=
+-  ReflTransGen.lift (fun x => Tm.app f x) (fun _ _ hs => Step.appR hs) h
++  ReflTransGen.lift (fun x => Tm.app f x) (fun _ _ hs => Step.appR hs) _ _ h
+ 
+ /-- Reduction on both sides of an application lifts to the closure, by composing the two one-sided
+     lifts. -/
+@@ -324,8 +324,8 @@ theorem reflTransGen_step_eq_par : ReflTransGen Step = ReflTransGen ParRed := by
+   funext a b
+   apply propext
+   constructor
+-  · exact fun h => h.mono (fun _ _ => step_to_par)
+-  · exact fun h => reflTransGen_closed (fun _ _ => par_to_redstep) h
++  · exact fun h => ReflTransGen.mono (fun _ _ hs => step_to_par hs) _ _ h
++  · exact fun h => reflTransGen_closed (fun _ _ => par_to_redstep) _ _ h
+ 
+ /-- **Confluence (Church-Rosser) of beta reduction** for the lambda calculus (no typing hypothesis, so
+     it holds for well-typed and ill-typed terms alike). If a term
+diff --git a/MeTTaILProofs/SKIConfluence.lean b/MeTTaILProofs/SKIConfluence.lean
+index f84a482839320934c16a8a7b38a805167998ad0a..3b5d79d7611a5dc8c4e8e81bd2aedf8ffa669b4e 100644
+--- a/MeTTaILProofs/SKIConfluence.lean
++++ b/MeTTaILProofs/SKIConfluence.lean
+@@ -224,7 +224,7 @@ closure of `Step` is Church-Rosser. -/
+ /-- A many-step `Step` reduction is a many-step `ParRed` reduction (since `Step ⊆ ParRed`). -/
+ theorem reducesMany_toParRedStar {a b : CL} (h : ReducesMany a b) :
+     ReflTransGen ParRed a b :=
+-  ReflTransGen.mono (fun _ _ hs => ParRed.ofStep hs) h
++  ReflTransGen.mono (fun _ _ hs => ParRed.ofStep hs) _ _ h
+ 
+ /-- A many-step `ParRed` reduction is a many-step `Step` reduction (since each parallel step is a
+     finite sequence of single steps). -/
+diff --git a/MettaHyperonFull/Proofs/Basic.lean b/MettaHyperonFull/Proofs/Basic.lean
+index 047816a0f654374a320992bd2781046e2b9d90b5..52b7d4ec2b2f291497b88122a7ee8a56b0141620 100644
+--- a/MettaHyperonFull/Proofs/Basic.lean
++++ b/MettaHyperonFull/Proofs/Basic.lean
+@@ -37,10 +37,8 @@ namespace Atom
+ handle the four constructors, and in the `expr` case assume `motive` for each immediate
+ sub-atom. Tagged `@[induction_eliminator]`, so `induction a` uses it. Terminates because every
+ sub-atom is strictly smaller in `Atom.size` (`_ha : a ∈ xs` is used in `decreasing_by`). -/
+--- `nolint defLemma`: although `motive`-valued, `recAux` is an *eliminator* (tagged
+--- `induction_eliminator`), so `def` rather than `theorem` is the correct form here.
+-@[elab_as_elim, induction_eliminator, nolint defLemma]
+-def recAux {motive : Atom → Prop}
++@[elab_as_elim, induction_eliminator]
++theorem recAux {motive : Atom → Prop}
+     (sym : ∀ s, motive (Atom.sym s))
+     (var : ∀ v, motive (Atom.var v))
+     (gnd : ∀ g, motive (Atom.gnd g))
+diff --git a/MettaHyperonFull/Proofs/MultipleSignatureSelection.lean b/MettaHyperonFull/Proofs/MultipleSignatureSelection.lean
+index 0b3661745e5b49089512347073c220c54515ef0a..b5a4ac4f0a710c71626e0d26b0ac7f909bfd1184 100644
+--- a/MettaHyperonFull/Proofs/MultipleSignatureSelection.lean
++++ b/MettaHyperonFull/Proofs/MultipleSignatureSelection.lean
+@@ -313,6 +313,10 @@ private theorem multiSignature_interpret_a :
+     instantiate_nil, multiSignatureEnv, multiSignatureAtoms, MinEnv.ofAtomsGT,
+     St.init, World.empty, isEmbeddedOp, isVariableHeaded, headKey, finItem,
+     isFinal, finalPair, Std.HashMap.getD_emptyWithCapacity, hNotEmpty]
++  change ([(instantiate [] notReducibleA, ([] : Bindings))].filter
++    (fun p => p.1 != emptyA)) = _
++  rw [instantiate_nil]
++  rfl
+ 
+ private theorem multiSignature_eval_a :
+     mettaEval multiSignatureEnv 1 St.init [] (.sym "a") =
+@@ -330,8 +334,8 @@ private theorem multiSignature_eval_a_expected :
+   have hCast :
+       mettaTypeCast multiSignatureEnv St.init.world [] (.sym "a") (.sym "A") =
+         .inr [] := by
+-    rw [mettaTypeCast]
+-    simp only [St.init]
++    rw [mettaTypeCast, mettaTypeCastAvoiding]
++    simp only [St.init, List.nil_append]
+     rw [typePrep_empty_symbol, multiSignature_a_type]
+     rw [show freshenArgumentTypes
+       (typeCastInferenceAvoid multiSignatureEnv (.sym "a") (.sym "a")
+@@ -353,61 +357,17 @@ private theorem multiSignature_reduce_application :
+     MinEnv.ofAtomsGT, St.init, World.empty, isEmbeddedOp, isVariableHeaded,
+     headKey, finItem, isFinal, finalPair, callGrounded,
+     GroundingTable.lookup, Std.HashMap.getD_emptyWithCapacity, hNotEmpty]
++  change ([(instantiate [] notReducibleA, ([] : Bindings))].filter
++    (fun p => p.1 != emptyA)) = _
++  rw [instantiate_nil]
++  rfl
+ 
+ /-- Observable repair canary: the earlier applicable declaration is no longer masked by the later
+ incompatible declaration. -/
+ theorem mettaEval_uses_first_applicable_signature :
+     (mettaEval multiSignatureEnv 2 St.init [] applicationA).1 =
+       [(applicationA, [])] := by
+-  rw [mettaEval.eq_2, instantiate_nil]
+-  simp only [applicationA]
+-  have hSelection :
+-      selectFunctionType multiSignatureEnv St.init.world (.sym "f") [.sym "a"] =
+-        .selected ⟨arrowA, [.sym "A"], .sym "RA", []⟩ := by
+-    simpa [St.init] using multiSignature_selection
+-  rw [hSelection]
+-  simp only
+-  have hPolicies :
+-      argumentEvaluationPolicies
+-        ⟨arrowA, [.sym "A"], .sym "RA", []⟩ 1 =
+-        [(true, .sym "A")] := by
+-    have hAtom : ((.sym "A" : Atom) != .sym "Atom") = true := by rfl
+-    have hVariable : ((.sym "A" : Atom) != .sym "Variable") = true := by rfl
+-    have hExpression : ((.sym "A" : Atom) != .sym "Expression") = true := by rfl
+-    simp [argumentEvaluationPolicies, instantiate_nil,
+-      hAtom, hVariable, hExpression]
+-  have hReturn : returnsAtom ⟨arrowA, [.sym "A"], .sym "RA", []⟩ = false := by
+-    have hRA : ((.sym "RA" : Atom) == .sym "Atom") = false := by rfl
+-    simp [returnsAtom, instantiate_nil, hRA]
+-  change
+-    (prioritizeSemanticResults (evaluateExpectedApplication
+-      (fun nextSt nextBindings nextAtom nextExpected =>
+-        mettaEvalExpected multiSignatureEnv 1 nextSt nextBindings nextAtom
+-          nextExpected)
+-      (fun nextSt application =>
+-        interpretFuel multiSignatureEnv 2 nextSt
+-          [{ stack := atomToStack (.expr [.sym "eval", application]) [], bnd := [] }] [])
+-      St.init "f" [.sym "a"]
+-      ⟨arrowA, [.sym "A"], .sym "RA", []⟩)).1 =
+-        [(.expr [.sym "f", .sym "a"], [])]
+-  have hReduce :
+-      interpretFuel multiSignatureEnv 2 St.init
+-        [{ stack := atomToStack (.expr [.sym "eval", .expr [.sym "f", .sym "a"]]) [],
+-           bnd := [] }] [] = ([(notReducibleA, [])], St.init) := by
+-    simpa [applicationA] using multiSignature_reduce_application
+-  have hNotError : (.sym "a" : Atom).isError = false := by rfl
+-  have hSame : ((.sym "a" : Atom) != .sym "a") = false := by rfl
+-  have hNotReducibleSelf : (notReducibleA == notReducibleA) = true := by rfl
+-  have hMerge : Bindings.merge [] [] = [[]] := by rfl
+-  have hVars : (.sym "a" : Atom).vars = [] := by simp [Atom.vars]
+-  have hRestrict : restrictBnd [] [] = [] := by rfl
+-  have hApplicationNotError :
+-      (Atom.expr [Atom.sym "f", Atom.sym "a"]).isError = false := rfl
+-  simp [evaluateExpectedApplication, evaluateExpectedApplicationFrom,
+-    hPolicies, hReturn,
+-    multiSignature_eval_a_expected, hReduce, hNotError, hSame,
+-    hNotReducibleSelf, hMerge, hVars, hRestrict,
+-    hApplicationNotError, prioritizeSemanticResults]
++  cbv
+ 
+ /-! ## Published evaluation-boundary canaries -/
+ 
+diff --git a/book/lake-manifest.json b/book/lake-manifest.json
+index f0864dd4f7c3e39cd32dfea30440e272eefc4d01..aacc6100bfd08418f88eb1c8ebc8a4e666b8f1ff 100644
+--- a/book/lake-manifest.json
++++ b/book/lake-manifest.json
+@@ -5,17 +5,17 @@
+    "type": "git",
+    "subDir": null,
+    "scope": "",
+-   "rev": "b677415e8a0becccc0b850137c2d8f6205132a91",
++   "rev": "3bdedf29bada13d8103e6c979001c51dcee210c8",
+    "name": "verso",
+    "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
++   "inputRev": "3bdedf29bada13d8103e6c979001c51dcee210c8",
+    "inherited": false,
+    "configFile": "lakefile.lean"},
+   {"url": "https://github.com/leanprover/illuminate",
+    "type": "git",
+    "subDir": null,
+    "scope": "",
+-   "rev": "20b8493528eed2fac9827ce18d41c475f0e1c50a",
++   "rev": "6bc815869cba1f19515715dc6b47795acd521f1c",
+    "name": "illuminate",
+    "manifestFile": "lake-manifest.json",
+    "inputRev": "main",
+@@ -25,7 +25,7 @@
+    "type": "git",
+    "subDir": null,
+    "scope": "",
+-   "rev": "63045536fe95024e6c18fc7b48e03f506701c5bc",
++   "rev": "b7eb3304aeae834b12dda98993a37f6a41f6f0bb",
+    "name": "plausible",
+    "manifestFile": "lake-manifest.json",
+    "inputRev": "main",
+@@ -35,7 +35,7 @@
+    "type": "git",
+    "subDir": null,
+    "scope": "",
+-   "rev": "6a3fb240133bcb7e1a066fdc784b3fdc304e3fc5",
++   "rev": "31907cc18f48a95384f99cee5582c00fb39e0f67",
+    "name": "MD4Lean",
+    "manifestFile": "lake-manifest.json",
+    "inputRev": "main",
+@@ -45,12 +45,12 @@
+    "type": "git",
+    "subDir": null,
+    "scope": "",
+-   "rev": "0bd508e8362f56d4a05cbf63614d4c97db954041",
++   "rev": "3a75ede05278806fd3249bb0c97a6fb5777a4f7d",
+    "name": "subverso",
+    "manifestFile": "lake-manifest.json",
+    "inputRev": "main",
+    "inherited": true,
+    "configFile": "lakefile.lean"}],
+- "name": "«zipper-manual»",
++ "name": "leatta",
+  "lakeDir": ".lake",
+  "fixedToolchain": false}
+diff --git a/book/lakefile.toml b/book/lakefile.toml
+index 31c59a302cc75376c1b0dcbf34b8adb8d999c38b..47efa63234ad50b5700fcd9238b798c730db368e 100644
+--- a/book/lakefile.toml
++++ b/book/lakefile.toml
+@@ -7,7 +7,7 @@ defaultTargets = ["Docs", "docs"]
+ [[require]]
+ name = "verso"
+ git = "https://github.com/leanprover/verso"
+-rev = "v4.31.0"
++rev = "3bdedf29bada13d8103e6c979001c51dcee210c8"
+ 
+ [[lean_lib]]
+ name = "Docs"
+diff --git a/book/lean-toolchain b/book/lean-toolchain
+index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+--- a/book/lean-toolchain
++++ b/book/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.31.0
++leanprover/lean4:v4.33.1
+diff --git a/docbuild/lake-manifest.json b/docbuild/lake-manifest.json
+index 92cee47c32e719f95c069119dda0f238d8308b57..622342f28364d1ae60a29f372b53134c4a482096 100644
+--- a/docbuild/lake-manifest.json
++++ b/docbuild/lake-manifest.json
+@@ -1,153 +1,186 @@
+-{"version": "1.2.0",
+- "packagesDir": "../.lake/packages",
+- "packages":
+- [{"url": "https://github.com/leanprover/doc-gen4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover",
+-   "rev": "0bc516c1b9db83658d6475c40d9b1ed71219b921",
+-   "name": "«doc-gen4»",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": false,
+-   "configFile": "lakefile.lean"},
+-  {"type": "path",
+-   "scope": "",
+-   "name": "MettaHyperonFull",
+-   "manifestFile": "lake-manifest.json",
+-   "inherited": false,
+-   "dir": "..",
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover/leansqlite",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "0be4df908d1a8e75b58961041e2b4973692623df",
+-   "name": "leansqlite",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover/lean4-cli",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "92564e5770e4d09f2d86dfbf8ada1e9c715b384c",
+-   "name": "Cli",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/fgdorais/lean4-unicode-basic",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "a2e430a4c9d3ad24078b8581fe0162fc5b0c9a6c",
+-   "name": "UnicodeBasic",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/dupuisf/BibtexQuery",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "5d31b64fb703c5d77f6ef4d1fb958f9bdf1ea539",
+-   "name": "BibtexQuery",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "nightly-testing",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/acmepjz/md4lean",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "6a3fb240133bcb7e1a066fdc784b3fdc304e3fc5",
+-   "name": "MD4Lean",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/mathlib4.git",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "fabf563a7c95a166b8d7b6efca11c8b4dc9d911f",
+-   "name": "mathlib",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/plausible",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "63045536fe95024e6c18fc7b48e03f506701c5bc",
+-   "name": "plausible",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/LeanSearchClient",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "c5d5b8fe6e5158def25cd28eb94e4141ad97c843",
+-   "name": "LeanSearchClient",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/import-graph",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "5c7542ed018c78194f1e2b903eaf6a792b74c03d",
+-   "name": "importGraph",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/ProofWidgets4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "24b0d9dc081c5423f8eec7e866c441e5184f29d9",
+-   "name": "proofwidgets",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/aesop",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "e3cb2f741431ce31bf73549fb52316a57368b06f",
+-   "name": "aesop",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/quote4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "f46324995fca5f0483b742e4eb4daec7f4ee50d2",
+-   "name": "Qq",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/batteries",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fa08db58b30eb033edcdab331bba000827f9f785",
+-   "name": "batteries",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"}],
+- "name": "docbuild",
+- "lakeDir": ".lake",
+- "fixedToolchain": false}
++{
++  "version": "1.2.0",
++  "packagesDir": "../.lake/packages",
++  "packages": [
++    {
++      "url": "https://github.com/leanprover/doc-gen4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover",
++      "rev": "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015",
++      "name": "\u00abdoc-gen4\u00bb",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015",
++      "inherited": false,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "type": "path",
++      "scope": "",
++      "name": "MettaHyperonFull",
++      "manifestFile": "lake-manifest.json",
++      "inherited": false,
++      "dir": "..",
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover/leansqlite",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "0be4df908d1a8e75b58961041e2b4973692623df",
++      "name": "leansqlite",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover/lean4-cli",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover",
++      "rev": "6130a47896ce867c6a4a55373441e59e565bad0f",
++      "name": "Cli",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "v4.33.0",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/fgdorais/lean4-unicode-basic",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "a2e430a4c9d3ad24078b8581fe0162fc5b0c9a6c",
++      "name": "UnicodeBasic",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/dupuisf/BibtexQuery",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "5d31b64fb703c5d77f6ef4d1fb958f9bdf1ea539",
++      "name": "BibtexQuery",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "nightly-testing",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/acmepjz/md4lean",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "6a3fb240133bcb7e1a066fdc784b3fdc304e3fc5",
++      "name": "MD4Lean",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/mathlib4.git",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "name": "mathlib",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/plausible",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "b7eb3304aeae834b12dda98993a37f6a41f6f0bb",
++      "name": "plausible",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/LeanSearchClient",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "5f4d51b81cbd3f6b32b156bfad9056621a040404",
++      "name": "LeanSearchClient",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/import-graph",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "16f02aa7642864af59f1ff0e384a015994db9118",
++      "name": "importGraph",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/ProofWidgets4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4be2e3d5087eeb272cf5a8853b8f9dd025ef5957",
++      "name": "proofwidgets",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/aesop",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "3448c0bcc5ce01b2d1546e483ec3620e32df3d0e",
++      "name": "aesop",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/quote4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "92c15be17b7caf78c2ad767ec40f89052d908d81",
++      "name": "Qq",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/batteries",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4488d40d070b9700d4d5a6aa342f0d40c31b2a2d",
++      "name": "batteries",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    }
++  ],
++  "name": "docbuild",
++  "lakeDir": ".lake",
++  "fixedToolchain": false
++}
+diff --git a/docbuild/lakefile.toml b/docbuild/lakefile.toml
+index ad2a23a322e810190d2fd7da15e5cd39141989d9..beedb9e803b7b4259d814beccba3f4eb196e4450 100644
+--- a/docbuild/lakefile.toml
++++ b/docbuild/lakefile.toml
+@@ -20,4 +20,4 @@ path = ".."
+ [[require]]
+ scope = "leanprover"
+ name = "doc-gen4"
+-rev = "v4.31.0"
++rev = "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015"
+diff --git a/docbuild/lean-toolchain b/docbuild/lean-toolchain
+index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+--- a/docbuild/lean-toolchain
++++ b/docbuild/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.31.0
++leanprover/lean4:v4.33.1
+diff --git a/lake-manifest.json b/lake-manifest.json
+index dd02a4837ebb270841d49e80208f75a3d70a9b9c..c82bfb59f60aec086495c5750f157c6036de2130 100644
+--- a/lake-manifest.json
++++ b/lake-manifest.json
+@@ -1,96 +1,117 @@
+-{"version": "1.2.0",
+- "packagesDir": ".lake/packages",
+- "packages":
+- [{"url": "https://github.com/leanprover-community/mathlib4.git",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "fabf563a7c95a166b8d7b6efca11c8b4dc9d911f",
+-   "name": "mathlib",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": false,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/plausible",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "63045536fe95024e6c18fc7b48e03f506701c5bc",
+-   "name": "plausible",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/LeanSearchClient",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "c5d5b8fe6e5158def25cd28eb94e4141ad97c843",
+-   "name": "LeanSearchClient",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/import-graph",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "5c7542ed018c78194f1e2b903eaf6a792b74c03d",
+-   "name": "importGraph",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/ProofWidgets4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "24b0d9dc081c5423f8eec7e866c441e5184f29d9",
+-   "name": "proofwidgets",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/aesop",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "e3cb2f741431ce31bf73549fb52316a57368b06f",
+-   "name": "aesop",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/quote4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "f46324995fca5f0483b742e4eb4daec7f4ee50d2",
+-   "name": "Qq",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/batteries",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fa08db58b30eb033edcdab331bba000827f9f785",
+-   "name": "batteries",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover/lean4-cli",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover",
+-   "rev": "92564e5770e4d09f2d86dfbf8ada1e9c715b384c",
+-   "name": "Cli",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"}],
+- "name": "MettaHyperonFull",
+- "lakeDir": ".lake",
+- "fixedToolchain": false}
++{
++  "version": "1.2.0",
++  "packagesDir": ".lake/packages",
++  "packages": [
++    {
++      "url": "https://github.com/leanprover-community/mathlib4.git",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "name": "mathlib",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "inherited": false,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/plausible",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "b7eb3304aeae834b12dda98993a37f6a41f6f0bb",
++      "name": "plausible",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/LeanSearchClient",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "5f4d51b81cbd3f6b32b156bfad9056621a040404",
++      "name": "LeanSearchClient",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/import-graph",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "16f02aa7642864af59f1ff0e384a015994db9118",
++      "name": "importGraph",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/ProofWidgets4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4be2e3d5087eeb272cf5a8853b8f9dd025ef5957",
++      "name": "proofwidgets",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/aesop",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "3448c0bcc5ce01b2d1546e483ec3620e32df3d0e",
++      "name": "aesop",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/quote4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "92c15be17b7caf78c2ad767ec40f89052d908d81",
++      "name": "Qq",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/batteries",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4488d40d070b9700d4d5a6aa342f0d40c31b2a2d",
++      "name": "batteries",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover/lean4-cli",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover",
++      "rev": "6130a47896ce867c6a4a55373441e59e565bad0f",
++      "name": "Cli",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "v4.33.0",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    }
++  ],
++  "name": "MettaHyperonFull",
++  "lakeDir": ".lake",
++  "fixedToolchain": false
++}
+diff --git a/lakefile.lean b/lakefile.lean
+index 72d0687a989bce0545ef6a328d3876f7cfbaf221..ea7df3efa6e9fcf97073df01cca6922c74d8212f 100644
+--- a/lakefile.lean
++++ b/lakefile.lean
+@@ -11,11 +11,11 @@ package «MettaHyperonFull» where
+ 
+ -- Mathlib backs the *metatheory layer only* (Multiset, Relation.ReflTransGen, order and
+ -- decidability infrastructure, aesop). Pinned to the release whose toolchain matches ours
+--- (leanprover/lean4:v4.31.0). The executable kernel deliberately does not import it:
++-- (leanprover/lean4:v4.33.1). The executable kernel deliberately does not import it:
+ -- Multiset/Finset/Real are noncomputable, so the interpreter that must `lake exe` stays on
+ -- List / Std.HashMap. This split is about computability, not dependency purity.
+ require mathlib from git
+-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0"
++  "https://github.com/leanprover-community/mathlib4.git" @ "0df444a360eaa60ab8c11dca51a86af692955474"
+ 
+ @[default_target]
+ lean_lib «MettaHyperonFull» where
+diff --git a/lean-toolchain b/lean-toolchain
+index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+--- a/lean-toolchain
++++ b/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.31.0
++leanprover/lean4:v4.33.1

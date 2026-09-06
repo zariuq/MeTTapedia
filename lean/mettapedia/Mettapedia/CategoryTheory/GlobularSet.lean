@@ -140,10 +140,12 @@ def trueThreeCell : Cell 3 :=
 def falseThreeCellInFiber : tower.BoundaryFiber 2 twoCell twoCell := by
   refine ⟨falseThreeCell, ?_⟩
   simp [tower, boundary, twoCell]
+  rfl
 
 def trueThreeCellInFiber : tower.BoundaryFiber 2 twoCell twoCell := by
   refine ⟨trueThreeCell, ?_⟩
   simp [tower, boundary, twoCell]
+  rfl
 
 /-- A proof-history family displayed over the unique 2-cell.  Its two
 inhabitants model distinct receipts or derivations without turning those

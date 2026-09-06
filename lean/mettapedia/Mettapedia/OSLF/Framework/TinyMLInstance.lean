@@ -521,6 +521,7 @@ theorem fstPair_fires :
 
 /-! ## End-to-End Bridge (Checker → Fiber → PathSemClosed BC+Graph) -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- End-to-end TinyML bridge:
 
 `checkLangUsing` soundness at a concrete state is lifted to representable-fiber
@@ -668,6 +669,7 @@ theorem tinyML_commDiPathSemLiftPkg_of_liftEq
     Mettapedia.OSLF.Framework.CategoryBridge.commDiPathSemLiftPkg_of_liftEq
       tinyML tinyExpr seed q hLiftEq
 
+set_option backward.isDefEq.respectTransparency false in
 /-- No-`hPkg` wrapper: consumes a named TinyML `liftEq` law directly. -/
 theorem tinyML_checker_sat_to_pathSemClosed_commDi_bc_graph_of_liftEq
     {relEnv : RelationEnv}

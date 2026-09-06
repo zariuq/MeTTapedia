@@ -71,6 +71,7 @@ theorem rhoBreadthBaseRedexA_commonReification_preservesOccurrence :
   · rfl
   · decide
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The breadth Quote/Drop node's reified frame selects one source-variable
 atom for any complete value assignment. -/
 noncomputable def rhoBreadthBaseRedexA_canonicalAtomWitness
@@ -252,6 +253,7 @@ private def rhoForeignWrappedQuotePreimage :
   costStaticConstructorPreimage rhoCIGSLT .wrapped
     rhoForeignWrappedQuoteDeclared rhoForeignWrappedQuoteRole
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem rhoForeignWrappedDrop_notBare :
     ¬ UsesBareCollection
       rhoForeignWrappedDropPreimage.sourceConstructor.1 := by
@@ -260,6 +262,7 @@ private theorem rhoForeignWrappedDrop_notBare :
     UsesBareCollection, rhoCalc, TypeExpr.name, TypeExpr.proc,
     TypeExpr.baseType]
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem rhoForeignWrappedQuote_notBare :
     ¬ UsesBareCollection
       rhoForeignWrappedQuotePreimage.sourceConstructor.1 := by
@@ -327,6 +330,7 @@ private theorem rhoForeignBoundaryQuote_typed :
   · rw [rho_costWrappedQuoteConstructor_params]
     exact .cons (by trivial) rfl rhoBreadthLeftProcessNode.term.2.1 .nil
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem rhoForeignWrappedNameType :
     (.base (costBaseSortName "Name") : TypeExpr) =
       .base (CostStaticColor.wrapped.mapLangSort rhoCIGSLT rhoName).1 := by
@@ -396,6 +400,7 @@ noncomputable def rhoForeignBoundaryQuoteTree :
       rhoForeignBoundaryQuotePattern (.base (costBaseSortName "Name")) :=
   .static rhoForeignBoundaryQuoteNode rhoForeignBoundaryQuoteChildren
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The foreign-boundary shell closes through the generic one-environment
 boundary exposure, not through a fixture equality of final normal forms. -/
 noncomputable def rhoForeignBoundaryQuoteBridge :

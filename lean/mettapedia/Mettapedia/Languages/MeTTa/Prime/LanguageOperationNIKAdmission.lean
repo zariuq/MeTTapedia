@@ -255,8 +255,9 @@ theorem relevant_change_has_no_alignment :
     ¬ ∃ currentRevision,
       CommonCurrent dependencies (false, false) (true, false)
         currentRevision := by
-  rw [CommonCurrent.exists_iff_sameDependencies]
-  intro same
+  intro alignment
+  have same := (CommonCurrent.exists_iff_sameDependencies (dependencies := dependencies)
+    (earlierRevision := (false, false)) (laterRevision := (true, false))).mp alignment
   have changed := same ()
   simp [dependencies] at changed
 

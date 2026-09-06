@@ -579,9 +579,9 @@ theorem decodeRows_dbRelationEnv (db : MMDb) (info : TypecodeInfo) :
     unfold dbRelationEnv
     induction db.floats with
     | nil => rfl
-    | cons f fs _ =>
+    | cons f fs ih =>
         simp only [List.map_cons]
-        simp [encFloat, tokPattern, decodeFloatRow?, floatRow]
+        simpa [encFloat, tokPattern, decodeFloatRow?, floatRow] using ih
   · -- axiom leg
     show ((dbRelationEnv db info).tuples "mm-syn-ax" []).filterMap
           (decodeAxRow? (envVarTypecode? (dbRelationEnv db info)))

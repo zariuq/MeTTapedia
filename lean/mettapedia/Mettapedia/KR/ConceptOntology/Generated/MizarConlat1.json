@@ -177,5 +177,5 @@
       "preview": "theorem Th5: for C being FormalContext for O being Subset of the carrier of C holds O c= (AttributeDerivation(C)).((Obje"
     }
   ],
-  "source_path": "/home/zar/claude/mizar/share/mml/conlat_1.miz"
+  "source_path": "mml/conlat_1.miz"
 }

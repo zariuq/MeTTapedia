@@ -1,0 +1,335 @@
+diff --git a/OrderedSemigroups/SemigroupToGroup/MonoidToGroup.lean b/OrderedSemigroups/SemigroupToGroup/MonoidToGroup.lean
+index 3d1882aeb988e6a378ebf87952ea319c795321e8..370751499d14086c6382a2029233feb00571e8f5 100644
+--- a/OrderedSemigroups/SemigroupToGroup/MonoidToGroup.lean
++++ b/OrderedSemigroups/SemigroupToGroup/MonoidToGroup.lean
+@@ -36,12 +36,9 @@ abbrev over_one_map (α : Type*) [CommMonoid α] : α →* over_one α
+ 
+ omit [Pow α ℕ+] [PNatPowAssoc α] in
+ theorem over_one_map_inj : Function.Injective (over_one_map α) := by
+-  simp [Function.Injective]
+   intro a b hab
+-  simp [over_one_map, MonoidHom.mrangeRestrict,
+-    ←Localization.mk_one_eq_monoidOf_mk] at hab
+-  simp [Localization.mk_eq_mk_iff'] at hab
+-  trivial
++  apply Localization.mk_left_injective (1 : (⊤ : Submonoid α))
++  exact congrArg Subtype.val hab
+ 
+ noncomputable def iso_over_one : α ≃*o (over_one α) where
+   toFun := (Localization.monoidOf (⊤ : Submonoid α)).toMonoidHom.mrangeRestrict
+@@ -54,14 +51,16 @@ noncomputable def iso_over_one : α ≃*o (over_one α) where
+     simp [←Subtype.val_inj]
+     exact (over_one_map α x).prop.choose_spec
+   right_inv := by
+-    simp [Function.RightInverse, Function.LeftInverse]
+-    intro x y hyx
+-    set t : over_one α := ⟨x, ⟨y, hyx⟩⟩
+-    simp [MonoidHom.mrangeRestrict, t.prop.choose_spec, t]
++    intro x
++    apply Subtype.ext
++    exact x.prop.choose_spec
++
+   map_mul' := by simp
+   map_le_map_iff' := by
+-    simp [MonoidHom.mrangeRestrict, ←Localization.mk_one_eq_monoidOf_mk,
+-      Localization.mk_le_mk]
++    intro a b
++    change Localization.mk a (1 : (⊤ : Submonoid α)) ≤
++      Localization.mk b (1 : (⊤ : Submonoid α)) ↔ a ≤ b
++    simp [Localization.mk_le_mk]
+ 
+ instance : CommGroup (with_division α) :=
+   { (inferInstance : CommMonoid (with_division α)) with
+diff --git a/OrderedSemigroups/SemigroupToGroup/SemigroupToGroup.lean b/OrderedSemigroups/SemigroupToGroup/SemigroupToGroup.lean
+index c374c6fda7faf24e27f1611b0425eddc3cbfa6f5..28b8e5055376d628839ae9161f2134b4a813222c 100644
+--- a/OrderedSemigroups/SemigroupToGroup/SemigroupToGroup.lean
++++ b/OrderedSemigroups/SemigroupToGroup/SemigroupToGroup.lean
+@@ -102,12 +102,8 @@ theorem compose_subsemigroup {G M : Type u} [Monoid G] [Monoid M]
+       convert inv
+       simp [α_to_group]
+     right_inv := by
+-      simp [Function.RightInverse, Function.LeftInverse]
+-      intro x y hyx
+-      set img : α_to_group.srange := ⟨α_to_group y, by simp⟩
+-      have inv := (Subtype.coe_prop img).choose_spec
+-      convert inv
+-      <;> simp [img, hyx]
++      intro x
++      exact Subtype.ext (Subtype.coe_prop x).choose_spec
+     map_mul' := by intro x y; exact Subtype.ext (map_mul α_to_group x y)
+     map_le_map_iff' := by
+       intro a b
+@@ -146,12 +142,8 @@ theorem compose_subsemigroup' {G : Type*} {M : Type*} [Group G] [Group M]
+       convert inv
+       simp [α_to_group]
+     right_inv := by
+-      simp [Function.RightInverse, Function.LeftInverse]
+-      intro x y hyx
+-      set img : α_to_group.srange := ⟨α_to_group y, by simp⟩
+-      have inv := (Subtype.coe_prop img).choose_spec
+-      convert inv
+-      <;> simp [img, hyx]
++      intro x
++      exact Subtype.ext (Subtype.coe_prop x).choose_spec
+     map_mul' := by intro x y; exact Subtype.ext (map_mul α_to_group x y)
+     map_le_map_iff' := by
+       intro a b
+diff --git a/OrderedSemigroups/SemigroupToGroup/SemigroupToMonoid.lean b/OrderedSemigroups/SemigroupToGroup/SemigroupToMonoid.lean
+index 1100e4ab1bfd53921e5245c691ae1fd4b143994b..441de8e1be63bd88c4ecee88ad1719664ed4ff7f 100644
+--- a/OrderedSemigroups/SemigroupToGroup/SemigroupToMonoid.lean
++++ b/OrderedSemigroups/SemigroupToGroup/SemigroupToMonoid.lean
+@@ -39,8 +39,8 @@ def without_one (α : Type u) [Semigroup α] : Subsemigroup (WithOne α) where
+ noncomputable def iso_without_one : α ≃* without_one α where
+   toFun x := ⟨x, by simp [without_one]⟩
+   invFun x := WithOne.unone x.prop
+-  left_inv := by simp [Function.LeftInverse]
+-  right_inv := by simp [Function.RightInverse, Function.LeftInverse]
++  left_inv := fun _ => WithOne.unone_coe _
++  right_inv := fun x => Subtype.ext (WithOne.coe_unone x.prop)
+   map_mul' := by intro x y; rfl
+ 
+ end Semigroup
+diff --git a/lake-manifest.json b/lake-manifest.json
+index 8213822c518fb589213a51df9d22920179df7b77..9e2eda236af50440b6720343a2567d57b385a1f0 100644
+--- a/lake-manifest.json
++++ b/lake-manifest.json
+@@ -1,96 +1,117 @@
+-{"version": "1.2.0",
+- "packagesDir": ".lake/packages",
+- "packages":
+- [{"url": "https://github.com/leanprover-community/mathlib4.git",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "fabf563a7c95a166b8d7b6efca11c8b4dc9d911f",
+-   "name": "mathlib",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": false,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/plausible",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "63045536fe95024e6c18fc7b48e03f506701c5bc",
+-   "name": "plausible",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/LeanSearchClient",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "c5d5b8fe6e5158def25cd28eb94e4141ad97c843",
+-   "name": "LeanSearchClient",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/import-graph",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "5c7542ed018c78194f1e2b903eaf6a792b74c03d",
+-   "name": "importGraph",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/ProofWidgets4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "24b0d9dc081c5423f8eec7e866c441e5184f29d9",
+-   "name": "proofwidgets",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/aesop",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "e3cb2f741431ce31bf73549fb52316a57368b06f",
+-   "name": "aesop",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/quote4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "f46324995fca5f0483b742e4eb4daec7f4ee50d2",
+-   "name": "Qq",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/batteries",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fa08db58b30eb033edcdab331bba000827f9f785",
+-   "name": "batteries",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover/lean4-cli",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover",
+-   "rev": "92564e5770e4d09f2d86dfbf8ada1e9c715b384c",
+-   "name": "Cli",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"}],
+- "name": "ordered_semigroups",
+- "lakeDir": ".lake",
+- "fixedToolchain": false}
++{
++  "version": "1.2.0",
++  "packagesDir": ".lake/packages",
++  "packages": [
++    {
++      "url": "https://github.com/leanprover-community/mathlib4.git",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "name": "mathlib",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "inherited": false,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/plausible",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "b7eb3304aeae834b12dda98993a37f6a41f6f0bb",
++      "name": "plausible",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/LeanSearchClient",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "5f4d51b81cbd3f6b32b156bfad9056621a040404",
++      "name": "LeanSearchClient",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/import-graph",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "16f02aa7642864af59f1ff0e384a015994db9118",
++      "name": "importGraph",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/ProofWidgets4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4be2e3d5087eeb272cf5a8853b8f9dd025ef5957",
++      "name": "proofwidgets",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/aesop",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "3448c0bcc5ce01b2d1546e483ec3620e32df3d0e",
++      "name": "aesop",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/quote4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "92c15be17b7caf78c2ad767ec40f89052d908d81",
++      "name": "Qq",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/batteries",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4488d40d070b9700d4d5a6aa342f0d40c31b2a2d",
++      "name": "batteries",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover/lean4-cli",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover",
++      "rev": "6130a47896ce867c6a4a55373441e59e565bad0f",
++      "name": "Cli",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "v4.33.0",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    }
++  ],
++  "name": "ordered_semigroups",
++  "lakeDir": ".lake",
++  "fixedToolchain": false
++}
+diff --git a/lakefile.lean b/lakefile.lean
+index d48d7ed543fa690eceb059f427fc3a09a0178411..9a8e0ab24a9dcb671a1154a8efe43677a4a77c1e 100644
+--- a/lakefile.lean
++++ b/lakefile.lean
+@@ -9,7 +9,7 @@ package «ordered_semigroups» where
+   -- add any additional package configuration options here
+ 
+ require mathlib from git
+-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0"
++  "https://github.com/leanprover-community/mathlib4.git" @ "0df444a360eaa60ab8c11dca51a86af692955474"
+ 
+ @[default_target]
+ lean_lib «OrderedSemigroups» where
+@@ -20,4 +20,4 @@ require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"
+ 
+ meta if get_config? env = some "dev" then
+ require «doc-gen4» from git
+-  "https://github.com/leanprover/doc-gen4" @ "main"
++  "https://github.com/leanprover/doc-gen4" @ "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015"
+diff --git a/lean-toolchain b/lean-toolchain
+index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+--- a/lean-toolchain
++++ b/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.31.0
++leanprover/lean4:v4.33.1

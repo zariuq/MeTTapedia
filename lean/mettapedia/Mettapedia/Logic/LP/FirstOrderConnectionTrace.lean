@@ -1332,7 +1332,7 @@ theorem fo_unsat_ground :
       unifyComplementLit? (σ := foFixtureSig) uFuel fo_lit_pos_a fo_lit_neg_a = some θ := by
     unfold unifyComplementLit? unifyAtoms
     simp [fo_lit_pos_a, fo_lit_neg_a, fo_atomP]
-    exact hU
+    exact ⟨rfl, hU⟩
   have hDer : TraceDerivableFO fo_unsat_ground_clauses uFuel
       fo_unsat_ground_root [] [.step_extend fo_unsat_ground_c2 fo_lit_neg_a] := by
     have hErase : fo_unsat_ground_c2.erase fo_lit_neg_a = [] := by
@@ -1365,6 +1365,7 @@ theorem fo_unsat_unify :
       simpa [finPairsToList, fo_tX, fo_tFa, fo_tA] using hp
     subst hp'
     simp [δ, Subst.single, Subst.applyTerm, fo_tX, fo_tFa, fo_tA]
+    rfl
   rcases unifyFuel_exists_of_unifies
       (eqs := finPairsToList (fun _ : Fin 1 => fo_tX) (fun _ : Fin 1 => fo_tFa))
       ⟨δ, hUnifies⟩ with ⟨uFuel, θ, hU⟩
@@ -1372,7 +1373,7 @@ theorem fo_unsat_unify :
       unifyComplementLit? (σ := foFixtureSig) uFuel fo_lit_pos_x fo_lit_neg_fa = some θ := by
     unfold unifyComplementLit? unifyAtoms
     simp [fo_lit_pos_x, fo_lit_neg_fa, fo_atomP]
-    exact hU
+    exact ⟨rfl, hU⟩
   have hDer : TraceDerivableFO fo_unsat_unify_clauses uFuel
       fo_unsat_unify_root [] [.step_extend fo_unsat_unify_c2 fo_lit_neg_fa] := by
     have hErase : fo_unsat_unify_c2.erase fo_lit_neg_fa = [] := by

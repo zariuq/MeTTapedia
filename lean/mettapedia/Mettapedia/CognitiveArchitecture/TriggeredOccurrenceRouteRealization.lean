@@ -242,6 +242,7 @@ theorem generatedPrefix_length (depth : Nat) :
     (generatedPrefix depth).length = depth := by
   simp [generatedPrefix, Codec.realizeRoute, checkedPrefix,
     checked_occurrence_count]
+  exact checked_occurrence_count depth
 
 /-- Every generated prefix member is genuine authored work and is selected
 within the existing bounded generated-work schedule. -/

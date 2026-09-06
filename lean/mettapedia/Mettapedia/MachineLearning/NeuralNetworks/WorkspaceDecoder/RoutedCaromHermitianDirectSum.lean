@@ -269,7 +269,6 @@ theorem internalDirectSumEquiv_intertwines
       (transition.comp
         (DFinsupp.lsum ℕ fun index => (summand index).subtype)) state
   rw [naturality]
-  rfl
 
 #print axioms internalDirectSumEquiv_intertwines
 

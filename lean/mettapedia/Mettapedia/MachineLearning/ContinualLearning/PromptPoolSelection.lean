@@ -247,7 +247,7 @@ theorem selectionCost_frequencyWeightedCost_uniform
   rw [Finset.mul_sum]
   apply Finset.sum_congr rfl
   intro prompt _
-  ring
+  exact mul_comm _ _
 
 /-- Multiplication of every prompt cost by the same positive scale preserves
 the complete set of minimizers. -/

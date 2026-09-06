@@ -338,11 +338,19 @@ inductive Candidate where
   | adequate
   | wrongOnly
   | inconsistent
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype Candidate where
+  elems := {.noCommitments, .adequate, .wrongOnly, .inconsistent}
+  complete value := by cases value <;> simp
 
 inductive Obligation where
   | rulesOutFalse
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype Obligation where
+  elems := {.rulesOutFalse}
+  complete value := by cases value <;> simp
 
 def models : Candidate → Finset Bool
   | .noCommitments => Finset.univ
@@ -428,7 +436,11 @@ namespace BennettOckhamCanary
 inductive Candidate where
   | weakLong
   | strongShort
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype Candidate where
+  elems := {.weakLong, .strongShort}
+  complete value := by cases value <;> simp
 
 def completions : Candidate → Finset Bool
   | .weakLong => Finset.univ

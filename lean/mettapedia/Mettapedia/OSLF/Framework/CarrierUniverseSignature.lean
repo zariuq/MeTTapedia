@@ -196,7 +196,7 @@ theorem language_validate (source : ValidatedLanguageDef) :
   · change source.language.typeNames.Nodup
     exact LanguageDef.typeNames_nodup_of_validate_eq_nil
       source.language source.valid
-  · simpa [language] using termLabels_nodup source
+  · exact termLabels_nodup source
   · intro term membership
     change term.category ∈ source.language.typeNames
     change term ∈ terms source at membership

@@ -288,7 +288,11 @@ theorem wmStep_complete {s : WMSort} (t₁ : WMTerm s) (q : Pattern) :
   obtain ⟨fuel, bounded⟩ := h
   cases bounded with
   | @rule _ _ _ r bs bs' hr hmatch hprem happly =>
-    simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule] at hmatch
+    simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?] at hmatch
     simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule] at happly
   -- r must be one of the 5 core rules
     simp [wmCoreLanguageDef, coreRules] at hr

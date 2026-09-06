@@ -224,6 +224,7 @@ theorem inducedWeightGradient_old_firstOrderInterference_eq_zero
 
 /-! ## Positive and negative executable fixtures -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- A one-row adapter selecting the second coordinate preserves the first
 coordinate's activation exactly while remaining live on the second. -/
 theorem secondAxis_preserves_first_and_updates_second :
@@ -260,6 +261,7 @@ theorem zeroDown_erases_induced_gradient
       0 := by
   simp [inducedWeightGradient, outputFactorGradient]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Without row orthonormality, `downᵀ * down` need not be a projector and
 can amplify rather than merely project a dense gradient. -/
 theorem scalar_nonorthonormal_down_amplifies_by_four :

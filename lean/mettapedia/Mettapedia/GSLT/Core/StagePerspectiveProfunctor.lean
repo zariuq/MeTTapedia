@@ -135,14 +135,12 @@ def stageToShadowSection
       naturality := by
         intro first second perspectiveMap
         ext element
-        simpa [terminalProfunctor, stagePerspectiveProfunctor] using
-          (chart.stageToShadow_natural_perspective
-            stage.unop perspectiveMap).symm }
+        exact (chart.stageToShadow_natural_perspective
+          stage.unop perspectiveMap).symm }
   naturality := by
     intro first second stageMap
     ext perspective element
-    simpa [terminalProfunctor, stagePerspectiveProfunctor] using
-      (chart.stageToShadow_natural_stage stageMap.unop perspective).symm
+    exact (chart.stageToShadow_natural_stage stageMap.unop perspective).symm
 
 /-- Evaluating the coherent section recovers the original composite through
 the ambient object. -/

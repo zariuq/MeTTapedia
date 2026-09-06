@@ -153,6 +153,22 @@ def productSigmaComprehensionIso (Γ A : Type w) :
     rcases point with ⟨context, value⟩
     rfl
 
+instance simpleFamiliesTypeOverCategory (Γ : Type w) :
+    Category.{w} (TypeOver (SimpleFamiliesCwf.{w}) Γ) :=
+  TypeOver.instCategory (C := SimpleFamiliesCwf.{w}) (Γ := Γ)
+
+local instance (Γ : Type w) :
+    Category.{w} (TypeOver (familiesCwf.{w}) Γ) :=
+  TypeOver.instCategory (C := familiesCwf.{w}) (Γ := Γ)
+
+instance simpleFamiliesTerminalTypeOverCategory (Γ : Type w) :
+    Category.{w} (TypeOver (SimpleFamiliesCwfWithTerminal.{w}).toCwf Γ) :=
+  TypeOver.instCategory (C := SimpleFamiliesCwfWithTerminal.toCwf) (Γ := Γ)
+
+local instance (Γ : Type w) :
+    Category.{w} (TypeOver (familiesCwfWithTerminal.{w}).toCwf Γ) :=
+  TypeOver.instCategory (C := familiesCwfWithTerminal.toCwf) (Γ := Γ)
+
 /-- Translate a display map between simple types into the corresponding
 display map between constant dependent families. -/
 def simpleToDependentArrow {Γ : Type w}
@@ -195,6 +211,7 @@ def dependentToSimpleArrow {Γ : Type w}
       funext point
       exact congrFun arrow.over ⟨point.1, point.2⟩ }
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Constant-family inclusion is fully faithful at every context.  It loses
 no display maps between types already in the simple image. -/
 def simpleToDependentTypeFunctorFullyFaithful (Γ : Type w) :
@@ -268,6 +285,7 @@ def simpleToDependentSubstitutionIso
     (fun _ => Iso.refl _)
     (fun arrow => simpleToDependentArrow_reindex substitution arrow)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The fibrewise fully faithful inclusions and their substitution
 comparisons assemble into a strong transformation of indexed type
 categories. -/
@@ -292,6 +310,7 @@ def simpleToDependentFamilyTransformation :
 
 /-! ## The pseudo-CwF profile inclusion -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The canonical simply typed families profile embeds into the dependent
 families profile as a pseudo CwF morphism.  Its base action is the identity,
 its fibre action is constant-family inclusion, and its comprehension
@@ -316,6 +335,7 @@ def simpleToDependentPseudoMorphism :
     rcases point with ⟨context, value⟩
     rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The profile inclusion sends every simple type to the corresponding
 constant family. -/
 @[simp]
@@ -325,11 +345,13 @@ theorem simpleToDependentPseudoMorphism_mapType
         (Γ := Γ) A = constantFamily A :=
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Its action on every type fibre is fully faithful. -/
 def simpleToDependentPseudoMorphism_fibreFullyFaithful (Γ : Type w) :
     (simpleToDependentPseudoMorphism.mapTypeFunctor Γ).FullyFaithful :=
   simpleToDependentTypeFunctorFullyFaithful Γ
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Negative control: the pseudo-CwF inclusion remains a proper fragment;
 the varying Boolean family is not in its object image. -/
 theorem varyingBoolFamily_not_in_pseudoMorphism_image :
@@ -348,6 +370,7 @@ def unitypedToDependentPseudoMorphism (V : Type w) :
   (unitypedToSimplePseudoMorphism V).comp
     simpleToDependentPseudoMorphism
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Along the composite comparison, the implicit unityped sort becomes the
 constant dependent family with fibre `V`. -/
 @[simp]

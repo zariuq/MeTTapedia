@@ -170,10 +170,10 @@ theorem exists_leaf_face {faces : Finset (Finset E)}
     constructor
     · intro hg
       rcases Finset.mem_filter.mp hg with ⟨hgE, hP⟩
-      exact Finset.mem_filter.mpr ⟨hgE, by simpa using hP⟩
+      exact Finset.mem_filter.mpr ⟨hgE, hP⟩
     · intro hg
       rcases Finset.mem_filter.mp hg with ⟨hgE, hP⟩
-      exact Finset.mem_filter.mpr ⟨hgE, by simpa using hP⟩
+      exact Finset.mem_filter.mpr ⟨hgE, hP⟩
   simpa [FiniteRelation.degreeOn, hfilter] using hleaf
 
 /-- Trivial but useful variant: in any nonempty finite family of faces, there exists

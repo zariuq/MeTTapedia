@@ -134,9 +134,9 @@ theorem finiteVolumeQueryMass_le_partition
   unfold finiteVolumeQueryMass InfiniteGroundMLNSpec.finiteVolumePartition
   refine Finset.sum_le_sum ?_
   intro x hx
-  by_cases hsat : satisfiesConstraints x q
-  · simp [hsat]
-  · simp [hsat]
+  split
+  · exact le_refl _
+  · exact zero_le
 
 theorem finiteVolumePartition_ne_top
     {Atom ClauseId : Type*} [DecidableEq Atom] [DecidableEq ClauseId]

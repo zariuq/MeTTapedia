@@ -56,8 +56,9 @@ theorem rhoIntrinsicRewritePathTrace_ticks_eq_length
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
     traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
       (rhoIntrinsicRewritePathTrace path) 1 = path.length := by
-  rw [rhoIntrinsicRewritePathTrace, traceAccount_rewritePathTrace]
-  exact rhoIntrinsicTotalCost_ticks_eq_length path
+  exact (congrArg (fun cost => cost 1)
+    (rhoIntrinsicRewritePathTraceAccount_eq_totalCost path)).trans
+    (rhoIntrinsicTotalCost_ticks_eq_length path)
 
 theorem rhoIntrinsicLedgerTotalAction_shadow_eq_traceAccount
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :

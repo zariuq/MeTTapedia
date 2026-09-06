@@ -36,6 +36,11 @@ open Mettapedia.TypeTheory.OperationalIntensionalExtensionalSemanticThinness
 universe w v uBase u
 universe uSource vSource uTarget vTarget uFamily
 
+local instance (context : Cat.{u, u + 1})
+    (family : context ⟶ Cat.of (Type u)) :
+    Category.{u} family.toFunctor.Elements :=
+  CategoryTheory.categoryOfElements family.toFunctor
+
 /-! ## Universe-polymorphic action on natural sections -/
 
 /-- Map a natural section along a morphism of covariant families. -/
@@ -252,6 +257,7 @@ def reindexTerm (semantics : B ⥤ᵖ Cat.{u, u + 1})
     TermAt semantics ((reindexing semantics path).obj family) :=
   restrictSection (semantics.map path).toFunctor term
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The semantic identity comparison transports restriction along an
 identity modality back to the original term. -/
 theorem reindexTerm_identity_coherence
@@ -266,6 +272,7 @@ theorem reindexTerm_identity_coherence
     (semantics.mapId mode).hom.toNatTrans term
   simpa [reindexTerm] using action
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The semantic composition comparison identifies one-step restriction
 along a composite modality with successive restriction along its factors. -/
 theorem reindexTerm_composition_coherence
@@ -282,9 +289,9 @@ theorem reindexTerm_composition_coherence
   apply (Functor.sections_ext_iff).2
   intro point
   change
-    TypeCat.Hom.hom
+    (TypeCat.Hom.hom
         (family.toFunctor.map
-          ((semantics.mapComp earlier later).hom.toNatTrans.app point))
+          ((semantics.mapComp earlier later).hom.toNatTrans.app point))).toFun
         (term.1 ((semantics.map (earlier ≫ later)).toFunctor.obj point)) =
       term.1
         ((semantics.map later).toFunctor.obj
@@ -330,6 +337,7 @@ theorem modeCellTermAction_reindex
   exact restrictSection_action
     (semantics.map₂ cell).toNatTrans term
 
+set_option backward.isDefEq.respectTransparency false in
 /-- A semantic mode 2-cell induces a functor between the corresponding
 reindexed comprehensions. -/
 def modeCellComprehensionAction
@@ -340,6 +348,7 @@ def modeCellComprehensionAction
       ((reindexing semantics second).obj family).toFunctor.Elements :=
   elementsAction (modeCellFamilyAction semantics cell family)
 
+set_option backward.isDefEq.respectTransparency false in
 @[simp] theorem modeCellComprehensionAction_projection
     (semantics : B ⥤ᵖ Cat.{u, u + 1})
     {source target : B} {first second : source ⟶ target}
@@ -351,6 +360,7 @@ def modeCellComprehensionAction
         ((reindexing semantics first).obj family).toFunctor :=
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The last variable is coherent under the comprehension action of a
 semantic mode 2-cell. -/
 theorem modeCellComprehensionAction_lastVariable
@@ -401,6 +411,7 @@ theorem factorTermAction_reindex
   modeCellTermAction_reindex
     thinSemanticPseudofunctor.{u} factorForward family term
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The factor comparison also induces the coherent functor between the two
 operational comprehensions. -/
 def factorComprehensionAction
@@ -420,6 +431,7 @@ theorem factorComprehensionAction_eq_iso_action
         (factorReindexingIso.{u}.hom.app family).toNatTrans :=
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 @[simp] theorem factorComprehensionAction_projection
     (family : SelectedFamily.{u} extensional) :
     factorComprehensionAction family ⋙
@@ -429,6 +441,7 @@ theorem factorComprehensionAction_eq_iso_action
         ((selectedReindexing.{u} evidenceReadout).obj family).toFunctor :=
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The factor comparison transports the last variable coherently between
 the two operational comprehensions. -/
 theorem factorComprehensionAction_lastVariable
@@ -446,6 +459,7 @@ theorem factorComprehensionAction_lastVariable
   modeCellComprehensionAction_lastVariable
     thinSemanticPseudofunctor.{u} factorForward family
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Term and comprehension coherence coexist with non-equality of the two
 authored modality paths. -/
 theorem factor_term_comprehension_noncollapse :

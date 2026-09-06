@@ -213,16 +213,14 @@ def leftRevision : CurrentProtectedRevision completeProfile completeProfile
   modification := identityModification .leftFork
   lineage := equalStateFork.parent_of_left
   receipt := leftReceipt
-  current := by
-    simp [IssuedReceipt.CurrentAt, leftReceipt]
+  current := by rfl
 
 def rightRevision : CurrentProtectedRevision completeProfile completeProfile
     RevisionProof discipline parent equalStateFork.right where
   modification := identityModification .rightFork
   lineage := equalStateFork.parent_of_right
   receipt := rightReceipt
-  current := by
-    simp [IssuedReceipt.CurrentAt, rightReceipt]
+  current := by rfl
 
 /-- Positive fork control: both equal-state children retain independently
 source-scoped, current protected-family evidence. -/
@@ -249,8 +247,7 @@ def mergeRevision : CurrentProtectedRevision completeProfile completeProfile
   modification := identityModification .mergeStep
   lineage := mergeCopies.left_parent
   receipt := mergeReceipt
-  current := by
-    simp [IssuedReceipt.CurrentAt, mergeReceipt]
+  current := by rfl
 
 /-- Sequential transport reaches the merge child while keeping the fork and
 merge receipts separately current. -/

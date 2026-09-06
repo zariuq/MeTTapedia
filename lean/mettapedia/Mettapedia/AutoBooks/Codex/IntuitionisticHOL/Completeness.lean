@@ -166,7 +166,7 @@ theorem deterministicAdditionCompatible_trueAnd_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
-  rfl
+
 
 theorem deterministicAdditionCompatible_falseOr_iff
     (S : SaturationSearchState Const Γ)
@@ -177,7 +177,7 @@ theorem deterministicAdditionCompatible_falseOr_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
-  rfl
+
 
 theorem deterministicAdditionCompatible_trueAll_iff
     (S : SaturationSearchState Const Γ)
@@ -187,7 +187,7 @@ theorem deterministicAdditionCompatible_trueAll_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
-  rfl
+
 
 theorem deterministicAdditionCompatible_falseAllWitness_iff
     (S : SaturationSearchState Const Γ)
@@ -197,7 +197,7 @@ theorem deterministicAdditionCompatible_falseAllWitness_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
-  rfl
+
 
 theorem deterministicAdditionCompatible_trueExWitness_iff
     (S : SaturationSearchState Const Γ)
@@ -207,7 +207,7 @@ theorem deterministicAdditionCompatible_trueExWitness_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
-  rfl
+
 
 theorem deterministicAdditionCompatible_falseEx_iff
     (S : SaturationSearchState Const Γ)
@@ -217,7 +217,7 @@ theorem deterministicAdditionCompatible_falseEx_iff
   simp [DeterministicAdditionCompatible, DeterministicLocalSaturationStep.additions,
     DeterministicLocalSaturationStep.toLocalSaturationStep, LocalSaturationStep.additions,
     SignedFormula.flip, Sign.flip]
-  rfl
+
 
 theorem branchAdditionCompatible_iff_of_singleton_addition
     (S : SaturationSearchState Const Γ)
@@ -328,7 +328,7 @@ theorem branchAdditionCompatible_falseAndLeft_iff
   rw [branchAdditionCompatible_iff_of_singleton_addition
     (S := S) (r := r) (sf := (Sign.falseE, φ))]
   · simp [SignedFormula.flip, Sign.flip]
-    rfl
+
   · simp [hstep, LocalSaturationStep.additions]
 
 theorem branchAdditionCompatible_falseAndRight_iff
@@ -340,7 +340,7 @@ theorem branchAdditionCompatible_falseAndRight_iff
   rw [branchAdditionCompatible_iff_of_singleton_addition
     (S := S) (r := r) (sf := (Sign.falseE, ψ))]
   · simp [SignedFormula.flip, Sign.flip]
-    rfl
+
   · simp [hstep, LocalSaturationStep.additions]
 
 theorem branchAdditionCompatible_trueOrLeft_iff
@@ -352,7 +352,7 @@ theorem branchAdditionCompatible_trueOrLeft_iff
   rw [branchAdditionCompatible_iff_of_singleton_addition
     (S := S) (r := r) (sf := (Sign.trueE, φ))]
   · simp [SignedFormula.flip, Sign.flip]
-    rfl
+
   · simp [hstep, LocalSaturationStep.additions]
 
 theorem branchAdditionCompatible_trueOrRight_iff
@@ -364,7 +364,7 @@ theorem branchAdditionCompatible_trueOrRight_iff
   rw [branchAdditionCompatible_iff_of_singleton_addition
     (S := S) (r := r) (sf := (Sign.trueE, ψ))]
   · simp [SignedFormula.flip, Sign.flip]
-    rfl
+
   · simp [hstep, LocalSaturationStep.additions]
 
 /-- Consume a chosen focused agenda item by removing exactly that target and
@@ -2116,24 +2116,6 @@ theorem true_mem_initialClosedHintikka_iff
       φ = (.top : Formula Const Γ) ∨ φ ∈ F.antecedents := by
   simp [initialHintikkaSet, toHintikkaGoal, HintikkaGoal.toHintikkaSet,
     HintikkaGoal.signedFormulas, HintikkaSet.close]
-  constructor
-  · intro h
-    rcases List.mem_cons.mp h with hTop | hRest
-    · cases hTop
-      exact Or.inl rfl
-    rcases List.mem_cons.mp hRest with hFalseBot | hTail
-    · cases hFalseBot
-    rcases List.mem_append.mp hTail with hMap | hSucc
-    · rcases List.mem_map.mp hMap with ⟨ψ, hψ, hEq⟩
-      cases hEq
-      exact Or.inr hψ
-    · rcases List.mem_singleton.mp hSucc with hEq
-      cases hEq
-  · rintro (rfl | hφ)
-    · exact List.mem_cons_self
-    · exact List.mem_cons_of_mem _ <|
-        List.mem_cons_of_mem _ <|
-          List.mem_append.mpr (Or.inl (List.mem_map.mpr ⟨φ, hφ, rfl⟩))
 
 theorem false_mem_initialClosedHintikka_iff
     (F : CompletenessFrontier Const Γ)
@@ -2142,24 +2124,6 @@ theorem false_mem_initialClosedHintikka_iff
       φ = (.bot : Formula Const Γ) ∨ φ = F.succedent := by
   simp [initialHintikkaSet, toHintikkaGoal, HintikkaGoal.toHintikkaSet,
     HintikkaGoal.signedFormulas, HintikkaSet.close]
-  constructor
-  · intro h
-    rcases List.mem_cons.mp h with hTrueTop | hRest
-    · cases hTrueTop
-    rcases List.mem_cons.mp hRest with hBot | hTail
-    · cases hBot
-      exact Or.inl rfl
-    rcases List.mem_append.mp hTail with hMap | hSucc
-    · rcases List.mem_map.mp hMap with ⟨ψ, _hψ, hEq⟩
-      cases hEq
-    · rcases List.mem_singleton.mp hSucc with hEq
-      cases hEq
-      exact Or.inr rfl
-  · rintro (rfl | rfl)
-    · exact List.mem_cons_of_mem _ List.mem_cons_self
-    · exact List.mem_cons_of_mem _ <|
-        List.mem_cons_of_mem _ <|
-          List.mem_append.mpr (Or.inr (List.mem_singleton_self (Sign.falseE, F.succedent)))
 
 theorem initialHintikkaSet_close_noncontradictory_iff
     (F : CompletenessFrontier Const Γ) :

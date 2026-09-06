@@ -27,7 +27,11 @@ open Mettapedia.KR.ConceptGeometry.AbstractInheritance
 inductive CaseStudy where
   | returningWallet
   | betrayal
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype CaseStudy where
+  elems := {.returningWallet, .betrayal}
+  complete value := by cases value <;> simp
 
 def yes : BinaryEvidence := ⟨1, 0⟩
 

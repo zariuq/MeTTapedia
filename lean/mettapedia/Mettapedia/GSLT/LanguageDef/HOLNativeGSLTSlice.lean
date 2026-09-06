@@ -324,19 +324,15 @@ private theorem all_eq_mapped_all {α : Type} (values : List α)
       rw [List.all_cons, List.map_cons, List.all_cons, ih]
       rfl
 
-set_option maxHeartbeats 4000000 in
-private theorem holLightRewriteValid :
-    ∀ rewrite ∈ holLightNativeSlice.rewrites,
-      LanguageDef.validateRewrite holLightNativeSlice rewrite = [] := by
-  intro rewrite hrewrite
-  simp only [holLightNativeSlice, sideRewrites, holLightRewrites,
-    List.mem_append, List.mem_cons, List.mem_nil_iff, or_false] at hrewrite
-  rcases hrewrite with
-    (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl) |
-    (rfl | rfl | rfl)
-  all_goals
+section RewriteValidation
+
+set_option maxHeartbeats 4000000
+set_option maxRecDepth 100000
+
+local macro "check_holLightRewriteValid_row" : tactic =>
+  `(tactic|
     simp (config := { maxSteps := 300000 })
-      [LanguageDef.validateRewrite, holLightNativeSlice, commonTypes,
+      [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff, holLightNativeSlice, commonTypes,
       commonDataTerms, sideProofTerms, holLightProofTerms, sideRewrites,
       holLightRewrites, termCtor, ty, rw, check, ok, validTypeEvidence,
       hasTypeEvidence, isBoolEvidence, validHypsEvidence, alphaEqEvidence,
@@ -350,21 +346,77 @@ private theorem holLightRewriteValid :
       LanguageDef.patternBinderNames, Pattern.constructorRefs,
       Pattern.constructorRefsList,
       Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
-      Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain]
+      Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain])
 
-set_option maxHeartbeats 4000000 in
-private theorem hol4RewriteValid :
-    ∀ rewrite ∈ hol4NativeSlice.rewrites,
-      LanguageDef.validateRewrite hol4NativeSlice rewrite = [] := by
+private theorem holLightRewriteValid_row_0 :
+    LanguageDef.validateRewrite holLightNativeSlice holLightNativeSlice.rewrites[0] = [] := by
+  check_holLightRewriteValid_row
+
+private theorem holLightRewriteValid_row_1 :
+    LanguageDef.validateRewrite holLightNativeSlice holLightNativeSlice.rewrites[1] = [] := by
+  check_holLightRewriteValid_row
+
+private theorem holLightRewriteValid_row_2 :
+    LanguageDef.validateRewrite holLightNativeSlice holLightNativeSlice.rewrites[2] = [] := by
+  check_holLightRewriteValid_row
+
+private theorem holLightRewriteValid_row_3 :
+    LanguageDef.validateRewrite holLightNativeSlice holLightNativeSlice.rewrites[3] = [] := by
+  check_holLightRewriteValid_row
+
+private theorem holLightRewriteValid_row_4 :
+    LanguageDef.validateRewrite holLightNativeSlice holLightNativeSlice.rewrites[4] = [] := by
+  check_holLightRewriteValid_row
+
+private theorem holLightRewriteValid_row_5 :
+    LanguageDef.validateRewrite holLightNativeSlice holLightNativeSlice.rewrites[5] = [] := by
+  check_holLightRewriteValid_row
+
+private theorem holLightRewriteValid_row_6 :
+    LanguageDef.validateRewrite holLightNativeSlice holLightNativeSlice.rewrites[6] = [] := by
+  check_holLightRewriteValid_row
+
+private theorem holLightRewriteValid_row_7 :
+    LanguageDef.validateRewrite holLightNativeSlice holLightNativeSlice.rewrites[7] = [] := by
+  check_holLightRewriteValid_row
+
+private theorem holLightRewriteValid_row_8 :
+    LanguageDef.validateRewrite holLightNativeSlice holLightNativeSlice.rewrites[8] = [] := by
+  check_holLightRewriteValid_row
+
+private theorem holLightRewriteValid_row_9 :
+    LanguageDef.validateRewrite holLightNativeSlice holLightNativeSlice.rewrites[9] = [] := by
+  check_holLightRewriteValid_row
+
+private theorem holLightRewriteValid_row_10 :
+    LanguageDef.validateRewrite holLightNativeSlice holLightNativeSlice.rewrites[10] = [] := by
+  check_holLightRewriteValid_row
+
+private theorem holLightRewriteValid :
+    ∀ rewrite ∈ holLightNativeSlice.rewrites,
+      LanguageDef.validateRewrite holLightNativeSlice rewrite = [] := by
   intro rewrite hrewrite
-  simp only [hol4NativeSlice, sideRewrites, hol4Rewrites,
+  simp only [holLightNativeSlice, sideRewrites, holLightRewrites,
     List.mem_append, List.mem_cons, List.mem_nil_iff, or_false] at hrewrite
   rcases hrewrite with
     (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl) |
-    (rfl | rfl)
-  all_goals
+    (rfl | rfl | rfl)
+  · exact holLightRewriteValid_row_0
+  · exact holLightRewriteValid_row_1
+  · exact holLightRewriteValid_row_2
+  · exact holLightRewriteValid_row_3
+  · exact holLightRewriteValid_row_4
+  · exact holLightRewriteValid_row_5
+  · exact holLightRewriteValid_row_6
+  · exact holLightRewriteValid_row_7
+  · exact holLightRewriteValid_row_8
+  · exact holLightRewriteValid_row_9
+  · exact holLightRewriteValid_row_10
+
+local macro "check_hol4RewriteValid_row" : tactic =>
+  `(tactic|
     simp (config := { maxSteps := 300000 })
-      [LanguageDef.validateRewrite, hol4NativeSlice, commonTypes,
+      [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff, hol4NativeSlice, commonTypes,
       commonDataTerms, sideProofTerms, hol4ProofTerms, sideRewrites,
       hol4Rewrites, termCtor, ty, rw, check, ok, validTypeEvidence,
       hasTypeEvidence, isBoolEvidence, validHypsEvidence, alphaEqEvidence,
@@ -378,7 +430,69 @@ private theorem hol4RewriteValid :
       LanguageDef.patternBinderNames, Pattern.constructorRefs,
       Pattern.constructorRefsList,
       Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
-      Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain]
+      Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain])
+
+private theorem hol4RewriteValid_row_0 :
+    LanguageDef.validateRewrite hol4NativeSlice hol4NativeSlice.rewrites[0] = [] := by
+  check_hol4RewriteValid_row
+
+private theorem hol4RewriteValid_row_1 :
+    LanguageDef.validateRewrite hol4NativeSlice hol4NativeSlice.rewrites[1] = [] := by
+  check_hol4RewriteValid_row
+
+private theorem hol4RewriteValid_row_2 :
+    LanguageDef.validateRewrite hol4NativeSlice hol4NativeSlice.rewrites[2] = [] := by
+  check_hol4RewriteValid_row
+
+private theorem hol4RewriteValid_row_3 :
+    LanguageDef.validateRewrite hol4NativeSlice hol4NativeSlice.rewrites[3] = [] := by
+  check_hol4RewriteValid_row
+
+private theorem hol4RewriteValid_row_4 :
+    LanguageDef.validateRewrite hol4NativeSlice hol4NativeSlice.rewrites[4] = [] := by
+  check_hol4RewriteValid_row
+
+private theorem hol4RewriteValid_row_5 :
+    LanguageDef.validateRewrite hol4NativeSlice hol4NativeSlice.rewrites[5] = [] := by
+  check_hol4RewriteValid_row
+
+private theorem hol4RewriteValid_row_6 :
+    LanguageDef.validateRewrite hol4NativeSlice hol4NativeSlice.rewrites[6] = [] := by
+  check_hol4RewriteValid_row
+
+private theorem hol4RewriteValid_row_7 :
+    LanguageDef.validateRewrite hol4NativeSlice hol4NativeSlice.rewrites[7] = [] := by
+  check_hol4RewriteValid_row
+
+private theorem hol4RewriteValid_row_8 :
+    LanguageDef.validateRewrite hol4NativeSlice hol4NativeSlice.rewrites[8] = [] := by
+  check_hol4RewriteValid_row
+
+private theorem hol4RewriteValid_row_9 :
+    LanguageDef.validateRewrite hol4NativeSlice hol4NativeSlice.rewrites[9] = [] := by
+  check_hol4RewriteValid_row
+
+private theorem hol4RewriteValid :
+    ∀ rewrite ∈ hol4NativeSlice.rewrites,
+      LanguageDef.validateRewrite hol4NativeSlice rewrite = [] := by
+  intro rewrite hrewrite
+  simp only [hol4NativeSlice, sideRewrites, hol4Rewrites,
+    List.mem_append, List.mem_cons, List.mem_nil_iff, or_false] at hrewrite
+  rcases hrewrite with
+    (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl) |
+    (rfl | rfl)
+  · exact hol4RewriteValid_row_0
+  · exact hol4RewriteValid_row_1
+  · exact hol4RewriteValid_row_2
+  · exact hol4RewriteValid_row_3
+  · exact hol4RewriteValid_row_4
+  · exact hol4RewriteValid_row_5
+  · exact hol4RewriteValid_row_6
+  · exact hol4RewriteValid_row_7
+  · exact hol4RewriteValid_row_8
+  · exact hol4RewriteValid_row_9
+
+end RewriteValidation
 
 set_option maxHeartbeats 4000000 in
 set_option maxRecDepth 100000 in
@@ -396,6 +510,129 @@ theorem hol4NativeSlice_validate : hol4NativeSlice.validate = [] := by
 
 set_option maxHeartbeats 8000000 in
 set_option maxRecDepth 100000 in
+private theorem nativeDefinitionRuleCheck_0 :
+    holLightNativeDefinition.rules.map RuleSchema.isLocallyValid =
+      [true, true, true, true, true, true, true, true, true, true, true] := by
+  unfold holLightNativeDefinition holLightNativeDefinition?
+  rw [rawDefinition?_eq_structural]
+  unfold rawDefinitionStructural?
+  rw [holLightNativeSlice_rewrites]
+  unfold List.mapM'
+  simp (config := { maxSteps := 800000 }) only
+    [CalculusLanguageDef.extend, List.map, List.flatMap, List.zip, extractRuleSchema?, checkedInputProof?, checkedOutputResult?,
+      evidenceArguments?, extractedSchema, findConstructor?,
+      relationJudgmentDecls, relationFactRules, referencedRelations,
+      holLightNativeSlice, commonTypes, commonDataTerms, sideProofTerms,
+      holLightProofTerms, sideRewrites, holLightRewrites,
+      holLightNativeProfile, termCtor, ty, rw, check, ok,
+      validTypeEvidence, hasTypeEvidence, isBoolEvidence,
+      validHypsEvidence, alphaEqEvidence, hypUnionEvidence,
+      hypRemoveEvidence, theoremEvidence, eqTerm, tyApp, funTy, tyList,
+      tyNil, boolTy, tmVar, tmConst, tmApp, hypsNil, hypsCons,
+      app, equalityNameHead, implicationNameHead, boolNameHead,
+      functionNameHead, pNameHead, qNameHead, N, T, P, Q, Q2, H, H1,
+      H2, HO, pvar, EvidenceProfile.derived,
+      EvidenceProfile.relationHead, EvidenceProfile.relationJudgment,
+      occurrenceEraseDups,
+      RuleSchema.occurrences, RuleSchema.patterns,
+      TermParam.typeExpr]
+  decide +kernel
+
+set_option maxHeartbeats 8000000 in
+set_option maxRecDepth 100000 in
+private theorem nativeDefinitionRuleCheck_1 :
+    holLightNativeDefinition.rules.map
+        (RuleSchema.isValidIn holLightNativeDefinition) =
+      [true, true, true, true, true, true, true, true, true, true, true] := by
+  unfold holLightNativeDefinition holLightNativeDefinition?
+  rw [rawDefinition?_eq_structural]
+  unfold rawDefinitionStructural?
+  rw [holLightNativeSlice_rewrites]
+  unfold List.mapM'
+  simp (config := { maxSteps := 800000 }) only
+    [CalculusLanguageDef.extend, List.map,
+      List.flatMap, List.zip, extractRuleSchema?, checkedInputProof?, checkedOutputResult?,
+      evidenceArguments?, extractedSchema, findConstructor?,
+      relationJudgmentDecls, relationFactRules, referencedRelations,
+      holLightNativeSlice, commonTypes, commonDataTerms, sideProofTerms,
+      holLightProofTerms, sideRewrites, holLightRewrites,
+      holLightNativeProfile, termCtor, ty, rw, check, ok,
+      validTypeEvidence, hasTypeEvidence, isBoolEvidence,
+      validHypsEvidence, alphaEqEvidence, hypUnionEvidence,
+      hypRemoveEvidence, theoremEvidence, eqTerm, tyApp, funTy, tyList,
+      tyNil, boolTy, tmVar, tmConst, tmApp, hypsNil, hypsCons,
+      app, equalityNameHead, implicationNameHead, boolNameHead,
+      functionNameHead, pNameHead, qNameHead, N, T, P, Q, Q2, H, H1,
+      H2, HO, pvar, EvidenceProfile.derived,
+      EvidenceProfile.relationHead, EvidenceProfile.relationJudgment,
+      occurrenceEraseDups,
+      RuleSchema.occurrences,
+      RuleSchema.patterns, TermParam.typeExpr]
+  decide +kernel
+
+set_option maxHeartbeats 8000000 in
+set_option maxRecDepth 100000 in
+private theorem nativeDefinitionRuleCheck_2 :
+    hol4NativeDefinition.rules.map RuleSchema.isLocallyValid =
+      [true, true, true, true, true, true, true, true, true, true] := by
+  unfold hol4NativeDefinition hol4NativeDefinition?
+  rw [rawDefinition?_eq_structural]
+  unfold rawDefinitionStructural?
+  rw [hol4NativeSlice_rewrites]
+  unfold List.mapM'
+  simp (config := { maxSteps := 800000 }) only
+    [CalculusLanguageDef.extend, List.map, List.flatMap, List.zip, extractRuleSchema?,
+      checkedInputProof?, checkedOutputResult?, evidenceArguments?,
+      extractedSchema, findConstructor?, relationJudgmentDecls,
+      relationFactRules, referencedRelations, hol4NativeSlice,
+      commonTypes, commonDataTerms, sideProofTerms, hol4ProofTerms,
+      sideRewrites, hol4Rewrites, hol4NativeProfile, termCtor, ty, rw,
+      check, ok, validTypeEvidence, hasTypeEvidence, isBoolEvidence,
+      validHypsEvidence, alphaEqEvidence, hypUnionEvidence,
+      hypRemoveEvidence, theoremEvidence, impTerm, tyApp, funTy, tyList,
+      tyNil, boolTy, tmVar, tmConst, tmApp, hypsNil, hypsCons,
+      app, equalityNameHead, implicationNameHead, boolNameHead,
+      functionNameHead, pNameHead, qNameHead, N, T, P, Q, H, HO, pvar,
+      EvidenceProfile.derived,
+      EvidenceProfile.relationHead, EvidenceProfile.relationJudgment,
+      occurrenceEraseDups,
+      RuleSchema.occurrences, RuleSchema.patterns,
+      TermParam.typeExpr]
+  decide +kernel
+
+set_option maxHeartbeats 8000000 in
+set_option maxRecDepth 100000 in
+private theorem nativeDefinitionRuleCheck_3 :
+    hol4NativeDefinition.rules.map
+        (RuleSchema.isValidIn hol4NativeDefinition) =
+      [true, true, true, true, true, true, true, true, true, true] := by
+  unfold hol4NativeDefinition hol4NativeDefinition?
+  rw [rawDefinition?_eq_structural]
+  unfold rawDefinitionStructural?
+  rw [hol4NativeSlice_rewrites]
+  unfold List.mapM'
+  simp (config := { maxSteps := 800000 }) only
+    [CalculusLanguageDef.extend, List.map, List.flatMap, List.zip, extractRuleSchema?,
+      checkedInputProof?, checkedOutputResult?, evidenceArguments?,
+      extractedSchema, findConstructor?, relationJudgmentDecls,
+      relationFactRules, referencedRelations, hol4NativeSlice,
+      commonTypes, commonDataTerms, sideProofTerms, hol4ProofTerms,
+      sideRewrites, hol4Rewrites, hol4NativeProfile, termCtor, ty, rw,
+      check, ok, validTypeEvidence, hasTypeEvidence, isBoolEvidence,
+      validHypsEvidence, alphaEqEvidence, hypUnionEvidence,
+      hypRemoveEvidence, theoremEvidence, impTerm, tyApp, funTy, tyList,
+      tyNil, boolTy, tmVar, tmConst, tmApp, hypsNil, hypsCons,
+      app, equalityNameHead, implicationNameHead, boolNameHead,
+      functionNameHead, pNameHead, qNameHead, N, T, P, Q, H, HO, pvar,
+      EvidenceProfile.derived,
+      EvidenceProfile.relationHead, EvidenceProfile.relationJudgment,
+      occurrenceEraseDups,
+      RuleSchema.occurrences,
+      RuleSchema.patterns, TermParam.typeExpr]
+  decide +kernel
+
+set_option maxHeartbeats 8000000 in
+set_option maxRecDepth 100000 in
 theorem holLightNativeDefinition_valid :
     holLightNativeDefinition.isValid = true := by
   simp only [CalculusLanguageDef.isValid, CalculusLanguageDef.hasValidLocalRules,
@@ -407,86 +644,13 @@ theorem holLightNativeDefinition_valid :
     rfl
   refine ⟨⟨⟨⟨⟨hlanguage, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · rw [all_eq_mapped_all]
-    have hmap :
-        holLightNativeDefinition.rules.map RuleSchema.isLocallyValid =
-          [true, true, true, true, true, true, true, true, true, true, true] := by
-      unfold holLightNativeDefinition holLightNativeDefinition?
-      rw [rawDefinition?_eq_structural]
-      unfold rawDefinitionStructural?
-      rw [holLightNativeSlice_rewrites]
-      unfold List.mapM'
-      simp (config := { maxSteps := 800000 })
-        [CalculusLanguageDef.extend, List.mapM'_cons, List.mapM'_nil,
-          List.map, List.filterMap, List.flatMap, List.zip, List.find?,
-          extractRuleSchema?, checkedInputProof?, checkedOutputResult?,
-          evidenceArguments?, extractedSchema, findConstructor?,
-          relationJudgmentDecls, relationFactRules, referencedRelations,
-          holLightNativeSlice, commonTypes, commonDataTerms, sideProofTerms,
-          holLightProofTerms, sideRewrites, holLightRewrites,
-          holLightNativeProfile, termCtor, ty, rw, check, ok,
-          validTypeEvidence, hasTypeEvidence, isBoolEvidence,
-          validHypsEvidence, alphaEqEvidence, hypUnionEvidence,
-          hypRemoveEvidence, theoremEvidence, eqTerm, tyApp, funTy, tyList,
-          tyCons, tyNil, boolTy, tmVar, tmConst, tmApp, hypsNil, hypsCons,
-          app, equalityNameHead, implicationNameHead, boolNameHead,
-          functionNameHead, pNameHead, qNameHead, N, T, P, Q, Q2, H, H1,
-          H2, HO, pvar, EvidenceProfile.derived,
-          EvidenceProfile.relationHead, EvidenceProfile.relationJudgment,
-          metavariableOccurrenceEq, occurrenceContains, occurrenceEraseDups,
-          occurrenceEraseDupsAux, occurrenceKeepIn, occurrenceKeepOut,
-          RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
-          RuleSchema.occurrences, RuleSchema.patterns,
-          patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
-          patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-          TermParam.typeExpr,
-          Pattern.isWellScoped, Pattern.isWellScopedAt,
-          Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
-          Pattern.hasCanonicalBinderMetadataList]
-      decide
+    have hmap := nativeDefinitionRuleCheck_0
     rw [hmap]
     rfl
   · decide
   · decide
   · rw [all_eq_mapped_all]
-    have hmap :
-        holLightNativeDefinition.rules.map
-            (RuleSchema.isValidIn holLightNativeDefinition) =
-          [true, true, true, true, true, true, true, true, true, true, true] := by
-      unfold holLightNativeDefinition holLightNativeDefinition?
-      rw [rawDefinition?_eq_structural]
-      unfold rawDefinitionStructural?
-      rw [holLightNativeSlice_rewrites]
-      unfold List.mapM'
-      simp (config := { maxSteps := 800000 })
-        [CalculusLanguageDef.extend, List.mapM'_cons, List.mapM'_nil, List.map,
-          List.filterMap, List.filter, List.flatMap, List.zip, List.find?,
-          extractRuleSchema?, checkedInputProof?, checkedOutputResult?,
-          evidenceArguments?, extractedSchema, findConstructor?,
-          relationJudgmentDecls, relationFactRules, referencedRelations,
-          holLightNativeSlice, commonTypes, commonDataTerms, sideProofTerms,
-          holLightProofTerms, sideRewrites, holLightRewrites,
-          holLightNativeProfile, termCtor, ty, rw, check, ok,
-          validTypeEvidence, hasTypeEvidence, isBoolEvidence,
-          validHypsEvidence, alphaEqEvidence, hypUnionEvidence,
-          hypRemoveEvidence, theoremEvidence, eqTerm, tyApp, funTy, tyList,
-          tyCons, tyNil, boolTy, tmVar, tmConst, tmApp, hypsNil, hypsCons,
-          app, equalityNameHead, implicationNameHead, boolNameHead,
-          functionNameHead, pNameHead, qNameHead, N, T, P, Q, Q2, H, H1,
-          H2, HO, pvar, EvidenceProfile.derived,
-          EvidenceProfile.relationHead, EvidenceProfile.relationJudgment,
-          metavariableOccurrenceEq, occurrenceContains, occurrenceEraseDups,
-          occurrenceEraseDupsAux, occurrenceKeepIn, occurrenceKeepOut,
-          RuleSchema.isValidIn, RuleSchema.isLocallyValid,
-          RuleSchema.metavariableNames, RuleSchema.occurrences,
-          RuleSchema.patterns, patternMetavariableOccurrencesAt,
-          patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
-          patternsHaveNoCollectionRest, CalculusLanguageDef.judgmentSchemaValid,
-          CalculusLanguageDef.lookupJudgment?, fixedConstructorsValid,
-          fixedConstructorListsValid, languageHasConstructorArity,
-          TermParam.typeExpr, Pattern.isWellScoped, Pattern.isWellScopedAt,
-          Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
-          Pattern.hasCanonicalBinderMetadataList]
-      decide
+    have hmap := nativeDefinitionRuleCheck_1
     rw [hmap]
     rfl
   · decide
@@ -504,83 +668,13 @@ theorem hol4NativeDefinition_valid :
     rfl
   refine ⟨⟨⟨⟨⟨hlanguage, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · rw [all_eq_mapped_all]
-    have hmap :
-        hol4NativeDefinition.rules.map RuleSchema.isLocallyValid =
-          [true, true, true, true, true, true, true, true, true, true] := by
-      unfold hol4NativeDefinition hol4NativeDefinition?
-      rw [rawDefinition?_eq_structural]
-      unfold rawDefinitionStructural?
-      rw [hol4NativeSlice_rewrites]
-      unfold List.mapM'
-      simp (config := { maxSteps := 800000 })
-        [CalculusLanguageDef.extend, List.mapM'_cons, List.mapM'_nil, List.map, List.filterMap,
-          List.flatMap, List.zip, List.find?, extractRuleSchema?,
-          checkedInputProof?, checkedOutputResult?, evidenceArguments?,
-          extractedSchema, findConstructor?, relationJudgmentDecls,
-          relationFactRules, referencedRelations, hol4NativeSlice,
-          commonTypes, commonDataTerms, sideProofTerms, hol4ProofTerms,
-          sideRewrites, hol4Rewrites, hol4NativeProfile, termCtor, ty, rw,
-          check, ok, validTypeEvidence, hasTypeEvidence, isBoolEvidence,
-          validHypsEvidence, alphaEqEvidence, hypUnionEvidence,
-          hypRemoveEvidence, theoremEvidence, impTerm, tyApp, funTy, tyList,
-          tyCons, tyNil, boolTy, tmVar, tmConst, tmApp, hypsNil, hypsCons,
-          app, equalityNameHead, implicationNameHead, boolNameHead,
-          functionNameHead, pNameHead, qNameHead, N, T, P, Q, H, HO, pvar,
-          EvidenceProfile.derived,
-          EvidenceProfile.relationHead, EvidenceProfile.relationJudgment,
-          metavariableOccurrenceEq, occurrenceContains, occurrenceEraseDups,
-          occurrenceEraseDupsAux, occurrenceKeepIn, occurrenceKeepOut,
-          RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
-          RuleSchema.occurrences, RuleSchema.patterns,
-          patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
-          patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-          TermParam.typeExpr, Pattern.isWellScoped, Pattern.isWellScopedAt,
-          Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
-          Pattern.hasCanonicalBinderMetadataList]
-      decide
+    have hmap := nativeDefinitionRuleCheck_2
     rw [hmap]
     rfl
   · decide
   · decide
   · rw [all_eq_mapped_all]
-    have hmap :
-        hol4NativeDefinition.rules.map
-            (RuleSchema.isValidIn hol4NativeDefinition) =
-          [true, true, true, true, true, true, true, true, true, true] := by
-      unfold hol4NativeDefinition hol4NativeDefinition?
-      rw [rawDefinition?_eq_structural]
-      unfold rawDefinitionStructural?
-      rw [hol4NativeSlice_rewrites]
-      unfold List.mapM'
-      simp (config := { maxSteps := 800000 })
-        [CalculusLanguageDef.extend, List.mapM'_cons, List.mapM'_nil, List.map, List.filterMap,
-          List.filter, List.flatMap, List.zip, List.find?, extractRuleSchema?,
-          checkedInputProof?, checkedOutputResult?, evidenceArguments?,
-          extractedSchema, findConstructor?, relationJudgmentDecls,
-          relationFactRules, referencedRelations, hol4NativeSlice,
-          commonTypes, commonDataTerms, sideProofTerms, hol4ProofTerms,
-          sideRewrites, hol4Rewrites, hol4NativeProfile, termCtor, ty, rw,
-          check, ok, validTypeEvidence, hasTypeEvidence, isBoolEvidence,
-          validHypsEvidence, alphaEqEvidence, hypUnionEvidence,
-          hypRemoveEvidence, theoremEvidence, impTerm, tyApp, funTy, tyList,
-          tyCons, tyNil, boolTy, tmVar, tmConst, tmApp, hypsNil, hypsCons,
-          app, equalityNameHead, implicationNameHead, boolNameHead,
-          functionNameHead, pNameHead, qNameHead, N, T, P, Q, H, HO, pvar,
-          EvidenceProfile.derived,
-          EvidenceProfile.relationHead, EvidenceProfile.relationJudgment,
-          metavariableOccurrenceEq, occurrenceContains, occurrenceEraseDups,
-          occurrenceEraseDupsAux, occurrenceKeepIn, occurrenceKeepOut,
-          RuleSchema.isValidIn, RuleSchema.isLocallyValid,
-          RuleSchema.metavariableNames, RuleSchema.occurrences,
-          RuleSchema.patterns, patternMetavariableOccurrencesAt,
-          patternsMetavariableOccurrencesAt, patternHasNoCollectionRest,
-          patternsHaveNoCollectionRest, CalculusLanguageDef.judgmentSchemaValid,
-          CalculusLanguageDef.lookupJudgment?, fixedConstructorsValid,
-          fixedConstructorListsValid, languageHasConstructorArity,
-          TermParam.typeExpr, Pattern.isWellScoped, Pattern.isWellScopedAt,
-          Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
-          Pattern.hasCanonicalBinderMetadataList]
-      decide
+    have hmap := nativeDefinitionRuleCheck_3
     rw [hmap]
     rfl
   · decide
@@ -780,7 +874,7 @@ def hol4WrongRemovalEvidenceProof : RawProof :=
 
 local macro "hol_native_check_core" : tactic =>
   `(tactic|
-    simp (config := { maxSteps := 1200000 })
+    simp (config := { maxSteps := 1200000 }) only
       [CalculusLanguageDef.extend, CheckedGSLT.checkRaw, CheckedGSLT.definition,
         holLightAdmittedSource, hol4AdmittedSource, holLightNativeSource,
         hol4NativeSource, holLightNativeDefinition_eq_structural,
@@ -820,13 +914,19 @@ local macro "hol_native_check_core" : tactic =>
         hol4AssumeProof, holLightEqMpProof, hol4DischProof, holLightGoal,
         hol4Goal])
 
+set_option maxHeartbeats 8000000 in
+set_option maxRecDepth 100000 in
 theorem holLightEqMpProof_checked :
     holLightAdmittedSource.checkRaw holLightGoal holLightEqMpProof = true := by
   hol_native_check_core
+  decide +kernel
 
+set_option maxHeartbeats 8000000 in
+set_option maxRecDepth 100000 in
 theorem hol4DischProof_checked :
     hol4AdmittedSource.checkRaw hol4Goal hol4DischProof = true := by
   hol_native_check_core
+  decide +kernel
 
 theorem holLightEqMpProof_exact_derivation :
     ∃ derivation : Derivation holLightAdmittedSource.definition holLightGoal,

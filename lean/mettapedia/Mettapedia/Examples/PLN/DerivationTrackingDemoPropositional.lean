@@ -76,14 +76,18 @@ inductive DemoRel
   | wallHumidity₁
   | bathroomHumidity₁
   | moldRisk₁
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype DemoRel where
+  elems := {.pipeLeak₁, .showerRunning₁, .wallHumidity₁, .bathroomHumidity₁, .moldRisk₁}
+  complete := by intro relation; cases relation <;> simp
 
 /-- A function-free propositional LP signature. -/
 abbrev DemoConst : Type := PUnit
 abbrev DemoVar : Type := PEmpty
 abbrev DemoFun : Type := PEmpty
 
-def DemoSig : LPSignature where
+abbrev DemoSig : LPSignature where
   constants := DemoConst
   vars := DemoVar
   relationSymbols := DemoRel

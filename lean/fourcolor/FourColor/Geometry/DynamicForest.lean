@@ -28,11 +28,13 @@ open Geometry
 open Finset
 open FourColor -- For Color, etc.
 
+universe uV uE uD
+
 /-- Bundle for the dynamic-forest peel construction using the dynamic dual forest argument. -/
 structure Data
-    {V E : Type*} [Fintype V] [DecidableEq V]
+    {V : Type uV} {E : Type uE} [Fintype V] [DecidableEq V]
     [Fintype E] [DecidableEq E] where
-  G : DiskGeometry V E
+  G : DiskGeometry.{uV, uE, uD} V E
   noDigons : NoDigons G -- Essential for uniqueness of dual edges
   gamma : Color := (1,0)
   gamma_eq : gamma = (1,0)  -- Constraint: gamma must be (1,0) for support₁ to work correctly

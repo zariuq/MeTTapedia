@@ -378,7 +378,9 @@ theorem fold_node (A : ListNodeAlgebra.{u, v, max u v} J W)
 def foldHom (A : ListNodeAlgebra.{u, v, max u v} J W) :
     syntaxAlgebra ⟶ A where
   toFun := fold A
-  map_node := by intros; simp [syntaxAlgebra]
+  map_node := by
+    intro conclusion witness children
+    exact fold_node A conclusion witness children
 
 mutual
   /-- Every homomorphism from syntax is its structural fold. -/

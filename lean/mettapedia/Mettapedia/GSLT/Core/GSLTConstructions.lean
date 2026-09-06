@@ -282,7 +282,7 @@ def synchronousProduct (left right : GSLT) : GSLT where
 other holds still.  This is the asynchronous composition of independent
 systems; genuine concurrency licenses live here once non-interference is
 supplied. -/
-def interleavingProduct (left right : GSLT) : GSLT where
+abbrev interleavingProduct (left right : GSLT) : GSLT where
   Term := left.Term × right.Term
   equations := productSetoid left right
   rewrites := fun source target =>

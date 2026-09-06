@@ -4,11 +4,11 @@ open System Lake DSL
 
 package Mettapedia where
   version := v!"0.1.0"
-  weakLeanArgs := #["-j", "1"]
 
-require "leanprover-community" / mathlib @ git "v4.31.0"
+require "leanprover-community" / mathlib @ git "0df444a360eaa60ab8c11dca51a86af692955474"
 
 -- Editable local repos live in ../externals.
+require TauCeti from "../externals/TauCeti"
 require ordered_semigroups from "../externals/ordered_semigroups"
 
 require Foundation from "../externals/Foundation"

@@ -137,7 +137,8 @@ lemma regionFactorGraph_veQueryWeight_eq_queryMass
     (q : LocalConstraintQuery Atom Λ) :
     VariableElimination.veQueryWeight (fg := regionFactorGraph M Λ ξ) q =
       finiteVolumeQueryMass M Λ ξ q := by
-  simpa using regionFactorGraph_weightOfConstraints_eq_queryMass M Λ ξ q
+  erw [VariableElimination.veQueryWeight_eq_weightOfConstraints]
+  exact regionFactorGraph_weightOfConstraints_eq_queryMass M Λ ξ q
 
 lemma regionFactorGraph_scopedWeight_eq_queryMass
     (M : InfiniteGroundMLNSpec Atom ClauseId)
@@ -147,7 +148,7 @@ lemma regionFactorGraph_scopedWeight_eq_queryMass
       (W := regionFactorGraphWMSource M Λ ξ) q =
       finiteVolumeQueryMass M Λ ξ q := by
   classical
-  rw [ValuationWorldModel.scopedWeight_eq_weight]
+  erw [ValuationWorldModel.scopedWeight_eq_weight]
   unfold ValuationWorldModel.weight regionFactorGraphWMSource
   simpa [VariableElimination.veQueryWeight] using
     regionFactorGraph_veQueryWeight_eq_queryMass M Λ ξ q
@@ -192,5 +193,6 @@ theorem regionFactorGraph_queryProb_eq_finiteVolume_queryProb
   simp [regionFactorGraphMassSemantics, finiteVolumeMassSemantics, MassSemantics.queryProb,
     regionFactorGraph_scopedWeight_eq_queryMass,
     regionFactorGraph_partitionFunction_eq_finiteVolumePartition]
+  rfl
 
 end Mettapedia.Logic.MarkovLogicInfiniteCollapse

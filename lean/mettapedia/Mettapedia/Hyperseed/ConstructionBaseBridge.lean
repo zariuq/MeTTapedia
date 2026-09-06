@@ -440,8 +440,10 @@ theorem visible_expansive_budget3_eq_univ :
 
 theorem thatsAllAt_expansive_budget3_readyToAct :
     expansiveConstructionBase.thatsAllAt (3 : ℕ) readyToActPremise := by
-  rw [ConstructionBase.thatsAllAt, ConstructionBase.closureAt,
-    ConstructionBase.fullClosure, visible_expansive_budget3_eq_univ]
+  change expansiveConstructionBase.closureAt (3 : ℕ) readyToActPremise =
+    expansiveConstructionBase.fullClosure readyToActPremise
+  unfold ConstructionBase.closureAt ConstructionBase.fullClosure
+  rw [visible_expansive_budget3_eq_univ]
   simp [fullAttributeClosure]
 
 theorem sensedSignal_mem_visible_regimeSensitive_nonempty_budget3 :

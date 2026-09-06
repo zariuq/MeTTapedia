@@ -178,9 +178,11 @@ private theorem quoteAndChoice_constructorLabels_eq :
 
 /-! ## Row validation of the choice extension's rewrites -/
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem zeroWithChoice_queryRewrite_row :
     LanguageDef.validateRewrite zeroWithChoice MeTTaZero.queryRewrite = [] := by
-  simp [LanguageDef.validateRewrite, zeroWithChoice_typeNames_eq,
+  simp [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff, zeroWithChoice_typeNames_eq,
     zeroWithChoice_terms_eq, zeroWithChoiceTermLiterals,
     MeTTaZero.queryRewrite, MeTTaZero.queryRequestPattern,
     MeTTaZero.queryAnswerPattern, MeTTaZero.metavariable,
@@ -192,9 +194,11 @@ private theorem zeroWithChoice_queryRewrite_row :
     Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, TypeExpr.baseNames]
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem zeroWithChoice_evaluationRewrite_row :
     LanguageDef.validateRewrite zeroWithChoice MeTTaZero.evaluationRewrite = [] := by
-  simp [LanguageDef.validateRewrite, zeroWithChoice_typeNames_eq,
+  simp [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff, zeroWithChoice_typeNames_eq,
     zeroWithChoice_terms_eq, zeroWithChoiceTermLiterals,
     MeTTaZero.evaluationRewrite, MeTTaZero.evaluationRequestPattern,
     MeTTaZero.evaluationAnswerPattern, MeTTaZero.metavariable,
@@ -206,9 +210,11 @@ private theorem zeroWithChoice_evaluationRewrite_row :
     Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, TypeExpr.baseNames]
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem zeroWithChoice_chooseLeftRewrite_row :
     LanguageDef.validateRewrite zeroWithChoice chooseLeftRewrite = [] := by
-  simp [LanguageDef.validateRewrite, zeroWithChoice_typeNames_eq,
+  simp [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff, zeroWithChoice_typeNames_eq,
     zeroWithChoice_terms_eq, zeroWithChoiceTermLiterals, chooseLeftRewrite,
     LanguageDef.validatePatternConstructors, LanguageDef.validateRulePatterns,
     LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
@@ -216,9 +222,11 @@ private theorem zeroWithChoice_chooseLeftRewrite_row :
     Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, TypeExpr.baseNames]
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem zeroWithChoice_chooseRightRewrite_row :
     LanguageDef.validateRewrite zeroWithChoice chooseRightRewrite = [] := by
-  simp [LanguageDef.validateRewrite, zeroWithChoice_typeNames_eq,
+  simp [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff, zeroWithChoice_typeNames_eq,
     zeroWithChoice_terms_eq, zeroWithChoiceTermLiterals, chooseRightRewrite,
     LanguageDef.validatePatternConstructors, LanguageDef.validateRulePatterns,
     LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
@@ -228,10 +236,12 @@ private theorem zeroWithChoice_chooseRightRewrite_row :
 
 /-! ## Row validation of the glued presentation's equation and rewrites -/
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem quoteAndChoice_quoteDropEquation_row :
     LanguageDef.validateEquation quoteAndChoice
       Prime.LanguageDef.quoteDropEquation = [] := by
-  simp [LanguageDef.validateEquation, quoteAndChoice_typeNames_eq,
+  simp [LanguageDef.validateEquation, LanguageDef.validateTypeExpr_eq_nil_iff, quoteAndChoice_typeNames_eq,
     quoteAndChoice_terms_eq, quoteAndChoiceTermLiterals,
     Prime.LanguageDef.quoteDropEquation,
     LanguageDef.validatePatternConstructors, LanguageDef.validateRulePatterns,
@@ -240,6 +250,8 @@ private theorem quoteAndChoice_quoteDropEquation_row :
     Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, TypeExpr.baseNames]
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem quoteAndChoice_queryRewrite_row :
     LanguageDef.validateRewrite quoteAndChoice MeTTaZero.queryRewrite = [] := by
   unfold LanguageDef.validateRewrite
@@ -259,6 +271,8 @@ private theorem quoteAndChoice_queryRewrite_row :
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem quoteAndChoice_evaluationRewrite_row :
     LanguageDef.validateRewrite quoteAndChoice MeTTaZero.evaluationRewrite = [] := by
   unfold LanguageDef.validateRewrite
@@ -278,19 +292,92 @@ private theorem quoteAndChoice_evaluationRewrite_row :
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
 
+set_option maxHeartbeats 200000 in
+private theorem demand_left_fvars : LanguageDef.patternFvarNames [] (Prime.LanguageDef.evaluationDemandRewrite.left) = ["space", "subject"] := by
+  simp [Prime.LanguageDef.evaluationDemandRewrite,
+    MeTTaZero.evaluationRequestPattern,
+    LanguageDef.patternFvarNames, Pattern.freeFvarNames]
+
+set_option maxHeartbeats 200000 in
+private theorem demand_left_binders : LanguageDef.patternBinderNames (Prime.LanguageDef.evaluationDemandRewrite.left) = [] := by
+  simp [Prime.LanguageDef.evaluationDemandRewrite,
+    MeTTaZero.evaluationRequestPattern,
+    LanguageDef.patternBinderNames]
+
+set_option maxHeartbeats 200000 in
+private theorem demand_left_scope : Pattern.isWellScoped (Prime.LanguageDef.evaluationDemandRewrite.left) = true := by
+  simp [Prime.LanguageDef.evaluationDemandRewrite,
+    MeTTaZero.evaluationRequestPattern,
+    Pattern.isWellScoped, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt]
+
+set_option maxHeartbeats 200000 in
+private theorem demand_right_fvars : LanguageDef.patternFvarNames [] (Prime.LanguageDef.evaluationDemandRewrite.right) = ["space", "subject"] := by
+  simp [Prime.LanguageDef.evaluationDemandRewrite,
+    MeTTaZero.evaluationRequestPattern,
+    LanguageDef.patternFvarNames, Pattern.freeFvarNames]
+
+set_option maxHeartbeats 200000 in
+private theorem demand_right_binders : LanguageDef.patternBinderNames (Prime.LanguageDef.evaluationDemandRewrite.right) = [] := by
+  simp [Prime.LanguageDef.evaluationDemandRewrite,
+    MeTTaZero.evaluationRequestPattern,
+    LanguageDef.patternBinderNames]
+
+set_option maxHeartbeats 200000 in
+private theorem demand_right_scope : Pattern.isWellScoped (Prime.LanguageDef.evaluationDemandRewrite.right) = true := by
+  simp [Prime.LanguageDef.evaluationDemandRewrite,
+    MeTTaZero.evaluationRequestPattern,
+    Pattern.isWellScoped, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt]
+
+set_option maxHeartbeats 200000 in
+private theorem reflected_left_fvars : LanguageDef.patternFvarNames [] (Prime.LanguageDef.reflectedDemandRewrite.left) = ["space", "subject"] := by
+  simp [Prime.LanguageDef.reflectedDemandRewrite, LanguageDef.patternFvarNames, Pattern.freeFvarNames]
+
+set_option maxHeartbeats 200000 in
+private theorem reflected_left_binders : LanguageDef.patternBinderNames (Prime.LanguageDef.reflectedDemandRewrite.left) = [] := by
+  simp [Prime.LanguageDef.reflectedDemandRewrite, LanguageDef.patternBinderNames]
+
+set_option maxHeartbeats 200000 in
+private theorem reflected_left_scope : Pattern.isWellScoped (Prime.LanguageDef.reflectedDemandRewrite.left) = true := by
+  simp [Prime.LanguageDef.reflectedDemandRewrite, Pattern.isWellScoped, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt]
+
+
+private theorem reflected_right_fvars :
+    LanguageDef.patternFvarNames [] Prime.LanguageDef.reflectedDemandRewrite.right = ["space", "subject"] :=
+  demand_right_fvars
+
+private theorem reflected_right_binders :
+    LanguageDef.patternBinderNames Prime.LanguageDef.reflectedDemandRewrite.right = [] :=
+  demand_right_binders
+
+private theorem reflected_right_scope :
+    Pattern.isWellScoped Prime.LanguageDef.reflectedDemandRewrite.right = true :=
+  demand_right_scope
+
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem quoteAndChoice_evaluationDemandRewrite_row :
     LanguageDef.validateRewrite quoteAndChoice
       Prime.LanguageDef.evaluationDemandRewrite = [] := by
-  simp [LanguageDef.validateRewrite, quoteAndChoice_typeNames_eq,
-    quoteAndChoice_terms_eq, quoteAndChoiceTermLiterals,
-    Prime.LanguageDef.evaluationDemandRewrite,
-    MeTTaZero.evaluationRequestPattern,
-    LanguageDef.validatePatternConstructors, LanguageDef.validateRulePatterns,
-    LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-    Pattern.constructorRefs, Pattern.constructorRefsList,
-    Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
-    Pattern.isWellScopedListAt, TypeExpr.baseNames]
+  unfold LanguageDef.validateRewrite
+  simp only [List.append_eq_nil_iff]
+  constructor
+  · constructor
+    · constructor <;> decide +kernel
+    · decide +kernel
+  · rw [quoteAndChoice_constructorLabels_eq]
+    simp only [LanguageDef.validateRulePatterns,
+      show Prime.LanguageDef.evaluationDemandRewrite.premises = [] from rfl,
+      show Prime.LanguageDef.reflectedDemandRewrite.premises = [] from rfl,
+      List.flatMap_nil, List.append_nil, List.all_cons, List.all_nil,
+      demand_left_fvars, demand_left_binders, demand_left_scope,
+      demand_right_fvars, demand_right_binders, demand_right_scope]
+    decide +kernel
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem quoteAndChoice_needRewrite_row :
     LanguageDef.validateRewrite quoteAndChoice
       Prime.LanguageDef.needRewrite = [] := by
@@ -309,34 +396,51 @@ private theorem quoteAndChoice_needRewrite_row :
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem quoteAndChoice_needReturnRewrite_row :
     LanguageDef.validateRewrite quoteAndChoice
       Prime.LanguageDef.needReturnRewrite = [] := by
-  simp [LanguageDef.validateRewrite, quoteAndChoice_typeNames_eq,
-    quoteAndChoice_terms_eq, quoteAndChoiceTermLiterals,
-    Prime.LanguageDef.needReturnRewrite,
-    MeTTaZero.evaluationAnswerPattern,
-    LanguageDef.validatePatternConstructors, LanguageDef.validateRulePatterns,
-    LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-    Pattern.constructorRefs, Pattern.constructorRefsList,
-    Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
-    Pattern.isWellScopedListAt, TypeExpr.baseNames]
+  unfold LanguageDef.validateRewrite
+  simp only [List.append_eq_nil_iff]
+  constructor
+  · constructor
+    · constructor <;> decide +kernel
+    · decide +kernel
+  · rw [quoteAndChoice_constructorLabels_eq]
+    simp [LanguageDef.validateRulePatterns, Prime.LanguageDef.needReturnRewrite,
+      MeTTaZero.evaluationRequestPattern, MeTTaZero.evaluationAnswerPattern,
+      LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
+      LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
+      LanguageDef.premiseProducedFvarNames, LanguageDef.premiseForAllParams,
+      Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
+      Pattern.isWellScopedListAt]
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem quoteAndChoice_reflectedDemandRewrite_row :
     LanguageDef.validateRewrite quoteAndChoice
       Prime.LanguageDef.reflectedDemandRewrite = [] := by
-  simp [LanguageDef.validateRewrite, quoteAndChoice_typeNames_eq,
-    quoteAndChoice_terms_eq, quoteAndChoiceTermLiterals,
-    Prime.LanguageDef.reflectedDemandRewrite,
-    LanguageDef.validatePatternConstructors, LanguageDef.validateRulePatterns,
-    LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-    Pattern.constructorRefs, Pattern.constructorRefsList,
-    Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
-    Pattern.isWellScopedListAt, TypeExpr.baseNames]
+  unfold LanguageDef.validateRewrite
+  simp only [List.append_eq_nil_iff]
+  constructor
+  · constructor
+    · constructor <;> decide +kernel
+    · decide +kernel
+  · rw [quoteAndChoice_constructorLabels_eq]
+    simp only [LanguageDef.validateRulePatterns,
+      show Prime.LanguageDef.evaluationDemandRewrite.premises = [] from rfl,
+      show Prime.LanguageDef.reflectedDemandRewrite.premises = [] from rfl,
+      List.flatMap_nil, List.append_nil, List.all_cons, List.all_nil,
+      reflected_left_fvars, reflected_left_binders, reflected_left_scope,
+      reflected_right_fvars, reflected_right_binders, reflected_right_scope]
+    decide +kernel
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem quoteAndChoice_chooseLeftRewrite_row :
     LanguageDef.validateRewrite quoteAndChoice chooseLeftRewrite = [] := by
-  simp [LanguageDef.validateRewrite, quoteAndChoice_typeNames_eq,
+  simp [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff, quoteAndChoice_typeNames_eq,
     quoteAndChoice_terms_eq, quoteAndChoiceTermLiterals, chooseLeftRewrite,
     LanguageDef.validatePatternConstructors, LanguageDef.validateRulePatterns,
     LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
@@ -344,9 +448,11 @@ private theorem quoteAndChoice_chooseLeftRewrite_row :
     Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, TypeExpr.baseNames]
 
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 100000 in
 private theorem quoteAndChoice_chooseRightRewrite_row :
     LanguageDef.validateRewrite quoteAndChoice chooseRightRewrite = [] := by
-  simp [LanguageDef.validateRewrite, quoteAndChoice_typeNames_eq,
+  simp [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff, quoteAndChoice_typeNames_eq,
     quoteAndChoice_terms_eq, quoteAndChoiceTermLiterals, chooseRightRewrite,
     LanguageDef.validatePatternConstructors, LanguageDef.validateRulePatterns,
     LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,

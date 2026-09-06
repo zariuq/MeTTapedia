@@ -78,6 +78,7 @@ theorem singleSquareHeadWeightedAttention_one_one
       layeredNeuralFunctionalAttentionFrom
       neuralFunctionalAttentionEntry
     simp
+    rfl
   · exact nomatch empty
 
 /-- Exact repair law: transposing the matrix exchanges the row and column
@@ -161,7 +162,7 @@ theorem singleSquareHeadWeightedAttention_transpose
           (Sum.inl (row, column)) channel
     rw [rowSliceAttention_transpose_single]
     rw [columnSliceAttention_transpose_single]
-    rw [pointWeightAttention_transport]
+    rw [pointWeightAttention_transport (singleSquareTransposeEquiv layer) queries keys values (Sum.inl (row, column)) channel]
     ring
   · exact nomatch empty
 

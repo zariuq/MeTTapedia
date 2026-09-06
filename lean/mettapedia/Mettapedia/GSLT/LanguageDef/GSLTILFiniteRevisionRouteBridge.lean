@@ -349,7 +349,8 @@ theorem institution_derives_reachesTarget_iff_all_sources
         (reachesTargetInstitutionSentence theory target) ↔
       ∀ source : theory.World,
         (revisionGSLT theory).MultiStep source target := by
-  rw [derives_iff_entails]
+  refine (derives_iff_entails (Opposite.op (revisionSignature theory)) ∅
+    (reachesTargetInstitutionSentence theory target)).trans ?_
   constructor
   · intro entails source
     exact entails (Quotient.mk (revisionGSLT theory).equations source)
@@ -400,6 +401,7 @@ theorem projected_paths_equal :
   simp [retainedToExecutionPathSquare, falseWitness, trueWitness, falseRoute,
     trueRoute, PathRetainingFiniteRoute.single,
     PathRetainingFiniteRoute.executionPath, NamedHistoryPath.toExecutionPath]
+  rfl
 
 /-- The occurrence-retaining loose route is not recoverable from its ordinary
 generated-GSLT path. -/

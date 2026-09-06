@@ -21,6 +21,7 @@ open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.CarrierWellSorted
 open Mettapedia.GSLT.LanguageDef.TptpOfficialAbstractSyntax
 
+set_option maxRecDepth 100000 in
 /-- The structural native type requested at one authored AST sort and free
 variable context. -/
 def contextualCarrierNativeType (sort : String)

@@ -198,6 +198,7 @@ theorem toWaist_artifact_code
     program.toWaist.artifact.2.code = program.nativeTerm.code :=
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The native program retains an inhabitant of its exact relational fibre,
 not only Boolean endpoint reachability. -/
 noncomputable def nativeEvidence
@@ -207,7 +208,8 @@ noncomputable def nativeEvidence
     program.intrinsicProgram.denotation.evidence source target := by
   exact (program.intrinsicProgram.evidenceEquiv source target).symm
     (by
-      simpa [intrinsicProgram, intrinsicWitness] using
+      simpa [intrinsicProgram, intrinsicWitness,
+        IntrinsicMILSemanticAdequacy.Program.toHypothesis_ofHypothesis] using
         program.intrinsicWitness.evidence)
 
 end CheckedNativeProgram

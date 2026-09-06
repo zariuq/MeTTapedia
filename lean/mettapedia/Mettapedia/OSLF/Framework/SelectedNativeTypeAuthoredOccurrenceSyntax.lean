@@ -56,7 +56,7 @@ theorem mem_endpointVariableNames_iff {source : ValidatedLanguageDef}
 recoverable, while decimal rendering avoids the quadratic unary names that
 would result from feeding the paired coordinate to `indexedMetavariable`. -/
 def authoredVariableName (slot index : Nat) : String :=
-  "$oslf:authored-variable:" ++ toString (Nat.pair slot index)
+  String.ofList (['$', 'o', 's', 'l', 'f', ':', 'a', 'u', 't', 'h', 'o', 'r', 'e', 'd', '-', 'v', 'a', 'r', 'i', 'a', 'b', 'l', 'e', ':'] ++ (toString (Nat.pair slot index)).toList)
 
 theorem authoredVariableName_injective :
     Function.Injective fun coordinate : Nat × Nat =>
@@ -64,7 +64,9 @@ theorem authoredVariableName_injective :
   intro first second equality
   have paired : Nat.pair first.1 first.2 = Nat.pair second.1 second.2 := by
     apply Nat.repr_injective
-    exact (String.append_right_inj "$oslf:authored-variable:").mp equality
+    have lists := congrArg String.toList equality
+    simp only [authoredVariableName, String.toList_ofList] at lists
+    exact String.toList_injective (List.append_cancel_left lists)
   exact Prod.ext (Nat.pair_eq_pair.mp paired).1 (Nat.pair_eq_pair.mp paired).2
 
 theorem authoredVariableName_eq_iff
@@ -84,14 +86,22 @@ theorem authoredVariableName_eq_iff
 theorem authoredVariableName_ne_focus (slot index : Nat) :
     authoredVariableName slot index ≠ "focus" := by
   intro equality
-  have lists := congrArg String.toList equality
-  simp [authoredVariableName] at lists
+  have heads := congrArg (fun name : String => name.toList.head?) equality
+  simp only [authoredVariableName, String.toList_ofList,
+    List.cons_append, List.head?_cons] at heads
+  have literalHead : "focus".toList.head? = some 'f' := by decide +kernel
+  rw [literalHead] at heads
+  cases heads
 
 theorem authoredVariableName_ne_reduct (slot index : Nat) :
     authoredVariableName slot index ≠ "reduct" := by
   intro equality
-  have lists := congrArg String.toList equality
-  simp [authoredVariableName] at lists
+  have heads := congrArg (fun name : String => name.toList.head?) equality
+  simp only [authoredVariableName, String.toList_ofList,
+    List.cons_append, List.head?_cons] at heads
+  have literalHead : "reduct".toList.head? = some 'r' := by decide +kernel
+  rw [literalHead] at heads
+  cases heads
 
 /-- Rename an authored endpoint variable by its exact occurrence and its first
 position in the ordered endpoint support.  Names outside the endpoint support
@@ -112,8 +122,12 @@ theorem renameVariable_ne_empty {source : ValidatedLanguageDef}
     (name : String) :
     renameVariable demand slot name ≠ "" := by
   intro equality
-  have lists := congrArg String.toList equality
-  simp [renameVariable, authoredVariableName] at lists
+  have heads := congrArg (fun name : String => name.toList.head?) equality
+  simp only [renameVariable, authoredVariableName, String.toList_ofList,
+    List.cons_append, List.head?_cons] at heads
+  have literalHead : "".toList.head? = none := rfl
+  rw [literalHead] at heads
+  cases heads
 
 /-- Renaming ordinary free variables preserves locally nameless scope. -/
 @[simp] theorem isWellScopedAt_renameFVars

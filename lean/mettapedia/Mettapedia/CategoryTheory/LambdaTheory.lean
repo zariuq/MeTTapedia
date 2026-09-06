@@ -33,7 +33,7 @@ This provides the missing structure for quantales: we get sSup/sInf for free.
 
 namespace Mettapedia.CategoryTheory.LambdaTheories
 
-open CategoryTheory
+open _root_.CategoryTheory
 
 /-! ## Subobject Fibrations
 

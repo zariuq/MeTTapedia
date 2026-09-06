@@ -14,15 +14,27 @@ namespace FourArmCoverageExample
 
 inductive Program where
   | p0 | p1 | p2 | p3 | p4 | p5
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype Program where
+  elems := {.p0, .p1, .p2, .p3, .p4, .p5}
+  complete := by intro value; cases value <;> simp
 
 inductive Action where
   | a0 | a1
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype Action where
+  elems := {.a0, .a1}
+  complete := by intro value; cases value <;> simp
 
 inductive Lineage where
   | source0 | source1 | shared2 | independent4a | independent4b
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype Lineage where
+  elems := {.source0, .source1, .shared2, .independent4a, .independent4b}
+  complete := by intro value; cases value <;> simp
 
 open Program Action Lineage
 open SemanticShaping
@@ -126,12 +138,17 @@ def model : SearchModel Program Action where
   guidedQueue := guidedQueue
   semanticSlots := 2
 
+private theorem checkerMember (program : Program) :
+    program ∈ checkerSet model ↔ model.checker program = true :=
+  (Finset.mem_filter).trans (and_iff_right (Finset.mem_univ program))
+
 theorem checker_boundary_nontrivial : HasAcceptanceBoundary model := by
   exact ⟨⟨.p1, rfl⟩, ⟨.p0, rfl⟩⟩
 
 theorem checker_set_exact : checkerSet model = {.p1, .p4} := by
   ext program
-  fin_cases program <;> simp [checkerSet, model, checker]
+  simp only [checkerMember]
+  fin_cases program <;> simp [model, checker]
 
 theorem exact_reward_support :
     positiveSupport (exactReward model) = {.p1, .p4} := by
@@ -146,7 +163,8 @@ theorem squared_reward_support :
       square_preservesBooleanPositiveSupport
   rw [hsupport]
   ext program
-  fin_cases program <;> simp [checkerSet, model, checker]
+  simp only [checkerMember]
+  fin_cases program <;> simp [model, checker]
 
 noncomputable def additivePartialReward (program : Program) : ℚ :=
   exactReward model program + partialPriority program
@@ -167,7 +185,8 @@ theorem additive_partial_creates_rejected_support :
   · rw [additive_partial_support]
     decide
   · ext program
-    fin_cases program <;> simp [checkerSet, model, checker]
+    simp only [Finset.mem_inter, checkerMember]
+    fin_cases program <;> simp [model, checker]
 
 theorem checker_filter_after_partial_is_exact :
     checkerFilteredSupport model additivePartialReward = {.p1, .p4} := by
@@ -332,7 +351,7 @@ theorem baseline_submission_times :
 theorem semantic_only_budget_one_omits_accepted :
     .p1 ∈ checkerSet model ∧ .p1 ∉ guidedQueue.take 1 := by
   constructor
-  · simp [checkerSet, model, checker]
+  · simp only [checkerMember]; simp [model, checker]
   · decide
 
 #print axioms exact_reward_support

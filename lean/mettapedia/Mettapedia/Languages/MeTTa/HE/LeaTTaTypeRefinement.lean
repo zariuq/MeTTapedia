@@ -71,6 +71,10 @@ theorem leatta_application_type_inferred_B :
     Metta.Minimal.getTypes applicationEnv applicationLeaAtom =
       [.sym "B"] := by
   simp [applicationEnv, applicationLeaAtom, Metta.Minimal.getTypes,
+    Metta.Minimal.cartesian, Metta.Minimal.typeInferenceAvoid,
+    Metta.Minimal.freshenArgumentTypes, Metta.Minimal.freshenTypeCandidate,
+    Metta.Minimal.renameAllVars, Metta.Minimal.matchApplicationTypeArguments,
+    Metta.Minimal.matchType, Metta.Minimal.matchReduced, Metta.Atom.vars,
     Metta.Minimal.MinEnv.ofAtomsGT, Std.HashMap.getD_insert,
     Std.HashMap.getD_emptyWithCapacity, Metta.matchAtoms,
     Metta.matchAtomsWith, Metta.Bindings.merge, Metta.instantiate]

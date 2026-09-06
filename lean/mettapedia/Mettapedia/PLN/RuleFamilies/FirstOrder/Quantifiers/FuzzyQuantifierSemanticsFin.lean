@@ -104,7 +104,7 @@ theorem nearOneMassInf_counting_eq_nearOneFractionFin
   unfold nearOneFractionFin nearOneFraction witnessFraction witnessCount
   by_cases h0 : Fintype.card U = 0
   · simp [h0]
-  · simp [h0]
+  · simp [h0, Fintype.card_subtype]
 
 /-- Exact reduction of the arbitrary-domain near-zero mass to the finite witness
 fraction when the capacity is counting and the profile is bounded in `[0,1]`. -/
@@ -121,7 +121,7 @@ theorem nearZeroMassInf_counting_eq_nearZeroFractionFin
   unfold nearZeroFractionFin nearZeroFraction witnessFraction witnessCount
   by_cases h0 : Fintype.card U = 0
   · simp [h0]
-  · simp [h0]
+  · simp [h0, Fintype.card_subtype]
 
 /-- Exact reduction of the infinitary existential score to the finite/counting score. -/
 theorem fuzzyExistsScoreInf_counting_eq_fuzzyExistsScoreFin

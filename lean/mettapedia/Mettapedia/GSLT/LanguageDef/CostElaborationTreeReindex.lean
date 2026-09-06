@@ -136,7 +136,9 @@ theorem mappedPlan_isStaticRoot {source target : CIGSLT}
     (node : CostStaticRegionNode source color targetFree) :
     (node.mappedPlan morphism scope laws).isStaticRoot = true := by
   unfold mappedPlan
-  rw [CostStaticRegionPlan.reindex_isStaticRoot]
+  refine (CostStaticRegionPlan.reindex_isStaticRoot _ _ _ _ _ _
+    (mapCostStaticRegionPlan morphism scope laws node.plan
+      node.term.2.2.2.1)).trans ?_
   exact (mapCostStaticRegionPlan_isStaticRoot morphism scope laws node.plan
     node.term.2.2.2.1).trans node.rootStatic
 
@@ -167,7 +169,9 @@ theorem mappedPlan_boundaryPacket {source target : CIGSLT}
       TypedCostRegionBoundaryPacket.map morphism scope color
         node.plan.boundaryPacket := by
   unfold mappedPlan
-  rw [CostStaticRegionPlan.reindex_boundaryPacket]
+  refine (CostStaticRegionPlan.reindex_boundaryPacket _ _ _ _ _ _
+    (mapCostStaticRegionPlan morphism scope laws node.plan
+      node.term.2.2.2.1)).trans ?_
   exact mapCostStaticRegionPlan_boundaryPacket morphism scope laws node.plan
     node.term.2.2.2.1
 
@@ -183,8 +187,11 @@ theorem map_boundaryPacket {source target : CIGSLT}
     (node.map morphism scope laws).plan.boundaryPacket =
       TypedCostRegionBoundaryPacket.map morphism scope color
         node.plan.boundaryPacket := by
-  rw [map, CostStaticRegionNode.ofPlan_plan]
-  exact node.mappedPlan_boundaryPacket morphism scope laws
+  exact congrArg CostStaticRegionPlan.boundaryPacket
+    (CostStaticRegionNode.ofPlan_plan (node.mappedTerm morphism)
+      (node.mappedPlan morphism scope laws)
+      (node.mappedPlan_isStaticRoot morphism scope laws)) |>.trans
+        (node.mappedPlan_boundaryPacket morphism scope laws)
 
 @[simp]
 theorem map_targetBound {source target : CIGSLT}
@@ -221,7 +228,6 @@ theorem map_term_pattern {source target : CIGSLT}
     (node : CostStaticRegionNode source color targetFree) :
     (node.map morphism scope laws).term.1 =
       mapPattern morphism.costWholeStructural.symbols node.term.1 := by
-  rw [map]
   exact node.mappedTerm_pattern morphism
 
 end CostStaticRegionNode
@@ -256,6 +262,20 @@ def CostRegionBoundaryTrees.reindexPacket {source : CIGSLT}
     CostRegionBoundaryTrees source targetFree color targetPacket.2 := by
   subst targetPacket
   exact trees
+
+/-- Grammar-rule mapping preserves its declared result type. -/
+theorem mapGrammarRule_resultType (symbols : LanguageDefSymbolMap)
+    (rule : GrammarRule) :
+    (.base (mapGrammarRule symbols rule).category : TypeExpr) =
+      mapTypeExpr symbols (.base rule.category) := by
+  rfl
+
+/-- Mapping a collection type preserves its collection constructor. -/
+theorem mapTypeExpr_collection_result (symbols : LanguageDefSymbolMap)
+    (collectionType : CollType) (elementType : TypeExpr) :
+    (.collection collectionType (mapTypeExpr symbols elementType) : TypeExpr) =
+      mapTypeExpr symbols (.collection collectionType elementType) := by
+  rfl
 
 mutual
   /-- Map one complete proof-relevant region tree.  Static nodes retain their
@@ -352,15 +372,15 @@ mutual
                 (mapPattern morphism.costWholeStructural.symbols))) =
               mapPattern morphism.costWholeStructural.symbols
                 (.apply rule.label arguments) := by
-          simp [mapPattern, mapPatternList_eq_map, mapGrammarRule]
+          simp only [mapPattern, mapPatternList_eq_map, mapGrammarRule]
         have typeEquality :
             (.base
               (mapGrammarRule
                 morphism.costWholeStructural.symbols rule).category :
                 TypeExpr) =
               mapTypeExpr morphism.costWholeStructural.symbols
-                (.base rule.category) := by
-          rfl
+                (.base rule.category) :=
+          mapGrammarRule_resultType morphism.costWholeStructural.symbols rule
         exact CostRegionTree.reindex rfl rfl patternEquality typeEquality
           mappedTree
     | @CostRegionTree.neutralApplicationQuote _ _ available outer rule
@@ -420,15 +440,15 @@ mutual
                 (mapPattern morphism.costWholeStructural.symbols))) =
               mapPattern morphism.costWholeStructural.symbols
                 (.apply rule.label arguments) := by
-          simp [mapPattern, mapPatternList_eq_map, mapGrammarRule]
+          simp only [mapPattern, mapPatternList_eq_map, mapGrammarRule]
         have typeEquality :
             (.base
               (mapGrammarRule
                 morphism.costWholeStructural.symbols rule).category :
                 TypeExpr) =
               mapTypeExpr morphism.costWholeStructural.symbols
-                (.base rule.category) := by
-          rfl
+                (.base rule.category) :=
+          mapGrammarRule_resultType morphism.costWholeStructural.symbols rule
         exact CostRegionTree.reindex rfl rfl patternEquality typeEquality
           mappedTree
     | @CostRegionTree.lambda _ _ available outer binder body domain codomain
@@ -463,14 +483,15 @@ mutual
                 (mapPattern morphism.costWholeStructural.symbols)) rest) =
               mapPattern morphism.costWholeStructural.symbols
                 (.collection collectionType elements rest) := by
-          simp [mapPattern, mapPatternList_eq_map]
+          simp only [mapPattern, mapPatternList_eq_map]
         have typeEquality :
             (.collection collectionType
               (mapTypeExpr morphism.costWholeStructural.symbols elementType) :
                 TypeExpr) =
               mapTypeExpr morphism.costWholeStructural.symbols
-                (.collection collectionType elementType) := by
-          rfl
+                (.collection collectionType elementType) :=
+          mapTypeExpr_collection_result morphism.costWholeStructural.symbols
+            collectionType elementType
         exact CostRegionTree.reindex rfl rfl patternEquality typeEquality
           mappedTree
 

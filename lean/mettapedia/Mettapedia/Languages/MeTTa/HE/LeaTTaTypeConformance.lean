@@ -398,22 +398,22 @@ private theorem leaSymbolTypeIndexFold_getD
       initial.getD name [] ++
         toLeaTTaAtoms (atoms.filterMap (directSymbolAnnotationType? name)) := by
   induction atoms generalizing initial with
-  | nil => simp [toLeaTTaAtoms]
+  | nil => simp [ toLeaTTaAtoms]
   | cons atom atoms ih =>
       rw [toLeaTTaAtoms, List.foldl_cons, ih]
       cases atom with
       | symbol | var | grounded =>
-          simp [leaSymbolTypeIndexStep, directSymbolAnnotationType?,
+          simp [List.filterMap_cons, leaSymbolTypeIndexStep, directSymbolAnnotationType?,
             toLeaTTaAtom]
       | expression children =>
           rcases children with _ | ⟨first, children⟩
-          · simp [leaSymbolTypeIndexStep, directSymbolAnnotationType?,
+          · simp [List.filterMap_cons, leaSymbolTypeIndexStep, directSymbolAnnotationType?,
               toLeaTTaAtom]
           rcases children with _ | ⟨annotated, children⟩
-          · simp [leaSymbolTypeIndexStep, directSymbolAnnotationType?,
+          · simp [ leaSymbolTypeIndexStep, directSymbolAnnotationType?,
               toLeaTTaAtom]
           rcases children with _ | ⟨type, children⟩
-          · simp [leaSymbolTypeIndexStep, directSymbolAnnotationType?,
+          · simp [ leaSymbolTypeIndexStep, directSymbolAnnotationType?,
               toLeaTTaAtom]
           rcases children with _ | ⟨extra, children⟩
           · cases first with
@@ -424,21 +424,21 @@ private theorem leaSymbolTypeIndexFold_getD
                   | symbol annotatedName =>
                       by_cases hname : annotatedName = name
                       · subst annotatedName
-                        simp [leaSymbolTypeIndexStep,
+                        simp [ leaSymbolTypeIndexStep,
                           directSymbolAnnotationType?, toLeaTTaAtom,
                           List.append_assoc]
-                      · simp [leaSymbolTypeIndexStep,
+                      · simp [ leaSymbolTypeIndexStep,
                           directSymbolAnnotationType?, toLeaTTaAtom,
                           Std.HashMap.getD_insert, hname]
                   | var | grounded | expression =>
-                      simp [leaSymbolTypeIndexStep,
+                      simp [ leaSymbolTypeIndexStep,
                         directSymbolAnnotationType?, toLeaTTaAtom]
-                · simp [leaSymbolTypeIndexStep,
+                · simp [ leaSymbolTypeIndexStep,
                     directSymbolAnnotationType?, toLeaTTaAtom, hcolon]
             | var | grounded | expression =>
-                simp [leaSymbolTypeIndexStep,
+                simp [List.filterMap_cons, leaSymbolTypeIndexStep,
                   directSymbolAnnotationType?, toLeaTTaAtom]
-          · simp [leaSymbolTypeIndexStep, directSymbolAnnotationType?,
+          · simp [ leaSymbolTypeIndexStep, directSymbolAnnotationType?,
               toLeaTTaAtom]
 
 /-- The expression annotation retained by LeaTTa's linear expression index. -/
@@ -480,17 +480,17 @@ private theorem leaExpressionTypeIndexQuery
       rw [toLeaTTaAtoms]
       cases atom with
       | symbol | var | grounded =>
-          simpa [leaExpressionAnnotation?,
+          simpa [List.filterMap_cons, List.filterMap_cons,leaExpressionAnnotation?,
             directExpressionAnnotationType?, toLeaTTaAtom] using ih
       | expression children =>
           rcases children with _ | ⟨first, children⟩
-          · simpa [leaExpressionAnnotation?,
+          · simpa [List.filterMap_cons, List.filterMap_cons,leaExpressionAnnotation?,
               directExpressionAnnotationType?, toLeaTTaAtom] using ih
           rcases children with _ | ⟨annotated, children⟩
-          · simpa [leaExpressionAnnotation?,
+          · simpa [List.filterMap_cons, List.filterMap_cons,leaExpressionAnnotation?,
               directExpressionAnnotationType?, toLeaTTaAtom] using ih
           rcases children with _ | ⟨type, children⟩
-          · simpa [leaExpressionAnnotation?,
+          · simpa [List.filterMap_cons, List.filterMap_cons,leaExpressionAnnotation?,
               directExpressionAnnotationType?, toLeaTTaAtom] using ih
           rcases children with _ | ⟨extra, children⟩
           · cases first with
@@ -515,13 +515,13 @@ private theorem leaExpressionTypeIndexQuery
                                 (toLeaTTaAtom head ::
                                   tail.map toLeaTTaAtom))) = true := by
                           change Metta.Atom.beq _ _ = true
-                          simpa [toLeaTTaAtom, toLeaTTaAtoms_eq_map] using
+                          simpa [List.filterMap_cons, List.filterMap_cons,toLeaTTaAtom, toLeaTTaAtoms_eq_map] using
                             htranslated
-                        simp [leaExpressionAnnotation?,
+                        simp [ leaExpressionAnnotation?,
                           directExpressionAnnotationType?, toLeaTTaAtom]
                         simp only [List.filter_cons, hfilter, if_true,
                           List.map_cons]
-                        simpa [toLeaTTaAtom, toLeaTTaAtoms_eq_map,
+                        simpa [List.filterMap_cons, List.filterMap_cons,toLeaTTaAtom, toLeaTTaAtoms_eq_map,
                           leaExpressionAnnotation?,
                           directExpressionAnnotationType?] using
                             congrArg (List.cons (toLeaTTaAtom type)) ih
@@ -554,26 +554,26 @@ private theorem leaExpressionTypeIndexQuery
                                 (toLeaTTaAtom head ::
                                   tail.map toLeaTTaAtom))) = false := by
                           change Metta.Atom.beq _ _ = false
-                          simpa [toLeaTTaAtom, toLeaTTaAtoms_eq_map] using
+                          simpa [List.filterMap_cons, List.filterMap_cons,toLeaTTaAtom, toLeaTTaAtoms_eq_map] using
                             htranslated
-                        simp [leaExpressionAnnotation?,
+                        simp [ leaExpressionAnnotation?,
                           directExpressionAnnotationType?, toLeaTTaAtom,
                           hatomNe]
                         simp only [List.filter_cons, hfilter,
                           Bool.false_eq_true, if_false]
-                        simpa [toLeaTTaAtom, toLeaTTaAtoms_eq_map,
+                        simpa [List.filterMap_cons, List.filterMap_cons,toLeaTTaAtom, toLeaTTaAtoms_eq_map,
                           leaExpressionAnnotation?,
                           directExpressionAnnotationType?, hatomNe] using ih
                   | symbol | var | grounded =>
-                      simpa [leaExpressionAnnotation?,
+                      simpa [List.filterMap_cons, List.filterMap_cons,leaExpressionAnnotation?,
                         directExpressionAnnotationType?, toLeaTTaAtom] using ih
-                · simpa [leaExpressionAnnotation?,
+                · simpa [List.filterMap_cons, List.filterMap_cons,leaExpressionAnnotation?,
                     directExpressionAnnotationType?, toLeaTTaAtom,
                     hcolon] using ih
             | var | grounded | expression =>
-                simpa [leaExpressionAnnotation?,
+                simpa [List.filterMap_cons, List.filterMap_cons,leaExpressionAnnotation?,
                   directExpressionAnnotationType?, toLeaTTaAtom] using ih
-          · simpa [leaExpressionAnnotation?,
+          · simpa [List.filterMap_cons, List.filterMap_cons,leaExpressionAnnotation?,
               directExpressionAnnotationType?, toLeaTTaAtom] using ih
 
 /-- The two type indexes observed by `getTypes` contain exactly the direct

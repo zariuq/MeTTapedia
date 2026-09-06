@@ -62,6 +62,7 @@ theorem halted_is_normal (outcome : ElaborationOutcome) :
   change step? (.halted outcome) = some target at step
   simp [step?] at step
 
+set_option backward.isDefEq.respectTransparency false in
 /-- A deterministic driver exposes the same single transition to generic
 bounded execution without carrying hidden private state. -/
 def driver : HostedDriver theory where

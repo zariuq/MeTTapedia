@@ -122,7 +122,7 @@ private theorem applyRule_head_mismatch (rule : RewriteRule) (ruleHead : String)
     (ruleArguments : List Pattern) (ruleLeft : rule.left = .apply ruleHead ruleArguments)
     (head : String) (arguments : List Pattern) (distinct : head ≠ ruleHead) :
     applyRuleWithPremisesUsing relationEnv language rule (.apply head arguments) = [] := by
-  simp [applyRuleWithPremisesUsing, matchPatternForRule, ruleLeft, matchPattern, 
+  simp [applyRuleWithPremisesUsing, matchPatternForRule_eq_syntactic, ruleLeft, matchPattern,
     Ne.symm distinct]
 
 /-- A running rule whose decision constructor differs never applies to a running state. -/
@@ -134,7 +134,7 @@ private theorem applyRule_run_decision_mismatch (rule : RewriteRule) (ruleDecisi
     (distinct : decisionHead ≠ ruleDecisionHead) :
     applyRuleWithPremisesUsing relationEnv language rule
       (.apply "bd-run" [.apply decisionHead decisionArguments, subject, kont]) = [] := by
-  simp [applyRuleWithPremisesUsing, matchPatternForRule, ruleLeft, matchPattern, matchArgs,
+  simp [applyRuleWithPremisesUsing, matchPatternForRule_eq_syntactic, ruleLeft, matchPattern, matchArgs,
     Ne.symm distinct]
 
 /-- A returning rule whose continuation constructor differs never applies. -/
@@ -146,7 +146,7 @@ private theorem applyRule_ret_kont_mismatch (rule : RewriteRule) (ruleBindings r
     (distinct : kontHead ≠ ruleKontHead) :
     applyRuleWithPremisesUsing relationEnv language rule
       (.apply "bd-ret" [bindings, subject, .apply kontHead kontArguments]) = [] := by
-  simp [applyRuleWithPremisesUsing, matchPatternForRule, ruleLeft, matchPattern, matchArgs,
+  simp [applyRuleWithPremisesUsing, matchPatternForRule_eq_syntactic, ruleLeft, matchPattern, matchArgs,
     mergeBindings, Ne.symm distinct]
 
 /-- A returning rule whose top frame constructor differs never applies. -/
@@ -160,7 +160,7 @@ private theorem applyRule_ret_frame_mismatch (rule : RewriteRule) (ruleBindings 
     applyRuleWithPremisesUsing relationEnv language rule
       (.apply "bd-ret" [bindings, subject,
         .apply "bd-kcons" [.apply frameHead frameArguments, rest]]) = [] := by
-  simp [applyRuleWithPremisesUsing, matchPatternForRule, ruleLeft, matchPattern, matchArgs,
+  simp [applyRuleWithPremisesUsing, matchPatternForRule_eq_syntactic, ruleLeft, matchPattern, matchArgs,
     mergeBindings, Ne.symm distinct]
 
 /-! ## The catalog on encoded arguments -/
@@ -207,13 +207,13 @@ private theorem apply_succeed (subject : Pattern) (kont : List Frame) :
         (encodeState (.run .succeed subject kont)) =
       [encodeState (.ret [] subject kont)] := by
   simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, succeedRewrite, 
-    
-    runPattern, retPattern, succeedPattern, 
-    nilBindingsPattern, 
+    builtinRelationTuples, succeedRewrite,
+
+    runPattern, retPattern, succeedPattern,
+    nilBindingsPattern,
     metavariable, encodeState, encodeDecision,
-    encodeBindings, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    encodeBindings, matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_capture (path : AccessPath) (name : String) (subject : Pattern)
@@ -226,23 +226,23 @@ private theorem apply_capture (path : AccessPath) (name : String) (subject : Pat
   cases projection : path.project? subject with
   | none =>
       simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, captureRewrite, 
-    
-    runPattern, retPattern, capturePattern, 
-    nilBindingsPattern, bindPattern, 
+    builtinRelationTuples, captureRewrite,
+
+    runPattern, retPattern, capturePattern,
+    nilBindingsPattern, bindPattern,
     metavariable, encodeState, encodeDecision,
-    matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings, tuples_project_none path subject _ projection]
   | some focused =>
       simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, captureRewrite, 
-    
-    runPattern, retPattern, capturePattern, 
-    nilBindingsPattern, bindPattern, 
+    builtinRelationTuples, captureRewrite,
+
+    runPattern, retPattern, capturePattern,
+    nilBindingsPattern, bindPattern,
     metavariable, encodeState, encodeDecision,
-    encodeBindings, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    encodeBindings, matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup, tuples_project_some path subject focused _ projection]
 
 private theorem apply_checkBound (path : AccessPath) (expected : Nat) (subject : Pattern)
@@ -257,23 +257,23 @@ private theorem apply_checkBound (path : AccessPath) (expected : Nat) (subject :
   | none =>
       simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, checkBoundRewrite,
-    
+
     runPattern, retPattern, checkBoundPattern,
-    nilBindingsPattern, 
+    nilBindingsPattern,
     metavariable, encodeState, encodeDecision,
-    matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings, tuples_project_none path subject _ projection]
   | some focused =>
       cases bound : isBoundAt focused expected <;>
       simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, checkBoundRewrite,
-    
+
     runPattern, retPattern, checkBoundPattern,
-    nilBindingsPattern, 
+    nilBindingsPattern,
     metavariable, encodeState, encodeDecision,
-    encodeBindings, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    encodeBindings, matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup, tuples_project_some path subject focused _ projection, tuples_bound,
         rowWhen, bound]
 
@@ -289,24 +289,24 @@ private theorem apply_checkConstructor (path : AccessPath) (expected : String) (
   cases projection : path.project? subject with
   | none =>
       simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, 
-    checkConstructorRewrite, 
-    runPattern, 
-    checkConstructorPattern, 
+    builtinRelationTuples,
+    checkConstructorRewrite,
+    runPattern,
+    checkConstructorPattern,
     metavariable, encodeState, encodeDecision,
-    matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings, tuples_project_none path subject _ projection]
   | some focused =>
       cases constructorTest : isConstructorOf focused expected arity <;>
       simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, 
-    checkConstructorRewrite, 
-    runPattern, 
-    checkConstructorPattern, 
+    builtinRelationTuples,
+    checkConstructorRewrite,
+    runPattern,
+    checkConstructorPattern,
     metavariable, encodeState, encodeDecision,
-    matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup, tuples_project_some path subject focused _ projection,
         tuples_constructor, rowWhen, constructorTest]
 
@@ -315,13 +315,13 @@ private theorem apply_join (head tail : Decision) (subject : Pattern) (kont : Li
         (encodeState (.run (.join head tail) subject kont)) =
       [encodeState (.run head subject (.joinRight tail :: kont))] := by
   simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, 
-    joinRewrite, 
-    runPattern, 
+    builtinRelationTuples,
+    joinRewrite,
+    runPattern,
     joinPattern, joinRightPattern,
     kconsPattern, metavariable, encodeState, encodeDecision,
-    encodeFrame, encodeKont, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    encodeFrame, encodeKont, matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_joinRight (bindings : Bindings) (tail : Decision) (subject : Pattern)
@@ -330,13 +330,13 @@ private theorem apply_joinRight (bindings : Bindings) (tail : Decision) (subject
         (encodeState (.ret bindings subject (.joinRight tail :: kont))) =
       [encodeState (.run tail subject (.joinMerge bindings :: kont))] := by
   simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, 
-    joinRightRewrite, 
-    runPattern, retPattern, 
+    builtinRelationTuples,
+    joinRightRewrite,
+    runPattern, retPattern,
     joinRightPattern,
-    joinMergePattern, kconsPattern, metavariable, encodeState, 
-    encodeFrame, encodeKont, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    joinMergePattern, kconsPattern, metavariable, encodeState,
+    encodeFrame, encodeKont, matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_joinMerge (tailBindings headBindings : Bindings) (subject : Pattern)
@@ -349,23 +349,23 @@ private theorem apply_joinMerge (tailBindings headBindings : Bindings) (subject 
   cases merge : mergeBindings headBindings tailBindings with
   | none =>
       simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, 
-    joinMergeRewrite, 
-    retPattern, 
-    
-    joinMergePattern, kconsPattern, metavariable, encodeState, 
-    encodeFrame, encodeKont, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    builtinRelationTuples,
+    joinMergeRewrite,
+    retPattern,
+
+    joinMergePattern, kconsPattern, metavariable, encodeState,
+    encodeFrame, encodeKont, matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings, tuples_merge_none headBindings tailBindings _ merge]
   | some merged =>
       simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, 
-    joinMergeRewrite, 
-    retPattern, 
-    
-    joinMergePattern, kconsPattern, metavariable, encodeState, 
-    encodeFrame, encodeKont, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    builtinRelationTuples,
+    joinMergeRewrite,
+    retPattern,
+
+    joinMergePattern, kconsPattern, metavariable, encodeState,
+    encodeFrame, encodeKont, matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup, tuples_merge_some headBindings tailBindings merged _ merge]
 
 private theorem apply_finish (bindings : Bindings) (subject : Pattern) :
@@ -373,13 +373,13 @@ private theorem apply_finish (bindings : Bindings) (subject : Pattern) :
         (encodeState (.ret bindings subject [])) =
       [encodeState (.done bindings)] := by
   simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
-    builtinRelationTuples, 
+    builtinRelationTuples,
     finishRewrite,
-    retPattern, donePattern, 
-    
-    knilPattern, metavariable, encodeState, 
-    encodeKont, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    retPattern, donePattern,
+
+    knilPattern, metavariable, encodeState,
+    encodeKont, matchPatternForRule_eq_syntactic,
+    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 /-! ## Executor equations, one per state family -/

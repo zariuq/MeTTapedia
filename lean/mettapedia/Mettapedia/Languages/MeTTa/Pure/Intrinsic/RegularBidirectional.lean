@@ -432,8 +432,8 @@ def checkRegularFormed : {n : Nat} → {Γ : Ctx n} →
           let firstChecked <- checkRegularFormed context first view.dom
             view.domFormed
           let secondExpected := inst0 first view.cod
-          let secondExpectedFormed := view.codFormed.instantiate
-            firstChecked.typing context.constantFreeCtx
+          let secondExpectedFormed : RegularHasType Γ secondExpected .u1 :=
+            view.codFormed.instantiate firstChecked.typing context.constantFreeCtx
           let secondChecked <- checkRegularFormed context second secondExpected
             secondExpectedFormed
           let pairTyping := RegularHasType.pair_intro view.domFormed
@@ -720,7 +720,9 @@ theorem checkRegular_pair_formed :
       (lookup (.snoc .nil .u0 : Ctx 1) 0) (inst0 (.var 0) view.cod) := by
     simpa [lookup_snoc_zero, rename, inst0, subst, subst0] using
       (components.2.inst0_body (ConstantFree.var (0 : Fin 1)))
-  rcases checkRegular_variable regularCtx_u0 0 _ secondConversion with
+  rcases checkRegular_variable regularCtx_u0 0
+      (view.codFormed.instantiate firstChecked.typing regularCtx_u0.constantFreeCtx)
+      secondConversion with
     ⟨secondChecked, secondEq⟩
   rw [secondEq]
   exact ⟨_, rfl⟩

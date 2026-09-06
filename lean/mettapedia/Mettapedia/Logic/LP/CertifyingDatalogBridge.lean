@@ -74,6 +74,7 @@ theorem GroundAtom.toCDL_ofCDL (ga : GroundAtom σ) :
     funext i
     simp [GroundAtom.toCDL, GroundAtom.ofCDL, List.getElem_ofFn,
           GroundTerm.ofConst_toConst]
+    rfl
   cases ga
   simp only [toCDL, ofCDL] at h ⊢
   congr

@@ -40,7 +40,8 @@ noncomputable def canonicalLabelFiberEquiv (d : Nat) (b : Label) :
         cases p with
         | mk i ℓ =>
             simp at hp
-            simp [hp]
+            subst ℓ
+            rfl
   right_inv i := by
     simp
 

@@ -28,9 +28,13 @@ open Mettapedia.ProbabilityTheory.BayesianNetworks
 
 namespace MembershipCounts
 
-inductive EmpiricalFactor
+inductive EmpiricalFactor where
   | joint
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype EmpiricalFactor where
+  elems := {.joint}
+  complete x := by cases x <;> simp
 
 /-- The joint factor scope for the empirical 2x2 table. -/
 def pairScope : Finset MembershipConcept :=
@@ -69,29 +73,11 @@ def pairPotential (c : MembershipCounts) (x : ∀ v ∈ pairScope, Bool) : Nat :
 
 /-- The one-factor graph whose joint potential is exactly the empirical 2x2
 table. -/
-def factorGraph (c : MembershipCounts) : FactorGraph MembershipConcept Nat where
+abbrev factorGraph (c : MembershipCounts) : FactorGraph MembershipConcept Nat where
   stateSpace := fun _ => Bool
   factors := EmpiricalFactor
   scope := fun _ => pairScope
   potential := fun _ => pairPotential c
-
-instance (c : MembershipCounts) : ∀ v : MembershipConcept, Fintype ((factorGraph c).stateSpace v) := by
-  intro _
-  dsimp [factorGraph]
-  infer_instance
-
-instance (c : MembershipCounts) : ∀ v : MembershipConcept, DecidableEq ((factorGraph c).stateSpace v) := by
-  intro _
-  dsimp [factorGraph]
-  infer_instance
-
-instance (c : MembershipCounts) : Fintype (factorGraph c).factors := by
-  dsimp [factorGraph]
-  infer_instance
-
-instance (c : MembershipCounts) : DecidableEq (factorGraph c).factors := by
-  dsimp [factorGraph]
-  infer_instance
 
 instance (c : MembershipCounts) : Fintype (factorGraph c).FullConfig := by
   dsimp [FactorGraph.FullConfig, factorGraph]
@@ -182,7 +168,7 @@ theorem veWeight_eq_pairWeight
           · intro hx q hq
             rcases q with ⟨v, b⟩
             cases v <;> exact hx ⟨_, b⟩ hq
-        simp [hSat, combinedFactor_apply, fullConfigEquiv])
+        exact ite_congr (propext hSat) (fun _ => combinedFactor_apply c x) (fun _ => rfl))
   rw [veWeight, VariableElimination.veQueryWeightList_eq_weightOfConstraintsList]
   exact hsum
 
@@ -331,6 +317,7 @@ theorem witnessMessage_eq (c : MembershipCounts) :
     simp [MessagePassing.unitVarToFactor, factorGraph, pairPotential, rawPotential, pairScope,
       VariableElimination.Factor.extend_apply_eq, VariableElimination.Factor.extend_apply_ne,
       MessagePassing.singletonOtherScopeAssign]
+    rfl
   cases b with
   | false =>
       rw [hsum]
@@ -363,6 +350,7 @@ theorem featureMessage_eq (c : MembershipCounts) :
     simp [MessagePassing.unitVarToFactor, factorGraph, pairPotential, rawPotential, pairScope,
       VariableElimination.Factor.extend_apply_eq, VariableElimination.Factor.extend_apply_ne,
       MessagePassing.singletonOtherScopeAssign]
+    rfl
   cases b with
   | false =>
       rw [hsum]
@@ -587,9 +575,7 @@ theorem featureToWitnessStrength_eq_bp_ratio (t : FiniteWitnessFeatureTable) :
         0
       else
         (jointFactorBelief t (ttJointAssign t) : ℝ) / featureMessage t true := by
-  simpa [featureToWitnessStrength, featureMessage, jointFactorBelief,
-    ttJointAssign, toMembershipCounts] using
-    MembershipCounts.extensionalInheritance_eq_bp_ratio (toMembershipCounts t)
+  exact MembershipCounts.extensionalInheritance_eq_bp_ratio (toMembershipCounts t)
 
 end FiniteWitnessFeatureTable
 
@@ -605,9 +591,13 @@ namespace FiniteFeatureWitnessCountTable
 
 variable {Feature Witness : Type} [Fintype Feature] [Fintype Witness]
 
-inductive CountFactor
+inductive CountFactor where
   | joint
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype CountFactor where
+  elems := {.joint}
+  complete x := by cases x <;> simp
 
 /-- Total mass of the finite feature/witness count table. -/
 noncomputable def total (t : FiniteFeatureWitnessCountTable Feature Witness) : Nat :=
@@ -802,7 +792,7 @@ theorem veWeight_eq_pairWeight
             t.count ((fullConfigEquiv t) x).1 ((fullConfigEquiv t) x).2
           else 0)
       rw [if_pos hRaw, if_pos hp']
-      simpa [fullConfigEquiv] using hpot
+      exact hpot
     · have hp' : ¬ pairSatisfies t constraints ((fullConfigEquiv t) x) :=
         fun hp' => hRaw (hSat.mpr hp')
       change
@@ -851,7 +841,8 @@ theorem pairWeight_feature_witness
       · exact hx ⟨MembershipConcept.witness, witness⟩ (by simp)
     · rintro ⟨rfl, rfl⟩ q hq
       rcases q with ⟨v, y⟩
-      cases v <;> simp at hq <;> simp [hq]
+      cases v <;> simp only [List.mem_cons, List.not_mem_nil, or_false] at hq
+      all_goals rcases hq with hq | hq <;> cases hq <;> rfl
   rw [pairWeight, Fintype.sum_prod_type]
   simp_rw [hSat]
   have hInner :
@@ -971,6 +962,7 @@ theorem witnessMessage_eq
   simp [MessagePassing.unitVarToFactor, factorGraph, MembershipCounts.pairScope,
     VariableElimination.Factor.extend_apply_eq, VariableElimination.Factor.extend_apply_ne,
     MessagePassing.singletonOtherScopeAssign]
+  rfl
 
 theorem featureMessage_eq
     (t : FiniteFeatureWitnessCountTable Feature Witness) :
@@ -992,6 +984,7 @@ theorem featureMessage_eq
   simp [MessagePassing.unitVarToFactor, factorGraph, MembershipCounts.pairScope,
     VariableElimination.Factor.extend_apply_eq, VariableElimination.Factor.extend_apply_ne,
     MessagePassing.singletonOtherScopeAssign]
+  rfl
 
 theorem witnessMessage_value
     (t : FiniteFeatureWitnessCountTable Feature Witness) (witness : Witness) :
@@ -1901,22 +1894,22 @@ theorem formedConceptInheritance_exact_via_ve_bp
           FiniteWitnessFeatureTable.featureMessage
             (formedConceptInheritanceTable G M subConcept superConcept) true) := by
   constructor
-  · simpa [formedConceptInheritanceTable] using
+  · exact
       finiteInheritancePrior_formedConceptInterpretation_eq_veWeight_ratio
         (G := G) (M := M) (subConcept := subConcept) (superConcept := superConcept)
   constructor
-  · simpa [formedConceptInheritanceTable] using
+  · exact
       finiteInheritanceStrength_formedConceptInterpretation_eq_veWeight_ratio
         (G := G) (M := M) (subConcept := subConcept) (superConcept := superConcept)
   constructor
-  · simpa [formedConceptInheritanceTable] using
+  · exact
       finiteInheritanceLogRatioBits_formedConceptInterpretation_eq_veQueryScore
         (G := G) (M := M) (subConcept := subConcept) (superConcept := superConcept)
   constructor
-  · simpa [formedConceptInheritanceTable] using
+  · exact
       finiteInheritancePrior_formedConceptInterpretation_eq_bpRatio
         (G := G) (M := M) (subConcept := subConcept) (superConcept := superConcept)
-  · simpa [formedConceptInheritanceTable] using
+  · exact
       finiteInheritanceStrength_formedConceptInterpretation_eq_bpRatio
         (G := G) (M := M) (subConcept := subConcept) (superConcept := superConcept)
 
@@ -2244,22 +2237,22 @@ theorem lowerFormedConceptInheritance_exact_via_ve_bp
           FiniteWitnessFeatureTable.featureMessage
             (lowerCredalConceptInheritanceTable Γ M subConcept superConcept) true) := by
   constructor
-  · simpa [lowerCredalConceptInheritanceTable] using
+  · exact
       finiteInheritancePrior_lowerFormedConceptInterpretation_eq_veWeight_ratio
         (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
   constructor
-  · simpa [lowerCredalConceptInheritanceTable] using
+  · exact
       finiteInheritanceStrength_lowerFormedConceptInterpretation_eq_veWeight_ratio
         (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
   constructor
-  · simpa [lowerCredalConceptInheritanceTable] using
+  · exact
       finiteInheritanceLogRatioBits_lowerFormedConceptInterpretation_eq_veQueryScore
         (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
   constructor
-  · simpa [lowerCredalConceptInheritanceTable] using
+  · exact
       finiteInheritancePrior_lowerFormedConceptInterpretation_eq_bpRatio
         (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
-  · simpa [lowerCredalConceptInheritanceTable] using
+  · exact
       finiteInheritanceStrength_lowerFormedConceptInterpretation_eq_bpRatio
         (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
 
@@ -2629,22 +2622,22 @@ theorem upperFormedConceptInheritance_exact_via_ve_bp
           FiniteWitnessFeatureTable.featureMessage
             (upperCredalConceptInheritanceTable Γ M subConcept superConcept) true) := by
   constructor
-  · simpa [upperCredalConceptInheritanceTable] using
+  · exact
       finiteInheritancePrior_upperFormedConceptInterpretation_eq_veWeight_ratio
         (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
   constructor
-  · simpa [upperCredalConceptInheritanceTable] using
+  · exact
       finiteInheritanceStrength_upperFormedConceptInterpretation_eq_veWeight_ratio
         (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
   constructor
-  · simpa [upperCredalConceptInheritanceTable] using
+  · exact
       finiteInheritanceLogRatioBits_upperFormedConceptInterpretation_eq_veQueryScore
         (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
   constructor
-  · simpa [upperCredalConceptInheritanceTable] using
+  · exact
       finiteInheritancePrior_upperFormedConceptInterpretation_eq_bpRatio
         (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
-  · simpa [upperCredalConceptInheritanceTable] using
+  · exact
       finiteInheritanceStrength_upperFormedConceptInterpretation_eq_bpRatio
         (Γ := Γ) (M := M) (subConcept := subConcept) (superConcept := superConcept)
 

@@ -208,8 +208,11 @@ def transportTerm {C : Cwf.{u, v, w, w'}} {Γ : C.Ctx}
 
 /-! ## Positive and negative controls -/
 
+/-- The one-point context, retained at the CwF's context type. -/
+def unitBoolContext : (familiesCwf.{0}).Ctx := PUnit
+
 /-- A Boolean type in the set-families CwF over the one-point context. -/
-def unitBoolType : TypeOver (familiesCwf.{0}) PUnit where
+def unitBoolType : TypeOver (familiesCwf.{0}) unitBoolContext where
   val := fun _ => Bool
 
 /-- A nontrivial display-map endomorphism induced by Boolean negation. -/
@@ -232,7 +235,7 @@ theorem boolNegationDisplay_transports_true :
       (fun point => !point.2))
     (fun _ : PUnit => true) PUnit.unit = false
   simp only [transportTerm]
-  rw [toTerm_ofTerm]
+  rw [toTerm_ofTerm (A := unitBoolType) (B := unitBoolType) (fun point => !point.2)]
   rfl
 
 /-- Negative: the category of types over a context is not made discrete by

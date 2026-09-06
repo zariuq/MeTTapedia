@@ -115,8 +115,7 @@ noncomputable instance presheafSubfunctorFrame
     {C : Type u} [Category.{v} C] (F : C ⥤ Type w) : Order.Frame (CategoryTheory.Subfunctor F) := by
   refine Order.Frame.ofMinimalAxioms ?_
   refine
-    { toCompleteLattice := inferInstance
-      inf_sSup_le_iSup_inf := ?_ }
+    { inf_sSup_le_iSup_inf := ?_ }
   intro a s
   have hs :
       (sSup s : CategoryTheory.Subfunctor F) =
@@ -238,20 +237,27 @@ noncomputable def presheafChangeOfBase (C : Type u) [Category C] :
     rcases hy with ⟨x, hx, rfl⟩
     exact ⟨x, hφ U hx, rfl⟩
   · intro X Y f φ ψ hφ
+    change CategoryTheory.Subfunctor X at φ ψ
     refine iSup_le ?_
     intro θ
+    change CategoryTheory.Subfunctor Y at θ
     by_cases hθ : CategoryTheory.Subfunctor.preimage θ f ≤ φ
     · have hθ' : CategoryTheory.Subfunctor.preimage θ f ≤ ψ := le_trans hθ hφ
       have hθsup : θ ≤
           (⨆ θ' : CategoryTheory.Subfunctor Y,
             if CategoryTheory.Subfunctor.preimage θ' f ≤ ψ then θ' else ⊥) :=
         le_iSup_of_le θ (by simp [hθ'])
-      simp only [if_pos hθ]; exact hθsup
+      have hlower : (if θ.preimage f ≤ φ then θ else
+          (⊥ : CategoryTheory.Subfunctor Y)) ≤ θ := by
+        simp only [if_pos hθ, le_refl]
+      exact le_trans hlower hθsup
     · simp [hθ]
   · intro X Y f φ ψ
     exact CategoryTheory.Subfunctor.image_le_iff
       (G := φ) (f := f) (G' := ψ)
   · intro X Y f ψ φ
+    change CategoryTheory.Subfunctor X at φ
+    change CategoryTheory.Subfunctor Y at ψ
     constructor
     · intro h
       have hψ : CategoryTheory.Subfunctor.preimage ψ f ≤ φ := h

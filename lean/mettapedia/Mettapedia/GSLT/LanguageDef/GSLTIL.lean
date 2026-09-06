@@ -166,7 +166,9 @@ private theorem rewrites_validate :
   simp only [List.mem_cons, List.mem_nil_iff, or_false] at rewriteMember
   rcases rewriteMember with rfl | rfl | rfl
   all_goals
-    simp [LanguageDef.validateRewrite, language, definition,
+    dsimp only [LanguageDef.validateRewrite, language, definition,
+      ExtendedLanguageDef.toLanguageDef, fibreAtRewrite, fibreUnderViaRewrite, applyViaRewrite]
+    simp [
       fibreAtRewrite, fibreUnderViaRewrite, applyViaRewrite,
       atPattern, viaPattern, metavariable, fibreStepRelation,
       transportRelation, stageType, routeKindType, routeType, stateType,
@@ -318,6 +320,8 @@ theorem execute_at (catalog : Catalog) (stage state : Pattern) :
     fibreAtRewrite, fibreUnderViaRewrite, applyViaRewrite,
     fibreStepRelation, transportRelation, atPattern, viaPattern,
     metavariable, matchPatternForRule, matchPatternForRuleUsing,
+    OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?,
     applyBindingsForRule, applyBindingsForRuleUsing,
     matchPattern, matchArgs, mergeBindings, applyBindings]
   generalize fibreTargets catalog stage state = targets
@@ -344,6 +348,8 @@ theorem execute_via (catalog : Catalog)
     fibreAtRewrite, fibreUnderViaRewrite, applyViaRewrite,
     fibreStepRelation, transportRelation, atPattern, viaPattern,
     metavariable, matchPatternForRule, matchPatternForRuleUsing,
+    OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?,
     applyBindingsForRule, applyBindingsForRuleUsing,
     matchPattern, matchArgs, mergeBindings, applyBindings]
   generalize fibreTargets catalog sourceStage state = fibreRows
@@ -633,7 +639,9 @@ theorem unknown_command_inert (catalog : Catalog) (arguments : List Pattern) :
   simp [rewriteStepWithPremisesUsing, applyRuleWithPremisesUsing,
     language, definition, fibreAtRewrite, fibreUnderViaRewrite,
     applyViaRewrite, atPattern, viaPattern, metavariable,
-    matchPatternForRule, matchPatternForRuleUsing, matchPattern]
+    matchPatternForRule, matchPatternForRuleUsing,
+    OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?, matchPattern]
 
 /-- The direct finite command relation is itself a GSLT. -/
 def wireGSLT (catalog : Catalog) : GSLT where

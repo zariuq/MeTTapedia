@@ -55,7 +55,11 @@ inductive Action : Type
   | left : Action
   | right : Action
   | stay : Action
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype Action where
+  elems := {.left, .right, .stay}
+  complete := by intro x; cases x <;> simp
 
 /-- Observations from the environment (binary for simplicity). -/
 abbrev Observation := Bool

@@ -303,24 +303,22 @@ private theorem sourceLanguage_valid : sourceLanguage.validate = [] := by
     intro rule membership
     change List.Mem rule [sourceFirst, sourceSecond] at membership
     rcases List.mem_cons.mp membership with rfl | tailMembership
-    · simp [LanguageDef.validateRewrite, sourceLanguage, sourceFirst,
-        sourceSecond, term, termType,
-        LanguageDef.validatePatternConstructors,
+    · simp only [LanguageDef.validateRewrite, sourceLanguage, sourceFirst]
+      simp only [List.flatMap_nil, List.nil_append]
+      simp [term, LanguageDef.validatePatternConstructors,
         LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
         LanguageDef.patternBinderNames, Pattern.constructorRefs,
         Pattern.constructorRefsList, Pattern.freeFvarNames,
-        Pattern.isWellScoped, Pattern.isWellScopedAt,
-        Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain]
+        Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt]
     · have equality := List.mem_singleton.mp tailMembership
       subst rule
-      simp [LanguageDef.validateRewrite, sourceLanguage, sourceFirst,
-        sourceSecond, term, termType,
-        LanguageDef.validatePatternConstructors,
+      simp only [LanguageDef.validateRewrite, sourceLanguage, sourceSecond]
+      simp only [List.flatMap_nil, List.nil_append]
+      simp [term, LanguageDef.validatePatternConstructors,
         LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
         LanguageDef.patternBinderNames, Pattern.constructorRefs,
         Pattern.constructorRefsList, Pattern.freeFvarNames,
-        Pattern.isWellScoped, Pattern.isWellScopedAt,
-        Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain]
+        Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt]
 
 private theorem targetLanguage_valid : targetLanguage.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorAndRewrites
@@ -336,13 +334,13 @@ private theorem targetLanguage_valid : targetLanguage.validate = [] := by
     change List.Mem rule [targetOnly] at membership
     have equality := List.mem_singleton.mp membership
     subst rule
-    simp [LanguageDef.validateRewrite, targetLanguage, targetOnly, term,
-      termType, LanguageDef.validatePatternConstructors,
+    simp only [LanguageDef.validateRewrite, targetLanguage, targetOnly]
+    simp only [List.flatMap_nil, List.nil_append]
+    simp [term, LanguageDef.validatePatternConstructors,
       LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
       LanguageDef.patternBinderNames, Pattern.constructorRefs,
       Pattern.constructorRefsList, Pattern.freeFvarNames,
-      Pattern.isWellScoped, Pattern.isWellScopedAt,
-      Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain]
+      Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt]
 
 private def source : ValidatedLanguageDef :=
   ⟨sourceLanguage, sourceLanguage_valid⟩

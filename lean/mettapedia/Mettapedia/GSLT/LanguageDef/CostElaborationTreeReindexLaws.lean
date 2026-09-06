@@ -445,7 +445,13 @@ theorem mapCostStaticRegionPlan_boundaryEntries
     simpa only [TypedCostRegionBoundaryPacket.map,
       CostStaticRegionPlan.boundaryPacket] using displayed
   rw [TypedCostRegionBoundaryTable.entries_map] at displayed'
-  simpa [List.map_map, Function.comp_def] using displayed'
+  exact displayed'.trans
+    (List.map_map.trans
+      ((List.map_congr_left fun boundary _ =>
+        TypedCostRegionBoundary.map_boundary morphism scope boundary).trans
+          (List.map_map (f := fun (boundary : TypedCostRegionBoundary source color targetFree) => boundary.boundary)
+            (g := CostRegionBoundary.map morphism)
+            (l := plan.boundaryTable.entries)).symm))
 
 /-- The boundary list displayed by a mapped plan is the pointwise map of the
 source boundary list. -/
@@ -489,32 +495,57 @@ mutual
       (mapCostStaticRegionPlan morphism scope laws plan object).decoration =
         plan.decoration.map morphism := by
     apply CostStaticPlanDecoration.ext
-    · simp
-    · simp
-    · simp
-    · simp
-    · simp
-    · simp
+    · rw [CostStaticPlanDecoration.sourceBound_map,
+        CostStaticRegionPlan.decoration_sourceBound plan]
+      exact CostStaticRegionPlan.decoration_sourceBound
+        (mapCostStaticRegionPlan morphism scope laws plan object)
+    · rw [CostStaticPlanDecoration.targetBound_map,
+        CostStaticRegionPlan.decoration_targetBound plan]
+      exact CostStaticRegionPlan.decoration_targetBound
+        (mapCostStaticRegionPlan morphism scope laws plan object)
+    · rw [CostStaticPlanDecoration.sourceAvailable_map,
+        CostStaticRegionPlan.decoration_sourceAvailable plan]
+      exact CostStaticRegionPlan.decoration_sourceAvailable
+        (mapCostStaticRegionPlan morphism scope laws plan object)
+    · rw [CostStaticPlanDecoration.outer_map,
+        CostStaticRegionPlan.decoration_outer plan]
+      exact CostStaticRegionPlan.decoration_outer
+        (mapCostStaticRegionPlan morphism scope laws plan object)
+    · rw [CostStaticPlanDecoration.pattern_map,
+        CostStaticRegionPlan.decoration_pattern plan]
+      exact CostStaticRegionPlan.decoration_pattern
+        (mapCostStaticRegionPlan morphism scope laws plan object)
+    · rw [CostStaticPlanDecoration.sourceType_map,
+        CostStaticRegionPlan.decoration_sourceType plan]
+      exact CostStaticRegionPlan.decoration_sourceType
+        (mapCostStaticRegionPlan morphism scope laws plan object)
     · exact mapCostStaticRegionPlan_boundaryDecorations morphism scope laws
         plan object
     · rw [CostStaticPlanDecoration.node_map]
       cases plan with
       | bvar | fvar =>
-          simp only [mapCostStaticRegionPlan,
+          rw [mapCostStaticRegionPlan.eq_1 morphism scope laws _ object]
+          dsimp only [id]
+          simp only [
             CostStaticRegionPlan.decoration,
             CostStaticPlanDecoration.node,
             CostStaticPlanDecorationNode.map]
-      | boundaryApplication =>
-          rw [mapCostStaticRegionPlan.eq_1]
+      | boundaryApplication constructor rendered outside certified certifies =>
+          rw [mapCostStaticRegionPlan.eq_1 morphism scope laws _ object]
+          dsimp only [id]
           rw [CostStaticRegionPlan.decoration_reindex]
           simp [CostStaticRegionPlan.decoration,
             CostStaticPlanDecoration.node,
             CostStaticPlanDecorationNode.map]
+          exact (CertifiedCostRegionBoundary.castContent_typed_boundary _
+            (certified.mapStatic morphism scope)).trans
+              (CertifiedCostRegionBoundary.mapStatic_typed_boundary morphism scope certified)
       | application constructor rendered current preimage notBare children =>
           have objects := WellSorted.objectArguments_of_objectApplication object
           have childEquality := mapCostStaticArgumentPlan_decorations morphism
             scope laws children objects
-          rw [mapCostStaticRegionPlan.eq_1]
+          rw [mapCostStaticRegionPlan.eq_1 morphism scope laws _ object]
+          dsimp only [id]
           rw [CostStaticRegionPlan.decoration_reindex]
           simp only [CostStaticRegionPlan.decoration,
             CostStaticPlanDecoration.node,
@@ -526,25 +557,32 @@ mutual
           have bodyObject := WellSorted.objectBody_of_objectLambda object
           have bodyEquality := mapCostStaticRegionPlan_decoration morphism scope
             laws bodyPlan bodyObject
-          rw [mapCostStaticRegionPlan.eq_1]
-          simpa [CostStaticRegionPlan.decoration,
-            CostStaticPlanDecoration.node,
-            CostStaticPlanDecorationNode.map,
-            CostStaticRegionPlan.decoration_reindex] using bodyEquality
+          rw [mapCostStaticRegionPlan.eq_1 morphism scope laws _ object]
+          dsimp only [id]
+          simp only [CostStaticRegionPlan.decoration,
+            CostStaticPlanDecoration.node, CostStaticPlanDecorationNode.map]
+          congr 1
+          exact (CostStaticRegionPlan.decoration_reindex _ _ _ _ _ _
+            (mapCostStaticRegionPlan morphism scope laws bodyPlan bodyObject)).trans
+              bodyEquality
       | multiLambda bodyPlan =>
           have bodyObject := WellSorted.objectBody_of_objectMultiLambda object
           have bodyEquality := mapCostStaticRegionPlan_decoration morphism scope
             laws bodyPlan bodyObject
-          rw [mapCostStaticRegionPlan.eq_1]
-          simpa [CostStaticRegionPlan.decoration,
-            CostStaticPlanDecoration.node,
-            CostStaticPlanDecorationNode.map,
-            CostStaticRegionPlan.decoration_reindex] using bodyEquality
+          rw [mapCostStaticRegionPlan.eq_1 morphism scope laws _ object]
+          dsimp only [id]
+          simp only [CostStaticRegionPlan.decoration,
+            CostStaticPlanDecoration.node, CostStaticPlanDecorationNode.map]
+          congr 1
+          exact (CostStaticRegionPlan.decoration_reindex _ _ _ _ _ _
+            (mapCostStaticRegionPlan morphism scope laws bodyPlan bodyObject)).trans
+              bodyEquality
       | collection choice selected children =>
           have objects := WellSorted.objectElements_of_objectCollection object
           have childEquality := mapCostStaticElementPlan_decorations morphism
             scope laws children objects
-          rw [mapCostStaticRegionPlan.eq_1]
+          rw [mapCostStaticRegionPlan.eq_1 morphism scope laws _ object]
+          dsimp only [id]
           rw [CostStaticRegionPlan.decoration_reindex]
           simp only [CostStaticRegionPlan.decoration,
             CostStaticPlanDecoration.node,
@@ -552,12 +590,16 @@ mutual
           congr 1
           apply Eq.trans ?_ childEquality
           apply CostStaticElementPlan.decorations_reindex
-      | boundaryCollection =>
-          rw [mapCostStaticRegionPlan.eq_1]
+      | boundaryCollection rejected choice selected certified certifies =>
+          rw [mapCostStaticRegionPlan.eq_1 morphism scope laws _ object]
+          dsimp only [id]
           rw [CostStaticRegionPlan.decoration_reindex]
           simp [CostStaticRegionPlan.decoration,
             CostStaticPlanDecoration.node,
             CostStaticPlanDecorationNode.map]
+          exact (CertifiedCostRegionBoundary.castContent_typed_boundary _
+            (certified.mapStatic morphism scope)).trans
+              (CertifiedCostRegionBoundary.mapStatic_typed_boundary morphism scope certified)
   termination_by 3 * sizeOf pattern + 2
   decreasing_by
     all_goals subst_vars
@@ -585,7 +627,8 @@ mutual
         mapCostStaticPlanDecorations morphism plan.decorations := by
     cases plan with
     | nil =>
-        rw [mapCostStaticArgumentPlan.eq_1]
+        rw [mapCostStaticArgumentPlan.eq_1 morphism scope laws _ objects]
+        dsimp only [id]
         simp [CostStaticArgumentPlan.decorations,
           mapCostStaticPlanDecorations]
     | cons representation parameterType head tail =>
@@ -594,7 +637,8 @@ mutual
           laws head objectParts.1
         have tailEquality := mapCostStaticArgumentPlan_decorations morphism
           scope laws tail objectParts.2
-        rw [mapCostStaticArgumentPlan.eq_1]
+        rw [mapCostStaticArgumentPlan.eq_1 morphism scope laws _ objects]
+        dsimp only [id]
         simp only [CostStaticArgumentPlan.decorations,
           CostStaticRegionPlan.decoration_reindex,
           CostStaticArgumentPlan.decorations_reindex,
@@ -628,7 +672,8 @@ mutual
         mapCostStaticPlanDecorations morphism plan.decorations := by
     cases plan with
     | nil =>
-        rw [mapCostStaticElementPlan.eq_1]
+        rw [mapCostStaticElementPlan.eq_1 morphism scope laws _ objects]
+        dsimp only [id]
         simp [CostStaticElementPlan.decorations,
           mapCostStaticPlanDecorations]
     | cons head tail =>
@@ -637,7 +682,8 @@ mutual
           laws head objectParts.1
         have tailEquality := mapCostStaticElementPlan_decorations morphism
           scope laws tail objectParts.2
-        rw [mapCostStaticElementPlan.eq_1]
+        rw [mapCostStaticElementPlan.eq_1 morphism scope laws _ objects]
+        dsimp only [id]
         simp only [CostStaticElementPlan.decorations,
           CostStaticRegionPlan.decoration_reindex,
           CostStaticElementPlan.decorations_reindex,
@@ -660,12 +706,16 @@ theorem CostStaticRegionNode.map_plan_decoration
     (node : CostStaticRegionNode source color targetFree) :
     (node.map morphism scope laws).plan.decoration =
       node.plan.decoration.map morphism := by
-  rw [CostStaticRegionNode.map, CostStaticRegionNode.ofPlan_plan]
-  change (node.mappedPlan morphism scope laws).decoration = _
-  simpa [CostStaticRegionNode.mappedPlan,
-    CostStaticRegionPlan.decoration_reindex] using
-      mapCostStaticRegionPlan_decoration morphism scope laws node.plan
-        node.term.2.2.2.1
+  refine (congrArg CostStaticRegionPlan.decoration
+    (CostStaticRegionNode.ofPlan_plan (node.mappedTerm morphism)
+      (node.mappedPlan morphism scope laws)
+      (node.mappedPlan_isStaticRoot morphism scope laws))).trans ?_
+  unfold CostStaticRegionNode.mappedPlan
+  exact (CostStaticRegionPlan.decoration_reindex _ _ _ _ _ _
+    (mapCostStaticRegionPlan morphism scope laws node.plan
+      node.term.2.2.2.1)).trans
+        (mapCostStaticRegionPlan_decoration morphism scope laws node.plan
+          node.term.2.2.2.1)
 
 private theorem mapCostRegionTree_decoration_of_node
     {source target : CIGSLT} (morphism : source.Morphism target)
@@ -680,10 +730,14 @@ private theorem mapCostRegionTree_decoration_of_node
     (mapCostRegionTree morphism scope laws tree).decoration =
       tree.decoration.map morphism := by
   apply CostTreeDecoration.ext
-  · simp
-  · simp
-  · simp
-  · simp
+  · rw [CostTreeDecoration.available_map, CostRegionTree.decoration_available tree]
+    exact CostRegionTree.decoration_available (mapCostRegionTree morphism scope laws tree)
+  · rw [CostTreeDecoration.outer_map, CostRegionTree.decoration_outer tree]
+    exact CostRegionTree.decoration_outer (mapCostRegionTree morphism scope laws tree)
+  · rw [CostTreeDecoration.pattern_map, CostRegionTree.decoration_pattern tree]
+    exact CostRegionTree.decoration_pattern (mapCostRegionTree morphism scope laws tree)
+  · rw [CostTreeDecoration.type_map, CostRegionTree.decoration_type tree]
+    exact CostRegionTree.decoration_type (mapCostRegionTree morphism scope laws tree)
   · simpa only [CostTreeDecoration.node_map] using nodeEquality
 
 mutual
@@ -710,8 +764,10 @@ mutual
           morphism scope laws children
         simp only [mapCostRegionTree, CostRegionTree.decoration,
           CostTreeDecoration.node, CostTreeDecorationNode.map,
-          CostRegionTree.decoration_reindex,
           CostStaticRegionNode.map_sourceSort]
+        refine (congrArg CostTreeDecoration.node
+          (CostRegionTree.decoration_reindex _ _ _ _ _)).trans ?_
+        dsimp only [CostRegionTree.decoration, CostTreeDecoration.node]
         congr 1
         · exact CostStaticRegionNode.map_plan_decoration morphism scope laws
             node
@@ -722,14 +778,20 @@ mutual
           morphism scope laws children
         simp only [mapCostRegionTree, CostRegionTree.decoration,
           CostTreeDecoration.node, CostTreeDecorationNode.map,
-          CostRegionTree.decoration_reindex]
+          ]
+        refine (congrArg CostTreeDecoration.node
+          (CostRegionTree.decoration_reindex _ _ _ _ _)).trans ?_
+        dsimp only [CostRegionTree.decoration, CostTreeDecoration.node]
         congr 1
     | .neutralApplicationQuote _ _ constructor _ _ _ children => by
         have childEquality := mapCostRegionArgumentTrees_decorations
           morphism scope laws children
         simp only [mapCostRegionTree, CostRegionTree.decoration,
           CostTreeDecoration.node, CostTreeDecorationNode.map,
-          CostRegionTree.decoration_reindex]
+          ]
+        refine (congrArg CostTreeDecoration.node
+          (CostRegionTree.decoration_reindex _ _ _ _ _)).trans ?_
+        dsimp only [CostRegionTree.decoration, CostTreeDecoration.node]
         congr 1
         apply Eq.trans ?_ childEquality
         apply CostRegionArgumentTrees.decorations_reindexOuter
@@ -744,9 +806,11 @@ mutual
         have bodyEquality := mapCostRegionTree_decoration_of_node morphism
           scope laws bodyTree
             (mapCostRegionTree_decoration_node morphism scope laws bodyTree)
-        simpa [mapCostRegionTree, CostRegionTree.decoration,
-          CostTreeDecoration.node, CostTreeDecorationNode.map,
-          CostRegionTree.decoration_reindexAvailable] using bodyEquality
+        simp only [mapCostRegionTree, CostRegionTree.decoration,
+          CostTreeDecoration.node, CostTreeDecorationNode.map]
+        congr 1
+        exact (CostRegionTree.decoration_reindexAvailable _
+          (mapCostRegionTree morphism scope laws bodyTree)).trans bodyEquality
     | .subst bodyTree replacementTree => by
         have bodyEquality := mapCostRegionTree_decoration_of_node morphism
           scope laws bodyTree
@@ -762,9 +826,12 @@ mutual
     | .collection children => by
         have childEquality := mapCostRegionElementTrees_decorations morphism
           scope laws children
-        simpa [mapCostRegionTree, CostRegionTree.decoration,
-          CostTreeDecoration.node, CostTreeDecorationNode.map,
-          CostRegionTree.decoration_reindex] using childEquality
+        simp only [mapCostRegionTree, CostRegionTree.decoration,
+          CostTreeDecoration.node, CostTreeDecorationNode.map]
+        refine (congrArg CostTreeDecoration.node
+          (CostRegionTree.decoration_reindex _ _ _ _ _)).trans ?_
+        exact congrArg CostTreeDecorationNode.collection childEquality
+
 
   /-- Mapping an argument forest maps its complete decorations pointwise. -/
   theorem mapCostRegionArgumentTrees_decorations

@@ -276,7 +276,8 @@ theorem guardedIntroduction_family_sound
       (displayedSource (typingAt demand slot) values
         (applyBindings environment.bindings
           (typingAt demand slot).site.focus)) after
-    rw [displayedSource_eq_focus,
+    rw [displayedSource_eq_focus slot values
+      (applyBindings environment.bindings (typingAt demand slot).site.focus),
       activation_focus_eq_before environment]
     exact
       (guardedSupportOccursAt_iff_occurrenceMeaning slot before after).mp

@@ -41,12 +41,15 @@ def outcomeTruthAttribute : outcomeObserved.BehavioralAttribute where
 theorem honest_true_message_in_full_honesty_extent :
     fullObserved.toClass honestTrueMessage ∈
       fullObserved.behavioralExtent fullHonestyAttribute := by
-  simp [fullHonestyAttribute, honest_true_message_is_honest]
+  exact (fullObserved.mem_behavioralExtent_toClass_iff _ fullHonestyAttribute).mpr
+    honest_true_message_is_honest
 
 theorem dishonest_true_message_not_in_full_honesty_extent :
     fullObserved.toClass dishonestTrueMessage ∉
       fullObserved.behavioralExtent fullHonestyAttribute := by
-  simp [fullHonestyAttribute, dishonest_true_message_is_not_honest]
+  intro member
+  exact dishonest_true_message_is_not_honest
+    ((fullObserved.mem_behavioralExtent_toClass_iff _ fullHonestyAttribute).mp member)
 
 /-- The honesty attribute separates the two full behavioral classes. -/
 theorem honesty_separates_full_classes :
@@ -58,16 +61,19 @@ theorem honesty_separates_full_classes :
 theorem honest_true_message_in_full_truth_extent :
     fullObserved.toClass honestTrueMessage ∈
       fullObserved.behavioralExtent fullTruthAttribute := by
+  apply (fullObserved.mem_behavioralExtent_toClass_iff _ fullTruthAttribute).mpr
   simp [fullTruthAttribute, TrueCommunication, honestTrueMessage]
 
 theorem honest_true_message_in_outcome_truth_extent :
     outcomeObserved.toClass honestTrueMessage ∈
       outcomeObserved.behavioralExtent outcomeTruthAttribute := by
+  apply (outcomeObserved.mem_behavioralExtent_toClass_iff _ outcomeTruthAttribute).mpr
   simp [outcomeTruthAttribute, TrueCommunication, honestTrueMessage]
 
 theorem dishonest_true_message_in_outcome_truth_extent :
     outcomeObserved.toClass dishonestTrueMessage ∈
       outcomeObserved.behavioralExtent outcomeTruthAttribute := by
+  apply (outcomeObserved.mem_behavioralExtent_toClass_iff _ outcomeTruthAttribute).mpr
   simp [outcomeTruthAttribute, TrueCommunication, dishonestTrueMessage]
 
 /-- There is no outcome-observer behavioral attribute whose state predicate

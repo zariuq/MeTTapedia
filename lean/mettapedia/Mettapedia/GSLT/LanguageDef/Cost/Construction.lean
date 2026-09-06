@@ -364,30 +364,33 @@ theorem mapGrammarRule_costClosure_costBaseConstructor_of_principal
     · rw [environment]
       exact source.costClosureConstructorName_environment
   cases rule with
-  | mk label category parameters syntaxPattern evalPolicy =>
+  | mk label category parameters syntaxPattern evalPolicy algebra =>
       change
         ({ label := source.costClosureConstructorName
               (costBaseConstructor source.cut
                 ⟨label, category, parameters, syntaxPattern,
-                  evalPolicy⟩).label
+                  evalPolicy, algebra⟩).label
            category := source.costClosureSortName
               (costBaseConstructor source.cut
                 ⟨label, category, parameters, syntaxPattern,
-                  evalPolicy⟩).category
+                  evalPolicy, algebra⟩).category
            params := (costBaseConstructor source.cut
               ⟨label, category, parameters, syntaxPattern,
-                evalPolicy⟩).params.map
+                evalPolicy, algebra⟩).params.map
                 (mapTermParam source.costClosureSymbols)
            syntaxPattern := (costBaseConstructor source.cut
               ⟨label, category, parameters, syntaxPattern,
-                evalPolicy⟩).syntaxPattern
+                evalPolicy, algebra⟩).syntaxPattern
            evalPolicy? := (costBaseConstructor source.cut
               ⟨label, category, parameters, syntaxPattern,
-                evalPolicy⟩).evalPolicy? } : GrammarRule) =
+                evalPolicy, algebra⟩).evalPolicy?
+           algebra? := (costBaseConstructor source.cut
+              ⟨label, category, parameters, syntaxPattern,
+                evalPolicy, algebra⟩).algebra? } : GrammarRule) =
           costBaseConstructor source.costInteractionCut
             (costBaseConstructor source.cut
               ⟨label, category, parameters, syntaxPattern,
-                evalPolicy⟩)
+                evalPolicy, algebra⟩)
       rw [labelMap, parametersMap]
       rfl
 
@@ -449,10 +452,11 @@ theorem costClosureConstructorName_of_nonprincipalAuthored
 theorem costCoreTerm_evalPolicy_eq_none (source : CIGSLT)
     (term : GrammarRule) (membership : term ∈ source.costCoreLanguage.terms) :
     term.evalPolicy? = none := by
-  simp only [costCoreLanguage, List.mem_append] at membership
+  dsimp only [costCoreLanguage] at membership
+  simp only [List.mem_append] at membership
   rcases membership with generatedMembership | apparatusMembership
-  · simp only [ContinuationRetypingPlan.generatedLanguage,
-      List.mem_append] at generatedMembership
+  · dsimp only [ContinuationRetypingPlan.generatedLanguage] at generatedMembership
+    simp only [List.mem_append] at generatedMembership
     rcases generatedMembership with baseMembership | wrappedMembership
     · rcases List.mem_map.mp baseMembership with
         ⟨constructor, _constructorMembership, rfl⟩
@@ -483,7 +487,7 @@ theorem mapGrammarRule_costClosure_of_nonprincipal (source : CIGSLT)
   have evalPolicy := source.costCoreTerm_evalPolicy_eq_none constructor.1
     (by exact constructor.2)
   rcases constructor with ⟨⟨label, category, parameters, syntaxItems,
-    policy⟩, membership⟩
+    policy, algebra⟩, membership⟩
   simp only at labelMap syntaxPattern evalPolicy
   have parametersMap :
       parameters.map (mapTermParam source.costClosureSymbols) =
@@ -497,14 +501,16 @@ theorem mapGrammarRule_costClosure_of_nonprincipal (source : CIGSLT)
        category := source.costClosureSortName category
        params := parameters.map (mapTermParam source.costClosureSymbols)
        syntaxPattern := syntaxItems
-       evalPolicy? := policy } : GrammarRule) =
+       evalPolicy? := policy
+       algebra? := algebra } : GrammarRule) =
       { label := costWrappedConstructorName label
         category := if category = costWrappedSortName then
           costWrappedSortName else costBaseSortName category
         params := parameters.map
           (mapParameterType (costWrappedTypeExpr costWrappedSortName))
         syntaxPattern := []
-        evalPolicy? := none }
+        evalPolicy? := none
+        algebra? := algebra }
   rw [labelMap, parametersMap, syntaxPattern, evalPolicy]
   rfl
 
@@ -900,7 +906,8 @@ mutual
         generalize patternEquality :
             mapPattern costBaseLanguageDefSymbolMap
               (.apply constructor arguments) = mappedPattern at typed
-        cases typed <;> simp [mapPattern] at patternEquality
+        cases typed <;> simp only [mapPattern, mapPatternList_eq_map,
+          Pattern.apply.injEq, reduceCtorEq] at patternEquality
         case constructor rule arguments' membership notBare argumentsTyped =>
             rcases patternEquality with
               ⟨mappedLabelEquality, argumentsEquality⟩
@@ -913,8 +920,8 @@ mutual
                     (mapPattern costBaseLanguageDefSymbolMap))
                   rule.params :=
               argumentsTyped
-            simp only [ContinuationRetypingPlan.generatedLanguage,
-              List.mem_append, List.mem_map] at membership
+            dsimp only [ContinuationRetypingPlan.generatedLanguage] at membership
+            simp only [List.mem_append, List.mem_map] at membership
             rcases membership with
               ⟨sourceRule, sourceMembership, ruleEquality⟩ |
               ⟨wrappedRule, _wrappedMembership, ruleEquality⟩

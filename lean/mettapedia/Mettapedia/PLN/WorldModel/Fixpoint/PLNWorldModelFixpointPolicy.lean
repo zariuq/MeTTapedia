@@ -93,7 +93,9 @@ instance : DecidablePred trustedAll := fun _ => isTrue trivial
 
 theorem trustedGate_trustedAll_eq (W : WeightedState) :
     trustedGate trustedAll W = W := by
-  simp [trustedGate, trustedAll]
+  apply Multiset.filter_eq_self.mpr
+  intro _ _
+  trivial
 
 theorem policyRevisedState_eq_add_of_compatible_trustedAll
     {W₁ W₂ : WeightedState}

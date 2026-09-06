@@ -270,6 +270,7 @@ theorem signedObservable_breaks_Markov_spine :
       (Finset.univ.filter fun block : Bool =>
         (1 : ℝ) ≤ signedTailCounterexample block) = {true} := by
     ext block
+    erw [Finset.mem_filter]
     cases block <;> norm_num [signedTailCounterexample]
   have hfraction :
       uniformTailFraction signedTailCounterexample 1 = (1 / 2 : ℝ) := by

@@ -345,7 +345,7 @@ theorem semantic_and_profitability_do_not_imply_receipt_sufficiency :
   · rintro ⟨admission⟩
     have collision : collapsedKey falseTrace = collapsedKey trueTrace := rfl
     have impossible := admission.supports () collision
-    simp [request, singlePolicyRequest, finalState, falseTrace, trueTrace]
+    simp [request, singlePolicyRequest, finalState, falseTrace, trueTrace, id]
       at impossible
 
 theorem relevant_change_is_stale : model.StaleAt (true, false) := by

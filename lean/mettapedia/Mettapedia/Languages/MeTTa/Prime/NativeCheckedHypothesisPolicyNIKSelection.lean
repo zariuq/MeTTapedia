@@ -180,6 +180,7 @@ noncomputable def runObserved {Source Target : Type}
     active.policyActive.runKey policy
       ((resultOnlyCatalog relation).readout selected.candidate receipt))
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Native execution and policy evaluation agree with the original selected
 operation and the declared policy on its exact result. -/
 @[simp] theorem runObserved_eq {Source Target : Type}

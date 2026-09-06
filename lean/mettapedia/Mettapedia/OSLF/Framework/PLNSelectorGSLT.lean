@@ -269,7 +269,7 @@ theorem oslf_diamond_extBayes2
       ((plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond
         (plnSelectorPredicate (Goal := Goal) (Fact := Fact)
           (fun e => e = .fuse (.update p l) (.update q l)))) := by
-  rw [(plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond_spec]
+  apply ((plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond_spec _ _).2
   refine ⟨.fuse (.update p l) (.update q l),
     PLNSelectorExpr.Reduces.extBayes2 p q l, ?_⟩
   change plnSelectorPredicate (Goal := Goal) (Fact := Fact)
@@ -286,7 +286,7 @@ theorem oslf_diamond_extBayesFamily
         (plnSelectorPredicate (Goal := Goal) (Fact := Fact)
           (fun e => e =
             .fuseFamily (xs.map (fun x => PLNSelectorExpr.update x l))))) := by
-  rw [(plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond_spec]
+  apply ((plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond_spec _ _).2
   refine ⟨.fuseFamily (xs.map (fun x => PLNSelectorExpr.update x l)),
     PLNSelectorExpr.Reduces.extBayesFamily xs l, ?_⟩
   change plnSelectorPredicate (Goal := Goal) (Fact := Fact)
@@ -311,7 +311,7 @@ theorem oslf_diamond_stagedFamily_roundtrip
           e = .atom
             (fuseFamily (fun i =>
               update (normalizeScorer (t i) (s i)) likelihood))))) := by
-  rw [(plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond_spec]
+  apply ((plnSelectorOSLF (Goal := Goal) (Fact := Fact)).diamond_spec _ _).2
   refine ⟨
       .atom (regradeScorer w⁻¹ (regradeScorer w (stagedFamilyPosterior t s likelihood))),
       ?_,
@@ -350,7 +350,7 @@ theorem oslf_box_stagedFamily_roundtrip
               (.normalize tnorm
                 (.atom (regradeScorer w⁻¹ (regradeScorer w (stagedFamilyPosterior t s likelihood)))))
               g f))) := by
-  rw [(plnSelectorOSLF (Goal := Goal) (Fact := Fact)).box_spec]
+  apply ((plnSelectorOSLF (Goal := Goal) (Fact := Fact)).box_spec _ _).2
   intro q hq
   change plnSelectorPredicate (Goal := Goal) (Fact := Fact)
     (fun candidate =>

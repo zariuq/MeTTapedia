@@ -1950,7 +1950,7 @@ theorem RootedDualConnectedCutSet.reachable
     (h : RootedDualConnectedCutSet root s) (hx : x ∈ s) :
     Relation.ReflTransGen gridClauseDualAdjacent root x := by
   have hreach := h.2 x hx
-  exact Relation.ReflTransGen.mono (fun _ _ hstep => hstep.2.2) hreach
+  exact Relation.ReflTransGen.mono (fun _ _ hstep => hstep.2.2) _ _ hreach
 
 theorem rootedDualConnectedCutSet_singleton
     (root : GridClauseId) :
@@ -1982,7 +1982,7 @@ theorem RootedStarConnectedCutSet.reachable
     (h : RootedStarConnectedCutSet root s) (hx : x ∈ s) :
     Relation.ReflTransGen gridClauseStarAdjacent root x := by
   have hreach := h.2 x hx
-  exact Relation.ReflTransGen.mono (fun _ _ hstep => hstep.2.2) hreach
+  exact Relation.ReflTransGen.mono (fun _ _ hstep => hstep.2.2) _ _ hreach
 
 theorem rootedStarConnectedCutSet_singleton
     (root : GridClauseId) :
@@ -2003,7 +2003,7 @@ theorem RootedStarConnectedCutSet.of_rootedDualConnectedCutSet
     (fun _ _ hstep =>
       ⟨hstep.1, hstep.2.1,
         gridClauseStarAdjacent_of_dualAdjacent hstep.2.2⟩)
-    (h.2 x hx)
+    _ _ (h.2 x hx)
 
 theorem list_isChain_reflTransGen_of_mem
     {α : Type*} {R : α → α → Prop}
@@ -2668,8 +2668,8 @@ theorem reflTransGen_gridAdjacentInRegion_subtype
   have hsub :=
     Relation.ReflTransGen.lift
       (p := fun x y : {p // p ∈ inside} => gridAdjacent x.1 y.1)
-      f hf hreach
-  simpa [f, ha, hb] using hsub
+      f hf _ _ hreach
+  simpa [Function.onFun, f, ha, hb] using hsub
 
 theorem exists_rel_cross_of_reflTransGen_connected
     {α : Type*} {R : α → α → Prop}
@@ -3016,7 +3016,7 @@ theorem GridConnectedRegion.exists_delete_vertex_gridAdjacentInRegion_preconnect
     exact ⟨hxErase, hyErase, hxyGrid⟩
   have hreach :=
     Relation.ReflTransGen.lift
-      (p := gridAdjacentInRegion (inside.erase v.1)) f hf hreachGraph
+      (p := gridAdjacentInRegion (inside.erase v.1)) f hf _ _ hreachGraph
   simpa [f, av, bv] using hreach
 
 theorem GridConnectedRegion.exists_delete_vertex_gridConnectedRegion
@@ -3159,7 +3159,7 @@ theorem OriginConnectedRegion.exists_delete_vertex_gridAdjacentInRegion_preconne
     exact ⟨hxErase, hyErase, hxyGrid⟩
   have hreach :=
     Relation.ReflTransGen.lift
-      (p := gridAdjacentInRegion (inside.erase v.1)) f hf hreachGraph
+      (p := gridAdjacentInRegion (inside.erase v.1)) f hf _ _ hreachGraph
   simpa [f, av, bv] using hreach
 
 theorem originConnectedSubregion_originConnected
@@ -4280,7 +4280,7 @@ theorem exists_visibleBoundarySeparatorEdge_of_reach_exterior_to_hull
           u ∈ boundaryConnectedOutsideSubregion n hull ∧
             v ∈ boundaryConnectedOutsideSubregion n hull ∧ gridAdjacent u v)
         out a := by
-    refine Relation.ReflTransGen.mono ?_ haReach
+    refine Relation.ReflTransGen.mono ?_ _ _ haReach
     intro u v huv
     have huExt : u ∈ boundaryConnectedOutsideSubregion n hull := by
       simpa [Ext] using huv.1
@@ -4311,7 +4311,7 @@ theorem exists_visibleBoundarySeparatorEdge_of_hullExteriorUnion_reach_exterior_
             (b ∈ boundaryConnectedOutsideSubregion n hull ∨ b ∈ hull) ∧
               gridAdjacent a b)
         out x := by
-    refine Relation.ReflTransGen.mono ?_ hreach
+    refine Relation.ReflTransGen.mono ?_ _ _ hreach
     intro a b hab
     exact (gridAdjacentIn_hullExteriorUnion_iff.1 hab)
   exact exists_visibleBoundarySeparatorEdge_of_reach_exterior_to_hull
@@ -4417,8 +4417,8 @@ theorem visibleOuterBoundaryStarGraph_connected_of_gridAdjacentInRegion_connecte
     Relation.ReflTransGen.lift
       (p := fun p q : {p // p ∈ visibleOuterBoundary n hull} =>
         gridAdjacent p.1 q.1)
-      f hf (hconn a.2 b.2)
-  simpa [f, a.2, b.2] using hreach
+      f hf _ _ (hconn a.2 b.2)
+  simpa [Function.onFun, f, a.2, b.2] using hreach
 
 theorem visibleOuterBoundaryStarGraph_connected_of_starConnected
     {n : ℕ} {hull : Region GridNode}
@@ -4454,8 +4454,8 @@ theorem visibleOuterBoundaryStarGraph_connected_of_starConnected
   have hreach :=
     Relation.ReflTransGen.lift
       (p := visibleOuterBoundaryStarRel n hull)
-      f hf (hconn a.2 b.2)
-  simpa [f, a.2, b.2] using hreach
+      f hf _ _ (hconn a.2 b.2)
+  simpa [Function.onFun, f, a.2, b.2] using hreach
 
 theorem visibleOuterBoundary_star_reachable_of_star
     {n : ℕ} {hull : Region GridNode} {p q : GridNode}
@@ -5085,7 +5085,7 @@ theorem erase_visibleOuterBoundary_reach_avoids_deleted_or_hits_deleted
       intro hallowed
       apply havoid
       refine Relation.ReflTransGen.lift
-        (p := RAvoid) id ?_ hallowed
+        (p := RAvoid) id ?_ _ _ hallowed
       intro a b hab
       simpa [RAvoid, R, Avoid] using
         ⟨hab.2.2.1, hab.2.2.2.1, hab.1, hab.2.1, hab.2.2.2.2⟩
@@ -5096,7 +5096,7 @@ theorem erase_visibleOuterBoundary_reach_avoids_deleted_or_hits_deleted
       ⟨a, b, haReachAllowed, _hbNotReach, hab, hbNotAllowed⟩
     have haReachAvoid : Relation.ReflTransGen RAvoid p a := by
       refine Relation.ReflTransGen.lift
-        (p := RAvoid) id ?_ haReachAllowed
+        (p := RAvoid) id ?_ _ _ haReachAllowed
       intro x y hxy
       simpa [RAvoid, R, Avoid] using
         ⟨hxy.2.2.1, hxy.2.2.2.1, hxy.1, hxy.2.1, hxy.2.2.2.2⟩
@@ -5352,7 +5352,7 @@ theorem visibleOuterBoundaryStarGraph_connected_of_erase_connected_of_deleted_fa
           exact ⟨a.2, b.2, hab⟩
         have hlift :=
           Relation.ReflTransGen.lift
-            (p := Rerase) f hf hreachSubtype
+            (p := Rerase) f hf _ _ hreachSubtype
         simpa [f] using hlift
       have hreachOrig :
           Relation.ReflTransGen
@@ -5440,7 +5440,7 @@ theorem visibleOuterBoundaryStarGraph_connected_of_erase_connected_of_deleted_re
           exact ⟨a.2, b.2, hab⟩
         have hlift :=
           Relation.ReflTransGen.lift
-            (p := Rerase) f hf hreachSubtype
+            (p := Rerase) f hf _ _ hreachSubtype
         simpa [f] using hlift
       rcases
         visibleOuterBoundary_star_reachable_or_hits_deleted_of_erase_reachable_strong
@@ -5538,7 +5538,7 @@ theorem visibleBoundarySeparatorEdges_reachable_from_stageBoundary_to_left
         gridAdjacent a c
   have hreachUnion :
       Relation.ReflTransGen RUnion b e.2 := by
-    refine Relation.ReflTransGen.mono ?_ hreachExt
+    refine Relation.ReflTransGen.mono ?_ _ _ hreachExt
     intro u v huv
     exact ⟨Or.inl huv.1, Or.inl huv.2.1, huv.2.2⟩
   have heLeft : e.1 ∈ hull :=
@@ -5560,7 +5560,7 @@ theorem visibleBoundarySeparatorEdges_hullExteriorUnion_reachable_from_stageBoun
   rcases visibleBoundarySeparatorEdges_reachable_from_stageBoundary_to_left he with
     ⟨b, hbBoundary, hbExt, hreach⟩
   refine ⟨b, hbBoundary, hbExt, ?_⟩
-  refine Relation.ReflTransGen.mono ?_ hreach
+  refine Relation.ReflTransGen.mono ?_ _ _ hreach
   intro a c hac
   exact gridAdjacentIn_hullExteriorUnion_iff.2 hac
 
@@ -5585,7 +5585,7 @@ theorem visibleBoundarySeparatorEdges_hullExteriorUnion_reachable_from_stageBoun
   have hleftToXUnion :
       Relation.ReflTransGen
         (gridAdjacentInRegion (hullExteriorUnion n hull)) e.1 x := by
-    refine Relation.ReflTransGen.mono ?_ hleftToXHull
+    refine Relation.ReflTransGen.mono ?_ _ _ hleftToXHull
     intro a c hac
     exact ⟨mem_hullExteriorUnion_of_mem_hull hac.1,
       mem_hullExteriorUnion_of_mem_hull hac.2.1, hac.2.2⟩
@@ -5609,7 +5609,7 @@ theorem visibleBoundarySeparatorEdges_hullExteriorUnion_reachable_from_stageBoun
       Relation.ReflTransGen
         (gridAdjacentInHullExteriorUnionCrossesOnlySeparatorEdge n hull e)
         b e.2 := by
-    refine Relation.ReflTransGen.mono ?_ hreachExt
+    refine Relation.ReflTransGen.mono ?_ _ _ hreachExt
     intro a c hac
     exact
       gridAdjacentInHullExteriorUnionCrossesOnlySeparatorEdge_of_boundaryConnectedOutside
@@ -5626,7 +5626,7 @@ theorem visibleBoundarySeparatorEdges_hullExteriorUnion_reachable_from_stageBoun
       Relation.ReflTransGen
         (gridAdjacentInHullExteriorUnionCrossesOnlySeparatorEdge n hull e)
         e.1 x := by
-    refine Relation.ReflTransGen.mono ?_ hleftToXHull
+    refine Relation.ReflTransGen.mono ?_ _ _ hleftToXHull
     intro a c hac
     exact gridAdjacentInHullExteriorUnionCrossesOnlySeparatorEdge_of_hull
       (e := e) hac
@@ -5650,7 +5650,7 @@ theorem visibleBoundarySeparatorEdges_hullExteriorUnion_reachable_from_stageBoun
       hconn he hx with
     ⟨b, hbBoundary, hbExt, hreach⟩
   refine ⟨b, hbBoundary, hbExt, ?_⟩
-  refine Relation.ReflTransGen.mono ?_ hreach
+  refine Relation.ReflTransGen.mono ?_ _ _ hreach
   intro a c hac
   exact
     gridAdjacentInHullExteriorUnionCrossesOnlySeparatorEdge_avoids_of_ne
@@ -5672,7 +5672,7 @@ theorem visibleBoundarySeparatorEdges_hullExteriorUnion_reachable_from_stageBoun
       hconn he hx with
     ⟨b, hbBoundary, hbExt, hreach⟩
   refine ⟨b, hbBoundary, hbExt, ?_⟩
-  refine Relation.ReflTransGen.mono ?_ hreach
+  refine Relation.ReflTransGen.mono ?_ _ _ hreach
   intro a c hac
   exact gridAdjacentInHullExteriorUnionCrossesOnlySeparatorEdge_avoids_erase
     he hac
@@ -5695,7 +5695,7 @@ theorem visibleBoundarySeparatorEdges_hullExteriorUnion_reachable_from_stageBoun
       hconn he hx with
     ⟨b, hbBoundary, hbExt, hreach⟩
   refine ⟨b, hbBoundary, hbExt, ?_⟩
-  refine Relation.ReflTransGen.mono ?_ hreach
+  refine Relation.ReflTransGen.mono ?_ _ _ hreach
   intro a c hac
   exact gridAdjacentInHullExteriorUnionAvoidsSeparatorEdges_mono hs hac
 
@@ -5838,7 +5838,7 @@ theorem boundaryConnectedOutsideSubregion_gridAdjacentInRegion_connected_of_subs
         hbaBoundary hbbBoundary
     refine Relation.ReflTransGen.lift
       (p := gridAdjacentInRegion (boundaryConnectedOutsideSubregion m inside))
-      id ?_ hstageReach
+      id ?_ _ _ hstageReach
     intro x y hxy
     exact
       ⟨mem_boundaryConnectedOutsideSubregion_of_mem_boundary
@@ -8661,7 +8661,7 @@ theorem visibleBoundaryChoiceStarGraph_connected_of_visibleOuterBoundaryStarGrap
         (by
           intro a b hab
           exact hstep (by simpa [visibleOuterBoundaryStarRel] using hab))
-        hvisReach
+        _ _ hvisReach
   rw [visibleBoundaryChoiceStarGraph_reachable_eq_reflTransGen
     (visibleStage := visibleStage) (cutStage := cutStage)
     (hull := hull) (s := s) hsEq hHull]
@@ -10960,9 +10960,8 @@ theorem hookSlackHullCutSet_eq_hookSlackInside_outerCut :
         (gridRegionSupport (gridExhaustion.region 4)).filter
           (gridBaseClauseCutsRegion hookSlackHull) := hookSlackHullCutSet_eq_stage4CutSet
     _ = originContainingSubregionOuterCutBaseClauses 4 hookSlackInside := by
-      simpa [hookSlackHull] using
-        originContainingSubregionCutBaseClauses_boundaryConnectedHullRegion_eq_outerCutBaseClauses
-          (n := 4) hookSlackInside_subset_stage4
+      exact originContainingSubregionCutBaseClauses_boundaryConnectedHullRegion_eq_outerCutBaseClauses
+        (n := 4) hookSlackInside_subset_stage4
 
 set_option maxRecDepth 10000 in
 theorem hookSlackHullCutSet_mem_originConnectedHullCutSetCandidatesInCutCardBox :
@@ -14332,7 +14331,11 @@ inductive CutWalkMove where
   | south
   | east
   | west
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype CutWalkMove where
+  elems := {.north, .south, .east, .west}
+  complete value := by cases value <;> simp
 
 /-- A one-bit tag recording whether a walk step discovers a fresh clause or
 revisits an already seen one. This keeps the first contour carrier deliberately
@@ -14341,7 +14344,11 @@ carrier itself. -/
 inductive CutWalkVisitTag where
   | fresh
   | revisit
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype CutWalkVisitTag where
+  elems := {.fresh, .revisit}
+  complete value := by cases value <;> simp
 
 /-- A crude length-`2m` walk code over an 8-symbol alphabet. This is the
 planned carrier for a future DFS-style encoding of connected cut sets; its
@@ -18541,8 +18548,8 @@ theorem RootedStarConnectedCutSet.subtype_reachable
   have hrt :=
     Relation.ReflTransGen.lift
       (p := fun a b : {c // c ∈ s} => gridClauseStarAdjacent a.1 b.1)
-      f hf (hstar.2 x.1 x.2)
-  simpa [f, hstar.root_mem, x.2] using hrt
+      f hf _ _ (hstar.2 x.1 x.2)
+  simpa [Function.onFun, f, hstar.root_mem, x.2] using hrt
 
 theorem RootedStarConnectedCutSet.subtype_starGraph_connected
     {root : GridClauseId} {s : Finset GridClauseId}
@@ -18600,7 +18607,7 @@ theorem RootedStarConnectedCutSet.of_subtype_starGraph_connected
     Relation.ReflTransGen.lift
       (p := fun a b : GridClauseId =>
         a ∈ s ∧ b ∈ s ∧ gridClauseStarAdjacent a b)
-      Subtype.val hmap hreach
+      Subtype.val hmap _ _ hreach
 
 theorem rootedStarConnectedCutSet_iff_subtype_starGraph_connected
     {root : GridClauseId} {s : Finset GridClauseId}
@@ -18778,7 +18785,7 @@ theorem cutSetStarGraph_reachable_of_visibleBoundarySeparatorEdgesSquareReachabl
       gridClauseStarAdjacent_gridAdjacentClauseId_of_visibleBoundarySeparatorEdgesSquareAdjacent hab]
   have hreachClause :
       Relation.ReflTransGen (cutSetStarRel s) (edgeClause e) (edgeClause f) :=
-    Relation.ReflTransGen.lift edgeClause hstep hreach
+    Relation.ReflTransGen.lift edgeClause hstep _ _ hreach
   rw [cutSetStarGraph_reachable_eq_reflTransGen]
   simpa [edgeClause, he, hf, fallback] using hreachClause
 
@@ -19148,7 +19155,7 @@ theorem cutSetStarGraph_connected_of_visibleBoundaryChoiceStarGraph_connected
             cutSetStarGraph_reachable_visibleBoundaryCutClauseChoice_of_clause_star
               (visibleStage := visibleStage) (cutStage := cutStage)
               (hull := hull) (s := s) hsEq hHull hab)
-        hvisReach
+        _ _ hvisReach
     exact hcollapse hchain
   haveI : Nonempty {p // p ∈ visibleOuterBoundary visibleStage hull} :=
     hvis.nonempty
@@ -19337,7 +19344,7 @@ theorem cutSetStarGraph_connected_of_visibleBoundaryStarGraph_connected_of_choic
         (by
           intro a b hab
           exact hstep (by simpa [visibleOuterBoundaryStarRel] using hab))
-        hvisReach
+        _ _ hvisReach
     exact hcollapse hchain
   haveI : Nonempty {p // p ∈ visibleOuterBoundary visibleStage hull} :=
     hvis.nonempty
@@ -20779,7 +20786,7 @@ theorem symmetricGridExpansion_prod_clauseEval_eq_baseClauseWeight
       ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec,
       symmetricGridClause, symmetricGridHorizontalEdgePairWeight,
       symmetricGridVerticalEdgePairWeight, classicalWeightedClause,
-      WeightedGroundClause.eval, Real.exp_zero]
+      WeightedGroundClause.eval, Real.exp_zero] <;> rfl
 
 theorem symmetricGridZeroField_finiteVolumeWeight_eq_prod_baseClauseWeight
     (w : ℝ) (Λ : Region GridNode) (x : LocalAssignment GridNode Λ)
@@ -23521,7 +23528,7 @@ theorem symmetricGridZeroField_clauseData_eval_spinFlip_eq_flip
       classicalWeightedClause, gridHorizontalClause_holds_spinFlip_iff_reverse,
       gridHorizontalReverseClause_holds_spinFlip_iff_forward,
       gridVerticalClause_holds_spinFlip_iff_reverse,
-      gridVerticalReverseClause_holds_spinFlip_iff_forward]
+      gridVerticalReverseClause_holds_spinFlip_iff_forward] <;> rfl
 
 theorem symmetricGridZeroField_finiteVolumeWeight_spinFlip
     (w : ℝ) (Λ : Region GridNode) (x : LocalAssignment GridNode Λ)
@@ -23605,7 +23612,7 @@ theorem symmetricGridZeroField_originSpin_queryMass_spinFlip
         (gridOriginSpinLocalQueryInRegion Λ hOrigin b)
     · have hxFlipSat : satisfiesConstraints (spinFlipLocalAssignment x)
           (gridOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := hsat.1 hxSat
-      simp [hxSat, hxFlipSat]
+      refine (if_pos hxSat).trans (Eq.trans ?_ (if_pos hxFlipSat).symm)
       simpa [spinFlipLocalAssignment_involutive] using
         (symmetricGridZeroField_finiteVolumeWeight_spinFlip w Λ (spinFlipLocalAssignment x) ξ)
     · have hxFlipNotSat : ¬ satisfiesConstraints (spinFlipLocalAssignment x)

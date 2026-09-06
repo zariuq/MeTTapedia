@@ -1,0 +1,1561 @@
+diff --git a/Provenance/AnnotatedDatabase.lean b/Provenance/AnnotatedDatabase.lean
+index f7e1175..ffb05e3 100644
+--- a/Provenance/AnnotatedDatabase.lean
++++ b/Provenance/AnnotatedDatabase.lean
+@@ -48,7 +48,7 @@ def AnnotatedDatabase.find (n: ℕ) (s: String) (d: AnnotatedDatabase T K) : Opt
+   | (s',rn)::tl => if h: n = rn.fst ∧ s =s' then some (Eq.mp (by rw[h.left]) rn.snd) else f tl
+   f d
+ 
+-def AnnotatedTuple.toComposite (p: AnnotatedTuple T K n) :=
++def AnnotatedTuple.toComposite (p: AnnotatedTuple T K n) : Tuple (T ⊕ K) (n + 1) :=
+   Fin.append (λ k: Fin n ↦ Sum.inl (p.fst k)) ![Sum.inr p.snd]
+ 
+ def Tuple.fromComposite (t: Tuple (T⊕K) (n+1)) : AnnotatedTuple T K n :=
+@@ -85,9 +85,13 @@ theorem AnnotatedRelation.toComposite_filter [Zero K] (r : AnnotatedRelation T K
+     (P : AnnotatedTuple T K n → Prop) [DecidablePred P]
+     [inst : DecidablePred (fun t : Tuple (T⊕K) (n+1) => P (Tuple.fromComposite t))] :
+     AnnotatedRelation.toComposite (r.filter P) = r.toComposite.filter (fun t => P (Tuple.fromComposite t)) := by
+-  simp only [AnnotatedRelation.toComposite, Multiset.filter_map]
+-  congr 1
+-  simp [Function.comp, Tuple.fromComposite_toComposite]
++  classical
++  refine Eq.trans ?_ (Multiset.filter_map
++    (p := fun t : Tuple (T ⊕ K) (n + 1) => P (Tuple.fromComposite t))
++    (fun t : AnnotatedTuple T K n => t.toComposite) r).symm
++  apply congrArg (Multiset.map (fun t : AnnotatedTuple T K n => t.toComposite))
++  exact @Multiset.filter_congr _ _ _ _ (fun a => inst _) _ (fun tuple _ =>
++    Iff.of_eq (congrArg P (Tuple.fromComposite_toComposite tuple)).symm)
+ 
+ @[simp]
+ theorem AnnotatedRelation.toComposite_add {T: Type} {K: Type} (ar₁ ar₂: AnnotatedRelation T K n):
+@@ -101,11 +105,9 @@ def AnnotatedDatabase.toComposite (d: AnnotatedDatabase T K): Database (T⊕K) :
+ theorem AnnotatedDatabase.find_toComposite_none {T: Type} {K: Type} (n: ℕ) (s: String) (d: AnnotatedDatabase T K):
+   d.find n s = none ↔ d.toComposite.find (n+1) s = none := by
+     induction d with
+-    | nil =>
+-      unfold find find.f Database.find Database.find.f toComposite
+-      simp
++    | nil => simp only [find, find.f, Database.find, Database.find.f, toComposite, List.map_nil]
+     | cons hd tl ih =>
+-      unfold find find.f Database.find Database.find.f toComposite
++      simp only [find, find.f, Database.find, Database.find.f, toComposite, List.map_cons, List.map_nil]
+       by_cases hhd: n=hd.snd.fst ∧ s=hd.fst
+       . simp[hhd]
+       . simp[hhd]
+@@ -115,10 +117,10 @@ theorem AnnotatedDatabase.find_toComposite_some {T: Type} {K: Type} (n: ℕ) (s:
+   ∀ r: AnnotatedRelation T K n, d.find n s = some r ↔ d.toComposite.find (n+1) s = some r.toComposite := by
+     induction d with
+     | nil =>
+-      unfold find find.f Database.find Database.find.f toComposite
++      simp only [find, find.f, Database.find, Database.find.f, toComposite, List.map_cons, List.map_nil]
+       simp
+     | cons hd tl ih =>
+-      unfold find find.f Database.find Database.find.f toComposite
++      simp only [find, find.f, Database.find, Database.find.f, toComposite, List.map_cons, List.map_nil]
+       by_cases hhd: n=hd.snd.fst ∧ s=hd.fst
+       . simp[hhd]
+         intro rn
+@@ -130,7 +132,7 @@ theorem AnnotatedDatabase.find_toComposite_some {T: Type} {K: Type} (n: ℕ) (s:
+           have : hd.snd.snd = Eq.mp (by rw[hhd.left]) rn := by
+             exact h
+           rw[this]
+-          simp
++          rfl
+         . intro h
+           let f := fun (p: Tuple T hd.2.1 × K) ↦ Fin.append (fun k ↦ Sum.inl (p.1 k)) ![Sum.inr p.2]
+           have hf : Function.Injective f := by
+@@ -149,8 +151,7 @@ theorem AnnotatedDatabase.find_toComposite_some {T: Type} {K: Type} (n: ℕ) (s:
+               assumption
+             exact Prod.ext (funext h1) h2
+           have map_eq : Multiset.map (f) hd.2.2 = Multiset.map (f) rn := h
+-          rw[Multiset.map_eq_map hf] at map_eq
+-          exact map_eq
++          exact (Multiset.map_eq_map hf).mp map_eq
+       . simp[hhd]
+         exact ih
+ 
+@@ -202,16 +203,32 @@ theorem AnnotatedRelation.toComposite_map_product {K: Type} {T: Type}
+       else if ↑k<n₁+n₂ then x.2 (@Fin.ofNat (n₂+1) _ (k.toNat - n₁))
+       else (x.1 (Fin.last n₁) * x.2 (Fin.last n₂)))
+     (Multiset.product ar₁.toComposite ar₂.toComposite) := by
+-  -- `toComposite` is `Multiset.map (·.toComposite)`, so the LHS is a `map ∘ map`
+-  -- over the product, while the RHS reindexes each factor by `toComposite` first.
+-  -- Distribute everything down to a single `bind`/`map` form on both sides and
+-  -- close pointwise with `toComposite_join`.
+-  unfold toComposite Multiset.product
+-  simp only [Multiset.map_bind, Multiset.bind_map, Multiset.map_map, Function.comp]
+-  refine Multiset.bind_congr fun x₁ _ => ?_
+-  refine Multiset.map_congr rfl fun x₂ _ => ?_
+-  -- The pointwise identity is exactly `toComposite_join`.
+-  exact AnnotatedTuple.toComposite_join x₁ x₂
++  have mapProduct {A B C D E F : Type}
++      (combine : A → B → C) (left : A → D) (right : B → E)
++      (result : C → F) (combine' : D → E → F)
++      (commutes : ∀ a b, result (combine a b) = combine' (left a) (right b))
++      (as : Multiset A) (bs : Multiset B) :
++      (as.product bs).map (fun pair => result (combine pair.1 pair.2)) =
++        ((as.map left).product (bs.map right)).map
++          (fun pair => combine' pair.1 pair.2) := by
++    simp only [Multiset.product, Multiset.map_bind, Multiset.bind_map,
++      Multiset.map_map, Function.comp_def]
++    apply Multiset.bind_congr
++    intro a _
++    apply Multiset.map_congr rfl
++    intro b _
++    exact commutes a b
++  have transport := mapProduct
++    (fun (x : AnnotatedTuple T K n₁) (y : AnnotatedTuple T K n₂) =>
++      ((Fin.append x.1 y.1), x.2 * y.2))
++    AnnotatedTuple.toComposite AnnotatedTuple.toComposite
++    AnnotatedTuple.toComposite
++    (fun x y (k : Fin (n₁ + n₂ + 1)) =>
++      if h : ↑k < n₁ then x (k.castLT (Nat.lt_add_right 1 h))
++      else if ↑k < n₁ + n₂ then y (@Fin.ofNat (n₂ + 1) _ (k.toNat - n₁))
++      else x (Fin.last n₁) * y (Fin.last n₂))
++    (fun x y => AnnotatedTuple.toComposite_join x y) ar₁ ar₂
++  exact (Multiset.map_map _ _ _).trans transport
+ 
+ theorem AnnotatedRelation.cast_toComposite {T: Type} {K: Type}
+   (ar: AnnotatedRelation T K n) (h': n+1=m+1) (h: n = m) :
+diff --git a/Provenance/Database.lean b/Provenance/Database.lean
+index 6506024..e0690d7 100644
+--- a/Provenance/Database.lean
++++ b/Provenance/Database.lean
+@@ -28,12 +28,7 @@ theorem Tuple.cast_get {T: Type} (heq: n=m) (t: Tuple T n) (k: Fin m) :
+     rfl
+ 
+ instance [DecidableEq T] : DecidableEq (Tuple T n) :=
+-  λ t₁ t₂ =>
+-    if h : ∀ k, t₁ k = t₂ k then isTrue (funext h)
+-    else isFalse (by
+-      intro h'
+-      apply h
+-      exact fun k => congrFun h' k)
++  inferInstanceAs (DecidableEq (Fin n → T))
+ 
+ instance [Repr α] : Repr (Tuple α n) := ⟨Tuple.repr⟩
+ 
+@@ -47,18 +42,13 @@ instance [ToString T] : ToString (Tuple T n) where
+     "(" ++ String.intercalate ", " (List.ofFn (fun i => toString (t i))) ++ ")"
+ 
+ instance : DecidableRel (λ (t₁ t₂: Tuple T n) => t₁ = t₂) :=
+-  λ f g ↦
+-    if h : ∀ i, f i = g i then
+-      isTrue (funext h)
+-    else
+-      isFalse (fun H => h (congrFun H))
++  inferInstanceAs (DecidableEq (Fin n → T))
+ 
+-instance : DecidableRel (λ (t₁ t₂: Tuple T n) => t₁ < t₂) :=
+-  λ f g ↦
+-    if h : ∃ i : Fin n, (∀ j, j < i → f j = g j) ∧ f i < g i then
+-      isTrue (h)
+-    else
+-      isFalse (h)
++instance : DecidableRel (λ (t₁ t₂: Tuple T n) => t₁ < t₂) := by
++  intro f g
++  change Fin n → T at f g
++  change Decidable (∃ i : Fin n, (∀ j, j < i → f j = g j) ∧ f i < g i)
++  infer_instance
+ 
+ instance : LinearOrder (Tuple T n) where
+   le_refl := by simp[(· ≤ ·)]
+@@ -166,6 +156,8 @@ instance : LinearOrder (Tuple T n) where
+           funext i
+           by_contra hneq
+           exact hnone ⟨i, hneq⟩
++        letI : DecidablePred (fun j : Fin n => ¬ a j = b j) :=
++          fun j => inferInstanceAs (Decidable ((a : Fin n → T) j ≠ (b : Fin n → T) j))
+         let k : Fin n := Fin.find (fun j ↦ ¬ a j = b j) hex
+         use k
+         constructor
+@@ -254,6 +246,7 @@ def Relation.cast_eq (r: Relation T n) (s: Relation T m) (heq: n=m) :
+     simp[Relation.cast, Tuple.cast]
+     subst heq
+     simp
++    exact Iff.of_eq ((congrArg (fun value => s = value) (Multiset.map_id r)).symm)
+ 
+ instance : Add (Relation T arity) := inferInstanceAs (Add (Multiset (Tuple T arity)))
+ instance : Sub (Relation T arity) := inferInstanceAs (Sub (Multiset (Tuple T arity)))
+diff --git a/Provenance/Query.lean b/Provenance/Query.lean
+index e855263..5743f31 100644
+--- a/Provenance/Query.lean
++++ b/Provenance/Query.lean
+@@ -46,26 +46,11 @@ theorem Term.castToAnnotatedTuple_eval [HasAltLinearOrder K] [SemiringWithMonus
+   t.castToAnnotatedTuple.eval (Fin.append (λ k ↦ Sum.inl (tuple k)) ![Sum.inr α]) = Sum.inl (t.eval tuple) := by
+   intro α
+   induction t with
+-  | const c =>
+-    unfold castToAnnotatedTuple eval
+-    simp
+-  | index k =>
+-    unfold castToAnnotatedTuple eval
+-    have hk : k.castLT (lt_trans k.isLt (lt_add_one n)) = Fin.castAdd 1 k := rfl
+-    rw[hk]
+-    rw[Fin.append_left]
+-  | add t₁ t₂ ih₁ ih₂ =>
+-    unfold castToAnnotatedTuple eval
+-    rw[ih₁, ih₂]
+-    simp[(·+·),Add.add]
+-  | sub t₁ t₂ ih₁ ih₂ =>
+-    unfold castToAnnotatedTuple eval
+-    rw[ih₁, ih₂]
+-    simp[(·-·),Sub.sub]
+-  | mul t₁ t₂ ih₁ ih₂ =>
+-    unfold castToAnnotatedTuple eval
+-    rw[ih₁, ih₂]
+-    simp[(·*·),Mul.mul]
++  | const c => rfl
++  | index k => exact Fin.append_left _ _ k
++  | add t₁ t₂ ih₁ ih₂ => exact congrArg₂ (fun a b : T ⊕ K => a + b) ih₁ ih₂
++  | sub t₁ t₂ ih₁ ih₂ => exact congrArg₂ (fun a b : T ⊕ K => a - b) ih₁ ih₂
++  | mul t₁ t₂ ih₁ ih₂ => exact congrArg₂ (fun a b : T ⊕ K => a * b) ih₁ ih₂
+ 
+ instance : Coe T (Term T n) where
+   coe a:= Term.const a
+diff --git a/Provenance/QueryAnnotatedDatabase.lean b/Provenance/QueryAnnotatedDatabase.lean
+index 9ff7c17..61ae7ec 100644
+--- a/Provenance/QueryAnnotatedDatabase.lean
++++ b/Provenance/QueryAnnotatedDatabase.lean
+@@ -20,8 +20,8 @@ def groupByKeyLookup [ValueType T] [SemiringWithMonus K] [DecidableEq K] [HasAlt
+     (r : AnnotatedRelation T K n) (u : Tuple T n) : K :=
+   (((groupByKey r).val.find? (·.1 = u)).map Prod.snd).getD 0
+ 
+-theorem groupByKey_find [ValueType T] [SemiringWithMonus K] [DecidableEq K] [HasAltLinearOrder K]
+-  (r : AnnotatedRelation T K n) (u : Tuple T n) :
++private theorem groupByKey_find_pairs [ValueType T] [SemiringWithMonus K] [DecidableEq K] [HasAltLinearOrder K]
++  (r : Multiset (Tuple T n × K)) (u : Tuple T n) :
+   (((groupByKey r).val.find? (·.1 = u)).map Prod.snd).getD 0 =
+     ((r.filter (fun t => t.1 = u)).map Prod.snd).sum := by
+   induction r using Multiset.induction_on with
+@@ -55,7 +55,7 @@ theorem groupByKey_find [ValueType T] [SemiringWithMonus K] [DecidableEq K] [Has
+         rw [Multiset.filter_cons_of_pos _ (by rfl)]
+         exact (Multiset.sum_cons α _).symm.trans
+           (congrArg Multiset.sum
+-            (@Multiset.map_cons (AnnotatedTuple T K n) K Prod.snd (u', α) _).symm)
++            (@Multiset.map_cons (Tuple T n × K) K Prod.snd (u', α) _).symm)
+       · unfold groupByKey
+         erw [Multiset.foldr_cons]
+         have hlookup :
+@@ -78,12 +78,13 @@ theorem groupByKey_find [ValueType T] [SemiringWithMonus K] [DecidableEq K] [Has
+           exact ih
+         rw [ih']
+         simp [h]
+-        have hmap :
+-            Multiset.map Prod.snd (Multiset.filter (fun t => t.1 = u) r) =
+-              Multiset.map (fun x => x.2) (Multiset.filter (fun t => t.1 = u) r) := by
+-          rfl
+-        rw [hmap]
+-        rfl
++
++
++theorem groupByKey_find [ValueType T] [SemiringWithMonus K] [DecidableEq K] [HasAltLinearOrder K]
++  (r : AnnotatedRelation T K n) (u : Tuple T n) :
++  (((groupByKey r).val.find? (·.1 = u)).map Prod.snd).getD 0 =
++    ((r.filter (fun t => t.1 = u)).map Prod.snd).sum := by
++  exact groupByKey_find_pairs r u
+ 
+ theorem groupByKeyLookup_eq_sum [ValueType T] [SemiringWithMonus K] [DecidableEq K] [HasAltLinearOrder K]
+     (r : AnnotatedRelation T K n) (u : Tuple T n) :
+@@ -221,7 +222,7 @@ theorem groupByKey_mem_iff [ValueType T] [SemiringWithMonus K] [DecidableEq K] [
+ theorem groupByKey_eq_groupedDedup [ValueType T] [SemiringWithMonus K] [DecidableEq K] [HasAltLinearOrder K]
+   (r : AnnotatedRelation T K n) :
+   Multiset.ofList ((groupByKey r).val) = groupedDedup r := by
+-  rw [Multiset.ext]
++  refine (@Multiset.ext (Tuple T n × K) _ _ _).mpr ?_
+   intro x
+   rcases x with ⟨u, β⟩
+   let s : Multiset (Tuple T n × K) := groupedDedup r
+@@ -274,7 +275,7 @@ theorem groupByKey_eq_groupedDedup [ValueType T] [SemiringWithMonus K] [Decidabl
+     simp [hxL, hxR]
+ 
+ theorem groupedDedup_lastCoordinate_eq_rewritingDedup [ValueType T] [SemiringWithMonus K]
+-    [DecidableEq K] [HasAltLinearOrder K] (r : AnnotatedRelation T K n) (x : Tuple T n) :
++    [DecidableEq K] [HasAltLinearOrder K] (r : Multiset (Tuple T n × K)) (x : Tuple T n) :
+   Sum.inr (Multiset.map Prod.snd (Multiset.filter (fun t ↦ t.1 = x) r)).sum =
+     Multiset.fold addFn 0
+       (Multiset.map (fun x ↦ x (Fin.last n))
+@@ -317,6 +318,11 @@ theorem groupByKey_toComposite_eq_rewritingDedup [ValueType T] [SemiringWithMonu
+     let d : Database (T ⊕ K) := [("__tmp", ⟨n + 1, r.toComposite⟩)]
+     (Query.Agg (fun (k : Fin n) => k.castLE (by simp)) ![#(Fin.last n)] ![AggFunc.sum]
+       (@Query.Rel (T ⊕ K) (n + 1) "__tmp")).evaluate d := by
++  have aggregate := Query.evaluate.eq_8
++    [("__tmp", ⟨n + 1, r.toComposite⟩)] (n + 1) n 1
++    (fun (k : Fin n) => k.castLE (Nat.le_succ n))
++    ![#(Fin.last n)] ![AggFunc.sum] (@Query.Rel (T ⊕ K) (n + 1) "__tmp")
++  refine Eq.trans ?_ aggregate.symm
+   erw [groupByKey_eq_groupedDedup]
+   simp [Query.evaluate, AnnotatedRelation.toComposite, groupedDedup, Database.find, Database.find.f,
+     Term.eval, Fin.append]
+@@ -330,29 +336,50 @@ theorem groupByKey_toComposite_eq_rewritingDedup [ValueType T] [SemiringWithMonu
+     have := congrFun hxy k
+     simpa [keyEmbed] using this
+   have hproj : Multiset.map projKey r = Multiset.map keyEmbed (Multiset.map Prod.fst r) := by
+-    rw [Multiset.map_map]
++    refine Eq.trans ?_ (Multiset.map_map _ _ _).symm
+     refine Multiset.map_congr rfl ?_
+     intro x hx
+     funext k
+-    simp [projKey, keyEmbed, AnnotatedTuple.toComposite]
++    exact AnnotatedTuple.toComposite_key x k
+   have hbase : (Multiset.map projKey r).dedup = Multiset.map keyEmbed leftBase := by
+     dsimp [leftBase]
+     rw [hproj, Multiset.dedup_map_of_injective keyEmbed_injective]
++  let database : Database (T ⊕ K) := [("__tmp", ⟨n + 1, r.toComposite⟩)]
++  let relation : Query (T ⊕ K) (n + 1) := .Rel (n + 1) "__tmp"
++  let projection : Tuple (Term (T ⊕ K) (n + 1)) n :=
++    fun k => #(k.castLE (Nat.le_succ n))
++  have relationValue : relation.evaluate database = r.toComposite := by
++    refine (Query.evaluate.eq_1 database "__tmp").trans ?_
++    simp [database, Database.find, Database.find.f]
++  have projectionValue : (Query.Proj projection relation).evaluate database =
++      Multiset.map projKey r := by
++    refine (Query.evaluate.eq_2 database (n + 1) relation projection).trans ?_
++    refine (congrArg (Multiset.map (fun t k => (projection k).eval t)) relationValue).trans ?_
++    exact Multiset.map_map _ _ _
++  have dedupValue : (Query.Dedup (Query.Proj projection relation)).evaluate database =
++      (Multiset.map projKey r).dedup :=
++    (Query.evaluate.eq_6 database _).trans (congrArg Multiset.dedup projectionValue)
++  erw [relationValue, dedupValue]
+   rw [hbase]
+   show _ = Multiset.map _ (Multiset.map keyEmbed ((Multiset.map Prod.fst r).dedup))
+-  rw [Multiset.map_map]
++  erw [Multiset.map_map, Multiset.map_map]
+   refine Multiset.map_congr rfl ?_
+   intro x hx
+   funext k
+   refine Fin.addCases ?_ ?_ k
+   · intro i
+-    simp [keyEmbed, AnnotatedTuple.toComposite]
++    dsimp only [Function.comp, AnnotatedTuple.toComposite]
++    refine (Fin.append_left _ _ i).trans ?_
++    exact (Fin.addCases_left (motive := fun _ => T ⊕ K)
++      (left := keyEmbed x) i).symm
+   · intro i
+     have hi : i = 0 := Fin.eq_zero i
+     subst hi
+     simp only [keyEmbed, AggFunc.eval, AnnotatedTuple.toComposite, Function.comp,
+       Fin.append_right, Fin.addCases_right, Matrix.cons_val_zero, Matrix.cons_val_fin_one]
+-    exact groupedDedup_lastCoordinate_eq_rewritingDedup (r := r) x
++    have coordinates := groupedDedup_lastCoordinate_eq_rewritingDedup (r := r) x
++    refine coordinates.trans ?_
++    congr 3
+ 
+ theorem diff_split [ValueType T] [SemiringWithMonus K] [DecidableEq K] [HasAltLinearOrder K]
+     (r₁ r₂ : AnnotatedRelation T K n) :
+@@ -361,31 +388,23 @@ theorem diff_split [ValueType T] [SemiringWithMonus K] [DecidableEq K] [HasAltLi
+     AnnotatedRelation.toComposite ((r₁.filter fun ta => ta.1 ∈ r₂.map Prod.fst).map
+       fun x => (x.1, x.2 - groupByKeyLookup r₂ x.1)) := by
+   classical
+-  simp only [AnnotatedRelation.toComposite]
+-  induction r₁ using Multiset.induction_on with
+-  | empty =>
+-      simp [Multiset.filter_zero]
+-      exact (Multiset.add_zero 0).symm
+-  | @cons p r₁ ih =>
+-    rcases p with ⟨u, α⟩
+-    by_cases hm : u ∈ r₂.map Prod.fst
+-    · have hnot : ¬(u ∉ r₂.map Prod.fst) := by simpa using hm
+-      simp only [Multiset.map_cons, Multiset.filter_cons, if_neg hnot, if_pos hm,
+-                 Multiset.map_add, Multiset.map_singleton, zero_add,
+-                 Multiset.map_cons]
+-      rw [ih]
+-      rw [Multiset.singleton_add]
+-      exact (Multiset.add_cons _ _ _).symm
+-    · have hm' : u ∉ r₂.map Prod.fst := hm
+-      have habs : groupByKeyLookup r₂ u = 0 :=
+-          groupByKeyLookup_eq_zero_of_not_mem_key _ _ hm'
+-      simp only [habs, monus_zero, Multiset.map_cons, Multiset.filter_cons,
+-                 if_pos hm', if_neg (show ¬u ∈ r₂.map Prod.fst from hm),
+-                 Multiset.map_add, Multiset.map_zero, Multiset.map_cons]
+-      rw [ih]
+-      simp only [Multiset.map_singleton, Multiset.zero_add]
+-      rw [Multiset.singleton_add]
+-      exact (Multiset.cons_add _ _ _).symm
++  have splitMap {A : Type} (p : A → Prop) [DecidablePred p]
++      (f : A → A) (fixed : ∀ x, ¬p x → f x = x) (s : Multiset A) :
++      s.map f = s.filter (fun x => ¬p x) + (s.filter p).map f := by
++    induction s using Multiset.induction_on with
++    | empty => simp
++    | cons x s ih =>
++      by_cases hx : p x
++      · simp [hx, ih]
++      · simp [hx, fixed x hx, ih]
++  have splitRelation := splitMap
++    (fun (x : AnnotatedTuple T K n) => x.1 ∈ r₂.map Prod.fst)
++    (fun (x : AnnotatedTuple T K n) => (x.1, x.2 - groupByKeyLookup r₂ x.1))
++    (fun x absent => by
++      have zero := groupByKeyLookup_eq_zero_of_not_mem_key r₂ x.1 absent
++      exact Prod.ext rfl (by rw [zero, monus_zero])) r₁
++  exact (congrArg AnnotatedRelation.toComposite splitRelation).trans
++    (AnnotatedRelation.toComposite_add _ _)
+ 
+ def Query.evaluateAnnotated (q: Query T n) (hq: q.noAgg) (d: AnnotatedDatabase T K) : AnnotatedRelation T K n := match q with
+ | Rel   n  s  =>
+diff --git a/Provenance/QueryRewriting.lean b/Provenance/QueryRewriting.lean
+index fc8b981..3c250f5 100644
+--- a/Provenance/QueryRewriting.lean
++++ b/Provenance/QueryRewriting.lean
+@@ -65,8 +65,6 @@ lemma Query.rewriting_valid_prod0 [Mul K] {n₁ n₂ n: ℕ}
+         (Multiset.product (ar₁) (ar₂)))).cast (by simp[hn]) := by
+         intro ar₁ ar₂
+         subst n
+-        rw[AnnotatedRelation.cast_toComposite]
+-        congr
+         rfl
+ 
+ lemma cast_apply
+@@ -228,7 +226,7 @@ private lemma proj_cast_append {T : Type} [ValueType T] {n : ℕ}
+     (h : (n + 1) + n = 2 * n + 1) :
+     (fun (k : Fin (n + 1)) => (Tuple.cast h (Fin.append s d)) (Fin.castLE (by omega) k)) = s := by
+   funext k
+-  rw [tuple_cast_index]
++  refine (tuple_cast_index h (Fin.append s d) (Fin.castLE (by omega) k)).trans ?_
+   show Fin.append s d ⟨(Fin.castLE _ k).val, _⟩ = s k
+   simp only [Fin.append, Fin.addCases, Fin.castLE]
+   have hlt : k.val < n + 1 := k.isLt
+@@ -246,13 +244,27 @@ private lemma diffKeyMap_toComposite {T K : Type} [ValueType T] [Zero K] {n : 
+     Multiset.map diffKeyProj r.toComposite =
+       Multiset.map (keyEmbed (T := T) (K := K)) (r.map Prod.fst) := by
+   unfold AnnotatedRelation.toComposite
+-  rw [Multiset.map_map, Multiset.map_map]
++  erw [Multiset.map_map, Multiset.map_map]
+   show Multiset.map (diffKeyProj ∘ fun p => p.toComposite) r =
+       Multiset.map ((keyEmbed (T := T) (K := K)) ∘ Prod.fst) r
+   refine Multiset.map_congr rfl ?_
+   intro ta hta
+   simpa [Function.comp] using diffKeyProj_toComposite (T := T) (K := K) ta
+ 
++private lemma filter_map_section {α β : Type} [DecidableEq α]
++    (key : β → α) (f : α → β) (hf : ∀ x, key (f x) = x)
++    (s : Multiset α) (hs : s.Nodup) (u : α)
++    [DecidablePred (fun x => key x = u)] :
++    (s.map f).filter (fun x => key x = u) = if u ∈ s then {f u} else 0 := by
++  classical
++  rw [Multiset.filter_map]
++  have hfilter : s.filter ((fun x => key x = u) ∘ f) = s.filter (· = u) := by
++    apply Multiset.filter_congr
++    intro x hx
++    simp only [Function.comp_apply, hf]
++  rw [hfilter, filter_eq_of_nodup hs u]
++  split <;> simp
++
+ private lemma groupedDedup_filter_key {T K : Type} [ValueType T] [SemiringWithMonus K]
+     [DecidableEq K] [HasAltLinearOrder K] {n : ℕ}
+     (r : AnnotatedRelation T K n) (u : Tuple T n) :
+@@ -260,21 +272,13 @@ private lemma groupedDedup_filter_key {T K : Type} [ValueType T] [SemiringWithMo
+       if hu : u ∈ r.map Prod.fst then
+         {(u, ((r.filter (fun t => t.1 = u)).map Prod.snd).sum)}
+       else 0 := by
+-  unfold groupedDedup
+-  rw [Multiset.filter_map]
+-  rw [show
+-      Multiset.filter
+-        (((fun gb : AnnotatedTuple T K n => gb.1 = u) ∘
+-          fun u' => (u', ((r.filter (fun t => t.1 = u')).map Prod.snd).sum)))
+-        (Multiset.dedup (Multiset.map Prod.fst r)) =
+-      Multiset.filter (fun x : Tuple T n => x = u) (Multiset.dedup (Multiset.map Prod.fst r)) by
+-        apply Multiset.filter_congr
+-        intro x hx
+-        simp]
+-  rw [filter_eq_of_nodup (Multiset.nodup_dedup (Multiset.map Prod.fst r)) u]
+-  by_cases hu : u ∈ r.map Prod.fst
+-  · simp only [Multiset.mem_dedup, hu, if_true, Multiset.map_singleton, dif_pos]; rfl
+-  · simp only [Multiset.mem_dedup, hu, if_false, Multiset.map_zero, dif_neg, not_false_iff]
++  have h := filter_map_section
++    (fun x : AnnotatedTuple T K n => x.1)
++    (fun u' : Tuple T n => (u', ((r.filter (fun t => t.1 = u')).map Prod.snd).sum))
++    (fun _ => rfl) (r.map Prod.fst).dedup (Multiset.nodup_dedup _) u
++  simp only [groupedDedup, Multiset.mem_dedup, dite_eq_ite] at h ⊢
++  convert h using 1
++  by_cases hu : u ∈ r.map Prod.fst <;> simp only [hu, if_true, if_false] <;> rfl
+ 
+ lemma multiset_filter_irrel {α : Type _} {p : α → Prop}
+     (dp₁ dp₂ : DecidablePred p) (s : Multiset α) :
+@@ -337,7 +341,10 @@ lemma dedup_rewriting_irrel
+   refine Multiset.map_congr rfl ?_
+   intro x hx
+   congr 1
+-  rw [multiset_filter_irrel (dp₁ x) (dp₂ x)]
++  funext i
++  exact congrArg (fun filtered => AggFunc.sum.eval
++    (Multiset.map (fun t => (#(Fin.last n)).eval t) filtered))
++    (multiset_filter_irrel (dp₁ x) (dp₂ x) r)
+ 
+ lemma Query.rewriting_valid_prod1 {n₁ n:ℕ} [ValueType (T⊕K)]
+   (hn: n₁+1+(n₂+1)=n+2)
+@@ -346,8 +353,8 @@ lemma Query.rewriting_valid_prod1 {n₁ n:ℕ} [ValueType (T⊕K)]
+   (r.cast hn).map f = r.map (λ t ↦ f (t.cast hn))
+     := by
+   intro r
+-  rw [(Relation.cast_eq r (r.cast hn) hn).mp rfl, Multiset.map_map]
+-  rfl
++  exact (congrArg (Multiset.map f) ((Relation.cast_eq r (r.cast hn) hn).mp rfl)).trans
++    (Multiset.map_map f (fun t => Tuple.cast hn t) r)
+ 
+ lemma Query.rewriting_append_left
+   (t₁: Tuple T n₁)
+@@ -462,8 +469,7 @@ private lemma diffJoin2Prop_cast_append_iff {T K : Type} [ValueType (T ⊕ K)] {
+       exact hlem
+     rw [hleft, hright] at hk
+     simpa [diffKeyProj] using hk.symm
+-  · intro hsd
+-    intro k
++  · intro hsd k
+     have hk := congrFun hsd k
+     have hkleft : (k.castLE (by omega) : Fin (2 * n + 2)) < n + 1 := by
+       show k.1 < n + 1
+@@ -500,7 +506,7 @@ private lemma diffJoin2Prop_append_grouped_iff {T K : Type} [ValueType T] [Semir
+       (s := AnnotatedTuple.toComposite (u, α))
+       (d := gb.toComposite)
+       (h := hcast)]
+-  rw [diffKeyProj_toComposite, diffKeyProj_toComposite]
++  rw [diffKeyProj_toComposite gb, diffKeyProj_toComposite (u, α)]
+   constructor
+   · intro hkey
+     exact keyEmbed_injective (T := T) (K := K) hkey
+@@ -518,7 +524,10 @@ private lemma diffProj2_append_grouped {T K : Type} [ValueType T] [SemiringWithM
+   let hcast : (n + 1) + (n + 1) = 2 * n + 2 := by omega
+   funext k
+   by_cases hk : ↑k < n
+-  · simp [diffProj2, hk, tuple_cast_index, AnnotatedTuple.toComposite, Fin.append, Fin.addCases]
++  · dsimp only [diffProj2]
++    rw [dif_pos hk]
++    refine (tuple_cast_index hcast _ _).trans ?_
++    simp [AnnotatedTuple.toComposite, Fin.append, Fin.addCases, hk]
+   · have hkLast : k = Fin.last n := by
+       apply Fin.eq_of_val_eq
+       exact Nat.eq_of_lt_succ_of_not_lt k.2 hk
+@@ -530,7 +539,7 @@ private lemma diffProj2_append_grouped {T K : Type} [ValueType T] [SemiringWithM
+         Tuple.cast hcast
+             (Fin.append (AnnotatedTuple.toComposite (u, α)) (AnnotatedTuple.toComposite (u, β)))
+             (Fin.ofNat (2 * n + 2) n) = Sum.inr α := by
+-      rw [tuple_cast_index]
++      erw [tuple_cast_index]
+       simp [Fin.ofNat, hmod, AnnotatedTuple.toComposite, Fin.append, Fin.addCases]
+     have hrightAnn :
+         Tuple.cast hcast
+@@ -538,7 +547,7 @@ private lemma diffProj2_append_grouped {T K : Type} [ValueType T] [SemiringWithM
+             (Fin.last (2 * n + 1)) = Sum.inr β := by
+       have hnot1 : ¬ ((2 * n : ℕ) < n) := by omega
+       have hnot2 : ¬ (((2 * n - n : ℕ)) < n) := by omega
+-      rw [tuple_cast_index]
++      erw [tuple_cast_index]
+       simp [AnnotatedTuple.toComposite, Fin.append, Fin.addCases, Fin.last, hnot1, hnot2]
+     calc
+       diffProj2
+@@ -572,7 +581,7 @@ private lemma diff_present_singleton {T K : Type} [ValueType T] [SemiringWithMon
+   classical
+   unfold AnnotatedRelation.toComposite
+   let hcast : (n + 1) + (n + 1) = 2 * n + 2 := by omega
+-  rw [relation_cast_map (h := hcast)
++  erw [relation_cast_map (h := hcast)
+       (f := Fin.append (AnnotatedTuple.toComposite (u, α)))]
+   set g : Multiset (AnnotatedTuple T K n) := groupedDedup r with hg
+   -- Fuse the maps and push the filter inward (erw bridges the differing `DecidablePred` instance).
+@@ -604,7 +613,7 @@ private lemma diff_present_singleton {T K : Type} [ValueType T] [SemiringWithMon
+               Tuple.cast hcast (Fin.append (AnnotatedTuple.toComposite (u, α)) x)) ∘
+             fun p : AnnotatedTuple T K n => p.toComposite)
+           ((u, ((r.filter (fun t => t.1 = u)).map Prod.snd).sum) ::ₘ 0) = _
+-    rw [Multiset.map_cons, Multiset.map_zero]
++    erw [Multiset.map_cons, Multiset.map_zero]
+     have hβ := diffProj2_append_grouped (u := u) (α := α)
+         (β := ((r.filter (fun t => t.1 = u)).map Prod.snd).sum)
+     simp only [Function.comp, AnnotatedTuple.toComposite] at hβ ⊢
+@@ -632,7 +641,7 @@ private lemma diff_present_ra_aux {T K : Type} [ValueType T] [SemiringWithMonus
+               (Relation.cast _
+                 (AnnotatedRelation.toComposite (0 : AnnotatedRelation T K n) *
+                   (groupedDedup r₂).toComposite)))
+-      rw [Multiset.filter_zero, Multiset.map_zero]
++      erw [Multiset.filter_zero, Multiset.map_zero]
+       show (0 : Relation (T ⊕ K) (n + 1)) = _
+       rw [show AnnotatedRelation.toComposite (0 : AnnotatedRelation T K n)
+             = (0 : Relation (T ⊕ K) (n + 1)) from Multiset.map_zero _,
+@@ -659,8 +668,8 @@ private lemma diff_present_ra_aux {T K : Type} [ValueType T] [SemiringWithMonus
+           (relation_mul_cons (s := AnnotatedTuple.toComposite (u, α))
+             (S := AnnotatedRelation.toComposite r₁)
+             (D := AnnotatedRelation.toComposite (groupedDedup r₂)))
+-      simp only [AnnotatedRelation.toComposite, Multiset.filter_cons, Multiset.map_cons]
+-      rw [Multiset.map_map, Multiset.map_add]
++      simp only [AnnotatedRelation.toComposite]
++      erw [Multiset.map_map, Multiset.filter_cons, Multiset.map_add, Multiset.map_cons]
+       change
+         Multiset.map
+             (fun x ↦
+@@ -709,8 +718,8 @@ private lemma diff_present_ra_aux {T K : Type} [ValueType T] [SemiringWithMonus
+                     (Multiset.map (fun p ↦ Fin.append p.1 p.2)
+                       (Multiset.product (AnnotatedRelation.toComposite r₁)
+                         (groupedDedup r₂).toComposite)))) := by
+-          simp only [AnnotatedRelation.toComposite, Relation.cast, HMul.hMul, Multiset.map_map] at ih ⊢
+-          exact ih
++          simp only [AnnotatedRelation.toComposite, Relation.cast, HMul.hMul] at ih ⊢
++          exact (Multiset.map_map _ _ _).symm.trans ih
+         have hhead :
+             (if h : u ∈ Multiset.map Prod.fst r₂ then
+                 {AnnotatedTuple.toComposite
+@@ -739,8 +748,8 @@ private lemma diff_present_ra_aux {T K : Type} [ValueType T] [SemiringWithMonus
+                     (Multiset.map (fun p ↦ Fin.append p.1 p.2)
+                       (Multiset.product (AnnotatedRelation.toComposite r₁)
+                         (groupedDedup r₂).toComposite)))) := by
+-          simp only [AnnotatedRelation.toComposite, Relation.cast, HMul.hMul, Multiset.map_map] at ih ⊢
+-          exact ih
++          simp only [AnnotatedRelation.toComposite, Relation.cast, HMul.hMul] at ih ⊢
++          exact (Multiset.map_map _ _ _).symm.trans ih
+         have hhead :
+             (if h : u ∈ Multiset.map Prod.fst r₂ then
+                 {AnnotatedTuple.toComposite
+@@ -951,8 +960,8 @@ private lemma diff_absent_ra_aux {T K : Type} [ValueType T] [SemiringWithMonus K
+             (Multiset.filter diffJoin1Prop
+               (Relation.cast hcast (Multiset.map (Fin.append t) s))) =
+             if diffKeyProj t ∈ s then {t} else 0 := by
+-        rw [relation_cast_map (h := hcast) (f := Fin.append t)]
+-        rw [Multiset.filter_map, Multiset.map_map]
++        erw [relation_cast_map (h := hcast) (f := Fin.append t)]
++        erw [Multiset.filter_map, Multiset.map_map]
+         have hpred :
+             Multiset.filter
+                 (diffJoin1Prop ∘ fun x : Tuple (T ⊕ K) n => Tuple.cast hcast (Fin.append t x))
+@@ -963,19 +972,19 @@ private lemma diff_absent_ra_aux {T K : Type} [ValueType T] [SemiringWithMonus K
+           simpa [Function.comp] using
+             (diffJoin1Prop_cast_append_iff (s := t) (d := d) (h := hcast))
+         have hmapEq :
+-            Multiset.map (diffProj1 ∘ fun x => Tuple.cast hcast (Fin.append t x))
+-              (Multiset.filter (diffJoin1Prop ∘ fun x => Tuple.cast hcast (Fin.append t x)) s) =
+-            Multiset.map (diffProj1 ∘ fun x => Tuple.cast hcast (Fin.append t x))
++            Multiset.map (diffProj1 ∘ fun x : Tuple (T ⊕ K) n => Tuple.cast hcast (Fin.append t x))
++              (Multiset.filter (diffJoin1Prop ∘ fun x : Tuple (T ⊕ K) n => Tuple.cast hcast (Fin.append t x)) s) =
++            Multiset.map (diffProj1 ∘ fun x : Tuple (T ⊕ K) n => Tuple.cast hcast (Fin.append t x))
+               (Multiset.filter (fun x : Tuple (T ⊕ K) n => x = diffKeyProj t) s) := by
+-          exact congrArg (Multiset.map (diffProj1 ∘ fun x => Tuple.cast hcast (Fin.append t x))) hpred
+-        rw [hmapEq]
++          exact congrArg (Multiset.map (diffProj1 ∘ fun x : Tuple (T ⊕ K) n => Tuple.cast hcast (Fin.append t x))) hpred
++        refine hmapEq.trans ?_
+         erw [filter_eq_of_nodup hs (diffKeyProj t)]
+         by_cases hmem : diffKeyProj t ∈ s
+         · simp only [if_pos hmem]
+           show
+-            Multiset.map (diffProj1 ∘ fun x => Tuple.cast hcast (Fin.append t x))
++            Multiset.map (diffProj1 ∘ fun x : Tuple (T ⊕ K) n => Tuple.cast hcast (Fin.append t x))
+                 (diffKeyProj t ::ₘ 0) = {t}
+-          rw [Multiset.map_cons, Multiset.map_zero]
++          erw [Multiset.map_cons, Multiset.map_zero]
+           have hproj :
+               diffProj1 (Tuple.cast hcast (Fin.append t (diffKeyProj t))) = t := by
+             exact proj_cast_append (s := t) (d := diffKeyProj t) (h := hcast)
+@@ -1115,27 +1124,11 @@ private lemma diff_present_branch_surface {T K : Type} [ValueType T] [SemiringWi
+           (fun t t' => DBFilter.And t t') DBFilter.True).eval
+         (Relation.cast (by omega) (r₁.toComposite * (groupedDedup r₂).toComposite))) := by
+   rw [diff_present_lookup_to_sum (r₁ := r₁) (r₂ := r₂)]
+-  calc
+-    AnnotatedRelation.toComposite
+-      ((r₁.filter (fun ta => ta.1 ∈ Multiset.map Prod.fst r₂)).map
+-        (fun x => (x.1, x.2 - ((r₂.filter (fun t => t.1 = x.1)).map Prod.snd).sum))) =
+-      Multiset.map diffProj2
+-        (Multiset.filter diffJoin2Prop
+-          (Relation.cast (by omega) (r₁.toComposite * (groupedDedup r₂).toComposite))) := by
+-        exact diff_present_ra_aux (r₁ := r₁) (r₂ := r₂)
+-    _ =
+-      Multiset.map diffProj2
+-        (Multiset.filter
+-          (((List.range n).map
+-            (fun k =>
+-              @DBFilter.BT (T ⊕ K) (2 * n + 2)
+-                (#(Fin.ofNat _ k) == #(Fin.ofNat _ (k + n + 1))))).foldr
+-            (fun t t' => DBFilter.And t t') DBFilter.True).eval
+-          (Relation.cast (by omega) (r₁.toComposite * (groupedDedup r₂).toComposite))) := by
+-        congr 1
+-        exact
+-          (diffJoinCond2_filter_eq
+-            (s := Relation.cast (by omega) (r₁.toComposite * (groupedDedup r₂).toComposite))).symm
++  exact (diff_present_ra_aux (r₁ := r₁) (r₂ := r₂)).trans
++    (congrArg (Multiset.map diffProj2)
++      (diffJoinCond2_filter_eq
++        (s := Relation.cast (by omega)
++          (r₁.toComposite * (groupedDedup r₂).toComposite))).symm)
+ 
+ theorem Query.rewriting_valid
+   [ValueType T] [SemiringWithMonus K] [DecidableEq K] [HasAltLinearOrder K]
+@@ -1151,6 +1144,7 @@ theorem Query.rewriting_valid
+       rw[AnnotatedDatabase.find_toComposite_none] at ha
+       rw[ha]
+       simp[AnnotatedRelation.toComposite]
++      rfl
+     | some rn =>
+       rw[AnnotatedDatabase.find_toComposite_some] at ha
+       rw[ha]
+@@ -1159,10 +1153,11 @@ theorem Query.rewriting_valid
+     simp
+     rw[← ih (noAggProj hq rfl)]
+     unfold AnnotatedRelation.toComposite
+-    simp
+-    apply congrFun
+-    apply congrArg
+-    funext t k
++    erw [Multiset.map_map, Multiset.map_map]
++    refine Multiset.map_congr rfl ?_
++    intro t ht
++    funext k
++    dsimp only [Function.comp]
+     by_cases hkn' : k=Fin.last n'
+     . simp[hkn']
+       simp[Term.eval]
+@@ -1174,9 +1169,8 @@ theorem Query.rewriting_valid
+       rw[happ n', happ m]
+       unfold AnnotatedTuple.toComposite
+       rw[Fin.append_right, Fin.append_right]
+-    . simp at hkn'
+-      have hlt := Fin.val_lt_last hkn'
+-      simp[hlt]
++    . have hlt := Fin.val_lt_last hkn'
++      erw [dif_pos hlt]
+       have hcastk : k = (Fin.castAdd 1 (k.castLT hlt): Fin (n'+1)) := by
+         apply Fin.eq_of_val_eq
+         simp
+@@ -1190,7 +1184,7 @@ theorem Query.rewriting_valid
+     simp
+     rw[← ih (noAggSel hq rfl)]
+     unfold AnnotatedRelation.toComposite
+-    rw[Multiset.filter_map]
++    erw[Multiset.filter_map]
+     apply congrArg
+     apply congrFun
+     simp[Function.comp_def]
+@@ -1211,18 +1205,19 @@ theorem Query.rewriting_valid
+     rw[ih₁ (noAggProd hq rfl).left]
+     rw[ih₂ (noAggProd hq rfl).right]
+     simp
+-    rw[eq_comm]
+-    rw[Relation.cast_eq]
++    symm
++    apply (Relation.cast_eq _ _ _).mpr
+     erw[Multiset.map_map]
+     conv_lhs =>
+       unfold evaluate
+       simp[(·*·)]
+       skip
+-    rw[rewriting_valid_prod1 (rewriting_valid_prod_heqn hn)]
+-    simp
+-    congr
+-    ext p k
+-    rw[Tuple.cast_get]
++    erw[rewriting_valid_prod1 (rewriting_valid_prod_heqn hn), Multiset.map_map]
++    refine Multiset.map_congr rfl ?_
++    intro p hp
++    funext k
++    dsimp only [Function.comp]
++    erw[Tuple.cast_get]
+     subst hn
+     by_cases hlt₁: ↑k < n₁
+     . simp[hlt₁]
+@@ -1233,7 +1228,7 @@ theorem Query.rewriting_valid
+       erw[rewriting_append_left (hk := by simpa using hksucc)]
+       apply congrArg
+       refine Fin.eq_of_val_eq ?_
+-      simp [Fin.coe_castLT, Fin.coe_castLE]
++      simp [Fin.val_castLT, Fin.val_castLE]
+     . by_cases hlt: ↑k < n₁+n₂
+       . simp[hlt₁,hlt]
+         simp only[Term.eval]
+@@ -1273,7 +1268,11 @@ theorem Query.rewriting_valid
+     unfold evaluateAnnotated evaluate rewriting
+     simp
+     rw [groupByKey_toComposite_eq_rewritingDedup (r := q.evaluateAnnotated (noAggDedup hq rfl) d)]
+-    simp [Query.evaluate, Database.find, Database.find.f, ih (noAggDedup hq rfl)]
++    refine (Query.evaluate.eq_8 _ _ _ _ _ _ _ _).trans ?_
++    simp only [ih (noAggDedup hq rfl)]
++    repeat' first | erw [Query.evaluate.eq_1] | erw [Query.evaluate.eq_2] | erw [Query.evaluate.eq_6]
++    simp only [Database.find, Database.find.f]
++    simp only [Matrix.cons_val_fin_one]
+     exact
+       dedup_rewriting_irrel
+         ((q.rewriting (noAggDedup hq rfl)).evaluate d.toComposite)
+@@ -1305,12 +1304,25 @@ theorem Query.rewriting_valid
+       -- r₁.toComposite = Part1-q'₁.evaluate and r₂.toComposite = Part2-q'₂.evaluate
+       congr 1
+       · -- Part 1: toComposite of absent-key filter = Part1.evaluate
+-        simp only [Query.evaluate, ← hih₁, ← hih₂, Term.eval]
++        repeat' first | erw [Query.evaluate.eq_2] | erw [Query.evaluate.eq_3] | erw [Query.evaluate.eq_4] | erw [Query.evaluate.eq_6] | erw [Query.evaluate.eq_7] | erw [Query.evaluate.eq_8]
++        simp only [← hih₁, ← hih₂, Term.eval]
+         rw [AnnotatedRelation.toComposite_filter]
+         exact diff_absent_branch_surface (r₁ := r₁) (r₂ := r₂)
+       · -- Part 2: toComposite of present-key monus = Part2.evaluate
+-        simp only [Query.evaluate, ← hih₁, ← hih₂, Term.eval]
++        repeat' first | erw [Query.evaluate.eq_2] | erw [Query.evaluate.eq_3] | erw [Query.evaluate.eq_4] | erw [Query.evaluate.eq_6] | erw [Query.evaluate.eq_7] | erw [Query.evaluate.eq_8]
++        simp only [← hih₁, ← hih₂, Term.eval]
+         have hpresent := diff_present_branch_surface (r₁ := r₁) (r₂ := r₂)
+-        simpa [r₁, r₂, groupedDedup_toComposite_eq_rewritingQuery, Query.evaluate,
+-          Database.find, Database.find.f, Term.eval, diffProj2_eq_expanded] using hpresent
++        simp only [groupedDedup_toComposite_eq_rewritingQuery] at hpresent
++        repeat' first | erw [Query.evaluate.eq_8] at hpresent | erw [Query.evaluate.eq_6] at hpresent | erw [Query.evaluate.eq_2] at hpresent | erw [Query.evaluate.eq_1] at hpresent
++        simp only [r₁, r₂, Database.find, Database.find.f, Term.eval,
++          Matrix.cons_val_fin_one, diffProj2_eq_expanded, and_self, ↓reduceDIte,
++          eq_mp_eq_cast, cast_eq] at hpresent
++        refine hpresent.trans ?_
++        congr 5
++        funext t
++        congr 1
++        funext k
++        have hk : k = 0 := Subsingleton.elim _ _
++        subst k
++        rfl
+   | Agg _ _ _ _ => simp[noAgg] at hq
+diff --git a/Provenance/Semirings/How.lean b/Provenance/Semirings/How.lean
+index 3b030dc..6eb90e9 100644
+--- a/Provenance/Semirings/How.lean
++++ b/Provenance/Semirings/How.lean
+@@ -13,16 +13,16 @@ instance : LE (MvPolynomial X ℕ) where
+ 
+ instance : Sub (MvPolynomial X ℕ) where
+   sub a b :=
+-    let aDF := a.toDFinsupp
+-    let bDF := b.toDFinsupp
+-    let rDF := DFinsupp.zipWith (λ m x y ↦ x - y) (by simp) aDF bDF
+-    rDF.toFinsupp
++    let aDF := (AddMonoidAlgebra.coeff a).toDFinsupp
++    let bDF := (AddMonoidAlgebra.coeff b).toDFinsupp
++    let difference := DFinsupp.zipWith (fun _ x y => x - y) (by simp) aDF bDF
++    AddMonoidAlgebra.ofCoeff difference.toFinsupp
+ 
+ 
+ theorem coeff_sub (p q : MvPolynomial X ℕ) (n : X →₀ ℕ) :
+   (p-q).coeff n = p.coeff n - q.coeff n := by
+     simp only[HSub.hSub, Sub.sub]
+-    simp [MvPolynomial.coeff, DFinsupp.toFinsupp, DFinsupp.zipWith]
++    simp [MvPolynomial.coeff, AddMonoidAlgebra.coeff_ofCoeff, DFinsupp.toFinsupp, DFinsupp.zipWith]
+ 
+ 
+ instance : PartialOrder (MvPolynomial X ℕ) where
+@@ -51,9 +51,11 @@ instance : IsOrderedAddMonoid (MvPolynomial X ℕ) where
+ instance : CanonicallyOrderedAdd (MvPolynomial X ℕ) where
+   exists_add_of_le := by
+     intro a b hab
+-    use Finsupp.zipWith (· - ·) (by simp) b a
++    use b - a
++
+     ext m
+-    exact (Nat.sub_eq_iff_eq_add' (hab m)).mp rfl
++    simp only [MvPolynomial.coeff_add, coeff_sub]
++    exact (Nat.add_sub_of_le (hab m)).symm
+ 
+   le_self_add := by
+     intro a b m
+@@ -72,9 +74,9 @@ noncomputable instance : SemiringWithMonus (MvPolynomial X ℕ) where
+     intro a b c
+     apply Iff.intro
+     . intro h m
+-      exact Nat.sub_le_iff_le_add'.mp (h m)
++      simpa only [MvPolynomial.coeff_add] using Nat.sub_le_iff_le_add'.mp (by simpa only [coeff_sub] using h m)
+     . intro h m
+-      exact Nat.sub_le_iff_le_add'.mpr (h m)
++      simpa only [coeff_sub] using Nat.sub_le_iff_le_add'.mpr (by simpa only [MvPolynomial.coeff_add] using h m)
+ 
+ theorem How.not_idempotent : ¬(idempotent (MvPolynomial X ℕ)) := by
+   simp
+diff --git a/Provenance/Semirings/Tropical.lean b/Provenance/Semirings/Tropical.lean
+index e16b03d..b1210c2 100644
+--- a/Provenance/Semirings/Tropical.lean
++++ b/Provenance/Semirings/Tropical.lean
+@@ -178,7 +178,7 @@ theorem Tropical.mul_sub_left_distributive
+               rcases this with ⟨z, hz⟩
+               simp[hz]
+               rw[WithTop.lt_def]
+-              simp
++              right
+               use x+y, x+z
+               constructor
+               . apply add_lt_add_right _
+diff --git a/Provenance/Semirings/Viterbi.lean b/Provenance/Semirings/Viterbi.lean
+index a988dbc..6a4a603 100644
+--- a/Provenance/Semirings/Viterbi.lean
++++ b/Provenance/Semirings/Viterbi.lean
+@@ -145,7 +145,6 @@ instance : SemiringWithMonus Viterbi where
+     -- unfold the definition of `sub` and split on `a ≤ b`
+     simp [(· - ·), Sub.sub]
+     split <;> simp_all
+-    exact (zero_le' : (0 : NNReal) ≤ (c : NNReal))
+ 
+ theorem absorptive : absorptive Viterbi := by
+   intro a
+diff --git a/Provenance/Semirings/Which.lean b/Provenance/Semirings/Which.lean
+index c579fee..1e515f4 100644
+--- a/Provenance/Semirings/Which.lean
++++ b/Provenance/Semirings/Which.lean
+@@ -158,55 +158,42 @@ instance : CanonicallyOrderedAdd (Which α) where
+ 
+   le_self_add := by
+     intro a b
+-    cases a <;> cases b <;> simp [(· ≤ ·)]
++    cases a <;> cases b <;> simp [(· ≤ ·)] <;> tauto
+ 
+   le_add_self := by
+     intro a b
+-    cases a <;> cases b <;> simp [(· ≤ ·)]
++    cases a <;> cases b <;> simp [(· ≤ ·)] <;> tauto
+ 
+ instance : IsOrderedAddMonoid (Which α) where
+   add_le_add_left := by
+-    intro a b
+-    simp[(· + ·),Add.add,(· ≤ ·)]
+-    cases a <;> cases b <;> intro h c <;> cases c <;> simp <;> simp at h
+-    . rename_i x y z
+-      exact Finset.union_subset_union_left h
+-    . assumption
+-
++    intro a b h c
++    cases a <;> cases b <;> cases c <;>
++      simp_all [(· + ·), Add.add, (· ≤ ·)] <;> tauto
+   add_le_add_right := by
+-    intro a b
+-    simp[(· + ·),Add.add,(· ≤ ·)]
+-    cases a <;> cases b <;> intro h c <;> cases c <;> simp <;> simp at h
+-    . rename_i x y z
+-      exact Finset.union_subset_union_right h
+-    . assumption
++    intro a b h c
++    cases a <;> cases b <;> cases c <;>
++      simp_all [(· + ·), Add.add, (· ≤ ·)] <;> tauto
+ 
+ instance : SemiringWithMonus (Which α) where
+   monus_spec := by
+     intro a b c
+-    simp[(· + ·),Add.add,(· - ·),Sub.sub,(· ≤ ·)]
+-    cases ha : a <;> rename_i sa <;> cases hb : b <;> cases hc : c <;> simp
+-    . rename_i sb sc
+-      by_cases h' : sa ⊆ sb <;> simp[h']
+-      . intro x hx
+-        exact Finset.mem_union_left sc (h' hx)
+-      . apply Iff.intro
+-        . intro h₁ x hx
++    cases a <;> cases b <;> cases c <;>
++      simp [(· + ·), Add.add, (· - ·), Sub.sub, (· ≤ ·)]
++    · rename_i sa sb sc
++      split_ifs with h
++      · simp only [(· ≤ ·), true_iff]
++        intro x hx
++        exact Or.inl (h hx)
++      · simp only [Finset.mem_sdiff]
++        constructor
++        · intro hsub x hx
+           by_cases hxb : x ∈ sb
+-          . exact Finset.mem_union_left sc hxb
+-          . simp[hxb]
+-            have hx₁ : x ∈ sa \ sb := by
+-              simp[hx,hxb]
+-            exact h₁ hx₁
+-        . intro h₁ x hx
+-          simp at hx
+-          have hx₁ : x ∈ sa := by
+-            simp[hx]
+-          have : x ∈ sb ∪ sc := h₁ hx₁
+-          simp[hx] at this
+-          assumption
+-    . rename_i sb
+-      by_cases h' : sa ⊆ sb <;> simp[h']
++          · exact Or.inl hxb
++          · exact Or.inr (hsub ⟨hx, hxb⟩)
++        · intro hsub x hx
++          exact (hsub hx.1).resolve_left hx.2
++    · rename_i sa sb
++      split_ifs with h <;> simp_all [(· ≤ ·)]
+ 
+ 
+ /-- Which[X] is not absorptive as long as there is at least one variable -/
+diff --git a/docbuild/lake-manifest.json b/docbuild/lake-manifest.json
+index beddec7..8e848bf 100644
+--- a/docbuild/lake-manifest.json
++++ b/docbuild/lake-manifest.json
+@@ -1,153 +1,186 @@
+-{"version": "1.2.0",
+- "packagesDir": "../.lake/packages",
+- "packages":
+- [{"url": "https://github.com/leanprover/doc-gen4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover",
+-   "rev": "0bc516c1b9db83658d6475c40d9b1ed71219b921",
+-   "name": "«doc-gen4»",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": false,
+-   "configFile": "lakefile.lean"},
+-  {"type": "path",
+-   "scope": "",
+-   "name": "provenance",
+-   "manifestFile": "lake-manifest.json",
+-   "inherited": false,
+-   "dir": "../",
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover/leansqlite",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "0be4df908d1a8e75b58961041e2b4973692623df",
+-   "name": "leansqlite",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover/lean4-cli",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "92564e5770e4d09f2d86dfbf8ada1e9c715b384c",
+-   "name": "Cli",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/fgdorais/lean4-unicode-basic",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "a2e430a4c9d3ad24078b8581fe0162fc5b0c9a6c",
+-   "name": "UnicodeBasic",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/dupuisf/BibtexQuery",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "5d31b64fb703c5d77f6ef4d1fb958f9bdf1ea539",
+-   "name": "BibtexQuery",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "nightly-testing",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/acmepjz/md4lean",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "6a3fb240133bcb7e1a066fdc784b3fdc304e3fc5",
+-   "name": "MD4Lean",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/mathlib4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fabf563a7c95a166b8d7b6efca11c8b4dc9d911f",
+-   "name": "mathlib",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/plausible",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "63045536fe95024e6c18fc7b48e03f506701c5bc",
+-   "name": "plausible",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/LeanSearchClient",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "c5d5b8fe6e5158def25cd28eb94e4141ad97c843",
+-   "name": "LeanSearchClient",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/import-graph",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "5c7542ed018c78194f1e2b903eaf6a792b74c03d",
+-   "name": "importGraph",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/ProofWidgets4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "24b0d9dc081c5423f8eec7e866c441e5184f29d9",
+-   "name": "proofwidgets",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/aesop",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "e3cb2f741431ce31bf73549fb52316a57368b06f",
+-   "name": "aesop",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/quote4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "f46324995fca5f0483b742e4eb4daec7f4ee50d2",
+-   "name": "Qq",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/batteries",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fa08db58b30eb033edcdab331bba000827f9f785",
+-   "name": "batteries",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"}],
+- "name": "docbuild",
+- "lakeDir": ".lake",
+- "fixedToolchain": false}
++{
++  "version": "1.2.0",
++  "packagesDir": "../.lake/packages",
++  "packages": [
++    {
++      "url": "https://github.com/leanprover/doc-gen4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover",
++      "rev": "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015",
++      "name": "\u00abdoc-gen4\u00bb",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015",
++      "inherited": false,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "type": "path",
++      "scope": "",
++      "name": "provenance",
++      "manifestFile": "lake-manifest.json",
++      "inherited": false,
++      "dir": "../",
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover/leansqlite",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "0be4df908d1a8e75b58961041e2b4973692623df",
++      "name": "leansqlite",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover/lean4-cli",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover",
++      "rev": "6130a47896ce867c6a4a55373441e59e565bad0f",
++      "name": "Cli",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "v4.33.0",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/fgdorais/lean4-unicode-basic",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "a2e430a4c9d3ad24078b8581fe0162fc5b0c9a6c",
++      "name": "UnicodeBasic",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/dupuisf/BibtexQuery",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "5d31b64fb703c5d77f6ef4d1fb958f9bdf1ea539",
++      "name": "BibtexQuery",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "nightly-testing",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/acmepjz/md4lean",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "6a3fb240133bcb7e1a066fdc784b3fdc304e3fc5",
++      "name": "MD4Lean",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/mathlib4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "name": "mathlib",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/plausible",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "b7eb3304aeae834b12dda98993a37f6a41f6f0bb",
++      "name": "plausible",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/LeanSearchClient",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "5f4d51b81cbd3f6b32b156bfad9056621a040404",
++      "name": "LeanSearchClient",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/import-graph",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "16f02aa7642864af59f1ff0e384a015994db9118",
++      "name": "importGraph",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/ProofWidgets4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4be2e3d5087eeb272cf5a8853b8f9dd025ef5957",
++      "name": "proofwidgets",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/aesop",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "3448c0bcc5ce01b2d1546e483ec3620e32df3d0e",
++      "name": "aesop",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/quote4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "92c15be17b7caf78c2ad767ec40f89052d908d81",
++      "name": "Qq",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/batteries",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4488d40d070b9700d4d5a6aa342f0d40c31b2a2d",
++      "name": "batteries",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    }
++  ],
++  "name": "docbuild",
++  "lakeDir": ".lake",
++  "fixedToolchain": false
++}
+diff --git a/docbuild/lakefile.toml b/docbuild/lakefile.toml
+index fd77208..f76ade4 100644
+--- a/docbuild/lakefile.toml
++++ b/docbuild/lakefile.toml
+@@ -10,4 +10,4 @@ path = "../"
+ [[require]]
+ scope = "leanprover"
+ name = "doc-gen4"
+-rev = "v4.31.0"
++rev = "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015"
+diff --git a/docbuild/lean-toolchain b/docbuild/lean-toolchain
+index 18640c8..a8afa7d 100644
+--- a/docbuild/lean-toolchain
++++ b/docbuild/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.31.0
++leanprover/lean4:v4.33.1
+diff --git a/lake-manifest.json b/lake-manifest.json
+index 63cf0a5..7934df4 100644
+--- a/lake-manifest.json
++++ b/lake-manifest.json
+@@ -1,96 +1,117 @@
+-{"version": "1.2.0",
+- "packagesDir": ".lake/packages",
+- "packages":
+- [{"url": "https://github.com/leanprover-community/mathlib4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fabf563a7c95a166b8d7b6efca11c8b4dc9d911f",
+-   "name": "mathlib",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": false,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/plausible",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "63045536fe95024e6c18fc7b48e03f506701c5bc",
+-   "name": "plausible",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/LeanSearchClient",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "c5d5b8fe6e5158def25cd28eb94e4141ad97c843",
+-   "name": "LeanSearchClient",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/import-graph",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "5c7542ed018c78194f1e2b903eaf6a792b74c03d",
+-   "name": "importGraph",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/ProofWidgets4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "24b0d9dc081c5423f8eec7e866c441e5184f29d9",
+-   "name": "proofwidgets",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/aesop",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "e3cb2f741431ce31bf73549fb52316a57368b06f",
+-   "name": "aesop",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/quote4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "f46324995fca5f0483b742e4eb4daec7f4ee50d2",
+-   "name": "Qq",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/batteries",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fa08db58b30eb033edcdab331bba000827f9f785",
+-   "name": "batteries",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover/lean4-cli",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover",
+-   "rev": "92564e5770e4d09f2d86dfbf8ada1e9c715b384c",
+-   "name": "Cli",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"}],
+- "name": "provenance",
+- "lakeDir": ".lake",
+- "fixedToolchain": false}
++{
++  "version": "1.2.0",
++  "packagesDir": ".lake/packages",
++  "packages": [
++    {
++      "url": "https://github.com/leanprover-community/mathlib4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "name": "mathlib",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "inherited": false,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/plausible",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "b7eb3304aeae834b12dda98993a37f6a41f6f0bb",
++      "name": "plausible",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/LeanSearchClient",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "5f4d51b81cbd3f6b32b156bfad9056621a040404",
++      "name": "LeanSearchClient",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/import-graph",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "16f02aa7642864af59f1ff0e384a015994db9118",
++      "name": "importGraph",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/ProofWidgets4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4be2e3d5087eeb272cf5a8853b8f9dd025ef5957",
++      "name": "proofwidgets",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/aesop",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "3448c0bcc5ce01b2d1546e483ec3620e32df3d0e",
++      "name": "aesop",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/quote4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "92c15be17b7caf78c2ad767ec40f89052d908d81",
++      "name": "Qq",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/batteries",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4488d40d070b9700d4d5a6aa342f0d40c31b2a2d",
++      "name": "batteries",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover/lean4-cli",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover",
++      "rev": "6130a47896ce867c6a4a55373441e59e565bad0f",
++      "name": "Cli",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "v4.33.0",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    }
++  ],
++  "name": "provenance",
++  "lakeDir": ".lake",
++  "fixedToolchain": false
++}
+diff --git a/lakefile.toml b/lakefile.toml
+index b148a1c..1f40e00 100644
+--- a/lakefile.toml
++++ b/lakefile.toml
+@@ -8,7 +8,7 @@ pp.unicode.fun = true
+ [[require]]
+ scope = "leanprover-community"
+ name = "mathlib"
+-rev = "v4.31.0"
++rev = "0df444a360eaa60ab8c11dca51a86af692955474"
+ 
+ [[lean_lib]]
+ name = "Provenance"
+diff --git a/lean-toolchain b/lean-toolchain
+index 18640c8..a8afa7d 100644
+--- a/lean-toolchain
++++ b/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.31.0
++leanprover/lean4:v4.33.1

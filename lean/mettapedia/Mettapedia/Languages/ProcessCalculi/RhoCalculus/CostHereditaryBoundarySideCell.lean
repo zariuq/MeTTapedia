@@ -2962,6 +2962,7 @@ private theorem normalize_fvar_tree'
   cases view with
   | fvar lookup => simp [CostRegionTree.normalize]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- **Family 1 closes whenever the non-boundary endpoint is an authored source
 variable.**
 
@@ -3217,6 +3218,7 @@ noncomputable def boundarySourceVariablePlanStops_sourcePatternLeafAligned_of_cl
     rightSelectedSource] using restores
 
 
+set_option backward.isDefEq.respectTransparency false in
 /-- **Mirror of
 `boundarySourceVariablePlanStops_sourcePatternLeafAligned_of_closeSmaller`**:
 the authored source variable on the left, the certified boundary on the

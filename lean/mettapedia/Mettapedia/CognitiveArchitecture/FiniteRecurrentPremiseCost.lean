@@ -70,13 +70,8 @@ theorem executionTracePrefix_demand (cycles : Nat) :
 theorem executionTracePrefix_cost (cycles : Nat) :
     costValuation.historyGrade (executionTracePrefix cycles) =
       some (cumulativeSpent cycles) := by
-  calc
-    costValuation.historyGrade (executionTracePrefix cycles) =
-        some (batchDemand eventCost (executionTracePrefix cycles)) :=
-      additive_historyGrade_eq_batchDemand eventCost
-        (executionTracePrefix cycles)
-    _ = some (cumulativeSpent cycles) := by
-      rw [executionTracePrefix_demand]
+  exact (additive_historyGrade_eq_batchDemand eventCost (executionTracePrefix cycles)).trans
+    (congrArg some (executionTracePrefix_demand cycles))
 
 /-- One explicit finite purse funds exactly the complete recurrent prefix. -/
 def executionTracePrefixFunding (cycles : Nat) :

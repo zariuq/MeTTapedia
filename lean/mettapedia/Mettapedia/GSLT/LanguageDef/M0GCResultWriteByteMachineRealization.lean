@@ -142,13 +142,10 @@ theorem rangeOffset?_cellAddress
       unfold ByteMemory.rangeOffset?
       rw [addition]
       simp only [ByteMemory.ofCheckerMemory]
-      split
-      next _inside =>
-        congr 1
-        rw [addressValue, wellFormed.resultBase_eq]
-        omega
-      next outside =>
-        exact (outside ⟨baseBefore, endInside⟩).elim
+      erw [dif_pos ⟨baseBefore, endInside⟩]
+      congr 1
+      rw [addressValue, wellFormed.resultBase_eq]
+      omega
 
 /-- A successful source-level chronological write is exactly one raw
 byte-machine word store at the selected physical address. -/

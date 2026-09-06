@@ -191,9 +191,7 @@ theorem termToMettaAtom_injective : Function.Injective termToMettaAtom := by
       intro right heq
       cases right with
       | var other =>
-          simp only [termToMettaAtom, Metta.Atom.var.injEq] at heq
-          subst other
-          rfl
+          exact congrArg Term.var (Metta.Atom.var.inj heq)
       | const constant => cases constant <;> simp [termToMettaAtom] at heq
       | app function terms =>
           cases function
@@ -316,8 +314,10 @@ theorem termToMettaAtom_applyTerm (substitution : MatchSubst) :
           (termToMettaAtom term) := by
   intro term
   induction term with
-  | var name => simp [Subst.applyTerm, termToMettaAtom,
-      applyClassSolution, substValuation]
+  | var name =>
+      change termToMettaAtom (substitution name) =
+        applyClassSolution (substValuation substitution) (.var name)
+      exact (applyClassSolution.eq_2 (substValuation substitution) name).symm
   | const constant => cases constant <;>
       simp [Subst.applyTerm, termToMettaAtom, applyClassSolution]
   | app function terms ih =>
@@ -361,7 +361,7 @@ theorem bindingSatisfied_of_unifies
         apply List.mem_append_left
         exact List.mem_map.mpr ⟨(key, value), hassignment, rfl⟩)
     have hdecoded := congrArg termToMettaAtom hequation
-    simpa only [Subst.applyTerm_var, substValuation,
+    simpa only [Subst.applyTerm, substValuation,
       termToMettaAtom_apply_atomToTerm] using hdecoded
   · intro left right hequality
     have hequation := hunifies
@@ -369,7 +369,7 @@ theorem bindingSatisfied_of_unifies
         apply List.mem_append_right
         exact List.mem_map.mpr ⟨(left, right), hequality, rfl⟩)
     have hdecoded := congrArg termToMettaAtom hequation
-    simpa only [Subst.applyTerm_var, substValuation] using hdecoded
+    simpa only [Subst.applyTerm, substValuation] using hdecoded
 
 /-- Every MeTTa-valued model encodes back into a genuine first-order unifier.
 The enlarged grounded signature is important here: no restriction on the
@@ -383,7 +383,7 @@ theorem unifies_of_bindingSatisfied
   · rcases List.mem_map.mp hassignment with
       ⟨⟨key, value⟩, hmem, rfl⟩
     apply termToMettaAtom_injective
-    simpa only [Subst.applyTerm_var, valuationSubst,
+    simpa only [Subst.applyTerm, valuationSubst,
       termToMettaAtom_mettaAtomToTerm,
       termToMettaAtom_apply_atomToTerm,
       substValuation_valuationSubst] using
@@ -391,7 +391,7 @@ theorem unifies_of_bindingSatisfied
   · rcases List.mem_map.mp hequality with
       ⟨⟨left, right⟩, hmem, rfl⟩
     apply termToMettaAtom_injective
-    simpa only [Subst.applyTerm_var, valuationSubst,
+    simpa only [Subst.applyTerm, valuationSubst,
       termToMettaAtom_mettaAtomToTerm] using
         hsatisfied.2 left right hmem
 

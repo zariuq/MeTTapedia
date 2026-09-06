@@ -300,13 +300,13 @@ theorem stepExactOnImage_of_exactTranslation
   faithful := by
     intro first last left right equality
     apply (translation.evidenceEquiv first last).injective
-    rw [translation.evidenceEquiv_agrees,
+    erw [translation.evidenceEquiv_agrees,
       translation.evidenceEquiv_agrees]
     exact equality
   full := by
     intro first last targetEvidence
     refine ⟨(translation.evidenceEquiv first last).symm targetEvidence, ?_⟩
-    rw [← translation.evidenceEquiv_agrees]
+    erw [← translation.evidenceEquiv_agrees]
     exact (translation.evidenceEquiv first last).apply_symm_apply
       targetEvidence
 
@@ -337,7 +337,7 @@ theorem optionToBoolPath_map
       simp only [Translation.mapEvidencePath, optionToBoolPath]
       rw [show boolOptionEquiv.symm
           (boolToOption.toTranslation.mapEvidence evidence) = evidence by
-        rw [← boolToOption.evidenceEquiv_agrees]
+        erw [← boolToOption.evidenceEquiv_agrees]
         exact boolOptionEquiv.symm_apply_apply evidence]
       rw [inductionHypothesis]
       rfl
@@ -353,7 +353,7 @@ theorem map_optionToBoolPath
       simp only [optionToBoolPath, Translation.mapEvidencePath]
       rw [show boolToOption.toTranslation.mapEvidence
           (boolOptionEquiv.symm evidence) = evidence by
-        rw [← boolToOption.evidenceEquiv_agrees]
+        erw [← boolToOption.evidenceEquiv_agrees]
         exact boolOptionEquiv.apply_symm_apply evidence]
       rw [inductionHypothesis]
       rfl

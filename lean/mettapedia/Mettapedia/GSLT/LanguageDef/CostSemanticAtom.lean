@@ -1252,9 +1252,13 @@ theorem decodeCostStaticAtomVariableName_encode (slot : Nat) :
 theorem decodeCostStaticAtomVariableName_sourceVariable (name : String) :
     decodeCostStaticAtomVariableName (costRegionSourceVariableName name) =
       none := by
-  simp [decodeCostStaticAtomVariableName, decodeTaggedPayload,
-    costStaticAtomVariableTag, costRegionSourceVariableName,
-    costRegionSourceVariableTag, dropListPrefix?]
+  have mismatch (suffix : List Char) :
+      dropListPrefix? costStaticAtomVariableTag.toList
+        (costRegionSourceVariableTag.toList ++ suffix) = none := by
+    cbv
+  simp only [decodeCostStaticAtomVariableName, costRegionSourceVariableName,
+    decodeTaggedPayload, String.toList_append, mismatch, Option.map_none]
+  rfl
 
 /-- Internal atom names are disjoint from proof-relevant boundary names. -/
 @[simp]
@@ -1262,9 +1266,13 @@ theorem decodeCostStaticAtomVariableName_boundaryVariable
     (boundary : CostRegionBoundary) :
     decodeCostStaticAtomVariableName
         (costRegionBoundaryVariableName boundary) = none := by
-  simp [decodeCostStaticAtomVariableName, decodeTaggedPayload,
-    costStaticAtomVariableTag, costRegionBoundaryVariableName,
-    costRegionBoundaryVariableTag, dropListPrefix?]
+  have mismatch (suffix : List Char) :
+      dropListPrefix? costStaticAtomVariableTag.toList
+        (costRegionBoundaryVariableTag.toList ++ suffix) = none := by
+    cbv
+  simp only [decodeCostStaticAtomVariableName, costRegionBoundaryVariableName,
+    decodeTaggedPayload, String.toList_append, mismatch, Option.map_none]
+  rfl
 
 /-- Finite semantic quotient of an explicit positional occurrence inventory.
 

@@ -407,6 +407,7 @@ def nonzeroErrorReplay : Float32HiddenStageReplay 1 1 :=
     errorSite :=
       fun _ => Float32AddMaskReplayCertificate.positiveQuarter }
 
+set_option backward.isDefEq.respectTransparency false in
 theorem nonzero_recorded_error_cannot_be_dropped :
     nonzeroErrorReplay.idealBlockAtRecordedError
         nonzeroErrorReplay.runtimePreviousCenter ≠

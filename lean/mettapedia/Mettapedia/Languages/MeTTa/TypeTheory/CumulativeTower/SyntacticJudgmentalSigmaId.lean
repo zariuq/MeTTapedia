@@ -146,6 +146,9 @@ theorem pair_reindex {rules : Rules Head}
   apply Term.ext
   simp only [reindexedPair, Term.cast_code, pair, Term.reindex,
     Presentation.subst]
+  congr 1
+  exact (Term.cast_code (instantiateType_reindex codomain first morphism)
+    (second.reindex morphism)).symm
 
 /-- First projection commutes with context substitution. -/
 theorem firstProjection_reindex {rules : Rules Head}
@@ -193,6 +196,8 @@ theorem secondProjection_reindex {rules : Rules Head}
   apply Term.ext
   simp only [Term.cast_code, secondProjection, reindexedPair,
     Term.reindex, Presentation.subst]
+  exact Term.cast_code (sum.secondProjectionType_reindex pair morphism)
+    ((sum.secondProjection pair).reindex morphism)
 
 /-! ## Proof-relevant Sigma computation -/
 

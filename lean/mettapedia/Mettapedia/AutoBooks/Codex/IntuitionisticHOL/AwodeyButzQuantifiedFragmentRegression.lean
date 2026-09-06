@@ -35,8 +35,9 @@ theorem derivable_forallPropSelfImp :
 theorem semilocalTruth_forallPropSelfImp_model :
     SimpleQuantifiedFormula.semilocalTruth model emptyEnv forallPropSelfImp = ⊤ := by
   rw [SimpleQuantifiedFormula.semilocalTruth_toFormula]
-  simp [forallPropSelfImp, SimpleQuantifiedFormula.toFormula, model]
-  trivial
+  simp [forallPropSelfImp, SimpleQuantifiedFormula.toFormula, SemilocalModel.formulaTruth,
+    SemilocalModel.eval, ApplicativeStructure.Env.extend, model]
+  exact ⟨fun _ => trivial, fun _ _ _ h => h⟩
 
 theorem globalTruth_forallPropSelfImp
     (M : GlobalModel BaseSort Const)
@@ -49,7 +50,8 @@ theorem globalTruth_forallPropSelfImp
 theorem semilocalTruth_existsAtomBot_false :
     ¬ SimpleQuantifiedFormula.semilocalTruth model emptyEnv existsAtomBot := by
   rw [SimpleQuantifiedFormula.semilocalTruth_toFormula]
-  simp [existsAtomBot, SimpleQuantifiedFormula.toFormula, model]
+  simp [existsAtomBot, SimpleQuantifiedFormula.toFormula, SemilocalModel.formulaTruth,
+    SemilocalModel.eval, ApplicativeStructure.Env.extend, model]
 
 theorem existsAtomBot_ne_forallPropSelfImp :
     existsAtomBot ≠ forallPropSelfImp := by

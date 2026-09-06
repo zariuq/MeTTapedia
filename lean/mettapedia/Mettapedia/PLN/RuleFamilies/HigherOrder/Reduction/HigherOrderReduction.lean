@@ -1025,7 +1025,11 @@ inductive BenContextObj
   | benMath
   | benJuggle
   | other
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype BenContextObj where
+  elems := { .benMath, .benJuggle, .other }
+  complete x := by cases x <;> simp
 
 /-- Ben holds in both Ben-context points, not in the generic `other` point. -/
 def benPred : BenContextObj → BinaryEvidence

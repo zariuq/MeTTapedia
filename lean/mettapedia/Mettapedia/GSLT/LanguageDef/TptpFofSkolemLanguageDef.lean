@@ -434,6 +434,7 @@ def expected : Pattern :=
         (TptpResolvedFofLanguageDef.encodeNatIndex 1))
       introducedNil)
 
+set_option backward.isDefEq.respectTransparency false in
 theorem semantic_output_encoding_is_exact : sourceEncoded = expected := by
   simp [sourceEncoded, expected, encodeOutput, encodeFormula, encodeTerm,
     encodeTerms, encodeTermPatterns, encodeIntroduced, encodeIntroducedSymbol,

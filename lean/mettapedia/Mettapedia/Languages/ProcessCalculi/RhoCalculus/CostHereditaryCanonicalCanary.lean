@@ -182,6 +182,7 @@ theorem rhoCutOrder_atomClosed_right_canary :
 
 /-! ## Production semantic-atom regression -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The actual typed base-colour Quote/Drop frame and its structural source
 variable meet at one retained semantic atom. -/
 noncomputable def rhoCutOrderBaseRedexNodeSemanticAtomJoin :
@@ -274,6 +275,7 @@ theorem rhoCutOrderBaseRedexTree_normalizeHereditary_eq_node :
       (normalizeStatic := rhoHereditaryStaticNormalizer)]
   exact rhoCutOrderBaseRedexStaticTree_normalizeHereditary_eq_node
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Positive selected-root regression: the exact generated Quote/Drop region
 aligns to the structural source variable through one retained semantic atom. -/
 noncomputable def rhoCutOrderBaseSelectedTreeNormalizationAlignment :
@@ -327,6 +329,7 @@ def rhoCutOrderBaseSelectedRight :
   · simp [rhoCutOrderFree, FreeTypeContext.ofList, sortName]
   · intro declaration membership
     rfl
+set_option backward.isDefEq.respectTransparency false in
 
 @[simp]
 theorem rhoCutOrderBaseSelectedLeft_pattern :
@@ -409,6 +412,7 @@ def rhoCutOrderBaseRedexTree_staticRootColor :
       (.reindexAvailable rhoCutOrderBaseRedexNode_targetBound _
         (.static rhoCutOrderBaseRedexNode rhoCutOrderBaseRedexChildren)))
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Root-only semantic certificate for the selected base Quote/Drop cell. -/
 noncomputable def rhoCutOrderBaseSelectedRootBridge :
     CostRegionRootNormalizationBridge rhoCIGSLT
@@ -1258,6 +1262,7 @@ theorem rhoCutOrder_commonKeyedSemanticFrames_eq :
     (canonicalizeByAt (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
       declaration rhoCutOrderLeftNode.targetBound.length) commonFrames
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The selected canonical frames themselves meet in the common semantic
 namespace before either endpoint restores atom values.  Thus equality of the
 hereditary evaluator results is obtained from the canonical atom square, not
@@ -1738,6 +1743,7 @@ theorem rhoCutOrder_commonSemanticRestoration_eq :
   exact CostStaticAtomFrameAlignment.restoredFrames_eq
     rhoCutOrderSemanticFrameAlignment 0
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The direct endpoint's finite substitution is the expected compact
 wrapped frame.  This is the endpoint factor of the semantic-atom square,
 separate from hereditary canonicalization. -/

@@ -42,7 +42,12 @@ def render (profile : ParserProfileLayer) : String :=
 
 theorem render_nonempty (profile : ParserProfileLayer) :
     render profile ≠ "" := by
-  simp [render]
+  intro empty
+  have prefixEmpty := (String.append_eq_empty_iff.mp empty).1
+  have prefixEmpty := (String.append_eq_empty_iff.mp prefixEmpty).1
+  have prefixEmpty := (String.append_eq_empty_iff.mp prefixEmpty).1
+  have prefixEmpty := (String.append_eq_empty_iff.mp prefixEmpty).1
+  exact (by decide : "(GSLTParserProfileLayerV1\n" ≠ "") prefixEmpty
 
 #print axioms render_nonempty
 

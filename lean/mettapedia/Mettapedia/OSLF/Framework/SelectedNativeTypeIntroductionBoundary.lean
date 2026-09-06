@@ -94,16 +94,16 @@ def rootTyping : DisplayedRewriteTyping source where
   focusBoundPrefix := []
   focusType := middleTyping.rewriteType
   rewriteLeftTyped := by
-    simpa [middleTyping, DisplayedRewriteSite.root,
+    simpa [middleTyping, middleSite, DisplayedRewriteSite.root,
       DisplayedRewriteSite.rewrite] using middleTyping.rewriteLeftTyped
   rewriteRightTyped := by
-    simpa [middleTyping, DisplayedRewriteSite.root,
+    simpa [middleTyping, middleSite, DisplayedRewriteSite.root,
       DisplayedRewriteSite.rewrite] using middleTyping.rewriteRightTyped
   sourceIsObject := by
-    simpa [middleTyping, DisplayedRewriteSite.root,
+    simpa [middleTyping, middleSite, DisplayedRewriteSite.root,
       DisplayedRewriteSite.rewrite] using middleTyping.sourceIsObject
   focusTyped := by
-    simpa [middleTyping, DisplayedRewriteSite.root,
+    simpa [middleTyping, middleSite, DisplayedRewriteSite.root,
       DisplayedRewriteSite.rewrite] using middleTyping.rewriteLeftTyped
 
 theorem rootGrounded :
@@ -134,7 +134,7 @@ theorem root_introduction_conclusion_not_authored_focus :
         (typingAt rootDemand rootSlot).site.focus
         (modalType rootDemand rootSlot (.fvar "result-family")) := by
   rw [Ne, introduction_conclusion_matches_authored_focus_iff]
-  simp [typingAt, occurrenceAt, rootDemand, rootTyping,
+  simp [List.get_eq_getElem, rootSlot, typingAt, occurrenceAt, rootDemand, rootTyping,
     ProfiledRewriteOccurrence.constant, DisplayedRewriteSite.root, source,
     sourceLanguage, contextualRewrite]
 

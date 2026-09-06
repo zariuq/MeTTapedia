@@ -1496,6 +1496,7 @@ theorem frameFloatVarsUnique?_of_pointwise {db : RuntimeDB}
               ConstantHeadedFormula.toRuntime, hvne]
 
 open Mettapedia.Languages.Metamath.SourceGSLTState in
+set_option backward.isDefEq.respectTransparency false in
 theorem frameDvVars_of_pointwise {db : RuntimeDB}
     {state : SourceState} {formula : ConstantHeadedFormula}
     (hpoint : ∀ hyp ∈ mandatoryHypotheses state formula,
@@ -3157,6 +3158,7 @@ theorem allDistinctDJ_def (names : List String) :
     allDistinctDJ names = allDistinctPairs names := rfl
 
 set_option maxHeartbeats 2000000 in
+set_option backward.isDefEq.respectTransparency false in
 /-- **Distinct-variable lane discharge**: appending the generated
 pairs to the raw caller frame projects to the canonical after-view. -/
 theorem projectSourcePrefix?_declareDisjoint {db : RuntimeDB}

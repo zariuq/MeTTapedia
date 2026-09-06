@@ -34,7 +34,11 @@ inductive MapleCourtRel
   | wallHumidity
   | bathroomHumidity
   | moldRisk
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype MapleCourtRel where
+  elems := {.pipeLeak, .showerRunning, .wallHumidity, .bathroomHumidity, .moldRisk}
+  complete := by intro relation; cases relation <;> simp
 
 abbrev MapleCourtConst := Unit
 abbrev MapleCourtVar := Unit

@@ -205,7 +205,9 @@ theorem rewriteOnce_active_cons {n : Nat} (edge : EdgeList.Edge n)
     (rest : List (EdgeList.Edge n)) (matrix : MatrixExpr n) :
     rewriteOnce (statePattern (.active (edge :: rest) matrix)) =
       [statePattern (.active rest (.setSymmetric matrix edge))] := by
-  simp [rewriteOnce, rewriteAt, language_rewrites, writeRule, finishRule,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    rewriteOnce, rewriteAt, language_rewrites, writeRule, finishRule,
     statePattern, edgesPattern, edgePattern, matrixPattern, applyRuleUsing,
     matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
     applyBindingsForRuleUsing, premisesUsing,
@@ -218,7 +220,9 @@ theorem rewriteOnce_active_cons {n : Nat} (edge : EdgeList.Edge n)
 theorem rewriteOnce_active_nil {n : Nat} (matrix : MatrixExpr n) :
     rewriteOnce (statePattern (.active [] matrix)) =
       [statePattern (.done matrix)] := by
-  simp [rewriteOnce, rewriteAt, language_rewrites, writeRule, finishRule,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    rewriteOnce, rewriteAt, language_rewrites, writeRule, finishRule,
     statePattern, edgesPattern, applyRuleUsing,
     matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
     applyBindingsForRuleUsing, premisesUsing,
@@ -230,7 +234,9 @@ theorem rewriteOnce_active_nil {n : Nat} (matrix : MatrixExpr n) :
 /-- Negative control: the declared terminal constructor has no successor. -/
 theorem rewriteOnce_done {n : Nat} (matrix : MatrixExpr n) :
     rewriteOnce (statePattern (.done matrix)) = [] := by
-  simp [rewriteOnce, rewriteAt, language_rewrites, writeRule, finishRule,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    rewriteOnce, rewriteAt, language_rewrites, writeRule, finishRule,
     statePattern, applyRuleUsing, matchPatternForRule,
     matchPatternForRuleUsing,
     Mettapedia.OSLF.MeTTaIL.Match.matchPattern]

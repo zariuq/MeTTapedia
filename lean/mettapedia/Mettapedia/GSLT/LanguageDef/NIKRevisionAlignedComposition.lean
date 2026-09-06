@@ -336,8 +336,9 @@ theorem relevant_change_has_no_common_current :
     ¬ ∃ currentRevision,
       CommonCurrent dependencySystem (false, false) (true, false)
         currentRevision := by
-  rw [CommonCurrent.exists_iff_sameDependencies]
+  intro common
   exact relevant_change_not_current
+    ((CommonCurrent.exists_iff_sameDependencies (dependencies := dependencySystem)).mp common)
 
 @[reducible] def naturalObserved : ObservedOperationalObject Unit where
   operational := naturalObject

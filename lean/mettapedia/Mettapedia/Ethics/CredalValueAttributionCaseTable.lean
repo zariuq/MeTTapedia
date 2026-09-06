@@ -20,7 +20,9 @@ open Mettapedia.KR.ConceptGeometry.AbstractInheritance
 
 universe u v
 
-deriving instance Fintype for MoralValueAttribute
+instance : Fintype MoralValueAttribute where
+  elems := {.MorallyGood, .MorallyBad, .MorallyPermissible}
+  complete value := by cases value <;> simp
 
 /-- A direct case/value evidence table for value attribution. -/
 structure CredalValueAttributionCaseTable (Case : Type u) where

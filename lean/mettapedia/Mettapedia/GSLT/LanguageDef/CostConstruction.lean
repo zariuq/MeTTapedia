@@ -254,7 +254,9 @@ private theorem costCoreTerm_category_mem (source : CIGSLT)
     (term : GrammarRule) (membership : term ∈ source.costCoreLanguage.terms) :
     term.category ∈ source.costCoreLanguage.typeNames := by
   rw [costCoreLanguage_typeNames]
-  simp only [costCoreLanguage, List.mem_append] at membership
+  change term ∈ source.continuationRetyping.generatedLanguage.terms ++
+    costCoreConstructors source.theory.presentation.interactingSort.1.name at membership
+  simp only [List.mem_append] at membership
   rcases membership with generatedMembership | apparatusMembership
   · exact List.mem_append_left _
       (generatedTerm_category_mem source.continuationRetyping term
@@ -480,10 +482,12 @@ theorem exists_declaredCostConstructor_of_mem (source : CIGSLT)
     (rule : GrammarRule) (membership : rule ∈ source.costCoreLanguage.terms) :
     ∃ constructor : source.DeclaredCostConstructor,
       source.materializeDeclaredCostConstructor constructor = rule := by
-  simp only [costCoreLanguage, List.mem_append] at membership
+  change rule ∈ source.continuationRetyping.generatedLanguage.terms ++
+    costCoreConstructors source.theory.presentation.interactingSort.1.name at membership
+  simp only [List.mem_append] at membership
   rcases membership with generatedMembership | apparatusMembership
-  · simp only [ContinuationRetypingPlan.generatedLanguage,
-      List.mem_append] at generatedMembership
+  · dsimp only [ContinuationRetypingPlan.generatedLanguage] at generatedMembership
+    simp only [List.mem_append] at generatedMembership
     rcases generatedMembership with baseMembership | wrappedMembership
     · rcases List.mem_map.mp baseMembership with
         ⟨sourceRule, sourceMembership, equality⟩

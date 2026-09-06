@@ -420,6 +420,7 @@ noncomputable def officialSerialization? (input : BatchInput)
   TptpFofCnfOfficialSerializationSemantics.serialize?
     (batchGeneratedPlan input firstClause) (allocatedOutput input firstClause)
 
+set_option backward.isDefEq.respectTransparency false in
 theorem officialSerialization_exists_of_ready (input : BatchInput)
     (firstClause : Nat) (ready : BatchSerializationReady input) :
     ∃ result, officialSerialization? input firstClause = some result := by

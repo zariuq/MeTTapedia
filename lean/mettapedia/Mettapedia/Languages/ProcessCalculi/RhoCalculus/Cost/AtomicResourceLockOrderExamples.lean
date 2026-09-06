@@ -15,6 +15,7 @@ namespace AtomicResourceLockOrderExamples
 
 open OrderedOccurrenceLocks
 
+set_option backward.isDefEq.respectTransparency false in
 inductive Transaction
   | alice
   | bob

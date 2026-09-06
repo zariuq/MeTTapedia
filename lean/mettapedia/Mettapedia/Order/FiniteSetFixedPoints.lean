@@ -337,10 +337,12 @@ def eraseUnit : Set Unit →o Set Unit where
 theorem forceUnit_lfp : forceUnit.lfp = Set.univ := by
   rw [lfp_eq_iterate_empty]
   simp [forceUnit]
+  rfl
 
 theorem eraseUnit_gfp : eraseUnit.gfp = ∅ := by
   rw [gfp_eq_iterate_univ]
   simp [eraseUnit]
+  rfl
 
 theorem forceUnit_entryRank :
     lfpEntryRank forceUnit () (by simp [forceUnit_lfp]) = 1 := by

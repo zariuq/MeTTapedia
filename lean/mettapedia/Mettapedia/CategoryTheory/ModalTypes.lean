@@ -167,7 +167,7 @@ theorem deduction_not_reach_false_identity :
 
 /-- Modal composition is meet in the frame fibers. -/
 theorem modalCompose_is_meet
-    (m1 m2 : PLNFiber PLNLambdaTheory.Pr) :
+    (m1 m2 : PLNLambdaTheory.SubPr) :
     modalCompose PLNLambdaTheory m1 m2 = m1 ⊓ m2 := by
   unfold modalCompose
   rfl

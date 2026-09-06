@@ -40,7 +40,7 @@ only together with the revision-bound request that supplies the slot-to-object
 map; it is not a serialization of `TypeExpr`. -/
 def indexedNameAt (index : Nat) : String :=
   String.ofList
-    ("$oslf:carrier-object:".toList ++ List.replicate index 'i')
+    (['$', 'o', 's', 'l', 'f', ':', 'c', 'a', 'r', 'r', 'i', 'e', 'r', '-', 'o', 'b', 'j', 'e', 'c', 't', ':'] ++ List.replicate index 'i')
 
 /-- Decode exactly the compact positional carrier namespace.  The numerical
 result is still only a wire index; a request-bound slot is reconstructed
@@ -58,7 +58,10 @@ def indexedNameAt? (name : String) : Option Nat :=
 @[simp]
 theorem indexedNameAt?_indexedNameAt (index : Nat) :
     indexedNameAt? (indexedNameAt index) = some index := by
-  simp [indexedNameAt?, indexedNameAt]
+  simp only [indexedNameAt?, indexedNameAt, String.toList_ofList]
+  change (if List.replicate index 'i' = List.replicate (List.replicate index 'i').length 'i'
+    then some (List.replicate index 'i').length else none) = some index
+  simp
 
 /-- Successful raw-name decoding reconstructs the exact private wire. -/
 theorem indexedNameAt_of_indexedNameAt?_eq_some {name : String} {index : Nat}
@@ -80,13 +83,8 @@ theorem indexedNameAt_of_indexedNameAt?_eq_some {name : String} {index : Nat}
 
 theorem indexedNameAt_injective : Function.Injective indexedNameAt := by
   intro first second equality
-  have lists := congrArg String.toList equality
-  have suffixEquality : List.replicate first 'i' =
-      List.replicate second 'i' := by
-    apply List.append_left_injective "$oslf:carrier-object:".toList
-    simpa [indexedNameAt] using lists
-  have lengths := congrArg List.length suffixEquality
-  simpa using lengths
+  have decoded := congrArg indexedNameAt? equality
+  simpa only [indexedNameAt?_indexedNameAt, Option.some.injEq] using decoded
 
 /-- Request-typed form of `indexedNameAt`. -/
 def indexedName {source : ValidatedLanguageDef}
@@ -182,7 +180,8 @@ theorem carrierTypeNames {source : ValidatedLanguageDef}
     {request : CarrierObjectClosure.Request source}
     (naming : Naming request) :
     (carrierSignature naming).typeNames = List.ofFn naming.name := by
-  simp [carrierSignature, carrierTypes, LanguageDef.typeNames, List.map_ofFn,
+  dsimp only [carrierSignature, LanguageDef.typeNames]
+  simp [carrierTypes, List.map_ofFn,
     Function.comp_def, TypeDecl.plain]
 
 theorem carrierTypeNames_nodup {source : ValidatedLanguageDef}
@@ -200,13 +199,14 @@ theorem carrierSignature_valid {source : ValidatedLanguageDef}
   · rfl
   · rfl
   · exact carrierTypeNames_nodup naming
-  · simp [carrierSignature]
+  · change ([] : List String).Nodup
+    exact List.nodup_nil
   · intro term membership
-    simp [carrierSignature] at membership
+    exact nomatch membership
   · intro term membership
-    simp [carrierSignature] at membership
+    exact nomatch membership
   · intro term membership
-    simp [carrierSignature] at membership
+    exact nomatch membership
 
 /-- Validated carrier-object signature used as the input to the per-carrier
 typing construction. -/
@@ -409,7 +409,8 @@ theorem length_universeCodes {source : ValidatedLanguageDef}
   change (CarrierUniverseSignature.terms
     (validatedCarrierSignature naming)).length = _
   rw [CarrierUniverseSignature.length_terms]
-  simp [validatedCarrierSignature, carrierSignature, carrierTypes]
+  dsimp only [validatedCarrierSignature, carrierSignature]
+  simp [carrierTypes]
 
 @[simp]
 theorem length_typingJudgments {source : ValidatedLanguageDef}
@@ -419,7 +420,8 @@ theorem length_typingJudgments {source : ValidatedLanguageDef}
   change (CarrierTypingLanguageDef.judgments
     (validatedCarrierSignature naming)).length = _
   rw [CarrierTypingLanguageDef.length_judgments]
-  simp [validatedCarrierSignature, carrierSignature, carrierTypes]
+  dsimp only [validatedCarrierSignature, carrierSignature]
+  simp [carrierTypes]
 
 @[simp]
 theorem length_universeAxioms {source : ValidatedLanguageDef}
@@ -429,7 +431,8 @@ theorem length_universeAxioms {source : ValidatedLanguageDef}
   change (CarrierTypingLanguageDef.axioms
     (validatedCarrierSignature naming)).length = _
   rw [CarrierTypingLanguageDef.length_axioms]
-  simp [validatedCarrierSignature, carrierSignature, carrierTypes]
+  dsimp only [validatedCarrierSignature, carrierSignature]
+  simp [carrierTypes]
 
 /-- The generated name retains a unique proof-relevant carrier meaning. -/
 theorem named_slot_unique {source : ValidatedLanguageDef}

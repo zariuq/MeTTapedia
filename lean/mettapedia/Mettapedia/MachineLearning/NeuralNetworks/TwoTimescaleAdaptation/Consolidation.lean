@@ -100,7 +100,9 @@ theorem scalarLedger_discount :
   constructor <;>
     norm_num [ledgerAfterConsolidation, discountedEvidenceCarry,
       GaussianEvidence.update, GaussianEvidence.add, scaleGaussianEvidence,
-      zeroScalarEvidence, unitScalarEvidence, Matrix.one_apply]
+      zeroScalarEvidence, unitScalarEvidence, Matrix.one_apply, Matrix.add_apply, Matrix.smul_apply]
+  all_goals change (0 : ℝ) + 1 + _ * 1 = _
+  all_goals norm_num
 
 /-! ## T5: when consolidation order matters -/
 

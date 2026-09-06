@@ -223,8 +223,8 @@ theorem packed_definition_profile_accepts :
     family.packedChecker.check
         ⟨definitionConversionEnvironment, definitionClaim⟩
         ⟨definitionConversionEnvironment, definitionConversionProof⟩ = true := by
-  rw [family.packedChecker_sameKind]
-  exact definition_profile_accepts
+  exact (family.packedChecker_sameKind definitionConversionEnvironment
+    definitionClaim definitionConversionProof).trans definition_profile_accepts
 
 /-- A proof tagged as belonging to the opaque profile cannot be replayed as
 evidence for the definition-bearing profile.  An authored profile view is

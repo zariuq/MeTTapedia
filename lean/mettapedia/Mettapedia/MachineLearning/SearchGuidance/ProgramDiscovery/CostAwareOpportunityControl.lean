@@ -126,7 +126,11 @@ namespace OpportunityFixture
 
 inductive Arm where
   | primaryBP | opportunityBP | pc
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype Arm where
+  elems := {.primaryBP, .opportunityBP, .pc}
+  complete x := by cases x <;> simp
 
 open Arm
 

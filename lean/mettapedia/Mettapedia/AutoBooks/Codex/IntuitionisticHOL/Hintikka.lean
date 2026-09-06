@@ -14,7 +14,7 @@ inductive Sign where
   | falseE
   deriving DecidableEq, Repr
 
-def SignedFormula (Const : Ty Base → Type v) (Γ : Ctx Base) := Sign × Formula Const Γ
+abbrev SignedFormula (Const : Ty Base → Type v) (Γ : Ctx Base) := Sign × Formula Const Γ
 
 /-- Staging container for local Hintikka data. -/
 structure HintikkaSet (Const : Ty Base → Type v) (Γ : Ctx Base) where
@@ -218,7 +218,7 @@ theorem premise_eq_of_mem_ofSignedFormula {sf : SignedFormula Const Γ}
       cases s <;> cases φ <;> cases b <;> simp [ofSignedFormula, premise] at h ⊢
       all_goals
         rcases h with ⟨rfl, rfl⟩
-        rfl
+        exact ⟨rfl, rfl⟩
 
 /-- Any branch target collected from a list of signed formulas points back to one
 of the formulas in that list. -/
@@ -329,12 +329,7 @@ theorem premise_mem_of_mem_close {H : HintikkaSet Const Γ}
     (h : LocalSaturationStep.premise s ∈ H.close.formulas) :
     LocalSaturationStep.premise s ∈ H.formulas := by
   cases s <;> simp [close, LocalSaturationStep.premise] at h ⊢
-  all_goals
-    rcases h with h | h
-    · cases h
-    · rcases h with h | h
-      · cases h
-      · exact h
+  all_goals exact h
 
 /-- A Hintikka set supports a local saturation step when it contains all formulas
 required by that branch or witness once the triggering premise is present. -/

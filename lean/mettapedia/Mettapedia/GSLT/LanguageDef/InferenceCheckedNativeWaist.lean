@@ -146,7 +146,8 @@ def second : collapsing.Graph () :=
 theorem retained_points_distinct : first ≠ second := by
   intro equality
   have evidenceEquality := congrArg Graph.evidence equality
-  simp [first, second] at evidenceEquality
+  change false = true at evidenceEquality
+  cases evidenceEquality
 
 theorem projected_artifacts_equal : first.artifact = second.artifact :=
   rfl

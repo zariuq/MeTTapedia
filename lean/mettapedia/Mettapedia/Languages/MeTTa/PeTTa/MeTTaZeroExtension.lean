@@ -37,7 +37,7 @@ open Mettapedia.OSLF.MeTTaIL.Match
 /-! ## Exact PeTTa model -/
 
 /-- PeTTa's real stored-atom list and matcher instantiate the kernel. -/
-def model (groundApply : Pattern → Multiset Pattern := fun _ => 0) :
+abbrev model (groundApply : Pattern → Multiset Pattern := fun _ => 0) :
     MeTTaZero.Model where
   Space := PeTTaSpace
   contents := fun space => space.storedAtoms
@@ -172,9 +172,13 @@ noncomputable def authoredQueryRealization
   observeArtifact := fun _ answers => answers.map unwrapQueryAnswer
   adequate := by
     intro request _
-    rw [MeTTaZeroLanguageAdequacy.authoredRealization_query,
-      Multiset.map_map]
-    simp
+    have realized := MeTTaZeroLanguageAdequacy.authoredRealization_query
+      (model groundApply) request.space request.spaceTerm request.pattern request.template
+    refine (congrArg (Multiset.map unwrapQueryAnswer) realized).trans ?_
+    rw [Multiset.map_map]
+    have roundtrip : unwrapQueryAnswer ∘ queryAnswerPattern = id :=
+      funext unwrapQueryAnswer_queryAnswerPattern
+    rw [roundtrip, Multiset.map_id]
 
 /-- Select the generic authored executor or PeTTa's native query evaluator per
 request.  The selector is deliberately unconstrained: correctness follows

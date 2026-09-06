@@ -113,10 +113,15 @@ def ContextHom.mapHead {sourceRules : Rules HeadOne}
   substitution := mapSubHeads map contextMorphism.substitution
   typed := by
     intro index
-    dsimp only [FormedContext.mapHead, mapSubHeads]
+    change Fin target.arity at index
+    change HasType targetRules (Ctx.mapHead map source.context)
+      (Tm.mapHead map (contextMorphism.substitution index))
+      (subst (mapSubHeads map contextMorphism.substitution)
+        ((Ctx.mapHead map target.context).lookup index))
+    rw [Ctx.lookup_mapHead]
     have transported :=
       (contextMorphism.typed index).mapHead presentationMorphism
-    simpa only [Ctx.lookup_mapHead, Tm.mapHead_subst] using transported
+    simpa only [Tm.mapHead_subst] using! transported
 
 /-- Every presentation morphism induces a functor on its declaration-aware
 syntactic context category. -/

@@ -253,9 +253,8 @@ theorem hom_eq_fold (targetAlgebra : Algebra polynomial target)
         homomorphism.toFun base index tree =
           Fix.fold polynomial targetAlgebra.act base index tree)
       (fun {index} shape children hypotheses => by
-      rw [show Fix.roll shape children =
-        (initial polynomial).act base index ⟨shape, children⟩ from rfl]
-      rw [homomorphism.commutes]
+      refine (homomorphism.commutes base index
+        (⟨shape, children⟩ : polynomial.Extension polynomial.Fix base index)).trans ?_
       change targetAlgebra.act base index
           ⟨shape, fun position =>
             homomorphism.toFun base _ (children position)⟩ =
@@ -539,6 +538,7 @@ noncomputable def eliminate {A : Type u}
     (consCase : ∀ head tail, motive tail → motive (cons head tail)) :
     eliminate motive nilCase consCase nil = nilCase := by
   simp only [eliminate, nil, Fix.eliminate_roll, motiveAtNil_canonical]
+  rfl
 
 /-- List elimination computes at `cons`. -/
 @[simp] theorem eliminate_cons {A : Type u}
@@ -1041,6 +1041,7 @@ noncomputable def eliminate {A : Type u}
       motive length tail → motive (length + 1) (cons head tail)) :
     eliminate motive nilCase consCase 0 nil = nilCase := by
   simp only [eliminate, nil, Fix.eliminate_roll, motiveAtNil_canonical]
+  rfl
 
 @[simp] theorem eliminate_cons {A : Type u}
     (motive : ∀ length, VectorP A length → Sort v)
@@ -1213,6 +1214,7 @@ noncomputable def j {A : Type u}
     (point : A) :
     j motive reflexivity (refl point) = reflexivity point := by
   simp only [j, refl, motiveAtRoll_canonical]
+  rfl
 
 /-- Polynomial identity reflects to ordinary equality. -/
 noncomputable def toEq {A : Type u} {left right : A} :

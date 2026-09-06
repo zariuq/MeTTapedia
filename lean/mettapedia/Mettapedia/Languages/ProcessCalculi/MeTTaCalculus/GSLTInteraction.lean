@@ -82,13 +82,11 @@ theorem executable_step_to_mettaCalcGSLT
 
 theorem mettaCalc_contact_constructor_label :
     mettaCalcInteractivePresentation.contactConstructor.1.label = "MPar" := by
-  simp [mettaCalcInteractivePresentation, mettaCalcParallelConstructor,
-    mettaCalc]
+  rfl
 
 theorem mettaCalc_interaction_rewrite_name :
     mettaCalcInteractivePresentation.interactionRewrite.1.name = "CommSym" := by
-  simp [mettaCalcInteractivePresentation, mettaCalcCommRewrite, mettaCalc,
-    commSymRule]
+  rfl
 
 /-- Positive control: symmetric `COMM` is selected as collection contact. -/
 theorem mettaCalc_comm_interaction_headed :
@@ -122,6 +120,6 @@ theorem mettaCalc_rho_interaction_rewrites_distinct :
     mettaCalcInteractivePresentation.interactionRewrite.1.name ≠
       rhoInteractivePresentation.interactionRewrite.1.name := by
   rw [mettaCalc_interaction_rewrite_name]
-  simp [rhoInteractivePresentation, rhoCalc, rhoCommRewrite]
+  decide +kernel
 
 end Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.GSLTInteraction

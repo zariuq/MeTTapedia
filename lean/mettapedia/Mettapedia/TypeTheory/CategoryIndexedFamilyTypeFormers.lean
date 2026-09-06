@@ -230,6 +230,7 @@ def sigmaFamily {context : Context.{u}} (domain : IndexedFamily context)
     exact sigmaValue_eq_of_total_eq
       (Functor.Elements.ext _ _ pointComposite resultComposite)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Pair two compatible natural sections into a dependent-sum section. -/
 def sigmaPair {context : Context.{u}} {domain : IndexedFamily context}
     {codomain : IndexedFamily (extend context domain)}
@@ -296,6 +297,7 @@ def sigmaFst {context : Context.{u}} {domain : IndexedFamily context}
   ⟨fun point => (value.1 point).1, fun route =>
     congrArg Sigma.fst (value.2 route)⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Second projection of a category-indexed dependent sum. -/
 def sigmaSnd {context : Context.{u}} {domain : IndexedFamily context}
     {codomain : IndexedFamily (extend context domain)}
@@ -505,6 +507,7 @@ def constant (context : Context.{u}) (valueType : Type u) :
   equivalence _ := Equiv.refl valueType
   apply_eq_map _ _ := rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Every family over a groupoid has invertible fibre action, because every
 context morphism already has an inverse. -/
 def ofGroupoid {base : Type u} [SmallGroupoid base]
@@ -698,6 +701,7 @@ def piLam {context : Context.{u}} {domain : IndexedFamily context}
     exact body.2
       (equivalenceElementLift domainAction route targetArgument)⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Application for products with invertible domain action. -/
 def piApp {context : Context.{u}} {domain : IndexedFamily context}
     (domainAction : FibrewiseEquivalenceAction domain)

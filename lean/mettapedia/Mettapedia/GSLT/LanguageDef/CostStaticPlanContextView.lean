@@ -650,7 +650,7 @@ theorem CostStaticRegionPlan.nonempty_contextInventoryView
                 simp [frame, CostStaticRegionPlan.abstractPattern,
                   OneHoleContext.fill, active.abstracts_eq])
               entryEmbedding := by
-                rw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
+                erw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
                 exact inventory.entryEmbedding.comp active.entryEmbedding }⟩
   | .lambda binderName inner, _, _, _, _, _, pattern, payload, _, plan,
       fillEq => by
@@ -678,7 +678,7 @@ theorem CostStaticRegionPlan.nonempty_contextInventoryView
                 simp [frame, CostStaticRegionPlan.abstractPattern,
                   OneHoleContext.fill])
               entryEmbedding := by
-                rw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
+                erw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
                 exact inventory.entryEmbedding }⟩
   | .multiLambda arity binderNames inner, _, _, _, _, _, pattern, payload,
       _, plan, fillEq => by
@@ -708,7 +708,7 @@ theorem CostStaticRegionPlan.nonempty_contextInventoryView
                 simp [frame, CostStaticRegionPlan.abstractPattern,
                   OneHoleContext.fill])
               entryEmbedding := by
-                rw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
+                erw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
                 exact inventory.entryEmbedding }⟩
   | .substBody inner replacement, _, _, _, _, _, pattern, payload, _, plan,
       fillEq => by
@@ -761,7 +761,7 @@ theorem CostStaticRegionPlan.nonempty_contextInventoryView
                 simp [frame, CostStaticRegionPlan.abstractPattern,
                   OneHoleContext.fill, active.abstracts_eq])
               entryEmbedding := by
-                rw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
+                erw [CostStaticPlanContextView.retainedEntries_liftSkeleton]
                 exact inventory.entryEmbedding.comp active.entryEmbedding }⟩
 
 /-- Support erasure of the inventory-preserving decomposition recovers the

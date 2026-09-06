@@ -29,7 +29,11 @@ inductive CanaryPhase where
   | afterDistractorOne
   | afterTargetTwo
   | done
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype CanaryPhase where
+  elems := {.start, .afterTargetOne, .afterDistractorOne, .afterTargetTwo, .done}
+  complete := by intro phase; cases phase <;> simp
 
 def phaseNext : CanaryPhase → CanaryPhase
   | .start => .afterTargetOne

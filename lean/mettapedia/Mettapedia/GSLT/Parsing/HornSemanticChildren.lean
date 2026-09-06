@@ -58,6 +58,7 @@ mutual
             components.2 term member
 end
 
+set_option backward.isDefEq.respectTransparency false in
 theorem semanticQuerySubstitution_apply_parserQuery
     (substitution : SymbolicSubstitution) (parseRelation : String)
     (grammar input value output : Term)
@@ -93,7 +94,7 @@ theorem semanticQuerySubstitution_apply_parserQuery
       ((encodeScopedTerms .query
         (Terms.ofList [grammar, .var 0, .var 1, .var 2])).map
           candidate.applyTerm).length)
-  simpa [candidate] using pointwise
+  simpa [candidate, List.get_eq_getElem] using pointwise
 
 mutual
   theorem semanticQuerySubstitution_apply_ruleTerm

@@ -32,7 +32,7 @@ private def q4LeaStackOverflow : Metta.Atom :=
 private def q4HEStackOverflow : Atom :=
   .expression [.symbol "Error", .symbol "a", .symbol "StackOverflow"]
 
-private def q4NoHost : GroundedDispatch where
+private def q4NoHost : Spec.Eval.GroundedDispatch where
   executable := fun _ => False
   outcome := fun _ _ _ => False
 
@@ -48,22 +48,10 @@ unchanged. -/
 theorem fuelOne_symbol_normal :
     (Metta.Minimal.mettaEval q4LeaEnv 1 Metta.Minimal.St.init []
       (.sym "a")).1 = [(.sym "a", [])] := by
-  have hNotEmpty :
-      (Metta.Atom.sym "NotReducible" != Metta.Atom.sym "Empty") = true := rfl
-  have hNotReducible :
-      (Metta.Atom.sym "NotReducible" ==
-        Metta.Atom.sym "NotReducible") = true := rfl
   simp [q4LeaEnv, Metta.Minimal.mettaEval, Metta.instantiate_nil,
-    Metta.Minimal.interpretFuel, Metta.Minimal.interpretStack1,
-    Metta.Minimal.atomToStack, Metta.Minimal.evalOp, Metta.Minimal.queryOp,
-    Metta.Minimal.candidatesW, Metta.Minimal.MinEnv.candidates,
     Metta.Minimal.MinEnv.ofAtomsGT, Metta.Minimal.extractRules,
-    Metta.Minimal.isFinal, Metta.Minimal.finalPair,
-    Metta.Minimal.notReducibleA, Metta.Minimal.emptyA, Metta.Minimal.finItem,
-    Metta.Minimal.isVariableHeaded, Metta.Minimal.isEmbeddedOp,
-    Metta.Minimal.headKey, Metta.Minimal.World.empty, Metta.Minimal.St.init,
-    Metta.Minimal.varsCopy, Metta.Minimal.returnsAtom,
-    hNotEmpty, hNotReducible]
+    Metta.Minimal.emptyA, Metta.Minimal.headKey,
+    Metta.Minimal.World.empty, Metta.Minimal.St.init]
 
 /-- Fuel is observable even on an inert closed symbol. -/
 theorem symbol_results_depend_on_fuel :

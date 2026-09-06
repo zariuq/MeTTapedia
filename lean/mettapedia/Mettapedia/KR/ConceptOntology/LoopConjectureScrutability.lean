@@ -122,7 +122,11 @@ inductive LoopProperty where
   | rip
   | twoSidedInverses
   | xCubedAssociative
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype LoopProperty where
+  elems := {.commutative, .associative, .flexible, .leftAlternative, .rightAlternative, .leftBol, .rightBol, .moufang, .cIdentity, .lip, .rip, .twoSidedInverses, .xCubedAssociative}
+  complete x := by cases x <;> simp
 
 /-- A finite loop-benchmark population with order labels and property
 incidence. This matches the benchmark interface used by the Python loop miner:

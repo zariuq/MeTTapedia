@@ -73,15 +73,27 @@ namespace DelayedYieldExample
 
 inductive Generation where
   | first | second
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype Generation where
+  elems := {.first, .second}
+  complete x := by cases x <;> simp
 
 inductive Arm where
   | primaryBP | opportunityBP | pc
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype Arm where
+  elems := {.primaryBP, .opportunityBP, .pc}
+  complete x := by cases x <;> simp
 
 inductive World where
   | compounding | fading
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype World where
+  elems := {.compounding, .fading}
+  complete x := by cases x <;> simp
 
 open Generation Arm World
 

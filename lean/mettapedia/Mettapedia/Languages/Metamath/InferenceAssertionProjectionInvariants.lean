@@ -34,7 +34,8 @@ theorem HypothesisInstances.substitutionKeys_eq
   | floating _ _ ih =>
       simp [floatingVariableNames, HypothesisView.floatingVariable?, ih]
   | essential _ _ ih =>
-      simpa [floatingVariableNames, HypothesisView.floatingVariable?] using ih
+      simpa only [floatingVariableNames, List.filterMap_cons,
+        HypothesisView.floatingVariable?] using ih
 
 /-- Distinct authored floating names transfer exactly to the finite
 substitution constructed from actual hypothesis instances. -/

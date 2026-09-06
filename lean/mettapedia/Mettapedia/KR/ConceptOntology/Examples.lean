@@ -23,20 +23,32 @@ inductive Creature where
   | tweety
   | pingu
   | plane
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype Creature where
+  elems := {.tweety, .pingu, .plane}
+  complete x := by cases x <;> simp
 
 /-- Tiny concept domain separating extensional inheritance from typicality. -/
 inductive Concept where
   | bird
   | penguin
   | fly
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype Concept where
+  elems := {.bird, .penguin, .fly}
+  complete x := by cases x <;> simp
 
 /-- Separate query sorts for membership and typicality/default evidence. -/
 inductive ToySort where
   | membership
   | typicality
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ToySort where
+  elems := {.membership, .typicality}
+  complete x := by cases x <;> simp
 
 /-- Typed toy query family. -/
 inductive ToyQueryFamily : ToySort → Type where

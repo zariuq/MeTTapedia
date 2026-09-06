@@ -341,7 +341,7 @@ theorem emergencyCourageSupport_records_positive_evidence :
     (ethicalObservationEncoder rescueTheory).observe emergencyCourageSupport
         (emergencyCrossCase, .hitsTarget RescueVirtue.courage) =
       positiveObservationEvidence := by
-  simp [emergencyCourageSupport]
+  exact ethicalObservationEncoder_supports_self rescueTheory _ _ _
 
 theorem ordinaryCourageRefutation_records_negative_evidence :
     (ethicalObservationEncoder rescueTheory).observe ordinaryCourageRefutation

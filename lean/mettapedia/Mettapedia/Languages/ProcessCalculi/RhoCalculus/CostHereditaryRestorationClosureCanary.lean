@@ -31,6 +31,7 @@ def rhoBreadthFvarAStructuralTree :
       (.base (costBaseSortName "Name")) :=
   .fvar (by rfl)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The exact child selected by the stopped context view aligns with the
 direct structural variable through the retained Quote/Drop semantic atom. -/
 noncomputable def rhoBreadthStoppedChildToFvarAlignment :
@@ -53,6 +54,7 @@ noncomputable def rhoBreadthStoppedChildToFvarAlignment :
         .fvar "a"
       simp [rhoBreadthFvarAStructuralTree, CostRegionTree.normalize])
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The breadth fixture inhabits the reusable stopped-boundary/source-variable
 root certificate with a genuine recursive child alignment. -/
 noncomputable def rhoBreadthStoppedToSourceVariableCertificate :

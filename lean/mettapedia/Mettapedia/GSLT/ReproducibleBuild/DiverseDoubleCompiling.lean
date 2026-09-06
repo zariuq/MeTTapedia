@@ -380,7 +380,11 @@ inductive ProofTwoRequirement where
   | parentCompilerCorrespondsToSource
   | defineCompile
   | definitionCompilerUnderTest
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype ProofTwoRequirement where
+  elems := { .defineExactlyCorrespond, .trustedCompilerTranslatesParent, .definitionStageOne, .definitionStageTwo, .parentSourcePortableAndDeterministic, .definePortableAndDeterministic, .parentCompilerCorrespondsToSource, .defineCompile, .definitionCompilerUnderTest }
+  complete x := by cases x <;> simp
 
 namespace ProofTwoRequirement
 
@@ -548,7 +552,11 @@ inductive ProofOneRequirement where
   | parentSourceCompilesCompilerSource
   | definitionStageOne
   | definitionStageTwo
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype ProofOneRequirement where
+  elems := { .defineExactlyCorrespond, .trustedCompilerTranslatesParent, .parentSourceCompilesCompilerSource, .definitionStageOne, .definitionStageTwo }
+  complete x := by cases x <;> simp
 
 namespace ProofOneRequirement
 

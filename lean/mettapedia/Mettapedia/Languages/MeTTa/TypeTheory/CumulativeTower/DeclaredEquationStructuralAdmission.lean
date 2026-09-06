@@ -119,7 +119,13 @@ def equationRow {declarations : List SourceDeclaration}
     Row basePresentation.1.toLanguageDef judgment where
   id := generatedRuleId ordinal
   arguments := claimArguments located.claim
-  idNonempty := by simp [generatedRuleId]
+  idNonempty := by
+    apply bne_iff_ne.mpr
+    change "prime-authored-equation." ++
+      AuthoredConstantInference.unaryOrdinal ordinal ≠ ""
+    intro empty
+    exact (by decide : "prime-authored-equation." ≠ "")
+      (String.append_eq_empty_iff.mp empty).1
   arity := rfl
   ground := claimArguments_ground located.claim
   canonical := claimArguments_canonical located.claim
@@ -187,10 +193,16 @@ private theorem ne_generatedRuleId_of_not_startsWith
     (ordinal : Nat) :
     id ≠ generatedRuleId ordinal := by
   intro equality
-  have prefixEquality := congrArg
-    (fun ruleId : RuleId =>
-      ruleId.value.startsWith "prime-authored-equation.") equality
-  simp [notPrefix, generatedRuleId] at prefixEquality
+  have hasPrefix : (generatedRuleId ordinal).value.startsWith
+      "prime-authored-equation." = true := by
+    apply String.startsWith_string_iff.mpr
+    change "prime-authored-equation.".toList <+:
+      ("prime-authored-equation." ++
+        AuthoredConstantInference.unaryOrdinal ordinal).toList
+    rw [String.toList_append]
+    exact List.prefix_append _ _
+  rw [equality] at notPrefix
+  exact Bool.noConfusion (notPrefix.symm.trans hasPrefix)
 
 private theorem generated_id_fresh (ordinal : Nat) :
     (!(basePresentation.1.rules.any fun existing =>

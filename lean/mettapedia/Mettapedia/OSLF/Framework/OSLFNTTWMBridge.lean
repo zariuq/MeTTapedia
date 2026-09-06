@@ -63,6 +63,7 @@ noncomputable def nttFormulaEvidenceSupportUsing
     (fun q =>
       (MeTTaToNTT.mettaFormulaToNT relEnv W queryOfAtom φf q Xobj).2 ≠ ⊥)
 
+set_option backward.isDefEq.respectTransparency false in
 /--
 Atom-level OSLF -> NTT -> WM triangle endpoint.
 

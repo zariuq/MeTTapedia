@@ -43,7 +43,11 @@ inductive Role where
   | incrementalCompression
   | pln
   | premiseSelection
-deriving DecidableEq, Repr, Fintype
+deriving DecidableEq, Repr
+
+instance : Fintype Role where
+  elems := {.foregroundChaining, .ecan, .incrementalCompression, .pln, .premiseSelection}
+  complete x := by cases x <;> simp
 
 def nextRole : Role -> Role
   | .foregroundChaining => .ecan

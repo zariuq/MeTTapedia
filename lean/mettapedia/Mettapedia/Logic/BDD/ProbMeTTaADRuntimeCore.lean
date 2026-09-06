@@ -390,11 +390,10 @@ theorem probADRRules_heads_eq_alts {σ : LPSignature}
       (List.finRange (alts.map Prod.snd).length).map (fun i => alts[↑i].2) =
         alts.map Prod.snd := by
     intro alts
-    induction alts with
-    | nil =>
-        simp
-    | cons alt rest ih =>
-        simpa [List.finRange_succ, ih]
+    apply List.ext_getElem
+    · simp
+    · intro i hi hj
+      simp
   simpa [probADRRules, expandAD, probADR,
       WeightedAnnotatedDisjunction.toAnnotatedDisjunction, Function.comp_def] using
     hheads alts

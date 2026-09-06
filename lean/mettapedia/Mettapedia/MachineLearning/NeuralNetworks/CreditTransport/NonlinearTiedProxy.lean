@@ -328,7 +328,7 @@ theorem cancelling_local_errors_preserve_tied_update :
         allActive identityDerivative exactCredit ∧
     cancellingProxy 0 0 ≠ exactCredit 0 0 ∧
     cancellingProxy 0 1 ≠ exactCredit 0 1 := by
-  norm_num [tiedOccurrenceUpdate, allActive, identityDerivative,
+  norm_num [tiedOccurrenceUpdate, allActive, identityDerivative, ContinuousLinearMap.adjoint_id,
     cancellingProxy, exactCredit, Fin.sum_univ_two, Finset.univ_unique]
 
 /-- Equal same-sign local errors reinforce: the aggregate error is twice the
@@ -342,7 +342,7 @@ theorem reinforcing_local_errors_accumulate :
       (∀ occurrence : Fin 2,
         ‖reinforcingProxy 0 occurrence - exactCredit 0 occurrence‖ = 1) := by
   constructor
-  · norm_num [tiedOccurrenceUpdate, allActive, identityDerivative,
+  · norm_num [tiedOccurrenceUpdate, allActive, identityDerivative, ContinuousLinearMap.adjoint_id,
       reinforcingProxy, exactCredit, Fin.sum_univ_two, Finset.univ_unique]
   · intro occurrence
     norm_num [reinforcingProxy, exactCredit]
@@ -357,7 +357,7 @@ theorem stale_proxy_reverses_tied_alignment :
       tiedOccurrenceUpdate (fun _ : ScalarOwner => ℝ) TwoOccurrences
         allActive identityDerivative reversedProxy
     @inner ℝ ℝ _ exactUpdate proxyUpdate = -16 := by
-  norm_num [tiedOccurrenceUpdate, allActive, identityDerivative,
+  norm_num [tiedOccurrenceUpdate, allActive, identityDerivative, ContinuousLinearMap.adjoint_id,
     exactCredit, reversedProxy, Fin.sum_univ_two, Finset.univ_unique]
 
 def squareUse (_ : ScalarOwner) (_ : Fin 2) (parameter : ℝ) : ℝ :=

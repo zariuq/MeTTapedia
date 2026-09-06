@@ -1501,6 +1501,12 @@ def guardPrefixListNat (pref : List ℕ) (yes no : Turing.ToPartrec.Code) : Turi
    | [], _ => true
    | x :: xs, v => if v.headI = x then prefixHeadI xs v.tail else false
 
+ theorem prefixHeadI_cons_eq_true (x : ℕ) (xs v : List ℕ) :
+     prefixHeadI (x :: xs) v = true ↔
+       v.headI = x ∧ prefixHeadI xs v.tail = true := by
+   rw [prefixHeadI]
+   split <;> simp_all
+
  theorem prefixHeadI_self (pref : List ℕ) : prefixHeadI pref pref = true := by
    induction pref with
    | nil =>
@@ -1516,7 +1522,7 @@ def guardPrefixListNat (pref : List ℕ) (yes no : Turing.ToPartrec.Code) : Turi
       | nil => rfl
       | cons e es =>
           have : (Coding.encodeHistElemNat e).1 = 0 := by
-            simpa [Coding.encodeHistoryNat, prefixHeadI] using hp
+            exact ((prefixHeadI_cons_eq_true _ _ _).1 hp).1
           cases e <;> simp [Coding.encodeHistElemNat] at this
   | cons e es ih =>
       cases h' with
@@ -1524,14 +1530,18 @@ def guardPrefixListNat (pref : List ℕ) (yes no : Turing.ToPartrec.Code) : Turi
           have :
               0 = (Coding.encodeHistElemNat e).1 ∧
                 0 = (Coding.encodeHistElemNat e).2 ∧ prefixHeadI (Coding.encodeHistoryNat es) [] = true := by
-            simpa [Coding.encodeHistoryNat, prefixHeadI] using hp
+            have hfirst := (prefixHeadI_cons_eq_true _ _ _).1 hp
+            have hsecond := (prefixHeadI_cons_eq_true _ _ _).1 hfirst.2
+            exact ⟨hfirst.1, hsecond.1, hsecond.2⟩
           cases e <;> simp [Coding.encodeHistElemNat] at this
       | cons e' es' =>
           have hparts :
               (Coding.encodeHistElemNat e').1 = (Coding.encodeHistElemNat e).1 ∧
                 (Coding.encodeHistElemNat e').2 = (Coding.encodeHistElemNat e).2 ∧
                   prefixHeadI (Coding.encodeHistoryNat es) (Coding.encodeHistoryNat es') = true := by
-            simpa [Coding.encodeHistoryNat, prefixHeadI] using hp
+            have hfirst := (prefixHeadI_cons_eq_true _ _ _).1 hp
+            have hsecond := (prefixHeadI_cons_eq_true _ _ _).1 hfirst.2
+            exact ⟨hfirst.1, hsecond.1, hsecond.2⟩
           have hes : es = es' := ih _ hparts.2.2
           have helem' : e' = e := by
             have hdec_e :
@@ -1587,6 +1597,7 @@ theorem dropIfHeadEqNat_eval_constNo (n : ℕ) (yes : Turing.ToPartrec.Code) (ou
       | succ m =>
           -- The `succ` branch decrements the head and recurses.
           simp [dropIfHeadEqNat, Turing.ToPartrec.Code.case_eval, h, ih, constListCode_eval]
+          rfl
 
 theorem guardPrefixListNat_eval_const (pref : List ℕ) (outYes outNo : List ℕ) (v : List ℕ) :
     (guardPrefixListNat pref (constListCode outYes) (constListCode outNo)).eval v =
@@ -1695,6 +1706,7 @@ theorem chooseByFlagsCode_eval (outs : List (List ℕ)) (flags : List ℕ) :
       | succ m =>
           simp [chooseByFlagsCode, chooseByFlags, Turing.ToPartrec.Code.case_eval, h, ih, Turing.ToPartrec.Code.comp_eval,
             constListCode_eval]
+          exact (Part.bind_some _ _).trans (ih _)
 
 theorem dispatchHistoryCodes_eval (cases : List (List ℕ × List ℕ)) (default : List ℕ) (v : List ℕ) :
     (dispatchHistoryCodes cases default).eval v =
@@ -1703,6 +1715,7 @@ theorem dispatchHistoryCodes_eval (cases : List (List ℕ × List ℕ)) (default
           (prefixMatchFlags (cases.map Prod.fst) v)) := by
   simp [dispatchHistoryCodes, prefixMatchFlagsCode_eval, chooseByFlagsCode_eval, prefixMatchFlags,
     Turing.ToPartrec.Code.comp_eval]
+  exact (Part.bind_some _ _).trans (chooseByFlagsCode_eval _ _)
 
 /-- Any `ToPartrec` program of the form `zeroValueActionCode act` always claims value `0`. -/
 theorem computeWithin_fst_eq_zero_of_tm_eq_zeroValueAction (t : ℕ) (p : RawToPartrecProgram) (h : History)

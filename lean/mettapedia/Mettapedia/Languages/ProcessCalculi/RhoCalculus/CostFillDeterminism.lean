@@ -96,12 +96,14 @@ theorem rho_collectionRule_cases {rule : GrammarRule}
           costWrappedTypeExpr, rhoCalc, rhoIGSLT,
           rhoInteractivePresentation, TypeDecl.plain, TypeExpr.name,
           TypeExpr.proc, TypeExpr.baseType] at shape
+        split_ifs at shape <;> cases shape.2
       · rw [rho_costWrappedParallelConstructor_params] at shape
         simp only [List.cons.injEq, TermParam.simple.injEq,
           TypeExpr.collection.injEq, and_true] at shape
         refine Or.inr ⟨shape.2.1.symm, ?_, shape.2.2.symm⟩
         simp [costWrappedConstructor, rhoCalc, rhoIGSLT,
           rhoInteractivePresentation, TypeDecl.plain]
+        rfl
       · simp [costWrappedConstructor, mapParameterType,
           costWrappedTypeExpr, rhoCalc, rhoIGSLT,
           rhoInteractivePresentation, TypeDecl.plain, TypeExpr.name,

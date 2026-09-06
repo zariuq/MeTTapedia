@@ -69,7 +69,7 @@ private theorem retainedConversion_support_iff_nonempty
           (StructuralStepReceipt.support_iff_nonempty
             retained.computation rules.headEq).mpr
             ((retained_support_iff_nonempty retained).mp step))
-        support
+        left right support
     exact
       (StructuralConversionReceipt.support_iff_nonempty
         retained.computation rules.headEq).mp retainedSupport
@@ -79,7 +79,7 @@ private theorem retainedConversion_support_iff_nonempty
         (retained_support_iff_nonempty retained).mpr
           ((StructuralStepReceipt.support_iff_nonempty
             retained.computation rules.headEq).mp step))
-      conversion.toSupport
+      left right conversion.toSupport
 
 /-- Forget only the conversion path, retaining proposition-valued support. -/
 def toSupport

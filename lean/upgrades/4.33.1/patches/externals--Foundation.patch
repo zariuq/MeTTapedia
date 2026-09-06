@@ -1,0 +1,1863 @@
+diff --git a/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean b/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean
+index 5092521da75d27ca98b1433658f61f13807e4e7d..e390cdea3809fd11c70efe5857c58b831b3233c0 100644
+--- a/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean
++++ b/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean
+@@ -116,8 +116,8 @@ lemma lt_def : a < b ↔ ∃ c, a + c + 1 = b := by
+   | ⊤, .some n => simp [(show ¬(⊤ : OmegaAddOne) < .some n by tauto)];
+   | .some m, ⊤ =>
+     simp only [(show .some m < (⊤ : OmegaAddOne) by tauto), true_iff];
+-    use ⊤;
+-    simp;
++    refine ⟨⊤, ?_⟩
++    exact (congrArg (· + 1) (add_top (a := .some m))).trans top_add
+   | .some m, .some n =>
+     apply Iff.trans (show some m < some n ↔ m < n by rfl);
+     apply Iff.trans Nat.iff_lt_exists_add_succ;
+diff --git a/Foundation/FirstOrder/Arithmetic/R0/Representation.lean b/Foundation/FirstOrder/Arithmetic/R0/Representation.lean
+index fb21ed928de1aac0450ac0132044f17c3a3eec39..6b4b07a029790cb81df34622194e13053b8468bd 100644
+--- a/Foundation/FirstOrder/Arithmetic/R0/Representation.lean
++++ b/Foundation/FirstOrder/Arithmetic/R0/Representation.lean
+@@ -207,11 +207,15 @@ private lemma models_codeAux {c : Code k} {f : List.Vector ℕ k →. ℕ} (hc :
+     · rintro ⟨e, hf, hg⟩
+       have hf : f (List.Vector.ofFn e) = Part.some y := (ihf _ _).mp hf
+       have hg : ∀ i, g i (List.Vector.ofFn v) = Part.some (e i) := fun i => (ihg i _ _).mp (hg i)
+-      simp [hg, hf]
++      have sequence : List.Vector.mOfFn (g · (List.Vector.ofFn v)) =
++          Part.some (List.Vector.ofFn e) :=
++        (congrArg List.Vector.mOfFn (funext hg)).trans
++          (List.Vector.mOfFn_pure (m := Part) e)
++      exact (congrArg (fun values => values.bind f) sequence).trans
++        ((Part.bind_some _ _).trans hf)
+     · intro h
+-      have : ∃ w, (∀ i, List.Vector.get w i ∈ g i (List.Vector.ofFn v)) ∧ y ∈ f w := by
+-        simpa using Part.eq_some_iff.mp h
+-      rcases this with ⟨w, hw, hy⟩
++      obtain ⟨w, hw, hy⟩ := Part.mem_bind_iff.mp (Part.eq_some_iff.mp h)
++      have hw := Part.mem_vector_mOfFn.mp hw
+       exact ⟨w.get, (ihf y w.get).mpr (by simpa [Part.eq_some_iff] using hy),
+         fun i ↦ (ihg i (w.get i) v).mpr (by simpa [Part.eq_some_iff] using hw i)⟩
+   case rfind c f _ ihf =>
+@@ -222,7 +226,14 @@ private lemma models_codeAux {c : Code k} {f : List.Vector ℕ k →. ℕ} (hc :
+       simpa [Semiformula.eval_rew, Function.comp_def, Matrix.empty_eq, Matrix.comp_vecCons', ihf, List.Vector.ofFn_vecCons]
+     constructor
+     · rintro ⟨hy, h⟩
+-      simpa [Part.eq_some_iff] using ⟨by simpa using hy, by intro z hz; exact Nat.ne_zero_of_lt (h z hz)⟩
++      apply Part.eq_some_iff.mpr
++      apply Nat.mem_rfind.mpr
++      constructor
++      · apply Part.mem_some_iff.mpr
++        simp [hy]
++      · intro z hz
++        apply Part.mem_some_iff.mpr
++        simp [Nat.ne_zero_of_lt (h z hz)]
+     · intro h; simpa [pos_iff_ne_zero] using Nat.mem_rfind.mp (Part.eq_some_iff.mp h)
+ 
+ lemma models_code {c : Code k} {f : List.Vector ℕ k →. ℕ} (hc : c.eval f) (y : ℕ) (v : Fin k → ℕ) :
+diff --git a/Foundation/FirstOrder/Arithmetic/Schemata.lean b/Foundation/FirstOrder/Arithmetic/Schemata.lean
+index ed6e7d0c27b869517cfa0eb5ca3047bc72bd262d..c3ae1cca592c5b826c553338ecf7e556a51f381d 100644
+--- a/Foundation/FirstOrder/Arithmetic/Schemata.lean
++++ b/Foundation/FirstOrder/Arithmetic/Schemata.lean
+@@ -191,7 +191,8 @@ instance models_InductionScheme_alt : V ⊧ₘ* InductionScheme ℒₒᵣ (Arith
+         (∀ x, Semiformula.Evalm V ![x] f φ → Semiformula.Evalm V ![x + 1] f φ) →
+         ∀ x, Semiformula.Evalm V ![x] f φ by
+     simp only [InductionScheme, Semantics.ModelsSet.setOf_iff, forall_exists_index, and_imp]
+-    rintro _ φ hφ rfl
++    refine ⟨?_⟩
++    rintro _ ⟨φ, hφ, rfl⟩
+     simpa [models_iff, Semiformula.eval_univCl, succInd, Semiformula.eval_rew_q,
+         Semiformula.eval_substs, Function.comp, Matrix.constant_eq_singleton]
+     using this φ hφ
+@@ -363,7 +364,8 @@ lemma models_succInd (φ : Semiformula ℒₒᵣ ℕ 1) : ℕ ⊧ₘ (succInd φ
+ instance models_ISigma (Γ k) : ℕ ⊧ₘ* 𝗜𝗡𝗗 Γ k := by
+   simp only [ModelsTheory.add_iff, PeanoMinus.instModelsTheoryNat, InductionScheme,
+     Semantics.ModelsSet.setOf_iff, forall_exists_index, and_imp, true_and]
+-  rintro _ φ _ rfl; simp [models_succInd]
++  refine ⟨?_⟩
++  rintro _ ⟨φ, _, rfl⟩; simp [models_succInd]
+ 
+ instance models_ISigmaZero : ℕ ⊧ₘ* 𝗜𝚺₀ := inferInstance
+ 
+@@ -372,7 +374,8 @@ instance models_ISigmaOne : ℕ ⊧ₘ* 𝗜𝚺₁ := inferInstance
+ instance models_Peano : ℕ ⊧ₘ* 𝗣𝗔 := by
+   simp only [Peano, InductionScheme, ModelsTheory.add_iff, PeanoMinus.instModelsTheoryNat,
+     Semantics.ModelsSet.setOf_iff, forall_exists_index, and_imp, true_and]
+-  rintro _ φ _ rfl; simp [models_succInd]
++  refine ⟨?_⟩
++  rintro _ ⟨φ, _, rfl⟩; simp [models_succInd]
+ 
+ instance : Entailment.Consistent (𝗜𝗡𝗗 Γ k) := (𝗜𝗡𝗗 Γ k).consistent_of_sound (Eq ⊥) rfl
+ 
+diff --git a/Foundation/FirstOrder/Basic/Calculus.lean b/Foundation/FirstOrder/Basic/Calculus.lean
+index d6e0ffd770e9ffc93c47095b989f7e126d2ae8c0..0dc04b9c09884dbc6bfe0413c88f3f59c38ee76c 100644
+--- a/Foundation/FirstOrder/Basic/Calculus.lean
++++ b/Foundation/FirstOrder/Basic/Calculus.lean
+@@ -309,7 +309,7 @@ def compact {Γ : Sequent L} : 𝓢 ⟹ Γ → (s : { s : Finset (SyntacticFormu
+     let ⟨s₁, d₁⟩ := compact d₁
+     let ⟨s₂, d₂⟩ := compact d₂
+     ⟨⟨(s₁ ∪ s₂ : Finset (SyntacticFormula L)), by simp [s₁.prop, s₂.prop]⟩,
+-      and (Tait.ofAxiomSubset (by simp) d₁) (Tait.ofAxiomSubset (by simp) d₂)⟩
++      and (Tait.ofAxiomSubset (by intro x hx; exact Finset.mem_union.mpr (Or.inl hx)) d₁) (Tait.ofAxiomSubset (by intro x hx; exact Finset.mem_union.mpr (Or.inr hx)) d₂)⟩
+   | or d      =>
+     let ⟨s, d⟩ := compact d
+     ⟨s, or d⟩
+@@ -320,7 +320,7 @@ def compact {Γ : Sequent L} : 𝓢 ⟹ Γ → (s : { s : Finset (SyntacticFormu
+     let ⟨s₁, d₁⟩ := compact d₁
+     let ⟨s₂, d₂⟩ := compact d₂
+     ⟨⟨(s₁ ∪ s₂ : Finset (SyntacticFormula L)), by simp [s₁.prop, s₂.prop]⟩,
+-      cut (Tait.ofAxiomSubset (by simp) d₁) (Tait.ofAxiomSubset (by simp) d₂)⟩
++      cut (Tait.ofAxiomSubset (by intro x hx; exact Finset.mem_union.mpr (Or.inl hx)) d₁) (Tait.ofAxiomSubset (by intro x hx; exact Finset.mem_union.mpr (Or.inr hx)) d₂)⟩
+   | axm (φ := φ) h =>
+     ⟨⟨{φ}, by simp [h]⟩, axm (by simp)⟩
+   | all d          =>
+@@ -333,7 +333,7 @@ def compact {Γ : Sequent L} : 𝓢 ⟹ Γ → (s : { s : Finset (SyntacticFormu
+ instance : Entailment.Compact (Schema L) where
+   Γ b := (compact b).1
+   ΓPrf b := (compact b).2
+-  Γ_subset b := by simpa using (compact b).1.prop
++  Γ_subset b := (compact b).1.prop
+   Γ_finite b := by simp
+ 
+ def deductionAux {Γ : Sequent L} : 𝓢 ⟹ Γ → 𝓢 \ {φ} ⟹ ∼(φ.univCl') :: Γ
+@@ -349,13 +349,13 @@ def deductionAux {Γ : Sequent L} : 𝓢 ⟹ Γ → 𝓢 \ {φ} ⟹ ∼(φ.univC
+     have : 𝓢 \ {φ} ⟹. ψ := axm (by simp [h, Ne.symm hq])
+     wk this (by simp)
+ 
+-def deduction (d : insert φ 𝓢 ⟹ Γ) : 𝓢 ⟹ ∼(φ.univCl') :: Γ := Tait.ofAxiomSubset (by intro x; simp; tauto) (deductionAux d (φ := φ))
++def deduction (d : insert φ 𝓢 ⟹ Γ) : 𝓢 ⟹ ∼(φ.univCl') :: Γ := Tait.ofAxiomSubset (by intro x hx; exact hx.1.resolve_left hx.2) (deductionAux d (φ := φ))
+ 
+ def provable_iff_inconsistent : 𝓢 ⊢ φ ↔ Entailment.Inconsistent (insert (∼φ.univCl') 𝓢) := by
+   constructor
+   · rintro b
+     exact Entailment.inconsistent_of_provable_of_unprovable
+-      (Entailment.wk! (by simp) (toClose! b)) (Entailment.by_axm _ (by simp))
++      (Entailment.wk! (by intro x hx; exact Or.inr hx) (toClose! b)) (Entailment.by_axm _ (by simp))
+   · intro h
+     rcases Tait.inconsistent_iff_provable.mp h with ⟨d⟩
+     have : 𝓢 ⊢! φ.univCl' :=  Derivation.cast (deduction d) (by rw [univCl'_eq_self_of (∼(φ.univCl')) (by simp)]; simp)
+@@ -462,9 +462,9 @@ end Derivation
+ 
+ namespace Schema
+ 
+-instance {𝓢 U : Schema L} : 𝓢 ⪯ 𝓢 ∪ U := Entailment.Axiomatized.weakerThanOfSubset (by simp)
++instance {𝓢 U : Schema L} : 𝓢 ⪯ 𝓢 ∪ U := Entailment.Axiomatized.weakerThanOfSubset (by intro x hx; exact Or.inl hx)
+ 
+-instance {𝓢 U : Schema L} : U ⪯ 𝓢 ∪ U := Entailment.Axiomatized.weakerThanOfSubset (by simp)
++instance {𝓢 U : Schema L} : U ⪯ 𝓢 ∪ U := Entailment.Axiomatized.weakerThanOfSubset (by intro x hx; exact Or.inr hx)
+ 
+ def deduction [L.DecidableEq] {𝓢 : Schema L} {φ ψ} (b : insert φ 𝓢 ⊢! ψ) : 𝓢 ⊢! φ.univCl' ➝ ψ :=
+   have : 𝓢 ⟹ [∼φ.univCl', ψ] := Derivation.deduction b
+@@ -504,7 +504,7 @@ open Entailment
+ 
+ instance : Axiomatized (Theory L) where
+   prfAxm {T} σ h := ofSyntacticProof <| Axiomatized.prfAxm (by simpa using h)
+-  weakening {σ T B} h b := ofSyntacticProof <| Axiomatized.weakening (by simpa using h) b
++  weakening {σ T B} h b := ofSyntacticProof <| Axiomatized.weakening (Theory.coe_subset_coe.mpr h) b
+ 
+ def deduction [L.DecidableEq] {T : Theory L} {σ τ} (b : insert σ T ⊢! τ) : T ⊢! σ ➝ τ :=
+   have : insert ↑σ T.toSchema ⊢! ↑τ := by simpa using toSyntacticProof b
+@@ -539,7 +539,7 @@ def compact! [L.DecidableEq] {T : Theory L} {φ : Sentence L} :
+ instance [L.DecidableEq] : Entailment.Compact (Theory L) where
+   Γ b := (compact! b).1
+   ΓPrf b := (compact! b).2
+-  Γ_subset b := by simpa using (compact! b).1.prop
++  Γ_subset b := (compact! b).1.prop
+   Γ_finite b := by simp
+ 
+ theorem compact [L.DecidableEq] {T : Theory L} {φ : Sentence L} (b : T ⊢ φ) :
+@@ -587,13 +587,12 @@ lemma inconsistent_lMap {T : Theory L₁} (Φ : L₁ →ᵥ L₂) :
+   refine inconsistent_iff_provable_bot.mpr <| provable_def.mpr ?_
+   suffices ↑(lMap Φ T) ⊢ ⊥ by simpa
+   apply Axiomatized.weakening! ?_ this
+-  simp only [Schema.lMap, toSchema, Set.image_subset_iff]
+-  intro φ hφ
+-  simpa using ⟨(Semiformula.lMap Φ) φ, Set.mem_image_of_mem _ hφ, Eq.symm (lMap_emb φ)⟩
++  rintro φ ⟨ψ, ⟨σ, hσ, rfl⟩, rfl⟩
++  exact ⟨Semiformula.lMap Φ σ, ⟨σ, hσ, rfl⟩, (lMap_emb σ).symm⟩
+ 
+-instance {T U : Theory L} : T ⪯ T + U := Entailment.Axiomatized.weakerThanOfSubset (by simp [add_def])
++instance {T U : Theory L} : T ⪯ T + U := Entailment.Axiomatized.weakerThanOfSubset (by intro x hx; exact Or.inl hx)
+ 
+-instance {T U : Theory L} : U ⪯ T + U := Entailment.Axiomatized.weakerThanOfSubset (by simp [add_def])
++instance {T U : Theory L} : U ⪯ T + U := Entailment.Axiomatized.weakerThanOfSubset (by intro x hx; exact Or.inr hx)
+ 
+ end Theory
+ 
+diff --git a/Foundation/FirstOrder/Basic/Eq.lean b/Foundation/FirstOrder/Basic/Eq.lean
+index bf5733e39aceb46c562f891fecba0abe6ecfeffc..6ef0978cd4d2822269c01b9ab52e48c9719673a7 100644
+--- a/Foundation/FirstOrder/Basic/Eq.lean
++++ b/Foundation/FirstOrder/Basic/Eq.lean
+@@ -187,7 +187,14 @@ lemma rel_mk {k} (r : L.Rel k) (v : Fin k → M) : Structure.rel (M := QuotEq L
+ 
+ lemma val_mk {e} {ε} (t : Semiterm L μ n) :
+     Semiterm.valm (QuotEq L M) (fun i ↦ ⟦e i⟧) (fun i ↦ ⟦ε i⟧) t = ⟦Semiterm.valm M e ε t⟧ :=
+-  by induction t <;> simp [*, funk_mk, Semiterm.val_func]
++  by
++    induction t with
++    | bvar => rfl
++    | fvar => rfl
++    | func f v ih =>
++      change Structure.func f (fun i => Semiterm.valm (QuotEq L M) _ _ (v i)) = _
++      rw [funext ih]
++      exact funk_mk f _
+ 
+ lemma eval_mk {e} {ε} {φ : Semiformula L μ n} :
+     Semiformula.Evalm (QuotEq L M) (fun i ↦ ⟦e i⟧) (fun i ↦ ⟦ε i⟧) φ ↔ Semiformula.Evalm M e ε φ := by
+@@ -217,8 +224,14 @@ lemma eval_mk {e} {ε} {φ : Semiformula L μ n} :
+       exact this
+   case _ => simp [*]
+   case _ => simp [*]
+-  case _ => simp [*, Semiformula.eval_rel, val_mk, rel_mk]
+-  case _ => simp [*, Semiformula.eval_nrel, val_mk, rel_mk]
++  case _ =>
++    change Semiformula.EvalAux _ _ _ _ ↔ _
++    simp [Semiformula.EvalAux, val_mk, rel_mk]
++    rfl
++  case _ =>
++    change Semiformula.EvalAux _ _ _ _ ↔ _
++    simp [Semiformula.EvalAux, val_mk, rel_mk]
++    rfl
+   case _ => simp [*]
+   case _ => simp [*]
+ 
+diff --git a/Foundation/FirstOrder/Basic/Model.lean b/Foundation/FirstOrder/Basic/Model.lean
+index 3f7f20d8e0d87442181aebc748ea0e837e1b80fa..c14456027ab7ee5f304c8c16778f2ef9a0e83580 100644
+--- a/Foundation/FirstOrder/Basic/Model.lean
++++ b/Foundation/FirstOrder/Basic/Model.lean
+@@ -128,6 +128,9 @@ variable {L₁ L₂ M}
+   induction φ using Semiformula.rec' <;>
+     simp [*, Language.Hom.rel_add₁, Semiformula.eval_rel,
+       Semiformula.lMap_rel, Semiformula.eval_nrel, Semiformula.lMap_nrel]
++  all_goals
++    change Semiformula.EvalAux _ _ _ _ ↔ _
++    simp [Semiformula.EvalAux]
+ 
+ @[simp] lemma eval_lMap_add₂ {n} (φ : Semiformula L₂ μ n) (e : Fin n → M) (ε : μ → M) :
+     Semiformula.Eval (add L₁ L₂ M) e ε (Semiformula.lMap (Language.Hom.add₂ L₁ L₂) φ)
+@@ -135,6 +138,9 @@ variable {L₁ L₂ M}
+   induction φ using Semiformula.rec' <;>
+     simp [*, Language.Hom.rel_add₂, Semiformula.eval_rel,
+       Semiformula.lMap_rel, Semiformula.eval_nrel, Semiformula.lMap_nrel]
++  all_goals
++    change Semiformula.EvalAux _ _ _ _ ↔ _
++    simp [Semiformula.EvalAux]
+ 
+ end add
+ 
+@@ -160,6 +166,9 @@ instance sigma : Structure (Language.sigma L) M where
+   induction φ using Semiformula.rec' <;>
+     simp [*, Language.Hom.rel_sigma, Semiformula.eval_rel,
+       Semiformula.lMap_rel, Semiformula.eval_nrel, Semiformula.lMap_nrel]
++  all_goals
++    change Semiformula.EvalAux _ _ _ _ ↔ _
++    simp [Semiformula.EvalAux]
+ 
+ end sigma
+ 
+diff --git a/Foundation/FirstOrder/Basic/Syntax/Rew.lean b/Foundation/FirstOrder/Basic/Syntax/Rew.lean
+index 44f408dfbf74969809b2e6458a5cb83ff26626cf..6df7544f47eb9e0accc3ba0357190fabe56ccc4f 100644
+--- a/Foundation/FirstOrder/Basic/Syntax/Rew.lean
++++ b/Foundation/FirstOrder/Basic/Syntax/Rew.lean
+@@ -456,6 +456,9 @@ def toEmpty [DecidableEq ξ] {n : ℕ} : (φ : Semiformula L ξ n) → φ.freeVa
+ 
+ @[simp] lemma emb_toEmpty [DecidableEq ξ] (φ : Semiformula L ξ n) (hp : φ.freeVariables = ∅) : Rewriting.emb (φ.toEmpty hp) = φ := by
+   induction φ using rec' <;> simp [toEmpty, rew_rel, rew_nrel, *]
++  all_goals
++    rename_i body ih
++    exact ih hp
+ 
+ @[simp] lemma toEmpty_emb [DecidableEq ξ] (φ : Semisentence L n) : (Rewriting.emb φ : Semiformula L ξ n).toEmpty (by simp) = φ := by
+   induction φ using rec' <;> simp [toEmpty, rew_rel, rew_nrel, *]
+diff --git a/Foundation/FirstOrder/Bootstrapping/Syntax/Formula/Functions.lean b/Foundation/FirstOrder/Bootstrapping/Syntax/Formula/Functions.lean
+index 33ee42d8e5b8c310cd0e805f54f59a4cc646be2e..66bd078b596521599581d9f7fe42d58cb34042c5 100644
+--- a/Foundation/FirstOrder/Bootstrapping/Syntax/Formula/Functions.lean
++++ b/Foundation/FirstOrder/Bootstrapping/Syntax/Formula/Functions.lean
+@@ -395,8 +395,8 @@ noncomputable def blueprint : UformulaRec1.Blueprint where
+   or     := .mkSigma “y param p₁ p₂ y₁ y₂. !qqOrDef y y₁ y₂”
+   all    := .mkSigma “y param p₁ y₁. !qqAllDef y y₁”
+   ex     := .mkSigma “y param p₁ y₁. !qqExDef y y₁”
+-  allChanges := .mkSigma “param' param. !(qVecGraph L) param' param”
+-  exChanges  := .mkSigma “param' param. !(qVecGraph L) param' param”
++  allChanges := qVecGraph L
++  exChanges  := qVecGraph L
+ 
+ noncomputable def construction : UformulaRec1.Construction V (blueprint L) where
+   rel (param)  := fun k R v ↦ ^rel k R (termSubstVec L k param v)
+@@ -417,8 +417,8 @@ noncomputable def construction : UformulaRec1.Construction V (blueprint L) where
+   or_defined := .mk fun v ↦ by simp [blueprint]
+   all_defined := .mk fun v ↦ by simp [blueprint]
+   ex_defined := .mk fun v ↦ by simp [blueprint]
+-  allChanges_defined := .mk fun v ↦ by simp [blueprint]
+-  exChanges_defined := .mk fun v ↦ by simp [blueprint]
++  allChanges_defined := qVec.defined
++  exChanges_defined := qVec.defined
+ 
+ end Substs
+ 
+diff --git a/Foundation/FirstOrder/Bootstrapping/Syntax/Proof/Basic.lean b/Foundation/FirstOrder/Bootstrapping/Syntax/Proof/Basic.lean
+index 6437218499dfd26367eaded8f8a7a78629210edb..87a567b08e513c3ad9a1e0dd591463c483022194 100644
+--- a/Foundation/FirstOrder/Bootstrapping/Syntax/Proof/Basic.lean
++++ b/Foundation/FirstOrder/Bootstrapping/Syntax/Proof/Basic.lean
+@@ -487,7 +487,14 @@ noncomputable abbrev provabilityPred (σ : Sentence L) : Sentence ℒₒᵣ := T
+ noncomputable def provabilityPred' (σ : Sentence L) : 𝚺₁.Sentence := .mkSigma
+   “!T.provable !!(⌜σ⌝)”
+ 
+-@[simp] lemma provabilityPred'_val (σ : Sentence L) : (T.provabilityPred' σ).val = T.provabilityPred σ := by rfl
++private theorem val_sentenceCode_substitution (φ : 𝚺₁.Semisentence 1)
++    (σ : Sentence L) :
++    (.mkSigma “!φ !!(⌜σ⌝)” : 𝚺₁.Sentence).val = φ.val/[⌜σ⌝] := by
++  rfl
++
++@[simp] lemma provabilityPred'_val (σ : Sentence L) :
++    (T.provabilityPred' σ).val = T.provabilityPred σ :=
++  val_sentenceCode_substitution T.provable σ
+ 
+ variable {T}
+ 
+diff --git a/Foundation/FirstOrder/Completeness/SearchTree.lean b/Foundation/FirstOrder/Completeness/SearchTree.lean
+index 68ae6084119fa95e35eae607905435ef327dcefb..7d5c39a000bd2a0bc76b949a1e9d3f7660f7cf57 100644
+--- a/Foundation/FirstOrder/Completeness/SearchTree.lean
++++ b/Foundation/FirstOrder/Completeness/SearchTree.lean
+@@ -182,7 +182,8 @@ lemma chain_monotone (nwf : ¬WellFounded (SearchTree.Lt T Γ)) {s u : ℕ} (h :
+     simpa [Nat.add_sub_of_le h] using this (u - s)
+   intro d; induction' d with d ih
+   · simp
+-  · simpa only [Nat.add_succ] using subset_trans ih <| ReduxNat.antimonotone (chain_spec nwf (s + d))
++  · intro x hx
++    exact ReduxNat.antimonotone (chain_spec nwf (s + d)) (ih hx)
+ 
+ lemma chain_spec' (nwf : ¬WellFounded (SearchTree.Lt T Γ)) (c : Code L) (i : ℕ) :
+     ⛓️[(encode c).pair i + 1] ≺[c] ⛓️[(encode c).pair i] := (chain_spec nwf _).toRedux
+diff --git a/Foundation/FirstOrder/Completeness/SubLanguage.lean b/Foundation/FirstOrder/Completeness/SubLanguage.lean
+index dd728e04687918787522a6fa9cf5e9398aeaa07a..f730fe22c34a8b2bfd86a6822a2af03434ceb76a 100644
+--- a/Foundation/FirstOrder/Completeness/SubLanguage.lean
++++ b/Foundation/FirstOrder/Completeness/SubLanguage.lean
+@@ -65,7 +65,13 @@ def toSubLanguage' (pf : ∀ k, L.Func k → Prop) (pr : ∀ k, L.Rel k → Prop
+ @[simp] lemma lMap_toSubLanguage' (pf : ∀ k, L.Func k → Prop) (pr : ∀ k, L.Rel k → Prop)
+   (t : Semiterm L ξ n) (h : ∀ k f, ⟨k, f⟩ ∈ t.lang → pf k f) :
+     (t.toSubLanguage' pf pr h).lMap L.ofSubLanguage = t :=
+-  by induction t <;> simp [*, toSubLanguage', lMap_func]
++  by
++    induction t with
++    | bvar => rfl
++    | fvar => rfl
++    | func f v ih =>
++      change func f (fun i => (toSubLanguage' pf pr (v i) _).lMap L.ofSubLanguage) = func f v
++      exact congrArg (func f) (funext fun i => ih i _)
+ 
+ end Semiterm
+ 
+@@ -125,7 +131,19 @@ def toSubLanguage' (pf : ∀ k, L.Func k → Prop) (pr : ∀ k, L.Rel k → Prop
+   (pf : ∀ k, L.Func k → Prop) (pr : ∀ k, L.Rel k → Prop) {n} (φ : Semiformula L ξ n)
+   (hf : ∀ k f, ⟨k, f⟩ ∈ φ.langFunc → pf k f) (hr : ∀ k r, ⟨k, r⟩ ∈ φ.langRel → pr k r) :
+     lMap L.ofSubLanguage (φ.toSubLanguage' pf pr hf hr) = φ := by
+-  induction φ using rec' <;> simp [*, toSubLanguage', lMap_rel, lMap_nrel]
++  induction φ using rec' with
++  | hverum => rfl
++  | hfalsum => rfl
++  | hrel r v =>
++    change rel r (fun i => (Semiterm.toSubLanguage' pf pr (v i) _).lMap L.ofSubLanguage) = rel r v
++    exact congrArg (rel r) (funext fun i => Semiterm.lMap_toSubLanguage' _ _ _ _)
++  | hnrel r v =>
++    change nrel r (fun i => (Semiterm.toSubLanguage' pf pr (v i) _).lMap L.ofSubLanguage) = nrel r v
++    exact congrArg (nrel r) (funext fun i => Semiterm.lMap_toSubLanguage' _ _ _ _)
++  | hand φ ψ ihφ ihψ => exact congrArg₂ and (ihφ _ _) (ihψ _ _)
++  | hor φ ψ ihφ ihψ => exact congrArg₂ or (ihφ _ _) (ihψ _ _)
++  | hall φ ih => exact congrArg all (ih _ _)
++  | hex φ ih => exact congrArg ex (ih _ _)
+ 
+ noncomputable def languageFuncIndexed (φ : Semiformula L ξ n) (k) : Finset (L.Func k) :=
+   Finset.preimage (langFunc φ) (Sigma.mk k) (Set.injOn_of_injective sigma_mk_injective)
+diff --git a/Foundation/FirstOrder/Hauptsatz.lean b/Foundation/FirstOrder/Hauptsatz.lean
+index 2ba243176554f2a1eed8f4807dab9731932b85b4..945df574a1dd1762a9cf053de1d4f142254140ac 100644
+--- a/Foundation/FirstOrder/Hauptsatz.lean
++++ b/Foundation/FirstOrder/Hauptsatz.lean
+@@ -332,7 +332,7 @@ def ofMinimalProof {φ : SyntacticFormulaᵢ L} : 𝗠𝗶𝗻¹ ⊢! φ → ⊩
+   termination_by b => HilbertProofᵢ.depth b
+ 
+ def relRefl {k} (R : L.Rel k) (v : Fin k → SyntacticTerm L) : [.rel R v] ⊩ rel R v :=
+-  relEquiv.symm ⟨Derivation.axL _ _, by simp⟩
++  relEquiv.symm ⟨Derivation.axL _ _, Derivation.IsCutFree.axL _ _⟩
+ 
+ protected def refl.or (ihφ : [φ] ⊩ φᴺ) (ihψ : [ψ] ⊩ ψᴺ) : [φ ⋎ ψ] ⊩ (φ ⋎ ψ)ᴺ :=
+   implyOf fun q dq ↦
+@@ -365,7 +365,7 @@ protected def refl.ex (d : ∀ x, [φ/[&x]] ⊩ (φ/[&x])ᴺ) : [∃' φ] ⊩ (
+ 
+ protected def refl : (φ : SyntacticFormula L) → [φ] ⊩ φᴺ
+   |         ⊤ => implyEquiv.symm fun q sqp dφ ↦ dφ
+-  |         ⊥ => falsumEquiv.symm ⟨Derivation.verum, by simp⟩
++  |         ⊥ => falsumEquiv.symm ⟨Derivation.verum, Derivation.IsCutFree.verum⟩
+   |  .rel R v => implyOf fun q dq ↦
+     let b : [.rel R v] ⊓ q ⊩ rel R v := (relRefl R v).monotone (StrongerThan.minLeLeft _ _)
+     dq.implyEquiv ([.rel R v] ⊓ q) (StrongerThan.minLeRight _ _) b
+diff --git a/Foundation/FirstOrder/Incompleteness/Dense.lean b/Foundation/FirstOrder/Incompleteness/Dense.lean
+index 9609bd32735ff1218c721d52a8eb010159673d73..a4d8c51c96f96a54581d2099100d39e685ac11c3 100644
+--- a/Foundation/FirstOrder/Incompleteness/Dense.lean
++++ b/Foundation/FirstOrder/Incompleteness/Dense.lean
+@@ -71,7 +71,7 @@ lemma FirstOrder.Arithmetic.dense (T : Theory ℒₒᵣ) [𝗜𝚺₁ ⪯ T] [T.
+     φ < ψ → ∃ ξ, φ < ξ ∧ ξ < ψ := fun h ↦ by
+   refine LindenbaumAlgebra.dense_of_finite_extend_incomplete T ?_ h
+   intro σ con
+-  have : 𝗜𝚺₁ ⪯ insert σ T := WeakerThan.trans ((inferInstance : 𝗜𝚺₁ ⪯ T)) (Axiomatized.le_of_subset (by simp))
++  have : 𝗜𝚺₁ ⪯ insert σ T := WeakerThan.trans ((inferInstance : 𝗜𝚺₁ ⪯ T)) (Axiomatized.le_of_subset (Set.subset_insert σ T))
+   exact Arithmetic.incomplete' (insert σ T)
+ 
+ instance (T : Theory ℒₒᵣ) [𝗜𝚺₁ ⪯ T] [T.Δ₁] : DenselyOrdered (LindenbaumAlgebra T) where
+diff --git a/Foundation/FirstOrder/Intuitionistic/Deduction.lean b/Foundation/FirstOrder/Intuitionistic/Deduction.lean
+index 362c503dfb63fd9a3069b523c50675a2e33b1f9e..4eb44593173846db622477c83de6e857a2d70e00 100644
+--- a/Foundation/FirstOrder/Intuitionistic/Deduction.lean
++++ b/Foundation/FirstOrder/Intuitionistic/Deduction.lean
+@@ -243,7 +243,7 @@ def rewrite (f : ℕ → SyntacticTerm L) : Λ ⊢! φ → Λ ⊢! Rew.rewrite f
+   | gen b ih =>
+     show ‖HilbertProofᵢ.gen _‖ = ‖HilbertProofᵢ.gen b‖
+     show ‖HilbertProofᵢ.cast _ _‖ + 1 = ‖b‖ + 1
+-    rw [depth_cast, ih]
++    exact congrArg (· + 1) ((depth_cast _ _).trans (ih _))
+   | all₁ => show ‖HilbertProofᵢ.cast _ _‖ = _; rw [depth_cast]; rfl
+   | all₂ => show ‖HilbertProofᵢ.cast _ _‖ = _; rw [depth_cast]; rfl
+   | ex₁ => show ‖HilbertProofᵢ.cast _ _‖ = _; rw [depth_cast]; rfl
+diff --git a/Foundation/FirstOrder/SetTheory/Universe.lean b/Foundation/FirstOrder/SetTheory/Universe.lean
+index 30b0a5560a046ee308a008d872a11018975c065c..622f5ca270136869602b9c0c1213a6e9f21e8b83 100644
+--- a/Foundation/FirstOrder/SetTheory/Universe.lean
++++ b/Foundation/FirstOrder/SetTheory/Universe.lean
+@@ -74,7 +74,7 @@ noncomputable instance : QPF.{u + 1, u + 1, u + 1} UniverseFunctor.{u} where
+ end UniverseFunctor
+ 
+ /-- The standard model of set theory -/
+-def Universe : Type (u + 1) := QPF.Fix UniverseFunctor
++abbrev Universe : Type (u + 1) := QPF.Fix UniverseFunctor
+ 
+ namespace Universe
+ 
+@@ -136,11 +136,11 @@ theorem ind
+     {P : Universe.{u} → Prop}
+     (ind : ∀ x, (∀ y ∈ x, P y) → P x)
+     (x : Universe) : P x :=
+-  QPF.Fix.ind P (fun s hs ↦ ind (mk s.set) (by
+-    rw [UniverseFunctor.liftp_iff] at hs
++  QPF.Fix.ind P (fun s hs ↦ by
++    letI : Small.{u} s.set := s.small
++    apply ind (@mk s.set s.small)
+     intro y hy
+-    rw [mem_mk] at hy
+-    exact hs y hy)) x
++    exact (UniverseFunctor.liftp_iff.mp hs) y (mem_mk.mp hy)) x
+ 
+ lemma wellFounded : WellFounded (α := Universe.{u}) (· ∈ ·) := ⟨ind fun x ih ↦ Acc.intro x ih⟩
+ 
+diff --git a/Foundation/Logic/Semantics.lean b/Foundation/Logic/Semantics.lean
+index 7d017fda1e2d7bc4298d579f74f789e20c9c6dc3..42745b60a17a1efad8a163e18fc141f5e508a3b2 100644
+--- a/Foundation/Logic/Semantics.lean
++++ b/Foundation/Logic/Semantics.lean
+@@ -208,7 +208,11 @@ instance empty' (𝓜 : M) : 𝓜 ⊧* (∅ : Set F) := ⟨by simp⟩
+     𝓜 ⊧* Set.range φ ↔ ∀ i, 𝓜 ⊧ φ i := by simp [modelsSet_iff]
+ 
+ @[simp] lemma setOf_iff {P : F → Prop} {𝓜 : M} :
+-    𝓜 ⊧* setOf P ↔ ∀ φ, P φ → 𝓜 ⊧ φ := by simp [modelsSet_iff]
++    𝓜 ⊧* setOf P ↔ ∀ φ, P φ → 𝓜 ⊧ φ := by
++  rw [modelsSet_iff]
++  constructor
++  · intro h φ hφ; exact h hφ
++  · intro h φ hφ; exact h φ hφ
+ 
+ end ModelsSet
+ 
+diff --git a/Foundation/Modal/Boxdot/GL_S.lean b/Foundation/Modal/Boxdot/GL_S.lean
+index 918904a5035bbee732e3a2cc2c4d173a783ecf42..a71fa730e9aa7e6e00cb48697dbfbac2c1433328 100644
+--- a/Foundation/Modal/Boxdot/GL_S.lean
++++ b/Foundation/Modal/Boxdot/GL_S.lean
+@@ -25,11 +25,21 @@ lemma iff_provable_boxdot_GL_provable_boxdot_S : Modal.GL ⊢ φᵇ ↔ Modal.S
+     intro M r _;
+     obtain ⟨i, hi⟩ := Kripke.Model.extendRoot.inr_satisfies_axiomT_set (M := M) (Γ := □⁻¹'φᵇ.subformulas);
+     let M₁ := M.extendRoot ⟨(□⁻¹'φᵇ.subformulas).card + 1, by omega⟩;
++    let tree : M₁.IsFiniteTree Model.extendRoot.root :=
++      Model.extendRoot.isFiniteTree (M := M) (r := r)
++    let : M₁.IsFinite := tree.toIsFinite
++    let : M₁.IsAsymmetric := ⟨tree.asymm⟩
++    let : M₁.IsTransitive := ⟨tree.trans⟩
+     let i₁ : M₁.World := Sum.inl i;
+     refine Model.extendRoot.inl_satisfies_boxdot_iff.mpr
+       $ Model.pointGenerate.modal_equivalent_at_root (r := i₁) |>.mp
+       $ @h (M₁↾i₁) Model.pointGenerate.root ?_ ?_;
+-    . exact {};
++    . exact {
++        toIsFinite := by dsimp [Model.pointGenerate]; infer_instance
++        toIsTree := {
++          toIsRootedBy := inferInstance
++          asymm := (Model.pointGenerate.isAsymmetric (M := M₁) (r := i₁)).asymm
++          trans := (Model.pointGenerate.isTransitive (M := M₁) (r := i₁)).trans } }
+     . apply @Model.pointGenerate.modal_equivalent_at_root (r := i₁) |>.mpr
+       apply Satisfies.fconj_def.mpr;
+       intro ψ hψ;
+diff --git a/Foundation/Modal/Kripke/ExtendRoot.lean b/Foundation/Modal/Kripke/ExtendRoot.lean
+index 0f69092300facc95170f439114297a7d240f381c..b4b12fd3b54a0f491f652761b190046078dd0644 100644
+--- a/Foundation/Modal/Kripke/ExtendRoot.lean
++++ b/Foundation/Modal/Kripke/ExtendRoot.lean
+@@ -130,11 +130,21 @@ lemma not_root_of_from_root' [F.IsTree r] {x : F.extendRoot n} (h : extendRoot.r
+ 
+ lemma not_root_of_from_root₁ [F.IsTree r] {x : F.extendRoot 1} (h : extendRoot.root ≺ x) :
+     x = r ∨ embed r ≺ x := by
+-  rcases not_root_of_from_root h with (⟨i, hi, rfl⟩ | hr | hr) <;> simp_all
++  rcases not_root_of_from_root h with (⟨i, hi, rfl⟩ | hr | hr)
++  · have bound : i.val < 1 := i.isLt
++    have positive : 0 < i.val := hi
++    omega
++  · exact Or.inl hr
++  · exact Or.inr hr
+ 
+ lemma not_root_of_from_root'₁ [F.IsTree r] {x : F.extendRoot 1} (h : extendRoot.root ≺ x) :
+     x = r ∨ ∃ x₀ : F, x = x₀ ∧ r ≺ x₀ := by
+-  rcases not_root_of_from_root' h with (⟨i, hi, rfl⟩ | hr | hr) <;> simp_all
++  rcases not_root_of_from_root' h with (⟨i, hi, rfl⟩ | hr | hr)
++  · have bound : i.val < 1 := i.isLt
++    have positive : 0 < i.val := hi
++    omega
++  · exact Or.inl hr
++  · exact Or.inr hr
+ 
+ lemma eq_inr_of_root_rel [F.IsTree r] {x : F.extendRoot 1} (h : extendRoot.root ≺ x) :
+     ∃ x₀ : F, x = x₀ := by
+diff --git a/Foundation/Modal/Kripke/Logic/GL/Unnecessitation.lean b/Foundation/Modal/Kripke/Logic/GL/Unnecessitation.lean
+index d6185eeb7f2e1f1c719c841ead9bbf44ed1e04e8..03f0f6deb56b91ea83db12a7573910be59166ae7 100644
+--- a/Foundation/Modal/Kripke/Logic/GL/Unnecessitation.lean
++++ b/Foundation/Modal/Kripke/Logic/GL/Unnecessitation.lean
+@@ -43,7 +43,7 @@ lemma imply_boxdot_plain_of_imply_box_box : Modal.GL ⊢ □φ ➝ □ψ → Mod
+   apply GL.Kripke.iff_unprovable_exists_unsatisfies_FiniteTransitiveTree.mpr;
+   use M₀, r₀;
+   refine ⟨?_, ?_⟩;
+-  . exact {};
++  . exact Model.extendRoot.isFiniteTree
+   . tauto;
+ 
+ theorem unnecessitation! : Modal.GL ⊢ □φ → Modal.GL ⊢ φ := by
+diff --git a/Foundation/Modal/Kripke/Logic/GLPoint3.lean b/Foundation/Modal/Kripke/Logic/GLPoint3.lean
+index 1b2bd2b978e8cdfd1665cac28e65b043ce3b0302..2f9bbd991685f5440a55595193f27d36ab56f191 100644
+--- a/Foundation/Modal/Kripke/Logic/GLPoint3.lean
++++ b/Foundation/Modal/Kripke/Logic/GLPoint3.lean
+@@ -117,7 +117,7 @@ private instance complete.filteredModel.isFiniteGLPoint3 : Frame.IsFiniteGLPoint
+       have := this x y;
+       tauto;
+     rintro ⟨x, rfl | ⟨Rvx, _⟩⟩ ⟨y, rfl | ⟨Rvy, _⟩⟩ hxy;
+-    . simp at hxy;
++    . exact False.elim (hxy (Subtype.ext rfl));
+     . tauto;
+     . tauto;
+     . apply Frame.p_connected' Rvx Rvy ?_;
+diff --git a/Foundation/Modal/Kripke/Logic/Grz/Completeness.lean b/Foundation/Modal/Kripke/Logic/Grz/Completeness.lean
+index ed01159087cd2bb92ca33ce24cbe587ff767394c..307cfdf2388146106493a8a3c979bb83ddf01c3e 100644
+--- a/Foundation/Modal/Kripke/Logic/Grz/Completeness.lean
++++ b/Foundation/Modal/Kripke/Logic/Grz/Completeness.lean
+@@ -186,6 +186,16 @@ lemma truthlemma {X : (miniCanonicalModel 𝓢 φ).World} (q_sub : ψ ∈ φ.sub
+       . assumption;
+       . simpa using iff_not_mem_compl (by grind) |>.not.mp hr;
+   | hbox ψ ih =>
++    have subψ : ψ ∈ φ.subformulas := Formula.subformulas.mem_box q_sub
++    have grzψ : ψ ∈ φ.subformulasGrz := Formula.subformulasGrz.mem_of_mem_subformula subψ
++    have grzBox : □ψ ∈ φ.subformulasGrz := Formula.subformulasGrz.mem_of_mem_subformula q_sub
++    have preψ : ψ ∈ □⁻¹'φ.subformulasGrz := by
++      simpa only [Finset.LO.preboxItr, Finset.mem_preimage, Function.iterate_one] using grzBox
++    have grzSpecial : □(ψ ➝ □ψ) ∈ φ.subformulasGrz :=
++      Formula.subformulasGrz.mem_boximpbox (by
++        simpa only [Finset.LO.preboxItr, Finset.mem_preimage, Function.iterate_one] using q_sub)
++    have preSpecial : (ψ ➝ □ψ) ∈ □⁻¹'φ.subformulasGrz := by
++      simpa only [Finset.LO.preboxItr, Finset.mem_preimage, Function.iterate_one] using grzSpecial
+     constructor;
+     . contrapose;
+       by_cases w : ψ ∈ X;
+@@ -204,18 +214,17 @@ lemma truthlemma {X : (miniCanonicalModel 𝓢 φ).World} (q_sub : ψ ∈ φ.sub
+             left; push_neg;
+             use (ψ ➝ □ψ);
+             refine ⟨?_, ?_, ?_⟩;
+-            . simp [Formula.subformulasGrz, Finset.LO.preboxItr];
+-              grind;
++            . exact preSpecial;
+             . apply hY.2;
+               simp;
+             . by_contra hC;
+-              have : ↑X *⊢[𝓢] ψ := membership_iff (by grind) |>.mp w;
+-              have : ↑X *⊢[𝓢] □(ψ ➝ □ψ) := membership_iff (by simp [Finset.LO.preboxItr]; grind) |>.mp hC;
++              have : ↑X *⊢[𝓢] ψ := membership_iff grzψ |>.mp w;
++              have : ↑X *⊢[𝓢] □(ψ ➝ □ψ) := membership_iff grzSpecial |>.mp hC;
+               have : ↑X *⊢[𝓢] (ψ ⋏ □(ψ ➝ □ψ)) ➝ □ψ := Context.of! $ truthlemma_lemma3;
+               have : ↑X *⊢[𝓢] □ψ := this ⨀ K!_intro (by assumption) (by assumption);
+-              have : □ψ ∈ X := membership_iff (by grind) |>.mpr this;
++              have : □ψ ∈ X := membership_iff grzBox |>.mpr this;
+               contradiction;
+-        . apply ih (by grind) |>.not.mpr;
++        . apply ih subψ |>.not.mpr;
+           apply iff_not_mem_compl (by grind) |>.not.mpr;
+           push_neg;
+           apply hY.2;
+@@ -225,12 +234,12 @@ lemma truthlemma {X : (miniCanonicalModel 𝓢 φ).World} (q_sub : ψ ∈ φ.sub
+         use X;
+         constructor;
+         . apply Frame.refl;
+-        . exact ih (by grind) |>.not.mpr w;
++        . exact ih subψ |>.not.mpr w;
+     . intro h Y RXY;
+-      apply ih (by grind) |>.mpr;
++      apply ih subψ |>.mpr;
+       have : ↑Y *⊢[𝓢] □ψ ➝ ψ := Context.of! $ axiomT!;
+-      have : ↑Y *⊢[𝓢] ψ := this ⨀ (membership_iff (by grind) |>.mp (RXY.1 ψ (by simp [Finset.LO.preboxItr]; grind) h));
+-      exact membership_iff (by grind) |>.mpr this;
++      have : ↑Y *⊢[𝓢] ψ := this ⨀ (membership_iff grzBox |>.mp (RXY.1 ψ preψ h));
++      exact membership_iff grzψ |>.mpr this;
+ 
+ lemma complete_of_mem_miniCanonicalFrame
+   (C : Kripke.FrameClass)
+diff --git a/Foundation/Modal/Kripke/Rank.lean b/Foundation/Modal/Kripke/Rank.lean
+index 6a8830cd0fbdaf3ed705c08e3b5c37967b45eff5..a56b1e7a6cbcece34e4fa0bb2065c15349690d26 100644
+--- a/Foundation/Modal/Kripke/Rank.lean
++++ b/Foundation/Modal/Kripke/Rank.lean
+@@ -127,13 +127,12 @@ lemma eq_original_height : Frame.rank (x : F.extendRoot 1) = Frame.rank x := by
+     apply extendRoot.embed_rel_iterate_embed_iff_rel.mpr;
+     exact Rxy;
+   . rintro (_ | y) Rxy (_ | z);
+-    . simp;
++    . simp [Frame.Rel', Frame.extendRoot]; omega;
+     . -- TODO: extract no loop lemma (x ≺^[n] i cannot happen where x is original and i is new elements by extension)
+       exfalso;
+-      have : extendRoot.root ≺ (x : F.extendRoot 1) := Frame.root_genaretes'! (F := F.extendRoot 1) x (by simp);
+       have : (x : F.extendRoot 1) ≺ x :=
+         Rel.Iterate.unwrap_of_trans_of_pos (by omega) $
+-        Rel.Iterate.comp (m := 1) |>.mp ⟨_, Rxy, by simpa⟩;
++        Rel.Iterate.comp (m := 1) |>.mp ⟨_, Rxy, ⟨(x : F.extendRoot 1), trivial, rfl⟩⟩;
+       exact Frame.irrefl _ this;
+     . apply Frame.asymm;
+       exact Frame.root_genaretes'! (F := F.extendRoot 1) y (by simp);
+@@ -192,7 +191,10 @@ lemma height_pos_of_dia {i : M} (hA : i ⊧ ◇ A) : 0 < M.rank i := by
+   apply lt_fcwHeight hj (by simp)
+ 
+ @[simp]
+-lemma Model.extendRoot.height₁ : (M.extendRoot 1).height = M.height + 1 := Frame.extendRoot.height_succ
++lemma Model.extendRoot.height₁ :
++    (M.toFrame.extendRoot (r := r) 1).height =
++      Frame.height (F := M.toFrame) (r := r) + 1 :=
++  Frame.extendRoot.height_succ (F := M.toFrame) (r := r)
+ 
+ end
+ 
+diff --git a/Foundation/Modal/Kripke/Rooted.lean b/Foundation/Modal/Kripke/Rooted.lean
+index 57880bce16a212a402713a2ed7cce5652dffd2c2..6205cc89ec6c55d3ca75593ac80dd1232b1c85f4 100644
+--- a/Foundation/Modal/Kripke/Rooted.lean
++++ b/Foundation/Modal/Kripke/Rooted.lean
+@@ -224,7 +224,7 @@ lemma trans_rel_of_origin_trans_rel {hx hy} (Rxy : F.Rel.TransGen x y)
+ instance instGenerated : (F↾R).IsGenerated (setGenerate.roots) where
+   roots_generates := by
+     rintro ⟨r, (hr | ⟨t, ht, Rtx⟩)⟩ _;
+-    . simp_all;
++    . exact (by assumption : ¬ (r ∈ (R : Set F))) hr |>.elim
+     . use ⟨t, by simp_all⟩;
+       constructor;
+       . simpa;
+diff --git a/Foundation/Modal/Kripke/Tree.lean b/Foundation/Modal/Kripke/Tree.lean
+index 21a62bbeb7e1d5c5c640682bbc8cb99e26ea0f28..66947018cfd22f2553cdf40dde317c892bb14619 100644
+--- a/Foundation/Modal/Kripke/Tree.lean
++++ b/Foundation/Modal/Kripke/Tree.lean
+@@ -116,7 +116,7 @@ instance : (F.mkTreeUnravelling r).IsRootedBy treeUnravelling.root where
+     constructor;
+     . by_contra hC;
+       subst hC;
+-      simp at hn;
++      exact hn (Subtype.ext rfl);
+     . assumption;
+ 
+ end Frame.treeUnravelling
+@@ -157,7 +157,7 @@ instance instFinite [DecidableEq F.World] [F.IsFinite] [F.IsTransitive] [F.IsIrr
+      Finite.of_injective
+      (β := { x // List.IsChain F.Rel x })
+      (fun x => ⟨x.1, x.2.2⟩)
+-     (by rintro ⟨x, hx⟩ ⟨y, hy⟩; simp_all);
++     (by intro x y equality; exact Subtype.ext (congrArg (fun entry : {x // List.IsChain F.Rel x} => entry.val) equality));
+   apply List.chains_finite;
+ 
+ instance instIsTree : (F.mkTransTreeUnravelling r).IsTree (mkTransTreeUnravelling.root) where
+diff --git a/Foundation/Modal/Logic/D/Basic.lean b/Foundation/Modal/Logic/D/Basic.lean
+index f8cc8140f071a9898551c2b56e0392f174a6edb5..cd3c1303cff17ebf330e7d3c864014b7da71e811 100644
+--- a/Foundation/Modal/Logic/D/Basic.lean
++++ b/Foundation/Modal/Logic/D/Basic.lean
+@@ -187,7 +187,7 @@ instance : (tailModel₀ M o).IsRootedBy (tailModel₀.root) where
+   root_generates := by
+     intro x h;
+     match x with
+-    | .inl _ => simp [tailModel₀.root] at h;
++    | .inl u => exact (h (congrArg Sum.inl (Subsingleton.elim u ()))).elim
+     | .inr $ _ =>
+       apply Relation.TransGen.single;
+       simp [tailModel₀, tailModel₀.root];
+@@ -265,8 +265,10 @@ lemma iff_root_rel_not_root {x : tailModel₀ M o} : tailModel₀.root ≺ x ↔
+   constructor;
+   . rintro h rfl;
+     simp [Frame.Rel', tailModel₀] at h;
+-  . intro h;
+-    simp_all [Frame.Rel', tailModel₀];
++  . intro h
++    rcases x with u | x
++    · exact (h (congrArg Sum.inl (Subsingleton.elim u ()))).elim
++    · cases x <;> trivial
+ 
+ protected def pMorphism_original : M →ₚ (tailModel₀ M o) where
+   toFun := embed_original
+diff --git a/Foundation/Modal/LogicSymbol.lean b/Foundation/Modal/LogicSymbol.lean
+index 5cb9000aaa2b2262af56c599132ea38d761b4626..3eed4e6c7676949659b288a333857de967f4231f 100644
+--- a/Foundation/Modal/LogicSymbol.lean
++++ b/Foundation/Modal/LogicSymbol.lean
+@@ -356,7 +356,7 @@ prefix:90 "□'" => List.LO.box
+ 
+ @[simp, grind =] lemma boxItr_nil : (□^[n]'([] : List F)) = [] := by rfl
+ 
+-@[simp, grind =] lemma boxItr_single : (□^[n]'[φ]) = [□^[n]φ] := by dsimp [boxItr];
++@[simp, grind =] lemma boxItr_single : (□^[n]'[φ]) = [□^[n]φ] := by rfl
+ 
+ @[simp, grind =] lemma eq_boxItr_conn : (□^[n]'(ψ :: s)) = (□^[n]ψ) :: (□^[n]'s) := by induction s <;> simp_all [boxItr];
+ @[simp, grind =] lemma eq_box_conn : (□' (ψ :: s)) = (□ψ) :: □'s := eq_boxItr_conn (n := 1)
+@@ -439,7 +439,7 @@ prefix:90 "◇'⁻¹" => List.LO.predia
+ @[simp, grind =] lemma diaItr_nil : (◇^[n]'([] : List F)) = [] := by rfl
+ @[simp, grind =] lemma prediaItr_nil : (◇⁻¹^[n]'([] : List F)) = [] := by rfl
+ 
+-@[simp, grind =] lemma diaItr_single : (◇^[n]'[φ]) = [◇^[n]φ] := by dsimp [diaItr];
++@[simp, grind =] lemma diaItr_single : (◇^[n]'[φ]) = [◇^[n]φ] := by rfl
+ 
+ @[simp, grind =] lemma eq_diaItr_conn : (◇^[n]'(ψ :: s)) = (◇^[n]ψ) :: (◇^[n]'s) := by induction s <;> simp_all [diaItr];
+ @[simp, grind =] lemma eq_dia_conn : (◇' (ψ :: s)) = (◇ψ) :: ◇'s := eq_diaItr_conn (n := 1)
+diff --git a/Foundation/Modal/Neighborhood/AxiomGeach.lean b/Foundation/Modal/Neighborhood/AxiomGeach.lean
+index ddbbc90ddfff08e9ff8c104fd5542dcca35afa1d..867a9804a360cc0cb614ab114befa15336154cf1 100644
+--- a/Foundation/Modal/Neighborhood/AxiomGeach.lean
++++ b/Foundation/Modal/Neighborhood/AxiomGeach.lean
+@@ -183,7 +183,10 @@ protected def isGeachean (g) [Entailment.HasAxiomGeach g 𝓢]
+   . obtain ⟨φ, rfl⟩ := iff_not_isNonProofset_exists.mp X_np; clear X_np;
+     replace hX : A ∈ proofset 𝓢 (◇^[g.i](□^[g.m]φ)) := by
+       rw [← diaItr_proofset, ← boxItr_proofset]; exact hX;
+-    suffices A ∈ proofset 𝓢 (□^[g.j](◇^[g.n]φ)) by simpa;
++    suffices A ∈ proofset 𝓢 (□^[g.j](◇^[g.n]φ)) by
++      change A ∈ 𝓒.toModel.box^[g.j] (𝓒.toModel.dia^[g.n] (proofset 𝓢 φ))
++      rw [diaItr_proofset (𝓒 := 𝓒), boxItr_proofset (𝓒 := 𝓒)]
++      exact this
+     apply MaximalConsistentSet.mdp_provable ?_ hX;
+     simp;
+ 
+@@ -236,14 +239,16 @@ instance [Entailment.HasAxiomFour 𝓢] : (basicCanonicity 𝓢).toModel.IsTrans
+   apply Canonicity.isTransitive;
+   intro X hX A hA;
+   obtain ⟨φ, rfl, hφ⟩ := basicCanonicity.iff_mem_box_exists_fml.mp hA;
+-  simp only [Canonicity.boxItr_proofset];
++  change A ∈ (basicCanonicity 𝓢).toModel.box^[2] (proofset 𝓢 φ)
++  rw [Canonicity.boxItr_proofset (𝓒 := basicCanonicity 𝓢)];
+   apply proofset.imp_subset.mp axiomFour! hφ;
+ 
+ instance [Entailment.HasAxiomD 𝓢] : (basicCanonicity 𝓢).toModel.IsSerial := by
+   apply Canonicity.isSerial;
+   intro X hX A hA;
+   obtain ⟨φ, rfl, hφ⟩ := basicCanonicity.iff_mem_box_exists_fml.mp hA;
+-  simp only [Canonicity.dia_proofset];
++  change A ∈ (basicCanonicity 𝓢).toModel.dia (proofset 𝓢 φ)
++  rw [Canonicity.dia_proofset (𝓒 := basicCanonicity 𝓢)];
+   apply proofset.imp_subset.mp axiomD! hφ;
+ 
+ 
+@@ -284,14 +289,16 @@ protected def isTransitive [Entailment.HasAxiomFour 𝓢]
+     . exfalso; exact basicCanonicity.not_isNonproofset_of_mem_box h $ hX;
+     . assumption;
+ 
++omit A in
+ protected def isEuclidean [Entailment.HasAxiomFive 𝓢]
+   (hP : ∀ X : Proofset 𝓢, X.IsNonproofset → ∀ A, Xᶜ ∉ P A → A ∈ (relativeBasicCanonicity 𝓢 P).toModel.box ((relativeBasicCanonicity 𝓢 P).toModel.dia X))
+   : (relativeBasicCanonicity 𝓢 P).toModel.IsEuclidean := by
++  clear A
+   apply Canonicity.isEuclidean;
+   intro X hX A hA;
+   apply hP;
+   . assumption;
+-  . rcases relativeBasicCanonicity.iff_mem_dia.mp hA with ⟨hA₁, (h | hA₂)⟩
++  . rcases (relativeBasicCanonicity.iff_mem_dia (A := A)).mp hA with ⟨hA₁, (h | hA₂)⟩
+     . exfalso;
+       obtain ⟨φ, hφ⟩ := iff_not_isNonProofset_exists.mp h;
+       apply hX (∼φ);
+@@ -306,7 +313,7 @@ protected instance isSymmetric [Entailment.HasAxiomGeach ⟨1, 0, 1, 0⟩ 𝓢]
+   intro X hX A hA;
+   apply hP₁;
+   . assumption;
+-  . rcases relativeBasicCanonicity.iff_mem_dia.mp hA with ⟨hA, (⟨φ, hφ⟩ | hA)⟩
++  . rcases (relativeBasicCanonicity.iff_mem_dia (A := A)).mp hA with ⟨hA, (⟨φ, hφ⟩ | hA)⟩
+     . rw [hφ] at hA;
+       sorry;
+     . assumption;
+diff --git a/Foundation/Modal/Neighborhood/Completeness.lean b/Foundation/Modal/Neighborhood/Completeness.lean
+index 38f07ad059d9970cfb645a7be9c33862fe3dfae3..053e8d9ba6353b9d179f223e3af820daed714da7 100644
+--- a/Foundation/Modal/Neighborhood/Completeness.lean
++++ b/Foundation/Modal/Neighborhood/Completeness.lean
+@@ -153,7 +153,7 @@ attribute [simp, grind] def_𝒩 def_V
+ 
+ variable {𝓒 : Canonicity 𝓢}
+ 
+-def toModel (𝓒 : Canonicity 𝓢) : Model where
++abbrev toModel (𝓒 : Canonicity 𝓢) : Model where
+   World := MaximalConsistentSet 𝓢
+   𝒩 := 𝓒.𝒩
+   Val := 𝓒.V
+@@ -168,20 +168,23 @@ lemma box_proofset : 𝓒.toModel.box (proofset 𝓢 φ) = (proofset 𝓢 (□φ
+ lemma boxItr_proofset : 𝓒.toModel.box^[n] (proofset 𝓢 φ) = (proofset 𝓢 (□^[n]φ)) := by
+   induction n generalizing φ with
+   | zero => simp;
+-  | succ n ih => simp only [Function.iterate_succ, Function.comp_apply, box_proofset, ih];
++  | succ n ih =>
++      exact (congrArg (𝓒.toModel.box^[n]) (box_proofset (𝓒 := 𝓒) (φ := φ))).trans
++        (ih (φ := □φ))
+ 
+ @[simp]
+ lemma dia_proofset : 𝓒.toModel.dia (proofset 𝓢 φ) = (proofset 𝓢 (◇φ)) := by
+   suffices 𝓒.toModel.dia (proofset 𝓢 φ) = (proofset 𝓢 (∼(□(∼φ)))) by tauto;
+   show (𝓒.toModel.box (proofset 𝓢 φ)ᶜ)ᶜ = _
+   rw [proofset.eq_neg (φ := □(∼φ)), ← box_proofset (𝓒 := 𝓒) (φ := ∼φ), proofset.eq_neg (φ := φ)];
+-  rfl;
+ 
+ @[simp]
+ lemma diaItr_proofset : 𝓒.toModel.dia^[n] (proofset 𝓢 φ) = (proofset 𝓢 (◇^[n]φ)) := by
+   induction n generalizing φ with
+   | zero => simp;
+-  | succ n ih => simp only [Function.iterate_succ, Function.comp_apply, dia_proofset, ih];
++  | succ n ih =>
++      exact (congrArg (𝓒.toModel.dia^[n]) (dia_proofset (𝓒 := 𝓒) (φ := φ))).trans
++        (ih (φ := ◇φ))
+ 
+ @[grind]
+ lemma iff_box {Γ : 𝓒.toModel} : □φ ∈ Γ.1 ↔ Γ ∈ 𝓒.toModel.box (proofset 𝓢 φ) := by apply 𝓒.def_𝒩
+@@ -202,7 +205,7 @@ lemma truthlemma : (proofset 𝓢 φ) = (𝓒.toModel φ) := by
+   induction φ with
+   | hatom => apply 𝓒.def_V _ |>.symm;
+   | hfalsum => simp only [proofset.eq_bot]; rfl;
+-  | himp φ ψ ihφ ihψ => simp only [proofset.eq_imp, Model.truthset.eq_imp, ihφ, ihψ]; rfl;
++  | himp φ ψ ihφ ihψ => simp only [proofset.eq_imp, Model.truthset.eq_imp, ihφ, ihψ];
+   | hbox φ ihφ =>
+     suffices proofset 𝓢 (□φ) = 𝓒.toModel.box (𝓒.toModel.truthset φ) by simpa;
+     rw [←ihφ, box_proofset];
+@@ -306,7 +309,6 @@ protected lemma iff_mem_dia :
+   rw [relativeBasicCanonicity.iff_mem_box.not]
+   set_option push_neg.use_distrib true in push_neg
+   simp only [iff_not_isNonProofset_exists]
+-  tauto
+ 
+ end relativeBasicCanonicity
+ 
+diff --git a/Foundation/Modal/Neighborhood/Filtration.lean b/Foundation/Modal/Neighborhood/Filtration.lean
+index d74870d698e2d543036fc62547ff6cfb2daab66a..8fb11168cfa731dd88b3799f01ee4776f5b82c04 100644
+--- a/Foundation/Modal/Neighborhood/Filtration.lean
++++ b/Foundation/Modal/Neighborhood/Filtration.lean
+@@ -206,22 +206,21 @@ attribute [simp] Filtration.B_def Filtration.V_def
+ 
+ variable {Fi : Filtration M T}
+ 
+-def toModel {M : Model} {T : FormulaSet ℕ} [T.IsSubformulaClosed] (Fi : Filtration M T) : Model where
+-  toFrame := Frame.mk_ℬ (FilterEqvQuotient M T) Fi.B
++abbrev toModel {M : Model} {T : FormulaSet ℕ} [T.IsSubformulaClosed] (Fi : Filtration M T) : Model where
++  toFrame := { World := FilterEqvQuotient M T, 𝒩 := fun x => { X | x ∈ Fi.B X } }
+   Val := Fi.V
+ 
+ @[simp, grind =_]
+-lemma toModel_def : Fi.toModel.box X = Fi.B X := by simp [Filtration.toModel, Frame.mk_ℬ, Frame.box]; rfl
++lemma toModel_def : Fi.toModel.box X = Fi.B X := by simp [Filtration.toModel, Frame.mk_ℬ, Frame.box]
+ 
+ theorem filtration (Fi : Filtration M T) (φ) (hφ : φ ∈ T) : (Fi.toModel φ) = 【M φ】 := by
+   induction φ with
+   | hatom a => apply Fi.V_def;
+-  | hfalsum => simp only [Model.truthset.eq_bot, toFilterEquivSet.empty]; rfl;
++  | hfalsum => simp only [Model.truthset.eq_bot, toFilterEquivSet.empty];
+   | himp φ ψ ihφ ihψ =>
+     replace ihφ := ihφ (by grind);
+     replace ihψ := ihψ (by grind);
+     simp_all [toFilterEquivSet.union, toFilterEquivSet.compl_truthset (show φ ∈ T by grind)];
+-    rfl;
+   | hbox φ ihφ =>
+     replace ihφ := ihφ (by grind);
+     apply ihφ ▸ Fi.B_def φ (by grind);
+@@ -237,19 +236,14 @@ lemma filtration_satisfies (Fi : Filtration M T) (φ) (hφ : φ ∈ T) {x : M} :
+ lemma truthlemma (Fi : Filtration M T) {φ ψ} (hφ : φ ∈ T) (hψ : ψ ∈ T) :
+   (Fi.toModel φ) = (Fi.toModel ψ) ↔ (【M φ】 : Set (FilterEqvQuotient M T)) = (【M ψ】) := by
+   rw [filtration Fi φ hφ, filtration Fi ψ hψ];
+-  rfl;
+ 
+ @[grind .]
+ lemma iff_mem_toModel_box_mem_B {Fi : Filtration M T} : W ∈ Fi.toModel.box Y ↔ W ∈ Fi.B Y := by
+   simp [Filtration.toModel, Frame.mk_ℬ, Frame.box];
+-  rfl;
+ 
+ @[grind =>]
+-lemma box_in_out {Fi : Filtration M T} (hφ : □φ ∈ T) : Fi.B 【M φ】 = 【M (□φ)】 := calc
+-  _ = Fi.toModel.box 【M.truthset φ】 := by simp [Filtration.toModel, Frame.mk_ℬ, Frame.box]; rfl;
+-  _ = Fi.toModel.box (Fi.toModel φ) := by rw [filtration Fi φ (by grind)];
+-  _ = (Fi.toModel (□φ)) := by simp;
+-  _ = 【M (□φ)】 := filtration Fi _ hφ
++lemma box_in_out {Fi : Filtration M T} (hφ : □φ ∈ T) : Fi.B 【M φ】 = 【M (□φ)】 :=
++  Fi.B_def φ hφ
+ 
+ @[grind =>]
+ lemma mem_box_in_out (hψ : □φ ∈ T) : X ∈ Fi.B 【M φ】 ↔ X ∈ 【M (□φ)】 := by grind;
+@@ -573,7 +567,7 @@ def quasiFilteringTransitiveFiltration (M : Model) [M.IsMonotonic] [M.IsTransiti
+           grind only [= Set.subset_def, = Finset.mem_union, = Set.setOf_true, of_mem_box,
+             Satisfies.def_box', = Finset.mem_filter, Model.truthset.eq_box,
+             FilterEqvQuotient.iff_eq, toFilterEquivSet.mem_of_mem, Satisfies.def_box,
+-            usr Set.mem_setOf_eq, = Set.setOf_false, !Frame.trans,
++            = Set.mem_ofPred_eq, = Set.setOf_false, !Frame.trans,
+             !toFilterEquivSet.iff_mem_truthset, = Model.truthset.eq_boxItr, Satisfies.def_boxItr']
+       . suffices ∀ ψ : Ψ, w ∈ M (□ψ) by
+           apply toFilterEquivSet.mem_of_mem;
+@@ -621,11 +615,11 @@ def quasiFilteringTransitiveFiltration (M : Model) [M.IsMonotonic] [M.IsTransiti
+         replace hv₁ : v ∈ M.box^[2] (M ξ) := M.trans hv₁;
+         grind only [= Set.subset_def, = Finset.mem_union, = Set.setOf_true, of_mem_box,
+           Satisfies.def_box', = Finset.mem_filter, Model.truthset.eq_box, FilterEqvQuotient.iff_eq,
+-          toFilterEquivSet.mem_of_mem, usr Set.mem_setOf_eq, = Set.setOf_false, !Frame.trans,
++          toFilterEquivSet.mem_of_mem, = Set.mem_ofPred_eq, = Set.setOf_false, !Frame.trans,
+           !toFilterEquivSet.iff_mem_truthset, = Model.truthset.eq_boxItr, Satisfies.def_boxItr']
+       . exfalso;
+         apply hYs₁;
+-        suffices (Vs = ∅ ∧ Us = ∅) by simp [eYVU, this.1, this.2]; rfl;
++        suffices (Vs = ∅ ∧ Us = ∅) by simp [eYVU, this.1, this.2];
+         constructor;
+         . suffices ∀ Yi ∈ Ys, ∀ ψ, □ψ ∈ T → Yi = 【M ψ】 → ⟦w⟧ ∉ 【M (□ψ)】 by simpa [Vs];
+           rintro _ _ ψ hψ rfl;
+diff --git a/Foundation/Modal/Neighborhood/IntersectionClosure.lean b/Foundation/Modal/Neighborhood/IntersectionClosure.lean
+index bff16794755ede2eea44903a7dae27ef3735f3ee..f46cbceba413eba7401f5546e5e135784bd986c4 100644
+--- a/Foundation/Modal/Neighborhood/IntersectionClosure.lean
++++ b/Foundation/Modal/Neighborhood/IntersectionClosure.lean
+@@ -62,8 +62,22 @@ lemma symm_𝒩 : F.quasiFiltering.𝒩 = F.supplementation.intersectionClosure.
+     rw [this];
+     use Ys.image (λ Yi => Yi ∪ (X \ Y));
+     refine ⟨?_, ?_, ?_⟩;
+-    . simpa;
+-    . simp; rfl;
++    . exact fun h => hYs₁ (Finset.image_eq_empty.mp h)
++    . apply Set.Subset.antisymm
++      · intro a ha
++        apply Set.mem_iInter.mpr
++        intro Z
++        apply Set.mem_iInter.mpr
++        intro hZ
++        obtain ⟨Yi, hYi, rfl⟩ := Finset.mem_image.mp hZ
++        exact Set.mem_iInter.mp (Set.mem_iInter.mp ha Yi) hYi
++      · intro a ha
++        apply Set.mem_iInter.mpr
++        intro Yi
++        apply Set.mem_iInter.mpr
++        intro hYi
++        exact Set.mem_iInter.mp (Set.mem_iInter.mp ha _)
++          (Finset.mem_image.mpr ⟨Yi, hYi, rfl⟩)
+     . intro Zi hZi;
+       obtain ⟨Yi, hYi, rfl⟩ := Finset.mem_image.mp hZi;
+       exact ⟨Yi, Set.subset_union_left, hYs₂ Yi hYi⟩;
+@@ -71,14 +85,14 @@ lemma symm_𝒩 : F.quasiFiltering.𝒩 = F.supplementation.intersectionClosure.
+     let Zs := Finset.image (α := Ys) (λ ⟨Yi, hYi⟩ => hYs₂ Yi hYi |>.choose) Finset.univ;
+     use (⋂ Zi ∈ Zs, Zi);
+     constructor;
+-    . rintro a ha _ ⟨Y, _, rfl⟩;
+-      suffices Y ∈ Ys → a ∈ Y by simpa;
+-      rintro hY;
+-      apply hYs₂ Y hY |>.choose_spec |>.1;
+-      simp only [Set.mem_setOf_eq, Finset.univ_eq_attach, Finset.mem_image, Finset.mem_attach, true_and, Subtype.exists, Set.iInter_exists, Set.mem_iInter, Zs] at ha;
+-      apply ha;
+-      . rfl;
+-      . assumption;
++    . intro a ha
++      apply Set.mem_iInter.mpr
++      intro Y
++      apply Set.mem_iInter.mpr
++      intro hY
++      apply (hYs₂ Y hY).choose_spec.1
++      exact Set.mem_iInter.mp (Set.mem_iInter.mp ha _) (Finset.mem_image.mpr
++        ⟨⟨Y, hY⟩, Finset.mem_univ _, rfl⟩)
+     . use Zs;
+       refine ⟨?_, ?_, ?_⟩;
+       . simpa [Zs];
+diff --git a/Foundation/Modal/Neighborhood/Supplementation.lean b/Foundation/Modal/Neighborhood/Supplementation.lean
+index bd8c7b8653d6e8742533833d04f7d3572311e370..3bbc22988c13e0ce01a93b315847e5d854fd1aaf 100644
+--- a/Foundation/Modal/Neighborhood/Supplementation.lean
++++ b/Foundation/Modal/Neighborhood/Supplementation.lean
+@@ -59,7 +59,7 @@ lemma itl_reduce : F.supplementation.supplementation.box X = F.supplementation.b
+   . rintro ⟨Y, RYX, Z, RZY, hZ⟩;
+     use Z;
+     constructor;
+-    . tauto_set;
++    . exact fun _ hx => RYX (RZY hx)
+     . assumption;
+   . apply subset;
+ 
+@@ -91,7 +91,7 @@ instance containsUnit [F.ContainsUnit] : F.supplementation.ContainsUnit := by
+   use Set.univ;
+   constructor;
+   . rfl;
+-  . simp;
++  . exact F.univ_mem x
+ 
+ instance isTransitive [F.IsTransitive] : F.supplementation.IsTransitive := by
+   constructor;
+@@ -105,11 +105,11 @@ instance isRegular [F.IsRegular] : F.supplementation.IsRegular := by
+   constructor;
+   rintro X Y w ⟨hX, hY⟩;
+   apply iff_exists_subset.mpr;
+-  obtain ⟨X', _⟩ := iff_exists_subset.mp hX;
+-  obtain ⟨Y', _⟩ := iff_exists_subset.mp hY;
++  obtain ⟨X', hXX, hwX⟩ := iff_exists_subset.mp hX;
++  obtain ⟨Y', hYY, hwY⟩ := iff_exists_subset.mp hY;
+   use X' ∩ Y';
+   constructor;
+-  . tauto_set;
++  . intro x hx; exact ⟨hXX hx.1, hYY hx.2⟩
+   . apply @Frame.regular F _ X' Y';
+     tauto;
+ 
+diff --git a/Foundation/Modal/Tableau.lean b/Foundation/Modal/Tableau.lean
+index be1d4a520fc0a5fd623d6d1e903c114f405d4674..a84668850050abbcaa4277d739c4594f53a6eeb2 100644
+--- a/Foundation/Modal/Tableau.lean
++++ b/Foundation/Modal/Tableau.lean
+@@ -13,7 +13,7 @@ variable {α : Type*}
+ variable {S} [Entailment S (Formula α)]
+ variable {𝓢 : S}
+ 
+-def Tableau (α : Type u) := Set (Formula α) × Set (Formula α)
++abbrev Tableau (α : Type u) := Set (Formula α) × Set (Formula α)
+ 
+ namespace Tableau
+ 
+diff --git a/Foundation/Propositional/ConsistentTableau.lean b/Foundation/Propositional/ConsistentTableau.lean
+index 31d74f69543e24790801cc5e3158d27413ebe772..d8356f21ce57c1dd351e07dd0eeaeee5f5284193 100644
+--- a/Foundation/Propositional/ConsistentTableau.lean
++++ b/Foundation/Propositional/ConsistentTableau.lean
+@@ -14,7 +14,7 @@ variable {α : Type*}
+ variable {S} [Entailment S (Formula α)]
+ variable {𝓢 : S}
+ 
+-def Tableau (α : Type u) := Set (Formula α) × Set (Formula α)
++abbrev Tableau (α : Type u) := Set (Formula α) × Set (Formula α)
+ 
+ namespace Tableau
+ 
+diff --git a/Foundation/Propositional/FMT/Completeness.lean b/Foundation/Propositional/FMT/Completeness.lean
+index d027e483ef68196b43e9db7549cd1f52edad0d95..36ec7686931b25824d9e9d279ba6f1710efaed4a 100644
+--- a/Foundation/Propositional/FMT/Completeness.lean
++++ b/Foundation/Propositional/FMT/Completeness.lean
+@@ -112,16 +112,16 @@ lemma next_consistent (H_consis : H.Consistent L) : (next L ψ H).Consistent L :
+     grind;
+ 
+ lemma next_monotone₁ : H.1 ⊆ (next L ψ H).1 := by
+-  simp [next, insert₁, insert₂];
+-  split <;> grind;
++  unfold next
++  split <;> simp [insert₁, insert₂];
+ 
+ lemma next_monotone₂ : H.2 ⊆ (next L ψ H).2 := by
+-  simp [next, insert₁, insert₂];
+-  split <;> grind;
++  unfold next
++  split <;> simp [insert₁, insert₂];
+ 
+ lemma next_either_mem (ψ) : ψ ∈ (next L ψ H).1 ∨ ψ ∈ (next L ψ H).2 := by
+-  simp [next, insert₁, insert₂];
+-  split <;> grind;
++  unfold next
++  split <;> simp [insert₁, insert₂];
+ 
+ noncomputable def enum (L : Logic ℕ) (H : HintikkaPair φ) : List (SubformulaOf φ) → HintikkaPair φ
+   | [] => H
+@@ -369,7 +369,8 @@ open Formula.FMT in
+ lemma HintikkaModel.truthlemma {H : HintikkaModel L φ} (hsub : ψ ∈ φ.subformulas) : ⟨ψ, hsub⟩ ∈ H.1.1 ↔ H ⊩ ψ := by
+   induction ψ generalizing H with
+   | hatom a => tauto;
+-  | hfalsum => simp;
++  | hfalsum =>
++    exact iff_false_intro (ConsistentSaturatedHintikkaPair.no_bot hsub);
+   | hand => apply Iff.trans $ ConsistentSaturatedHintikkaPair.iff_mem_and hsub; grind;
+   | hor => apply Iff.trans $ ConsistentSaturatedHintikkaPair.iff_mem_or hsub; grind;
+   | himp χ ξ ihχ ihξ =>
+diff --git a/Foundation/Propositional/Kripke/AxiomKrieselPutnam.lean b/Foundation/Propositional/Kripke/AxiomKrieselPutnam.lean
+index a1b86a80b1c788e366fe3443a9f0742ca00bcdc2..540f748b70ae033f3ade7025edbd49acbe3e72b0 100644
+--- a/Foundation/Propositional/Kripke/AxiomKrieselPutnam.lean
++++ b/Foundation/Propositional/Kripke/AxiomKrieselPutnam.lean
+@@ -121,10 +121,12 @@ instance [Entailment.HasAxiomKrieselPutnam 𝓢] : (canonicalFrame 𝓢).Satisfi
+               apply mdp_mem₁_provable (φ := Γ₁.conj) ?_ ?_;
+               . apply C!_trans ?_ CFconjNNFconj!;
+                 apply CFConj_FConj!_of_subset;
+-                intro φ;
+-                simp only [Finset.mem_image, Finset.mem_preimage, Finset.mem_filter, forall_exists_index, and_imp, Γ₁, Γ₂];
+-                rintro _ _ _ rfl;
+-                tauto;
++                intro φ member
++                obtain ⟨ψ, member, rfl⟩ := Finset.mem_image.mp member
++                obtain ⟨χ, member, equality⟩ := Finset.mem_image.mp member
++                have equality : χ = ψ := Formula.neg_inj.mp equality
++                subst χ
++                exact Finset.mem_preimage.mp member;
+               . apply iff_mem₁_fconj.mpr;
+                 intro φ;
+                 simp only [Set.mem_inter_iff, Set.mem_image, Set.mem_setOf_eq, Finset.coe_filter, and_imp, forall_exists_index, Γ₁, ΓNyz];
+@@ -140,10 +142,12 @@ instance [Entailment.HasAxiomKrieselPutnam 𝓢] : (canonicalFrame 𝓢).Satisfi
+               apply mdp_mem₁_provable (φ := Γ₁.conj) ?_ ?_;
+               . apply C!_trans ?_ CFconjNNFconj!;
+                 apply CFConj_FConj!_of_subset;
+-                intro φ;
+-                simp only [Finset.mem_image, Finset.mem_preimage, Finset.mem_filter, forall_exists_index, and_imp, Γ₁, Γ₂];
+-                rintro _ _ _ rfl;
+-                tauto;
++                intro φ member
++                obtain ⟨ψ, member, rfl⟩ := Finset.mem_image.mp member
++                obtain ⟨χ, member, equality⟩ := Finset.mem_image.mp member
++                have equality : χ = ψ := Formula.neg_inj.mp equality
++                subst χ
++                exact Finset.mem_preimage.mp member;
+               . apply iff_mem₁_fconj.mpr;
+                 intro φ;
+                 simp only [Set.mem_inter_iff, Set.mem_image, Set.mem_setOf_eq, Finset.coe_filter, and_imp, forall_exists_index, Γ₁, ΓNyz];
+diff --git a/Foundation/Propositional/Kripke/AxiomWLEM.lean b/Foundation/Propositional/Kripke/AxiomWLEM.lean
+index 865778f35de71c62668de5c1981d83ce42898e8e..c54682fd0948cf7d3cf2b850b7b3fbe762ca1425 100644
+--- a/Foundation/Propositional/Kripke/AxiomWLEM.lean
++++ b/Foundation/Propositional/Kripke/AxiomWLEM.lean
+@@ -84,7 +84,8 @@ instance [Entailment.HasAxiomWLEM 𝓢] : (canonicalFrame 𝓢).IsPiecewiseStron
+   suffices Tableau.Consistent 𝓢 (y.1.1 ∪ z.1.1, ∅) by
+     obtain ⟨w, hw⟩ := lindenbaum (𝓢 := 𝓢) this;
+     use w;
+-    simpa [canonicalFrame.rel₁] using hw;
++    exact ⟨fun _ member => hw.1 (Or.inl member),
++      fun _ member => hw.1 (Or.inr member)⟩;
+ 
+   intro Γ Δ;
+   intro hΓ hΔ h;
+diff --git a/Foundation/Propositional/Kripke/Completeness.lean b/Foundation/Propositional/Kripke/Completeness.lean
+index 0b782f4341902604a51cbf1c695897ab8ecbbaf7..45fad01d428588205d761e29a09d3ca501dffc80 100644
+--- a/Foundation/Propositional/Kripke/Completeness.lean
++++ b/Foundation/Propositional/Kripke/Completeness.lean
+@@ -122,10 +122,14 @@ private lemma truthlemma.himp
+ lemma truthlemma : t ⊧ φ ↔ φ ∈ t.1.1 := by
+   induction φ generalizing t with
+   | hatom => tauto;
+-  | hfalsum => simp only [Semantics.Bot.models_falsum, not_mem₁_falsum];
++  | hfalsum =>
++      change False ↔ ⊥ ∈ t.1.1
++      exact (iff_false_intro not_mem₁_falsum).symm
+   | himp φ ψ ihp ihq => exact truthlemma.himp ihp ihq;
+-  | hand φ ψ ihp ihq => simp [SaturatedConsistentTableau.iff_mem₁_and, *];
+-  | hor φ ψ ihp ihq => simp [SaturatedConsistentTableau.iff_mem₁_or, *];
++  | hand φ ψ ihp ihq =>
++      exact (and_congr ihp ihq).trans SaturatedConsistentTableau.iff_mem₁_and.symm
++  | hor φ ψ ihp ihq =>
++      exact (or_congr ihp ihq).trans SaturatedConsistentTableau.iff_mem₁_or.symm
+ 
+ lemma iff_valid_on_canonicalModel_deducible : (Kripke.canonicalModel 𝓢) ⊧ φ ↔ 𝓢 ⊢ φ := by
+   constructor;
+diff --git a/Foundation/Propositional/Tait/Calculus.lean b/Foundation/Propositional/Tait/Calculus.lean
+index f45985c97b44c11645a8b5a2b3ceb96ef7f0ddd1..49fc0de24780b385b1b89661c85f85c30328d0cb 100644
+--- a/Foundation/Propositional/Tait/Calculus.lean
++++ b/Foundation/Propositional/Tait/Calculus.lean
+@@ -93,7 +93,10 @@ def compact {Γ : Sequent α} : T ⟹ Γ → (s : { s : Finset (NNFormula α) //
+     let ⟨s₁, d₁⟩ := compact d₁
+     let ⟨s₂, d₂⟩ := compact d₂
+     ⟨⟨(s₁ ∪ s₂ : Finset (NNFormula α)), by simp [s₁.prop, s₂.prop]⟩,
+-      and (Tait.ofAxiomSubset (by simp) d₁) (Tait.ofAxiomSubset (by simp) d₂)⟩
++      and (Tait.ofAxiomSubset (𝓛 := ((s₁ ∪ s₂ : Finset (NNFormula α)) : Theory α))
++        (fun _ h => Finset.mem_union.mpr (Or.inl h)) d₁)
++        (Tait.ofAxiomSubset (𝓛 := ((s₁ ∪ s₂ : Finset (NNFormula α)) : Theory α))
++          (fun _ h => Finset.mem_union.mpr (Or.inr h)) d₂)⟩
+   | or d      =>
+     let ⟨s, d⟩ := compact d
+     ⟨s, or d⟩
+@@ -104,14 +107,17 @@ def compact {Γ : Sequent α} : T ⟹ Γ → (s : { s : Finset (NNFormula α) //
+     let ⟨s₁, d₁⟩ := compact d₁
+     let ⟨s₂, d₂⟩ := compact d₂
+     ⟨⟨(s₁ ∪ s₂ : Finset (NNFormula α)), by simp [s₁.prop, s₂.prop]⟩,
+-      cut (Tait.ofAxiomSubset (by simp) d₁) (Tait.ofAxiomSubset (by simp) d₂)⟩
++      cut (Tait.ofAxiomSubset (𝓛 := ((s₁ ∪ s₂ : Finset (NNFormula α)) : Theory α))
++        (fun _ h => Finset.mem_union.mpr (Or.inl h)) d₁)
++        (Tait.ofAxiomSubset (𝓛 := ((s₁ ∪ s₂ : Finset (NNFormula α)) : Theory α))
++          (fun _ h => Finset.mem_union.mpr (Or.inr h)) d₂)⟩
+   | axm (φ := φ) h =>
+     ⟨⟨{φ}, by simp [h]⟩, axm (by simp)⟩
+ 
+ instance : Entailment.Compact (Theory α) where
+   Γ b := (compact b).1
+   ΓPrf b := (compact b).2
+-  Γ_subset b := by simpa using (compact b).1.prop
++  Γ_subset b := (compact b).1.prop
+   Γ_finite b := by simp
+ 
+ def deductionAux {Γ : Sequent α} {φ} : T ⟹ Γ → T \ {φ} ⟹ ∼φ :: Γ
+@@ -126,14 +132,18 @@ def deductionAux {Γ : Sequent α} {φ} : T ⟹ Γ → T \ {φ} ⟹ ∼φ :: Γ
+     if hq : φ = ψ then em (φ := φ) (by simp [hq]) (by simp) else
+       Tait.wk (show T \ {φ} ⟹ [ψ] from Tait.axm (by simp [h, Ne.symm hq])) (by simp)
+ 
+-def deduction {Γ : Sequent α} {φ} (d : insert φ T ⟹ Γ) : T ⟹ ∼φ :: Γ := Tait.ofAxiomSubset (by simp) (deductionAux d)
++def deduction {Γ : Sequent α} {φ} (d : insert φ T ⟹ Γ) : T ⟹ ∼φ :: Γ := Tait.ofAxiomSubset (fun _ h => by
++  rcases h with ⟨h, absent⟩
++  rcases h with equal | member
++  · exact False.elim (absent equal)
++  · exact member) (deductionAux d)
+ 
+ lemma inconsistent_iff_provable :
+     Entailment.Inconsistent (insert φ T) ↔ T ⊢ ∼φ := by
+   constructor
+   · intro h; exact ⟨deduction (Tait.inconsistent_iff_provable.mp h).get⟩
+   · rintro b
+-    exact Entailment.inconsistent_of_provable_of_unprovable (φ := φ) (Entailment.by_axm _ <| by simp) (Entailment.wk! (by simp) b)
++    exact Entailment.inconsistent_of_provable_of_unprovable (φ := φ) (Entailment.by_axm _ <| by simp) (Entailment.wk! (fun _ h => Or.inr h) b)
+ 
+ lemma consistent_iff_unprovable :
+     Entailment.Consistent (insert φ T) ↔ T ⊬ ∼φ := by simp [←Entailment.not_inconsistent_iff_consistent, inconsistent_iff_provable]
+@@ -145,7 +155,7 @@ omit [DecidableEq α]
+   · intro h
+     exact Entailment.inconsistent_iff_provable_bot.mpr
+       <| Entailment.StrongCut.cut! (by simp) <| Entailment.inconsistent_iff_provable_bot.mp h
+-  · intro h; exact h.of_supset (by simpa using Entailment.Axiomatized.axm_subset T)
++  · intro h; exact h.of_supset (Entailment.Axiomatized.axm_subset T)
+ 
+ @[simp] lemma consistent_theory_iff :
+     Entailment.Consistent (Entailment.theory T) ↔ Entailment.Consistent T := by simp [←Entailment.not_inconsistent_iff_consistent, inconsistent_theory_iff]
+diff --git a/Foundation/ProvabilityLogic/Classification/Trace.lean b/Foundation/ProvabilityLogic/Classification/Trace.lean
+index e3ad24426511be601434025ebbfe89876ead2fe2..72a6d1ecddb479489e3454c4d832c9c7b4e54765 100644
+--- a/Foundation/ProvabilityLogic/Classification/Trace.lean
++++ b/Foundation/ProvabilityLogic/Classification/Trace.lean
+@@ -473,11 +473,12 @@ lemma provable_TBB_of_mem_trace {n : ℕ} (h : n ∈ (T.ProvabilityLogic U).trac
+   obtain ⟨A, hA₁, ⟨M, r, _, _, rfl, h₂⟩⟩ := by simpa using h;
+   replace hA₁ : ∀ f : T.StandardRealization, U ⊢ f A := ProvabilityLogic.provable_iff.mp (by grind);
+ 
++  let : M.IsFiniteTree r := { toIsFinite := inferInstance, toIsTree := inferInstance }
+   let M₀ := M.extendRoot 1;
+   let r₀ : M₀ := Frame.extendRoot.root
+-  have Rr₀ : ∀ {x : M}, r₀ ≺ x := λ {x} => Frame.root_genaretes'! (r := r₀) x (by simp)
++  have Rr₀ : ∀ {x : M}, r₀ ≺ x := fun {x} => Frame.extendRoot.rooted_original
+ 
+-  have : M₀.IsFiniteTree r₀ := {};
++  let : M₀.IsFiniteTree r₀ := Model.extendRoot.isFiniteTree (M := M) (r := r)
+   let S : SolovaySentences T.standardProvability M₀.toFrame r₀ := SolovaySentences.standard T M₀.toFrame;
+ 
+   have : M₀ ⊧ A ➝ (Modal.TBB M.height) := by
+@@ -561,7 +562,8 @@ lemma provable_TBBMinus_of_mem_trace (h : ¬(T.ProvabilityLogic U) ⊆ Modal.S)
+ 
+   let M₀ := Model.extendRoot M₁ 1;
+   let r₀ : M₀.World := Model.extendRoot.root;
+-  have : Fintype M₀.World := Fintype.ofFinite _
++  let : M₀.IsFiniteTree r₀ := Model.extendRoot.isFiniteTree (M := M₁) (r := r₁)
++  let : Fintype M₀.World := Fintype.ofFinite _
+ 
+   let R := Set.Finite.inter_of_left (s := (Finset.range M₁.height)) (t := (T.ProvabilityLogic U).trace) (Finset.finite_toSet _) |>.toFinset;
+ 
+@@ -577,7 +579,6 @@ lemma provable_TBBMinus_of_mem_trace (h : ¬(T.ProvabilityLogic U) ⊆ Modal.S)
+       apply provable_TBB_of_mem_trace;
+       simp_all [R, Logic.trace];
+ 
+-  have : M₁.IsFiniteTree r₁ := {};
+   let S := SolovaySentences.standard T M₀.toFrame;
+ 
+   have H₁ : 𝗜𝚺₁ ⊢ (S.realization B ➝ S.realization (∼⩕ n ∈ (cofinite_of_not_subset_S h).toFinset, TBB n)) := by
+diff --git a/Foundation/ProvabilityLogic/GL/Completeness.lean b/Foundation/ProvabilityLogic/GL/Completeness.lean
+index 2afc582f0e370f6e311aa0cd40de10aa6d3482b3..a556c6f051e06c62bb05fca382559365371cedd3 100644
+--- a/Foundation/ProvabilityLogic/GL/Completeness.lean
++++ b/Foundation/ProvabilityLogic/GL/Completeness.lean
+@@ -24,6 +24,8 @@ theorem unprovable_realization_exists
+     ∃ f : T.StandardRealization, T ⊬ f A := by
+   let M₀ := M₁.extendRoot 1
+   let r₀ : M₀ := Frame.extendRoot.root
++  let : M₀.IsFiniteTree r₀ :=
++    Model.extendRoot.isFiniteTree (M := M₁) (r := r₁) (n := 1)
+   have hdnA : r₀ ⊧ ◇(∼A) := by
+     suffices ∃ i, r₀ ≺ i ∧ i ⊭ A by simpa [Formula.Kripke.Satisfies]
+     refine ⟨.inr r₁, ?_, ?_⟩
+@@ -38,7 +40,9 @@ theorem unprovable_realization_exists
+     apply Order.le_of_lt_add_one
+     calc
+       (Theory.standardProvability T).height < M₀.height := S.theory_height hdnA hC
+-      _                                     = M₁.height + 1 := by simp [M₀]
++      _                                     = M₁.height + 1 := by
++        have hheight := Model.extendRoot.height₁ (M := M₁) (r := r₁)
++        exact (congrArg (fun k : ℕ => (k : ℕ∞)) hheight).trans (by simp)
+   exact not_lt_of_ge this h
+ 
+ /-- Arithmetical completeness of $\mathsf{GL}$-/
+diff --git a/Foundation/ProvabilityLogic/S/Completeness.lean b/Foundation/ProvabilityLogic/S/Completeness.lean
+index 0e5b0057766418f028c42612f0fd36788211c4c7..f024327b0c80e577b5a19303799716755ac07515 100644
+--- a/Foundation/ProvabilityLogic/S/Completeness.lean
++++ b/Foundation/ProvabilityLogic/S/Completeness.lean
+@@ -38,12 +38,13 @@ variable {M₁ : Kripke.Model} {r₁ : M₁} [M₁.IsFiniteTree r₁] {A : Formu
+ lemma refl_mainlemma_aux (hA : ¬r₁ ⊧ (A.rflSubformula.conj ➝ A)) :
+   let M₀ := M₁.extendRoot 1
+   let r₀ : M₀ := Model.extendRoot.root
+-  have : Fintype M₀.World := Fintype.ofFinite _
++  have : M₀.IsFiniteTree r₀ := Model.extendRoot.isFiniteTree (M := M₁) (r := r₁)
++  let : Fintype M₀.World := Fintype.ofFinite _
+   let S := SolovaySentences.standard T M₀.toFrame
+   ∀ B ∈ A.subformulas,
+   (r₁ ⊧ B → 𝗜𝚺₁ ⊢ (S r₀) ➝ (S.realization B)) ∧
+   (r₁ ⊭ B → 𝗜𝚺₁ ⊢ (S r₀) ➝ ∼(S.realization B)) := by
+-  intro M₀ r₀ _ S B B_sub;
++  intro M₀ r₀ _ _ S B B_sub;
+ 
+   replace hA := Formula.Kripke.Satisfies.imp_def.not.mp hA;
+   push_neg at hA;
+@@ -135,14 +136,16 @@ lemma refl_mainlemma_aux (hA : ¬r₁ ⊧ (A.rflSubformula.conj ➝ A)) :
+ lemma rfl_mainlemma (hA : ¬r₁ ⊧ (A.rflSubformula.conj ➝ A)) :
+   letI M₀ := M₁.extendRoot 1
+   letI r₀ : M₀ := Model.extendRoot.root
+-  haveI : Fintype M₀.World := Fintype.ofFinite _
++  have : M₀.IsFiniteTree r₀ := Model.extendRoot.isFiniteTree (M := M₁) (r := r₁)
++  let : Fintype M₀.World := Fintype.ofFinite _
+   letI S := SolovaySentences.standard T M₀.toFrame
+   ∀ B ∈ A.subformulas, r₁ ⊧ B → 𝗜𝚺₁ ⊢ (S r₀) ➝ (S.realization B) := fun B B_sub => (refl_mainlemma_aux hA B B_sub).1
+ 
+ lemma rfl_mainlemma_neg (hA : ¬r₁ ⊧ (A.rflSubformula.conj ➝ A)) :
+   letI M₀ := M₁.extendRoot 1
+   letI r₀ : M₀ := Model.extendRoot.root
+-  haveI : Fintype M₀.World := Fintype.ofFinite _
++  have : M₀.IsFiniteTree r₀ := Model.extendRoot.isFiniteTree (M := M₁) (r := r₁)
++  let : Fintype M₀.World := Fintype.ofFinite _
+   letI S := SolovaySentences.standard T M₀.toFrame
+   ∀ B ∈ A.subformulas, r₁ ⊭ B → 𝗜𝚺₁ ⊢ (S r₀) ➝ ∼(S.realization B) := λ B B_sub => (refl_mainlemma_aux hA B B_sub).2
+ 
+@@ -178,13 +181,14 @@ lemma GL_S_TFAE :
+ 
+     let M₀ := Model.extendRoot M₁ 1;
+     let r₀ : M₀.World := Model.extendRoot.root;
+-    have : Fintype M₀.World := Fintype.ofFinite _
++    have : M₀.IsFiniteTree r₀ := Model.extendRoot.isFiniteTree (M := M₁) (r := r₁)
++    let : Fintype M₀.World := Fintype.ofFinite _
+     let S := SolovaySentences.standard T M₀.toFrame
+     use S.realization;
+ 
+     have := Formula.Kripke.Satisfies.not_imp_def.mp hA |>.2;
+     have : ℕ ⊧ₘ S r₀ ➝ ∼S.realization A := models_of_provable inferInstance $ by
+-      convert SolovaySentences.rfl_mainlemma_neg (T := T) hA A (by grind) $ Formula.Kripke.Satisfies.not_imp_def.mp hA |>.2;
++      exact SolovaySentences.rfl_mainlemma_neg (T := T) hA A (by grind) $ Formula.Kripke.Satisfies.not_imp_def.mp hA |>.2;
+     simp only [Models, LO.Semantics.Not.models_not, LO.Semantics.Imp.models_imply] at this;
+     exact this <| by
+       simpa [models_iff, S, SolovaySentences.standard_σ_def] using FirstOrder.Arithmetic.Bootstrapping.SolovaySentences.solovay_root_sound
+diff --git a/Foundation/Vorspiel/AdjunctiveSet.lean b/Foundation/Vorspiel/AdjunctiveSet.lean
+index 2f15515c621cf65917d19d4116d67b644550a15b..d26483db3a930aa6cd5cdc0ff31482f3bc158a1d 100644
+--- a/Foundation/Vorspiel/AdjunctiveSet.lean
++++ b/Foundation/Vorspiel/AdjunctiveSet.lean
+@@ -24,6 +24,7 @@ class AdjunctiveSet (β : outParam Type*) (α : Type*) extends Membership β α,
+ attribute [simp] AdjunctiveSet.not_mem_empty AdjunctiveSet.mem_cons_iff
+ 
+ instance Set.adjunctiveSet : AdjunctiveSet α (Set α) where
++  Subset := Set.Subset
+   subset_iff := iff_of_eq Set.subset_def
+   not_mem_empty := by simp
+   mem_cons_iff := by simp [Adjoin.adjoin]
+@@ -39,6 +40,7 @@ instance Multiset.adjunctiveSet : AdjunctiveSet α (Multiset α) where
+   mem_cons_iff := by simp [Adjoin.adjoin]
+ 
+ instance Finset.adjunctiveSet [DecidableEq α] : AdjunctiveSet α (Finset α) where
++  Subset := fun a b => ∀ ⦃x⦄, x ∈ a → x ∈ b
+   subset_iff := Finset.subset_iff
+   not_mem_empty := by simp
+   mem_cons_iff := by simp [Adjoin.adjoin]
+diff --git a/Foundation/Vorspiel/Arithmetic.lean b/Foundation/Vorspiel/Arithmetic.lean
+index 0d31be69c9438117d78bc1d99d734ccd55152e3b..e7a6cbe6c5a645c8365053ebd7eb68de52447ae8 100644
+--- a/Foundation/Vorspiel/Arithmetic.lean
++++ b/Foundation/Vorspiel/Arithmetic.lean
+@@ -9,6 +9,27 @@ public import Mathlib.Logic.Godel.GodelBetaFunction
+ 
+ open Mathlib List.Vector Part
+ 
++private theorem findValue (predicate : Nat → Bool) (value : Nat) :
++    Nat.rfind (fun index => Part.some (predicate index)) = Part.some value ↔
++      true = predicate value ∧ ∀ index < value, false = predicate index := by
++  constructor
++  · intro equality
++    have found := Nat.mem_rfind.mp (Part.eq_some_iff.mp equality)
++    exact ⟨Part.mem_some_iff.mp found.1,
++      fun index smaller => Part.mem_some_iff.mp (found.2 smaller)⟩
++  · rintro ⟨found, minimal⟩
++    exact Part.eq_some_iff.mpr (Nat.mem_rfind.mpr
++      ⟨Part.mem_some_iff.mpr found,
++        fun {index} smaller => Part.mem_some_iff.mpr (minimal index smaller)⟩)
++
++private theorem mapFindValue (predicate : Nat → Bool) (mapping : Nat → α) (value : α) :
++    Part.map mapping (Nat.rfind (fun index => Part.some (predicate index))) = Part.some value ↔
++      ∃ index, (true = predicate index ∧ ∀ earlier < index, false = predicate earlier) ∧
++        mapping index = value :=
++  (Part.eq_some_iff.trans (Part.mem_map_iff mapping)).trans
++    (exists_congr fun index => and_congr
++      (Part.eq_some_iff.symm.trans (findValue predicate index)) Iff.rfl)
++
+ namespace Nat
+ 
+ lemma pos_of_eq_one (h : n = 1) : 0 < n := by simp [h]
+@@ -55,7 +76,7 @@ lemma or_eq (n m : ℕ) : or n m = if 0 < n ∨ 0 < m then 1 else 0 := by simp [
+ 
+ @[simp] lemma and_pos_iff (n m : ℕ) : 0 < and n m ↔ 0 < n ∧ 0 < m := by simp [and_eq]; by_cases 0 < n ∧ 0 < m <;> simp [*]
+ 
+-@[simp] lemma or_pos_iff (n m : ℕ) : 0 < or n m ↔ 0 < n ∨ 0 < m := by simp [or_eq]; by_cases 0 < n ∨ 0 < m <;> simp [*]
++@[simp] lemma booleanOr_pos_iff (n m : ℕ) : 0 < or n m ↔ 0 < n ∨ 0 < m := by simp [or_eq]; by_cases 0 < n ∨ 0 < m <;> simp [*]
+ 
+ @[simp] lemma inv_pos_iff (n : ℕ) : 0 < inv n ↔ ¬0 < n := by simp [inv]
+ 
+@@ -144,14 +165,23 @@ lemma bind (f : List.Vector ℕ n → ℕ →. ℕ) (hf : @ArithPart₁ (n + 1)
+     cases i using Fin.cases
+     · simp_all
+     · solve_by_elim)).of_eq (by
+-    intro v; simp only [succ_eq_add_one, coe_some, bind_eq_bind]
+-    rcases Part.eq_none_or_eq_some (g v) with (hgv | ⟨x, hgv⟩)
+-    · simp [hgv, List.Vector.mOfFn]
+-    · simp [hgv]
+-      have : List.Vector.mOfFn (fun i => (g :> fun j v => Part.some $ v.get j) i v) = pure (List.Vector.ofFn (x :> fun j => v.get j)) := by
+-        rw [←List.Vector.mOfFn_pure]; apply congr_arg
+-        funext i; cases i using Fin.cases <;> simp [hgv]
+-      simp [this])
++    intro v
++    have sequence : List.Vector.mOfFn
++        (fun i => (g :> fun j v => Part.some (v.get j)) i v) =
++        (g v).map (fun value => value ::ᵥ v) := by
++      have tail : List.Vector.mOfFn (fun i => Part.some (v.get i)) = Part.some v :=
++        (List.Vector.mOfFn_pure (m := Part) (fun i => v.get i)).trans
++          (congrArg Part.some (List.Vector.ofFn_get v))
++      change (g v).bind (fun value =>
++        (List.Vector.mOfFn (fun i => Part.some (v.get i))).bind
++          (fun rest => Part.some (value ::ᵥ rest))) = _
++      refine (congrArg (fun rest => (g v).bind
++        (fun value => rest.bind (fun vector => Part.some (value ::ᵥ vector)))) tail).trans ?_
++      exact (congrArg (Part.bind (g v))
++        (funext fun value => Part.bind_some v (fun vector => Part.some (value ::ᵥ vector)))).trans
++        (Part.bind_some_eq_map (fun value => value ::ᵥ v) (g v))
++    refine (congrArg (fun vector => vector.bind (fun w => f w.tail w.head)) sequence).trans ?_
++    exact Part.bind_map _ _ _)
+ 
+ lemma map (f : List.Vector ℕ n → ℕ → ℕ) (hf : @Arithmetic₁ (n + 1) fun v => f v.tail v.head) {g} (hg : @ArithPart₁ n g) :
+     @ArithPart₁ n fun v => (g v).map (f v) :=
+@@ -202,7 +232,10 @@ lemma lt {n} (i j : Fin n) : @Arithmetic₁ n (fun v => isLtNat (v.get i) (v.get
+ 
+ lemma comp {m n f} (g : Fin n → List.Vector ℕ m → ℕ) (hf : Arithmetic₁ f) (hg : ∀ i, Arithmetic₁ (g i)) :
+     Arithmetic₁ fun v => f (List.Vector.ofFn fun i => g i v) :=
+-  (Nat.ArithPart₁.comp (fun i => g i : Fin n → List.Vector ℕ m →. ℕ) hf hg).of_eq <| by simp
++  (Nat.ArithPart₁.comp (fun i => g i : Fin n → List.Vector ℕ m →. ℕ) hf hg).of_eq <| by
++    intro v
++    exact (congrArg (fun vector : Part (List.Vector ℕ n) => vector.bind (fun w => Part.some (f w)))
++      (List.Vector.mOfFn_pure (m := Part) (fun i => g i v))).trans (Part.bind_some _ _)
+ 
+ def Vec {n m} (f : List.Vector ℕ n → List.Vector ℕ m) : Prop := ∀ i, Arithmetic₁ fun v => (f v).get i
+ 
+@@ -295,7 +328,9 @@ namespace Nat.Arithmetic₁
+ protected lemma sqrt {n} (i : Fin n) : Arithmetic₁ (fun v => sqrt (v.get i)) := by
+   have := ArithPart₁.implicit_fun i (fun _ x => x * x) ((mul 0 1).comp₂ _ head head)
+   exact this.of_eq <| by
+-    intro v; simp only [Bool.decide_and, PFun.coe_val, eq_some_iff, mem_rfind, mem_some_iff]
++    intro v
++    apply (findValue _ _).mpr
++    simp only [Bool.decide_and, PFun.coe_val, eq_some_iff, mem_rfind, mem_some_iff]
+     constructor
+     · simpa using ⟨sqrt_le (List.Vector.get v i), lt_succ_sqrt (List.Vector.get v i)⟩
+     · intro m hm; symm
+@@ -312,7 +347,8 @@ lemma sub {n} (i j : Fin n) : Arithmetic₁ (fun v => v.get i - v.get j) := by
+       ((and 0 1).comp₂ _ ((lt 0 1).comp₂ _ (proj i.succ) (proj j.succ)) ((equal 0 1).comp₂ _ head zero))
+   exact (ArithPart₁.rfindPos this).of_eq <| by
+     intro v
+-    simp only [head_cons, get_cons_succ, or_pos_iff, isEqNat_pos_iff, and_pos_iff,
++    apply (findValue _ _).mpr
++    simp only [head_cons, get_cons_succ, booleanOr_pos_iff, isEqNat_pos_iff, and_pos_iff,
+       isLtNat_pos_iff, Bool.decide_or, Bool.decide_and, PFun.coe_val, eq_some_iff, mem_rfind,
+       mem_some_iff, F]
+     constructor
+@@ -374,7 +410,8 @@ lemma dvd (i j : Fin n) : Arithmetic₁ (fun v => isDvdNat (v.get i) (v.get j))
+   have := ArithPart₁.map (fun v x => isLeNat x (v.get j)) this (ArithPart₁.rfindPos hr)
+   exact this.of_eq <| by
+     intro v
+-    simp only [head_cons, get_cons_succ, or_pos_iff, isEqNat_pos_iff, isLtNat_pos_iff,
++    apply (mapFindValue _ _ _).mpr
++    simp only [head_cons, get_cons_succ, booleanOr_pos_iff, isEqNat_pos_iff, isLtNat_pos_iff,
+       Bool.decide_or, isDvdNat, PFun.coe_val, eq_some_iff, mem_map_iff, mem_rfind, mem_some_iff]
+     by_cases hv : v.get i ∣ v.get j
+     · simp only [hv, ↓reduceIte]
+@@ -404,6 +441,7 @@ lemma rem (i j : Fin n) : Arithmetic₁ (fun v => v.get i % v.get j) := by
+     (dvd 0 1).comp₂ _ (proj j.succ) ((sub 0 1).comp₂ _ (proj i.succ) head)
+   exact (ArithPart₁.rfindPos this).of_eq <| by
+     intro v
++    apply (findValue _ _).mpr
+     suffices ∀ m < v.get i % v.get j, ¬v.get j ∣ v.get i - m by
+       simpa [F, Part.eq_some_iff, Nat.dvd_sub_mod]
+     intro m hm A
+@@ -438,7 +476,8 @@ lemma ball {φ : List.Vector ℕ n → ℕ → ℕ} (hp : @Arithmetic₁ (n + 1)
+     (ArithPart₁.rfindPos hF)
+   exact this.of_eq <| by
+     intro v
+-    simp only [tail_cons, head_cons, get_cons_succ, or_pos_iff, inv_pos_iff, not_lt,
++    apply (mapFindValue _ _ _).mpr
++    simp only [tail_cons, head_cons, get_cons_succ, booleanOr_pos_iff, inv_pos_iff, not_lt,
+       nonpos_iff_eq_zero, isLeNat_pos_iff, Bool.decide_or, PFun.coe_val, eq_some_iff, mem_map_iff,
+       mem_rfind, mem_some_iff, F]
+     by_cases H : ∀ m < v.get i, 0 < φ v m
+@@ -507,6 +546,7 @@ lemma prec {n f g} (hf : @Arithmetic₁ n f) (hg : @Arithmetic₁ (n + 2) g) :
+     (beta 0 1).of_eq (by simp [List.Vector.get_one])
+   exact (ArithPart₁.map (fun v x => Nat.beta x v.head) this (ArithPart₁.rfindPos hF)).of_eq <| by
+     intro v
++    apply (mapFindValue _ _ _).mpr
+     simp only [add_succ_sub_one, head_cons, tail_cons, and_pos_iff, isEqNat_pos_iff,
+       ball_pos_iff, Bool.decide_and, PFun.coe_val, eq_some_iff, mem_map_iff, mem_rfind,
+       mem_some_iff, F]
+diff --git a/Foundation/Vorspiel/Computability.lean b/Foundation/Vorspiel/Computability.lean
+index 89058065d5277a8ce17cdf9dced355b3e00318a0..4fc305815e955dbd7c3ff67d91276459011105a5 100644
+--- a/Foundation/Vorspiel/Computability.lean
++++ b/Foundation/Vorspiel/Computability.lean
+@@ -13,7 +13,16 @@ namespace Part
+   |     0, _, _ => by simp [List.Vector.mOfFn, List.Vector.eq_nil]
+   | n + 1, w, v => by
+     suffices (∃ a ∈ v 0, ∃ u, (∀ (i : Fin n), u.get i ∈ v i.succ) ∧ w = a ::ᵥ u) ↔ ∀ (i : Fin (n + 1)), w.get i ∈ v i by
+-      simpa [List.Vector.mOfFn, @mem_vector_mOfFn _ n]
++      refine Iff.trans Part.mem_bind_iff ?_
++      refine Iff.trans ?_ this
++      apply exists_congr
++      intro value
++      apply and_congr_right
++      intro membership
++      refine Iff.trans Part.mem_bind_iff ?_
++      apply exists_congr
++      intro tail
++      exact and_congr (@mem_vector_mOfFn _ n tail (fun i => v i.succ)) Part.mem_some_iff
+     constructor
+     · rintro ⟨a, ha, v, hv, rfl⟩ i; cases i using Fin.cases <;> simp [ha, hv]
+     · intro h; exact ⟨w.head, by simpa using h 0, w.tail,
+diff --git a/lake-manifest.json b/lake-manifest.json
+index 286d5cd3a966ab4550435c0875f051bc96cce2fe..6acb3ac3a643c734080adf1e14eaa0116027c96a 100644
+--- a/lake-manifest.json
++++ b/lake-manifest.json
+@@ -1,146 +1,177 @@
+-{"version": "1.2.0",
+- "packagesDir": ".lake/packages",
+- "packages":
+- [{"url": "https://github.com/leanprover-community/mathlib4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fabf563a7c95a166b8d7b6efca11c8b4dc9d911f",
+-   "name": "mathlib",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": false,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover/doc-gen4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover",
+-   "rev": "689fdeecf45e08cc048214680d40cfe2491be78b",
+-   "name": "«doc-gen4»",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.30.0",
+-   "inherited": false,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/plausible",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "63045536fe95024e6c18fc7b48e03f506701c5bc",
+-   "name": "plausible",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/LeanSearchClient",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "c5d5b8fe6e5158def25cd28eb94e4141ad97c843",
+-   "name": "LeanSearchClient",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/import-graph",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "5c7542ed018c78194f1e2b903eaf6a792b74c03d",
+-   "name": "importGraph",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/ProofWidgets4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "24b0d9dc081c5423f8eec7e866c441e5184f29d9",
+-   "name": "proofwidgets",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/aesop",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "e3cb2f741431ce31bf73549fb52316a57368b06f",
+-   "name": "aesop",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/quote4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "f46324995fca5f0483b742e4eb4daec7f4ee50d2",
+-   "name": "Qq",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/batteries",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fa08db58b30eb033edcdab331bba000827f9f785",
+-   "name": "batteries",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover/leansqlite",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "a1d21d8b5f230205bb04c3bff479383f66802c0b",
+-   "name": "leansqlite",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover/lean4-cli",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover",
+-   "rev": "92564e5770e4d09f2d86dfbf8ada1e9c715b384c",
+-   "name": "Cli",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/fgdorais/lean4-unicode-basic",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "f8c99ff779ec217063545b3b191747c92e7fbfb3",
+-   "name": "UnicodeBasic",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/dupuisf/BibtexQuery",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "5d31b64fb703c5d77f6ef4d1fb958f9bdf1ea539",
+-   "name": "BibtexQuery",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "nightly-testing",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/acmepjz/md4lean",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "6a3fb240133bcb7e1a066fdc784b3fdc304e3fc5",
+-   "name": "MD4Lean",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"}],
+- "name": "Foundation",
+- "lakeDir": ".lake",
+- "fixedToolchain": false}
++{
++  "version": "1.2.0",
++  "packagesDir": ".lake/packages",
++  "packages": [
++    {
++      "url": "https://github.com/leanprover-community/mathlib4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "name": "mathlib",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "inherited": false,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover/doc-gen4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover",
++      "rev": "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015",
++      "name": "\u00abdoc-gen4\u00bb",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015",
++      "inherited": false,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/plausible",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "b7eb3304aeae834b12dda98993a37f6a41f6f0bb",
++      "name": "plausible",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/LeanSearchClient",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "5f4d51b81cbd3f6b32b156bfad9056621a040404",
++      "name": "LeanSearchClient",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/import-graph",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "16f02aa7642864af59f1ff0e384a015994db9118",
++      "name": "importGraph",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/ProofWidgets4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4be2e3d5087eeb272cf5a8853b8f9dd025ef5957",
++      "name": "proofwidgets",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/aesop",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "3448c0bcc5ce01b2d1546e483ec3620e32df3d0e",
++      "name": "aesop",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/quote4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "92c15be17b7caf78c2ad767ec40f89052d908d81",
++      "name": "Qq",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/batteries",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4488d40d070b9700d4d5a6aa342f0d40c31b2a2d",
++      "name": "batteries",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover/leansqlite",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "a1d21d8b5f230205bb04c3bff479383f66802c0b",
++      "name": "leansqlite",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover/lean4-cli",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover",
++      "rev": "6130a47896ce867c6a4a55373441e59e565bad0f",
++      "name": "Cli",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "v4.33.0",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/fgdorais/lean4-unicode-basic",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "f8c99ff779ec217063545b3b191747c92e7fbfb3",
++      "name": "UnicodeBasic",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/dupuisf/BibtexQuery",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "5d31b64fb703c5d77f6ef4d1fb958f9bdf1ea539",
++      "name": "BibtexQuery",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "nightly-testing",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/acmepjz/md4lean",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "6a3fb240133bcb7e1a066fdc784b3fdc304e3fc5",
++      "name": "MD4Lean",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    }
++  ],
++  "name": "Foundation",
++  "lakeDir": ".lake",
++  "fixedToolchain": false
++}
+diff --git a/lakefile.toml b/lakefile.toml
+index 30f7f9d5aa606aab62d0d73c4f551e5844317b4f..be7a7b10779029539fbaa36ed3d59138c7cb2eaa 100644
+--- a/lakefile.toml
++++ b/lakefile.toml
+@@ -13,12 +13,12 @@ weak.linter.style.multiGoal = true
+ [[require]]
+ scope = "leanprover"
+ name = "doc-gen4"
+-rev = "v4.31.0"
++rev = "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015"
+ 
+ [[require]]
+ scope = "leanprover-community"
+ name = "mathlib"
+-rev = "v4.31.0"
++rev = "0df444a360eaa60ab8c11dca51a86af692955474"
+ 
+ [[lean_lib]]
+ name = "Foundation"
+diff --git a/lean-toolchain b/lean-toolchain
+index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+--- a/lean-toolchain
++++ b/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.31.0
++leanprover/lean4:v4.33.1

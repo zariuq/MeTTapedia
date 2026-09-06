@@ -403,7 +403,7 @@ private theorem batch_schema_names_reserved (rewrite : RewriteRule)
   · rw [TptpFofClausificationBatchGenerationLanguageDef.cons_schemaNames_exact]
     simp [schemaNameReserve]
 
-private def batchSignatureEmbedding (rewrite : RewriteRule)
+private theorem batchSignatureEmbedding (rewrite : RewriteRule)
     (membership : rewrite ∈
       TptpFofClausificationBatchGenerationLanguageDef.rewrites) :
     SignatureEmbeddingFor
@@ -495,6 +495,33 @@ private theorem role_code_signature_declared (entry : RolePolicyEntry)
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
   all_goals exact required_projection_signature_declared _ (by decide)
 
+theorem projection_typeContext (entry : RolePolicyEntry) (withRefinement : Bool) :
+    (mkProjectionRule entry withRefinement).typeContext = [
+    ("digest", .base "String"),
+    ("index", .base "Integer"),
+    ("name", .base "Tptp92Ast:name"),
+    ("formula", .base "Tptp92Ast:fof-formula"),
+    ("annotations", .base "Tptp92Ast:annotations"),
+    ("span", .base "Tptp92Ast:source-span"),
+    ("refinement", .base "Tptp92Ast:general-term"),
+    ("skolem", .base "TptpFofSkolem:Output"),
+    ("cnf", .base "TptpFofCnf:Output")] := rfl
+
+theorem projection_premises (entry : RolePolicyEntry) (withRefinement : Bool) :
+    (mkProjectionRule entry withRefinement).premises = ([] : List Premise) := rfl
+
+theorem projection_left (entry : RolePolicyEntry) (withRefinement : Bool) :
+    (mkProjectionRule entry withRefinement).left = projectionRequest
+    (sourceFofInput (sourceOccurrence (v "digest") (v "index"))
+      (if withRefinement then refinedRole entry.code (v "refinement")
+       else plainRole entry.code))
+    (v "skolem") (v "cnf") := rfl
+
+theorem projection_right (entry : RolePolicyEntry) (withRefinement : Bool) :
+    (mkProjectionRule entry withRefinement).right = targetRequest
+    (batchOccurrence (v "digest") (v "index"))
+    (encodePolarity entry.polarity) (v "skolem") (v "cnf") := rfl
+
 local macro "projection_row_simp" : tactic =>
   `(tactic|
     (simp_all [requiredProjectionTypes, requiredProjectionSignatures,
@@ -502,7 +529,8 @@ local macro "projection_row_simp" : tactic =>
       required_projection_signature_declared,
       role_code_signature_declared,
       schemaNameReserve, schema_name_not_constructor,
-      mkProjectionRule, projectionRequest, targetRequest, sourceFofInput,
+      projection_typeContext, projection_premises, projection_left, projection_right,
+      projectionRequest, targetRequest, sourceFofInput,
       sourceOccurrence, sourceDigest, batchOccurrence, plainRole,
       refinedRole, tokenLowerWord, a, v,
       TptpFofClausificationBatchGenerationLanguageDef.request,
@@ -548,7 +576,7 @@ private theorem projection_premisesDeclared (entry : RolePolicyEntry)
         LanguageDef.premisePatterns,
       ∀ reference ∈ pattern.constructorRefs,
         reference ∈ RewriteValidationCertificate.constructorSignatures language := by
-  simp [mkProjectionRule]
+  simp [projection_premises]
 
 private theorem projection_allPatternsScoped (entry : RolePolicyEntry)
     (_entryMembership : entry ∈ rolePolicy) (withRefinement : Bool) :
@@ -559,6 +587,7 @@ private theorem projection_allPatternsScoped (entry : RolePolicyEntry)
   rcases entry with ⟨code, polarity⟩
   cases polarity <;> cases withRefinement <;> projection_row_simp
 
+set_option maxHeartbeats 800000 in
 private theorem projection_fvarsAvoidConstructors (entry : RolePolicyEntry)
     (entryMembership : entry ∈ rolePolicy) (withRefinement : Bool) :
     ∀ name ∈ ((LanguageDef.patternFvarNames []

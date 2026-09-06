@@ -43,6 +43,14 @@ abbrev ThinMode :=
   LocallyThinWhiskeredCellBicategory.Extension
     FreeModeBicategory CellGenerator
 
+instance thinModeBicategory : Bicategory ThinMode :=
+  LocallyThinWhiskeredCellBicategory.extensionBicategory
+    (B := FreeModeBicategory) (Authored := CellGenerator)
+
+instance thinModeLocallyThin (source target : ThinMode) :
+    Quiver.IsThin (source ⟶ target) :=
+  LocallyThinWhiskeredCellBicategory.extensionLocallyThin source target
+
 def operational : ThinMode := ⟨Mode.operational⟩
 def intensional : ThinMode := ⟨Mode.intensional⟩
 def extensional : ThinMode := ⟨Mode.extensional⟩

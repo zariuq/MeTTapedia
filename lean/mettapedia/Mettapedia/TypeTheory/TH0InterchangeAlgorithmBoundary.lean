@@ -238,8 +238,10 @@ def encodeTerm {context : Ctx String} {type : Ty String} :
   | const constant => simp [encodeTerm, decodeTerm?]
   | app function argument functionIH argumentIH =>
       simp [encodeTerm, decodeTerm?, functionIH, argumentIH]
+      rfl
   | lam body bodyIH =>
       simp [encodeTerm, decodeTerm?, bodyIH]
+      rfl
   | top => simp [encodeTerm, decodeTerm?]
   | bot => simp [encodeTerm, decodeTerm?]
   | and left right leftIH rightIH =>

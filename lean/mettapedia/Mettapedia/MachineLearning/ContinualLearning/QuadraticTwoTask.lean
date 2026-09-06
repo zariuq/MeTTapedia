@@ -200,8 +200,12 @@ theorem obliqueTasks_curvature_interference :
   constructor
   · intro h
     have hij := congrFun (congrFun h (0 : Fin 2)) (1 : Fin 2)
-    norm_num [curvatureCommutator, obliqueFirstTask, obliqueSecondTask,
-      Matrix.mul_apply, Fin.sum_univ_two] at hij
+    change (obliqueSecondTask.curvature * obliqueFirstTask.curvature :
+      Matrix (Fin 2) (Fin 2) ℝ) 0 1 -
+      (obliqueFirstTask.curvature * obliqueSecondTask.curvature :
+      Matrix (Fin 2) (Fin 2) ℝ) 0 1 = 0 at hij
+    simp only [Matrix.mul_apply] at hij
+    norm_num [obliqueFirstTask, obliqueSecondTask, Fin.sum_univ_two] at hij
   · intro h
     have hi := congrFun h (0 : Fin 2)
     norm_num [sequentialTwoTaskUpdate, QuadraticTask.update,

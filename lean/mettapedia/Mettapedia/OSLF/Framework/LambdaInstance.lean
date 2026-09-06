@@ -88,7 +88,7 @@ def lambdaCalc : LanguageDef := {
 /-- The sole authored lambda-calculus presentation passes the structural
 declaration gate. -/
 theorem lambdaCalc_validate_eq_nil : lambdaCalc.validate = [] := by
-  simp [LanguageDef.validate, lambdaCalc, LanguageDef.validateRewrite,
+  simp [LanguageDef.validate, lambdaCalc, LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff,
     LanguageDef.duplicateErrors, LanguageDef.duplicateErrorsAux,
     LanguageDef.validatePatternConstructors,
     LanguageDef.validateRulePatterns, Pattern.constructorRefs,

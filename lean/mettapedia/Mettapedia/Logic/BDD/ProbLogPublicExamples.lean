@@ -30,6 +30,7 @@ open Mettapedia.Logic.LP
 
 /-! ## 1. Signature and atoms -/
 
+set_option backward.isDefEq.respectTransparency false in
 inductive TossRel
   | coin
   | heads
@@ -410,7 +411,7 @@ theorem gatedToss_locallyStructurablyCompilable :
       simp [gatedTossStratification, gatedTossInst, gatedTossAD,
         GroundedFirstOrderWeightedADInstance.toGroundWeightedAD,
         Grounding.groundFirstOrderWeightedAD,
-        coin₁, heads₁, tails₁, unaryGroundAtom]
+        coin₁, heads₁, tails₁, unaryGroundAtom, GroundAtom.ofFinArgs]
   · refine ⟨gatedTossLocalSwitchSlot, ?_, ?_, ?_, ?_, ?_⟩
     · intro i j hij
       apply Fin.ext

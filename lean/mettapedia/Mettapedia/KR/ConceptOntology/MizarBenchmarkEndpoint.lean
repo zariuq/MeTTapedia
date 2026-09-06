@@ -131,7 +131,11 @@ inductive MizarFamilyPilotArticle where
   | lattice3
   | lattice4
   | lattice6
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype MizarFamilyPilotArticle where
+  elems := { .conlat_1, .conlat_2, .yellow_0, .yellow_1, .yellow_2, .yellow_3, .waybel_0, .waybel_1, .lattices, .lattice2, .lattice3, .lattice4, .lattice6 }
+  complete x := by cases x <;> simp
 
 def sampledThresholds : MizarFamilyPilotArticle → List Nat
   | .conlat_1 => [1, 12, 23, 42]
@@ -244,7 +248,11 @@ inductive MizarFamilyDualityTrackedPair where
   | objectDerivation_attributeDerivation
   | conceptAllObjects_conceptAllAttributes
   | top_bottom
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype MizarFamilyDualityTrackedPair where
+  elems := { .objectDerivation_attributeDerivation, .conceptAllObjects_conceptAllAttributes, .top_bottom }
+  complete x := by cases x <;> simp
 
 def dualityGhostCandidateArticles : Finset MizarFamilyPilotArticle :=
   [.conlat_1, .yellow_2, .waybel_0].toFinset

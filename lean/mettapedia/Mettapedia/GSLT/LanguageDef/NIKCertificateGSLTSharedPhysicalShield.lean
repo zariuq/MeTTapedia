@@ -64,7 +64,7 @@ theorem checkSharedPacket_compiled_eq_decide
         checkWireArticle definition (articleOfDerivation derivation)
       else false) = decide (actual = submitted)
   rw [checkWireArticle_articleOfDerivation derivation]
-  simp [articleOfDerivation]
+  by_cases h : actual = submitted <;> simp [articleOfDerivation, h]
 
 /-! ## Exact shared physical authority -/
 
@@ -91,8 +91,11 @@ def sharedPhysicalContract (presentation : SoundPresentation Meaning) :
         rcases (scope_iff_closed_derivation presentation claim).1 inScope with
           ⟨derivation⟩
         exact ⟨sharedCertificateOfDerivation derivation,
-          by simpa [sharedPhysicalChecker] using
-            checkSharedPacket_compiled_eq_decide derivation claim⟩ }
+          by
+            simpa only [sharedPhysicalChecker] using
+            (checkSharedPacket_compiled_eq_decide derivation claim).trans
+              (@decide_eq_true (claim = claim)
+                (Mettapedia.OSLF.MeTTaIL.Syntax.instDecidableEqPattern claim claim) rfl)⟩ }
 
 /-- Compile an intrinsic CertificateGSLT proof object into the shared physical
 ABI. -/

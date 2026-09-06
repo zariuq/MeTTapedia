@@ -67,8 +67,11 @@ theorem flatten_subst (substitution : Nat → Term signature) :
   | .var _ => by simp [flatten]
   | .op .one _arguments => rfl
   | .op .mul arguments => by
-      simp only [Term.subst_op, flatten, List.flatMap_append]
-      rw [flatten_subst substitution (arguments mulLeft),
+      change flatten ((arguments mulLeft).subst substitution) ++
+          flatten ((arguments mulRight).subst substitution) =
+        (flatten (arguments mulLeft) ++ flatten (arguments mulRight)).flatMap
+          (fun index => flatten (substitution index))
+      rw [List.flatMap_append, flatten_subst substitution (arguments mulLeft),
         flatten_subst substitution (arguments mulRight)]
 
 /-! ## Reusable monoid consequences -/

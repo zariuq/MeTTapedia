@@ -113,8 +113,10 @@ theorem semilocalTruth_topConjTop_of_derivable :
 
 theorem semilocalTruth_propSelfImp (p : Prop) :
     SimplePropFormula.semilocalTruth model (propEnv p) propSelfImp = (p → p) := by
-  simp [propSelfImp, propSelfFormula, propEnv,
-    SemilocalModel.formulaTruth, SemilocalModel.eval, model]
+  rw [SimplePropFormula.semilocalTruth_toFormula]
+  simp [propSelfImp, propSelfFormula, propEnv, SimplePropFormula.toFormula,
+    SimpleTerm.toTerm, SemilocalModel.formulaTruth, SemilocalModel.eval, model]
+  exact fun h => h
 
 theorem semilocalTruth_propSelfImp_top (p : Prop) :
     SimplePropFormula.semilocalTruth model (propEnv p) propSelfImp = ⊤ := by

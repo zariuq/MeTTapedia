@@ -119,7 +119,10 @@ def lambdaInteractionCut : InteractionCutPresentation lambdaIGSLT where
       intro equality
       have labels := congrArg (fun constructor => constructor.1.label) equality
       simp [lambdaProgramOperand, lambdaAbstractionConstructor,
-        lambdaCoreContact, lambdaApplicationConstructor, lambdaCalc] at labels)
+        lambdaCoreContact, lambdaApplicationConstructor, lambdaCalc,
+        List.getElem_cons] at labels
+      change "Lam" = "App" at labels
+      exact (by decide : ("Lam" : String) ≠ "App") labels)
   environmentPlacement := .direct rfl rfl rfl rfl
   sourceShape :=
     { core := lambdaCalc.rewrites[0].left
@@ -271,7 +274,8 @@ theorem lambda_costBaseApplication_params :
     lambdaValidatedLanguageDef, lambdaInteractionCut, lambdaProgramOperand,
     lambdaEnvironmentOperand, lambdaApplicationConstructor,
     lambdaAbstractionConstructor, mapParameterType, costBaseTypeExpr,
-    costWrappedTypeExpr, TypeDecl.plain]
+    costWrappedTypeExpr, TypeDecl.plain, List.getElem_cons]
+  decide +kernel
 
 @[simp]
 theorem lambda_costBaseAbstraction_params :
@@ -283,7 +287,8 @@ theorem lambda_costBaseAbstraction_params :
     lambdaValidatedLanguageDef, lambdaInteractionCut, lambdaProgramOperand,
     lambdaEnvironmentOperand, lambdaApplicationConstructor,
     lambdaAbstractionConstructor, mapParameterType,
-    costWrappedTypeExpr, TypeDecl.plain]
+    costWrappedTypeExpr, TypeDecl.plain, List.getElem_cons]
+  decide +kernel
 
 /-- The translated beta source is sorted after the direct argument and
 abstraction body are moved into the wrapped fiber. -/

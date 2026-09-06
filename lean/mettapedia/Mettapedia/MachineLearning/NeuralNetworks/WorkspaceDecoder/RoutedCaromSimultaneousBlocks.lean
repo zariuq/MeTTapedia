@@ -174,6 +174,9 @@ theorem simultaneousBlockTransition_eq_scalar_add_residual
         simultaneousBlockResidual transition commutes character command := by
   ext state
   simp [simultaneousBlockTransition, simultaneousBlockResidual]
+  change transition command state.val = character command • state.val +
+    (transition command state.val - character command • state.val)
+  abel
 
 /-- Over an algebraically closed field, the simultaneous generalized blocks
 of a commuting family span the whole finite-dimensional state space. -/

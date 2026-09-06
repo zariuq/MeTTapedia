@@ -259,10 +259,8 @@ def callGuardGSLT : GSLT where
     exact step
 
 def stepDecision : EffectiveStructure.StepDecision callGuardGSLT where
-  decideStep source target := decide (MachineStep source target)
-  correct := by
-    intro source target
-    exact decide_eq_true_iff
+  decideStep := fun (source target : Machine) => decide (MachineStep source target)
+  correct := fun (source target : Machine) => decide_eq_true_iff
 
 /-- The NTT generated from the call-guard GSLT recognizes exactly the selected
 typed-call successor. -/
@@ -270,9 +268,8 @@ theorem decideStep_iff_ntt (source target : Machine) :
     stepDecision.decideStep source target = true ↔
       (gsltOSLF callGuardGSLT).satisfies source
         (exactTargetNativeType callGuardGSLT target).pred := by
-  rw [stepDecision.correct]
-  exact (satisfies_exactTargetNativeType_iff_step
-    callGuardGSLT source target).symm
+  exact (stepDecision.correct source target).trans
+    (satisfies_exactTargetNativeType_iff_step callGuardGSLT source target).symm
 
 /-- The exact modal type consumed by later native inference composition. -/
 abbrev typedCallNTT (claim : Claim) (declaration : ArrowDeclaration) :
@@ -352,10 +349,8 @@ def boundaryProofSystem : NativeProofSystem Claim where
   Judges := fun article claim => article.Valid claim
 
 def boundaryKernel : NativeProofKernel boundaryProofSystem where
-  decide claim article := decide (article.Valid claim)
-  correct := by
-    intro claim article
-    exact decide_eq_true_iff
+  decide := fun (claim : Claim) (article : BoundaryArticle) => decide (article.Valid claim)
+  correct := fun (claim : Claim) (article : BoundaryArticle) => decide_eq_true_iff
 
 def boundaryFamily : AuthorityFamily AuthorityKind where
   Claim := fun _ => Claim

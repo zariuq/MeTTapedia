@@ -107,7 +107,7 @@ def mapPred : ModeHom X Y → ModePred Y → ModePred X
     (f : ModeHom X Y) (g : ModeHom Y Z) (ψ : ModePred Z) :
     mapPred (f ≫ g) ψ = mapPred f (mapPred g ψ) := by
   cases f <;> cases g <;>
-    simp [ModeHom.comp, mapPred, predPullback_comp]
+    simp [ModeHom.comp, mapPred, predPullback_comp] <;> rfl
 
 @[simp] theorem termMap_comp
     (f : ModeHom X Y) (g : ModeHom Y Z) (p : Pattern) :

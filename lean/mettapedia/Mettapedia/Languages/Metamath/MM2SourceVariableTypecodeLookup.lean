@@ -67,6 +67,7 @@ def semanticNTT (target : SemanticState) :=
   Mettapedia.OSLF.Framework.GSLTTypeSynthesis.exactTargetNativeType
     semanticGSLT target
 
+set_option backward.isDefEq.respectTransparency false in
 theorem semanticStep_inhabits_target_native_type
     {before after : SemanticState}
     (step : FiniteOccurrenceLookup.Step before after) :

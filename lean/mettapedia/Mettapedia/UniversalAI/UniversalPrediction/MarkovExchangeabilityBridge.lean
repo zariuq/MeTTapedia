@@ -560,6 +560,7 @@ def ofFin2State (state : TransCounts 2 × Fin 2) : BinarySummaryState :=
     ofFin2State (toFin2State state) = state := by
   rcases state with ⟨c, b⟩
   simp [toFin2State, ofFin2State]
+  rfl
 
 @[simp] theorem toFin2State_ofFin2State (state : TransCounts 2 × Fin 2) :
     toFin2State (ofFin2State state) = state := by

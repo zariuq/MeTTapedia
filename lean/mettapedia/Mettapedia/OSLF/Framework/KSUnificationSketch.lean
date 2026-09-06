@@ -29,7 +29,7 @@ namespace Mettapedia.OSLF.Framework.KSUnificationSketch
 
 open scoped ENNReal
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Opposite
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.Framework.CategoryBridge
@@ -394,8 +394,7 @@ abbrev RhoNameNativeFiber :=
   languageSortFiber rhoCalc rhoName
 
 noncomputable instance : Order.Frame RhoNameNativeFiber := by
-  dsimp [RhoNameNativeFiber, languageSortFiber, languagePresheafLambdaTheory]
-  infer_instance
+  exact (languageSortPredicateFibration rhoCalc).frame ⟨rhoName⟩
 
 /-- The identity path at the rho name sort, named to keep the two sampled
 constructor paths syntactically explicit. -/

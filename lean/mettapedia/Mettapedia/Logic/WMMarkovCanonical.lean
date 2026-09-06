@@ -91,11 +91,8 @@ noncomputable def markov_binaryEvidenceOfRowEvidence {k : ℕ}
 @[simp] theorem markov_binaryEvidenceOfRowEvidence_zero {k : ℕ}
     (target : Fin k) :
     markov_binaryEvidenceOfRowEvidence (0 : MultiEvidence k) target = 0 := by
-  ext
-  · change (((0 : MultiEvidence k).counts target : ℕ) : ℝ≥0∞) = 0
-    simp
-  · change (∑ a : Fin k, if a = target then (0 : ℝ≥0∞) else (((0 : MultiEvidence k).counts a : ℕ) : ℝ≥0∞)) = 0
-    simp
+  have counts_zero (a : Fin k) : (0 : MultiEvidence k).counts a = 0 := rfl
+  ext <;> simp [markov_binaryEvidenceOfRowEvidence, counts_zero]
 
 theorem markov_binaryEvidenceOfRowEvidence_add {k : ℕ}
     (e₁ e₂ : MultiEvidence k) (target : Fin k) :

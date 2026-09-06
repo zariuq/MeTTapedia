@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.HE.BindingComposition
+import Mettapedia.Languages.MeTTa.HE.Space
 import Mettapedia.OSLF.PathMap.CandidateArchitecture
 import Mettapedia.OSLF.PathMap.ImportedRowContract
 
@@ -34,7 +35,6 @@ CeTTa's conjunction query evaluates patterns left-to-right:
   = direct matching (for binding-level parity)
 - `skip_rematch_correct` / `full_rematch_required` — honest boundary
 
-## 0 sorry, 0 warnings, 0 errors
 -/
 
 namespace Mettapedia.OSLF.PathMap.SeedRematchContract

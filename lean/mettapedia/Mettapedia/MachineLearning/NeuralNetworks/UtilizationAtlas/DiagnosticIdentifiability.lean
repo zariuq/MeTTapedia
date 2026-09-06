@@ -48,7 +48,11 @@ inductive PrimitiveTelemetryField where
   | confidence
   | mean
   | gain
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype PrimitiveTelemetryField where
+  elems := {.recurrenceDepth, .targetActionId, .heldOutLoss, .settlingResidualNorm, .readAttentionEntropy, .legalActionCount, .accepted, .confidenceKappa, .slotId, .nPlus, .nMinus, .effectiveEvidence, .decayRetention, .derivedDecayDefault, .naturalParameter, .precision, .strength, .confidence, .mean, .gain}
+  complete := by intro value; cases value <;> simp
 
 /-- The JSON key assigned to a primitive observable. -/
 def primitiveTelemetryFieldName : PrimitiveTelemetryField → String
@@ -96,16 +100,49 @@ def primitiveTelemetryFields : List PrimitiveTelemetryField :=
   , .mean
   , .gain ]
 
-set_option maxHeartbeats 2000000 in
-set_option maxRecDepth 100000 in
+private def primitiveTelemetryFragmentIndex (field : PrimitiveTelemetryField) :
+    Fin utilizationAtlasDepthProbeSchemaFragments.length :=
+  match field with
+  | .recurrenceDepth => ⟨7, by decide⟩
+  | .targetActionId => ⟨8, by decide⟩
+  | .heldOutLoss => ⟨8, by decide⟩
+  | .settlingResidualNorm => ⟨8, by decide⟩
+  | .readAttentionEntropy => ⟨9, by decide⟩
+  | .legalActionCount => ⟨9, by decide⟩
+  | .accepted => ⟨9, by decide⟩
+  | .confidenceKappa => ⟨10, by decide⟩
+  | .slotId => ⟨30, by decide⟩
+  | .nPlus => ⟨35, by decide⟩
+  | .nMinus => ⟨35, by decide⟩
+  | .effectiveEvidence => ⟨36, by decide⟩
+  | .decayRetention => ⟨36, by decide⟩
+  | .derivedDecayDefault => ⟨37, by decide⟩
+  | .naturalParameter => ⟨37, by decide⟩
+  | .precision => ⟨38, by decide⟩
+  | .strength => ⟨38, by decide⟩
+  | .confidence => ⟨38, by decide⟩
+  | .mean => ⟨38, by decide⟩
+  | .gain => ⟨38, by decide⟩
+
+private theorem primitiveTelemetryFragment_contains (field : PrimitiveTelemetryField) :
+    ("\"" ++ primitiveTelemetryFieldName field ++ "\"").toList <:+:
+      (utilizationAtlasDepthProbeSchemaFragments[
+        primitiveTelemetryFragmentIndex field]).toList := by
+  cases field <;> decide +kernel
+
 /-- Every modeled observable key occurs in the hash-pinned v3 schema payload. -/
 theorem primitiveTelemetryRegistry_grounded :
     primitiveTelemetryFields.all (fun field =>
       utilizationAtlasDepthProbeSchemaPayload.contains
         ("\"" ++ primitiveTelemetryFieldName field ++ "\"")) = true := by
-  norm_num [primitiveTelemetryFields, primitiveTelemetryFieldName,
-    utilizationAtlasDepthProbeSchemaPayload]
-  all_goals decide
+  apply List.all_eq_true.mpr
+  intro field _member
+  apply String.contains_string_iff.mpr
+  change _ <:+: (String.join utilizationAtlasDepthProbeSchemaFragments).toList
+  rw [String.toList_join, List.flatMap_def]
+  exact (primitiveTelemetryFragment_contains field).trans
+    (List.infix_of_mem_flatten
+      (List.mem_map.mpr ⟨_, List.getElem_mem _, rfl⟩))
 
 /-- The registry cannot circularly import the v3 derived answer block. -/
 theorem primitiveTelemetryRegistry_excludes_derivedDiagnostics
@@ -272,7 +309,11 @@ inductive DiagnosticKind where
   | crossSlotHessian
   | lyapunovResidual
   | multimodalDecisionGap
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype DiagnosticKind where
+  elems := {.processVarianceQ, .overlap, .distortionResidual, .gainVariation, .branchProduct, .spectralEnvelope, .propagationRatio, .commutatorEnergy, .crossSlotHessian, .lyapunovResidual, .multimodalDecisionGap}
+  complete := by intro value; cases value <;> simp
 
 /-- Diagnostic value in the scalar/quadratic regime model. -/
 noncomputable def diagnosticValue
@@ -603,7 +644,11 @@ inductive NeededProbe where
   | crossSlotPerturbation
   | lyapunovMetricEnergyAndRate
   | fullCompletionPosteriorOrMixtureComponents
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype NeededProbe where
+  elems := {.innovationResidualSeries, .sourceIdentityAndOverlap, .latentMeasurementCalibrationPairs, .pairedCounterfactualEndpointsAndTargetChart, .topologyDistanceAndBandwidth, .pairedOperatorJacobian, .crossSlotPerturbation, .lyapunovMetricEnergyAndRate, .fullCompletionPosteriorOrMixtureComponents}
+  complete := by intro value; cases value <;> simp
 
 /-- Result of the primitive-telemetry identifiability audit. -/
 inductive IdentifiabilityStatus where

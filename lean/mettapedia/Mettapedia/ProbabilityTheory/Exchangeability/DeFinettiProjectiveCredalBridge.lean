@@ -2783,7 +2783,7 @@ def bernoulliMixturePrefixLawAt
 
 /-- The canonical infinite Boolean prefix cylinder system: window `n` is the
 first `n` bits of an infinite Boolean path. -/
-def bernoulliMixturePrefixProcessCylinderSystem :
+abbrev bernoulliMixturePrefixProcessCylinderSystem :
     ProjectiveCylinderSystem ℕ (ℕ → Bool) where
   Local n := Fin n → Bool
   project n ω := fun i => ω i
@@ -2810,7 +2810,7 @@ imprecise de Finetti set of Bernoulli mixtures.
 
 At each finite prefix length `n`, the local lower prevision is exactly the lower
 envelope of the admissible Bernoulli-mixture prefix previsions. -/
-noncomputable def bernoulliMixturePrefixProcessLowerSpec
+noncomputable abbrev bernoulliMixturePrefixProcessLowerSpec
     (C : Set BernoulliMixture)
     (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
       BernoulliMixturePrefixLaw M n)
@@ -2937,9 +2937,7 @@ theorem bernoulliMixturePrefixProcessFiniteJointWindowSystem_localCoherent_of_ma
           C hLaw hCw).jointMarginalPrevision u i hi R X =
         ((bernoulliMixturePrefixLawAt C hLaw i) M₀ hM₀).toPrecisePrevision X := by
     rw [ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointMarginalPrevision_apply]
-    simpa [R, ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointCylinderGamble,
-      bernoulliMixturePrefixProcessFiniteJointWindowSystem] using
-      (hMarginal M₀ hM₀ u (i := i) hi X)
+    exact hMarginal M₀ hM₀ u (i := i) hi X
   exact hLower.trans_eq hMarginalEq.symm
 
 /-- The canonical analytic Bernoulli-mixture prefix laws are automatically
@@ -4859,7 +4857,6 @@ theorem posteriorBernoulliMixturePrefixProcessWitness_of_zeroInteriorMixingMass
           ht0 ht1
     rw [ProjectiveCylinderSystem.marginalPrevision_mix]
     rw [hMarginalTrue, hMarginalFalse]
-    rfl
   have hLocalEq :
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).cylinders.marginalPrevision n P =
         (bernoulliMixturePrefixLaw_analytic
@@ -5072,10 +5069,7 @@ theorem posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem_localCoher
         (bernoulliMixturePrefixLaw_analytic
           (M.posteriorBernoulliMixture k l hZ) i).toPrecisePrevision X := by
     rw [ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointMarginalPrevision_apply]
-    simpa [R, ProjectiveLocalLowerPrevisionSpec.FiniteJointWindowSystem.jointCylinderGamble,
-      posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem,
-      bernoulliMixturePrefixProcessFiniteJointWindowSystem] using
-      (hMarginal u (i := i) hi X)
+    exact hMarginal u hi X
   exact hLower.trans_eq hMarginalEq.symm
 
 /-- Extend a finite Boolean prefix to an infinite path by padding the tail with
@@ -6966,7 +6960,6 @@ theorem BernoulliMixtureAnalyticPrefixProcessWitness_of_zeroInteriorMixingMass
           ht0 ht1
     rw [ProjectiveCylinderSystem.marginalPrevision_mix]
     rw [hMarginalTrue, hMarginalFalse]
-    rfl
   have hLocalEq :
       bernoulliMixturePrefixProcessCylinderSystem.marginalPrevision n P =
         (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision := by
@@ -7349,8 +7342,7 @@ theorem not_AnalyticMixingFamilyRawProcessCompatible_of_positiveFirstTrueLowerEn
     exact hP (n + 1) (firstTruePrefixGamble n)
   have hLocalPos :
       0 < S.localLower (n + 1) (firstTruePrefixGamble n) := by
-    simpa [S, AnalyticMixingFamilyPositiveFirstTrueLowerEnvelope,
-      bernoulliMixturePrefixProcessLowerSpec_localLower_apply] using hPos n
+    exact hPos n
   have hMarginalPos :
       0 <
         (S.cylinders.marginalPrevision (n + 1) P)

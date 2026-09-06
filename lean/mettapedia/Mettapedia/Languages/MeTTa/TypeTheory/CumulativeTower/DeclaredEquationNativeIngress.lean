@@ -227,6 +227,7 @@ the checker is absent from the conversion object. -/
 noncomputable def canonicalNilNativeConversionFromSource :=
   canonicalNilTypedFromSource.toNativeConversion
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The positive receipt round-trip retains the exact source position and
 identity substitution. -/
 theorem canonicalNilNativeReceipt_reflects_source :

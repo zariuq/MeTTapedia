@@ -524,10 +524,18 @@ theorem langReduces_identityWrapper
     hrw (premisesNil := hprem)
   · simp [hleft,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       matchPattern, matchArgs, BEq.beq, List.length, mergeBindings,
       List.filterMap]
   · simp [hright,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       applyBindings, List.find?, BEq.beq]
 
 private theorem mem_rewrites (rw : RewriteRule) (h : rw ∈ allIdentityRewrites) :
@@ -595,10 +603,18 @@ theorem langReduces_activePassive (np₁ np₂ v : Pattern) :
     (premisesNil := rfl)
   · simp [activePassiveRewrite,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       matchPattern, matchArgs, BEq.beq, List.length, mergeBindings,
       List.filterMap, List.find?]
   · simp [activePassiveRewrite,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       applyBindings, List.find?, BEq.beq, List.map]
 
 /-- Active-passive evidence transparency: evidence of φ at the passive clause
@@ -794,10 +810,18 @@ theorem langReduces_pastTense (cl : Pattern) :
     (premisesNil := rfl)
   · simp [pastTenseRewrite,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       matchPattern, matchArgs, BEq.beq, List.length, mergeBindings,
       List.filterMap, List.find?]
   · simp [pastTenseRewrite,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       applyBindings, List.find?, BEq.beq, List.map]
 
 /-- Present tense reduction: UseCl(TTAnt(TPres, ASimul), PPos, cl) ⇝ ⊛temporal(cl, 0). -/
@@ -815,10 +839,18 @@ theorem langReduces_presentTense (cl : Pattern) :
     (premisesNil := rfl)
   · simp [presentTenseRewrite,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       matchPattern, matchArgs, BEq.beq, List.length, mergeBindings,
       List.filterMap, List.find?]
   · simp [presentTenseRewrite,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       applyBindings, List.find?, BEq.beq, List.map]
 
 /-- Future tense reduction: UseCl(TTAnt(TFut, ASimul), PPos, cl) ⇝ ⊛temporal(cl, 1). -/
@@ -836,10 +868,18 @@ theorem langReduces_futureTense (cl : Pattern) :
     (premisesNil := rfl)
   · simp [futureTenseRewrite,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       matchPattern, matchArgs, BEq.beq, List.length, mergeBindings,
       List.filterMap, List.find?]
   · simp [futureTenseRewrite,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       applyBindings, List.find?, BEq.beq, List.map]
 
 /-- **Positive result**: Past-tense evidence is ◇-accessible from the full
@@ -894,6 +934,10 @@ private theorem gfRGL_rule_does_not_match_temporal (r : RewriteRule)
   -- Each disjunct fixes r to a specific rewrite rule with a known LHS
   rcases hr with (h|h|h|h|h|h)|(h|h|h|h) <;> subst h <;>
     simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       matchPattern, useNElimRewrite, positAElimRewrite,
       useCompElimRewrite, useVElimRewrite, useN2ElimRewrite, useA2ElimRewrite,
       activePassiveRewrite, presentTenseRewrite, pastTenseRewrite, futureTenseRewrite]

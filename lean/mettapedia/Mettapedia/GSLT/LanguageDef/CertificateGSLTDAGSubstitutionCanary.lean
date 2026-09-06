@@ -44,13 +44,12 @@ private def ruleShare : RuleSchema :=
     conclusion := judgmentC }
 
 private def subPresentation : CalculusLanguageDef :=
-  { language := LanguageDef.empty "certificate-gslt-sub"
-    calculus :=
-      { judgments :=
-          [{ head := "CertificateGSLT-Sub-A", arity := 0 },
-           { head := "CertificateGSLT-Sub-B", arity := 0 },
-           { head := "CertificateGSLT-Sub-C", arity := 0 }]
-        rules := [ruleAB, ruleShare] } }
+  CalculusLanguageDef.extend (LanguageDef.empty "certificate-gslt-sub")
+    { judgments :=
+        [{ head := "CertificateGSLT-Sub-A", arity := 0 },
+         { head := "CertificateGSLT-Sub-B", arity := 0 },
+         { head := "CertificateGSLT-Sub-C", arity := 0 }]
+      rules := [ruleAB, ruleShare] }
 
 private theorem emptyLanguage_validate (name : String) :
     (LanguageDef.empty name).validate = [] := by
@@ -58,8 +57,8 @@ private theorem emptyLanguage_validate (name : String) :
     simp [LanguageDef.empty, LanguageDef.typeNames]
 
 private theorem subPresentation_valid :
-    subCalculusLanguageDef.isValid = true := by
-  simp [subPresentation, CalculusLanguageDef.isValid,
+    subPresentation.isValid = true := by
+  simp [subPresentation, CalculusLanguageDef.extend, CalculusLanguageDef.isValid,
     CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
     CalculusLanguageDef.hasValidLocalRules, CalculusLanguageDef.ruleIds, emptyLanguage_validate,
     ruleAB, ruleShare, judgmentA, judgmentB, judgmentC,

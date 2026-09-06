@@ -199,12 +199,20 @@ instance : ∀ n, DecidableEq (SmokePred n) := fun _ => inferInstance
 /-- Two-element domain. -/
 inductive Person where
   | alice | bob
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype Person where
+  elems := {.alice, .bob}
+  complete value := by cases value <;> simp
 
 /-- Single variable. -/
 inductive X where
   | x
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype X where
+  elems := {.x}
+  complete value := by cases value <;> simp
 
 /-- The clause template `¬Smokes(x) ∨ Cancer(x)` (i.e., `Smokes(x) → Cancer(x)`)
 with satisfied potential 1, unsatisfied potential 0 (hard constraint). -/
@@ -603,7 +611,10 @@ theorem smoke_queryMass_cancerAlice_eq_six :
   simp only [CountableMLNSemantics.queryMass, GroundMLN.toCountableMLNSemantics,
              constraintQueryHolds, satisfiesConstraints]
   rw [tsum_eq_sum (s := Finset.univ) (fun W hW => (hW (Finset.mem_univ W)).elim)]
-  exact smoke_sum_cancerAlice_eq_six_aux
+  convert smoke_sum_cancerAlice_eq_six_aux using 1
+  congr 1
+  funext world
+  congr 1
 
 theorem smoke_queryMass_impossible_eq_zero :
     (clauseMassSemantics smokeGroundMLN smokeFullSupport).queryMass impossibleAliceQuery = 0 := by
@@ -613,7 +624,10 @@ theorem smoke_queryMass_impossible_eq_zero :
   simp only [CountableMLNSemantics.queryMass, GroundMLN.toCountableMLNSemantics,
              constraintQueryHolds, satisfiesConstraints]
   rw [tsum_eq_sum (s := Finset.univ) (fun W hW => (hW (Finset.mem_univ W)).elim)]
-  exact smoke_sum_impossible_eq_zero_aux
+  convert smoke_sum_impossible_eq_zero_aux using 1
+  congr 1
+  funext world
+  congr 1
 
 theorem smoke_queryProb_cancerAlice_eq_two_thirds :
     (clauseMassSemantics smokeGroundMLN smokeFullSupport).queryProb cancerAliceQuery =
@@ -916,12 +930,20 @@ instance : ∀ n, DecidableEq (RelPred n) := fun _ => inferInstance
 /-- Two-element domain. -/
 inductive Elem where
   | a | b
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype Elem where
+  elems := {.a, .b}
+  complete value := by cases value <;> simp
 
 /-- Two variables: x (universal) and y (existential). -/
 inductive XY where
   | x | y
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype XY where
+  elems := {.x, .y}
+  complete value := by cases value <;> simp
 
 /-! ### Named ground atoms -/
 
@@ -979,7 +1001,11 @@ private noncomputable def existClauseB : WeightedGroundClause (GroundAtom RelPre
 
 /-- Two-clause index type. -/
 inductive ExistClauseId where | clauseA | clauseB
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype ExistClauseId where
+  elems := {.clauseA, .clauseB}
+  complete value := by cases value <;> simp
 
 /-- The ground MLN with two coupled existential-grounded clauses. -/
 noncomputable def existGroundMLN : GroundMLN (GroundAtom RelPred Elem) ExistClauseId where
@@ -1130,7 +1156,10 @@ theorem exist_queryMass_relAB_eq_six :
   simp only [CountableMLNSemantics.queryMass, GroundMLN.toCountableMLNSemantics,
              constraintQueryHolds, satisfiesConstraints]
   rw [tsum_eq_sum (s := Finset.univ) (fun W hW => (hW (Finset.mem_univ W)).elim)]
-  exact exist_sum_queryMass_relAB_eq_six
+  convert exist_sum_queryMass_relAB_eq_six using 1
+  congr 1
+  funext world
+  congr 1
 
 theorem exist_queryProb_relAB_eq_two_thirds :
     (clauseMassSemantics existGroundMLN existFullSupport).queryProb existRelABQuery =

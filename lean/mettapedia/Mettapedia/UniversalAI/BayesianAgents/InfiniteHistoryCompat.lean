@@ -652,7 +652,6 @@ theorem environmentMeasureWithPolicy_map_frestrictLe
     (κ := @Mettapedia.UniversalAI.InfiniteHistory.trajKernelOf StepFamily _
       (transitionKernelWithPolicy μ π) this 0) hf,
     hKmap]
-  rfl
 
 theorem environmentMeasureWithPolicy_cylinderSetAt_succ
     (μ : Environment Action Percept) (π : Agent Action Percept) (h_stoch : isStochastic μ)
@@ -684,7 +683,6 @@ theorem environmentMeasureWithPolicy_cylinderSetAt_succ
           ({p | prefixToHistory t p = h} : Set (Prefix t)) := by
             rw [environmentMeasureWithPolicy_map_frestrictLe (μ := μ) (π := π)
               (h_stoch := h_stoch) (n := t)]
-            rfl
 
 section FiniteHorizonUtility
 
@@ -789,8 +787,8 @@ theorem measurable_discountedRewardSum (γ : DiscountFactor) (t : ℕ) :
       have h_mul :
           Measurable fun traj : Trajectory =>
             γ.val * discountedRewardSum (Action := Action) (Percept := Percept) γ t (trajTail traj) := by
-        simpa using (measurable_const.mul h_tail)
-      simpa [discountedRewardSum] using h_reward.add h_mul
+        exact measurable_const.mul h_tail
+      exact h_reward.add h_mul
 
 omit [Fintype Action] [Fintype Percept] in
 theorem measurable_discountedRewardSumFrom (γ : DiscountFactor) (k t : ℕ) :

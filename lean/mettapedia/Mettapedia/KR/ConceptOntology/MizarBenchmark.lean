@@ -34,7 +34,11 @@ abbrev articleExactGate : EvidenceGate BinaryEvidence := exactGate
 inductive MizarGate where
   | loose
   | strict
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype MizarGate where
+  elems := {.loose, .strict}
+  complete x := by cases x <;> simp
 
 instance : Nonempty MizarGate := ⟨.loose⟩
 

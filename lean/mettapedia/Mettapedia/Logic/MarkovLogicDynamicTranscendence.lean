@@ -229,8 +229,9 @@ private lemma infiniteMLNMassSemantics_queryProb_empty_eq_one
     (hμ : FixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ : Measure (InfiniteWorld Atom))) :
     (infiniteMLNMassSemantics M μ hμ).queryProb [] = 1 := by
-  simp only [MassSemantics.queryProb, infiniteMLNMassSemantics]
-  rw [if_neg (by simp : (1 : ENNReal) ≠ 0)]
+  change (if (1 : ENNReal) = 0 then 0 else
+    (μ : Measure (InfiniteWorld Atom)) (infiniteQueryEvent []) / 1) = 1
+  rw [if_neg one_ne_zero]
   have huniv : infiniteQueryEvent ([] : ConstraintQuery Atom) = Set.univ := by
     ext ω
     simp [infiniteQueryEvent, satisfiesConstraints]

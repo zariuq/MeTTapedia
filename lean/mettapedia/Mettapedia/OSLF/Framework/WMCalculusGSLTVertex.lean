@@ -176,6 +176,7 @@ private theorem intervalRules_nil (i : WMIntervalSemantics) : intervalRules i = 
 /-- All typing axis rules are empty. -/
 private theorem typingRules_nil (q : WMQueryTyping) : typingRules q = [] := by cases q <;> rfl
 
+set_option backward.isDefEq.respectTransparency false in
 theorem wmFullVertexLanguageDef_base_eq (v w : WMFullVertex)
     (hov : v.overlap = w.overlap) (hfg : v.forgetting = w.forgetting)
     (hpv : v.provenance = w.provenance) (hfp : v.fixpoint = w.fixpoint)
@@ -206,6 +207,7 @@ def wmFullVertexIdMorphism (v w : WMFullVertex)
     refine ⟨t, LangReducesStar.single ?_, rfl⟩
     rw [heq]; exact h
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The minimal full vertex has the same rewrite rules as the core WM calculus. -/
 theorem wmFullVertexMinimal_rewrites_eq_core :
     (wmFullVertexLanguageDef wmFullVertexMinimal).rewrites =
@@ -247,6 +249,7 @@ noncomputable def wmMaximalOSLF :=
 def wmFullVertexRuleCount (v : WMFullVertex) : Nat :=
   (wmFullVertexLanguageDef v).rewrites.length
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The minimal vertex has exactly the 5 core rules. -/
 theorem wmFullVertexMinimal_ruleCount :
     wmFullVertexRuleCount wmFullVertexMinimal = 5 := by
@@ -256,6 +259,7 @@ theorem wmFullVertexMinimal_ruleCount :
         provenanceRules, fixpointRules, costRules,
         conservationRules, experimentRules, kripkeRules, carrierRules]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The maximal vertex has 5 core + 1 overlap + 2 forgetting + 1 support +
     6 provenance + 4 fixpoint + 3 cost + 2 conservation + 7 experiment +
     3 kripke + 2 generic = 36 rules. -/

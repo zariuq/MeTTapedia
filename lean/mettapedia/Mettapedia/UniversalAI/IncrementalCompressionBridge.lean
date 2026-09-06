@@ -70,7 +70,8 @@ theorem singletonAlgorithmicProbability_eq_programWeight
     Mettapedia.UniversalAI.SolomonoffPrior.algorithmicProbability_add_program
       (conditionalSlice U condition) ({} : Finset BinString) program source
       (by simp) computes
-  simpa [Mettapedia.UniversalAI.SolomonoffPrior.algorithmicProbability] using added
+  simpa only [Mettapedia.UniversalAI.SolomonoffPrior.algorithmicProbability,
+    Finset.filter_empty, Finset.sum_empty, zero_add] using! added
 
 /-- The feature program contributes its dyadic weight to the finite
 conditional algorithmic probability of the source. -/

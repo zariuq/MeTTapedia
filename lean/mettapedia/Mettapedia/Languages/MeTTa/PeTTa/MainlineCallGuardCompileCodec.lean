@@ -536,6 +536,9 @@ theorem finish_rule_reflects
   rw [← targetEq]
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
     finishTransition, compileHalted, compiledPattern, familyPattern,
     applyBindings, structural, encodeCompileLanguageControl,
     encodeCompilationResult, encodeFamily]
@@ -669,6 +672,9 @@ theorem skipHead_rule_reflects
   · rw [← targetEq]
     simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       skipHeadTransition, compileRunning, applyBindings,
       Mettapedia.GSLT.LanguageDef.CertificateGSLT.applyBindings_fvar,
       ownerLookup, revisionLookup, headLookup, arityLookup, remainingLookup,
@@ -805,6 +811,9 @@ theorem skipArity_rule_reflects
   rw [← targetEq]
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
     skipArityTransition, compileRunning, applyBindings,
     Mettapedia.GSLT.LanguageDef.CertificateGSLT.applyBindings_fvar,
     ownerLookup, revisionLookup, declarationHeadLookup, arityLookup,
@@ -958,6 +967,9 @@ theorem beginDeclaration_rule_reflects
   rw [← targetEq]
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
     beginDeclarationTransition, compileArguments, declarationPattern,
     argModesNil, applyBindings,
     Mettapedia.GSLT.LanguageDef.CertificateGSLT.applyBindings_fvar,
@@ -1004,6 +1016,9 @@ theorem argumentsFinished_rule_reflects
   rw [← targetEq]
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
     argumentsFinishedTransition, compileResult, declarationPattern,
     applyBindings, structural, encodeCompileLanguageControl,
     encodeDeclaration]
@@ -1073,6 +1088,9 @@ theorem fixedInput_rule_reflects
   · rw [← targetEq]
     simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       inputStepTransition, compileArguments, declarationPattern,
       argModesSnoc, applyBindings, structural, encodeCompileLanguageControl,
       encodeDeclaration, encodeArgModes_append_singleton]
@@ -1166,6 +1184,9 @@ theorem checkedInput_rule_reflects
   rw [← targetEq]
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
     checkedInputTransition, inputStepTransition, compileArguments,
     declarationPattern, checkedArgMode, argModesSnoc, applyBindings, structural,
     encodeCompileLanguageControl, encodeDeclaration,
@@ -1251,6 +1272,9 @@ theorem openInput_rule_reflects
   rw [← targetEq]
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
     openInputTransition, compileHalted, outsideFragmentPattern, a,
     applyBindings, encodeCompileLanguageControl, encodeCompilationResult]
 
@@ -1320,6 +1344,9 @@ theorem fixedResult_rule_reflects
   · rw [← targetEq]
     simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       resultStepTransition, compileRunning, declarationPattern, plansSnoc,
       planPattern, applyBindings, structural, encodeCompileLanguageControl,
       encodePlan, encodeDeclaration,
@@ -1418,6 +1445,9 @@ theorem checkedResult_rule_reflects
   rw [← targetEq]
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
     checkedResultTransition, resultStepTransition, compileRunning,
     declarationPattern, checkedResultMode, plansSnoc, planPattern,
     applyBindings, structural, encodeCompileLanguageControl, encodePlan,
@@ -1504,6 +1534,9 @@ theorem openResult_rule_reflects
   rw [← targetEq]
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
     openResultTransition, compileHalted, outsideFragmentPattern, a,
     applyBindings, encodeCompileLanguageControl, encodeCompilationResult]
 

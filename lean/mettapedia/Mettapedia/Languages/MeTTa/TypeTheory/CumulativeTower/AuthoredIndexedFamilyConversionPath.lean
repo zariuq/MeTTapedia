@@ -352,7 +352,7 @@ theorem authoredToNativePath_substitute
             liftReceipt
               (presented.receiptEquiv
                 (occurrence.substitute substitution)) := by
-          rw [substituteAuthoredPath]
+          erw [substituteAuthoredPath.eq_def]
           exact authoredToNativePath_step presented
             (source := substitutedSource) (target := substitutedTarget)
             (occurrence.substitute substitution)
@@ -363,7 +363,7 @@ theorem authoredToNativePath_substitute
             (naturality.substitute occurrence substitution)
         _ = substituteNativePath presented substitution typed
             (authoredToNativePath presented (.step occurrence)) := by
-          rw [authoredToNativePath_step presented
+          erw [authoredToNativePath_step presented
             (source := sourceState) (target := targetState)]
           rfl
   | refl state =>
@@ -386,14 +386,14 @@ theorem authoredToNativePath_substitute
               (.symm path)) =
             .symm (authoredToNativePath presented
               (substituteAuthoredPath presented substitution typed path)) := by
-          rw [substituteAuthoredPath, authoredToNativePath_symm]
+          erw [substituteAuthoredPath.eq_def, authoredToNativePath_symm]
         _ = .symm (substituteNativePath presented substitution typed
               (authoredToNativePath presented path)) := congrArg _ ih
         _ = substituteNativePath presented substitution typed
             (.symm (authoredToNativePath presented path)) := by rfl
         _ = substituteNativePath presented substitution typed
             (authoredToNativePath presented (.symm path)) := by
-          rw [authoredToNativePath_symm]
+          erw [authoredToNativePath_symm]
   | trans first second ihFirst ihSecond =>
       calc
         authoredToNativePath presented
@@ -404,7 +404,7 @@ theorem authoredToNativePath_substitute
                 (substituteAuthoredPath presented substitution typed first))
               (authoredToNativePath presented
                 (substituteAuthoredPath presented substitution typed second)) := by
-          rw [substituteAuthoredPath, authoredToNativePath_trans]
+          erw [substituteAuthoredPath.eq_def, authoredToNativePath_trans]
         _ = .trans
               (substituteNativePath presented substitution typed
                 (authoredToNativePath presented first))
@@ -416,7 +416,7 @@ theorem authoredToNativePath_substitute
               (authoredToNativePath presented second)) := by rfl
         _ = substituteNativePath presented substitution typed
             (authoredToNativePath presented (.trans first second)) := by
-          rw [authoredToNativePath_trans]
+          erw [authoredToNativePath_trans]
 
 /-! ## Positive and negative controls -/
 
@@ -501,7 +501,9 @@ theorem authored_nil_left_association_maps_structurally :
         canonicalNilTypedOccurrence.toNativeConversion := by
   simp [authoredNilLeftAssociated, authoredNilStep,
     TypedOccurrence.toNativeConversion, TypedOccurrence.toNativeStep,
-    TypedOccurrence.nativeEvidence, authoredNativeStepEquiv]
+    TypedOccurrence.nativeEvidence]
+  erw [authoredToNativePath_trans, authoredToNativePath_trans,
+    authoredToNativePath_symm, authoredToNativePath_step]
   rfl
 
 end Canary

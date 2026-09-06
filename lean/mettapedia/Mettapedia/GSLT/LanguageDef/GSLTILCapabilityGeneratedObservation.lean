@@ -158,10 +158,12 @@ theorem supportsMaxSelection_pullbackCapabilityDomain
           score) :
     (route.pullbackCapabilityDomain targetDiscipline chronological parallel
       Independent).SupportsMaxSelection score := by
-  rw [ObservationDiscipline.OperationalDomain.supportsMaxSelection_iff_constantOnReadoutFibers]
-    at supported ⊢
+  apply (ObservationDiscipline.OperationalDomain.supportsMaxSelection_iff_constantOnReadoutFibers
+    (route.pullbackCapabilityDomain targetDiscipline chronological parallel Independent) score).mpr
   intro first second firstMember secondMember sameReadout
-  exact supported
+  exact (ObservationDiscipline.OperationalDomain.supportsMaxSelection_iff_constantOnReadoutFibers
+    (ObservationDiscipline.OperationalDomain.capabilityGenerated
+      targetDiscipline chronological parallel Independent) score).mp supported
     (route.pullbackCapabilityDomain_mapsToTarget targetDiscipline chronological
       parallel Independent firstMember)
     (route.pullbackCapabilityDomain_mapsToTarget targetDiscipline chronological

@@ -65,10 +65,20 @@ def chainEvidenceEquiv (model : PrimeModel) (source target : Claim model) :
       (stepEquiv model).symm witness.2.2⟩
   left_inv witness := by
     rcases witness with ⟨middle, earlier, later⟩
-    simp
+    refine Sigma.ext (β := fun middle =>
+      (primeStepRel model).evidence source middle ×
+        (primeStepRel model).evidence middle target) rfl ?_
+    apply heq_of_eq
+    exact Prod.ext ((stepEquiv model).symm_apply_apply earlier)
+      ((stepEquiv model).symm_apply_apply later)
   right_inv witness := by
     rcases witness with ⟨middle, earlier, later⟩
-    simp
+    refine Sigma.ext (β := fun middle =>
+      (returnedStepRel model).evidence source middle ×
+        (returnedStepRel model).evidence middle target) rfl ?_
+    apply heq_of_eq
+    exact Prod.ext ((stepEquiv model).apply_symm_apply earlier)
+      ((stepEquiv model).apply_symm_apply later)
 
 /-! ## The exact returned image and its strict boundary -/
 

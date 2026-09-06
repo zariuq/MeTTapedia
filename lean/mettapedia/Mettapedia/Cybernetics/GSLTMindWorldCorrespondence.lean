@@ -66,7 +66,7 @@ theorem mapRoute_preserves_routeLengthGeometry
     dist ((translation.mapRoute earlier).length : ℝ)
         ((translation.mapRoute later).length : ℝ) =
       dist (earlier.length : ℝ) (later.length : ℝ)
-  rw [translation.mapRoute_length, translation.mapRoute_length]
+  erw [translation.mapRoute_length, translation.mapRoute_length]
 
 /-! ## Exact operational realization -/
 
@@ -171,7 +171,8 @@ theorem withGoalAndRouteCost_cost_preserved
     (withGoalAndRouteCost translation goalWeight
         goalWeight_nonnegative).resourceCost route =
       ((translation.mapRoute route).length : ℝ) := by
-  rw [withGoalAndRouteCost_resourceCost, translation.mapRoute_length]
+  rw [withGoalAndRouteCost_resourceCost]
+  exact (congrArg (fun length : Nat => (length : ℝ)) (translation.mapRoute_length route)).symm
 
 theorem withGoalAndRouteCost_exact
     {source target : GSLT.{uTerm}}

@@ -244,7 +244,11 @@ inductive Node
   | left
   | right
   | merge
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype Node where
+  elems := {.left, .right, .merge}
+  complete := by intro value; cases value <;> simp
 
 namespace Node
 

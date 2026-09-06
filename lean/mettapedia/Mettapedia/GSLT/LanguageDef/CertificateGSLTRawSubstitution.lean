@@ -313,8 +313,7 @@ theorem eraseOpen_getD {definition : ValidatedCalculusLanguageDef}
   | cons head tail =>
       refine Fin.cases ?_ (fun tailIndex => ?_) index
       · rfl
-      · simpa [OpenDerivationList.eraseOpen, OpenDerivationList.get] using
-          eraseOpen_getD tail tailIndex fallback
+      · exact eraseOpen_getD tail tailIndex fallback
 
 end OpenDerivationList
 

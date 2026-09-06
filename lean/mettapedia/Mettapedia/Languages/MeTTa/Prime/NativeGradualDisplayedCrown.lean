@@ -223,6 +223,7 @@ def rawRefinesWorldOfState {Ground : Type} {source : CostConfig Ground}
       rcases evidence with ⟨target, execution, rfl⟩
       exact .certify execution
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Stale scheduling evidence returns to the exact raw branch rather than
 refuting or serializing it. -/
 theorem stale_state_realizes_raw {Ground : Type}

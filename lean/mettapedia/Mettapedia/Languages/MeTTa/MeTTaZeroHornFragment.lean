@@ -169,7 +169,8 @@ def hornQueryEmbedding (rules : List (DefiniteRule String))
               (hornFact atom) (hornFact atom) _ (hornFact atom)) ↔
           HornStep rules assign atom .request (.answer _)
       unfold hornSpace
-      rw [queryGSLT_step_iff, query_count_eq_stepCount]
+      refine (queryGSLT_step_iff occurrenceModel _ _ _ _ _).trans ?_
+      rw [query_count_eq_stepCount]
       constructor
       · exact HornStep.found
       · intro step

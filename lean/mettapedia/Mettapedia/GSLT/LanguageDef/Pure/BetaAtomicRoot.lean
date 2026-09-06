@@ -798,7 +798,7 @@ theorem hasCompletion_iff_viable (goal : Expr) (state : State) :
     (betaAtomicRoot goal).asRefinementInterface.HasCompletion state ↔ viable state := by
   constructor
   · rintro ⟨suffix, finalState, hrun, hterminal⟩
-    rw [interface_run_eq_filteredRun goal] at hrun
+    have hrun := (interface_run_eq_filteredRun goal suffix state).symm.trans hrun
     cases suffix with
     | nil =>
         have hstate : state = finalState := Option.some.inj hrun

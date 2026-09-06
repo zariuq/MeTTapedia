@@ -169,7 +169,7 @@ theorem sigmoid_queryMass_true_eq_three :
   rw [univ_atomValuation_unit]
   rw [Finset.sum_insert valTrue_not_mem_singleton_valFalse, Finset.sum_singleton]
   simp only [GroundMLN.toCountableMLNSemantics]
-  rw [if_pos (by simpa [constraintQueryHolds, satisfiesConstraints] using qTrue_holds_valTrue),
+  erw [if_pos (by simpa [constraintQueryHolds, satisfiesConstraints] using qTrue_holds_valTrue),
     if_neg (by simpa [constraintQueryHolds, satisfiesConstraints] using qTrue_not_holds_valFalse)]
   simp [sigmoid_worldWeight_true]
 
@@ -266,7 +266,7 @@ theorem conflicting_queryMass_true_eq_three :
   rw [univ_atomValuation_unit]
   rw [Finset.sum_insert valTrue_not_mem_singleton_valFalse, Finset.sum_singleton]
   simp only [GroundMLN.toCountableMLNSemantics]
-  rw [if_pos (by simpa [constraintQueryHolds, satisfiesConstraints] using qTrue_holds_valTrue),
+  erw [if_pos (by simpa [constraintQueryHolds, satisfiesConstraints] using qTrue_holds_valTrue),
     if_neg (by simpa [constraintQueryHolds, satisfiesConstraints] using qTrue_not_holds_valFalse)]
   rw [add_zero]
   exact conflicting_worldWeight_true
@@ -348,7 +348,7 @@ theorem hardZero_queryMass_false_eq_zero :
   rw [univ_atomValuation_unit]
   rw [Finset.sum_insert valTrue_not_mem_singleton_valFalse, Finset.sum_singleton]
   simp only [GroundMLN.toCountableMLNSemantics]
-  rw [if_neg (by simpa [constraintQueryHolds, satisfiesConstraints] using qFalse_not_holds_valTrue),
+  erw [if_neg (by simpa [constraintQueryHolds, satisfiesConstraints] using qFalse_not_holds_valTrue),
     if_pos (by simpa [constraintQueryHolds, satisfiesConstraints] using qFalse_holds_valFalse)]
   simp [hardZero_worldWeight_false]
 

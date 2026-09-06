@@ -13,15 +13,27 @@ namespace SixProgramLedgerExample
 
 inductive Arm where
   | bpPrimary | bpOpportunity | pc | dfa
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype Arm where
+  elems := {.bpPrimary, .bpOpportunity, .pc, .dfa}
+  complete x := by cases x <;> simp
 
 inductive Generation where
   | generation1 | generation2 | generation3
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype Generation where
+  elems := {.generation1, .generation2, .generation3}
+  complete x := by cases x <;> simp
 
 inductive Source where
   | world1BP | world1PC | world2PC | independentPC
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype Source where
+  elems := {.world1BP, .world1PC, .world2PC, .independentPC}
+  complete x := by cases x <;> simp
 
 open Arm Generation Source
 

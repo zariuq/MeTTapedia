@@ -312,6 +312,7 @@ theorem parallelComposite_commutes_adjacent_cross_events
       (parallelComposite left right).observe
         (front ++ [.inr rightEvent, .inl leftEvent] ++ back) := by
   simp [parallelComposite_observe]
+  rfl
 
 end ObservationDiscipline
 

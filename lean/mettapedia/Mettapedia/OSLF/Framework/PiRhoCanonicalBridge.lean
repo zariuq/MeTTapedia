@@ -1930,6 +1930,7 @@ theorem predDomain_rf_fragment_canary_nontrivial :
     (hrf := hrf) (hsafe := hsafeRefl)
     (hAtomPred := fun _ p hp => hp)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Stronger RF canary using predecessor-domain atoms with an actual non-refl
 COMM RF trace. -/
 theorem predDomain_rf_fragment_canary_nontrivial_progress :

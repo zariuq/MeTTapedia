@@ -125,11 +125,11 @@ theorem language_validate (request : DisplayedOccurrenceLanguage) :
   apply LanguageDef.validate_eq_nil_of_constructorOnly
   · rfl
   · rfl
-  · simp [language, formulaSortName, LanguageDef.typeNames, TypeDecl.plain]
-  · simpa [language, modalTerms] using
-      modalTermLabels_nodup request.selectedSites.length
+  · change [formulaSortName].Nodup
+    exact List.nodup_singleton _
+  · exact modalTermLabels_nodup request.selectedSites.length
   · intro term termMembership
-    simp only [language] at termMembership
+    change term ∈ modalTerms request at termMembership
     unfold modalTerms modalTermsForSiteCount modalTermsFrom at termMembership
     rw [List.mem_map] at termMembership
     obtain ⟨slot, _, rfl⟩ := termMembership
@@ -137,7 +137,7 @@ theorem language_validate (request : DisplayedOccurrenceLanguage) :
     simp
   · intro term termMembership parameter parameterMembership typeName
       typeNameMembership
-    simp only [language] at termMembership
+    change term ∈ modalTerms request at termMembership
     unfold modalTerms modalTermsForSiteCount modalTermsFrom at termMembership
     rw [List.mem_map] at termMembership
     obtain ⟨slot, _, rfl⟩ := termMembership
@@ -148,7 +148,7 @@ theorem language_validate (request : DisplayedOccurrenceLanguage) :
     change typeName ∈ [formulaSortName]
     simpa [TermParam.typeExpr, TypeExpr.baseNames] using typeNameMembership
   · intro term termMembership
-    simp only [language] at termMembership
+    change term ∈ modalTerms request at termMembership
     unfold modalTerms modalTermsForSiteCount modalTermsFrom at termMembership
     rw [List.mem_map] at termMembership
     obtain ⟨slot, _, rfl⟩ := termMembership
@@ -185,7 +185,7 @@ theorem singleton_request_has_one_modal_term
     (source : ValidatedLanguageDef)
     (site : DisplayedRewriteSite source.language) :
     (language (.atSelection source [site])).terms.length = 1 := by
-  simp [language, modalTerms, DisplayedOccurrenceLanguage.atSelection]
+  rfl
 
 /-- Sparse demand is observable in the generated artifact: one selected
 occurrence cannot masquerade as two merely because their focused terms agree. -/
@@ -196,8 +196,8 @@ theorem one_site_signature_ne_two_site_signature
       language (.atSelection source [first, second]) := by
   intro equality
   have termLengths := congrArg (fun definition => definition.terms.length) equality
-  simp [language, modalTerms, DisplayedOccurrenceLanguage.atSelection]
-    at termLengths
+  change 1 = 2 at termLengths
+  contradiction
 
 end Canary
 

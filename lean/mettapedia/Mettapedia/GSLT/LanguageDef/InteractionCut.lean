@@ -577,13 +577,13 @@ def rhoInteractionCut : InteractionCutPresentation rhoIGSLT where
   programPlacement := .introduced rfl (by
       intro equality
       have labels := congrArg (fun constructor => constructor.1.label) equality
-      simp [rhoProgramIntroduction, rhoInputConstructor, rhoCoreContact,
-        rhoInteractivePresentation, rhoCalc] at labels)
+      change "PInput" = "PPar" at labels
+      exact (by decide : ("PInput" : String) ≠ "PPar") labels)
   environmentPlacement := .introduced rfl (by
       intro equality
       have labels := congrArg (fun constructor => constructor.1.label) equality
-      simp [rhoEnvironmentIntroduction, rhoOutputConstructor, rhoCoreContact,
-        rhoInteractivePresentation, rhoCalc] at labels)
+      change "POutput" = "PPar" at labels
+      exact (by decide : ("POutput" : String) ≠ "PPar") labels)
   sourceShape :=
     { core := rhoCommRewrite.left
       coreShape := by

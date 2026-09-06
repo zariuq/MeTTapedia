@@ -285,7 +285,7 @@ theorem realizationRefinement_compatible {Ground : Type}
   intro first last worlds
   change some ((realizeWorlds worlds).map RealizedWorld.value) =
     some (worlds.map ExecutionWorld.value)
-  rw [realizeWorlds_values]
+  exact congrArg some (realizeWorlds_values worlds)
 
 def observedRealization {Ground : Type} (source : CostConfig Ground) :
     IndexedObservedRefinement (ambiguousWorldsObserved Ground source)
@@ -364,8 +364,9 @@ theorem targetScheduler_isLossy :
 needs to know whether native parallel realization was earned. -/
 theorem targetScheduler_not_supports_nativeSchedulePolicy :
     ¬ (targetScheduler Ground source).SupportsPolicy hasNativeSchedule := by
-  rw [(targetScheduler Ground source).supportsPolicy_iff_constantOnReadoutFibers]
-  intro constant
+  intro supported
+  have constant := @((targetScheduler Ground source).supportsPolicy_iff_constantOnReadoutFibers
+    hasNativeSchedule).mp supported
   have rawMember :
       (ambiguousWorldArchitecture Ground source).domain.contains
         [rawPairWorld] :=
@@ -378,7 +379,7 @@ theorem targetScheduler_not_supports_nativeSchedulePolicy :
 
 def admission := admittedAt exampleDependencies false source
 
-def active : admission.Active false :=
+theorem active : admission.Active false :=
   admission.activate (exampleDependencies.sameDependencies_refl false)
 
 /-- Current NIK execution realizes the certified world directly. -/
@@ -439,7 +440,7 @@ theorem alternatives_do_not_mint_joint_parallelism :
 
 def admission := admittedAt exampleDependencies false contestedSource
 
-def active : admission.Active false :=
+theorem active : admission.Active false :=
   admission.activate (exampleDependencies.sameDependencies_refl false)
 
 /-- Current NIK realization maps both alternatives and selects neither. -/

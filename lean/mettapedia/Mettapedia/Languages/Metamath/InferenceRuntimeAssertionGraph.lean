@@ -280,9 +280,7 @@ theorem emptyFrame_constantAssertion_graph
     callerVariables_eq := rfl
     dvCheck_ok := by
       simp [DB.dvCheck, DB.dvCheckBool, emptyBoundaryFrame]
-      intro left right
-      intro hmem
-      cases hmem
+      rfl
     conclusion := constantBoundaryFormula
     formula_subst_ok := by
       rfl

@@ -41,7 +41,7 @@ theorem diamond_preserves_entailment (lang : LanguageDef)
     ∀ p, langDiamond lang φ p → langDiamond lang ψ p :=
   by
     intro p holds
-    rw [langDiamond_spec] at holds ⊢
+    erw [langDiamond_spec] at holds ⊢
     obtain ⟨q, step, satisfies⟩ := holds
     exact ⟨q, step, h q satisfies⟩
 
@@ -51,7 +51,7 @@ theorem box_preserves_entailment (lang : LanguageDef)
     ∀ p, langBox lang φ p → langBox lang ψ p :=
   by
     intro p holds
-    rw [langBox_spec] at holds ⊢
+    erw [langBox_spec] at holds ⊢
     intro q step
     exact h q (holds q step)
 

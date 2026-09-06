@@ -172,6 +172,7 @@ theorem canary_negative_unaryBody_insufficientFuel :
     sldQuery kbPQ.prog gaP.toAtom 1 = none := by
   simp [sldQuery, sldSearch, kbPQ, gaP,
     factP, factQ, rulePfromQ, atomP, atomQ, unifyAtoms, unifyFuel]
+  split_ifs <;> exact ⟨rfl, rfl⟩
 
 end Canaries
 

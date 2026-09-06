@@ -529,7 +529,8 @@ omit [Fintype Obj] [Fintype Attr] in
       (S.map (posExtEmbedding (Obj := Obj) (Attr := Attr)))).pos =
         (S.card : ℝ≥0∞) := by
   rw [stampSetEvidence, sum_stampContribution_pos, Finset.sum_map]
-  simp [stampContribution, posExtEmbedding]
+  change (∑ _ ∈ S, (1 : ℝ≥0∞)) = _
+  simp
 
 omit [Fintype Obj] [Fintype Attr] in
 @[simp] theorem stampSetEvidence_posExtEmbedding_neg
@@ -537,7 +538,8 @@ omit [Fintype Obj] [Fintype Attr] in
     (stampSetEvidence
       (S.map (posExtEmbedding (Obj := Obj) (Attr := Attr)))).neg = 0 := by
   rw [stampSetEvidence, sum_stampContribution_neg, Finset.sum_map]
-  simp [stampContribution, posExtEmbedding]
+  change (∑ _ ∈ S, (0 : ℝ≥0∞)) = _
+  simp
 
 omit [Fintype Obj] [Fintype Attr] in
 @[simp] theorem stampSetEvidence_negExtEmbedding_pos
@@ -545,7 +547,8 @@ omit [Fintype Obj] [Fintype Attr] in
     (stampSetEvidence
       (S.map (negExtEmbedding (Obj := Obj) (Attr := Attr)))).pos = 0 := by
   rw [stampSetEvidence, sum_stampContribution_pos, Finset.sum_map]
-  simp [stampContribution, negExtEmbedding]
+  change (∑ _ ∈ S, (0 : ℝ≥0∞)) = _
+  simp
 
 omit [Fintype Obj] [Fintype Attr] in
 @[simp] theorem stampSetEvidence_negExtEmbedding_neg
@@ -554,7 +557,8 @@ omit [Fintype Obj] [Fintype Attr] in
       (S.map (negExtEmbedding (Obj := Obj) (Attr := Attr)))).neg =
         (S.card : ℝ≥0∞) := by
   rw [stampSetEvidence, sum_stampContribution_neg, Finset.sum_map]
-  simp [stampContribution, negExtEmbedding]
+  change (∑ _ ∈ S, (1 : ℝ≥0∞)) = _
+  simp
 
 omit [Fintype Obj] [Fintype Attr] in
 @[simp] theorem stampSetEvidence_posIntEmbedding_pos
@@ -563,7 +567,8 @@ omit [Fintype Obj] [Fintype Attr] in
       (S.map (posIntEmbedding (Obj := Obj) (Attr := Attr)))).pos =
         (S.card : ℝ≥0∞) := by
   rw [stampSetEvidence, sum_stampContribution_pos, Finset.sum_map]
-  simp [stampContribution, posIntEmbedding]
+  change (∑ _ ∈ S, (1 : ℝ≥0∞)) = _
+  simp
 
 omit [Fintype Obj] [Fintype Attr] in
 @[simp] theorem stampSetEvidence_posIntEmbedding_neg
@@ -571,7 +576,8 @@ omit [Fintype Obj] [Fintype Attr] in
     (stampSetEvidence
       (S.map (posIntEmbedding (Obj := Obj) (Attr := Attr)))).neg = 0 := by
   rw [stampSetEvidence, sum_stampContribution_neg, Finset.sum_map]
-  simp [stampContribution, posIntEmbedding]
+  change (∑ _ ∈ S, (0 : ℝ≥0∞)) = _
+  simp
 
 omit [Fintype Obj] [Fintype Attr] in
 @[simp] theorem stampSetEvidence_negIntEmbedding_pos
@@ -579,7 +585,8 @@ omit [Fintype Obj] [Fintype Attr] in
     (stampSetEvidence
       (S.map (negIntEmbedding (Obj := Obj) (Attr := Attr)))).pos = 0 := by
   rw [stampSetEvidence, sum_stampContribution_pos, Finset.sum_map]
-  simp [stampContribution, negIntEmbedding]
+  change (∑ _ ∈ S, (0 : ℝ≥0∞)) = _
+  simp
 
 omit [Fintype Obj] [Fintype Attr] in
 @[simp] theorem stampSetEvidence_negIntEmbedding_neg
@@ -588,7 +595,8 @@ omit [Fintype Obj] [Fintype Attr] in
       (S.map (negIntEmbedding (Obj := Obj) (Attr := Attr)))).neg =
         (S.card : ℝ≥0∞) := by
   rw [stampSetEvidence, sum_stampContribution_neg, Finset.sum_map]
-  simp [stampContribution, negIntEmbedding]
+  change (∑ _ ∈ S, (1 : ℝ≥0∞)) = _
+  simp
 
 omit [Fintype Attr] in
 theorem positiveExtensionalStampedEvidence_exact
@@ -890,11 +898,19 @@ while repeated provenance does not double-count the same witness packet. -/
 inductive RevisionOverlapCanaryObj where
   | left
   | right
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype RevisionOverlapCanaryObj where
+  elems := {.left, .right}
+  complete x := by cases x <;> simp
 
 inductive RevisionOverlapCanaryAttr where
   | only
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype RevisionOverlapCanaryAttr where
+  elems := {.only}
+  complete x := by cases x <;> simp
 
 /-- One positive extensional witness packet at the left canary object. -/
 noncomputable def revisionOverlapCanaryLeftPacket :

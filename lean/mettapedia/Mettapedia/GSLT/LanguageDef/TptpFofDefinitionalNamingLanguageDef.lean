@@ -617,24 +617,31 @@ local macro "certify_open_row" : tactic =>
 private theorem rewrite00_checked :
     RewriteValidationCertificate.check language variablesRewrites[0] = true := by
   certify_variables_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite01_checked :
     RewriteValidationCertificate.check language variablesRewrites[1] = true := by
   certify_variables_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite02_checked :
     RewriteValidationCertificate.check language leafNameRewrites[0] = true := by
   certify_leaf_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite03_checked :
     RewriteValidationCertificate.check language leafNameRewrites[1] = true := by
   certify_leaf_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite04_checked :
     RewriteValidationCertificate.check language leafNameRewrites[2] = true := by
   certify_leaf_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite05_checked :
     RewriteValidationCertificate.check language leafNameRewrites[3] = true := by
   certify_leaf_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite06_checked :
     RewriteValidationCertificate.check language leafNameRewrites[4] = true := by
   certify_leaf_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite07_checked :
     RewriteValidationCertificate.check language leafNameRewrites[5] = true := by
   certify_leaf_row
@@ -696,6 +703,7 @@ private theorem and_allPatternsScoped :
     RewriteValidationCertificate.allPatternsScopedCheck andRule = true := by
   simp only [andRule]
   certify_naming_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem and_fvarsAvoidConstructors :
     RewriteValidationCertificate.fvarsAvoidConstructorsCheck language andRule =
       true := by
@@ -742,6 +750,7 @@ private theorem or_allPatternsScoped :
     RewriteValidationCertificate.allPatternsScopedCheck orRule = true := by
   simp only [orRule]
   certify_naming_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem or_fvarsAvoidConstructors :
     RewriteValidationCertificate.fvarsAvoidConstructorsCheck language orRule =
       true := by
@@ -779,39 +788,50 @@ private theorem rewrite09_checked :
 private theorem rewrite10_checked :
     RewriteValidationCertificate.check language reverseRewrites[0] = true := by
   certify_reverse_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite11_checked :
     RewriteValidationCertificate.check language reverseRewrites[1] = true := by
   certify_reverse_row
 private theorem rewrite12_checked :
     RewriteValidationCertificate.check language reverseRewrites[2] = true := by
   certify_reverse_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite13_checked :
     RewriteValidationCertificate.check language reverseRewrites[3] = true := by
   certify_reverse_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite14_checked :
     RewriteValidationCertificate.check language openRewrites[0] = true := by
   certify_open_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite15_checked :
     RewriteValidationCertificate.check language openRewrites[1] = true := by
   certify_open_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite16_checked :
     RewriteValidationCertificate.check language openRewrites[2] = true := by
   certify_open_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite17_checked :
     RewriteValidationCertificate.check language openRewrites[3] = true := by
   certify_open_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite18_checked :
     RewriteValidationCertificate.check language openRewrites[4] = true := by
   certify_open_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite19_checked :
     RewriteValidationCertificate.check language openRewrites[5] = true := by
   certify_open_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite20_checked :
     RewriteValidationCertificate.check language openRewrites[6] = true := by
   certify_open_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite21_checked :
     RewriteValidationCertificate.check language openRewrites[7] = true := by
   certify_open_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite22_checked :
     RewriteValidationCertificate.check language openRewrites[8] = true := by
   certify_open_row

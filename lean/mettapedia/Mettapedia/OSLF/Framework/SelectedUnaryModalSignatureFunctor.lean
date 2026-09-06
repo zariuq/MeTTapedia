@@ -192,10 +192,14 @@ noncomputable def mapMorphism
     StructuralMorphism (validatedLanguage source) (validatedLanguage target) where
   symbols := symbols morphism
   mapsTypes declaration membership := by
-    simp only [validatedLanguage, language] at membership ⊢
-    simpa [mapTypeDecl, symbols] using membership
+    change List.Mem declaration [TypeDecl.plain formulaSortName] at membership
+    change List.Mem (mapTypeDecl (symbols morphism) declaration) [TypeDecl.plain formulaSortName]
+    have equality := List.mem_singleton.mp membership
+    subst declaration
+    exact List.Mem.head _
   mapsTerms rule membership := by
-    simp only [validatedLanguage, language] at membership ⊢
+    change rule ∈ modalTerms source at membership
+    change mapGrammarRule (symbols morphism) rule ∈ modalTerms target
     unfold modalTerms modalTermsForSiteCount modalTermsFrom at membership ⊢
     obtain ⟨slot, slotMembership, rfl⟩ := List.mem_map.mp membership
     apply List.mem_map.mpr

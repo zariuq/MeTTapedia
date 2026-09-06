@@ -330,7 +330,7 @@ theorem sem_dia_eq_langDiamond (lang : LanguageDef)
     langFormulaSem lang I (.dia φ) = langDiamond lang (langFormulaSem lang I φ) :=
   by
     apply Subtype.ext
-    funext source
+    refine funext (fun (source : Pattern) => ?_)
     apply propext
     rw [langFormulaSem_apply, langDiamond_spec]
     simp only [sem, langFormulaSem_apply]
@@ -342,7 +342,7 @@ theorem sem_dia_eq_langDiamondUsing (relEnv : RelationEnv) (lang : LanguageDef)
       langDiamondUsing relEnv lang (langFormulaSemUsing relEnv lang I φ) :=
   by
     apply Subtype.ext
-    funext source
+    refine funext (fun (source : Pattern) => ?_)
     apply propext
     rw [langFormulaSemUsing_apply, langDiamondUsing_spec]
     simp only [sem, langFormulaSemUsing_apply]
@@ -353,7 +353,7 @@ theorem sem_box_eq_langBox (lang : LanguageDef)
     langFormulaSem lang I (.box φ) = langBox lang (langFormulaSem lang I φ) :=
   by
     apply Subtype.ext
-    funext target
+    refine funext (fun (target : Pattern) => ?_)
     apply propext
     rw [langFormulaSem_apply, langBox_spec]
     simp only [sem, langFormulaSem_apply]
@@ -365,7 +365,7 @@ theorem sem_box_eq_langBoxUsing (relEnv : RelationEnv) (lang : LanguageDef)
       langBoxUsing relEnv lang (langFormulaSemUsing relEnv lang I φ) :=
   by
     apply Subtype.ext
-    funext target
+    refine funext (fun (target : Pattern) => ?_)
     apply propext
     rw [langFormulaSemUsing_apply, langBoxUsing_spec]
     simp only [sem, langFormulaSemUsing_apply]

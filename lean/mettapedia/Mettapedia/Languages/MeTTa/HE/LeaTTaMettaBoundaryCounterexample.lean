@@ -76,7 +76,7 @@ private def typedASpace : Space :=
   Space.ofList [
     .expression [.symbol ":", .symbol "a", .symbol "A"]]
 
-private def noHostDispatch : GroundedDispatch where
+private def noHostDispatch : Spec.Eval.GroundedDispatch where
   executable := fun _ => False
   outcome := fun _ _ _ => False
 

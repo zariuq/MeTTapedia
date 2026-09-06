@@ -591,7 +591,11 @@ inductive NamedPCBenefit where
   | prospectiveCompensation
   | strictSaddleCurvature
   | synchronizedLocalParallelism
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype NamedPCBenefit where
+  elems := {.unitErrorCoordinatePlasticity, .scalarCurvatureNormalization, .localQuadraticTrustCorrection, .prospectiveCompensation, .strictSaddleCurvature, .synchronizedLocalParallelism}
+  complete := by intro value; cases value <;> simp
 
 theorem namedPCBenefit_catalog_cardinality : Fintype.card NamedPCBenefit = 6 := by
   decide

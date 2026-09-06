@@ -137,7 +137,7 @@ theorem axiomStatement_fmla_eq :
 theorem axiomStatement_hyps_eq :
     axiomStatement.ctx.hyps =
       [(("wff" : Metamath.CN), [Metamath.Sym.var xVR]),
-       (("wff" : Metamath.CN), [Metamath.Sym.var xVR])] := by decide
+       (("wff" : Metamath.CN), [Metamath.Sym.var xVR])] := by rfl
 
 theorem axiomStatement_vars_eq :
     axiomStatement.vars = [xVR, xVR] := by decide
@@ -219,6 +219,7 @@ theorem no_supported_wff {e : Metamath.Expr} :
   cases h with
   | hyp g hmem =>
       simp [frameToContext, emptyFrame] at hmem
+      exact List.not_mem_nil hmem
   | var v hsupp =>
       obtain ⟨v', hfind⟩ := hsupp
       rw [varMapOfFrame_emptyFrame] at hfind

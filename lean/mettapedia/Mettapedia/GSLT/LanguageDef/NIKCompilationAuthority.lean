@@ -208,8 +208,8 @@ def stepAuthority
   id := authorityId
   Certificate := EdgeCertificate compilerChecker
   check := fun claim certificate =>
-    if certificate.source = claim.source /\
-        certificate.target = claim.target then
+    if (certificate.source : State) = claim.source /\
+        (certificate.target : State) = claim.target then
       compilerChecker.check certificate.source certificate.target
         certificate.evidence
     else

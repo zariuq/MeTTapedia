@@ -386,6 +386,7 @@ private theorem hasDerivedHead_rhoPar_false (p q : Pattern)
   rw [rhoPar_eq_parComponents_append]
   exact hasDerivedHead_collection_false_of_forall hall
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem hasDerivedHead_encode_rf {P : Process}
     (hrf : ForwardSimulation.RestrictionFree P) :
     ∀ n v,

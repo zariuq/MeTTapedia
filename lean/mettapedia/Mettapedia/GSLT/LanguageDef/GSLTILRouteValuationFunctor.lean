@@ -68,8 +68,7 @@ theorem functorial_count_is_not_route_faithful :
     ¬ Function.Injective
       (fun witness : retainedFiniteRoute collisionTheory Nat () () =>
         functorGrade countValuation witness.1.occurrences) := by
-  simpa only [occurrenceGrade_eq_functorGrade] using
-    count_grade_projection_not_injective
+  exact count_grade_projection_not_injective
 
 end Canary
 

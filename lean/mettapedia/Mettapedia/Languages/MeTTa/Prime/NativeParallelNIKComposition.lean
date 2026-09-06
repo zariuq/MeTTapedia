@@ -217,7 +217,7 @@ theorem relevant_change_has_no_common_current :
     ¬ ∃ currentRevision,
       CommonCurrent dependencies (false, false) (true, false)
         currentRevision := by
-  rw [CommonCurrent.exists_iff_sameDependencies]
+  erw [CommonCurrent.exists_iff_sameDependencies]
   intro same
   have changed := same ()
   change false = true at changed

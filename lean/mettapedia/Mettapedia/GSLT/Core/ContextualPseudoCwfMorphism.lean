@@ -46,6 +46,9 @@ open scoped Pseudofunctor.StrongTrans
 
 universe u v w w'
 
+local instance (Γ : Type) : Category.{0} (TypeOver familiesCwfWithTerminal.toCwf Γ) :=
+  TypeOver.instCategory (C := familiesCwfWithTerminal.toCwf) (Γ := Γ)
+
 /-! ## Pulling back the indexed category of types -/
 
 /-- Reindex the target CwF's type pseudofunctor along a functor of base
@@ -226,6 +229,7 @@ theorem preserves_extensionSubstitution
       simp only [Iso.inv_hom_id_assoc]
       rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Solving cartesian-lift preservation for the selected target lift.  This
 form is convenient when a pasting calculation starts in the reindexed
 translated type. -/
@@ -887,6 +891,7 @@ namespace CwfFamilyMorphism
 
 variable {C D E : Cwf.{u, v, w, w'}}
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Composition of context functors and their dependent type-and-term maps.
 This is the presheaf-level operation underlying composition of strict and
 pseudo CwF morphisms. -/
@@ -1539,6 +1544,7 @@ def compositeSubstitutionIso
     (second.mapTypeFunctor (first.base.obj ⟨Γ⟩).val).mapIso
       (first.substitutionIso substitution A)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The raw naturality component of the composed strong transformation is
 the inverse of the conventional composite substitution comparison. -/
 @[simp]
@@ -1576,24 +1582,7 @@ theorem compositeFamilyTransformation_naturality_hom_substitution
         Functor.whiskerLeft_app, Functor.whiskerRight_app,
         Functor.associator_hom_app, Functor.associator_inv_app,
         Cat.Hom.isoMk_hom, Iso.refl_hom]
-      let component := (nested.naturality sourceArrow).hom.toNatTrans.app A
-      let sourceObject :=
-        (((TypeOver.reindexingPseudofunctor C.toCwf).map sourceArrow ≫
-          nested.app
-            ({ as := Opposite.op (⟨Γ⟩ : C.toCwf.base.Context) } :
-              LocallyDiscrete C.toCwf.base.Contextᵒᵖ)).toFunctor.obj A)
-      let targetObject :=
-        ((nested.app
-            ({ as := Opposite.op (⟨Δ⟩ : C.toCwf.base.Context) } :
-              LocallyDiscrete C.toCwf.base.Contextᵒᵖ) ≫
-          (Pseudofunctor.comp first.base.op.toPseudofunctor
-            (D.toCwf.pullbackTypePseudofunctor second.base)).map
-              sourceArrow).toFunctor.obj A)
-      change (𝟙 sourceObject) ≫ component ≫ (𝟙 targetObject) ≫
-        (𝟙 targetObject) ≫ (𝟙 targetObject) = component
-      rw [Category.id_comp]
-      dsimp only [sourceObject, targetObject]
-      rw [Category.comp_id, Category.comp_id, Category.comp_id]
+      erw [Category.id_comp, Category.comp_id]
     have innerComponent :
         ((Pseudofunctor.StrongTrans.vcomp first.family prewhiskered
           ).naturality sourceArrow).hom.toNatTrans.app A =
@@ -1615,16 +1604,8 @@ theorem compositeFamilyTransformation_naturality_hom_substitution
         NatTrans.comp_app, Functor.whiskerLeft_app,
         Functor.whiskerRight_app, Functor.associator_hom_app,
         Functor.associator_inv_app]
-      let firstComponent :=
-        (second.mapTypeFunctor (first.base.obj ⟨Γ⟩).val).map
-          ((first.family.naturality sourceArrow).hom.toNatTrans.app A)
-      let secondComponent :=
-        (second.family.naturality
-          (Quiver.Hom.op (first.base.map substitution)).toLoc
-          ).hom.toNatTrans.app (first.mapTypeObject A)
-      change 𝟙 _ ≫ firstComponent ≫ 𝟙 _ ≫ secondComponent ≫ 𝟙 _ =
-        firstComponent ≫ secondComponent
-      simp
+      erw [Category.id_comp]
+      rfl
     change
       (((Pseudofunctor.StrongTrans.vcomp nested comparison).naturality
         sourceArrow).hom.toNatTrans.app A).substitution = _
@@ -1816,6 +1797,7 @@ theorem composite_projection_preserved
         secondProjection
     _ = _ := (Category.assoc _ _ _).symm
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The pointwise display-map action of the fibrewise composite is exactly
 conjugation by the composite comprehension comparisons. -/
 theorem composite_display_preserved
@@ -1904,6 +1886,7 @@ theorem composite_display_preserved
         mappedFirstDisplayExpanded
     _ = _ := by simp only [Category.assoc]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The selected cartesian comprehension lift is preserved by the
 composite pseudo morphism.  The proof pastes the two preservation squares;
 the middle seam is exactly `display_preserved` for the first substitution
@@ -1989,7 +1972,6 @@ theorem composite_preserves_extensionSubstitution
     _ = mappedEtaFirst.substitution ≫
         (etaSecond.substitution ≫ targetLift) := by
       rw [mapFirstComparison, preserveSecond]
-      rfl
     _ = _ := by simp only [Category.assoc]
 
 /-- Composition of pseudo CwF morphisms.  The family component is not merely
@@ -2672,6 +2654,7 @@ theorem preserves_extensionSubstitution
         (selectedExtensionSubstitution_reads_vz morphism
           substitution A.val).symm
 
+set_option backward.isDefEq.respectTransparency false in
 /-- A strict CwF morphism preserves a two-stage selected comprehension lift.
 The proof is the pasting of the two one-step preservation squares with the
 cartesian naturality square for the first comparison. -/
@@ -2772,7 +2755,6 @@ theorem preserves_composedExtensionSubstitution
         (rhoAs.inv ≫
           morphism.toFamilyMorphism.base.map sourceLiftFirst ≫ rhoA.hom) := by
       rw [preserveFirst, preserveSecond]
-      rfl
     _ = rhoAss.inv ≫
         (morphism.toFamilyMorphism.base.map sourceLiftSecond ≫
           morphism.toFamilyMorphism.base.map sourceLiftFirst) ≫ rhoA.hom := by

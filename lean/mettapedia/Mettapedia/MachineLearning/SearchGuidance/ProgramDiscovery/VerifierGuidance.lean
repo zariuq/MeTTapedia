@@ -85,6 +85,10 @@ theorem transformedExactSupport_eq_iff
         checkerSet model ↔
       PreservesBooleanPositiveSupport transform := by
   classical
+  have supportMember (score : Program → ℚ) (program : Program) :
+      program ∈ positiveSupport score ↔ 0 < score program :=
+    ⟨fun h => (Finset.mem_filter.mp h).2,
+      fun h => Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩⟩
   constructor
   · intro hequality
     rcases hboundary with ⟨⟨accepted, haccepted⟩, ⟨rejected, hrejected⟩⟩
@@ -92,7 +96,7 @@ theorem transformedExactSupport_eq_iff
     · intro hpositive
       have hmember : rejected ∈
           positiveSupport (fun program ↦ transform (exactReward model program)) := by
-        simp [positiveSupport, exactReward, hrejected, hpositive]
+        simp [supportMember, exactReward, hrejected, hpositive]
       rw [hequality] at hmember
       have htrue := (mem_checkerSet_iff model rejected).1 hmember
       rw [hrejected] at htrue
@@ -100,12 +104,12 @@ theorem transformedExactSupport_eq_iff
     · have hmember : accepted ∈ checkerSet model :=
         (mem_checkerSet_iff model accepted).2 haccepted
       rw [← hequality] at hmember
-      simpa [positiveSupport, exactReward, haccepted] using hmember
+      simpa [supportMember, exactReward, haccepted] using hmember
   · intro hpreserves
     ext program
     cases hchecked : model.checker program
-    · simp [positiveSupport, checkerSet, exactReward, hchecked, hpreserves.1]
-    · simp [positiveSupport, checkerSet, exactReward, hchecked, hpreserves.2]
+    · simp [supportMember, checkerSet, exactReward, hchecked, hpreserves.1]
+    · simp [supportMember, checkerSet, exactReward, hchecked, hpreserves.2]
 
 theorem square_preservesBooleanPositiveSupport :
     PreservesBooleanPositiveSupport fun reward : ℚ ↦ reward ^ 2 := by

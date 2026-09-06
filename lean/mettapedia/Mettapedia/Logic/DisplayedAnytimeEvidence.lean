@@ -138,7 +138,7 @@ end MonotoneEvidence
 
 /-- Every stage contains two distinguishable Boolean evidence values for the
 same true claim. -/
-def boolFibre : MonotoneEvidence.{0} True where
+abbrev boolFibre : MonotoneEvidence.{0} True where
   EvidenceAt := fun _ => Bool
   persist _ witness := witness
   sound _ := True.intro

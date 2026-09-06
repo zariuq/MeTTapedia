@@ -99,8 +99,9 @@ theorem clauseWM_scopedWeight_eq_queryMass
       (W := clauseWMSource M support) constraints =
       (clauseMassSemantics M support).queryMass constraints := by
   classical
-  rw [ValuationWorldModel.scopedWeight_eq_weight]
-  exact clauseWM_weight_eq_queryMass M support constraints
+  exact (ValuationWorldModel.scopedWeight_eq_weight
+    (fg := compiledClauseFactorGraph M support) (W := clauseWMSource M support) constraints).trans
+    (clauseWM_weight_eq_queryMass M support constraints)
 
 /-- The total weight of the clause source equals the MLN total mass. -/
 theorem clauseWM_total_eq_totalMass
@@ -111,7 +112,7 @@ theorem clauseWM_total_eq_totalMass
       (clauseMassSemantics M support).totalMass := by
   classical
   unfold ValuationWorldModel.total
-  rw [clauseWM_weight_eq_queryMass]
+  apply (clauseWM_weight_eq_queryMass M support []).trans
   -- queryMass [] = totalMass: empty constraints are trivially satisfied
   unfold clauseMassSemantics
   simp only [CountableMLNSemantics.toMassSemantics]
@@ -119,7 +120,7 @@ theorem clauseWM_total_eq_totalMass
   unfold CountableMLNSemantics.queryMass CountableMLNSemantics.totalMass
   refine tsum_congr ?_
   intro w
-  simp only [toCountableMLNSemantics]
+  change (if constraintQueryHolds [] w then M.worldWeight support w else 0) = M.worldWeight support w
   -- if (∀ c ∈ [], w c.1 = c.2) then worldWeight else 0 = worldWeight
   rw [if_pos]
   intro c hc; exact absurd hc List.not_mem_nil

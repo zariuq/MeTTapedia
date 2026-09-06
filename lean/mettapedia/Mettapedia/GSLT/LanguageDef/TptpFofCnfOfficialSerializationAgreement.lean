@@ -2138,6 +2138,7 @@ private def EntriesAgreement (plan : LexicalPlan) (polarity source : Pattern) :
       source = some entries →
     EventuallyExact plan (serializeEntries polarity source)
       (renderEntries entries)
+set_option backward.isDefEq.respectTransparency false in
 
 private theorem entriesAgreement (plan : LexicalPlan) (polarity source : Pattern) :
     EntriesAgreement plan polarity source := by

@@ -82,6 +82,7 @@ private theorem typingRules_nil (x : WMQueryTyping) : typingRules x = [] := by c
 
 /-! ## §3: Full Vertex Rule Subset Theorem -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Rewrite rules of a weaker full vertex are a subset of a stronger one.
     `v ≤ w` means `v` has at least as many rules as `w`. -/
 theorem wmFullVertexRules_subset_of_le {v w : WMFullVertex} (h : v ≤ w) :
@@ -122,6 +123,7 @@ theorem wmFullVertexRules_subset_of_le {v w : WMFullVertex} (h : v ≤ w) :
     · exact .inl (.inr (kripkeRules_subset_of_le hk r hkri))
   · exact .inr (carrierRules_subset_of_le hca r hcar)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Rewrite rules subset for extended (6-axis) vertex. -/
 theorem wmExtVertexRules_subset_of_le {v w : WMExtVertex} (h : v ≤ w) :
     ∀ r ∈ (wmExtVertexLanguageDef w).rewrites,

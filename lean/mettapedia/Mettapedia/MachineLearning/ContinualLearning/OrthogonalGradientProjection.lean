@@ -195,6 +195,7 @@ theorem identityMemory_erases_gradient
 
 /-! ## Executable positive and negative fixtures -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Storing the first coordinate preserves it and leaves a second-coordinate
 gradient live, with exact descent margin four. -/
 theorem firstAxisMemory_projects_to_second :
@@ -223,6 +224,7 @@ theorem firstAxisMemory_projects_to_second :
         Matrix.mulVec, Matrix.mul_apply, dotProduct,
         Fin.sum_univ_two]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Orthonormality is load-bearing.  In one dimension a stored vector of
 length two produces the operator `I-4I=-3I`; following the negative nominal
 projected gradient then has positive directional derivative and is strict

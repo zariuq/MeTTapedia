@@ -284,7 +284,7 @@ theorem intrusive_not_serializable :
     serializable.2 [.intrusiveRewind, .foregroundBridge]
       (List.Perm.swap Work.foregroundBridge Work.intrusiveRewind [])
   have targetIsAfterBridge : target = (afterBridge, ∅) := by
-    simpa [semantics, deterministicSemantics, workspaceStep, execute,
+    simpa [semantics, deterministicSemantics, workspaceStep, execute, List.foldl,
       applyWork, initialWorkspace, afterBridge] using targetRun
   have sameObservationAtBridge := sameObservation
   rw [targetIsAfterBridge] at sameObservationAtBridge
@@ -341,7 +341,7 @@ theorem intrusive_pair_refused_by_parallel_backend :
       initialWorkspace := by
   rintro ⟨referenceTarget, ⟨badWave⟩⟩
   have referenceIsIntrusive : referenceTarget = intrusiveReferenceTarget := by
-    simpa [semantics, deterministicSemantics, workspaceStep, execute,
+    simpa [semantics, deterministicSemantics, workspaceStep, execute, List.foldl,
       applyWork, initialWorkspace, intrusiveReferenceTarget] using
         badWave.executionSerializable.1
   have badSerialization := badWave.executionSerializable
@@ -381,8 +381,8 @@ private instance workspaceQueryDecidableEq :
 def replayableAdmissionDecision
     (claim : EventClaim (deterministicTheory workspaceStep observeWorkspace)) :
     Bool :=
-  decide (claim.first = Work.foregroundBridge ∧
-    claim.second = Work.refreshPremiseIndex)
+  decide ((show Work from claim.first) = Work.foregroundBridge ∧
+    (show Work from claim.second) = Work.refreshPremiseIndex)
 
 theorem replayableAdmissionDecision_reflects
     (claim : EventClaim (deterministicTheory workspaceStep observeWorkspace)) :
@@ -390,7 +390,6 @@ theorem replayableAdmissionDecision_reflects
       Admitted replayableParallelBackend claim := by
   simp [replayableAdmissionDecision, Admitted, replayableParallelBackend,
     CanonicalUsefulPair]
-  exact Iff.rfl
 
 def replayableAdmission : AdmissionAuthority replayableParallelBackend :=
   ofBooleanDecision replayableAdmissionDecision

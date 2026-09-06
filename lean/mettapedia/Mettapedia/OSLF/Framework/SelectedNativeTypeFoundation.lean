@@ -283,9 +283,7 @@ theorem stableCarrierTypes_eq_of_object_count
 
 theorem stableCarrierNames_nodup {source : ValidatedLanguageDef}
     (demand : Demand source) : (stableCarrierNames demand).Nodup := by
-  unfold stableCarrierNames stableCarrierTypes
-  simpa [CarrierObjectLanguageDef.carrierSignature,
-    LanguageDef.typeNames] using
+  exact
     CarrierObjectLanguageDef.carrierTypeNames_nodup
       (CarrierObjectLanguageDef.Naming.indexed demand.carrierObjects)
 

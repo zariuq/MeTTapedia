@@ -166,6 +166,7 @@ theorem identityChart_JJt_positiveExample :
         (((ContinuousLinearEquiv.refl ℝ ℝ : ℝ ≃L[ℝ] ℝ) : ℝ →L[ℝ] ℝ)†)) =
       ContinuousLinearMap.id ℝ ℝ := by
   simp
+  exact ContinuousLinearMap.adjoint_id
 
 /-- The previously checked shear is the concrete negative fixture for the
 general theorem: its non-orthogonal chart does not conjugate raw flows. -/

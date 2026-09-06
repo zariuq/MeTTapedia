@@ -62,7 +62,7 @@ core. -/
 def theory {package : ProgramPlan} (compiled : CompiledProgram package) : GSLT :=
   languageGSLT compiled.language
     (ReductionRespectsEquations.of_equation_free
-      (sourceLanguage?_equations_empty compiled.compiled))
+      (sourceLanguage?_isEquationFree compiled.compiled))
 
 /-- Source semantics for the supported program is the established
 premise-aware, contextual `LanguageDef` reduction relation. -/
@@ -114,6 +114,8 @@ theorem dfa_q0_zero_source_step : dfaPeTTa.SourceStep
       semanticDeclarations]
     decide
   · simp [dfaQ0ZeroRule,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRuleUsing,
+      Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
       Mettapedia.OSLF.MeTTaIL.Match.matchPattern,
       Mettapedia.OSLF.MeTTaIL.Match.matchArgs,

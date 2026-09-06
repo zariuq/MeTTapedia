@@ -177,7 +177,8 @@ theorem target_reachable
     (policyGSLT policy).MultiStep source closure.target := by
   have reachable := driver.toHostedDriver.runReport_multiStep
     closure.fuel source initialControl
-  simpa [closure.completed] using reachable
+  rw [closure.completed] at reachable
+  exact reachable
 
 end FiniteClosure
 

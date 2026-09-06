@@ -63,7 +63,7 @@ theorem producesAnswerSatisfying_request_iff
         (saturatePredicate (evaluationGSLT source)
           (emittedAnswerSatisfies source observation))).1
       (.request initial request) ↔ _
-  rw [gsltDiamond_spec]
+  refine (gsltDiamond_spec _ _ _).trans ?_
   constructor
   · rintro ⟨middle, firstStep, middleMeaning⟩
     cases firstStep with
@@ -71,8 +71,8 @@ theorem producesAnswerSatisfying_request_iff
         change gsltDiamond (evaluationGSLT source)
           (saturatePredicate (evaluationGSLT source)
             (emittedAnswerSatisfies source observation)).1 _ at middleMeaning
-        rw [gsltDiamond_spec] at middleMeaning
-        obtain ⟨target, secondStep, targetMeaning⟩ := middleMeaning
+        obtain ⟨target, secondStep, targetMeaning⟩ :=
+          (gsltDiamond_spec _ _ _).1 middleMeaning
         have observed : emittedAnswerSatisfies source observation target :=
           (saturatePredicate_apply_iff_of_equiv_iff_eq
             (evaluationGSLT source) (fun _ _ => Iff.rfl)
@@ -87,7 +87,7 @@ theorem producesAnswerSatisfying_request_iff
       (saturatePredicate (evaluationGSLT source)
         (emittedAnswerSatisfies source observation)).1
       (.completed initial request final answers)
-    rw [gsltDiamond_spec]
+    apply (gsltDiamond_spec _ _ _).2
     refine ⟨.answer initial request final answers occurrence,
       EvaluationStep.emitted occurrence, ?_⟩
     exact (saturatePredicate_apply_iff_of_equiv_iff_eq

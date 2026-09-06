@@ -352,8 +352,11 @@ theorem causalLE_relabel_iff {Other : Type*} [Fintype Other]
       receipt.CausalLE earlier later := by
   constructor
   · intro path
-    simpa [CausalLE, DirectCause, relabel] using
-      path.lift ids.symm (fun _ _ edge => by simpa [DirectCause, relabel] using edge)
+    have lifted : Relation.ReflTransGen receipt.DirectCause
+        (ids.symm (ids earlier)) (ids.symm (ids later)) :=
+      path.lift (p := receipt.DirectCause) ids.symm (fun _ _ edge => edge)
+    change Relation.ReflTransGen receipt.DirectCause earlier later
+    simpa only [Equiv.symm_apply_apply] using lifted
   · intro path
     simpa [CausalLE, DirectCause, relabel] using
       path.lift ids (fun _ _ edge => by simpa [DirectCause, relabel] using edge)

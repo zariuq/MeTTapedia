@@ -648,7 +648,7 @@ theorem readBodyAt?_refines_neutral
           rw [if_pos wordBodyExact]
           unfold ByteRegion.readBodyAtMemory?
           simp only [toNeutral]
-          rw [if_pos bodyExact]
+          erw [if_pos bodyExact]
           rw [checkedAdd_of_lt bodyBase compiledLayout.termOffset
             termStartFits']
           rw [checkedAdd_of_lt bodyBase compiledLayout.childOffset

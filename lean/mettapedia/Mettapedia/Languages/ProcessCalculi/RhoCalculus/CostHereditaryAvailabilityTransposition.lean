@@ -181,6 +181,7 @@ theorem canonicalizeReifiedTargetFrame_availabilityTransposedAligned
   simpa [CostStaticAvailabilityRegime.largeDepth, targetBoundEq,
     List.length_append] using normalized
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Restoring the two canonical frames at their actual endpoint binder depths
 produces the same compact hereditary static result. -/
 theorem normalizeHereditaryWithInventory_availabilityTransposed_eq

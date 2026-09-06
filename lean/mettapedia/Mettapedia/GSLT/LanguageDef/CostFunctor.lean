@@ -13,7 +13,7 @@ identity and composition laws hold on every string, not only on declarations.
 
 namespace Mettapedia.GSLT.LanguageDef
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open StructuralMorphism
 
@@ -559,8 +559,17 @@ theorem costLanguageDefSymbolMap_sort_apparatus
     (symbols : LanguageDefSymbolMap) (sort : String) :
     (costLanguageDefSymbolMap symbols).sort (costApparatusSortName sort) =
       costApparatusSortName sort := by
-  simp [costLanguageDefSymbolMap, mapTaggedName, costBaseSortTag,
-    costApparatusSortName, dropListPrefix?]
+  change mapTaggedName costBaseSortTag symbols.sort
+    (costApparatusSortName sort) = costApparatusSortName sort
+  unfold mapTaggedName
+  split
+  next suffix found =>
+    apply False.elim
+    apply costBaseSortName_ne_apparatus (String.ofList suffix) sort
+    apply String.toList_injective
+    simpa only [costBaseSortName, String.toList_append, String.toList_ofList] using
+      append_eq_of_dropListPrefix?_eq_some found
+  next => rfl
 
 @[simp]
 theorem costLanguageDefSymbolMap_constructor_apparatus
@@ -568,9 +577,25 @@ theorem costLanguageDefSymbolMap_constructor_apparatus
     (costLanguageDefSymbolMap symbols).constructor
         (costApparatusConstructorName constructor) =
       costApparatusConstructorName constructor := by
-  simp [costLanguageDefSymbolMap, mapCostConstructorName,
-    costBaseConstructorTag, costWrappedConstructorTag,
-    costApparatusConstructorName, dropListPrefix?]
+  change mapCostConstructorName symbols.constructor
+    (costApparatusConstructorName constructor) = costApparatusConstructorName constructor
+  unfold mapCostConstructorName
+  split
+  next suffix found =>
+    apply False.elim
+    apply costBaseConstructorName_ne_apparatus (String.ofList suffix) constructor
+    apply String.toList_injective
+    simpa only [costBaseConstructorName, String.toList_append, String.toList_ofList] using
+      append_eq_of_dropListPrefix?_eq_some found
+  next =>
+    split
+    next suffix found =>
+      apply False.elim
+      apply costWrappedConstructorName_ne_apparatus (String.ofList suffix) constructor
+      apply String.toList_injective
+      simpa only [costWrappedConstructorName, String.toList_append, String.toList_ofList] using
+        append_eq_of_dropListPrefix?_eq_some found
+    next => rfl
 
 @[simp]
 theorem costLanguageDefSymbolMap_id :

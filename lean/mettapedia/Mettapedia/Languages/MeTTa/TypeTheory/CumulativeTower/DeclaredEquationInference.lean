@@ -289,10 +289,9 @@ def generatedRuleId (ordinal : Nat) : RuleId :=
 
 theorem generatedRuleId_injective : Function.Injective generatedRuleId := by
   intro left right equality
-  have lengthEquality := congrArg (fun ruleId => ruleId.value.length) equality
-  simp [generatedRuleId, AuthoredConstantInference.unaryOrdinal_length]
-    at lengthEquality
-  omega
+  apply AuthoredConstantInference.unaryOrdinal_injective
+  exact (String.append_right_inj "prime-authored-equation.").mp
+    (congrArg RuleId.value equality)
 
 def generatedRule (ordinal : Nat) {declarations : List SourceDeclaration}
     (located : LocatedEquation declarations) : RuleSchema :=
@@ -698,25 +697,7 @@ set_option maxRecDepth 20000 in
 private theorem example_delta_disjoint :
     (equationFactDelta exampleSource).disjointFrom
       basePresentation.1 = true := by
-  unfold equationFactDelta
-  rw [example_elaborates]
-  simp [CalculusLanguageExtension.disjointFrom, basePresentation,
-    generatedRules, exampleDeclarations, equationInventory, liftConstant,
-    liftPriorEquation, generatedRule, generatedRuleId,
-    AuthoredConstantInference.unaryOrdinal,
-    typedConversionExtension, typedConversionDelta,
-    DeclarationAwareFormedTyping.formedTypingExtension,
-    ValidatedCalculusLanguageExtension.target, DeclarationAwareFormedTyping.formedTypingDelta,
-    DeclarationAwareCheckedContext.contextFormationExtension,
-    DeclarationAwareCheckedContext.contextFormationDelta,
-    CalculusLanguageExtension.apply,
-    DeclarationAwareCheckedContext.Structural.checked,
-    DeclarationAwareStructuralTyping.checked,
-    DeclarationAwareStructuralTyping.definition,
-    DeclarationAwareStructuralTyping.definition,
-    DeclarationAwareStructuralTyping.Data.definition,
-    DeclarationAwareDataLanguage.definition]
-  decide
+  decide +kernel
 
 set_option maxRecDepth 20000 in
 private theorem example_delta_policy :
@@ -745,83 +726,7 @@ set_option maxRecDepth 20000 in
 private theorem example_target_valid :
     ((equationFactDelta exampleSource).apply
       basePresentation.1).isValid = true := by
-  unfold equationFactDelta
-  rw [example_elaborates]
-  unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
-  have languageValidate :
-      (({ newTerms := []
-          newJudgments := [{ head := "prime-authored-equation", arity := 8 }]
-          newRules := generatedRules exampleDeclarations } :
-        CalculusLanguageExtension).apply
-        basePresentation.1).toLanguageDef.validate = [] := by
-    simpa [equationFactDelta, example_elaborates] using
-      example_target_language_validate
-  rw [languageValidate]
-  simp [basePresentation, generatedRules, exampleDeclarations,
-    equationInventory, liftConstant, liftPriorEquation, generatedRule,
-    generatedRuleId, AuthoredConstantInference.unaryOrdinal,
-    LocatedEquation.claim, encodeEquationClaim, equationFactPattern,
-    duplicateSchema, interleavedEntry,
-    SourceEquation.sourceIndex, SourceEquation.equationIndex,
-    typedConversionExtension, typedConversionDelta,
-    typedConversionReflRule, typedConversionPattern,
-    DeclarationAwareFormedTyping.formedTypingExtension,
-    ValidatedCalculusLanguageExtension.target, DeclarationAwareFormedTyping.formedTypingDelta,
-    DeclarationAwareFormedTyping.formedTypingRule,
-    DeclarationAwareFormedTyping.formedHasTypePattern,
-    DeclarationAwareCheckedContext.contextFormationExtension,
-    DeclarationAwareCheckedContext.contextFormationDelta,
-    DeclarationAwareCheckedContext.Structural.checked,
-    DeclarationAwareStructuralTyping.checked,
-    DeclarationAwareStructuralTyping.definition,
-    DeclarationAwareStructuralTyping.definition,
-    DeclarationAwareStructuralTyping.Data.definition,
-    DeclarationAwareStructuralTyping.legacyGroundRule,
-    DeclarationAwareStructuralTyping.sortRule,
-    DeclarationAwareStructuralTyping.reflRule,
-    DeclarationAwareStructuralTyping.piFormRule,
-    DeclarationAwareStructuralTyping.hasTypePattern,
-    DeclarationAwareStructuralTyping.tmHeadPattern,
-    DeclarationAwareStructuralTyping.tmReflPattern,
-    DeclarationAwareStructuralTyping.tmIdPattern,
-    DeclarationAwareStructuralTyping.tmPiPattern,
-    DeclarationAwareStructuralTyping.headSortPattern,
-    DeclarationAwareStructuralTyping.levelSuccPattern,
-    DeclarationAwareStructuralTyping.levelMaxPattern,
-    DeclarationAwareStructuralTyping.natSuccPattern,
-    DeclarationAwareStructuralTyping.ctxSnocPattern,
-    DeclarationAwareCheckedContext.contextNilRule,
-    DeclarationAwareCheckedContext.contextSnocRule,
-    DeclarationAwareCheckedContext.contextFormedPattern,
-    DeclarationAwareCheckedContext.encodeLevelSpine,
-    DeclarationAwareCheckedContext.levelSpineNilConstructor,
-    DeclarationAwareCheckedContext.levelSpineSnocConstructor,
-    DeclarationAwareDataLanguage.dataConstructor,
-    DeclarationAwareDataLanguage.definition,
-    DeclarationAwareDataLanguage.constructorArities,
-    DeclarationAwareDataLanguage.kernelDataType, TypeDecl.plain,
-    DeclarationAwarePatternCodec.encodeNat,
-    DeclarationAwarePatternCodec.encodeDeclName,
-    DeclarationAwarePatternCodec.encodeLevel,
-    DeclarationAwarePatternCodec.encodeTowerHead,
-    DeclarationAwarePatternCodec.towerHeadCodec,
-    DeclarationAwarePatternCodec.encodeCtx,
-    DeclarationAwarePatternCodec.encodeTm,
-    Tower.zero, CalculusLanguageExtension.apply, CalculusLanguageDef.ruleIds,
-    CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
-    CalculusLanguageDef.conversionDeclarationValid,
-    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
-    RuleSchema.occurrences, RuleSchema.patterns,
-    patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
-    patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
-    fixedConstructorListsValid, languageHasConstructorArity,
-    Pattern.isWellScoped, Pattern.isWellScopedAt,
-    Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
-    Pattern.hasCanonicalBinderMetadataList, Pattern.zipHead,
-    Pattern.mapHead, Pattern.evalHead]
-  decide
+  decide +kernel
 
 private def exampleExtension : ValidatedCalculusLanguageExtension basePresentation where
   extension := equationFactDelta exampleSource

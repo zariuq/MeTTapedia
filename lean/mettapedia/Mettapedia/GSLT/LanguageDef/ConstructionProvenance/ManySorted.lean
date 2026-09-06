@@ -449,7 +449,7 @@ theorem erase_not_injective :
   intro injective
   have recordsEqual : twoDirect = twoComposed := by
     apply injective
-    simp [twoDirect, twoComposed, two_routes_evaluate_equally]
+    exact congrArg (Sigma.mk Kind.number) two_routes_evaluate_equally
   exact two_routes_are_distinct
     (congrArg (constructionReceiptLayer.route arithmetic) recordsEqual)
 

@@ -81,6 +81,8 @@ theorem canary_occurs_rejects_all_fuel (fuel : ℕ) :
       rfl
   | succ n =>
       simp [eqOccurs, xTerm, fxTerm, uSig, unifyFuel, Term.occursIn]
+      intro impossible
+      cases impossible
 
 /-- Semantic negative canary at the occurs-check boundary: `x = f(x)` has no
 first-order unifier. -/
@@ -101,6 +103,7 @@ private theorem deltaNonOccurs_unifies_eqNonOccurs :
   simp [eqNonOccurs] at hp
   rcases hp with rfl
   simp [deltaNonOccurs, xTerm, fcTerm, Subst.applyTerm, Subst.single]
+  rfl
 
 /-- Positive completeness canary: for the non-occurs equation `x = f(c0)`,
 the global semantic endpoint produces executable success. -/

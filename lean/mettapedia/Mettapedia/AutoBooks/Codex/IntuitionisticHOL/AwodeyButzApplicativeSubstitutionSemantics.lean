@@ -1004,7 +1004,7 @@ noncomputable def reindexableApplicativeInterp :
               (ApplicativeSubst.eval
                 (I := reindexableApplicativeInterp (M := M))
                 (Γ := Γ) (Δ := Δ) σs)).toContinuousMap γ) := by
-              rw [EtaleSpace.BasicTopologicalInterpretation.CtxTerm.reindex_apply]
+              erw [EtaleSpace.BasicTopologicalInterpretation.CtxTerm.reindex_apply]
               symm
               exact var_val_decode (M := M) x _
       _ =

@@ -261,7 +261,7 @@ theorem post_dispatch_fallback_catches_unmatched_c :
     postDispatchOrElse (EmptyDemandCoherence.pure Answer.c) selectiveDispatch
       (EmptyDemandCoherence.pure Action.fallback) =
         EmptyDemandCoherence.pure Action.fallback := by
-  simp [postDispatchOrElse_catches_downstream_zero, selectiveDispatch]
+  rfl
 
 /-- Permanent separation canary: source-local fallback and post-dispatch
 fallback disagree on an unmatched value. -/

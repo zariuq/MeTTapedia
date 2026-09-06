@@ -150,7 +150,7 @@ def guardRowEvidenceOfMeanings {slot : Occurrence} {before : Pattern}
   have formulaExact :
       (authoredClaims premiseProfile slot).get rowIndex =
         authoredClaim premiseProfile slot premise := by
-    simp [authoredClaims, premise]
+    exact List.getElem_ofFn rowIndex.isLt
   exact
     { premise := premise
       formula_eq := formulaExact
@@ -158,7 +158,7 @@ def guardRowEvidenceOfMeanings {slot : Occurrence} {before : Pattern}
 
 /-- Ordered guard-row evidence reconstructs the complete relation meaning at
 the one shared matcher world. -/
-def meaningsOfGuardRowEvidence {slot : Occurrence} {before : Pattern}
+theorem meaningsOfGuardRowEvidence {slot : Occurrence} {before : Pattern}
     (environment : ActivationEnvironment slot before)
     (evidence : FormulaRowEvidence (guardModel slot before) environment
       (authoredClaims premiseProfile slot)) :
@@ -206,8 +206,9 @@ theorem guardContextSatisfies_iff_groundMeanings
   change
     ContextSatisfies (guardModel slot before) environment
         (ContextSchema.prepend (authoredClaims premiseProfile slot) delta) ↔ _
-  rw [contextSatisfies_prepend_iff,
-    guardRowSatisfies_iff_groundMeanings]
+  refine (contextSatisfies_prepend_iff (guardModel slot before) environment
+    (authoredClaims premiseProfile slot) delta).trans ?_
+  rw [guardRowSatisfies_iff_groundMeanings]
   constructor
   · exact And.left
   · intro meanings

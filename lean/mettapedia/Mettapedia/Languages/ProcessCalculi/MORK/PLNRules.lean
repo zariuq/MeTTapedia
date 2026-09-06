@@ -319,7 +319,7 @@ theorem pln_step_implies_mork_fireSourceRule
     ∃ r_source ∈ languageDefToSourceExecRules plnPremiseLanguageDef,
       ∃ σ : Subst, applySinks s σ r_source.tmpl ∈ fireSourceRule s r_source :=
   languageStep_implies_mork_fireSourceRule
-    relEnv plnPremiseLanguageDef p q step rfl
+    relEnv plnPremiseLanguageDef p q step
     (by
       intro rule ruleMember
       simp [plnPremiseLanguageDef] at ruleMember
@@ -353,7 +353,7 @@ theorem pln_guarded_step_implies_mork_fireSourceRule
     ∃ r_source ∈ languageDefToSourceExecRulesExt plnGuardedPremiseLanguageDef,
       ∃ σ : Subst, applySinks s σ r_source.tmpl ∈ fireSourceRule s r_source :=
   languageStep_implies_mork_fireSourceRuleExt
-    relEnv plnGuardedPremiseLanguageDef p q step rfl
+    relEnv plnGuardedPremiseLanguageDef p q step
     (by
       intro rule ruleMember
       simp [plnGuardedPremiseLanguageDef] at ruleMember

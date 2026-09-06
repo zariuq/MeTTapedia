@@ -558,6 +558,7 @@ private theorem and_leftDeclared :
       true := by
   simp only [andRule]
   certify_generation_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem and_rightDeclared :
     RewriteValidationCertificate.patternDeclaredCheck language andRule.right =
       true := by
@@ -572,6 +573,7 @@ private theorem and_allPatternsScoped :
     RewriteValidationCertificate.allPatternsScopedCheck andRule = true := by
   simp only [andRule]
   certify_generation_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem and_fvarsAvoidConstructors :
     RewriteValidationCertificate.fvarsAvoidConstructorsCheck language andRule =
       true := by
@@ -604,6 +606,7 @@ private theorem or_leftDeclared :
       true := by
   simp only [orRule]
   certify_generation_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem or_rightDeclared :
     RewriteValidationCertificate.patternDeclaredCheck language orRule.right =
       true := by
@@ -618,6 +621,7 @@ private theorem or_allPatternsScoped :
     RewriteValidationCertificate.allPatternsScopedCheck orRule = true := by
   simp only [orRule]
   certify_generation_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem or_fvarsAvoidConstructors :
     RewriteValidationCertificate.fvarsAvoidConstructorsCheck language orRule =
       true := by
@@ -641,6 +645,7 @@ private theorem or_rightBound :
 private theorem rewrite00_checked :
     RewriteValidationCertificate.check language variablesRewrites[0] = true := by
   certify_variables_row
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite01_checked :
     RewriteValidationCertificate.check language variablesRewrites[1] = true := by
   certify_variables_row
@@ -685,6 +690,7 @@ private theorem rewrite12_checked :
       or_rightDeclared or_premisesDeclared or_allPatternsScoped
       or_fvarsAvoidConstructors or_bindersAvoidConstructors
       or_contextAvoidsConstructors or_rightBound
+set_option backward.isDefEq.respectTransparency false in
 private theorem rewrite13_checked :
     RewriteValidationCertificate.check language generateRewrites[0] = true := by
   certify_generate_row

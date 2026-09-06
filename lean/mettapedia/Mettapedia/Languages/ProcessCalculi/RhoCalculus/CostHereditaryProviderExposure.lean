@@ -91,6 +91,7 @@ theorem canonicalize_ne_subst_of_isObjectPattern
 
 namespace RhoCollapsingLeafExposure
 
+set_option backward.isDefEq.respectTransparency false in
 /-- **The exposure is an agreement of hereditary normal forms.**
 
 The atom constructor pins the partner to the restored selected atom, and its

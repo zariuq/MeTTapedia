@@ -556,7 +556,8 @@ omit [DecidableEq V] in
       have hfs : RespectsAll (V := V) (β := β) (K := K) fs := by
         intro ψ hψ
         exact h ψ (by simp [hψ])
-      simp [bundleRespectsAll, ih]
+      change φ :: _ = φ :: fs
+      exact congrArg (List.cons φ) (ih hfs)
 
 @[simp] theorem combineAll_bundleRespectsAll
     (fs : List (Valuation V β K))

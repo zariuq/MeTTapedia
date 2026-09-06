@@ -109,7 +109,7 @@ theorem rho_bvar_lookup_of_tree
     {index : Nat} {type : TypeExpr}
     (tree : CostRegionTree rhoCIGSLT targetFree available outer (.bvar index)
       type) :
-    (available ++ outer)[index]? = some type := by
+    getElem? (available ++ outer) index = some type := by
   cases tree.structuralRootView tree.rootIsStatic_eq_false_of_bvar with
   | bvar lookup => exact lookup
 

@@ -121,6 +121,7 @@ def reindexProductTermMap {rules : Rules Head}
       subst morphism.substitution term := by
   simp [reindexProductTermMap, ExactMap.comp, reindexTermMap,
     reindexTermAtCodeMap]
+  rfl
 
 theorem lambda_raw_natural {rules : Rules Head}
     {source target : FormedContext rules}
@@ -185,7 +186,7 @@ theorem application_raw_natural {rules : Rules Head}
           reindexApplicationInputMap, productMap, reindexTermMap,
           reindexTermAtCodeMap, TypeOver.reindex,
           liftContextHom_substitution, subst, subst_inst0]
-      all_goals rfl
+      all_goals first | rfl | exact subst_inst0 _ _ _
 
 /-- Dependent application satisfies the Beck--Chevalley square at the
 displayed gradual level. -/
@@ -263,6 +264,7 @@ def reindexPairInputMap {rules : Rules Head}
       subst morphism.substitution term := by
   simp [reindexSumTermMap, ExactMap.comp, reindexTermMap,
     reindexTermAtCodeMap]
+  rfl
 
 theorem pair_raw_natural {rules : Rules Head}
     {source target : FormedContext rules}
@@ -276,6 +278,7 @@ theorem pair_raw_natural {rules : Rules Head}
   cases input with
   | mk first second =>
       simp [pairMap, reindexPairInputMap, subst]
+      rfl
 
 /-- Dependent pair introduction is natural in its ambient formed context. -/
 def pairNaturalitySquare {rules : Rules Head}
@@ -323,6 +326,7 @@ theorem firstProjection_raw_natural {rules : Rules Head}
       (firstProjectionMap (sum.reindex morphism)).mapRaw
         ((reindexSumTermMap sum morphism).mapRaw pair) := by
   simp [reindexTermMap, reindexTermAtCodeMap, firstProjectionMap, subst]
+  rfl
 
 def firstProjectionNaturalitySquare {rules : Rules Head}
     {source target : FormedContext rules}
@@ -351,7 +355,7 @@ theorem secondProjection_raw_natural {rules : Rules Head}
   apply RawJudgment.ext <;>
     simp [reindexJudgmentMap, secondProjectionMap, TypeOver.reindex,
       liftContextHom_substitution, subst, subst_inst0]
-  all_goals rfl
+  all_goals first | rfl | exact subst_inst0 _ _ _
 
 def secondProjectionNaturalitySquare {rules : Rules Head}
     {source target : FormedContext rules}
@@ -559,7 +563,7 @@ theorem piBeta_raw_natural {rules : Rules Head}
     simp [reindexHomogeneousStepMap, piBetaMap, reindexPiBetaInputMap,
       productMap, reindexTermMap, reindexTermAtCodeMap,
       TypeOver.reindex, liftContextHom_substitution, subst, subst_inst0]
-  all_goals rfl
+  all_goals first | rfl | exact subst_inst0 _ _ _
 
 /-- Pi beta receipts commute with every typed context substitution. -/
 def piBetaNaturalitySquare {rules : Rules Head}
@@ -738,7 +742,7 @@ theorem sigmaSecondBeta_raw_natural {rules : Rules Head}
     simp [reindexDependentStepMap, sigmaSecondBetaMap,
       reindexPairInputMap, TypeOver.reindex, liftContextHom_substitution,
       subst, subst_inst0]
-  all_goals rfl
+  all_goals first | rfl | exact subst_inst0 _ _ _
 
 /-- The term-level second-beta receipt is strictly stable under ambient
 substitution. -/

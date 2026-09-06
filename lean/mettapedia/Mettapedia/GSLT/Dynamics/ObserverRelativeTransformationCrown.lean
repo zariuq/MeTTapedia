@@ -602,7 +602,8 @@ theorem exact_occurrence_bag_refuses_coarse_drop_shape :
     transformation.removed_eq_zero_at_exact_occurrence_bag
       control identityIndex_exact
   rw [removedEqual] at noRemoval
-  simp at noRemoval
+  have impossible : (1 : Nat) = 0 := congrArg Multiset.card noRemoval
+  omega
 
 end Canary
 

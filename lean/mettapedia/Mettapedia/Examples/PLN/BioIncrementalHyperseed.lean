@@ -37,13 +37,21 @@ open scoped ENNReal
 inductive CandidatePair where
   | pairA
   | pairB
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype CandidatePair where
+  elems := {.pairA, .pairB}
+  complete x := by cases x <;> simp
 
 inductive Mechanism where
   | regulatory
   | eqtl
   | abc
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype Mechanism where
+  elems := {.regulatory, .eqtl, .abc}
+  complete x := by cases x <;> simp
 
 structure BioObservation where
   pair : CandidatePair

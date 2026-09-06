@@ -146,19 +146,19 @@ def probabilityToWMVertex (v : ProbabilityVertex) : WMVertex :=
   | logic =>
       cases h : v .logic <;>
         simp [probabilityToWMVertex, wmToProbabilityVertex, mkWMVertex,
-          logicToDistributivity, distributivityToWMLogic, h]
+          logicToDistributivity, distributivityToWMLogic, h] <;> rfl
   | truthValue =>
       cases h : v .truthValue <;>
         simp [probabilityToWMVertex, wmToProbabilityVertex, mkWMVertex,
-          truthValueToPrecision, precisionToTruthValue, h]
+          truthValueToPrecision, precisionToTruthValue, h] <;> rfl
   | interval =>
       cases h : v .interval <;>
         simp [probabilityToWMVertex, wmToProbabilityVertex, mkWMVertex,
-          intervalToAdditivity, additivityToWMInterval, h]
+          intervalToAdditivity, additivityToWMInterval, h] <;> rfl
   | typing =>
       cases h : v .typing <;>
         simp [probabilityToWMVertex, wmToProbabilityVertex, mkWMVertex,
-          typingToSupport, supportToWMTyping, h]
+          typingToSupport, supportToWMTyping, h] <;> rfl
 
 theorem wmToProbabilityVertex_injective : Function.Injective wmToProbabilityVertex := by
   intro v w h

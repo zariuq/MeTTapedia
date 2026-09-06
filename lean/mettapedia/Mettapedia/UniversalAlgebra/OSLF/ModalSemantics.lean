@@ -46,7 +46,7 @@ inductive Operation where
   | rightConstant
 deriving DecidableEq, Repr
 
-def signature : Signature where
+abbrev signature : Signature where
   Operation := Operation
   arity _ := 0
 

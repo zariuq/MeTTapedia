@@ -933,8 +933,8 @@ mutual
             ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
             WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern,
             CostRegionTree.normalizedAvailable_pattern]
-          simp only [WellSorted.AvailableOpenPattern.ofOpenPattern_pattern,
-            CostRegionTree.normalize, values]
+          simp only [CostRegionTree.normalize, values]
+          exact WellSorted.AvailableOpenPattern.ofOpenPattern_pattern _
         have rightEndpoint :
             WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter
                 (node.termAvailable.toReflectiveOpenPattern.reindexBound
@@ -2136,7 +2136,10 @@ theorem CostOpenNormalizerFactorsThroughFreeSupport.normalizeRecontextualizeFree
       targetRestricted.reindex restrictedContexts.symm rfl rfl =
         sourceRestricted := by
     apply Subtype.ext
-    simp [targetRestricted, sourceRestricted]
+    exact (ReflectiveWellSorted.OpenTerm.reindex_pattern _ _ _ targetRestricted).trans
+      ((ReflectiveWellSorted.OpenTerm.restrictFreeContext_pattern _).trans
+        ((ReflectiveWellSorted.OpenTerm.recontextualizeFree_pattern term preserves).trans
+          (ReflectiveWellSorted.OpenTerm.restrictFreeContext_pattern term).symm))
   have restrictedOutputs :
       (@normalizeOpen
         (targetFree.restrictTo term.1.freeFvarNames) bound sort

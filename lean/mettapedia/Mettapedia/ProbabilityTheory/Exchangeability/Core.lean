@@ -323,8 +323,9 @@ theorem card_filter_countTrue_eq (m k : ℕ) :
       (Finset.powersetCard k (Finset.univ : Finset (Fin m))).card := by
     apply Finset.card_bij (fun v _ => Finset.univ.filter (fun i => v i = true))
     · intro v hv
-      simp only [Finset.mem_filter, countTrue] at hv
-      rw [Finset.mem_powersetCard]; exact ⟨Finset.filter_subset _ _, hv.2⟩
+      have hvCount := (Finset.mem_filter.mp hv).2
+      rw [Finset.mem_powersetCard]
+      exact ⟨Finset.filter_subset _ _, hvCount⟩
     · intro v₁ _ v₂ _ heq
       funext i
       have : (v₁ i = true) ↔ (v₂ i = true) := by
@@ -337,7 +338,9 @@ theorem card_filter_countTrue_eq (m k : ℕ) :
     · intro S hS
       rw [Finset.mem_powersetCard] at hS
       refine ⟨fun i => decide (i ∈ S), ?_, ?_⟩
-      · simp only [Finset.mem_filter, Finset.mem_univ, true_and, countTrue]
+      · apply Finset.mem_filter.mpr
+        refine ⟨Finset.mem_univ _, ?_⟩
+        change (Finset.univ.filter fun i => decide (i ∈ S) = true).card = k
         have : (Finset.univ.filter fun i => decide (i ∈ S) = true) = S := by
           ext i; simp [decide_eq_true_eq]
         rw [this]; exact hS.2

@@ -628,7 +628,8 @@ theorem totalWeight_eq_evalConst_of_scope_empty (φ : Factor fg)
           simp at hv }
       have hdefault : (default : FactorGraph.Assign (fg := fg) (∅ : Finset V)) = emptyAssign fg := by
         exact Unique.uniq _ _
-      simp [totalWeight, evalConst, hdefault]
+      change (∑ x : FactorGraph.Assign fg ∅, potential x) = potential (emptyAssign fg)
+      exact (Fintype.sum_unique _).trans (congrArg potential hdefault)
 
 theorem totalWeight_eq_fullConfigSum_of_scope_univ (φ : Factor fg)
     [Fintype V] [∀ v, Fintype (fg.stateSpace v)] [AddCommMonoid K]
@@ -719,7 +720,11 @@ lemma coveringFactors_product_fullAssign
     ((coveringFactors (fg := fg)).map
       (fun φ => φ.potential (FactorGraph.fullAssign (fg := fg) x φ.scope))).prod = 1 := by
   classical
-  simp [coveringFactors]
+  simp only [coveringFactors, List.map_map]
+  apply List.prod_eq_one
+  intro value membership
+  obtain ⟨vertex, _, rfl⟩ := List.mem_map.mp membership
+  rfl
 
 lemma veFactorList_scope_univ
     (fs : List (Factor fg))

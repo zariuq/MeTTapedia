@@ -1050,8 +1050,8 @@ theorem matcher_mono : ∀ n : Nat,
             simp [hvalues] at hx ⊢
             exact hx
         | cons first rest =>
-            simp only [hvalues, Bindings.valuesConsistent] at hx ⊢
-            by_cases hclass : rest.all (fun value => value == first) = true
+            simp only [hvalues] at hx ⊢
+            by_cases hclass : Bindings.valuesConsistent (first :: rest) = true
             · rw [if_pos hclass] at hx ⊢
               by_cases hsame : first = val
               · have hbeq : (first == val) = true := by simp [hsame]
@@ -1071,13 +1071,13 @@ theorem matcher_mono : ∀ n : Nat,
             simp [hvalues] at hx ⊢
             exact hx
         | cons first rest =>
-            simp only [hvalues, Bindings.valuesConsistent] at hx ⊢
-            by_cases hall : rest.all (fun value => value == first) = true
+            simp only [hvalues] at hx ⊢
+            by_cases hall : Bindings.valuesConsistent (first :: rest) = true
             · rw [if_pos hall] at hx ⊢
               exact hx
             · rw [if_neg hall] at hx ⊢
               cases rest with
-              | nil => simp at hall
+              | nil => simp [Bindings.valuesConsistent] at hall
               | cons second tail =>
                   cases tail with
                   | nil =>

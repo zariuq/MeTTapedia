@@ -288,8 +288,12 @@ def decodeFrame : Pattern → Option RuntimeFrame
 
 @[simp] theorem decodeFrame_encodeFrame (frame : RuntimeFrame) :
     decodeFrame (encodeFrame frame) = some frame := by
-  cases frame
-  simp [encodeFrame, decodeFrame, frameHead]
+  cases frame with
+  | mk dj hyps =>
+    simp [encodeFrame, decodeFrame, frameHead,
+      decodeListWith_encodeListWith encodeDVPair decodeDVPair
+        decodeDVPair_encodeDVPair dj.toList]
+    rfl
 
 theorem encodeFrame_injective : Function.Injective encodeFrame := by
   intro left right h

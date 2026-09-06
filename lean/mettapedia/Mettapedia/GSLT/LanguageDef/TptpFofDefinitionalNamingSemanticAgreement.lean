@@ -160,6 +160,7 @@ noncomputable def namePattern {depth : Nat} :
   | .ex _, impossible, _, _, _ => False.elim impossible
 termination_by source => sizeOf source
 
+set_option backward.isDefEq.respectTransparency false in
 noncomputable def nameDerivation {depth : Nat} :
     (source : Source.Formula depth) → (quantifierFree : QuantifierFree source) →
     (frontier : Nat) → (definitions introduced : List Pattern) →
@@ -492,6 +493,7 @@ theorem encodeReference_defined_exact (depth id : Nat) :
     TptpFofDefinitionalCnfLanguageDef.encodeReference,
     variableTerms_zero_exact]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem namePattern_exact {depth : Nat} (source : Source.Formula depth)
     (quantifierFree : QuantifierFree source) (frontier : Nat)
     (definitionPatterns introducedPatterns : List Pattern) :

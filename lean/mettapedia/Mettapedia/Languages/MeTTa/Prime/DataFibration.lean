@@ -422,15 +422,10 @@ instance pushforwardLift_isStronglyCocartesian
       CategoryTheory.CategoryOfElements.homMk _ _ tailRoute (by
         change (dataFunctor diagram).map tailRoute
             ((dataFunctor diagram).map route object.2) = targetObject.2
-        calc
-          _ = (dataFunctor diagram).map
-                (CategoryTheory.CategoryStruct.comp route tailRoute) object.2 :=
-              (CategoryTheory.Functor.map_comp_apply
-                (dataFunctor diagram) route tailRoute object.2).symm
-          _ = (dataFunctor diagram).map candidate.val object.2 := by
-              exact congrArg
-                (fun arrow => (dataFunctor diagram).map arrow object.2) baseEq
-          _ = targetObject.2 := candidate.property)
+        exact (CategoryTheory.Functor.map_comp_apply
+          (dataFunctor diagram) route tailRoute object.2).symm.trans
+          ((congrArg (fun arrow => (dataFunctor diagram).map arrow object.2)
+            baseEq).trans candidate.property))
     have mediatorLift : (projection diagram).IsHomLift tailRoute mediator := by
       change (projection diagram).IsHomLift
         ((projection diagram).map mediator) mediator
@@ -1055,7 +1050,9 @@ theorem translation_mapType_id (model : CurrentModel) (stage : Stage)
     type.map (translation model (CategoryTheory.CategoryStruct.id stage)).mapBase =
       type := by
   induction type with
-  | base state => simp [translation]
+  | base state =>
+      simp only [DataType.map_base]
+      exact congrArg DataType.base (transportTerm_id (IndexedLanguageChange.diagram model) stage state)
   | data payload inductionHypothesis => simp [inductionHypothesis]
 
 /-- Composite transport acts compositionally on intensional Data codes. -/
@@ -1069,7 +1066,9 @@ theorem translation_mapType_comp (model : CurrentModel)
       (type.map (translation model earlier).mapBase).map
         (translation model later).mapBase := by
   induction type with
-  | base state => simp [translation]
+  | base state =>
+      simp only [DataType.map_base]
+      exact congrArg DataType.base (transportTerm_comp _ _ _ _)
   | data payload inductionHypothesis => simp [inductionHypothesis]
 
 /-- Identity language transport acts identically on every nested Data
@@ -1174,7 +1173,8 @@ theorem promotion_lift_is_strongly_cocartesian
     ((indexedDiagram model).projection).IsStronglyCocartesian promote
       ((indexedDiagram model).pushforwardLift
         ⟨zeroStage, exactData model zeroStage state stamp⟩ promote) := by
-  infer_instance
+  exact IndexedDataDiagram.pushforwardLift_isStronglyCocartesian (indexedDiagram model)
+    ⟨zeroStage, exactData model zeroStage state stamp⟩ promote
 
 /-- Negative direction: the current Data opfibration has no reverse
 Prime-to-Zero push-forward because the base language category has no route. -/

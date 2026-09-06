@@ -142,7 +142,9 @@ noncomputable instance instConjugateEvidenceNormalGamma :
     show (↑(NormalGammaEvidence.hplus e₁ e₂).n : ℝ≥0∞) = ↑e₁.n + ↑e₂.n
     simp only [NormalGammaEvidence.hplus]
     exact Nat.cast_add (R := ℝ≥0∞) e₁.n e₂.n
-  observationCount_zero := by simp
+  observationCount_zero := by
+    change (Nat.cast 0 : ℝ≥0∞) = 0
+    exact Nat.cast_zero
 
 /-! ## Conjugate-Update Fact Index
 

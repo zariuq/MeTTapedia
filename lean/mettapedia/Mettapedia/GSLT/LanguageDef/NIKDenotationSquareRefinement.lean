@@ -47,7 +47,7 @@ def refinementOfDenotationSquare
   preservesMeaning := by
     intro term meaningful
     change targetInvariant.denote (realization.mapTerm term)
-    rw [square.commutes]
+    erw [square.commutes]
     exact meaningful
 
 @[simp] theorem refinementOfDenotationSquare_realization

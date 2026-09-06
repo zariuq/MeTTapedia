@@ -161,15 +161,10 @@ theorem resolve_mem_carrierNames {source : ValidatedLanguageDef}
         additionalCarrierNames demand := by
   rw [carrierNames_append]
   have retained := CarrierObjectNameLookup.indexed_name_mem_typeNames membership
-  simpa [resolve, CarrierObjectNameLookup.indexed?,
+  simp only [resolve, CarrierObjectNameLookup.indexed?,
     CarrierObjectNameLookup.lookup?_eq_some_of_mem _ membership,
-    CarrierObjectLanguageDef.indexedDefinition,
-    CarrierObjectLanguageDef.definition,
-    CarrierTypingLanguageDef.definition,
-    CarrierObjectLanguageDef.validatedCarrierSignature,
-    CarrierObjectLanguageDef.carrierSignature,
-    CarrierUniverseSignature.language,
-    LanguageDef.typeNames] using retained
+    Option.getD_some]
+  exact retained
 
 /-- The carrier residual contains precisely the universe-code rows of the
 new carrier-name suffix. -/
@@ -195,12 +190,7 @@ theorem carrierExtension_terms {source : ValidatedLanguageDef}
           (CarrierObjectLanguageDef.Naming.indexed
             (demand.foundation.carrierObjects.append
               (authoredRequest demand)))).map TypeDecl.name := by
-    simpa [augmentedRequest, CarrierObjectLanguageDef.indexedDefinition,
-      CarrierObjectLanguageDef.definition, CarrierTypingLanguageDef.definition,
-      CarrierObjectLanguageDef.validatedCarrierSignature,
-      CarrierObjectLanguageDef.carrierSignature,
-      CarrierUniverseSignature.language, LanguageDef.typeNames] using
-        carrierNames_append demand
+    exact carrierNames_append demand
   rw [← nameEqRaw]
   change
     (CarrierUniverseSignature.termsFor
@@ -237,12 +227,7 @@ theorem carrierExtension_judgments {source : ValidatedLanguageDef}
           (CarrierObjectLanguageDef.Naming.indexed
             (demand.foundation.carrierObjects.append
               (authoredRequest demand)))).map TypeDecl.name := by
-    simpa [augmentedRequest, CarrierObjectLanguageDef.indexedDefinition,
-      CarrierObjectLanguageDef.definition, CarrierTypingLanguageDef.definition,
-      CarrierObjectLanguageDef.validatedCarrierSignature,
-      CarrierObjectLanguageDef.carrierSignature,
-      CarrierUniverseSignature.language, LanguageDef.typeNames] using
-        carrierNames_append demand
+    exact carrierNames_append demand
   rw [← nameEqRaw]
   change
     ((SelectedNativeTypeFoundation.stableCarrierNames demand.foundation ++
@@ -277,12 +262,7 @@ theorem carrierExtension_rules {source : ValidatedLanguageDef}
           (CarrierObjectLanguageDef.Naming.indexed
             (demand.foundation.carrierObjects.append
               (authoredRequest demand)))).map TypeDecl.name := by
-    simpa [augmentedRequest, CarrierObjectLanguageDef.indexedDefinition,
-      CarrierObjectLanguageDef.definition, CarrierTypingLanguageDef.definition,
-      CarrierObjectLanguageDef.validatedCarrierSignature,
-      CarrierObjectLanguageDef.carrierSignature,
-      CarrierUniverseSignature.language, LanguageDef.typeNames] using
-        carrierNames_append demand
+    exact carrierNames_append demand
   rw [← nameEqRaw]
   change
     ((SelectedNativeTypeFoundation.stableCarrierNames demand.foundation ++

@@ -294,9 +294,12 @@ theorem crossLayerSwap_changes_layer :
     layeredWeightLayer tinyThreeLayerShape
         (crossLayerSwap firstIncoming) = 1 ∧
       layeredWeightLayer tinyThreeLayerShape firstIncoming = 0 := by
-  norm_num
-    [tinyThreeLayerShape, crossLayerSwap, firstIncoming,
-      firstOutgoing, layeredWeightLayer, Equiv.swap_apply_def]
+  constructor
+  · change layeredWeightLayer tinyThreeLayerShape
+      ((Equiv.swap firstIncoming firstOutgoing) firstIncoming) = 1
+    rw [Equiv.swap_apply_left]
+    rfl
+  · rfl
 
 end LayeredWeightSpaceFixtures
 

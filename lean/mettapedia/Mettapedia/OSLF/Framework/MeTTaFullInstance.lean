@@ -71,6 +71,7 @@ theorem mettaFull_pathOrder
 
 /-! ## End-to-End Bridge (Checker → Fiber → PathSemClosed BC+Graph) -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- End-to-end MeTTaFull bridge parallel to TinyML/MeTTaMinimal. -/
 theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
     {relEnv : RelationEnv}
@@ -196,6 +197,7 @@ theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph
       (X := X) (p := p))
   exact ⟨hSatFiber, hClosedBase, hBCGraph.1, hBCGraph.2⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Public no-package wrapper using the concrete `mettaFull_pathOrder` law. -/
 theorem mettaFull_checker_sat_to_pathSemClosed_commDi_bc_graph_auto
     {relEnv : RelationEnv}

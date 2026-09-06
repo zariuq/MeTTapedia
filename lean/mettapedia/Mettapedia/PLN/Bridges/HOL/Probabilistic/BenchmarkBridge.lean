@@ -54,7 +54,11 @@ from having to smuggle context back in through ad hoc payload fields. -/
 inductive BenchmarkContextStatus where
   | contextMissing
   | contextComplete
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype BenchmarkContextStatus where
+  elems := {.contextMissing, .contextComplete}
+  complete := by intro value; cases value <;> simp
 
 /-- Benchmark-side trust/calibration regime carried as an explicit latent
 coordinate. -/
@@ -62,14 +66,22 @@ inductive BenchmarkTrustRegime where
   | skeptical
   | baseline
   | confident
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype BenchmarkTrustRegime where
+  elems := {.skeptical, .baseline, .confident}
+  complete := by intro value; cases value <;> simp
 
 /-- Benchmark-side topology class carried as an explicit latent coordinate. -/
 inductive BenchmarkTopologyClass where
   | unspecified
   | hubDominated
   | loopyDense
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype BenchmarkTopologyClass where
+  elems := {.unspecified, .hubDominated, .loopyDense}
+  complete := by intro value; cases value <;> simp
 
 /-- Non-regime latent benchmark profile.  The current semantic bridge still
 recovers the existing guarded payload exactly, but the hidden context, trust,
@@ -355,7 +367,6 @@ theorem componentSentenceProb_eq_branchMass
     (g : GuardRegime) :
     (benchmarkHierarchicalState payload hvalid).componentSentenceProb g benchmarkSentence =
       branchMass payload g := by
-  rw [HierarchicalState.componentSentenceProb, sentenceProb]
   change (branchPMF payload hvalid g).toMeasure ({true} : Set Bool) =
     branchMass payload g
   rw [PMF.toMeasure_apply_singleton _ true (measurableSet_singleton true)]
@@ -370,7 +381,6 @@ theorem latentComponentSentenceProb_eq_branchMass
     (θ : BenchmarkLatent) :
     (benchmarkLatentHierarchicalState profile payload hvalid).componentSentenceProb θ benchmarkSentence =
       branchMass payload θ.guardRegime := by
-  rw [HierarchicalState.componentSentenceProb, sentenceProb]
   change (branchPMF payload hvalid θ.guardRegime).toMeasure ({true} : Set Bool) =
     branchMass payload θ.guardRegime
   rw [PMF.toMeasure_apply_singleton _ true (measurableSet_singleton true)]

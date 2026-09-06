@@ -1014,6 +1014,7 @@ theorem handler_inputIsChecked_exact
     inputIsOpenQuery, nameNotEqualQuery, arityDiffersQuery, arityMatchesQuery,
     checkedInputAnswer, decodeTermValue?, decodeAbiWith?,
     abiPayload?, abiValue, callBool, callValue, node]
+  rfl
 
 theorem handler_inputIsOpen_exact
     (term : Term) (environment receipt : Pattern) :
@@ -1092,6 +1093,7 @@ theorem handler_resultIsChecked_exact
     nameNotEqualQuery, arityDiffersQuery, arityMatchesQuery,
     checkedResultAnswer, decodeTermValue?, decodeAbiWith?, abiPayload?,
     abiValue, callBool, callValue, node]
+  rfl
 
 theorem handler_resultIsOpen_exact
     (term : Term) (environment receipt : Pattern) :

@@ -2,6 +2,7 @@ import Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement
 import MettaHyperonFull.Minimal.Interpreter
 import MettaHyperonFull.Proofs.BindingLaws
 import MettaHyperonFull.Proofs.CaptureAvoidingFreshening
+import MettaHyperonFull.Proofs.TypeInferenceFreshening
 import MettaHyperonFull.Proofs.Substitution
 import Std.Data.HashMap.Lemmas
 
@@ -140,7 +141,7 @@ private def collisionOuterArgumentT : Metta.VarName :=
   Metta.Minimal.captureAvoidingName collisionOuterAvoid 1 collisionInnerT
 
 private def collisionFunctionAvoid : List Metta.VarName :=
-  collisionOuterAvoid ++ [collisionOuterArgumentT]
+  collisionOuterAvoid ++ [collisionInnerT]
 
 private def collisionOuterFunctionT : Metta.VarName :=
   Metta.Minimal.captureAvoidingName collisionFunctionAvoid 2 "t"
@@ -348,7 +349,7 @@ theorem repaired_unresolved_return_variable_is_fresh :
   simp [escapeEnv, nullaryK, escapeFreshT, escapeAvoid,
     Metta.Minimal.getTypes, Metta.Minimal.MinEnv.ofAtomsGT,
     Std.HashMap.getD_insert, Std.HashMap.getD_emptyWithCapacity,
-    Metta.Minimal.typeInferenceAvoid, Metta.Minimal.freshenArgumentTypes,
+    Metta.Minimal.cartesian, Metta.Minimal.typeInferenceAvoid, Metta.Minimal.freshenArgumentTypes,
     Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
     Metta.Minimal.matchApplicationTypeArguments, Metta.instantiate_nil]
 
@@ -374,19 +375,11 @@ theorem repaired_annotation_variable_spelling_collision_accepts :
     simp [collisionEnv, collisionInnerT, collisionInnerAvoid,
       Metta.Minimal.getTypes, Metta.Minimal.MinEnv.ofAtomsGT,
       Std.HashMap.getD_insert, Std.HashMap.getD_emptyWithCapacity,
-      Metta.Minimal.typeInferenceAvoid, Metta.Minimal.freshenArgumentTypes,
+      Metta.Minimal.cartesian, Metta.Minimal.typeInferenceAvoid, Metta.Minimal.freshenArgumentTypes,
       Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
       Metta.Minimal.matchApplicationTypeArguments, Metta.instantiate_nil]
   have hdistinct : collisionOuterFunctionT ≠ collisionOuterArgumentT := by
-    intro heq
-    have hfresh := Metta.Minimal.captureAvoidingName_not_mem
-      collisionFunctionAvoid 2 "t"
-    apply hfresh
-    have heq' : Metta.Minimal.captureAvoidingName
-        collisionFunctionAvoid 2 "t" = collisionOuterArgumentT := by
-      simpa [collisionOuterFunctionT] using heq
-    rw [heq']
-    simp [collisionFunctionAvoid]
+    exact Metta.Minimal.captureAvoidingName_ne_of_counter_ne (by decide)
   have hfold : Metta.Minimal.matchApplicationTypeArguments []
       [.var collisionOuterFunctionT, .sym "A"]
       [.sym "B", .var collisionOuterArgumentT] =
@@ -414,10 +407,6 @@ theorem repaired_annotation_variable_spelling_collision_accepts :
     simp [Metta.Minimal.freshenArgumentTypes,
       Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
       Metta.Atom.vars, collisionOuterArgumentT]
-  have hfunctionAvoid : collisionOuterAvoid ++
-      [.sym "B", .var collisionOuterArgumentT].flatMap Metta.Atom.vars =
-        collisionFunctionAvoid := by
-    simp [collisionFunctionAvoid, Metta.Atom.vars]
   have hfunction : Metta.Minimal.freshenTypeCandidate
       collisionFunctionAvoid 2
       (.expr [.sym "->", .var "t", .sym "A", .sym "R"]) =
@@ -440,18 +429,8 @@ theorem repaired_annotation_variable_spelling_collision_accepts :
   rw [Metta.Minimal.getTypes.eq_10 collisionEnv (.sym "g")
     [.sym "b", .expr [.sym "k"]] hnotState]
   rw [hdirect]
-  dsimp only
-  simp only [hg]
-  simp only [List.map]
-  rw [hb, hinner]
-  simp only [List.head?_cons, Option.getD_some, List.cons_append,
-    List.nil_append, List.length_cons, List.length_nil, Nat.reduceAdd]
-  simp only [houterAvoid, harguments, hfunctionAvoid, hfunction]
-  rw [List.filterMap_cons]
-  simp only [List.dropLast_cons_cons, List.dropLast_singleton,
-    List.getLast?_cons, List.getLast?_nil, Option.getD_some,
-    List.filterMap_nil]
-  rw [hfold]
-  simp [Metta.instantiate_of_closed, Metta.Atom.vars]
+  simp [hg, hb, hinner, Metta.Minimal.cartesian, houterAvoid, harguments,
+    show collisionOuterAvoid ++ [collisionInnerT] = collisionFunctionAvoid from rfl,
+    hfunction, hfold, Metta.instantiate_of_closed, Metta.Atom.vars]
 
 end Mettapedia.Languages.MeTTa.HE.LeaTTaTypeVariableEscapeCounterexample

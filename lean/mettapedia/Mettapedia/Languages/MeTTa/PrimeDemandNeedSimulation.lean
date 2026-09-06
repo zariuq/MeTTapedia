@@ -277,11 +277,14 @@ theorem wellFormedWorld_initial (t : Term) (lineage : LineageId) :
     WellFormedWorld (initialWorld t lineage) := by
   intro cell hPresent
   simp only [initialWorld, initialHeap, rootCell, Heap.lookup] at hPresent
-  split at hPresent
-  · rename_i hEq
-    subst hEq
+  by_cases hEq : cell = rootCell lineage
+  · subst cell
     exact Nat.zero_lt_one
-  · simp at hPresent
+  · have habsent : (initialWorld t lineage).heap.lookup cell = none := by
+      exact if_neg hEq
+    change ((initialWorld t lineage).heap.lookup cell).isSome = true at hPresent
+    rw [habsent] at hPresent
+    cases hPresent
 
 /-- The fresh cell of a slot-bounded world is absent from its heap. -/
 theorem freshCell_absent_of_wellFormed

@@ -330,6 +330,8 @@ termination_by 5 *
   (sizeOf (left.map (applyTypeValuation valuation)) +
     sizeOf (right.map (applyTypeValuation valuation))) + 2
 decreasing_by
+  all_goals have headSize := congrArg sizeOf (List.cons.inj equation).1
+  all_goals have tailSize := congrArg sizeOf (List.cons.inj equation).2
   all_goals simp_wf
   all_goals subst_vars
   all_goals dsimp at *

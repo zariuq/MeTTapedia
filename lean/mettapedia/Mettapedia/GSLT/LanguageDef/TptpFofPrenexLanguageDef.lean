@@ -231,6 +231,7 @@ noncomputable def expected : Pattern :=
         ⟨.plain, "q"⟩)
       (unaryArguments (0 : Fin 2)))
 
+set_option backward.isDefEq.respectTransparency false in
 theorem semantic_prenex_encoding_is_exact :
     encodePrenex (TptpFofPrenexSemantics.prenex source) = expected := by
   simp [p, q, source, expected, TptpFofPrenexSemantics.prenex,

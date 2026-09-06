@@ -63,41 +63,11 @@ We define the vector space structure on gambles.
 -/
 
 /-- A gamble is a real-valued function on some outcome space Ω (often assumed bounded). -/
-def Gamble (Ω : Type*) := Ω → ℝ
+abbrev Gamble (Ω : Type*) := Ω → ℝ
 
 namespace Gamble
 
 variable {Ω : Type*}
-
-instance : Zero (Gamble Ω) := ⟨fun _ => 0⟩
-instance : Add (Gamble Ω) := ⟨fun X Y ω => X ω + Y ω⟩
-instance : Neg (Gamble Ω) := ⟨fun X ω => -X ω⟩
-instance : Sub (Gamble Ω) := ⟨fun X Y ω => X ω - Y ω⟩
-instance : SMul ℝ (Gamble Ω) := ⟨fun r X ω => r * X ω⟩
-
-instance : AddCommGroup (Gamble Ω) where
-  add_assoc X Y Z := funext fun ω => add_assoc (X ω) (Y ω) (Z ω)
-  zero_add X := funext fun ω => zero_add (X ω)
-  add_zero X := funext fun ω => add_zero (X ω)
-  add_comm X Y := funext fun ω => add_comm (X ω) (Y ω)
-  neg_add_cancel X := funext fun ω => neg_add_cancel (X ω)
-  nsmul := nsmulRec
-  zsmul := zsmulRec
-
-instance : Module ℝ (Gamble Ω) where
-  smul_add r X Y := funext fun ω => mul_add r (X ω) (Y ω)
-  add_smul r s X := funext fun ω => add_mul r s (X ω)
-  mul_smul r s X := funext fun ω => mul_assoc r s (X ω)
-  one_smul X := funext fun ω => one_mul (X ω)
-  zero_smul X := funext fun ω => zero_mul (X ω)
-  smul_zero r := funext fun _ => mul_zero r
-
-/-- Pointwise order on gambles. -/
-instance : LE (Gamble Ω) := ⟨fun X Y => ∀ ω, X ω ≤ Y ω⟩
-
-instance : Preorder (Gamble Ω) where
-  le_refl X ω := le_refl (X ω)
-  le_trans X Y Z hXY hYZ ω := le_trans (hXY ω) (hYZ ω)
 
 /-- A constant gamble that always returns c. -/
 def const (c : ℝ) : Gamble Ω := fun _ => c

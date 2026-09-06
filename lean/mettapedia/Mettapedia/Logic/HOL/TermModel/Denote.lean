@@ -134,7 +134,7 @@ theorem repCore (M : World (WithParams Const))
       simp only [Rep] at h1 h2
       exact eqProp_mem_of_iff M hC (h1.symm.trans h2)
   | .base b => by
-      refine ⟨fun t => by simp only [tval, Rep], fun {d u₁ u₂} h1 h2 => ?_⟩
+      refine ⟨fun t => by simp only [tval, Rep]; rfl, fun {d u₁ u₂} h1 h2 => ?_⟩
       simp only [Rep] at h1 h2
       rw [h1] at h2
       exact TermDom.mk_eq.mp (congrArg ULift.down h2)

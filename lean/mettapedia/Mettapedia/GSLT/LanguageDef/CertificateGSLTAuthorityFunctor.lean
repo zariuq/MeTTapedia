@@ -200,7 +200,9 @@ exactly. -/
     mapCertificate (Interpretation.id presentation.object) certificate =
       certificate := by
   rcases certificate with ⟨claim, proof⟩
-  simp [mapCertificate]
+  simp only [mapCertificate]
+  congr 1
+  exact Interpretation.id_mapOpen proof
 
 /-- Certificate transport respects interpretation composition. -/
 theorem mapCertificate_comp {Meaning : Pattern -> Prop}

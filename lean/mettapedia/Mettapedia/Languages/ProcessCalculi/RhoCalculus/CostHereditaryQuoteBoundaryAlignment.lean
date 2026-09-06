@@ -211,6 +211,7 @@ theorem CostRegionBoundaryTrees.getEntry_normal_eq_of_availabilitySuffix
   exact normalized.trans (by
     simp [smallBoundary, largeBoundary, largeTree])
 
+set_option backward.isDefEq.respectTransparency false in
 theorem CostStaticPlanReached.exists_visibleQuoteRootTree
     {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
     {payload rootAbstract : Pattern}
@@ -308,6 +309,7 @@ theorem CostStaticPlanReached.exists_visibleQuoteRootTree
     (state.payloadTreeOfWellSorted admission.wellSorted)
     admission.object
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Rebuild an admitted reached bare parallel at its visible `Proc` root.
 
 The reached plan may sit below a contextual binder suffix, but recompiling the
@@ -1999,6 +2001,7 @@ noncomputable def CostStaticRegionPlan.quoteCanonicalRestoresTogether_of_normali
         (largeEnvironment.reify largePlan.abstractPattern)))
   exact canonicalAligned.toRestoresTogether
 
+set_option backward.isDefEq.respectTransparency false in
 /-- A reached authored Quote, interpreted in the enclosing static
 environment, restores to the hereditary normal form of its payload tree. -/
 noncomputable def CostStaticPlanReached.parentQuoteFrame_restoresToPayloadNormal
@@ -2458,6 +2461,7 @@ theorem CostStaticPlanReached.parentCanonicalFrame_atomCovered
   exact parentNode.reifyTargetFrame_atomCovered environment name
     targetMembership
 
+set_option backward.isDefEq.respectTransparency false in
 /-- A certified boundary facing an admitted authored Quote reduces the exact
 plan-stop source-alignment obligation to the recursively normalized payload
 pair and the Quote plan's sealed positional forest. -/

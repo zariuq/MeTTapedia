@@ -302,14 +302,7 @@ theorem sourceGrammar_syntax_only :
   exact ⟨rfl, rfl⟩
 
 theorem sourceGrammar_valid : sourceGrammar.validate = [] := by
-  simp [LanguageDef.validate, sourceGrammar, sourceProductions,
-    production, parameter, labelTokenSort, symbolTokenSort,
-    proofLabelTokenSort, compressedWordTokenSort, includePathTokenSort,
-    symbolListSort, disjointSymbolListSort, proofListSort,
-    proofHeaderListSort, compressedWordListSort, statementSort, databaseSort,
-    outerStatementSort, outerDatabaseSort,
-    LanguageDef.typeNames, TypeDecl.plain, TermParam.bodyName,
-    TermParam.binderNames, TermParam.typeExpr, TypeExpr.baseNames]
+  decide +kernel
 
 theorem sourceGrammar_supported :
     grammarSupportedForInference sourceGrammar = true := by

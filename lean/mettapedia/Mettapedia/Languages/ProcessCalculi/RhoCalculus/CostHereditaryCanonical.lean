@@ -1664,7 +1664,8 @@ theorem normalizeHereditary_available_equationSetoid
           (normalizeHereditary node values) := by
     apply WellSorted.AvailableOpenPattern.ext
     rw [CostStaticSourceTerm.actAvailable_pattern,
-      WellSorted.AvailableOpenPattern.ofOpenPattern_pattern]
+      WellSorted.AvailableOpenPattern.ofOpenPattern_pattern
+        (normalizeHereditary node values)]
     have hereditaryPattern : (normalizeHereditary node values).1 =
         rhoCostStaticActionAt node.thinning
           environment.restorationSupportedOpenAssignment [] node.targetBound
@@ -1852,6 +1853,15 @@ theorem rhoCommonSourceAction_canonicalize_eq
       (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT color)
       sameTargetBound
   let rightCommon := rightCommonRaw.reindex sourceBoundEq sameTargetBound rfl
+  have leftPattern := leftEnvironment.reifySourceTermToCommon_pattern cospan
+    cospan.leftSlot cospan.leftCommutes
+    (leftNode.reifiedSourceTerm leftEnvironment)
+  have rightRawPattern := rightEnvironment.reifySourceTermToCommon_pattern cospan
+    cospan.rightSlot cospan.rightCommutes
+    (rightNode.reifiedSourceTerm rightEnvironment)
+  have rightPattern :=
+    (CostStaticRegionNode.CostStaticSourceTerm.reindex_pattern rightCommonRaw
+      sourceBoundEq sameTargetBound rfl).trans rightRawPattern
   have actionEquality :=
     rhoCostStaticActionAt_canonicalize_eq_of_canonicalize_eq
       (inner := []) (available := leftNode.targetBound) leftNode.thinning
@@ -1859,12 +1869,11 @@ theorem rhoCommonSourceAction_canonicalize_eq
       leftCommon.safe rightCommon.safe leftCommon.supported.constructorsWithin
       rightCommon.supported.constructorsWithin leftCommon.term.2.1.2.2.1
       rightCommon.term.2.1.2.2.1 (by
-        simpa [leftCommon, rightCommon,
-          CostStaticRegionNode.CostStaticSourceTerm.reindex_pattern,
-          CostStaticRegionNode.reifiedSourceTerm,
-          CostStaticRegionNode.reifiedSourceFrame_pattern,
-          rightCommonRaw, leftEnvironment, rightEnvironment, cospan] using
-            commonSourceCanonical)
+        exact (congrArg (canonicalize rhoReflectivePresentation.toReflectivePresentationDecl)
+          leftPattern).trans
+          (commonSourceCanonical.trans
+            (congrArg (canonicalize rhoReflectivePresentation.toReflectivePresentationDecl)
+              rightPattern).symm))
   have rightAction :
       rhoCostStaticActionAt leftNode.thinning assignment []
           leftNode.targetBound rightCommon.term.1 =
@@ -1876,10 +1885,8 @@ theorem rhoCommonSourceAction_canonicalize_eq
         (CostStaticRegionNode.CostStaticSourceTerm.reindex_act_ofTarget
           rightCommonRaw sameTargetBound rfl assignment)
   rw [rightAction] at actionEquality
-  simpa [leftCommon, rightCommonRaw,
-    CostStaticRegionNode.reifiedSourceTerm,
-    CostStaticRegionNode.reifiedSourceFrame_pattern, leftEnvironment,
-    rightEnvironment, cospan, assignment] using actionEquality
+  rw [leftPattern, rightRawPattern] at actionEquality
+  exact actionEquality
 
 /-- Structural alignment of the two already-canonical authored frames is a
 sufficient, occurrence-sensitive interface to the common-source Cost action.

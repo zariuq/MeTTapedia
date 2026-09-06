@@ -223,6 +223,7 @@ def reflectingRegistration
     ReflectingRegistration map where
   reflects := reflects
   laws := reflectingTransportLaws map reflects
+set_option backward.isDefEq.respectTransparency false in
 
 inductive ReflectingFace where
   | forwardSafe
@@ -314,6 +315,7 @@ def exactRequest
       simp
   candidates_nonempty := ⟨.forwardSafe, by simp⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- A blame-sensitive request cuts out exactly the reflecting face. -/
 def stableBlameRequest
     {source : Fibre.{uRaw, uExact}}

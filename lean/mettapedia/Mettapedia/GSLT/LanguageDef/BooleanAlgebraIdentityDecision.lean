@@ -203,7 +203,7 @@ private theorem eval_twoPointAssignment {Var : Type uVar}
     term.eval (twoPointAssignment (B := B) assignment) =
       if term.eval assignment then ⊤ else ⊥ := by
   induction term with
-  | atom name => simp [Term.eval, twoPointAssignment]
+  | atom name => rfl
   | bottom => simp [Term.eval]
   | top => simp [Term.eval]
   | meet left right leftIH rightIH =>

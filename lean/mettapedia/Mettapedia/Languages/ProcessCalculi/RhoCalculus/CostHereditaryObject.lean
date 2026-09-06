@@ -161,10 +161,18 @@ private theorem rho_costEquationContextStep_mem_freeFvarNames_iff
   | core coreStep =>
       cases coreStep with
       | @inContext context redex contractum instanceWitness =>
-          obtain ⟨fuel, bounded⟩ := instanceWitness
-          obtain ⟨declaration, _membership, representatives⟩ :=
-            CostCanonicalLaws.rho_costEquationInstanceAt_canonicalize_eq
-              bounded
+          obtain ⟨declaration, representatives⟩ : ∃ declaration,
+              Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                  declaration redex =
+                Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                  declaration contractum := by
+            rcases instanceWitness with ⟨fuel, bounded⟩ | derived
+            · obtain ⟨declaration, _membership, representatives⟩ :=
+                CostCanonicalLaws.rho_costEquationInstanceAt_canonicalize_eq
+                  bounded
+              exact ⟨declaration, representatives⟩
+            · exact ⟨_,
+                CostCanonicalLaws.rho_costDerivedInstance_canonicalize_eq derived⟩
           apply mem_freeFvarNames_fill_iff_of_iff context name
           calc
             name ∈ redex.freeFvarNames ↔
@@ -412,6 +420,7 @@ private theorem restrictTo_idempotent
   by_cases membership : name ∈ names <;>
     simp [WellSorted.FreeTypeContext.restrictTo, membership]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The supported hereditary executor is structurally independent of unused
 ambient free-context entries.  No compiler parametricity assumption is
 needed: both executions run in the same finite restricted context. -/

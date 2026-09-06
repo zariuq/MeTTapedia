@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.BindingRenamingResolution
 import Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening
 import Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
 import Mettapedia.Languages.MeTTa.HE.VariantQueryCorrectness
@@ -592,117 +593,6 @@ theorem freshenRule_alphaEq_freshenEquation_snd
     (freshenRule_alphaEq_snd counter (toLeaTTaAtom lhs) (toLeaTTaAtom rhs)).trans
       (freshenEquation_alphaEq_snd idx lhs rhs fuel hdepth).symm
 
-private theorem resolve_eq_lookup_or_none_of_noVar
-    {b : Bindings} (hno : NoVarAssignmentValues b) :
-    ∀ fuel v, b.resolve v fuel = match fuel with | 0 => none | _ + 1 => b.lookup v := by
-  intro fuel v
-  cases fuel with
-  | zero =>
-      rfl
-  | succ fuel =>
-      unfold Bindings.resolve
-      cases hlookup : b.lookup v with
-      | none =>
-          rfl
-      | some val =>
-          cases val with
-          | var x =>
-              exact False.elim (hno hlookup)
-          | symbol s =>
-              rfl
-          | grounded g =>
-              rfl
-          | expression es =>
-              rfl
-
-private theorem resolve_eq_lookup_or_none_of_keysRenamedBy_noVar
-    (r : VarRenaming) {b b' : Bindings}
-    (hrel : BindingsKeysRenamedBy r b b')
-    (hno : NoVarAssignmentValues b) :
-    ∀ fuel v,
-      b'.resolve (r.rename v) fuel =
-        match fuel with | 0 => none | _ + 1 => b'.lookup (r.rename v) := by
-  intro fuel v
-  cases fuel with
-  | zero =>
-      rfl
-  | succ fuel =>
-      unfold Bindings.resolve
-      cases hlookup : b.lookup v with
-      | none =>
-          have hnone' : b'.lookup (r.rename v) = none := by
-            have hbound := hrel.bound_iff v
-            simp [hlookup] at hbound
-            exact hbound
-          rw [hnone']
-      | some val =>
-          have hlookup' : b'.lookup (r.rename v) = some val :=
-            hrel.forward v val hlookup
-          cases val with
-          | var x =>
-              exact False.elim (hno hlookup)
-          | symbol s =>
-              rw [hlookup']
-          | grounded g =>
-              rw [hlookup']
-          | expression es =>
-              rw [hlookup']
-
-/-- When a pattern-key renaming leaves all matched values fixed and the original
-bindings carry no variable-valued assignments, applying the renamed bindings to
-the renamed atom computes the same result as renaming the original HE
-application result. This is the core HE-side transport lemma behind the
-restricted no-chain equation bridge: renamed matcher keys are harmless once
-recursive variable chains are absent. -/
-private theorem applyAtomTotal_apply_of_bindingsKeysRenamedBy_noVar
-    (r : VarRenaming) {b b' : Bindings}
-    (hrel : BindingsKeysRenamedBy r b b')
-    (hno : NoVarAssignmentValues b)
-    (hfix : ∀ {v val}, b.lookup v = some val → applyAtomTotal r val = val) :
-    ∀ fuel a,
-      b'.apply (applyAtomTotal r a) fuel = applyAtomTotal r (b.apply a fuel) := by
-  intro fuel
-  induction fuel with
-  | zero =>
-      intro a
-      simp [Bindings.apply]
-  | succ fuel ih =>
-      intro a
-      cases a with
-      | symbol s =>
-          simp [Bindings.apply, applyAtomTotal]
-      | grounded g =>
-          simp [Bindings.apply, applyAtomTotal]
-      | expression es =>
-          simp [Bindings.apply, applyAtomTotal]
-          intro a ha
-          exact ih a
-      | var v =>
-          cases fuel with
-          | zero =>
-              simp [Bindings.apply, Bindings.resolve, applyAtomTotal]
-          | succ fuel =>
-              cases hlookup : b.lookup v with
-              | none =>
-                  have hnone' : b'.lookup (r.rename v) = none := by
-                    have hbound := hrel.bound_iff v
-                    simp [hlookup] at hbound
-                    exact hbound
-                  simp [Bindings.apply, Bindings.resolve, applyAtomTotal, hlookup, hnone']
-              | some val =>
-                  have hlookup' : b'.lookup (r.rename v) = some val :=
-                    hrel.forward v val hlookup
-                  have hfixed : applyAtomTotal r val = val := hfix hlookup
-                  cases val with
-                  | var x =>
-                      exact False.elim (hno hlookup)
-                  | symbol s =>
-                      simp [Bindings.apply, Bindings.resolve, applyAtomTotal, hlookup, hlookup', hfixed]
-                  | grounded g =>
-                      simp [Bindings.apply, Bindings.resolve, applyAtomTotal, hlookup, hlookup', hfixed]
-                  | expression es =>
-                      simp [Bindings.apply, Bindings.resolve, applyAtomTotal, hlookup, hlookup', hfixed]
-
 private theorem toLeaTTaAtom_applyAtomTotal_eq_renBy
     (r : VarRenaming) :
     ∀ a : OSLFCore.Atom, toLeaTTaAtom (applyAtomTotal r a) = renBy r.rename (toLeaTTaAtom a)
@@ -787,8 +677,7 @@ theorem visible_successor_of_keyRenamed_instantiated_item
       hno' hkeys' hdepthRenamed hitem
   have happly :
       qb'.apply (applyAtomTotal r rhs) fuel = applyAtomTotal r (qb.apply rhs fuel) :=
-    applyAtomTotal_apply_of_bindingsKeysRenamedBy_noVar
-      r hrel hno (a := rhs) (fuel := fuel) hfix
+    apply_keysRenamed r hr hrel hfix fuel rhs
   have halphaApply :
       Metta.AlphaEq
         (toLeaTTaAtom (qb'.apply (applyAtomTotal r rhs) fuel))

@@ -368,7 +368,15 @@ def compileShortcutWithCost {n : Nat} (witness : shortcutRuleInterface.W)
     AcceptedCertificate.node baseRuleInterface .bToC Judgment.c
       (fun _ : Fin 1 => Judgment.b) (by decide) (fun _ => bCertificate)
   refine ⟨cCertificate, ?_⟩
-  simp [cCertificate, bCertificate, AcceptedCertificate.node_nodeCount]
+  have hb := AcceptedCertificate.node_nodeCount baseRuleInterface .aToB Judgment.b
+    (fun _ : Fin 1 => Judgment.a) (by decide) children
+  have hc := AcceptedCertificate.node_nodeCount baseRuleInterface .bToC Judgment.c
+    (fun _ : Fin 1 => Judgment.b) (by decide) (fun _ => bCertificate)
+  change cCertificate.nodeCount = _
+  erw [hc]
+  simp only [Fintype.sum_unique]
+  erw [hb]
+  simp only [Fintype.sum_unique]
   omega
 
 /-- The certificate component of exact shortcut expansion. -/

@@ -571,7 +571,7 @@ private theorem admissionTermDisjoint
   have disjoint := admissionExtension_disjoint
   unfold CalculusLanguageExtension.disjointFrom at disjoint
   simp only [Bool.and_eq_true] at disjoint
-  have fresh := List.all_eq_true.mp disjoint.1.1 newTerm newMember
+  have fresh := List.all_eq_true.mp disjoint.1.1.1.1.2 newTerm newMember
   intro equalLabels
   have collision :
       DefinitionConversionKernel.definition.toLanguageDef.terms.any

@@ -335,12 +335,7 @@ theorem petriNet_AB_rawStep_CD :
     (initialBindings := bindings) (finalBindings := bindings)
     ?_ ?_ .nil ?_ ?_
   · simp [petriNet]
-  · simp [bindings, transitionT1, marking, tokA, tokB,
-      matchPatternForRule, matchPattern, matchBag, mergeBindings]
-    refine ⟨[], by simp [matchArgs], bindings, ?_, ?_⟩
-    · refine ⟨[], by simp [matchArgs], ?_⟩
-      rfl
-    · rfl
+  · decide +kernel
   · simp [bindings, transitionT1, applyPremisesWithEnv]
   · simp [bindings, transitionT1, marking, tokC, tokD,
       applyBindingsForRule, applyBindings]
@@ -473,18 +468,12 @@ theorem C_ne_D : tokC ≠ tokD := by decide
 
 /-- {D} is a dead marking: no transition matches (proven via negation). -/
 theorem D_is_dead : petriNetReducts (marking [tokD]) = [] := by
-  simp [petriNetReducts, rewriteAt, petriNet, transitionT1, transitionT2,
-    marking, tokD, applyRuleUsing,
-    matchPatternForRule, matchPattern, matchBag, mergeBindings,
-    premisesUsing, applyBindingsForRule, applyBindings]
+  decide +kernel
 
 /-- {A, B} has exactly one reduct via T1. -/
 theorem AB_has_one_reduct :
     (petriNetReducts (marking [tokA, tokB])).length = 1 := by
-  simp [petriNetReducts, rewriteAt, petriNet, transitionT1, transitionT2,
-    marking, tokA, tokB, applyRuleUsing,
-    matchPatternForRule, matchPattern, matchArgs, matchBag, mergeBindings,
-    premisesUsing, applyBindingsForRule, applyBindings]
+  decide +kernel
 
 -- Verification: OSLF pipeline type-checks
 #check petriOSLF

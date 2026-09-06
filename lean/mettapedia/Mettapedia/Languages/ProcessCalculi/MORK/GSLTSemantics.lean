@@ -87,7 +87,7 @@ theorem normalForm_iff (profile : ExecutionProfile) (space : Space) :
         exact False.elim
           (normal ⟨next, (profile.toGSLT_step_iff space next).2 moved⟩)
   · intro stopped ⟨next, moved⟩
-    rw [profile.toGSLT_step_iff, stopped] at moved
+    erw [profile.toGSLT_step_iff, stopped] at moved
     simp at moved
 
 /-- The canonical driver for every MM2 profile has no private control state.
@@ -107,6 +107,8 @@ noncomputable def driver (profile : ExecutionProfile) :
     | none => simp [found] at moved
     | some actual =>
         simp [found] at moved
+        have same := congrArg Prod.fst moved
+        dsimp at same
         subst next
         exact found
 
@@ -433,6 +435,8 @@ theorem ExecutionProfile.runReport_expired_has_step
   | none => simp [ExecutionProfile.driver, found] at moved
   | some actual =>
       simp [ExecutionProfile.driver, found] at moved
+      have same := congrArg Prod.fst moved
+      dsimp at same
       subst next
       rfl
 
@@ -482,7 +486,9 @@ theorem runReport_zero_of_step {space next : Space}
        | none => none
        | some next => some (next, ())) = some (next, ())
     rw [moved]
-  rw [HostedDriver.runReport, driverMoved]
+  erw [HostedDriver.runReport.eq_def]
+  dsimp only
+  erw [driverMoved]
   rfl
 
 /-- A completed report certifies that its residual MM2 space is quiescent. -/

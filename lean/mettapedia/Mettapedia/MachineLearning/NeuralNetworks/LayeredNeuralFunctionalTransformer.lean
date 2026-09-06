@@ -201,15 +201,15 @@ def movedFirstRowFeatures :
 
 theorem movedFirstRowFeatures_grid00 :
     movedFirstRowFeatures grid00 0 = 0 := by
-  simp
-    [movedFirstRowFeatures, transportRows, partialRowCellSwap,
-      firstRowFeatures, grid00, grid10]
+  unfold movedFirstRowFeatures transportRows
+  rw [show partialRowCellSwap.symm grid00 = grid10 from Equiv.swap_apply_left _ _]
+  norm_num [firstRowFeatures, grid10]
 
 theorem movedFirstRowFeatures_grid10 :
     movedFirstRowFeatures grid10 0 = 1 := by
-  simp
-    [movedFirstRowFeatures, transportRows, partialRowCellSwap,
-      firstRowFeatures, grid00, grid10]
+  unfold movedFirstRowFeatures transportRows
+  rw [show partialRowCellSwap.symm grid10 = grid00 from Equiv.swap_apply_right _ _]
+  norm_num [firstRowFeatures, grid00]
 
 theorem movedFirstRowFeatures_grid11 :
     movedFirstRowFeatures grid11 0 = 0 := by
@@ -237,6 +237,7 @@ theorem firstRowFeatures_sum :
   rw [Fintype.sum_sum_type]
   simp only [Fintype.sum_prod_type]
   simp [firstRowFeatures]
+  exact Finset.sum_empty
 
 theorem movedFirstRowFeatures_sum :
     (∑ coordinate : LayeredWeightCoordinate squareShape,

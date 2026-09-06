@@ -564,7 +564,8 @@ theorem generatedLanguage_typeNames {theory : IGSLT}
       theory.presentation.presentation.language.typeNames.map
           costBaseSortName ++
         [costWrappedSortName] := by
-  simp [generatedLanguage, generatedTypes, LanguageDef.typeNames,
+  dsimp only [generatedLanguage, LanguageDef.typeNames]
+  simp [generatedTypes, LanguageDef.typeNames,
     TypeDecl.plain, List.map_map]
 
 /-- The tagged source sorts and the wrapped sort form a duplicate-free
@@ -625,7 +626,8 @@ theorem generatedLanguage_constructorLabels {theory : IGSLT}
       (theory.presentation.presentation.language.terms.map (·.label)).map
           costBaseConstructorName ++
         plan.wrappedLabels.map costWrappedConstructorName := by
-  simp only [generatedLanguage, List.map_append]
+  dsimp only [generatedLanguage]
+  simp only [List.map_append]
   congr 1
   · simp only [List.map_map]
     apply List.map_congr_left
@@ -665,7 +667,8 @@ theorem generatedTerm_category_mem {theory : IGSLT}
     (membership : term ∈ plan.generatedLanguage.terms) :
     term.category ∈ plan.generatedLanguage.typeNames := by
   rw [generatedLanguage_typeNames]
-  simp only [generatedLanguage, List.mem_append] at membership
+  dsimp only [generatedLanguage] at membership
+  simp only [List.mem_append] at membership
   rcases membership with baseMembership | wrappedMembership
   · simp only [List.mem_map] at baseMembership
     rcases baseMembership with ⟨source, sourceMembership, rfl⟩
@@ -771,7 +774,8 @@ theorem generatedTerm_parameter_baseName_mem {theory : IGSLT}
     (name : String)
     (nameMembership : name ∈ (TermParam.typeExpr parameter).baseNames) :
     name ∈ plan.generatedLanguage.typeNames := by
-  simp only [generatedLanguage, List.mem_append] at termMembership
+  dsimp only [generatedLanguage] at termMembership
+  simp only [List.mem_append] at termMembership
   rcases termMembership with baseMembership | wrappedMembership
   · simp only [List.mem_map] at baseMembership
     rcases baseMembership with ⟨source, sourceMembership, rfl⟩
@@ -790,7 +794,8 @@ theorem generatedTerm_syntaxPattern_eq_nil {theory : IGSLT}
     (plan : ContinuationRetypingPlan cut) (term : GrammarRule)
     (termMembership : term ∈ plan.generatedLanguage.terms) :
     term.syntaxPattern = [] := by
-  simp only [generatedLanguage, List.mem_append] at termMembership
+  dsimp only [generatedLanguage] at termMembership
+  simp only [List.mem_append] at termMembership
   rcases termMembership with baseMembership | wrappedMembership
   · simp only [List.mem_map] at baseMembership
     rcases baseMembership with ⟨source, _sourceMembership, rfl⟩

@@ -135,7 +135,7 @@ lemma weightOfConstraints_eq_jointWeight_sum
     have h :=
       VariableElimination.combineAll_factorsOfGraph_potential_eq_unnormalizedJoint
         (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) (x := x)
-    simpa [DiscreteCPT.toFactorGraph_unnormalizedJoint_eq] using h
+    exact h.trans (DiscreteCPT.toFactorGraph_unnormalizedJoint_eq cpt x)
   -- Expand the semantic weight into a full-config sum.
   unfold VariableElimination.weightOfConstraints
   simp [VariableElimination.weightOfConstraintsList]
@@ -183,8 +183,8 @@ lemma veQueryWeight_eq_jointWeight_sum
         if x ∈ BayesianNetwork.eventOfConstraints (bn := bn) cs then
           cpt.jointWeight x
         else 0 := by
-  simpa using
-    (weightOfConstraints_eq_jointWeight_sum (bn := bn) (cpt := cpt) cs)
+  rw [VariableElimination.veQueryWeight_eq_weightOfConstraints]
+  exact weightOfConstraints_eq_jointWeight_sum (bn := bn) (cpt := cpt) cs
 
 lemma weightOfConstraints_eq_jointMeasure_eventOfConstraints
     (cpt : bn.DiscreteCPT) (cs : List (Σ v : V, bn.stateSpace v))
@@ -210,8 +210,8 @@ lemma veQueryWeight_eq_jointMeasure_eventOfConstraints
     [∀ v, Nonempty (bn.stateSpace v)] :
     VariableElimination.veQueryWeight (fg := DiscreteCPT.toFactorGraph (bn := bn) cpt) cs =
       cpt.jointMeasure (BayesianNetwork.eventOfConstraints (bn := bn) cs) := by
-  simpa using
-    (weightOfConstraints_eq_jointMeasure_eventOfConstraints (bn := bn) (cpt := cpt) (cs := cs))
+  rw [VariableElimination.veQueryWeight_eq_weightOfConstraints]
+  exact weightOfConstraints_eq_jointMeasure_eventOfConstraints (bn := bn) (cpt := cpt) (cs := cs)
 
 lemma weightOfConstraints_eq_jointMeasure_eventEq
     (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v)

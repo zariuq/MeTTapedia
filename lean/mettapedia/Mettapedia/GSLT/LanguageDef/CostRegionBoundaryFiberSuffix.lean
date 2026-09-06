@@ -345,6 +345,8 @@ private theorem collectCostStaticApplyBoundaryFibers_availabilitySuffix_of
                                     headSmallEquation, headLargeEquation,
                                     tailSmallEquation, tailLargeEquation]
                                     at smallCollected largeCollected
+                                  have smallEq := Option.some.inj smallCollected
+                                  have largeEq := Option.some.inj largeCollected
                                   subst small
                                   subst large
                                   exact headSuffix.append tailSuffix
@@ -436,6 +438,8 @@ private theorem collectCostStaticCollectionBoundaryFibers_availabilitySuffix_of
                         localOuter, headSmallEquation, headLargeEquation,
                         tailSmallEquation, tailLargeEquation]
                         at smallCollected largeCollected
+                      have smallEq := Option.some.inj smallCollected
+                      have largeEq := Option.some.inj largeCollected
                       subst small
                       subst large
                       exact headSuffix.append tailSuffix
@@ -502,6 +506,7 @@ theorem collectCostStaticBoundaryFibersAt_apply_of_decode_some
       subst selectedIntrinsic
       rfl
 
+set_option maxHeartbeats 2000000 in
 /-- The lambda branch, with its occurrence-index transport made explicit. -/
 theorem collectCostStaticBoundaryFibersAt_lambda_arrow
     (source : CIGSLT) (color : CostStaticColor)
@@ -513,8 +518,9 @@ theorem collectCostStaticBoundaryFibersAt_lambda_arrow
       collectCostStaticBoundaryFibersAt source color targetFree
         (domain :: available) (outerContext.comp (.lambda binder .hole)) body
           codomain := by
-  simp [collectCostStaticBoundaryFibersAt]
+  rfl
 
+set_option maxHeartbeats 2000000 in
 /-- The multi-lambda branch, with its occurrence-index transport made
 explicit. -/
 theorem collectCostStaticBoundaryFibersAt_multiLambda_arrow
@@ -529,8 +535,26 @@ theorem collectCostStaticBoundaryFibersAt_multiLambda_arrow
         (List.replicate arity domain ++ available)
           (outerContext.comp (.multiLambda arity binders .hole)) body
             codomain := by
-  simp [collectCostStaticBoundaryFibersAt]
+  rfl
 
+/-- The collection branch exposes just its selected element type. -/
+theorem collectCostStaticBoundaryFibersAt_collection
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (available : List TypeExpr)
+    (outerContext : OneHoleContext) (collectionType : CollType)
+    (elements : List Pattern) (rest : Option String) (expected : TypeExpr) :
+    collectCostStaticBoundaryFibersAt source color targetFree available
+        outerContext (.collection collectionType elements rest) expected =
+      (costStaticCollectionTypingChoice? source color targetFree available
+        collectionType elements expected).bind (fun choice =>
+          collectCostStaticCollectionBoundaryFibers source color targetFree
+            available outerContext collectionType [] elements rest
+              (choice.targetElementType source color)) := by
+  unfold collectCostStaticBoundaryFibersAt
+  cases costStaticCollectionTypingChoice? source color targetFree available
+    collectionType elements expected <;> rfl
+
+set_option maxHeartbeats 2000000 in
 /-- The syntax-derived boundary-fibre collector is positionally stable under
 an unused outer binder suffix.  Every retained occurrence either receives
 that suffix or lies below a quote and keeps its local support unchanged. -/
@@ -554,15 +578,17 @@ theorem collectCostStaticBoundaryFibersAt_availabilitySuffix_of_scoped
     with
   | hbvar index =>
       intro expected _object _scope small large smallCollected largeCollected
-      simp [collectCostStaticBoundaryFibersAt] at smallCollected largeCollected
-      subst small
-      subst large
+      change some CostRegionBoundaryFibers.nil = some small at smallCollected
+      change some CostRegionBoundaryFibers.nil = some large at largeCollected
+      cases Option.some.inj smallCollected
+      cases Option.some.inj largeCollected
       exact .nil
   | hfvar name =>
       intro expected _object _scope small large smallCollected largeCollected
-      simp [collectCostStaticBoundaryFibersAt] at smallCollected largeCollected
-      subst small
-      subst large
+      change some CostRegionBoundaryFibers.nil = some small at smallCollected
+      change some CostRegionBoundaryFibers.nil = some large at largeCollected
+      cases Option.some.inj smallCollected
+      cases Option.some.inj largeCollected
       exact .nil
   | happly constructor arguments inductionHypothesis =>
       intro expected object scope small large smallCollected largeCollected
@@ -769,11 +795,14 @@ theorem collectCostStaticBoundaryFibersAt_availabilitySuffix_of_scoped
               (by simpa [Pattern.isWellScopedAt, Nat.add_comm] using scope)
               smallCollected largeCollected
       | base category =>
-          simp [collectCostStaticBoundaryFibersAt] at smallCollected
+          change none = some small at smallCollected
+          cases smallCollected
       | collection collectionType elementType =>
-          simp [collectCostStaticBoundaryFibersAt] at smallCollected
+          change none = some small at smallCollected
+          cases smallCollected
       | multiBinder domain =>
-          simp [collectCostStaticBoundaryFibersAt] at smallCollected
+          change none = some small at smallCollected
+          cases smallCollected
   | hmultiLambda arity binders body inductionHypothesis =>
       intro expected object scope small large smallCollected largeCollected
       cases expected with
@@ -796,17 +825,23 @@ theorem collectCostStaticBoundaryFibersAt_availabilitySuffix_of_scoped
                   List.length_replicate, Nat.add_comm] using scope)
                 smallCollected largeCollected
           | base category =>
-              simp [collectCostStaticBoundaryFibersAt] at smallCollected
+              change none = some small at smallCollected
+              cases smallCollected
           | collection collectionType elementType =>
-              simp [collectCostStaticBoundaryFibersAt] at smallCollected
+              change none = some small at smallCollected
+              cases smallCollected
           | arrow first second =>
-              simp [collectCostStaticBoundaryFibersAt] at smallCollected
+              change none = some small at smallCollected
+              cases smallCollected
       | base category =>
-          simp [collectCostStaticBoundaryFibersAt] at smallCollected
+          change none = some small at smallCollected
+          cases smallCollected
       | collection collectionType elementType =>
-          simp [collectCostStaticBoundaryFibersAt] at smallCollected
+          change none = some small at smallCollected
+          cases smallCollected
       | multiBinder domain =>
-          simp [collectCostStaticBoundaryFibersAt] at smallCollected
+          change none = some small at smallCollected
+          cases smallCollected
   | hsubst body replacement bodyHypothesis replacementHypothesis =>
       intro expected object scope small large smallCollected largeCollected
       simp [WellSorted.isObjectPattern] at object
@@ -821,16 +856,19 @@ theorem collectCostStaticBoundaryFibersAt_availabilitySuffix_of_scoped
       cases choiceSmallEquation : costStaticCollectionTypingChoice? source color
           targetFree inner collectionType elements expected with
       | none =>
-          simp [collectCostStaticBoundaryFibersAt, choiceSmallEquation]
-            at smallCollected
+          rw [collectCostStaticBoundaryFibersAt_collection,
+            choiceSmallEquation] at smallCollected
+          cases smallCollected
       | some choice =>
           have choiceLargeEquation : costStaticCollectionTypingChoice? source
               color targetFree (inner ++ ambient) collectionType elements
                 expected = some choice := by
             rw [choiceEquality]
             exact choiceSmallEquation
-          simp [collectCostStaticBoundaryFibersAt, choiceSmallEquation,
-            choiceLargeEquation] at smallCollected largeCollected
+          rw [collectCostStaticBoundaryFibersAt_collection,
+            choiceSmallEquation] at smallCollected
+          rw [collectCostStaticBoundaryFibersAt_collection,
+            choiceLargeEquation] at largeCollected
           exact
             collectCostStaticCollectionBoundaryFibers_availabilitySuffix_of
               source color targetFree inner ambient outerContext collectionType

@@ -244,6 +244,7 @@ noncomputable def app {I : TopologicalInterpretation Base Const X}
       exact hEval.trans (congrFun hfExp γ)
   }
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Beta law for the full typed topological interpretation. -/
 @[simp] theorem app_lam {I : TopologicalInterpretation Base Const X}
     {Γ : Ctx Base} {τ υ : Ty Base}

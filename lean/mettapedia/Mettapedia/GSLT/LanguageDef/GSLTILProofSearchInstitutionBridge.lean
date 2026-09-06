@@ -22,6 +22,7 @@ set_option autoImplicit false
 namespace Mettapedia.GSLT.LanguageDef.GSLTIL.ProofSearchInstitutionBridge
 
 open Mettapedia.GSLT
+open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.LanguageDef.CalculusAsLanguage
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
@@ -45,14 +46,25 @@ def derivabilitySentence (definition : ValidatedCalculusLanguageDef) :
     Set GoalState :=
   { goals | (proofSearchGSLT definition).MultiStep goals [] }
 
-/-- The same set at the exact sentence type supplied by the institutional
-functor.  This bridge is definitionally transparent but is named so instance
-search need not unfold a functor object to recognize ordinary set membership. -/
+/-- Derivability descends to semantic states. Proof search has equality as
+its equation relation, so equivalent representatives have the same goal list. -/
 def derivabilityInstitutionSentence
     (definition : ValidatedCalculusLanguageDef) :
-    predicateSentence.obj (Opposite.op (proofSearchSignature definition)) := by
-  change Set GoalState
-  exact derivabilitySentence definition
+    predicateSentence.obj (Opposite.op (proofSearchSignature definition)) :=
+  fun state => Quotient.lift
+    (fun goals => goals ∈ derivabilitySentence definition)
+    (by
+      intro left right equal
+      change left = right at equal
+      cases equal
+      rfl) state
+
+@[simp] theorem mk_mem_derivabilityInstitutionSentence_iff
+    (definition : ValidatedCalculusLanguageDef) (goals : GoalState) :
+    derivabilityInstitutionSentence definition
+      (Quotient.mk (proofSearchGSLT definition).equations goals) ↔
+        goals ∈ derivabilitySentence definition :=
+  Iff.rfl
 
 /-- Operational sentence membership is exactly proof-relevant derivability
 of the same ordered goal list. -/
@@ -74,7 +86,7 @@ derivation fibre of one judgment. -/
 
 /-- Every concrete derivation projects to truth of the generated semantic
 sentence at its singleton proof-search state. -/
-def derivationToSentenceTruth
+theorem derivationToSentenceTruth
     {definition : ValidatedCalculusLanguageDef} {goal : Pattern}
     (derivation : Derivation definition goal) :
     [goal] ∈ derivabilitySentence definition :=
@@ -102,14 +114,16 @@ theorem institution_derives_derivabilitySentence_iff_all_goals
         (derivabilityInstitutionSentence definition) ↔
       ∀ goals : GoalState,
         Nonempty (DerivationList definition goals) := by
-  change derivabilitySentence definition ∈
-      semanticConsequence GoalState ∅ ↔ _
-  rw [mem_semanticConsequence_empty_iff]
+  change derivabilityInstitutionSentence definition ∈
+      semanticConsequence (SemanticTerm (proofSearchGSLT definition)) ∅ ↔ _
+  erw [mem_semanticConsequence_empty_iff]
   constructor
   · intro universal goals
-    exact (mem_derivabilitySentence_iff definition goals).1 (universal goals)
-  · intro allGoals goals
-    exact (mem_derivabilitySentence_iff definition goals).2 (allGoals goals)
+    exact (mem_derivabilitySentence_iff definition goals).1 (universal (Quotient.mk _ goals))
+  · intro allGoals state
+    induction state using Quotient.inductionOn with
+    | _ goals =>
+        exact (mem_derivabilitySentence_iff definition goals).2 (allGoals goals)
 
 /-! ## Concrete proof-identity and cost obstruction -/
 

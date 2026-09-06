@@ -1526,6 +1526,7 @@ theorem rhoIntrinsicLedgerTotalAction_temporalLength_eq_length
       simpa [rhoIntrinsicLedgerAction] using ih
     simp [totalAction, GSLT.RewritePath.length, ih', RhoLedger.temporalList_add,
       rhoIntrinsicLedgerAction, rhoIntrinsicStepLedger_temporalList_length]
+    exact rhoIntrinsicStepLedger_temporalList_length h
 
 theorem rhoIntrinsicLedgerTotalAction_traceCoherent
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
@@ -1740,8 +1741,11 @@ theorem rhoIntrinsicDirectSpentStack_rewritePathAppend
       RhoDirectStack.append
         (rhoIntrinsicDirectSpentStack left)
         (rhoIntrinsicDirectSpentStack right) := by
-  unfold rhoIntrinsicDirectSpentStack
-  rw [totalAction_append, RhoLedger.temporalList_add, RhoDirectStack_ofTrace_append]
+  have htotal := totalAction_append rhoIntrinsicLedgerAction left right
+  have htrace := congrArg (fun ledger : RhoLedger => RhoDirectStack.ofTrace ledger.temporalList) htotal
+  exact htrace.trans (by
+    rw [RhoLedger.temporalList_add, RhoDirectStack_ofTrace_append]
+    rfl)
 
 @[simp] theorem rhoIntrinsicDirectSpentStack_oneStepPath
     {t u : Pattern} (step : rhoGSLT.Step t u) :
@@ -1782,7 +1786,7 @@ noncomputable def rhoIntrinsicDirectStepSpent
     rhoSpentSyntaxTicks (rhoIntrinsicDirectStepSpent step).toPattern = 1 := by
   rw [rhoIntrinsicDirectStepSpent_eq_oneStepPath,
     rhoIntrinsicDirectSpentStack_ticks_eq_length]
-  simp
+  rfl
 
 theorem rhoIntrinsicDirectSpentStack_rewritePathAppend_steps
     {t u v : Pattern}
@@ -1828,7 +1832,8 @@ theorem rhoIntrinsicDirectSpentTrace_eq_stack
           RhoDirectStack.append
             (rhoIntrinsicDirectSpentStack (oneStepPath (S := rhoGSLT) step))
             (rhoIntrinsicDirectSpentStack rest) := by
-              rw [rhoIntrinsicDirectStepSpent_eq_oneStepPath, ih]
+              exact congrArg₂ RhoDirectStack.append
+                (rhoIntrinsicDirectStepSpent_eq_oneStepPath step) ih
       _ =
           rhoIntrinsicDirectSpentStack
             (rewritePathAppend (oneStepPath (S := rhoGSLT) step) rest) := by

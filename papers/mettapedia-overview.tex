@@ -1,0 +1,160 @@
+\documentclass[10pt]{article}
+\usepackage[a4paper,margin=21mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,microtype,amsmath,amssymb,booktabs,tabularx,array}
+\usepackage{xurl}
+\usepackage[colorlinks=true,urlcolor=blue!50!black,linkcolor=blue!50!black]{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=*}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2pt}
+\newcommand{\statusdate}{6 September 2026}
+\newcommand{\src}[1]{{\small\path{#1}}}
+\title{MeTTapedia: Project Overview and Verification Status}
+\author{Zar Goertzel and Oru\v{z}i (Codex-assisted)}
+\date{Working snapshot: \statusdate}
+
+\begin{document}
+\maketitle
+\vspace{-1.5em}
+
+\textbf{Purpose.} MeTTapedia develops reusable formal mathematics, logic, and
+AI theory across several proof systems. Its central engineering aim is to
+connect executable reasoning with precise semantics and checked evidence:
+what a program computes, what a statement means, and why a certificate
+licenses that statement should agree. The repository is an active research
+library; the presence of a development does not imply that every claimed
+result in that development has been proved.
+
+\section*{The project at a glance}
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{.22\linewidth}X@{}}
+\toprule
+Area & Contents and connections \\
+\midrule
+Mathematical foundations & Probability, information theory, order and
+category theory, computability, Knuth--Skilling foundations of inference,
+exchangeability, and universal AI. These supply assumptions and structures
+used by the reasoning developments. \\
+Evidence and reasoning & Probabilistic Logic Networks (PLN), world-model
+semantics, Bayesian networks, higher-order logic, and bridges between
+derivations, evidence, and probabilistic interpretations. \\
+Languages and processes & MeTTa dialects, MeTTaIL, operational semantics,
+OSLF, process calculi including the rho calculus, and language interfaces
+for Metamath, GF, SUMO, and related systems. \\
+Compositional interfaces & Generated syntactic labelled transition systems
+(GSLTs), typed translation, contextual substitution, certificate checking,
+and cost-sensitive transport. Graph and matrix representations connect
+language interfaces with neural and algorithmic work. \\
+Applications and case studies & Neural-network and cognitive-architecture
+models, formal ethics, four-color and Ramsey developments, and executable
+checker kernels. Their verification status varies by result. \\
+\bottomrule
+\end{tabularx}
+
+\begin{center}
+\small
+Mathematical foundations
+$\longrightarrow$ language and world-model semantics\\[3pt]
+$\longrightarrow$ typed interfaces and checked certificates
+$\longrightarrow$ applications
+\end{center}
+This is a conceptual map, not an import graph. A Bayesian-network inference
+rule requires its stated model and independence hypotheses; returning a
+number does not justify applying it without them. Likewise, certificate
+acceptance must refer to the intended language, claim, and revision.
+
+The flagship library is \src{lean/mettapedia/Mettapedia/}. Separate Lean
+projects cover algorithms, support libraries, ethics, four-color and Ramsey
+work, with editable external dependencies under \src{lean/externals/} and
+standalone projects under \src{lean/standalone/}. Other formal systems have
+their own trees: \src{cakeml/}, \src{megalodon/}, \src{mizar/}, and
+\src{isabelle/}. The current Lean migration does not validate those other
+toolchains.
+
+\section*{Current milestone: stable Lean 4.33.1}
+
+The active migration targets \textbf{Lean 4.33.1}, with Mathlib pinned to
+\nolinkurl{0df444a360eaa60ab8c11dca51a86af692955474}. Release candidates are
+excluded. An isolated upgrade worktree and external worktrees protect the
+concurrent development branch. TauCeti has been adapted from a nearby
+upstream revision in the project's own fork.
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{.27\linewidth}X@{}}
+\toprule
+Verification boundary & Evidence in this migration snapshot \\
+\midrule
+TauCeti & Library, website, examples, and API documentation build on stable
+4.33.1. All 1,818 module pages are generated; dependency links retain the
+fork's external-documentation behavior. \\
+Flagship MeTTapedia & A combined 6,336-target, root-library, and four-executable build passes
+(25,072 jobs). The other 47 targets retain baseline limitations: 30 have
+source-failure evidence, 15 depend on failing runtime expectations, and two
+reach the assembled-check resource boundary. All 6,383 targets are accounted for. Both Lake
+configurations agree. A proved state-encoding lemma preserves the decoder
+to fold agreement across the compiler's loop-state representation change.
+\\
+External libraries & The combined external and nested library gate passes.
+LeaTTa's API documentation and both books build; the books render.
+Vanilla's default build and API documentation also pass. \\
+Metamath checking & Canonical CLI and single-pass/legacy parity regressions
+pass, including the external checker's depth-limit control. The MeTTapedia NIK audit accepted the full 50.8 MB \src{set.mm},
+checking parsing and proofs in sound-default mode and rejecting incomplete
+proofs. Forty-seven selected MM2 expectations match 4.31: 37 evaluate true and
+ten false on both versions. These runtime comparisons are not kernel
+proof certificates. \\
+Other Lean projects & FOET, Ramsey36, FourColor, and selected algorithm,
+GF, and MeTTaIL support targets pass their recorded builds. SUMO
+source checks accept three upstream examples and reject malformed input. \\
+Reproducibility & All 14 external patches replay from fresh
+pinned checkouts with matching source fingerprints. Reapplication to a
+dirty checkout is rejected. Main-branch integration remains pending. \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Migration scope.} The supported baseline builds and existing research
+status are preserved on Lean 4.33.1. Completing unfinished research is a
+separate task.
+
+\section*{Research obligations and integration}
+
+Compilation, regression checks, and admission-free proofs are distinct gates.
+Unresolved mathematics remains in the graph WeakProduct construction,
+FourColor, and Lean4Lean; Foundation retains its unproved point-generated-frame
+height axiom. The migration does not complete these developments.
+
+Lean 4.31 comparisons reproduce the evaluator, canonical-bridge, exporter,
+and OSLF regression-fixture failures. The OSLF fixture retains exactly its two
+old errors after compatibility repair. Expensive assembled checks also reach
+the resource boundary before migration.
+The HE real-file check has byte-identical output on both versions: three
+supported cases pass; equal-chain fails on both and is not a regression.
+
+The verified source fingerprints and baseline classifications are recorded in
+\src{lean/upgrades/4.33.1/verification.json}. From \src{lean/mettapedia/},
+the recorded flagship gate is:
+\begin{verbatim}
+lake build $(cat ../upgrades/4.33.1/verified-modules.txt) \
+  Mettapedia mettapedia metamathNIKAudit \
+  checkRFC8259NativeForestExact sumoNativeSourceCheck
+\end{verbatim}
+\src{lean/bootstrap_local_repos.sh} clones missing editable dependencies at
+pinned revisions and applies their recorded patches. Existing checkouts are
+preserved; \src{lean/upgrades/4.33.1/replay.py} verifies migrated fingerprints
+with \texttt{--verify} and applies patches to clean bases with \texttt{--apply}.
+The migration is verified in its isolated worktree. Integration still requires
+reconciling concurrent main-branch changes with the maintainers.
+
+\section*{Reading map}
+
+\src{papers/world-model-calculus.tex} develops the world-model/PLN thread;
+\src{papers/CertificateGSLT.tex} presents compositional certificate checking;
+\src{papers/gslt2gslt.tex} discusses typed action decoding and neural
+interfaces; \src{papers/MettaKernel.tex} covers the proof-kernel curriculum.
+These are research drafts. The migration recipe and dependency pins live in
+\src{lean/upgrades/4.33.1/}.
+
+Repository: \url{https://github.com/zariuq/MeTTapedia}.
+The changes reported here await integration.
+\end{document}

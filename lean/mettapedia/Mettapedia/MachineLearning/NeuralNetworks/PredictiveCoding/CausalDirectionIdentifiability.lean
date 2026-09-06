@@ -580,6 +580,10 @@ theorem forward_xClampOperatorModel_posteriorMean
     LinearGaussianOperatorModel.precision_mul_posteriorMean
       ((forwardNodeResidualModel covariance).xClampOperatorModel x)
   have hcoordinate := congrFun hsolve ()
+  simp only [LinearGaussianOperatorModel.posteriorPrecision,
+    LinearGaussianOperatorModel.naturalParameter, Matrix.mul_apply,
+    Matrix.transpose_apply, Matrix.mulVec, dotProduct] at hcoordinate
+  dsimp only [Matrix.transpose] at hcoordinate
   simp [LinearGaussianOperatorModel.posteriorPrecision,
     LinearGaussianOperatorModel.naturalParameter,
     TwoNodeQuadraticResidualModel.xClampOperatorModel,
@@ -599,6 +603,10 @@ theorem reverse_xClampOperatorModel_posteriorMean
     LinearGaussianOperatorModel.precision_mul_posteriorMean
       ((reverseNodeResidualModel covariance).xClampOperatorModel x)
   have hcoordinate := congrFun hsolve ()
+  simp only [LinearGaussianOperatorModel.posteriorPrecision,
+    LinearGaussianOperatorModel.naturalParameter, Matrix.mul_apply,
+    Matrix.transpose_apply, Matrix.mulVec, dotProduct] at hcoordinate
+  dsimp only [Matrix.transpose] at hcoordinate
   simp [LinearGaussianOperatorModel.posteriorPrecision,
     LinearGaussianOperatorModel.naturalParameter,
     TwoNodeQuadraticResidualModel.xClampOperatorModel,
@@ -699,6 +707,10 @@ theorem forward_xInterveneOperatorModel_posteriorMean
     LinearGaussianOperatorModel.precision_mul_posteriorMean
       ((forwardNodeResidualModel covariance).xInterveneOperatorModel x)
   have hcoordinate := congrFun hsolve ()
+  simp only [LinearGaussianOperatorModel.posteriorPrecision,
+    LinearGaussianOperatorModel.naturalParameter, Matrix.mul_apply,
+    Matrix.transpose_apply, Matrix.mulVec, dotProduct] at hcoordinate
+  dsimp only [Matrix.transpose] at hcoordinate
   simp [LinearGaussianOperatorModel.posteriorPrecision,
     LinearGaussianOperatorModel.naturalParameter,
     TwoNodeQuadraticResidualModel.xInterveneOperatorModel,
@@ -716,6 +728,10 @@ theorem reverse_xInterveneOperatorModel_posteriorMean
     LinearGaussianOperatorModel.precision_mul_posteriorMean
       ((reverseNodeResidualModel covariance).xInterveneOperatorModel x)
   have hcoordinate := congrFun hsolve ()
+  simp only [LinearGaussianOperatorModel.posteriorPrecision,
+    LinearGaussianOperatorModel.naturalParameter, Matrix.mul_apply,
+    Matrix.transpose_apply, Matrix.mulVec, dotProduct] at hcoordinate
+  dsimp only [Matrix.transpose] at hcoordinate
   simp [LinearGaussianOperatorModel.posteriorPrecision,
     LinearGaussianOperatorModel.naturalParameter,
     TwoNodeQuadraticResidualModel.xInterveneOperatorModel,

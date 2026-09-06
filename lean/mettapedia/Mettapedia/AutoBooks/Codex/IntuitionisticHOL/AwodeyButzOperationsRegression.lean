@@ -51,7 +51,9 @@ theorem pulledIdSection_apply_snd (b : Bool) :
 
 theorem pulledIdSection_apply_snd_ne_false (b : Bool) :
     Function.Pullback.snd (pulledIdSection.toContinuousMap b) ≠ false := by
-  simp [pulledIdSection_apply_snd]
+  rw [pulledIdSection_apply_snd]
+  intro impossible
+  cases impossible
 
 end AwodeyButzOperationsRegression
 

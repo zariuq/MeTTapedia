@@ -28,14 +28,22 @@ inductive GWASFineMappingRegime where
   | singleSignal
   | multiSignal
   | diffuseCredibleSet
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype GWASFineMappingRegime where
+  elems := { .singleSignal, .multiSignal, .diffuseCredibleSet }
+  complete x := by cases x <;> simp
 
 /-- Coarse tissue or cell-type regimes. -/
 inductive GWASTissueRegime where
   | tissueSpecific
   | crossTissue
   | unknownTissue
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype GWASTissueRegime where
+  elems := { .tissueSpecific, .crossTissue, .unknownTissue }
+  complete x := by cases x <;> simp
 
 /-- Coarse mechanism-family regimes. -/
 inductive GWASMechanismRegime where
@@ -43,14 +51,22 @@ inductive GWASMechanismRegime where
   | regulatory
   | splicing
   | pathwayMediated
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype GWASMechanismRegime where
+  elems := { .coding, .regulatory, .splicing, .pathwayMediated }
+  complete x := by cases x <;> simp
 
 /-- Trust / calibration regimes for the evidence-integration layer. -/
 inductive GWASTrustRegime where
   | calibrated
   | uncertain
   | weaklySupported
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype GWASTrustRegime where
+  elems := { .calibrated, .uncertain, .weaklySupported }
+  complete x := by cases x <;> simp
 
 /-- Explicit latent regime for broad GWAS mechanistic reasoning. -/
 structure GWASLatentRegime where

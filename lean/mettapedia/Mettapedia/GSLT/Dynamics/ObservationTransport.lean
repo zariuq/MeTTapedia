@@ -125,6 +125,7 @@ theorem pullback_comp_observe
     (pullback first (pullback second discipline)).observe events =
       (pullback (second ∘ first) discipline).observe events := by
   simp only [pullback_observe, List.map_map]
+  rfl
 
 /-- Pullback retains ordering on the value dial exactly; it neither chooses
 an order nor imposes one on disciplines that lack it. -/
@@ -176,6 +177,7 @@ theorem observe_mapRoute
       ofDiscipline targetDiscipline (translation.mapRoute path) := by
   simp only [ofDiscipline_apply, ObservationDiscipline.pullback_observe,
     events_mapRoute]
+  rfl
 
 /-! ## Negative control: naturality is not reflection -/
 

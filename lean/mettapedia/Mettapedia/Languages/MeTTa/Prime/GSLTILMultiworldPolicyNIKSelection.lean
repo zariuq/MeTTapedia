@@ -49,7 +49,11 @@ inductive Face where
   | cardinality
   | outcomes
   | worlds
-deriving DecidableEq, Repr, Fintype
+deriving DecidableEq, Repr
+
+instance : Fintype Face where
+  elems := { .cardinality, .outcomes, .worlds }
+  complete x := by cases x <;> simp
 
 deriving instance Inhabited for Face
 
@@ -142,7 +146,7 @@ theorem runner_agrees (face : Face) (policy : Policy)
     runner profile command face policy supported (readout profile command face state) =
       (policies profile command).decide policy state := by
   cases face <;> cases policy <;>
-    simp [runner, readout, policies, supports] at supported ⊢
+    simp [runner, readout, policies, supports, id] at supported ⊢
 
 theorem supports_mono {weaker stronger : Face}
     (related : weaker <= stronger) (policy : Policy)

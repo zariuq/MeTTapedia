@@ -183,7 +183,7 @@ evaluates to the native free-monoid unit. -/
 theorem toList_freeBoolOne
     (interpretation : Signature.Interpretation signature signature) :
     FreeMonoid.toList (freeBoolOne interpretation) = [] := by
-  rw [freeBoolOne, Term.toList_evaluateBelow_freeMonoid]
+  erw [freeBoolOne, Term.toList_evaluateBelow_freeMonoid]
   rw [Term.variableWord_eq_nil_of_variablesBelow_zero
     (interpretation.operation .one).2]
   rfl

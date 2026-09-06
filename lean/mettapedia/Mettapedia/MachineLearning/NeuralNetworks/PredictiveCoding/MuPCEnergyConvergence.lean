@@ -167,8 +167,8 @@ theorem muPCDiagonalAspectInverseRescaling_tendsto_one
     intro j
     by_cases hij : i = j
     · subst j
-      simpa using
-        ((continuousAt_const.add
+      simp only [ite_true]
+      exact ((continuousAt_const.add
           (continuousAt_id.mul continuousAt_const)).inv₀ (by norm_num))
     · simpa [hij] using
         (continuousAt_const : ContinuousAt (fun _ : ℝ => (0 : ℝ)) 0)

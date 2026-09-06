@@ -91,7 +91,8 @@ def identity : (certificate : Mettapedia.Logic.Derivation J W) →
     reorder (identity certificate) = certificate := by
   induction certificate with
   | node conclusion witness arity children ih =>
-      simp only [identity, reorder]
+      simp only [identity]
+      erw [reorder]
       congr 1
       funext i
       exact ih i

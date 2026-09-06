@@ -263,6 +263,7 @@ theorem decideAt_singleton_eq_sourceDecision (byte : UInt8) :
     decideAt parserPresentation metamathSeparatorPlan [byte.toNat] 0 =
       (if sourceWhitespace byte then .separator else .content) := by
   simp [decideAt, sourceWhitespace]
+  rfl
 
 /-- The plan-driven byte step and the efficient streaming step are literally
 the same transition after classification.  This is the executable fusion

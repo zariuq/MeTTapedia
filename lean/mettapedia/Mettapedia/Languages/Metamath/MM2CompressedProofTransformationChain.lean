@@ -87,6 +87,7 @@ theorem lowerPath_agrees_translation :
           ⟨LinkedInventoryLoader.lower_step step⟩ route)
         (lowerPath_agrees_translation rest)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The generic realization maps every retained abstract occurrence step to
 the exact linked-row path already used by compressed-verifier activation. -/
 theorem lowerPath_agrees_realization

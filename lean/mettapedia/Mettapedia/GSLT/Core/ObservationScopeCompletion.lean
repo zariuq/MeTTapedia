@@ -241,6 +241,7 @@ theorem closed_empty_first_is_not_count_satisfied :
     ¬ closedEmptyFirst.DemandSatisfied := by
   simp [ScopedObservation.DemandSatisfied,
     ScopedObservation.observedCount, CountSatisfied, closedEmptyFirst]
+  exact ActivationDriver.observeBoundedRun_occurrences Tick.tickDriver [] .done () 0
 
 theorem closed_empty_first_is_execution_closed :
     closedEmptyFirst.ExecutionClosed := by

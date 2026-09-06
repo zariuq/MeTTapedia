@@ -64,6 +64,7 @@ This is parametric in the oracle — the specific BN motif (chain, fork)
 determines which oracles are sound for a given network topology.
 The calculus only cares that the oracle answers positively. -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Under any RelationEnv that satisfies the outsideScope premise,
     the guarded forgetting rule fires:
     `Extract(Forget(S, W), q) ↦ Extract(W, q)`.

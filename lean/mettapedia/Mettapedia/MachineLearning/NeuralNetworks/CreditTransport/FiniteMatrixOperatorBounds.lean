@@ -109,6 +109,8 @@ theorem maximumEntry_alone_fails :
   have hsquare := (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).2 hbound
   norm_num [vector, Matrix.toEuclideanCLM_toLp, Matrix.mulVec, dotProduct,
     EuclideanSpace.real_norm_sq_eq] at hsquare
+  erw [Matrix.toEuclideanCLM_toLp] at hsquare
+  norm_num [Matrix.mulVec, dotProduct] at hsquare
 
 #print axioms l2OperatorNorm_le_entrywiseL1
 #print axioms maximumEntry_alone_fails

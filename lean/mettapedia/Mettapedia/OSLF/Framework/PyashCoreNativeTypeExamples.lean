@@ -3,6 +3,7 @@ import Mettapedia.OSLF.Framework.PyashCoreModel
 namespace Mettapedia.OSLF.Framework.PyashCoreInstance
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-- Positive native-type witness: a canonical Pyash state shape is accepted by `pyashStateTop`. -/
 def pyashStateTopPositiveExample : Pattern :=
@@ -27,19 +28,25 @@ def pyashStateTopNegativeBadOutcomeExample : Pattern :=
     ]
 
 theorem pyashStateTop_accepts_positive_example :
-    pyashStateTop.pred pyashStateTopPositiveExample := by
-  unfold pyashStateTop pyashStateTopPositiveExample
+    (langOSLF pyashCore "State").satisfies
+      pyashStateTopPositiveExample pyashStateTop.pred := by
+  rw [pyashStateTop_satisfies_iff]
+  unfold pyashStateTopPositiveExample
   simp [isPyashState, isPyashInstr, isPyashSentence, isPyashMood, isPyashVerb,
     isPyashRoleTypes, isPyashSignature, isPyashOutcome]
 
 theorem pyashStateTop_rejects_non_state_example :
-    ¬ pyashStateTop.pred pyashStateTopNegativeNonStateExample := by
-  unfold pyashStateTop pyashStateTopNegativeNonStateExample
+    ¬ (langOSLF pyashCore "State").satisfies
+      pyashStateTopNegativeNonStateExample pyashStateTop.pred := by
+  rw [pyashStateTop_satisfies_iff]
+  unfold pyashStateTopNegativeNonStateExample
   simp [isPyashState]
 
 theorem pyashStateTop_rejects_bad_outcome_example :
-    ¬ pyashStateTop.pred pyashStateTopNegativeBadOutcomeExample := by
-  unfold pyashStateTop pyashStateTopNegativeBadOutcomeExample
+    ¬ (langOSLF pyashCore "State").satisfies
+      pyashStateTopNegativeBadOutcomeExample pyashStateTop.pred := by
+  rw [pyashStateTop_satisfies_iff]
+  unfold pyashStateTopNegativeBadOutcomeExample
   simp [isPyashState, isPyashInstr, isPyashSentence, isPyashMood, isPyashVerb,
     isPyashRoleTypes, isPyashSignature, isPyashOutcome]
 

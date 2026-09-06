@@ -278,7 +278,11 @@ inductive AxiomTag where
   | unionElim
   | powerIntro
   | powerElim
-deriving DecidableEq, Repr, Fintype
+deriving DecidableEq, Repr
+
+instance : Fintype AxiomTag where
+  elems := {.emptyElim, .unionIntro, .unionElim, .powerIntro, .powerElim}
+  complete value := by cases value <;> simp
 
 def AxiomTag.formula : AxiomTag -> ClosedFormula
   | .emptyElim => emptyElimFormula

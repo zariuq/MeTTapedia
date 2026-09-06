@@ -24,6 +24,7 @@ open Mettapedia.PLN.RuleFamilies.HigherOrder.PLNRegimeMixtureTheorems
 
 /-! ## Small finite regime canary -/
 
+set_option backward.isDefEq.respectTransparency false in
 inductive DemoRegime where
   | focused
   | alternate
@@ -231,6 +232,7 @@ def gwasFocusedHypothesis : GWASHypothesis where
   mechanism := "regulatory"
   phenotype := "obesity"
 
+set_option backward.isDefEq.respectTransparency false in
 theorem certifiedChaining_regression_gwas_broadSupport_eq :
     gwasBroadSupport gwasFocusedProfile gwasFocusedQuery = 3 / 5 := by
   simp [gwasBroadSupport, gwasFocusedProfile, gwasFocusedPosterior,

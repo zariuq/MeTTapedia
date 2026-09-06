@@ -434,6 +434,8 @@ theorem clausesNil_rewriteAt_exact (root : Pattern) (fuel : Nat) :
       (TptpFofDefinitionalCnfLanguageDef.clausesCons
         (unitClause root) TptpFofDefinitionalCnfLanguageDef.clausesNil)] := by
   generation_root
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 800000 in
 
 theorem clausesAnd_rewriteAt_exact
     (root id source left right tail arity introducedTail arguments
@@ -485,6 +487,8 @@ theorem clausesAnd_rewriteAt_exact
           leftNegative rightNegative)
         rest)] := by
   generation_root_using_all
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 800000 in
 
 theorem clausesOr_rewriteAt_exact
     (root id source left right tail arity introducedTail arguments

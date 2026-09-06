@@ -83,7 +83,11 @@ inductive PrimitiveRecommendationOutcome where
   | evidenceBearing
   | settlingDetected
   | gainVariationDetected
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype PrimitiveRecommendationOutcome where
+  elems := {.plain, .evidenceBearing, .settlingDetected, .gainVariationDetected}
+  complete := by intro value; cases value <;> simp
 
 /-- Exact scalar classifier.  Empirical consumers may separately register a
 tolerance policy, but no noisy or trained-nonlinear theorem is asserted here. -/
@@ -1276,7 +1280,11 @@ inductive SupplementSelectorInput where
   | primitiveInputs
   | selectedProbes
   | probeResults
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype SupplementSelectorInput where
+  elems := {.primitiveInputs, .selectedProbes, .probeResults}
+  complete := by intro value; cases value <;> simp
 
 def supplementSelectorInputKey : SupplementSelectorInput → String
   | .primitiveInputs => "primitive_inputs"

@@ -259,7 +259,11 @@ theorem U_L_conf_round_trip (n : NARSTruthValue) : (U (L n)).c = n.c := by
 
 /-- Round-trip: U ∘ L preserves frequency (when c > 0). -/
 theorem U_L_freq_round_trip (n : NARSTruthValue) (hc : n.c > 0) : (U (L n)).f = n.f := by
-  simp only [U, L, BinaryEvidence.total]
+  change (if ENNReal.ofReal (n.f * c2w n.c) +
+      ENNReal.ofReal ((1 - n.f) * c2w n.c) = 0 then 0.5 else
+      (ENNReal.ofReal (n.f * c2w n.c) /
+        (ENNReal.ofReal (n.f * c2w n.c) +
+          ENNReal.ofReal ((1 - n.f) * c2w n.c))).toReal) = n.f
   have hw : c2w n.c ≥ 0 := n.weight_nonneg
   have hf : 0 ≤ n.f := n.f_nonneg
   have h1f : 0 ≤ 1 - n.f := sub_nonneg.mpr n.f_le_one

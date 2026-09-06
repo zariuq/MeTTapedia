@@ -334,12 +334,14 @@ theorem toBasePath_toCanonicalMatrixRoute {n : Nat} (source : State n) :
   cases source <;>
     simp [toCanonicalMatrixRoute, GradedRoute.toBasePath,
       toCanonicalMatrixPath]
+  rfl
 
 theorem toBasePath_fromMatrixRoute {n : Nat} (layout : Layout)
     (graph : AdjacencyMatrix.Rep n) :
     (fromMatrixRoute layout graph).toBasePath = fromMatrixPath layout graph := by
   cases layout <;>
     simp [fromMatrixRoute, GradedRoute.toBasePath, fromMatrixPath]
+  rfl
 
 /-- Graded and ungraded canonical routes have exactly the same ordered
 refinement path after erasure. -/

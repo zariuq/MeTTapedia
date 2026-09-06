@@ -506,12 +506,14 @@ theorem parallelSpliceOccurrenceSource_name
                   elements := by
               simp [parallelSplice]
             simp [parallelSpliceOccurrenceSource, parallelSplice]
+            exact CostStaticFVarListOccurrence.castPatterns_name _ occurrence
           · have spliceEquality :
                 parallelSplice declaration
                     (.collection collectionType elements none) =
                   [.collection collectionType elements none] := by
               simp [parallelSplice, parallel]
             simp [parallelSpliceOccurrenceSource, parallelSplice, parallel]
+            exact CostStaticFVarListOccurrence.castPatterns_name _ occurrence
   | bvar index =>
       exact singletonListOccurrenceRoot_name occurrence
   | fvar name =>

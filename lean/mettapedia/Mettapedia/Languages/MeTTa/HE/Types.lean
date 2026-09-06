@@ -555,13 +555,19 @@ private theorem filterMap_decode_encode_assignments (xs : List (String × Atom))
     (xs.map encodeAssignment).filterMap decodeAssignment? = xs := by
   induction xs with
   | nil => rfl
-  | cons x xs ih => cases x; simp [encodeAssignment, decodeAssignment?]
+  | cons x xs ih =>
+      cases x
+      simp only [List.map_cons, List.filterMap_cons, encodeAssignment, decodeAssignment?]
+      exact congrArg (_ :: ·) ih
 
 private theorem filterMap_decode_encode_equalities (xs : List (String × String)) :
     (xs.map encodeEquality).filterMap decodeEquality? = xs := by
   induction xs with
   | nil => rfl
-  | cons x xs ih => cases x; simp [encodeEquality, decodeEquality?]
+  | cons x xs ih =>
+      cases x
+      simp only [List.map_cons, List.filterMap_cons, encodeEquality, decodeEquality?]
+      exact congrArg (_ :: ·) ih
 
 theorem ofLegacyStructuralAtom_toLegacyStructuralAtom (b : Bindings) :
     ofLegacyStructuralAtom? (toLegacyStructuralAtom b) = some b := by

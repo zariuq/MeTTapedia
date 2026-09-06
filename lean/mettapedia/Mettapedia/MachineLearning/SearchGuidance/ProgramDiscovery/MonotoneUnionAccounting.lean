@@ -103,7 +103,11 @@ namespace Fixture
 
 inductive FixtureArm where
   | left | right
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype FixtureArm where
+  elems := {.left, .right}
+  complete := by intro x; cases x <;> simp
 
 open FixtureArm
 

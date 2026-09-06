@@ -75,7 +75,7 @@ theorem langDiamond_eq_di_pb (lang : LanguageDef)
     di (langSpan lang).source (pb (langSpan lang).target φ.1) := by
   funext source
   apply propext
-  rw [langDiamond_spec]
+  refine (langDiamond_spec lang φ source).trans ?_
   constructor
   · rintro ⟨target, step, holds⟩
     exact ⟨⟨(source, target), step⟩, rfl, holds⟩
@@ -89,7 +89,7 @@ theorem langBox_eq_ui_pb (lang : LanguageDef)
     ui (langSpan lang).target (pb (langSpan lang).source φ.1) := by
   funext target
   apply propext
-  rw [langBox_spec]
+  refine (langBox_spec lang φ target).trans ?_
   constructor
   · intro holds edge targetEq
     exact holds edge.1.1 (targetEq ▸ edge.2)

@@ -286,14 +286,14 @@ def contract : AuthorityContract theory where
               trivial
             complete := by
               intro claim inScope
-              exact ⟨true, by simp⟩ }
+              exact ⟨true, by change (true || claim) = true; exact Bool.true_or _⟩ }
 
 /-- The old proof token embeds as `false`; the target's `true` token is the
 new authority unavailable in the base profile. -/
 def inclusion : AuthorityView contract .base .extension where
   mapClaim := id
   mapCertificate := fun _ => false
-  check_commutes := by intro claim certificate; cases certificate; simp [contract]
+  check_commutes := by intro claim certificate; cases certificate; exact Bool.false_or _
   meaning_preserved := by intro claim meaningful; trivial
 
 /-- Positive control: translated base evidence has exactly the same replay

@@ -101,7 +101,7 @@ theorem frontierLegal_iff_legacyLegal
     exact budgetEquivalent.mp budget
   · intro legacy
     refine ⟨APSort.expression, ?_, rfl, budgetEquivalent.mpr legacy⟩
-    simp [frontierState, frontierAction, incomplete]
+    exact List.getElem?_replicate_of_lt incomplete
 
 /-- Complete states expose EOS rather than another constructor action. -/
 theorem complete_frontier_has_no_constructor_legal

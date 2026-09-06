@@ -1,6 +1,7 @@
 import Mettapedia.Languages.MeTTa.HE.Spec.Type.Conformance
 import Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
 import MettaHyperonFull.Minimal.Interpreter
+import MettaHyperonFull.Proofs.TypeSoundness
 
 /-!
 # External-ground type-tag counterexample
@@ -102,10 +103,15 @@ theorem repaired_external_tag_accepted_by_applicability :
   have hcheck :
       Metta.Minimal.typeCheckArgsOutcome customApplicabilityEnv
           Metta.Minimal.World.empty [.sym "T"] 0 [] [customLea] = .success [] := by
-    simp [Metta.Minimal.typeCheckArgsOutcome, hprep, htypes,
+    simp [Metta.Minimal.typeCheckArgsOutcome,
+      Metta.Minimal.typeCheckArgsDetailedOutcome,
+      Metta.Minimal.typeCheckArgsDetailedOutcomeScoped,
+      Metta.Minimal.scanActualTypes, hprep, htypes,
       Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
       Metta.instantiate, hmatch]
-  rw [Metta.Minimal.typeMismatch, Metta.Minimal.selectFunctionType, hopPrep, hopTypes]
-  simp [Metta.Minimal.scanFunctionTypeCandidates, hcheck]
+  have selected := Metta.selectFunctionType_singleton_arrow_selected_of_outcome
+    customApplicabilityEnv Metta.Minimal.World.empty "acceptsT" [customLea]
+    [.sym "T"] (.sym "R") [] (by simpa [hopPrep] using hopTypes) rfl hcheck
+  simp [Metta.Minimal.typeMismatch, selected]
 
 end Mettapedia.Languages.MeTTa.HE.LeaTTaGroundTypeCounterexample

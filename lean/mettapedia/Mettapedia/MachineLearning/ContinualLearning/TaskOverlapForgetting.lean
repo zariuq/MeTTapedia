@@ -186,6 +186,7 @@ theorem totalOverlapDrift_eq_zero_of_each_overlap_zero
 
 /-! ## Positive and negative executable boundaries -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Two orthogonal one-dimensional task bases have zero overlap and exact
 zero source forgetting for every target coefficient. -/
 theorem orthogonalAxes_no_forgetting
@@ -210,6 +211,7 @@ theorem orthogonalAxes_no_forgetting
   exact ⟨overlapZero,
     zero_taskOverlap_no_forgetting _ _ coefficient overlapZero⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Final zero forgetting can hide nonzero intermediate forgetting: identical
 task directions with coefficients `2` and `-2` cancel exactly. -/
 theorem oppositeTaskPackets_cancel_nonzero_intermediateDrift :
@@ -237,6 +239,7 @@ theorem oppositeTaskPackets_cancel_nonzero_intermediateDrift :
       norm_num [totalOverlapDrift, taskOverlap, Matrix.mulVec,
         Matrix.mul_apply, dotProduct]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Overlap magnitude alone cannot order forgetting: a smaller overlap with
 a larger coefficient can produce unit drift, while a larger overlap with
 zero coefficient produces no drift. -/
@@ -256,6 +259,7 @@ theorem smallerOverlap_can_forget_more :
     norm_num [taskOverlap, Matrix.mulVec, Matrix.mul_apply,
       dotProduct]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The fixed-feature/NTK hypothesis is load-bearing.  A target direction may
 be orthogonal to the stored source basis but aligned with a drifted source
 basis, changing the current source prediction. -/

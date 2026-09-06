@@ -173,8 +173,7 @@ theorem universeCode_has_arity_zero (source : ValidatedLanguageDef)
       LanguageDef.filter_terms_by_label_eq_singleton
         (CarrierUniverseSignature.language source).terms
         (CarrierUniverseSignature.rule code carrier)
-        (by simpa [CarrierUniverseSignature.language] using
-          CarrierUniverseSignature.termLabels_nodup source)
+        (CarrierUniverseSignature.termLabels_nodup source)
         (universeRule_mem source code carrierMembership)
   rw [filtered]
   simp [CarrierUniverseSignature.rule]

@@ -288,7 +288,11 @@ namespace LineageFixtures
 
 inductive Source where
   | root | left | right | otherWorld
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype Source where
+  elems := {.root, .left, .right, .otherWorld}
+  complete x := by cases x <;> simp
 
 inductive World where
   | first | second

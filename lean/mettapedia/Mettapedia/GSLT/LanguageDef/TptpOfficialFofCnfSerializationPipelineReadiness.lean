@@ -588,6 +588,7 @@ private theorem underExistential_originalReady {sourceDepth targetDepth : Nat}
   · exact generatedApplication_originalReady targetDepth identity
   · exact ready predecessor
 
+set_option backward.isDefEq.respectTransparency false in
 theorem skolemizeFrom_originalReady {sourceDepth targetDepth : Nat}
     (environment : Fin sourceDepth ->
       TptpFofSkolemizationSemantics.Term targetDepth)

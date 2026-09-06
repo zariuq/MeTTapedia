@@ -359,7 +359,8 @@ def comp {Request Answer : Type} [DecidableEq Answer]
       decorateRevision last.base.source last.revision.keying
         (later.base.occurrence.mapTerm
           (earlier.base.occurrence.mapTerm term))
-    rw [earlier.decoration_commutes, later.decoration_commutes]
+    exact (congrArg later.revision.mapTerm (earlier.decoration_commutes term)).trans
+      (later.decoration_commutes (earlier.base.occurrence.mapTerm term))
   base_commutes := by
     intro term
     change later.total.mapTerm
@@ -572,7 +573,12 @@ inductive Operation where
   | observeValue
   | observeStableFault
   | inspectOrigin
-deriving DecidableEq, Repr, Fintype
+deriving DecidableEq, Repr
+
+instance : Fintype Operation where
+  elems := {.allocate, .resample, .beginEvaluation, .commitValue, .commitStableFault,
+    .retry, .observeValue, .observeStableFault, .inspectOrigin}
+  complete operation := by cases operation <;> simp
 
 namespace Event
 

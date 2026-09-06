@@ -211,5 +211,6 @@ theorem infiniteMLN_queryStrength_unique_of_uniform
     M.paperUniformSmallTotalInfluence_implies_paperUniqueMeasure hM μ ν hμ hν
   simp only [MassSemantics.queryProb, infiniteMLNMassSemantics]
   rw [hmeq]
+  rfl
 
 end Mettapedia.Logic.MarkovLogicInfiniteWorldModel

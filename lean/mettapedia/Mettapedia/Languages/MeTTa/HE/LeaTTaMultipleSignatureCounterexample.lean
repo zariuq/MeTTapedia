@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.HE.Spec.Eval
 import Mettapedia.Languages.MeTTa.HE.Spec.Type.Conformance
 import MettaHyperonFull.Proofs.MultipleSignatureSelection
 import Std.Data.HashMap.Lemmas
@@ -49,7 +50,7 @@ private def multiSignatureEnv : Metta.Minimal.MinEnv :=
     .expr [.sym ":", .sym "f", leaArrowB],
     .expr [.sym ":", .sym "a", .sym "A"]] []
 
-private def noHostDispatch : GroundedDispatch where
+private def noHostDispatch : Spec.Eval.GroundedDispatch where
   executable := fun _ => False
   outcome := fun _ _ _ => False
 
@@ -318,9 +319,12 @@ theorem runtime_last_signature_rejects_earlier_applicable_call :
   have hmatch : Metta.Minimal.matchType [] (.sym "B") (.sym "A") = none := by
     rfl
   simp [Metta.Minimal.scanFunctionTypeCandidates, leaArrowB,
-    Metta.Minimal.typeCheckArgsOutcome, hprep, htypes,
+    Metta.Minimal.typeCheckArgsDetailedOutcome,
+    Metta.Minimal.typeCheckArgsDetailedOutcomeScoped,
+    Metta.Minimal.scanActualTypes, hprep, htypes,
     Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
-    Metta.instantiate, hmatch, Metta.Minimal.FunctionTypeScanOutcome.prependError]
+    Metta.instantiate, hmatch, Metta.Minimal.FunctionTypeScanOutcome.prependErrors,
+    Metta.Minimal.TypeCheckArgsError.toFunctionTypeError]
 
 /-- Positive repair canary: the runtime's sole ordered selection boundary now
 chooses the earlier applicable declaration.  The fork proof module additionally
@@ -346,10 +350,12 @@ theorem repaired_runtime_selects_earlier_applicable_signature :
     simp [Metta.Minimal.typePrep, Metta.Minimal.subTokens.eq_1,
       Metta.Minimal.wrapStates.eq_3, Metta.Minimal.World.empty]
   have hcheck :
-      Metta.Minimal.typeCheckArgsOutcome multiSignatureEnv
+      Metta.Minimal.typeCheckArgsDetailedOutcome multiSignatureEnv
           Metta.Minimal.World.empty [.sym "A"] 0 [] [.sym "a"] =
-        .success [] := by
-    simp [Metta.Minimal.typeCheckArgsOutcome, hprepArg, hatypes,
+        .success [] [] := by
+    simp [Metta.Minimal.typeCheckArgsDetailedOutcome,
+    Metta.Minimal.typeCheckArgsDetailedOutcomeScoped,
+    Metta.Minimal.scanActualTypes, hprepArg, hatypes,
       Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
       Metta.instantiate, hmatch]
   refine ⟨⟨leaArrowA, [.sym "A"], .sym "RA", []⟩, ?_, rfl⟩

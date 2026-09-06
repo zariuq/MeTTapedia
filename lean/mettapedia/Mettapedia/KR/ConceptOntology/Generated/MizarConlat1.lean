@@ -1,6 +1,6 @@
 import Mettapedia.KR.ConceptOntology.BenchmarkControl
 
--- AUTO-GENERATED from /home/zar/claude/mizar/share/mml/conlat_1.miz. Do not edit by hand.
+-- AUTO-GENERATED from mml/conlat_1.miz. Do not edit by hand.
 
 namespace Mettapedia.KR.ConceptOntology.Generated.MizarConlat1
 
@@ -23,7 +23,11 @@ inductive Item where
   | theorem_3 -- theorem Th3: for C being FormalContext for O1,O2 being Subset of the carrier of C holds O1 c= O2 implies (ObjectDerivati
   | theorem_4 -- theorem Th4: for C being FormalContext for A1,A2 being Subset of the carrier' of C holds A1 c= A2 implies (AttributeDeri
   | theorem_5 -- theorem Th5: for C being FormalContext for O being Subset of the carrier of C holds O c= (AttributeDerivation(C)).((Obje
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype Item where
+  elems := {.definition_1, .registration_2, .definition_2, .definition_3, .registration_4, .definition_4, .notation_1, .definition_5, .definition_6, .theorem_1, .theorem_2, .theorem_3, .theorem_4, .theorem_5}
+  complete x := by cases x <;> simp
 
 def itemLabel : Item → String
   | .definition_1 => "definition_1"
@@ -51,7 +55,11 @@ inductive Attribute where
   | ObjectDerivation -- ObjectDerivation
   | Subset -- Subset
   | is_connected_with -- is-connected-with
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype Attribute where
+  elems := {.AttributeCtor, .AttributeDerivation, .ContextStr, .FormalContext, .Function, .Information, .ObjectDerivation, .Subset, .is_connected_with}
+  complete x := by cases x <;> simp
 
 def attributeLabel : Attribute → String
   | .AttributeCtor => "Attribute"

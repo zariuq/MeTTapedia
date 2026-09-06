@@ -388,8 +388,6 @@ private lemma mu_C_inter_Bc_eq_sum_rest :
         (hS := measurable_C.inter measurable_B.compl)]
   rw [sum_piSplitAtC (f := fun ω => (C ∩ (B : Set ChainBN.JointSpace)ᶜ).indicator cpt.jointWeight ω)]
   simp [C, B, eventTrue, Set.indicator]
-  refine Fintype.sum_congr (α := Rest) (M := ℝ≥0∞) _ _ (fun r => ?_)
-  cases hb : r idxB <;> simp
 
 private lemma mu_A_inter_B_eq_sum_rest :
     (μ (cpt := cpt)) (A ∩ (B : Set ChainBN.JointSpace)) =
@@ -441,14 +439,6 @@ private lemma mu_A_inter_Bc_eq_sum_rest :
         (hS := measurable_A.inter measurable_B.compl)]
   rw [sum_piSplitAtC (f := fun ω => (A ∩ (B : Set ChainBN.JointSpace)ᶜ).indicator cpt.jointWeight ω)]
   simp [A, B, eventTrue, Set.indicator]
-  -- Normalize `¬ r idxB = true` into `r idxB = false`.
-  have hnormB (c : Bool) (r : Rest) :
-      (if r idxA = true ∧ ¬r idxB = true then cpt.jointWeight (cfg c r) else 0) =
-        (if r idxA = true ∧ r idxB = false then cpt.jointWeight (cfg c r) else 0) := by
-    by_cases hA : r idxA = true
-    · cases hb : r idxB <;> simp [hA]
-    · simp [hA]
-  simp_rw [hnormB]
   calc
     ((∑ r : Rest, if r idxA = true ∧ r idxB = false then cpt.jointWeight (cfg true r) else 0) +
         ∑ r : Rest, if r idxA = true ∧ r idxB = false then cpt.jointWeight (cfg false r) else 0) =
@@ -476,8 +466,6 @@ private lemma mu_C_inter_A_inter_Bc_eq_sum_rest :
         (hS := measurable_C.inter (measurable_A.inter measurable_B.compl))]
   rw [sum_piSplitAtC (f := fun ω => (C ∩ (A ∩ (B : Set ChainBN.JointSpace)ᶜ)).indicator cpt.jointWeight ω)]
   simp [C, A, B, eventTrue, Set.indicator]
-  refine Fintype.sum_congr (α := Rest) (M := ℝ≥0∞) _ _ (fun r => ?_)
-  cases hA : r idxA <;> cases hb : r idxB <;> simp
 
 /-! ### Screening-off equalities as BN theorems -/
 

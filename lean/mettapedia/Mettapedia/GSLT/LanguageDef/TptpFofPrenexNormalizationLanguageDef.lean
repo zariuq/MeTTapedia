@@ -2820,6 +2820,7 @@ noncomputable def matrixShiftDerivation (cutoff : Nat) :
         (TptpFofPrenexLanguageDef.encodeMatrix right quantifierFree.2) := by
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The structural matrix target is exactly the independently defined
 binder-safe shift of the semantic matrix. -/
 theorem matrixShiftTarget_exact :
@@ -3251,6 +3252,7 @@ decreasing_by
     simp [TptpFofPrenexSemantics.PrenexForm.quantifierCount,
       TptpFofPrenexSemantics.PrenexForm.rew_quantifierCount_exact, *]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Syntax-directed authored derivation from every canonical NNF formula to
 the result of the independently defined total prenex normalizer. -/
 noncomputable def prenexDerivation : {depth : Nat} ->

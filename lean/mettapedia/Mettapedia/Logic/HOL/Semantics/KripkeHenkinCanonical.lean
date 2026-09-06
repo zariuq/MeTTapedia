@@ -361,7 +361,8 @@ theorem canonicalLevelKripkeHenkin_forcesAt_empty_iff_mem
       φ ∈ W.carrier := by
   have hClosed : subst (Base := Base) (Const := WithParams Const) ρ φ = φ :=
     ClosedEnv.subst_empty (Base := Base) (Const := WithParams Const) ρ φ
-  rw [ForcesAt, hClosed]
+  unfold ForcesAt
+  rw [hClosed]
   rfl
 
 /-- Canonical membership model packaged using the explicit full-presented

@@ -4731,8 +4731,14 @@ private theorem specMatch_evalCoherentAt
         (evalCoherentIn_empty out valuation source)
         (by simp [AssignmentsNodup, Bindings.empty])
         (by
-          simp [Spec.Match.Merge.ValuesAgree, Bindings.classValues,
-            Bindings.lookup, Bindings.empty, Bindings.addEquality]) hout
+          change Spec.Match.Merge.ValuesAgree
+            (({ assignments := [], equalities := [(left, right)] } : Bindings).classValues left)
+          simp only [Spec.Match.Merge.ValuesAgree, Bindings.classValues]
+          have lookupEmpty :
+              ({ assignments := [], equalities := [(left, right)] } : Bindings).lookup =
+                fun _ => none := by funext name; rfl
+          rw [lookupEmpty]
+          simp) hout
   next =>
       intro key value hnonvar hadmissible hout hnodup
       apply evalCoherentIn_assign_of_classValues_nil

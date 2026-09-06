@@ -71,6 +71,7 @@ def canonicalSuccessorList (term : RhoProcess) : List RhoProcess :=
       intro target member
       exact ⟨1, mem_rewriteAt_iff_stepAt.mp member⟩)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Membership in the typed runtime list exposes membership in the raw
 generated stepper list. -/
 theorem pattern_mem_of_mem_canonicalSuccessorList
@@ -97,6 +98,7 @@ theorem canonicalSuccessorList_sound
   change canonicalize source.1 = canonicalize (canonicalize source.1)
   exact (canonicalize_idempotent source.1).symm
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Every saturated step from a closed process lands in the class of an
 entry of the executable canonical-successor list. -/
 theorem canonicalSuccessorList_complete (term : RhoProcess) :

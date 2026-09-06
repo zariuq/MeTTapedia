@@ -112,9 +112,10 @@ theorem mathlibAdjacencyMatrix_apply {n : Nat} (graph : AdjacencyMatrix.Rep n)
     (source target : Fin n) :
     mathlibAdjacencyMatrix graph source target =
       (toMatrix graph source target).toNat := by
+  unfold mathlibAdjacencyMatrix
+  rw [SimpleGraph.adjMatrix_apply]
   cases h : graph.cell source target <;>
-    simp [mathlibAdjacencyMatrix, SimpleGraph.adjMatrix_apply,
-      AdjacencyMatrix.denote, toMatrix, h]
+    simp [AdjacencyMatrix.denote, toMatrix, h]
 
 /-- Reconstructing Mathlib's graph from the canonical matrix recovers exactly
 the independently denoted graph. -/

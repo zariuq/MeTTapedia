@@ -444,9 +444,8 @@ theorem derivability_iff_combinedGSLTUsing (relations : RelationEnv)
     Nonempty (DerivationList checked goals) ↔
       (combinedGSLTUsing relations checked laws).MultiStep
         (inCalculus goals) (inCalculus []) := by
-  unfold combinedGSLTUsing
-  rw [disjointSum_right_multiStep]
-  exact derivationList_nonempty_iff_proofSearch checked goals
+  exact (derivationList_nonempty_iff_proofSearch checked goals).trans
+    (disjointSum_right_multiStep _ _ _ _).symm
 
 /-- The historical closed-world totalizer is the empty-environment
 specialization of `combinedGSLTUsing`. -/

@@ -143,7 +143,7 @@ validation gate. -/
 theorem mettaCalc_validate_eq_nil : mettaCalc.validate = [] := by
   simp [LanguageDef.validate, mettaCalc, commSymRule, reflRule, parCongRule,
     LanguageDef.duplicateErrors, LanguageDef.duplicateErrorsAux,
-    LanguageDef.validateEquation, LanguageDef.validateRewrite,
+    LanguageDef.validateEquation, LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff,
     LanguageDef.validatePatternConstructors,
     LanguageDef.validateRulePatterns,
     LanguageDef.typeNames, TypeDecl.plain, TypeExpr.baseNames,

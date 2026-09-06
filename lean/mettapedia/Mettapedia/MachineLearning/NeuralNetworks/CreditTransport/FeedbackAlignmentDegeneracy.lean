@@ -205,14 +205,16 @@ theorem mem_recoverySignSets_iff
     (width required : ℕ) (signSet : Finset (Fin width)) :
     signSet ∈ recoverySignSets width required ↔
       required ≤ signSet.card ∧ signSet.card ≤ width := by
-  simp [recoverySignSets, Finset.mem_powersetCard]
+  unfold recoverySignSets
+  erw [Finset.mem_disjiUnion]
+  simp [Finset.mem_powersetCard]
 
 /-- The number of compatible sign configurations is the upper binomial tail. -/
 theorem card_recoverySignSets
     (width required : ℕ) :
     (recoverySignSets width required).card =
       ∑ k ∈ Finset.Icc required width, width.choose k := by
-  rw [recoverySignSets, Finset.card_disjiUnion]
+  erw [recoverySignSets, Finset.card_disjiUnion]
   simp [Finset.card_powersetCard]
 
 /-- Partial binomial sum through index `radius`. -/

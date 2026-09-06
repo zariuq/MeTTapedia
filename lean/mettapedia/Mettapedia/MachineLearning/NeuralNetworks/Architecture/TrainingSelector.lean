@@ -20,7 +20,11 @@ inductive CheckerFeedbackSupport where
   | terminalOnly
   | partialProgress
   | denseFeedback
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype CheckerFeedbackSupport where
+  elems := {.noFeedback, .terminalOnly, .partialProgress, .denseFeedback}
+  complete := by intro value; cases value <;> simp
 
 /-- Training and adaptation regimes represented by the selector. -/
 inductive TrainingMethod where
@@ -38,7 +42,11 @@ inductive TrainingMethod where
   | searchLevelFlow
   | periodicConsolidation
   | unresolved
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype TrainingMethod where
+  elems := {.ordinaryBP, .constrainedBP, .errorCoordinatePC, .prospectivePrimalDualPC, .dfaDirectBroadcast, .syntheticGradient, .targetPropagation, .forwardGradient, .zerothOrderAdapterTuning, .equilibriumMethod, .fastStateBeliefCarom, .searchLevelFlow, .periodicConsolidation, .unresolved}
+  complete := by intro value; cases value <;> simp
 
 /-- Qualitative and quantitative observations used by the selector.  Rational
 fields are exact so boundary cases cannot be changed by floating-point noise. -/

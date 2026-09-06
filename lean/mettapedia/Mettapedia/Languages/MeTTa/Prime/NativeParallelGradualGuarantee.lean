@@ -222,6 +222,7 @@ theorem rawOfCertified_pairExecution :
     rawOfCertified pairExecution =
       internalBranchWorld oneColourFamily.parallelStep PUnit.unit := by
   simp [rawOfCertified, pairExecution, internalBranchWorld]
+  rfl
 
 /-- The certified two-event family is a proper precision refinement of its
 own raw rho step. -/

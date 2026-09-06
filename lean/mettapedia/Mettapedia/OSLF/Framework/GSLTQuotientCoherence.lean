@@ -45,7 +45,7 @@ theorem equationQuotientDiamond_mk_spec (theory : GSLT.{uTheory})
       ∃ target : theory.Term,
         theory.Step source target ∧
           predicate (Quotient.mk theory.equations target) := by
-  rw [equationQuotientDiamond, gsltDiamond_spec]
+  apply (gsltDiamond_spec (semanticTheory theory) predicate (Quotient.mk theory.equations source)).trans
   constructor
   · rintro ⟨targetClass, step, holds⟩
     induction targetClass using Quotient.inductionOn with
@@ -64,7 +64,7 @@ theorem equationQuotientBox_mk_spec (theory : GSLT.{uTheory})
       ∀ source : theory.Term,
         theory.Step source target →
           predicate (Quotient.mk theory.equations source) := by
-  rw [equationQuotientBox, gsltBox_spec]
+  apply (gsltBox_spec (semanticTheory theory) predicate (Quotient.mk theory.equations target)).trans
   constructor
   · intro holds source step
     exact holds (Quotient.mk theory.equations source)

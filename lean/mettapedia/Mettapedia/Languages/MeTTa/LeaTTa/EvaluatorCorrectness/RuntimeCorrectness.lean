@@ -22,6 +22,19 @@ open Metta.Minimal
 open Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.ContextualStep
 open Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.QueryOpBridge
 
+/-- A completed nonempty result retains its instantiated value and binding
+response when the scheduler collects its public output. -/
+theorem filtered_final_singleton (atom : Metta.Atom) (bindings : Metta.Bindings)
+    (notEmpty : (Metta.instantiate bindings atom != emptyA) = true) :
+    List.filter (fun pair : Metta.Atom × Metta.Bindings => pair.1 != emptyA)
+      (List.map finalPair (List.filter isFinal [finItem [] atom bindings])) =
+        [(Metta.instantiate bindings atom, bindings)] := by
+  erw [List.filter_cons]
+  change (if Metta.instantiate bindings atom != emptyA then
+    [(Metta.instantiate bindings atom, bindings)] else []) =
+      [(Metta.instantiate bindings atom, bindings)]
+  rw [if_pos notEmpty]
+
 /-! ## Published success-priority algebra -/
 
 /-- Applying the published success-priority boundary to a singleton changes
@@ -3338,6 +3351,9 @@ theorem interpretFuel_eval_notReducible_of_no_candidates_eq
     env st fuel [] x b op args hinst hcall hembed hNotVarHead hnone
   simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA,
     notReducibleA_ne_empty]
+  simp only [List.filter_cons, List.filter_nil, isFinal, Bool.true_eq, if_true,
+    List.map_cons, List.map_nil, finalPair, instantiate_notReducibleA]
+  rfl
 
 /-- Fuel-driver harvest of
 `interpretStack1_eval_symbol_notReducible_of_no_candidates`. This is the executable root-evaluator
@@ -3376,6 +3392,9 @@ theorem interpretFuel_eval_symbol_notReducible_of_no_candidates_eq
     env st fuel [] x b op hinst hembed hnone
   simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA,
     notReducibleA_ne_empty]
+  simp only [List.filter_cons, List.filter_nil, isFinal, Bool.true_eq, if_true,
+    List.map_cons, List.map_nil, finalPair, instantiate_notReducibleA]
+  rfl
 
 /-- Fuel-driver harvest of
 `interpretStack1_eval_ground_notReducible_of_no_candidates`. This is the executable root-evaluator
@@ -3414,6 +3433,9 @@ theorem interpretFuel_eval_ground_notReducible_of_no_candidates_eq
     env st fuel [] x b g hinst hembed hnone
   simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA,
     notReducibleA_ne_empty]
+  simp only [List.filter_cons, List.filter_nil, isFinal, Bool.true_eq, if_true,
+    List.map_cons, List.map_nil, finalPair, instantiate_notReducibleA]
+  rfl
 
 /-- Fuel-driver harvest of `interpretStack1_eval_var_notReducible`. -/
 theorem interpretFuel_eval_var_notReducible
@@ -3447,6 +3469,9 @@ theorem interpretFuel_eval_var_notReducible_eq
     env st fuel [] x b v hinst hembed
   simp [interpretFuel, hstep, finItem, isFinal, finalPair, instantiate_notReducibleA,
     notReducibleA_ne_empty]
+  simp only [List.filter_cons, List.filter_nil, isFinal, Bool.true_eq, if_true,
+    List.map_cons, List.map_nil, finalPair, instantiate_notReducibleA]
+  rfl
 
 /-! ## Full `mettaEval` consumption of `NotReducible` root readouts -/
 

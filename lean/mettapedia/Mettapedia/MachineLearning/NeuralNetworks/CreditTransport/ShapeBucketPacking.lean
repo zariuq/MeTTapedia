@@ -354,7 +354,7 @@ theorem shape_only_bucket_is_not_semantically_sufficient :
         () shapeOnlyTrueNode shapeOnlyFeature ≠
       heterogeneousLogicalMap shapeOnlyInitial
         () shapeOnlyTrueNode shapeOnlyFeature := by
-  rw [unpack_packedMap_pack_eq_logicalMap]
+  erw [unpack_packedMap_pack_eq_logicalMap]
   norm_num [logicalMap, sharedIdentityOperator, shapeOnlyInitial,
     heterogeneousLogicalMap, shapeOnlyTrueNode]
 
@@ -380,6 +380,8 @@ theorem untagged_bucket_index_merges_distinct_targets :
       logicalSegmentSum boolEdgeTarget boolEdgeContribution false = 2 := by
   norm_num [logicalSegmentSum, boolEdgeTarget, boolEdgeContribution,
     untaggedBoolIndex, Finset.sum_filter]
+  erw [Finset.sum_filter]
+  norm_num
 
 #print axioms unpack_pack
 #print axioms pack_unpack

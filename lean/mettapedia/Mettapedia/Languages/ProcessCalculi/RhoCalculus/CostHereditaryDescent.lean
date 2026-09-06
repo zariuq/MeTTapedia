@@ -1473,7 +1473,6 @@ theorem plan_abstract_iterDropUnit_of_iterDropUnit
                               rhoCIGSLT color (rhoReflectivePresentation.toReflectivePresentationDecl)).parallelCollection
                               elements none) := by
                           simp_wf
-                          omega
                         omega
                       have unitSource := allUnits (getElem elements i iLen)
                         ((List.mem_iff_getElem.mpr ⟨_, iLen, rfl⟩))
@@ -1599,7 +1598,6 @@ theorem plan_abstract_iterDropUnit_of_iterDropUnit
                                 color (rhoReflectivePresentation.toReflectivePresentationDecl)
                                 ).parallelCollection elements none) := by
                           simp_wf
-                          omega
                         omega
                       have elemCases :=
                         parallelCollapse_members_result_or_unit
@@ -1666,7 +1664,6 @@ theorem plan_abstract_iterDropUnit_of_iterDropUnit
                               color (rhoReflectivePresentation.toReflectivePresentationDecl)
                               ).parallelCollection elements none) := by
                         simp_wf
-                        omega
                       omega
                     have carrierTower := inductionHypothesis pC
                       (innerLevel + 1) measureCarrier carrierCanon
@@ -2257,7 +2254,6 @@ theorem rho_dropTower_typed_chain
                             sizeOf (Pattern.collection collectionType
                               elements none) := by
                           simp_wf
-                          omega
                         omega)
                       memberTyped memberCanonical
                   rw [parallelType, rhoDeclC_parallelCollection_hashBag]
@@ -2677,7 +2673,6 @@ theorem rhoDescend {color : CostStaticColor} {targetFree : FreeTypeContext} :
                       sizeOf elements < sizeOf
                         (Pattern.collection collectionType elements none) := by
                     simp_wf
-                    omega
                   omega
                 obtain ⟨payload, ⟨childState, childCollapse, ⟨childEmbedding⟩,
                     childCanonical⟩⟩ :=
@@ -2705,7 +2700,6 @@ theorem rhoDescend {color : CostStaticColor} {targetFree : FreeTypeContext} :
                     sizeOf elements < sizeOf
                       (Pattern.collection collectionType elements none) := by
                   simp_wf
-                  omega
                 have beforeUnits : ∀ b ∈ active.beforeAbstracts,
                     canonicalize rhoReflectivePresentation.toReflectivePresentationDecl b =
                       Pattern.apply rhoReflectivePresentation.toReflectivePresentationDecl.parallelUnitConstructor

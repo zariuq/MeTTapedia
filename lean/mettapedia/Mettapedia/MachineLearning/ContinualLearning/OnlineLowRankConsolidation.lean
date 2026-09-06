@@ -212,7 +212,10 @@ theorem two_rankOne_packets_consolidate_to_identity :
     fin_cases column <;>
     norm_num [consolidatePackets, consolidatePacket, LowRankPacket.delta,
       firstAxisPacket, secondAxisPacket, lowRankDelta, Matrix.mul_apply,
-      Fin.sum_univ_one]
+      Fin.sum_univ_one] <;>
+    erw [one_smul, one_smul] <;>
+    erw [Matrix.mul_apply, Matrix.mul_apply] <;>
+    norm_num [Fin.sum_univ_one]
 
 /-- Constant active rank does not imply that the accumulated merged update
 has that rank. -/
@@ -258,6 +261,8 @@ theorem reset_without_consolidating_changes_effectiveWeight :
     OnlineLowRankState.effectiveWeight, liveScalarState,
     mergedLowRankWeight, lowRankDelta, Matrix.mul_apply,
     Fin.sum_univ_one] at coordinate
+  erw [Matrix.zero_mul, one_smul, Matrix.mul_apply] at coordinate
+  norm_num [Fin.sum_univ_one] at coordinate
 
 /-! ## Online diagonal empirical Fisher -/
 

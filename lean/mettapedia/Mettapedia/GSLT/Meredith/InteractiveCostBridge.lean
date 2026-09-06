@@ -224,7 +224,7 @@ theorem continuedCommTraceAccount_ticks
               exact rhoIntrinsicStepCost_apply_one h)
             (continuedCommPath chan payload body)
     _ = 1 := by
-        simp [continuedCommPath]
+        rfl
 
 /-- The temporal coordinate of the one-step bridge is exactly the path length. -/
 theorem continuedCommTotalCost_ticks_eq_length

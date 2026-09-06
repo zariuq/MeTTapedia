@@ -303,6 +303,7 @@ theorem weightOfConstraintsList_mapPotential
     | nil =>
         intro x
         simp [combineAll, oneFactor, FactorGraph.mapPotential]
+        rfl
     | cons φ fs ih =>
         intro x
         calc
@@ -432,7 +433,7 @@ theorem veQueryWeightList_mapPotential
         (fs.map (Factor.mapPotential (fg := fg) h))
         constraints := by
   rw [veQueryWeightList_eq_weightOfConstraintsList]
-  rw [veQueryWeightList_eq_weightOfConstraintsList]
+  erw [veQueryWeightList_eq_weightOfConstraintsList]
   exact weightOfConstraintsList_mapPotential
     (fg := fg) (h := h) (fs := fs) constraints
 
@@ -562,12 +563,20 @@ recover the same weight and lineage as querying the two projected factor graphs.
 
 inductive DemoVar
   | target
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype DemoVar where
+  elems := { .target }
+  complete x := by cases x; simp
 
 inductive DemoFactor
   | left
   | right
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype DemoFactor where
+  elems := { .left, .right }
+  complete x := by cases x <;> simp
 
 abbrev DemoLineage := Which (Fin 2)
 abbrev DemoValue := ℕ × DemoLineage

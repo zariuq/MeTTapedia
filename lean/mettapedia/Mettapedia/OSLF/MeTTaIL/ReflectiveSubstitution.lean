@@ -296,6 +296,13 @@ def applyBindingsForRuleUsing
   | some declaration => applyBindingsReflective declaration bindings rule.right
   | none => applyBindings bindings rule.right
 
+/-- An empty reflection profile selects ordinary syntactic substitution. -/
+@[simp] theorem applyBindingsForRuleUsing_empty
+    (rule : RewriteRule) (bindings : Bindings) :
+    applyBindingsForRuleUsing .empty rule bindings =
+      applyBindings bindings rule.right := by
+  simp [applyBindingsForRuleUsing, ReflectionProfile.empty]
+
 /-- Binding application for the five-field core.  Reflection-free operation
 is definitionally ordinary syntactic substitution. -/
 def applyBindingsForRule

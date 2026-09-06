@@ -84,16 +84,16 @@ private def deniedRules : List RuleSchema :=
 /-! ## The database is the join of the two tables -/
 
 private theorem evidenceCore_validate (rules : List RuleSchema) :
-    (rulesPresentation evidenceCore evidenceCalculus rules).toLanguageDef.validate = [] := by
+    (rulesDefinition evidenceCore evidenceCalculus rules).toLanguageDef.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly <;>
-    simp [rulesPresentation, evidenceCore, evidenceType, atomRule,
+    simp [rulesDefinition, evidenceCore, evidenceType, atomRule,
       LanguageDef.typeNames, TypeDecl.plain]
 
 private theorem holds_valid :
-    (rulesPresentation evidenceCore evidenceCalculus holdsRules).isValid = true := by
+    (rulesDefinition evidenceCore evidenceCalculus holdsRules).isValid = true := by
   unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [evidenceCore_validate]
-  simp [rulesPresentation, evidenceCore, evidenceType, atomRule,
+  simp [rulesDefinition, evidenceCore, evidenceType, atomRule,
     holdsRules, holdsAlphaRule, holdsBetaRule, holdsJ,
     atomAlpha, atomBeta,
     CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
@@ -112,10 +112,10 @@ private theorem holds_valid :
   decide
 
 private theorem denied_valid :
-    (rulesPresentation evidenceCore evidenceCalculus deniedRules).isValid = true := by
+    (rulesDefinition evidenceCore evidenceCalculus deniedRules).isValid = true := by
   unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [evidenceCore_validate]
-  simp [rulesPresentation, evidenceCore, evidenceType, atomRule,
+  simp [rulesDefinition, evidenceCore, evidenceType, atomRule,
     deniedRules, deniedAlphaRule, deniedDeltaRule, deniedJ,
     atomAlpha, atomDelta,
     CalculusLanguageDef.judgmentSignatureValid, CalculusLanguageDef.judgmentHeads,
@@ -134,11 +134,11 @@ private theorem denied_valid :
   decide
 
 private theorem database_valid :
-    (rulesPresentation evidenceCore evidenceCalculus
+    (rulesDefinition evidenceCore evidenceCalculus
       (holdsRules ++ deniedRules)).isValid = true := by
   unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [evidenceCore_validate]
-  simp [rulesPresentation, evidenceCore, evidenceType, atomRule,
+  simp [rulesDefinition, evidenceCore, evidenceType, atomRule,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, holdsJ, deniedJ,
     atomAlpha, atomBeta, atomDelta,
@@ -158,16 +158,16 @@ private theorem database_valid :
   decide
 
 private def database : ValidatedCalculusLanguageDef :=
-  ⟨rulesPresentation evidenceCore evidenceCalculus (holdsRules ++ deniedRules),
+  ⟨rulesDefinition evidenceCore evidenceCalculus (holdsRules ++ deniedRules),
     database_valid⟩
 
 /-- The positive and negative tables genuinely amalgamate: both inject
 into the database along the join arrows. -/
 theorem tables_amalgamate :
     RuleLookupRefines
-        ⟨rulesPresentation evidenceCore evidenceCalculus holdsRules, holds_valid⟩ database ∧
+        ⟨rulesDefinition evidenceCore evidenceCalculus holdsRules, holds_valid⟩ database ∧
       RuleLookupRefines
-        ⟨rulesPresentation evidenceCore evidenceCalculus deniedRules, denied_valid⟩
+        ⟨rulesDefinition evidenceCore evidenceCalculus deniedRules, denied_valid⟩
           database := by
   constructor
   · exact join_refines_left
@@ -185,7 +185,7 @@ theorem tables_amalgamate :
 private theorem holdsAlpha_instantiates :
     instantiateRule? database ⟨⟨"holds-alpha"⟩, []⟩ =
       some ([], holdsJ atomAlpha) := by
-  simp [instantiateRule?, database, rulesPresentation, evidenceCore,
+  simp [instantiateRule?, database, rulesDefinition, evidenceCore,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, holdsJ, atomAlpha,
     CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchemas?,
@@ -194,7 +194,7 @@ private theorem holdsAlpha_instantiates :
 private theorem holdsBeta_instantiates :
     instantiateRule? database ⟨⟨"holds-beta"⟩, []⟩ =
       some ([], holdsJ atomBeta) := by
-  simp [instantiateRule?, database, rulesPresentation, evidenceCore,
+  simp [instantiateRule?, database, rulesDefinition, evidenceCore,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, holdsJ, atomBeta,
     CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchemas?,
@@ -203,7 +203,7 @@ private theorem holdsBeta_instantiates :
 private theorem deniedAlpha_instantiates :
     instantiateRule? database ⟨⟨"denied-alpha"⟩, []⟩ =
       some ([], deniedJ atomAlpha) := by
-  simp [instantiateRule?, database, rulesPresentation, evidenceCore,
+  simp [instantiateRule?, database, rulesDefinition, evidenceCore,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, deniedJ, atomAlpha,
     CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchemas?,
@@ -212,7 +212,7 @@ private theorem deniedAlpha_instantiates :
 private theorem deniedDelta_instantiates :
     instantiateRule? database ⟨⟨"denied-delta"⟩, []⟩ =
       some ([], deniedJ atomDelta) := by
-  simp [instantiateRule?, database, rulesPresentation, evidenceCore,
+  simp [instantiateRule?, database, rulesDefinition, evidenceCore,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, deniedJ, atomDelta,
     CalculusLanguageDef.lookupRule?, argumentsValidAt, instantiateSchemas?,
@@ -259,7 +259,7 @@ private theorem database_application_shape {ruleInstance : RuleInstance}
           rule = holdsAlphaRule ∨ rule = holdsBetaRule ∨
             rule = deniedAlphaRule ∨ rule = deniedDeltaRule := by
         have := lookup
-        simp only [database, rulesPresentation, evidenceCore, holdsRules,
+        simp only [database, rulesDefinition, evidenceCore, holdsRules,
           deniedRules, CalculusLanguageDef.lookupRule?,
           CalculusLanguageDef.rules] at this
         all_goals simp_all
@@ -356,11 +356,11 @@ private def explosionRule : RuleSchema :=
     conclusion := holdsJ atomGamma }
 
 private theorem exploded_valid :
-    (rulesPresentation evidenceCore evidenceCalculus
+    (rulesDefinition evidenceCore evidenceCalculus
       ((holdsRules ++ deniedRules) ++ [explosionRule])).isValid = true := by
   unfold CalculusLanguageDef.isValid CalculusLanguageDef.hasValidLocalRules
   rw [evidenceCore_validate]
-  simp [rulesPresentation, evidenceCore, evidenceType, atomRule,
+  simp [rulesDefinition, evidenceCore, evidenceType, atomRule,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, explosionRule, holdsJ, deniedJ,
     atomAlpha, atomBeta, atomDelta, atomGamma,
@@ -380,7 +380,7 @@ private theorem exploded_valid :
   decide
 
 private def exploded : ValidatedCalculusLanguageDef :=
-  ⟨rulesPresentation evidenceCore evidenceCalculus
+  ⟨rulesDefinition evidenceCore evidenceCalculus
     ((holdsRules ++ deniedRules) ++ [explosionRule]), exploded_valid⟩
 
 private theorem database_refines_exploded :
@@ -391,7 +391,7 @@ private theorem database_refines_exploded :
 private theorem explosion_instantiates :
     instantiateRule? exploded ⟨⟨"alpha-conflict-yields-gamma"⟩, []⟩ =
       some ([holdsJ atomAlpha, deniedJ atomAlpha], holdsJ atomGamma) := by
-  simp [instantiateRule?, exploded, rulesPresentation, evidenceCore,
+  simp [instantiateRule?, exploded, rulesDefinition, evidenceCore,
     holdsRules, deniedRules, holdsAlphaRule, holdsBetaRule,
     deniedAlphaRule, deniedDeltaRule, explosionRule, holdsJ, deniedJ,
     atomAlpha, atomGamma, CalculusLanguageDef.lookupRule?, argumentsValidAt,

@@ -368,7 +368,7 @@ end Trace
 /-- The GSLT induced by independently accepted compiler transitions.  This is
 the trace theory itself, not yet a claim that a particular native compiler
 implements an authored language semantics. -/
-def toGSLT : GSLT where
+abbrev toGSLT : GSLT where
   Term := State
   equations := ⟨Eq, ⟨Eq.refl, Eq.symm, Eq.trans⟩⟩
   rewrites := fun source target =>

@@ -28,10 +28,14 @@ open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.KR.ConceptOntology
 
 /-- The two concept positions in the empirical 2×2 table. -/
-inductive MembershipConcept
+inductive MembershipConcept where
   | feature
   | witness
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype MembershipConcept where
+  elems := {.feature, .witness}
+  complete x := by cases x <;> simp
 
 /-- Counts for a binary feature/witness contingency table.
 

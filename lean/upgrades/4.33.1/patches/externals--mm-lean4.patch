@@ -1,0 +1,273 @@
+diff --git a/Metamath/DeclarativeSpec.lean b/Metamath/DeclarativeSpec.lean
+index 29576e410d216c0c2814a2752647fa3651567ed1..3823d4ebcdcc910983f0d7f85af9544602f709ff 100644
+--- a/Metamath/DeclarativeSpec.lean
++++ b/Metamath/DeclarativeSpec.lean
+@@ -50,9 +50,7 @@ variables are replaced by the substitution function. -/
+ 
+ /-- Constant name: the string representation of a constant symbol.
+     Examples: "wff", "|-", "(", "->", "0" -/
+-def CN := String
+-instance : Inhabited CN := inferInstanceAs (Inhabited String)
+-instance : DecidableEq CN := inferInstanceAs (DecidableEq String)
++abbrev CN := String
+ 
+ /-- Variable reference: pairs a variable with its typecode.
+     - `type`: the typecode from the $f statement (e.g., "wff", "term", "set")
+@@ -83,7 +81,7 @@ def Sym.isVar : Sym → Bool
+ Per §4.2.2: "An expression is any sequence of math symbols, possibly empty." -/
+ 
+ /-- Expression: a sequence of symbols (§4.2.2) -/
+-def Expr := List Sym
++abbrev Expr := List Sym
+ /-- Variable as a singleton expression -/
+ def VR.expr (v : VR) : Expr := [var v]
+ 
+@@ -521,7 +519,8 @@ theorem Provable.trans' {axs Γ} (σ) {Γ' fmla} (pr : Provable axs Γ' fmla)
+   | hyp f h => exact hh f h
+   | var v =>
+       change Provable axs Γ (v.type, List.append (σ v) ([] : List Sym))
+-      simpa [List.append_nil] using (hv v)
++      exact (congrArg (fun expression : List Sym => Provable axs Γ (v.type, expression))
++        (List.append_nil (σ v))).mpr (hv v)
+   | @ax σ' a ha dj' _ _ IH_h IH_v =>
+     rw [← Formula.subst_tr]
+     apply ax (subst.trans σ' σ) ha
+@@ -596,7 +595,7 @@ theorem DJ_cons {a b l σ dj'}
+   | _, _, ⟨h, .inl (.tail _ h')⟩ => h₂ _ _ ⟨h, .inl h'⟩
+   | _, _, ⟨h, .inr (.tail _ h')⟩ => h₂ _ _ ⟨h, .inr h'⟩
+ 
+-theorem HH_nil {axs Γ σ} : ∀ h:Formula, h ∈ [] → Provable axs Γ (h.subst σ)
++theorem HH_nil {axs Γ σ} : ∀ h:Formula, h ∈ ([] : List Formula) → Provable axs Γ (h.subst σ)
+   | _, h => nomatch h
+ 
+ theorem HH_cons {axs Γ σ c f hyps}
+diff --git a/Metamath/Legacy/CompatThms.lean b/Metamath/Legacy/CompatThms.lean
+index 24528b341d3c5459a0517d4c39042bd72d18367a..69670fe34eb735cef0819ead1d8398beca837fcf 100644
+--- a/Metamath/Legacy/CompatThms.lean
++++ b/Metamath/Legacy/CompatThms.lean
+@@ -96,7 +96,7 @@ theorem checkSinglePass_eq_checkTwoPassLegacy_of_sharedExpandedBytes
+           IO DB) =
+       pure (checkExpandedResult config (.ok (processed, seenLegacy))) :=
+     congrArg (fun db => (pure db : IO DB)) h_inner
+-  simpa using h_inner_io
++  exact h_inner_io
+ 
+ /-- IO-level bridge theorem: if both front-ends produce the same include error,
+ both checkers return the same DB. -/
+@@ -124,7 +124,7 @@ theorem checkSinglePass_eq_checkTwoPassLegacy_of_sharedIncludeError
+       (pure (finalizeSinglePassResult config (.error err)) : IO DB) =
+       pure (checkExpandedResult config (.error err)) :=
+     congrArg (fun db => (pure db : IO DB)) h_inner
+-  simpa using h_inner_io
++  exact h_inner_io
+ 
+ /-- Specialized IO bridge: if both front-ends report the same include read-failure
+ payload, both checkers are equal. -/
+diff --git a/Metamath/ParserLoopInduction.lean b/Metamath/ParserLoopInduction.lean
+index e34b97039b34a827d169848436cc44c367dd53ef..27b596a0729e372e0fe1484b84259feb29943ca5 100644
+--- a/Metamath/ParserLoopInduction.lean
++++ b/Metamath/ParserLoopInduction.lean
+@@ -1485,7 +1485,6 @@ theorem feedTokens_hyps_behavior (s : ParserState) (arr : Array Sym) (p : Tokens
+         right; right
+         apply withAt_propagates_error
+         simp [ParserState.mkErrorFromEvidence, ParserState.withDB]
+-        exact ParserState_mkErrorFromEvidence_sets_error_bool s pos (.scopeDecl err)
+       | none =>
+         simp only [ParserState.withDB, Id_bind_eq]
+         by_cases h_ok : (s.db.insertHyp pos l true arr).error? = none
+@@ -1517,7 +1516,6 @@ theorem feedTokens_hyps_behavior (s : ParserState) (arr : Array Sym) (p : Tokens
+         cases h_int : s.db.interrupt with
+         | true =>
+             simp [h_int, ParserState.withDB, Verify.DB.error]
+-            right; right; rfl
+         | false =>
+             simp
+             left
+diff --git a/Metamath/ParserOperations.lean b/Metamath/ParserOperations.lean
+index b2bb5c837633d9cab4e429585591b60db915fd0e..1e694de920376397457334fa1abb228c8d870618 100644
+--- a/Metamath/ParserOperations.lean
++++ b/Metamath/ParserOperations.lean
+@@ -4115,7 +4115,6 @@ theorem feedTokens_ax_db (s : ParserState) (arr : Array Sym) (pos : Pos) (l : St
+           if Formula.hasConstHead arr = true then s_inner
+           else s.mkErrorFromEvidence pos (.scopeDecl .firstSymbolNotConstant))).db := by
+     simp [ParserState.feedTokens, h_s_inner]
+-    rfl
+   calc
+     (s.feedTokens arr ⟨.ax, pos, l⟩).db
+         = (ParserState.withAt l (fun _ =>
+@@ -4243,7 +4242,6 @@ theorem feedTokens_float_db (s : ParserState) (arr : Array Sym) (pos : Pos) (l :
+             else s.mkErrorFromEvidence pos (.scopeDecl .expectedConstantAndVariable)
+           else s.mkErrorFromEvidence pos (.scopeDecl .firstSymbolNotConstant))).db := by
+     simp [ParserState.feedTokens, h_s_inner]
+-    rfl
+   calc
+     (s.feedTokens arr ⟨.float, pos, l⟩).db
+         = (ParserState.withAt l (fun _ =>
+@@ -4351,7 +4349,6 @@ theorem feedTokens_ess_db (s : ParserState) (arr : Array Sym) (pos : Pos) (l : S
+           if Formula.hasConstHead arr = true then s_inner
+           else s.mkErrorFromEvidence pos (.scopeDecl .firstSymbolNotConstant))).db := by
+     simp [ParserState.feedTokens, h_s_inner, h_gate_none]
+-    rfl
+   calc
+     (s.feedTokens arr ⟨.ess, pos, l⟩).db
+         = (ParserState.withAt l (fun _ =>
+diff --git a/Metamath/Spec/Bridge.lean b/Metamath/Spec/Bridge.lean
+index 363a6f0be297746970cc9bb666be0d56b25e9066..7463fd9e80860ed292cec24a961c1b4cc5a6dd84 100644
+--- a/Metamath/Spec/Bridge.lean
++++ b/Metamath/Spec/Bridge.lean
+@@ -834,9 +834,7 @@ theorem Hyp.toMarioFormula_roundtrip_floating (c : Constant) (v : Variable) (var
+     MarioFormula.toHyp (Hyp.toMarioFormula (Hyp.floating c v) vars) =
+     some (Hyp.floating c (MarioVR.toVariable (Variable.toMarioVR v))) := by
+   unfold Hyp.toMarioFormula MarioFormula.toHyp
+-  -- After unfolding, goal is: if c.c == c.c then some ... else none = some ...
+-  -- simp automatically handles c.c == c.c and reduces the ite
+-  simp only [beq_self_eq_true, ite_true]
++  exact if_pos (show ((c.c : String) == c.c) = true by simp)
+ 
+ /-- Soundness for floating conversion: If a MarioFormula came from converting
+     a floating hypothesis, then converting it back recovers a floating hypothesis
+diff --git a/Metamath/Spec/Equivalence.lean b/Metamath/Spec/Equivalence.lean
+index 1a4c49011d6fd5fe66737114273df8d7b450aafe..011a1deb95ab735e6070bf719ff402a8f59a8be7 100644
+--- a/Metamath/Spec/Equivalence.lean
++++ b/Metamath/Spec/Equivalence.lean
+@@ -265,6 +265,7 @@ theorem hypToMarioFormula_floating_expr (vm : VarMap) (c : Constant) (v : Variab
+     hypToMarioFormula vm (Hyp.floating c v) = exprToFormula vm ⟨c, [v.v]⟩ := by
+   unfold hypToMarioFormula exprToFormula exprToMarioExpr
+   simp [h_find, toMarioSym_var h_find]
++  rfl
+ 
+ /-- Hypothesis conversion always yields a member of the frame context. -/
+ theorem hypToMarioFormula_mem {fr : Frame} {h : Hyp} :
+@@ -1551,7 +1552,6 @@ theorem marioExpr_subst_eq_flatMap (σ : MarioVR → MarioExpr) (e : MarioExpr)
+           simp only [Metamath.Expr.subst, List.flatMap_cons, List.singleton_append, ih]
+       | var v =>
+           rw [Metamath.Expr.subst, List.flatMap_cons, ih]
+-          rfl
+ 
+ /-- Auxiliary lemma for substitution correspondence on symbol lists.
+     Works on a general list with the const-preservation hypothesis. -/
+@@ -2161,8 +2161,6 @@ theorem proofValid_stack_supported {Γ : Database} {consts : ConstSet} {fr : Fra
+                   rw [h_stack_eq]
+                   exact List.mem_append_left _ (List.mem_reverse.mpr h_in_needed)
+                 rw [← (congrArg Constant.c h_type_pres)]
+-                change SupportedProvable Γ fr
+-                  ((σ v_hyp).typecode.c, List.append (exprToMarioExpr vm (σ v_hyp)) ([] : MarioExpr))
+                 simpa [vm, exprToFormula, List.append_nil] using
+                   ih (σ v_hyp) h_in_stack
+ 
+diff --git a/Metamath/Tests/CheckSinglePassParity.lean b/Metamath/Tests/CheckSinglePassParity.lean
+index c88ef42678219972ff4cc0d90dff88a099ffae24..6d4a9d4a1008eab3f554fc25538ca17d03ed3fba 100644
+--- a/Metamath/Tests/CheckSinglePassParity.lean
++++ b/Metamath/Tests/CheckSinglePassParity.lean
+@@ -62,7 +62,7 @@ private def runParityCaseExpectCode
+       s!"{label}: single-pass parseErrorCode mismatch, expected {repr expected}, got {repr dbSingle.parseErrorCode?}"
+   IO.println s!"✓ {label}"
+ 
+-/-- Regression: include-depth fuel overflow must decode to includeCycleDetected.
++/-- Regression: include-depth fuel overflow must decode to includeDepthExceeded.
+ Also checked for legacy/single-pass parity. -/
+ def runIncludeDepthOverflowRegression : IO Unit := do
+   let path := "test_databases/include_depth/root_depth.mm"
+@@ -71,11 +71,11 @@ def runIncludeDepthOverflowRegression : IO Unit := do
+   let dbSingle ← checkSinglePass path cfg
+   assertShapeEq "include-depth-overflow" (dbShape dbLegacy) (dbShape dbSingle)
+   match dbSingle.parseErrorCode? with
+-  | some .includeCycleDetected =>
+-      IO.println "✓ include-depth-overflow decodes as includeCycleDetected"
++  | some .includeDepthExceeded =>
++      IO.println "✓ include-depth-overflow decodes as includeDepthExceeded"
+   | code =>
+       throw <| IO.userError
+-        s!"include-depth-overflow: expected includeCycleDetected, got {repr code}"
++        s!"include-depth-overflow: expected includeDepthExceeded, got {repr code}"
+ 
+ /-- End-to-end parity checks between two-pass legacy and single-pass checker. -/
+ def runCheckSinglePassParitySuite : IO Unit := do
+diff --git a/Metamath/VerifyDBConfigThms.lean b/Metamath/VerifyDBConfigThms.lean
+index 0da192f114906d7883ff46655bbfa2cd14b4d999..050862c8b07273b80c255369df13db1d6c3cc979 100644
+--- a/Metamath/VerifyDBConfigThms.lean
++++ b/Metamath/VerifyDBConfigThms.lean
+@@ -145,10 +145,17 @@ namespace DB
+ 
+ @[simp] theorem insertHyp_config (db : DB) (pos : Pos) (l : String) (ess : Bool) (f : Formula) :
+     (db.insertHyp pos l ess f).config = db.config := by
+-  unfold insertHyp
+-  simp only [DB.error]
+-  split <;> try simp [DB.insertHypChecks_config]
+-  split <;> simp [DB.insertHypChecks_config, DB.insert_config, DB.withHyps_config]
++  have choose (condition : Bool) (yes no : DB)
++      (hy : yes.config = db.config) (hn : no.config = db.config) :
++      (if condition then yes else no).config = db.config := by
++    cases condition <;> assumption
++  exact choose _ _ _ (DB.insertHypChecks_config db pos ess f)
++    (choose _ _ _
++      ((DB.insert_config _ pos l (.hyp ess f)).trans
++        (DB.insertHypChecks_config db pos ess f))
++      ((DB.withHyps_config _ _).trans
++        ((DB.insert_config _ pos l (.hyp ess f)).trans
++          (DB.insertHypChecks_config db pos ess f))))
+ 
+ @[simp] theorem insertAxiom_config (db : DB) (pos : Pos) (l : String) (fmla : Formula) :
+     (db.insertAxiom pos l fmla).config = db.config := by
+diff --git a/lake-manifest.json b/lake-manifest.json
+index 06175ad086a95d250024dad47b3fd69b0cce63f0..c38e23ff0743d9d2646e950d6ea3c0c775af289c 100644
+--- a/lake-manifest.json
++++ b/lake-manifest.json
+@@ -1,16 +1,21 @@
+-{"version": "1.2.0",
+- "packagesDir": ".lake/packages",
+- "packages":
+- [{"url": "https://github.com/leanprover-community/batteries",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "fa08db58b30eb033edcdab331bba000827f9f785",
+-   "name": "batteries",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": false,
+-   "configFile": "lakefile.toml"}],
+- "name": "«mm-lean4»",
+- "lakeDir": ".lake",
+- "fixedToolchain": false}
++{
++  "version": "1.2.0",
++  "packagesDir": ".lake/packages",
++  "packages": [
++    {
++      "url": "https://github.com/leanprover-community/batteries",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4488d40d070b9700d4d5a6aa342f0d40c31b2a2d",
++      "name": "batteries",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": false,
++      "configFile": "lakefile.toml"
++    }
++  ],
++  "name": "\u00abmm-lean4\u00bb",
++  "lakeDir": ".lake",
++  "fixedToolchain": false
++}
+diff --git a/lakefile.lean b/lakefile.lean
+index 87252a66589cb0de501b6f0ed5f73c326c1282f7..a1265f2406dd744511bbf86de9f9283dbdb68005 100644
+--- a/lakefile.lean
++++ b/lakefile.lean
+@@ -5,7 +5,7 @@ package «mm-lean4» where
+   -- TODO: Enable strict mode once Verify.lean is updated
+   -- moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false"]
+ 
+-require batteries from git "https://github.com/leanprover-community/batteries" @ "v4.31.0"
++require batteries from git "https://github.com/leanprover-community/batteries" @ "4488d40d070b9700d4d5a6aa342f0d40c31b2a2d"
+ 
+ @[default_target]
+ lean_lib Metamath where
+diff --git a/lean-toolchain b/lean-toolchain
+index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+--- a/lean-toolchain
++++ b/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.31.0
++leanprover/lean4:v4.33.1

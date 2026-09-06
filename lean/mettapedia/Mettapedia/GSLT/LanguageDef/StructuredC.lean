@@ -525,6 +525,11 @@ private theorem rewrites_validate :
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain,
       TypeExpr.baseNames]
+  all_goals
+    repeat' apply And.intro
+    all_goals
+      apply LanguageDef.validateTypeExpr_eq_nil_of_baseNames
+      simp [TypeExpr.baseNames]
 
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_concreteSyntaxAndRewrites

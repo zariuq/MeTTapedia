@@ -209,8 +209,8 @@ private theorem addVarBinding_mono_step
           simp [hvalues] at h ⊢
           exact h
       | cons first rest =>
-          simp only [hvalues, Bindings.valuesConsistent] at h ⊢
-          by_cases hclass : rest.all (fun value => value == first) = true
+          simp only [hvalues] at h ⊢
+          by_cases hclass : Bindings.valuesConsistent (first :: rest) = true
           · rw [if_pos hclass] at h ⊢
             by_cases hsame : first = val
             · have hbeq : (first == val) = true := by simp [hsame]
@@ -254,13 +254,13 @@ private theorem addVarEquality_mono_step
           simp [hvalues] at h ⊢
           exact h
       | cons first rest =>
-          simp only [hvalues, Bindings.valuesConsistent] at h ⊢
-          by_cases hclass : rest.all (fun value => value == first) = true
+          simp only [hvalues] at h ⊢
+          by_cases hclass : Bindings.valuesConsistent (first :: rest) = true
           · rw [if_pos hclass] at h ⊢
             exact h
           · rw [if_neg hclass] at h ⊢
             cases rest with
-            | nil => simp at hclass
+            | nil => simp [Bindings.valuesConsistent] at hclass
             | cons second tail =>
               cases tail with
               | nil =>
@@ -375,19 +375,19 @@ private theorem mergeSoundFamily : ∀ fuel,
             subst out
             exact .fresh hvalues
         | cons first rest =>
-            simp only [hvalues, Bindings.valuesConsistent] at h
-            by_cases hclass : rest.all (fun value => value == first) = true
+            simp only [hvalues] at h
+            by_cases hclass : Bindings.valuesConsistent (first :: rest) = true
             · rw [if_pos hclass] at h
               by_cases hsame : first = val
               · have hbeq : (first == val) = true := by simp [hsame]
                 rw [if_pos hbeq] at h
                 simp at h
                 subst out
-                exact .same hvalues (by simp [Bindings.valuesConsistent, hclass]) hsame
+                exact .same hvalues hclass hsame
               · have hbeq : ¬ (first == val) = true := by simpa using hsame
                 rw [if_neg hbeq] at h
                 rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
-                exact .conflict hvalues (by simp [Bindings.valuesConsistent, hclass]) hsame
+                exact .conflict hvalues hclass hsame
                   (matchAtoms_sound hmb) (ihMerge hmerge)
             · rw [if_neg hclass] at h
               rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
@@ -398,7 +398,7 @@ private theorem mergeSoundFamily : ∀ fuel,
                   MatchListRel (List.replicate (rest.length + 1) first)
                     (rest ++ [val]) mb := by
                 simpa [List.length_append] using hrel
-              exact .reconcile hvalues (by simp [Bindings.valuesConsistent, hclass])
+              exact .reconcile hvalues (Bool.eq_false_iff.mpr hclass)
                 hrel' (ihMerge hmerge)
       · intro b a c out h
         simp only [addVarEquality] at h
@@ -408,21 +408,21 @@ private theorem mergeSoundFamily : ∀ fuel,
             rcases h with ⟨_, rfl⟩
             exact .consistent (by simp [hvalues, Bindings.valuesConsistent])
         | cons first rest =>
-            simp only [hvalues, Bindings.valuesConsistent] at h
-            by_cases hclass : rest.all (fun value => value == first) = true
+            simp only [hvalues] at h
+            by_cases hclass : Bindings.valuesConsistent (first :: rest) = true
             · rw [if_pos hclass] at h
               simp at h
               subst out
-              exact .consistent (by simp [hvalues, Bindings.valuesConsistent, hclass])
+              exact .consistent (by simpa only [hvalues] using hclass)
             · rw [if_neg hclass] at h
               cases rest with
-              | nil => simp at hclass
+              | nil => simp [Bindings.valuesConsistent] at hclass
               | cons second tail =>
                 cases tail with
                 | nil =>
                   rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
                   exact .pairConflict hvalues
-                    (by simp [Bindings.valuesConsistent, hclass])
+                    (Bool.eq_false_iff.mpr hclass)
                     (matchAtoms_sound hmb) (ihMerge hmerge)
                 | cons third tail =>
                   rcases List.mem_flatMap.mp h with ⟨mb, hmb, hmerge⟩
@@ -430,7 +430,7 @@ private theorem mergeSoundFamily : ∀ fuel,
                   simp at hseed
                   subst seed
                   exact .classConflict hvalues
-                    (by simp [Bindings.valuesConsistent, hclass]) hrel (ihMerge hmerge)
+                    (Bool.eq_false_iff.mpr hclass) hrel (ihMerge hmerge)
       · intro left right out h
         change out ∈ execEqFold (execAssignFold [left] right.assignments n) right.equalities n at h
         have hAssignFold :

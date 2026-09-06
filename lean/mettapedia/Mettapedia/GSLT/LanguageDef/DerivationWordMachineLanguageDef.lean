@@ -212,6 +212,17 @@ def terms : List GrammarRule :=
 def retainedSourceType (declaration : TypeDecl) : Bool :=
   declaration.name != "Instructions"
 
+private theorem retainedSourceTypes_eq :
+    DerivationCheckMachineLanguageDef.language.types.filter retainedSourceType =
+      ([
+    { name := "Integer", carrier := .builtinInt },
+    { name := "String", carrier := .builtinString },
+    "Index", "OptionalIndex", "Formula", "Rule", "Evidence", "Provenance",
+    "Obligation", "ServiceState", "Relevance", "ParentIds", "Formulas", "LinkState", "Node",
+    "Nodes", "Instruction", "RootState", "Decision", "Fault",
+    "Outcome", "Config"] : List TypeDecl) := by
+  rfl
+
 /-- The compact target is generated from the source signature and transition
 table.  The instruction-list carrier and the two source control terms are
 replaced; semantic payloads are represented by explicit finite-arena
@@ -517,7 +528,8 @@ private theorem rewrites_validate :
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
   all_goals
     simp (config := { maxSteps := 4000000 })
-      [LanguageDef.validateRewrite, language, terms, retainedSourceTerm,
+      [retainedSourceTypes_eq, LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff,
+      language, terms, retainedSourceTerm,
       retainedSourceType, malformedRecordTransition, liftRewrite,
       sourceInstruction?, liftContext, liftTypeExpr, liftPremise, liftPattern,
       liftLeft, a, v, query, run, halted, recordsNil, recordsCons, decoded,
@@ -569,7 +581,7 @@ private theorem rewrites_validate :
       LanguageDef.premiseForAllParams, Pattern.constructorRefs,
       Pattern.constructorRefsList, Pattern.freeFvarNames,
       Pattern.isWellScoped, Pattern.isWellScopedAt,
-      Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain,
+      Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain, List.filter_cons,
       TypeExpr.baseNames]
 
 set_option maxHeartbeats 30000000 in
@@ -579,7 +591,7 @@ theorem language_validate : language.validate = [] := by
   all_goals first
   | exact rewrites_validate
   | (simp (config := { maxSteps := 4000000 })
-      [language, terms, retainedSourceTerm, retainedSourceType,
+      [retainedSourceTypes_eq, language, terms, retainedSourceTerm, retainedSourceType,
       DerivationCheckMachineLanguageDef.language,
       DerivationCheckMachineLanguageDef.terms,
       DerivationCheckMachineLanguageDef.ctor,
@@ -626,7 +638,7 @@ theorem language_validate : language.validate = [] := by
       recordsCons, decoded, decodeRejected,
       LanguageDef.concreteSyntaxRowsValid,
       LanguageDef.concreteSyntaxItemAllowed, LanguageDef.typeNames,
-      TermParam.typeExpr, TypeExpr.baseNames, TypeDecl.plain])
+      TermParam.typeExpr, TypeExpr.baseNames, TypeDecl.plain, List.filter_cons])
 
 def validated : ValidatedLanguageDef where
   language := language
@@ -736,7 +748,8 @@ theorem missingFinishStep_exact :
     rewriteAt (engineBasePremises RelationEnv.empty) language 1
       missingFinishStart = [missingFinishDone] := by
   simp (config := { maxSteps := 2000000 })
-    [rewriteAt, applyRuleUsing, premisesUsing, premiseStepUsing,
+    [Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    rewriteAt, applyRuleUsing, premisesUsing, premiseStepUsing,
     engineBasePremises, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, RelationEnv.empty,
     language, transitions, liftedTransitions,
@@ -796,7 +809,8 @@ theorem missingFinishDone_irreducible :
     rewriteAt (engineBasePremises RelationEnv.empty) language 1
       missingFinishDone = [] := by
   simp (config := { maxSteps := 2000000 })
-    [rewriteAt, applyRuleUsing, premisesUsing, premiseStepUsing,
+    [Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    rewriteAt, applyRuleUsing, premisesUsing, premiseStepUsing,
     engineBasePremises, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, RelationEnv.empty,
     language, transitions, liftedTransitions,

@@ -111,30 +111,50 @@ theorem transport_path_backward
 inductive WMLogic where
   | boolean
   | heyting
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype WMLogic where
+  elems := {.boolean, .heyting}
+  complete value := by cases value <;> simp
 
 inductive WMTruthValue where
   | point
   | bounds
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype WMTruthValue where
+  elems := {.point, .bounds}
+  complete value := by cases value <;> simp
 
 inductive WMIntervalSemantics where
   | bayesNormal
   | bayesExact
   | walleyIDM
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype WMIntervalSemantics where
+  elems := {.bayesNormal, .bayesExact, .walleyIDM}
+  complete value := by cases value <;> simp
 
 inductive WMQueryTyping where
   | untyped
   | typedSigma
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype WMQueryTyping where
+  elems := {.untyped, .typedSigma}
+  complete value := by cases value <;> simp
 
 inductive WMAxis where
   | logic
   | truthValue
   | interval
   | typing
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype WMAxis where
+  elems := {.logic, .truthValue, .interval, .typing}
+  complete value := by cases value <;> simp
 
 def wmAxisTy : WMAxis → Type
   | .logic => WMLogic

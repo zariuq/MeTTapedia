@@ -23,8 +23,7 @@ def costWholeInteractingSort (source : CIGSLT) :
     change List.Mem (TypeDecl.plain costWrappedSortName)
       source.costCoreLanguage.types
     apply List.mem_append_left
-    simp [ContinuationRetypingPlan.generatedLanguage,
-      ContinuationRetypingPlan.generatedTypes]⟩
+    exact List.mem_append_right _ (List.mem_singleton_self _)⟩
 
 /-- The generated binary contact, selected from the exact Cost language. -/
 def costWholeContactConstructor (source : CIGSLT) :

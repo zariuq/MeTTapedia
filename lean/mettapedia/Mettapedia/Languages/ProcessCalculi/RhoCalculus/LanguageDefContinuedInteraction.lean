@@ -105,6 +105,8 @@ theorem rhoContinuationRetyping_wrappable :
             mapParameterType, costWrappedTypeExpr, rhoIGSLT,
             rhoInteractivePresentation, rhoQuoteConstructor, rhoCalc,
             TypeDecl.plain, TypeExpr.proc, TypeExpr.baseType]
+          intro collection element
+          split <;> intro equality <;> cases equality
         · apply ArgumentsHaveTypes.cons
           · simp [MatchesParameterRepresentation, mapParameterType]
           · rfl
@@ -131,9 +133,7 @@ theorem rho_costWrappedParallelConstructor_params :
     (costWrappedConstructor (theory := rhoIGSLT) rhoCalc.terms[3]).params =
       [.simple "ps"
         (.collection .hashBag (.base costWrappedSortName))] := by
-  simp [costWrappedConstructor, rhoCalc, mapParameterType,
-    costWrappedTypeExpr, rhoIGSLT, rhoInteractivePresentation,
-    TypeDecl.plain, TypeExpr.proc, TypeExpr.baseType, TypeExpr.bag]
+  decide +kernel
 
 /-- The same raw empty-bag representation inhabits both generated process
 fibers.  Its intended canonical unit is therefore determined by the derived
@@ -201,28 +201,14 @@ theorem rho_costBaseInputConstructor_params :
         .abstraction "p"
           (.arrow (.base (costBaseSortName "Name"))
             (.base costWrappedSortName))] := by
-  simp [costBaseConstructor, costBaseParameter, isSelectedContinuation,
-    rhoCalc, mapParameterType, costBaseTypeExpr, costWrappedTypeExpr,
-    rhoInteractionCut_program_constructor_value,
-    rhoInteractionCut_environment_constructor_value,
-    rhoInteractionCut_program_continuation_index,
-    rhoInteractionCut_environment_continuation_index,
-    rhoIGSLT, rhoInteractivePresentation, TypeDecl.plain,
-    TypeExpr.name, TypeExpr.proc, TypeExpr.funType, TypeExpr.baseType]
+  decide +kernel
 
 @[simp]
 theorem rho_costBaseOutputConstructor_params :
     (costBaseConstructor rhoInteractionCut rhoCalc.terms[4]).params =
       [.simple "n" (.base (costBaseSortName "Name")),
         .simple "q" (.base costWrappedSortName)] := by
-  simp [costBaseConstructor, costBaseParameter, isSelectedContinuation,
-    rhoCalc, mapParameterType, costBaseTypeExpr, costWrappedTypeExpr,
-    rhoInteractionCut_program_constructor_value,
-    rhoInteractionCut_environment_constructor_value,
-    rhoInteractionCut_program_continuation_index,
-    rhoInteractionCut_environment_continuation_index,
-    rhoIGSLT, rhoInteractivePresentation, TypeDecl.plain,
-    TypeExpr.name, TypeExpr.proc, TypeExpr.baseType]
+  decide +kernel
 
 @[simp]
 theorem rho_costBaseQuoteConstructor_params :
@@ -248,17 +234,13 @@ theorem rho_costBaseDropConstructor_params :
 theorem rho_costWrappedQuoteConstructor_params :
     (costWrappedConstructor (theory := rhoIGSLT) rhoCalc.terms[2]).params =
       [.simple "p" (.base costWrappedSortName)] := by
-  simp [costWrappedConstructor, rhoCalc, mapParameterType,
-    costWrappedTypeExpr, rhoIGSLT, rhoInteractivePresentation,
-    TypeDecl.plain, TypeExpr.proc, TypeExpr.baseType]
+  decide +kernel
 
 @[simp]
 theorem rho_costWrappedDropConstructor_params :
     (costWrappedConstructor (theory := rhoIGSLT) rhoCalc.terms[1]).params =
       [.simple "n" (.base (costBaseSortName "Name"))] := by
-  simp [costWrappedConstructor, rhoCalc, mapParameterType,
-    costWrappedTypeExpr, rhoIGSLT, rhoInteractivePresentation,
-    TypeDecl.plain, TypeExpr.name, TypeExpr.baseType]
+  decide +kernel
 
 /-- Rho's authored COMM redex remains well-sorted after the input and output
 continuation positions are moved to the wrapped fiber. -/
@@ -548,60 +530,45 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
         (rhoContinuationRetyping.mem_wrappedConstructors_iff
           rhoContinuationQuoteConstructor).2 (by
             constructor <;> decide)
-      simpa [reflectiveRetypingLanguage,
-        costWrappedReflectivePresentationDecl, costWrappedStaticSymbols,
-        costWrappedStaticReflectiveSymbols,
-        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
-        rhoReflectivePresentation, rhoContinuationQuoteConstructor,
-        rhoQuoteConstructor, costWrappedConstructor, rhoCalc] using
-        rhoContinuationRetyping.costWrappedConstructor_filter_generated
-          rhoContinuationQuoteConstructor selected
+      exact rhoContinuationRetyping.costWrappedConstructor_filter_generated
+        rhoContinuationQuoteConstructor selected
     · simp [costWrappedConstructor, rhoIGSLT, rhoInteractivePresentation,
         rhoValidatedLanguageDef, rhoCalc,
         costWrappedReflectivePresentationDecl,
         costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
         Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation]
+      rfl
     · exact rho_costWrappedQuoteConstructor_params
     · have selected : rhoContinuationDropConstructor ∈
           rhoContinuationRetyping.wrappedConstructors :=
         (rhoContinuationRetyping.mem_wrappedConstructors_iff
           rhoContinuationDropConstructor).2 (by
             constructor <;> decide)
-      simpa [reflectiveRetypingLanguage,
-        costWrappedReflectivePresentationDecl, costWrappedStaticSymbols,
-        costWrappedStaticReflectiveSymbols,
-        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
-        rhoReflectivePresentation, rhoContinuationDropConstructor,
-        costWrappedConstructor, rhoCalc] using
-        rhoContinuationRetyping.costWrappedConstructor_filter_generated
-          rhoContinuationDropConstructor selected
+      exact rhoContinuationRetyping.costWrappedConstructor_filter_generated
+        rhoContinuationDropConstructor selected
     · simp [costWrappedConstructor, rhoIGSLT, rhoInteractivePresentation,
         rhoValidatedLanguageDef, rhoCalc,
         costWrappedReflectivePresentationDecl,
         costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
         Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation]
+      rfl
     · exact rho_costWrappedDropConstructor_params
     · have selected : rhoContinuationUnitConstructor ∈
           rhoContinuationRetyping.wrappedConstructors :=
         (rhoContinuationRetyping.mem_wrappedConstructors_iff
           rhoContinuationUnitConstructor).2 (by
             constructor <;> decide)
-      simpa [reflectiveRetypingLanguage,
-        costWrappedReflectivePresentationDecl, costWrappedStaticSymbols,
-        costWrappedStaticReflectiveSymbols,
-        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
-        rhoReflectivePresentation, rhoContinuationUnitConstructor,
-        costWrappedConstructor, rhoCalc] using
-        rhoContinuationRetyping.costWrappedConstructor_filter_generated
-          rhoContinuationUnitConstructor selected
+      exact rhoContinuationRetyping.costWrappedConstructor_filter_generated
+        rhoContinuationUnitConstructor selected
     · simp [costWrappedConstructor, rhoIGSLT, rhoInteractivePresentation,
         rhoValidatedLanguageDef, rhoCalc,
         costWrappedReflectivePresentationDecl,
         costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
         Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation]
+      rfl
     · rfl
     · simp [reflectiveRetypingLanguage, rhoIGSLT,
         rhoInteractivePresentation, rhoValidatedLanguageDef, rhoCalc,
@@ -763,6 +730,8 @@ theorem rho_input_continuation_retyped :
     rhoIGSLT, rhoInteractivePresentation, TypeDecl.plain,
     TypeExpr.name, TypeExpr.proc, TypeExpr.funType, TypeExpr.baseType,
     costBaseSortName, costWrappedSortName]
+
+  constructor <;> decide +kernel
 
 /-- Negative control: rho's channel/subject argument remains in the base name
 sort; continuation retyping does not seal or re-sort interaction subjects. -/

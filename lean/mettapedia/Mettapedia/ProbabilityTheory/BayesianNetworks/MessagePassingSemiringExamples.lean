@@ -58,15 +58,16 @@ instance : CommSemiring MaxTimesNat where
     ext
     simp
   nsmul n a := if n = 0 then 0 else a
-  nsmul_zero a := by
-    ext
-    simp
+  nsmul_zero a := by rfl
   nsmul_succ n a := by
     by_cases h : n = 0
     · subst h
       ext
-      simp
+      change a.toNat = max 0 a.toNat
+      exact (Nat.zero_max _).symm
     · ext
+      change (if n + 1 = 0 then 0 else a).toNat =
+        max (if n = 0 then 0 else a).toNat a.toNat
       simp [h]
   add_comm a b := by
     ext
@@ -101,11 +102,19 @@ instance : CommSemiring MaxTimesNat where
 inductive DemoVar
   | hidden
   | target
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
 
 inductive DemoFactor
   | pair
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype DemoVar where
+  elems := {.hidden, .target}
+  complete := by intro v; cases v <;> simp
+
+instance : Fintype DemoFactor where
+  elems := {.pair}
+  complete := by intro f; cases f <;> simp
 
 def pairScope : Finset DemoVar := {DemoVar.hidden, DemoVar.target}
 

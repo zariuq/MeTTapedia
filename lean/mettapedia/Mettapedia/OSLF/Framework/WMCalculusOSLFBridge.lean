@@ -519,6 +519,7 @@ theorem wmCongLangReduces_evidenceAdd (v : WMExtVertex) (pw₁ pw₂ pq : Patter
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) :=
   congReduces_of_rawReduces_ext v _ _ (wmLangReduces_evidenceAdd v pw₁ pw₂ pq)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Congruence on left Combine argument using `ruleCombineCongLeft`.
     The authored contextual premise is discharged by the evidence-add step
     in the same least contextual relation. -/
@@ -582,6 +583,7 @@ theorem wmCongFullLangReduces_evidenceAdd (v : WMFullVertex) (pw₁ pw₂ pq : P
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) :=
   congReduces_of_rawReduces_full v _ _ (wmFullLangReduces_evidenceAdd v pw₁ pw₂ pq)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Full-vertex: congruence on left Combine via evidence-add. -/
 theorem wmFullLangReduces_combineCongLeft_evidenceAdd (v : WMFullVertex)
     (pw₁ pw₂ pw₃ pq : Pattern) :
@@ -627,6 +629,7 @@ theorem full_chain_evidence_add_fully_nested (v : WMFullVertex) (pw₁ pw₂ pw�
       (langReduces_to_semantic _
         (wmFullLangReduces_combineCongLeft_evidenceAdd v pw₁ pw₂ pw₃ pq)))
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Guarded+cong: evidence-add fires (core rule, premises = []). -/
 theorem wmGuardedCongLangReduces_evidenceAdd (relEnv : RelationEnv)
     (v : WMExtVertex) (pw₁ pw₂ pq : Pattern) :
@@ -649,6 +652,7 @@ theorem wmGuardedCongLangReduces_evidenceAdd (relEnv : RelationEnv)
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
       applyBindings]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Guarded+cong: congruence on left Combine via evidence-add. -/
 theorem wmGuardedCongLangReduces_combineCongLeft_evidenceAdd (relEnv : RelationEnv)
     (v : WMExtVertex) (pw₁ pw₂ pw₃ pq : Pattern) :
@@ -802,6 +806,7 @@ noncomputable def wmExtVertexOSLFGuarded (relEnv : RelationEnv) (v : WMExtVertex
 noncomputable def wmFullVertexOSLFGuarded (relEnv : RelationEnv) (v : WMFullVertex) :=
   langOSLFUsing relEnv (wmFullVertexLanguageDefGuarded v)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Core rules fire in the guarded calculus (at any RelationEnv),
     since core rules have `premises = []`. -/
 theorem wmGuardedLangReduces_evidenceAdd (relEnv : RelationEnv)

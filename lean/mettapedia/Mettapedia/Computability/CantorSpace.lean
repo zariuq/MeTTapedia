@@ -306,11 +306,11 @@ theorem coinMeasure_cylinderSet (n : ℕ) (bits : Fin n → Bool) :
     intro i hi
     simp only [Finset.mem_range] at hi
     simp only [hi, dite_true]
-    unfold bernoulliHalfMeasure bernoulliHalf half
-    rw [(PMF.bernoulli 2⁻¹ half_le_one).toMeasure_apply_singleton
+    unfold bernoulliHalfMeasure bernoulliHalf
+    rw [(PMF.bernoulli half half_le_one).toMeasure_apply_singleton
         (bits ⟨i, hi⟩) (measurableSet_singleton _)]
     rw [PMF.bernoulli_apply]
-    cases bits ⟨i, hi⟩ <;> simp
+    cases bits ⟨i, hi⟩ <;> simp [half]
   rw [Finset.prod_congr rfl h_half]
   rw [Finset.prod_const, Finset.card_range]
 

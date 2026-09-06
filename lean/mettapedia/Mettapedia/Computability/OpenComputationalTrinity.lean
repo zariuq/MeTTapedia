@@ -250,8 +250,8 @@ def pointBooleanDevelopment : ComparisonMap unitComparison boolComparison where
   program := pointToBool
   logic := pointToBool
   space := pointToBool
-  programLogic := by simp [pointToBool, unitComparison, boolComparison]
-  logicSpace := by simp [pointToBool, unitComparison, boolComparison]
+  programLogic := (Category.id_comp pointToBool).trans (Category.comp_id pointToBool).symm
+  logicSpace := (Category.id_comp pointToBool).trans (Category.comp_id pointToBool).symm
 
 /-- The development preserves every old distinction on all three faces. -/
 def pointBooleanExtension : Extension unitComparison boolComparison where

@@ -152,6 +152,7 @@ private theorem floatingName_mem_of_operationalHyp_mem
   | essential label formula =>
       simp [operationalHyp] at heq
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Distinct authored floating names determine a unique typecode for every
 operational variable. -/
 private theorem operationalFloatUnique_of_floatingNames_nodup :

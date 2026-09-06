@@ -31,18 +31,30 @@ inductive TrustTriangleAction where
   | harmfulDisclosure
   | coerciveOverride
   | safeEscalation
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype TrustTriangleAction where
+  elems := { .harmfulDisclosure, .coerciveOverride, .safeEscalation }
+  complete x := by cases x <;> simp
 
 /-- Two ethically relevant duties in this scenario. -/
 inductive TrustTriangleDuty where
   | noHarm
   | respectAutonomy
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype TrustTriangleDuty where
+  elems := { .noHarm, .respectAutonomy }
+  complete x := by cases x <;> simp
 
 /-- One ethically relevant feature (severity of conflict). -/
 inductive TrustTriangleFeature where
   | conflictSeverity
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype TrustTriangleFeature where
+  elems := { .conflictSeverity }
+  complete x := by cases x; simp
 
 /-- Duty profiles for each candidate action.
 

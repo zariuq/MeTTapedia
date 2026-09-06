@@ -222,15 +222,57 @@ set_option maxHeartbeats 1000000 in
 attribute [-simp] isolated Fin.Fin1.eq_one
   LO.LogicalConnective.AndOrClosed.falsum
   LO.LogicalConnective.AndOrClosed.verum in
+private theorem language_rewrites_validate :
+    ∀ rewrite ∈ language.rewrites, LanguageDef.validateRewrite language rewrite = [] := by
+  intro rewrite membership
+  change rewrite ∈
+    [MeTTaZero.queryRewrite, MeTTaZero.evaluationRewrite,
+     evaluationDemandRewrite, needRewrite, needReturnRewrite,
+     reflectedDemandRewrite] at membership
+  simp only [List.mem_cons, List.mem_nil_iff, or_false] at membership
+  rcases membership with rfl | rfl | rfl | rfl | rfl | rfl
+  all_goals
+    dsimp only [LanguageDef.validateRewrite, language, MeTTaZero.language,
+      MeTTaZero.definition, ExtendedLanguageDef.toLanguageDef, ExtendedLanguageDef.addLayer,
+      MeTTaZero.queryRewrite, MeTTaZero.evaluationRewrite,
+      evaluationDemandRewrite, needRewrite, needReturnRewrite, reflectedDemandRewrite]
+    simp [MeTTaZero.queryRequestPattern, MeTTaZero.queryAnswerPattern,
+      MeTTaZero.evaluationRequestPattern,
+      MeTTaZero.evaluationAnswerPattern, MeTTaZero.metavariable,
+      LanguageDef.validatePatternConstructors,
+      LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
+      LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
+      LanguageDef.premiseFvarNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseForAllParams, Pattern.constructorRefs,
+      Pattern.constructorRefsList, Pattern.freeFvarNames,
+      Pattern.isWellScoped, Pattern.isWellScopedAt,
+      Pattern.isWellScopedListAt, nameType, receiptType,
+      MeTTaZero.atomType, MeTTaZero.spaceType, MeTTaZero.processType,
+      MeTTaZero.alternativesType, unitConstructor, quoteConstructor,
+      dropConstructor, evaluateNameConstructor, needRequestConstructor,
+      needAnswerConstructor, needKeyConstructor,
+      requestDependencyConstructor, spaceAtomDependencyConstructor,
+      capabilityDependencyConstructor, inertDependencyConstructor,
+      receiptConstructor, constructor, LanguageDef.typeNames, TypeDecl.plain,
+      TypeExpr.baseNames]
+
+  all_goals
+    repeat' constructor
+
+set_option maxHeartbeats 1000000 in
+attribute [-simp] isolated Fin.Fin1.eq_one
+  LO.LogicalConnective.AndOrClosed.falsum
+  LO.LogicalConnective.AndOrClosed.verum in
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
   case htypes =>
-    simp [language, MeTTaZero.language, MeTTaZero.definition, nameType,
+    simp [language, MeTTaZero.language, MeTTaZero.definition, ExtendedLanguageDef.addLayer, nameType,
       receiptType, MeTTaZero.atomType, MeTTaZero.spaceType,
       MeTTaZero.processType, MeTTaZero.alternativesType,
       LanguageDef.typeNames, TypeDecl.plain]
   case hconstructors =>
-    simp [language, MeTTaZero.language, MeTTaZero.definition,
+    simp [language, MeTTaZero.language, MeTTaZero.definition, ExtendedLanguageDef.addLayer,
       unitConstructor, quoteConstructor, dropConstructor,
       evaluateNameConstructor, needRequestConstructor, needAnswerConstructor,
       needKeyConstructor, requestDependencyConstructor,
@@ -240,10 +282,10 @@ theorem language_validate : language.validate = [] := by
       zeroQueryAnswerConstructor, zeroEvaluationRequestConstructor,
       zeroEvaluationAnswerConstructor]
   case hequations =>
-    simp [language, MeTTaZero.language, MeTTaZero.definition,
+    simp [language, MeTTaZero.language, MeTTaZero.definition, ExtendedLanguageDef.addLayer,
       quoteDropEquation]
   case hrewrites =>
-    simp [language, MeTTaZero.language, MeTTaZero.definition,
+    simp [language, MeTTaZero.language, MeTTaZero.definition, ExtendedLanguageDef.addLayer,
       MeTTaZero.queryRewrite, MeTTaZero.evaluationRewrite,
       evaluationDemandRewrite, needRewrite, needReturnRewrite,
       reflectedDemandRewrite]
@@ -268,7 +310,7 @@ theorem language_validate : language.validate = [] := by
     · simp only [List.mem_cons, List.mem_nil_iff, or_false] at addedMember
       rcases addedMember with rfl | rfl | rfl | rfl | rfl | rfl | rfl |
         rfl | rfl | rfl | rfl | rfl <;>
-        simp_all [language, MeTTaZero.language, MeTTaZero.definition,
+        simp_all [language, MeTTaZero.language, MeTTaZero.definition, ExtendedLanguageDef.addLayer,
           nameType, receiptType, unitConstructor, quoteConstructor,
           dropConstructor, evaluateNameConstructor, needRequestConstructor,
           needAnswerConstructor, needKeyConstructor,
@@ -299,7 +341,7 @@ theorem language_validate : language.validate = [] := by
     · simp only [List.mem_cons, List.mem_nil_iff, or_false] at addedMember
       rcases addedMember with rfl | rfl | rfl | rfl | rfl | rfl | rfl |
         rfl | rfl | rfl | rfl | rfl <;>
-        simp_all [language, MeTTaZero.language, MeTTaZero.definition,
+        simp_all [language, MeTTaZero.language, MeTTaZero.definition, ExtendedLanguageDef.addLayer,
           nameType, receiptType, unitConstructor, quoteConstructor,
           dropConstructor, evaluateNameConstructor, needRequestConstructor,
           needAnswerConstructor, needKeyConstructor,
@@ -337,9 +379,9 @@ theorem language_validate : language.validate = [] := by
   case hequationValid =>
     intro equation membership
     have equationEq : equation = quoteDropEquation := by
-      simpa [language, MeTTaZero.language, MeTTaZero.definition] using membership
+      simpa [language, MeTTaZero.language, MeTTaZero.definition, ExtendedLanguageDef.addLayer] using membership
     subst equation
-    simp [language, MeTTaZero.language, MeTTaZero.definition,
+    simp [language, MeTTaZero.language, MeTTaZero.definition, ExtendedLanguageDef.addLayer,
       quoteDropEquation, LanguageDef.validateEquation,
       LanguageDef.validatePatternConstructors,
       LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
@@ -355,38 +397,9 @@ theorem language_validate : language.validate = [] := by
       capabilityDependencyConstructor, inertDependencyConstructor,
       receiptConstructor, constructor, LanguageDef.typeNames, TypeDecl.plain,
       TypeExpr.baseNames]
-  case hrewriteValid =>
-    intro rewrite membership
-    change rewrite ∈
-      [MeTTaZero.queryRewrite, MeTTaZero.evaluationRewrite,
-       evaluationDemandRewrite, needRewrite, needReturnRewrite,
-       reflectedDemandRewrite] at membership
-    simp only [List.mem_cons, List.mem_nil_iff, or_false] at membership
-    rcases membership with rfl | rfl | rfl | rfl | rfl | rfl <;>
-      simp [language, MeTTaZero.language, MeTTaZero.definition,
-        MeTTaZero.queryRewrite, MeTTaZero.evaluationRewrite,
-        MeTTaZero.queryRequestPattern, MeTTaZero.queryAnswerPattern,
-        MeTTaZero.evaluationRequestPattern,
-        MeTTaZero.evaluationAnswerPattern, MeTTaZero.metavariable,
-        evaluationDemandRewrite, needRewrite, needReturnRewrite,
-        reflectedDemandRewrite, LanguageDef.validateRewrite,
-        LanguageDef.validatePatternConstructors,
-        LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
-        LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
-        LanguageDef.premiseFvarNames,
-        LanguageDef.premiseProducedFvarNames,
-        LanguageDef.premiseForAllParams, Pattern.constructorRefs,
-        Pattern.constructorRefsList, Pattern.freeFvarNames,
-        Pattern.isWellScoped, Pattern.isWellScopedAt,
-        Pattern.isWellScopedListAt, nameType, receiptType,
-        MeTTaZero.atomType, MeTTaZero.spaceType, MeTTaZero.processType,
-        MeTTaZero.alternativesType, unitConstructor, quoteConstructor,
-        dropConstructor, evaluateNameConstructor, needRequestConstructor,
-        needAnswerConstructor, needKeyConstructor,
-        requestDependencyConstructor, spaceAtomDependencyConstructor,
-        capabilityDependencyConstructor, inertDependencyConstructor,
-        receiptConstructor, constructor, LanguageDef.typeNames, TypeDecl.plain,
-        TypeExpr.baseNames]
+    apply LanguageDef.validateTypeExpr_eq_nil_of_baseNames
+    simp [TypeExpr.baseNames]
+  case hrewriteValid => exact language_rewrites_validate
 
 /-- The authored three-rule route corresponding to Prime's lazy semantic
 path: enter Need, compute one admitted answer, then return to the extensional
@@ -508,7 +521,7 @@ theorem no_identity_symbol_retraction :
     · exact (by decide : "prime-quote" ≠ "zero-evaluate") equal
     · exact (by decide : "prime-quote" ≠ "zero-evaluate-answer") equal
   apply absent
-  simpa [MeTTaZero.language, MeTTaZero.definition, quoteConstructor, constructor]
+  simpa [MeTTaZero.language, MeTTaZero.definition, ExtendedLanguageDef.addLayer, quoteConstructor, constructor]
     using labelMember
 
 /-! ## CoGSLT-authored interpretation fibres -/
@@ -628,10 +641,9 @@ private theorem elaborateRawExtensions?_rewrite (base : LanguageDef)
   unfold elaborateRawExtensions?
   exact authoredExtensionComposition.elaborate_quote base raw
 
-private def elaborateExtensions? (base : LanguageDef)
-    (source : (authoredExtensionComposition.system base).authoring.theory.Term) :
+private def admitExtensions? (base : LanguageDef)
+    (raw : authoredExtensionComposition.Fiber base) :
     Option (AdmittedExtensions base) := do
-  let raw ← elaborateRawExtensions? base source
   let program := raw.1
   if programAdmitted : LogicProgram.AdmissibleFor program base = true then
     let library := raw.2.1
@@ -647,6 +659,11 @@ private def elaborateExtensions? (base : LanguageDef)
   else
     none
 
+private def elaborateExtensions? (base : LanguageDef)
+    (source : (authoredExtensionComposition.system base).authoring.theory.Term) :
+    Option (AdmittedExtensions base) :=
+  (elaborateRawExtensions? base source).bind (admitExtensions? base)
+
 private def quoteExtensions (base : LanguageDef)
     (extensions : AdmittedExtensions base) :
     (authoredExtensionComposition.system base).authoring.theory.Term :=
@@ -661,8 +678,11 @@ private def quoteExtensions (base : LanguageDef)
   rcases extensions with
     ⟨⟨program, programAdmitted⟩,
       ⟨⟨library, libraryAdmitted⟩, ⟨profile, profileAdmitted⟩⟩⟩
-  unfold elaborateExtensions? quoteExtensions elaborateRawExtensions?
-  rw [authoredExtensionComposition.elaborate_quote]
+  have raw := elaborateRawExtensions?_quote base
+    (program, library, profileDeclarations profile)
+  refine (congrArg (fun result => result.bind (admitExtensions? base)) raw).trans ?_
+  change admitExtensions? base (program, library, profileDeclarations profile) = _
+  dsimp only [admitExtensions?]
   simp [programAdmitted, libraryAdmitted, profileAdmitted,
     profileOfDeclarations_declarations]
 

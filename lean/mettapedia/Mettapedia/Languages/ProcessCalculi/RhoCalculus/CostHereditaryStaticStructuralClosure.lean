@@ -1274,6 +1274,7 @@ noncomputable def stoppedBoundaryElaborationSourceVariable
     leftElaboration alignedRight right slot selected (staticFrame slot selected)
     childAlignment
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Close a stopped foreign boundary beneath one exact authored Quote/Drop
 shell.
 
@@ -1367,6 +1368,7 @@ noncomputable def stoppedQuoteDropBoundaryElaborationAlignedSameSupport
       exact staticFrame)
     childAlignment alignedToRight sameSupport
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Support-independent Quote/Drop terminal for a stopped boundary whose
 recursive elaboration normalizes to a structural source variable.  The exact
 stopped occurrence determines the semantic slot; the authored shell proves
@@ -1449,6 +1451,7 @@ noncomputable def stoppedQuoteDropBoundaryElaborationSourceVariable
       exact staticFrame)
     childAlignment
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Close a stopped foreign boundary beneath one bare-parallel singleton
 shell.
 
@@ -1540,6 +1543,7 @@ noncomputable def stoppedParallelSingletonBoundaryElaborationAlignedSameSupport
       exact staticFrame)
     childAlignment alignedToRight sameSupport
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Support-independent bare-parallel singleton terminal for a stopped
 boundary whose recursive elaboration normalizes to a structural source
 variable.  Multiplicity is retained by the stopped occurrence and entry
@@ -2151,6 +2155,7 @@ theorem CostStaticRegionNode.reifiedSourceFrame_bvar_of_abstractCanonical
     canonicalEquality
   simpa [Pattern.renameFVars, canonicalize] using renamed
 
+set_option backward.isDefEq.respectTransparency false in
 /-- An authored source name that is the whole canonical skeleton result
 supplies the exact occurrence, semantic slot, and selected-colour canonical
 frame needed by the direct free-variable exposure constructor. -/

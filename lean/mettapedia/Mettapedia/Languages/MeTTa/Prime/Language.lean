@@ -596,9 +596,8 @@ def baseRuntimeElaboration (model : Model) :
               (.request space subject)) :=
         model.observation.elaboration.equation sourceEquivalent
       _ = some (model.base.source.occurrences space subject) := by
-        rw [model.observation.elaborates,
-          model.observation.occurrenceMeaning]
-        rfl
+        exact (model.observation.elaborates _).trans
+          (congrArg some (model.observation.occurrenceMeaning (.request space subject)))
       _ = (runtimeElaboration model).elaborate
           ((needRuntimeEmbedding model).toFun (.request space subject)) := by
         rfl
@@ -617,9 +616,9 @@ def baseRuntimeElaboration (model : Model) :
       _ = model.observation.elaboration.elaborate
           (model.base.occurrenceEmbedding.toFun
             (.answer space subject occurrence result)) := by
-        rw [model.observation.elaborates,
-          model.observation.occurrenceMeaning]
-        rfl
+        exact ((model.observation.elaborates _).trans
+          (congrArg some (model.observation.occurrenceMeaning
+            (.answer space subject occurrence result)))).symm
       _ = model.observation.elaboration.elaborate target :=
         model.observation.elaboration.equation
           (model.base.host.equations.iseqv.symm targetEquivalent)

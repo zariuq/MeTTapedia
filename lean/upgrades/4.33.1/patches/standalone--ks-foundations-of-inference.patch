@@ -1,0 +1,1048 @@
+diff --git a/Computability/CantorSpace.lean b/Computability/CantorSpace.lean
+index ebb94336306d260578fc4e1fe4b15569ff7d29bf..5b2a2151584adf99129e46ac019ac283931e92c0 100644
+--- a/Computability/CantorSpace.lean
++++ b/Computability/CantorSpace.lean
+@@ -309,8 +309,7 @@ theorem coinMeasure_cylinderSet (n : ℕ) (bits : Fin n → Bool) :
+     unfold bernoulliHalfMeasure bernoulliHalf half
+     rw [(PMF.bernoulli 2⁻¹ half_le_one).toMeasure_apply_singleton
+         (bits ⟨i, hi⟩) (measurableSet_singleton _)]
+-    rw [PMF.bernoulli_apply]
+-    cases bits ⟨i, hi⟩ <;> simp
++    exact (PMF.bernoulli_apply (p := 2⁻¹) (h := half_le_one) (b := bits ⟨i, hi⟩)).trans (by cases bits ⟨i, hi⟩ <;> simp)
+   rw [Finset.prod_congr rfl h_half]
+   rw [Finset.prod_const, Finset.card_range]
+ 
+diff --git a/KnuthSkilling/Additive/Counterexamples/BenV2Theorem1.lean b/KnuthSkilling/Additive/Counterexamples/BenV2Theorem1.lean
+index 8877c3e63e8f0293829f8acdf8e4875b2c583b48..01eb307de770e42d0e282b459ccf2a995acc7354 100644
+--- a/KnuthSkilling/Additive/Counterexamples/BenV2Theorem1.lean
++++ b/KnuthSkilling/Additive/Counterexamples/BenV2Theorem1.lean
+@@ -37,7 +37,7 @@ theorem exists_assoc_strictMono_noncomm :
+   refine ⟨SD.exX, SD.exY, ?_⟩
+   -- `SD.op_not_comm` is stated for the `KnuthSkillingAlgebra.op` instance, but this
+   -- instance is definitionally `SD.op`.
+-  simpa [KnuthSkillingAlgebraBase.op, SD.op] using SD.op_not_comm
++  exact SD.op_not_comm
+ 
+ /-- A tiny meta-lemma: an order-reflecting additive regrading forces commutativity. -/
+ theorem commutative_of_representation
+diff --git a/KnuthSkilling/Additive/Counterexamples/GoertzelLemma7.lean b/KnuthSkilling/Additive/Counterexamples/GoertzelLemma7.lean
+index 22ecd0e7568536cb29ac5c2c30e6a216adcfa40a..6efa0b54e753e7ab2e50de98853753f18bb4a612 100644
+--- a/KnuthSkilling/Additive/Counterexamples/GoertzelLemma7.lean
++++ b/KnuthSkilling/Additive/Counterexamples/GoertzelLemma7.lean
+@@ -80,21 +80,22 @@ noncomputable def F2 : AtomFamily ℝ≥0 2 :=
+       else ⟨Real.sqrt 2, by positivity⟩
+     pos := by
+       intro i
+-      by_cases h : i = i0
+-      · subst h
+-        simp [KnuthSkillingAlgebraBase.ident]
+-      · have : (0 : ℝ) < Real.sqrt 2 := by
+-          have : (0 : ℝ) < (2 : ℝ) := by norm_num
+-          exact Real.sqrt_pos.2 this
+-        -- Reduce the goal to `0 < √2` in `ℝ≥0`, then cast.
+-        have : (0 : ℝ≥0) < ⟨Real.sqrt 2, by positivity⟩ := by
+-          exact_mod_cast this
+-        simpa [if_neg h, KnuthSkillingAlgebraBase.ident] using this }
++      change (0 : ℝ≥0) < (if i = i0 then 1 else ⟨Real.sqrt 2, by positivity⟩)
++      have positive : ∀ (p : Prop) [Decidable p],
++          (0 : ℝ≥0) < (if p then 1 else ⟨Real.sqrt 2, by positivity⟩) := by
++        intro p decision
++        by_cases h : p
++        · exact (congrArg (fun x : ℝ≥0 => 0 < x) (if_pos h)).mpr zero_lt_one
++        · exact (congrArg (fun x : ℝ≥0 => 0 < x) (if_neg h)).mpr
++            (show (0 : ℝ≥0) < ⟨Real.sqrt 2, by positivity⟩ from
++              by exact_mod_cast (Real.sqrt_pos.mpr (by norm_num : (0 : ℝ) < 2)))
++      exact positive (i = i0) }
+ 
+ private lemma F2_atom0 : F2.atoms i0 = (1 : ℝ≥0) := by
+   simp [F2, i0]
+ 
+ private lemma F2_atom1 : F2.atoms i1 = ⟨Real.sqrt 2, by positivity⟩ := by
++  apply Subtype.ext
+   simp [F2, i0, i1]
+ 
+ private lemma iterate_op_add_eq_mul (x : ℝ≥0) : ∀ n : ℕ, iterate_op x n = (n : ℝ≥0) * x
+@@ -123,8 +124,9 @@ private lemma mu_F2 (r : Multi 2) :
+   have h1 :
+       ((iterate_op (α := ℝ≥0) (F2.atoms i1) (r i1) : ℝ≥0) : ℝ) = (r i1 : ℝ) * Real.sqrt 2 := by
+     -- atom1 = √2
+-    rw [F2_atom1, iterate_op_add_eq_mul, NNReal.coe_mul, NNReal.coe_natCast]
+-    congr 1
++    have iteration := congrArg (fun value : ℝ≥0 => (value : ℝ))
++      (iterate_op_add_eq_mul (F2.atoms i1) (r i1))
++    exact iteration.trans (by rw [NNReal.coe_mul, NNReal.coe_natCast]; rfl)
+   -- Collect terms.
+   have h0' :
+       ((iterate_op (α := ℝ≥0) (F2.atoms 0) (r 0) : ℝ≥0) : ℝ) = (r 0 : ℝ) := by
+diff --git a/KnuthSkilling/Additive/Counterexamples/KSSeparationNotDerivable.lean b/KnuthSkilling/Additive/Counterexamples/KSSeparationNotDerivable.lean
+index a0e2e17b604c1e7ac5680084867e02410b3ba0fe..f943f1a1de55c68632dec2b41e89d1979829bfa3 100644
+--- a/KnuthSkilling/Additive/Counterexamples/KSSeparationNotDerivable.lean
++++ b/KnuthSkilling/Additive/Counterexamples/KSSeparationNotDerivable.lean
+@@ -21,7 +21,7 @@ These are minimal *formal* blockers against any proof attempt that tries to dedu
+ theorem exists_knuthskilling_noncomm :
+     ∃ (α : Type) (_ : KnuthSkillingAlgebra α), ∃ x y : α, op x y ≠ op y x := by
+   refine ⟨SD, inferInstance, SD.exX, SD.exY, ?_⟩
+-  simpa [KnuthSkillingAlgebraBase.op, SD.op] using SD.op_not_comm
++  exact SD.op_not_comm
+ 
+ theorem exists_knuthskilling_not_separation :
+     ∃ (α : Type) (_ : KnuthSkillingAlgebra α), ¬ KnuthSkilling.KSSeparation α := by
+diff --git a/KnuthSkilling/Additive/Counterexamples/SemidirectNoSeparation.lean b/KnuthSkilling/Additive/Counterexamples/SemidirectNoSeparation.lean
+index 6408ac537b8b232281a7b1db231fd122c3161526..ab2df396db87fb2be464a1f6341c4d399ef5f46d 100644
+--- a/KnuthSkilling/Additive/Counterexamples/SemidirectNoSeparation.lean
++++ b/KnuthSkilling/Additive/Counterexamples/SemidirectNoSeparation.lean
+@@ -72,7 +72,9 @@ theorem baseOp_assoc (p q r : SDBase) : baseOp (baseOp p q) r = baseOp p (baseOp
+ 
+ theorem op_assoc : ∀ x y z : SD, op (op x y) z = op x (op y z) := by
+   intro x y z
+-  cases x <;> cases y <;> cases z <;> simp [op, baseOp_assoc]
++  cases x <;> cases y <;> cases z <;> first
++  | rfl
++  | exact congrArg some (baseOp_assoc _ _ _)
+ 
+ theorem op_ident_right : ∀ x : SD, op x ident = x := by
+   intro x; simp [ident]
+@@ -232,17 +234,23 @@ def fst : SD → ℕ
+ 
+ lemma fst_op_left_some (p : SDBase) (z : SD) :
+     fst (op (some p) z) = (p.1 : ℕ) + fst z := by
+-  cases z <;> simp [fst, op, baseOp]
++  cases z with
++  | none => exact (Nat.add_zero _).symm
++  | some q => rfl
+ 
+ lemma fst_iterate_op_left_some (p : SDBase) (n : ℕ) :
+     fst (Nat.iterate (op (some p)) n (some p)) = (n + 1) * (p.1 : ℕ) := by
+   induction n with
+   | zero =>
+-    simp [fst]
++    exact (Nat.one_mul _).symm
+   | succ n ih =>
+     -- Use the application form: `f^[n+1] a = f (f^[n] a)`.
+-    simp [Function.iterate_succ_apply', fst_op_left_some, ih, Nat.succ_mul, Nat.add_comm,
+-      Nat.add_left_comm]
++    calc
++      _ = fst (op (some p) ((op (some p))^[n] (some p))) :=
++        congrArg fst (Function.iterate_succ_apply' (op (some p)) n (some p))
++      _ = (p.1 : ℕ) + fst ((op (some p))^[n] (some p)) := fst_op_left_some _ _
++      _ = (p.1 : ℕ) + (n + 1) * (p.1 : ℕ) := congrArg ((p.1 : ℕ) + ·) ih
++      _ = _ := by ring
+ 
+ lemma fst_le_of_le : ∀ {x y : SD}, x ≤ y → fst x ≤ fst y := by
+   intro x y hxy
+@@ -332,8 +340,10 @@ def exY : SD := ((toLex ((⟨2, Nat.succ_pos 1⟩ : PNat), 1) : SDBase) : SD)
+ theorem op_not_comm : KnuthSkillingAlgebraBase.op exX exY ≠ KnuthSkillingAlgebraBase.op exY exX := by
+   -- exX ⊕ exY = (3, 1 + 2^1*1) = (3, 3)
+   -- exY ⊕ exX = (3, 1 + 2^2*1) = (3, 5)
+-  simp [SD.exX, SD.exY, SD.op, SD.baseOp, KnuthSkillingAlgebraBase.op]
+-  decide
++  intro h
++  have hcoord := congrArg (fun x : SD => x.map (fun p => p.2)) h
++  change (some 3 : Option ℕ) = some 5 at hcoord
++  cases hcoord
+ 
+ /-!
+ ## `KSSeparation` fails in this model
+diff --git a/KnuthSkilling/Additive/Proofs/DirectCuts/DirectCuts.lean b/KnuthSkilling/Additive/Proofs/DirectCuts/DirectCuts.lean
+index 921d0c55d40dd3588e8949ca26f6b77a069ee470..842f7e351431c45110172f57a14d2c3ab6fde636 100644
+--- a/KnuthSkilling/Additive/Proofs/DirectCuts/DirectCuts.lean
++++ b/KnuthSkilling/Additive/Proofs/DirectCuts/DirectCuts.lean
+@@ -1409,8 +1409,7 @@ theorem cutSet_pnat_add_closed (a x y : α) (_hcomm : ∀ u v : α, op u v = op
+     have h_add_lhs : iterate_op_pnat a (⟨m₁.val * n₂.val + m₂.val * n₁.val, h_num_pos⟩ : ℕ+) =
+                      op (iterate_op_pnat a (⟨m₁.val * n₂.val, Nat.mul_pos m₁.pos n₂.pos⟩ : ℕ+))
+                         (iterate_op_pnat a (⟨m₂.val * n₁.val, Nat.mul_pos m₂.pos n₁.pos⟩ : ℕ+)) := by
+-      rw [← iterate_op_pnat_add]
+-      congr 1
++      exact iterate_op_pnat_add a (m₁ * n₂) (m₂ * n₁)
+     -- Step 3: x^(n₁*n₂) ⊕ y^(n₁*n₂) = (x⊕y)^(n₁*n₂) (distribution with commutativity)
+     have h_distrib : iterate_op_pnat (op x y) (n₁ * n₂) =
+                      op (iterate_op_pnat x (n₁ * n₂)) (iterate_op_pnat y (n₁ * n₂)) := by
+diff --git a/KnuthSkilling/Bridges/MathlibBridge.lean b/KnuthSkilling/Bridges/MathlibBridge.lean
+index a53b027a6af110da2902bbd35fe792b0fa7ffb9e..f5e1eb263e06c8d20644a53303547adc449fbbd9 100644
+--- a/KnuthSkilling/Bridges/MathlibBridge.lean
++++ b/KnuthSkilling/Bridges/MathlibBridge.lean
+@@ -68,12 +68,12 @@ def instAddCommMonoid {α : Type*} [KnuthSkillingAlgebraBase α]
+   nsmul n x := ⟨iterate_op x.val n⟩
+   nsmul_zero x := by
+     ext
+-    simp [iterate_op_zero, val_zero]
++    exact iterate_op_zero x.val
+   nsmul_succ n x := by
+     ext
+     have hswap : op x.val (iterate_op x.val n) = op (iterate_op x.val n) x.val := by
+       simpa using (hcomm x.val (iterate_op x.val n))
+-    simpa [iterate_op_succ, val_add] using hswap
++    exact (iterate_op_succ x.val n).trans hswap
+   add_assoc x y z := by
+     ext
+     simpa [val_add] using (op_assoc x.val y.val z.val)
+diff --git a/KnuthSkilling/Core/HeytingBounds.lean b/KnuthSkilling/Core/HeytingBounds.lean
+index 22bd0f3889030fe1952d3e8ecba49ef0d3192e15..ce2554344982176a65458803fbb97c957c8fbf8c 100644
+--- a/KnuthSkilling/Core/HeytingBounds.lean
++++ b/KnuthSkilling/Core/HeytingBounds.lean
+@@ -186,25 +186,73 @@ theorem heytingWidth_nonneg (ν : ModularValuation α) (a : α) : 0 ≤ heytingW
+   have h := lower_le_upper ν a
+   linarith
+ 
++/-! ## Scalar Valuation Does Not Imply Boolean Collapse -/
++
++/-- The normalized rank valuation on the three-element Heyting chain. -/
++noncomputable def threeChainValuation : ModularValuation (Fin 3) where
++  val := fun a => (a.val : ℝ) / 2
++  monotone := by
++    intro a b hab
++    apply div_le_div_of_nonneg_right
++    · exact_mod_cast hab
++    · norm_num
++  val_bot := by norm_num
++  val_top := by norm_num
++  modular := by
++    intro a b
++    rcases le_total a b with hab | hba
++    · rw [sup_eq_right.mpr hab, inf_eq_left.mpr hab]
++      ring
++    · rw [sup_eq_left.mpr hba, inf_eq_right.mpr hba]
++
++/-- The three-chain valuation satisfies the strict, one-way fidelity condition
++used by K&S: a strict lattice comparison gives a strict scalar comparison. -/
++theorem threeChainValuation_strictMono : StrictMono threeChainValuation.val := by
++  intro a b hab
++  simp only [threeChainValuation]
++  apply div_lt_div_of_pos_right
++  · exact_mod_cast hab
++  · norm_num
++
++/-- A scalar modular valuation can exist on a non-Boolean Heyting algebra while
++its induced lower and upper truth bounds remain genuinely distinct.  Thus a
++scalar measure and a point-valued Boolean truth assignment are different
++notions. -/
++theorem threeChain_scalar_measure_with_strict_heyting_gap :
++    (1 : Fin 3) ⊔ (1 : Fin 3)ᶜ ≠ ⊤ ∧
++    threeChainValuation.val (1 : Fin 3) = (1 : ℝ) / 2 ∧
++    lowerBound threeChainValuation (1 : Fin 3) <
++      upperBound threeChainValuation (1 : Fin 3) := by
++  constructor
++  · decide
++  constructor
++  · norm_num [threeChainValuation]
++  · norm_num [lowerBound, upperBound, threeChainValuation]
++
+ /-! ## Summary: The Correct Story
+ 
+-The Heyting bounds construction captures exactly what distinguishes
+-Boolean from Heyting probability:
++The Heyting bounds construction exposes one canonical numerical distinction
++between Boolean and Heyting complement behavior:
+ 
+ 1. **Lower bound** = ν(a) = "direct evidence for a"
+ 2. **Upper bound** = 1 - ν(¬a) = "absence of evidence against a"
+ 
+ In Boolean algebras: lower = upper (points)
+-In Heyting algebras: lower ≤ upper (intervals with slack)
++In Heyting algebras: lower ≤ upper (the interval may have slack)
+ 
+ The **width** of the interval is the **excluded middle gap**:
+ - Zero for elements satisfying a ⊔ ¬a = ⊤
+-- Positive for elements where excluded middle fails
++- Positive where the valuation strictly detects failure of excluded middle
+ 
+-This is the CORRECT gate between Boolean and Heyting K&S.
++This is the complement gate for modular valuations on Heyting algebras.
+ It's NOT about "incomparable elements forcing interval overlap"
+ (that claim was false and has been corrected).
+ 
++It does not prove that two real coordinates are a universally minimal
++codomain.  The pair records the direct-support and not-refuted readouts while
++preserving their possible gap; other observation disciplines can require
++different algebraic carriers.
++
+ The connection to intuitionistic logic:
+ - In classical logic: knowing ¬a tells you everything about a
+ - In intuitionistic logic: ¬a only bounds a from above
+diff --git a/KnuthSkilling/Core/HeytingValuation.lean b/KnuthSkilling/Core/HeytingValuation.lean
+index 076377366b1a4aee9ad37650192398c71109e7ff..0df84ab34a4c5bfd620ec9601c593019fe4e5d67 100644
+--- a/KnuthSkilling/Core/HeytingValuation.lean
++++ b/KnuthSkilling/Core/HeytingValuation.lean
+@@ -1,5 +1,5 @@
+ /-
+-# Heyting Valuations: Proper K&S on Distributive Lattices
++# Heyting Valuations: Modular Valuations on Distributive Lattices
+ 
+ ## The Key Insight
+ 
+@@ -8,7 +8,7 @@ Standard K&S probability on Boolean algebras uses:
+ 
+ But on Heyting algebras, complements don't satisfy ¬¬a = a, so this doesn't work.
+ 
+-The proper generalization uses the **modularity axiom**:
++A complement-free generalization uses the **modularity axiom**:
+ - ν(x) + ν(y) = ν(x ∨ y) + ν(x ∧ y)
+ 
+ This avoids complements entirely, working directly with lattice operations (∨, ∧).
+@@ -16,8 +16,10 @@ This avoids complements entirely, working directly with lattice operations (∨,
+ ## Key Properties
+ 
+ On Boolean algebras, modularity + normalization recovers standard probability.
+-On non-Boolean Heyting algebras, we get a proper probability-like measure
+-that respects the partial order structure without forcing total ordering.
++On non-Boolean Heyting algebras, modular valuations give probability-like
++scalar measures without requiring Boolean complements.  This does not imply
++that every such valuation detects every non-Boolean element, nor that a
++two-dimensional codomain is forced.
+ 
+ ## References
+ 
+diff --git a/KnuthSkilling/Core/LEMSatisfiability.lean b/KnuthSkilling/Core/LEMSatisfiability.lean
+index d6faad5eb401f7fa6c159430094351a402868a68..fa395f096ba7e24cfe75997efc9552b71ef4f2eb 100644
+--- a/KnuthSkilling/Core/LEMSatisfiability.lean
++++ b/KnuthSkilling/Core/LEMSatisfiability.lean
+@@ -153,7 +153,11 @@ inductive Chain3 : Type
+   | bot : Chain3
+   | mid : Chain3
+   | top : Chain3
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++instance : Fintype Chain3 where
++  elems := {.bot, .mid, .top}
++  complete value := by cases value <;> simp
+ 
+ namespace Chain3
+ 
+diff --git a/KnuthSkilling/Core/RegularityLEMCounterexample.lean b/KnuthSkilling/Core/RegularityLEMCounterexample.lean
+index aec3ba0cd17e9cf8f332b6f4e7b5e30fd5d85afa..6d3defb9da617058f038c3a0cef19d3b23d3f241 100644
+--- a/KnuthSkilling/Core/RegularityLEMCounterexample.lean
++++ b/KnuthSkilling/Core/RegularityLEMCounterexample.lean
+@@ -145,7 +145,11 @@ inductive H5 : Type
+   | b : H5
+   | ab : H5
+   | top : H5
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++instance : Fintype H5 where
++  elems := {.bot, .a, .b, .ab, .top}
++  complete value := by cases value <;> simp
+ 
+ namespace H5
+ 
+diff --git a/KnuthSkilling/Core/SymmetricalFoundation.lean b/KnuthSkilling/Core/SymmetricalFoundation.lean
+index e9179c893e74323d3146d142d502b99692d5c943..a7e5f0a3dfa52f22954e0f7a6e862fc762c48462 100644
+--- a/KnuthSkilling/Core/SymmetricalFoundation.lean
++++ b/KnuthSkilling/Core/SymmetricalFoundation.lean
+@@ -333,7 +333,7 @@ theorem mean_bornRule_sum_unit_phases :
+     rw [intervalIntegral.integral_const_mul, hcos]
+     simp only [mul_zero, add_zero]
+     field_simp
+-  · exact intervalIntegral.intervalIntegrable_const
++  · exact intervalIntegrable_const
+   · apply IntervalIntegrable.const_mul
+     exact Continuous.intervalIntegrable (by continuity) _ _
+ 
+diff --git a/KnuthSkilling/Core/TotalityImprecision.lean b/KnuthSkilling/Core/TotalityImprecision.lean
+index 48284ba8f158e3fb8c10a6219eb640e2126c4c0a..e1ee9845e961369bb38f2ceb89d476f722ca6e78 100644
+--- a/KnuthSkilling/Core/TotalityImprecision.lean
++++ b/KnuthSkilling/Core/TotalityImprecision.lean
+@@ -1,32 +1,30 @@
+ /-
+-# Totality Axiom and Imprecise Probability
++# Totality, Order Reflection, and Interval Models
+ 
+-This file formally derives that imprecise probability arises from weakening
+-the totality axiom in Knuth-Skilling foundations.
++This file separates three notions that are easy to conflate: one-way scalar
++fidelity, order-reflecting scalar embeddings, and interval representations.
+ 
+ ## Main Results
+ 
+ * `PartialKnuthSkillingAlgebra`: K&S axioms with PartialOrder instead of LinearOrder
+ * `PlausibilityInterval`: Interval-valued plausibilities for partial orders
+-* `totality_implies_precision`: Adding totality collapses intervals to points
+-* `partial_order_gives_imprecision`: Incomparable elements → non-trivial intervals
++* `totality_of_orderReflectingPointRepresentation`: an order-reflecting scalar
++  representation forces the source order to be total
++* `incomparable_implies_overlapping`: a faithful interval representation sends
++  incomparable elements to non-separated intervals
+ 
+ ## Mathematical Background
+ 
+-**Knuth-Skilling Full Axioms** (precise probability):
+-1. **Total order**: ∀ a b, a ≤ b ∨ b ≤ a (trichotomy)
+-2. Associativity: (x ⊕ y) ⊕ z = x ⊕ (y ⊕ z)
+-3. Identity: x ⊕ 0 = x
+-4. Strict monotonicity
+-5. Archimedean: no infinitesimals
++`PartialKnuthSkillingAlgebra` is a deliberately lightweight partial-order
++analogue of the ordered associative combination used by K&S.  It is not, by
++itself, a formalization of all the hypotheses of their representation theorem.
+ 
+-**Weakened Axioms** (imprecise probability):
+-1. **Partial order**: reflexive, antisymmetric, transitive (NO totality)
+-2-5: Same as above
+-
+-**Key Insight**: The representation theorem maps:
+-- Total order → point-valued Θ : α → ℝ
+-- Partial order → interval-valued Θ : α → [ℝ, ℝ]
++**Key distinction**: K&S fidelity is one-way: order in the lattice must imply
++order of the scalar values, while the scalar order may extend the lattice order.
++The stronger requirement that a scalar map also *reflect* order forces the
++source order to be total.  Interval-valued semantics is one principled way to
++retain incomparability, but incomparability alone does not forbid ordinary
++one-way K&S scalar valuations.
+ 
+ ## References
+ 
+@@ -53,9 +51,10 @@ in plausibility assignments.
+ 
+ /-- A **Partial Knuth-Skilling Algebra**: the K&S axioms with partial order instead of linear order.
+ 
+-This captures systems where some plausibilities are incomparable — the agent
+-cannot decide which is more plausible. This is the algebraic foundation
+-for imprecise probability / credal sets / coherent lower previsions.
++This captures systems where some plausibilities are incomparable.  An interval
++model can retain that information, but further coherence assumptions are needed
++before identifying such a model with a particular theory of imprecise
++probability.
+ 
+ **Difference from `KnuthSkillingAlgebra`**:
+ - `KnuthSkillingAlgebra` extends `LinearOrder` (total order)
+@@ -101,8 +100,9 @@ end PartialKnuthSkillingAlgebra
+ /-!
+ ## Part 2: Interval Representation
+ 
+-For partial orders, we represent elements as intervals [lower, upper] ⊆ ℝ.
+-The interval width measures the "imprecision" in the plausibility assignment.
++This section studies a chosen interval representation [lower, upper] ⊆ ℝ.
++The interval width measures imprecision in that representation.  Existence of
++such a representation is data below, not a consequence of partial order alone.
+ -/
+ 
+ /-- An interval in ℝ representing an imprecise plausibility. -/
+@@ -270,22 +270,23 @@ theorem linear_order_all_comparable {α : Type*} [LinearOrder α] (x y : α) :
+   · exact Or.inr (le_of_lt hgt)
+ 
+ /-!
+-### Point-Valued Faithful Representations Force Totality
++### Order-Reflecting Point Representations Force Totality
+ 
+-If a partial order admits a faithful point-valued representation into `ℝ` (i.e. an order embedding),
++If a partial order admits an order-reflecting point representation into `ℝ` (i.e. an order embedding),
+ then it must already be total: any two points become comparable because `ℝ` is linearly ordered.
+ 
+-This is the clean formal sense in which `LinearOrder` is not cosmetic: it is exactly what is needed
+-to support point-valued (precise) representations. Dropping totality leads naturally to interval-
+-valued semantics (`TotalityImprecision.lean`) rather than a point-valued embedding.
++This is stronger than the one-way fidelity used by Knuth and Skilling: their scalar
++valuation may consistently add comparisons between incomparable lattice elements.
++Dropping order reflection leads naturally to scalar extensions; retaining the
++original incomparability leads naturally to interval- or product-valued semantics.
+ -/
+ 
+-/-- A point-valued **faithful** representation into `ℝ`: order is reflected and preserved. -/
+-def FaithfulPointRepresentation (α : Type*) [PartialOrder α] : Prop :=
++/-- A point-valued representation into `ℝ` that both preserves and reflects order. -/
++def OrderReflectingPointRepresentation (α : Type*) [PartialOrder α] : Prop :=
+   ∃ Θ : α → ℝ, ∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b
+ 
+-theorem totality_of_faithfulPointRepresentation {α : Type*} [PartialOrder α]
+-    (hΘ : FaithfulPointRepresentation α) :
++theorem totality_of_orderReflectingPointRepresentation {α : Type*} [PartialOrder α]
++    (hΘ : OrderReflectingPointRepresentation α) :
+     ∀ x y : α, x ≤ y ∨ y ≤ x := by
+   rcases hΘ with ⟨Θ, hΘ⟩
+   intro x y
+@@ -293,28 +294,28 @@ theorem totality_of_faithfulPointRepresentation {α : Type*} [PartialOrder α]
+   · exact Or.inl ((hΘ x y).2 hxy)
+   · exact Or.inr ((hΘ y x).2 hyx)
+ 
+-theorem no_faithfulPointRepresentation_of_incomparable {α : Type*} [PartialOrder α]
++theorem no_orderReflectingPointRepresentation_of_incomparable {α : Type*} [PartialOrder α]
+     (hinc : ∃ x y : α, ¬(x ≤ y) ∧ ¬(y ≤ x)) :
+-    ¬ FaithfulPointRepresentation α := by
++    ¬ OrderReflectingPointRepresentation α := by
+   intro hΘ
+   rcases hinc with ⟨x, y, hx, hy⟩
+-  have htot := totality_of_faithfulPointRepresentation (α := α) hΘ x y
++  have htot := totality_of_orderReflectingPointRepresentation (α := α) hΘ x y
+   cases htot with
+   | inl hxy => exact hx hxy
+   | inr hyx => exact hy hyx
+ 
+-theorem no_pointRepresentation_with_incomparables
++theorem no_orderReflectingPointRepresentation_with_incomparables
+     {α : Type*} [PartialKnuthSkillingAlgebra α]
+     (x y : α) (hxy : PartialKnuthSkillingAlgebra.Incomparable x y) :
+     ¬ ∃ (Θ : α → ℝ), ∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b := by
+   intro hΘ
+-  -- Any faithful point-valued representation forces totality, contradicting incomparability.
++  -- Any order-reflecting point representation forces totality, contradicting incomparability.
+   have hinc : ∃ x y : α, ¬(x ≤ y) ∧ ¬(y ≤ x) := ⟨x, y, hxy.1, hxy.2⟩
+-  exact no_faithfulPointRepresentation_of_incomparable (α := α) hinc (by
+-    simpa [FaithfulPointRepresentation] using hΘ)
++  exact no_orderReflectingPointRepresentation_of_incomparable (α := α) hinc (by
++    simpa [OrderReflectingPointRepresentation] using hΘ)
+ 
+ /-!
+-### Theorem 4: The Totality-Precision Connection
++### Theorem 4: Totality Constrains Interval Separation
+ 
+ For faithful representations:
+ - PartialOrder allows incomparable elements → allows overlapping intervals → imprecision possible
+@@ -350,15 +351,16 @@ theorem totality_no_overlapping_intervals {α : Type*} [PartialKnuthSkillingAlge
+     · rw [← heq]; exact Or.inr (Or.inr rfl)
+ 
+ /-!
+-## Part 4: The Axiom-Framework Correspondence
++## Part 4: Labels for Two Representation Policies
+ 
+-The precision axis in the probability hypercube corresponds exactly to
+-this totality/partial distinction:
++The following finite labels describe two representation policies.  They do not
++assert that the source order alone determines the codomain or a probability
++framework.
+ 
+ | Precision | Order Type | Representation | Framework |
+ |-----------|------------|----------------|-----------|
+-| Precise | LinearOrder | Θ : α → ℝ | Kolmogorov |
+-| Imprecise | PartialOrder | Θ : α → [ℝ,ℝ] | Walley |
++| Precise | scalar point model | Θ : α → ℝ | may support precise probability |
++| Imprecise | interval model | Θ : α → [ℝ,ℝ] | may support lower/upper probability |
+ -/
+ 
+ /-- The precision axis values. -/
+@@ -369,8 +371,8 @@ deriving DecidableEq, Repr
+ 
+ /-- Map precision axis to order type requirement. -/
+ def PrecisionAxis.orderRequirement : PrecisionAxis → String
+-  | .precise => "LinearOrder (totality required)"
+-  | .imprecise => "PartialOrder (incomparability allowed)"
++  | .precise => "chosen scalar point model"
++  | .imprecise => "chosen interval model"
+ 
+ /-- Map precision axis to representation type. -/
+ def PrecisionAxis.representationType : PrecisionAxis → String
+@@ -379,59 +381,42 @@ def PrecisionAxis.representationType : PrecisionAxis → String
+ 
+ /-- Map precision axis to probability framework. -/
+ def PrecisionAxis.framework : PrecisionAxis → String
+-  | .precise => "Kolmogorov probability / Cox's theorem"
+-  | .imprecise => "Walley's coherent lower previsions / credal sets"
+-
+-/-- The axiom-framework correspondence as a formal statement. -/
+-theorem precision_corresponds_to_totality :
+-    (PrecisionAxis.precise).orderRequirement = "LinearOrder (totality required)" ∧
+-    (PrecisionAxis.imprecise).orderRequirement = "PartialOrder (incomparability allowed)" := by
++  | .precise => "compatible with precise probability"
++  | .imprecise => "compatible with lower/upper probability"
++
++/-- The labels expose the representation choice without claiming it follows
++from the source order. -/
++theorem precisionAxis_labels :
++    (PrecisionAxis.precise).orderRequirement = "chosen scalar point model" ∧
++    (PrecisionAxis.imprecise).orderRequirement = "chosen interval model" := by
+   simp [PrecisionAxis.orderRequirement]
+ 
+ /-!
+-## Summary: What Falls Out of the Axiomatics (PROVEN)
+-
+-**Goertzel's Question**: "What axioms do the imprecise probabilities fall out of?"
+-
+-**Answer**: Imprecise probability arises from **K&S axioms with totality removed**.
++## Summary: Exact Scope of the Proven Results
+ 
+ ### What We Have Proven:
+ 
+ 1. **`PartialKnuthSkillingAlgebra`**: K&S axioms with PartialOrder instead of LinearOrder
+    - Allows incomparable elements (neither x ≤ y nor y ≤ x)
+ 
+-2. **`incomparable_implies_overlapping`**: For faithful representations,
+-   incomparable algebra elements ↔ overlapping interval representations
+-   - Proved by contrapositive using faithfulness
++2. **`incomparable_implies_overlapping`**: For a supplied faithful interval
++   representation, incomparable algebra elements have non-separated images
++   - This is one direction, proved by contrapositive using faithfulness
+ 
+ 3. **`linear_order_no_incomparable`**: LinearOrder forbids incomparable elements
+    - Proved from trichotomy
+ 
+-4. **`totality_no_overlapping_intervals`**: In LinearOrder + faithful representation,
++4. **`totality_no_overlapping_intervals`**: Under totality and an
++   order-respecting interval representation,
+    all interval pairs are separated or equal (no overlaps)
+    - Proved by case analysis on x ≤ y ∨ y ≤ x
+ 
+-### The Axiom-Framework Correspondence:
+-
+-| K&S Axiom Set | Order Type | Intervals | Framework |
+-|---------------|------------|-----------|-----------|
+-| Full K&S | LinearOrder | No overlap possible | Kolmogorov |
+-| K&S − totality | PartialOrder | Overlaps allowed | Walley |
+-
+-### Why Imprecision Emerges Naturally:
+-
+-1. PartialOrder allows incomparable elements
+-2. Incomparable elements must have overlapping intervals (for faithful reps)
+-3. Overlapping intervals = imprecise plausibility assignments
+-4. This IS Walley's coherent lower previsions!
+-
+-### The Quantale Connection:
+-
+-- **Precise** ([0,1] quantale): Point-valued, × as tensor
+-- **Imprecise** ([0,1]² quantale): Interval-valued, componentwise × as tensor
+-
+-Both are commutative quantales, so the weakness formula w(H) = ⨁_{(u,v)∈H} [μ(u) ⊗ μ(v)]
+-applies uniformly across the precision axis!
++These results do **not** prove that deleting totality from the K&S hypotheses
++constructs a Walley-style coherent lower prevision, nor that a partial order
++cannot have a one-way faithful scalar valuation.  They identify the stronger
++order-reflection hypothesis under which a real-valued point representation
++would force totality, and the consequences of choosing a faithful interval
++representation when incomparability is to be retained.
+ -/
+ 
+ end KnuthSkilling.TotalityImprecision
+diff --git a/KnuthSkilling/Examples/ImpreciseOn7Element.lean b/KnuthSkilling/Examples/ImpreciseOn7Element.lean
+index 19a45593b58d1ed174958cdc3dc3efb3865f36e5..8ebf82cb2190543e7d4101089bedd3976c535721 100644
+--- a/KnuthSkilling/Examples/ImpreciseOn7Element.lean
++++ b/KnuthSkilling/Examples/ImpreciseOn7Element.lean
+@@ -57,7 +57,11 @@ inductive ConfigState
+   | analytics  -- a ∧ b ∧ c ∧ ¬d
+   | alerts     -- a ∧ b ∧ ¬c ∧ d
+   | full       -- a ∧ b ∧ c ∧ d
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++instance : Fintype ConfigState where
++  elems := {.nothing, .justA, .justB, .coresOnly, .analytics, .alerts, .full}
++  complete value := by cases value <;> simp
+ 
+ namespace ConfigState
+ 
+diff --git a/KnuthSkilling/Examples/PreciseVsImpreciseGrounded.lean b/KnuthSkilling/Examples/PreciseVsImpreciseGrounded.lean
+index 7a11ab5e9cdd4abd86fd299bc42729439f5a9da9..5753d634820a3c4c3e44a60b56ba390570f7e74e 100644
+--- a/KnuthSkilling/Examples/PreciseVsImpreciseGrounded.lean
++++ b/KnuthSkilling/Examples/PreciseVsImpreciseGrounded.lean
+@@ -41,7 +41,11 @@ inductive State
+   | safe
+   | risky
+   | catastrophic
+-  deriving DecidableEq, Fintype
++  deriving DecidableEq
++
++instance : Fintype State where
++  elems := {.safe, .risky, .catastrophic}
++  complete value := by cases value <;> simp
+ 
+ /-- Events are subsets of states, forming a Boolean algebra.
+ 
+diff --git a/KnuthSkilling/Experimental/RepresentationTheorem/Explorations/AffineNoSeparation.lean b/KnuthSkilling/Experimental/RepresentationTheorem/Explorations/AffineNoSeparation.lean
+index d6668610f71fbd2673913b5ff3271d3995620241..0798b6b3f164975a06f06e5d520555dfd2b14ab0 100644
+--- a/KnuthSkilling/Experimental/RepresentationTheorem/Explorations/AffineNoSeparation.lean
++++ b/KnuthSkilling/Experimental/RepresentationTheorem/Explorations/AffineNoSeparation.lean
+@@ -57,7 +57,10 @@ def fst : Aff → ℕ
+ @[simp] theorem fst_some (p : AffBase) : fst (some p : Aff) = (p.1 : ℕ) := rfl
+ 
+ theorem fst_op (x y : Aff) : fst (op x y) = fst x * fst y := by
+-  cases x <;> cases y <;> simp [fst, op, baseOp]
++  cases x <;> cases y <;> first
++  | rfl
++  | exact (Nat.one_mul _).symm
++  | exact (Nat.mul_one _).symm
+ 
+ theorem baseOp_assoc (p q r : AffBase) : baseOp (baseOp p q) r = baseOp p (baseOp q r) := by
+   apply Prod.ext
+@@ -66,7 +69,9 @@ theorem baseOp_assoc (p q r : AffBase) : baseOp (baseOp p q) r = baseOp p (baseO
+ 
+ theorem op_assoc : ∀ x y z : Aff, op (op x y) z = op x (op y z) := by
+   intro x y z
+-  cases x <;> cases y <;> cases z <;> simp [op, baseOp_assoc]
++  cases x <;> cases y <;> cases z <;> first
++  | rfl
++  | exact congrArg some (baseOp_assoc _ _ _)
+ 
+ theorem op_noncomm :
+     ∃ x y : Aff, op x y ≠ op y x := by
+@@ -74,8 +79,10 @@ theorem op_noncomm :
+   let x : Aff := (some ((⟨2, by decide⟩ : PNat), 1))
+   let y : Aff := (some ((⟨3, by decide⟩ : PNat), 1))
+   refine ⟨x, y, ?_⟩
+-  simp [x, y, op, baseOp]
+-  decide
++  intro equality
++  have values := congrArg (fun value : Aff => value.map (fun pair => pair.2)) equality
++  change some 3 = some 4 at values
++  cases values
+ 
+ /-!
+ ## Why `op_archimedean` fails for this candidate
+@@ -91,13 +98,13 @@ theorem fst_x1 : fst x1 = 1 := by rfl
+ theorem fst_y2 : fst y2 = 2 := by rfl
+ 
+ theorem op_x1_self : op x1 x1 = x1 := by
+-  simp [x1, op, baseOp]
++  rfl
+ 
+ theorem not_op_archimedean_candidate :
+     ¬ (∀ x y : Aff, ident < x → ∃ n : ℕ, y < Nat.iterate (op x) n x) := by
+   intro h
+   have hx : ident < x1 := by
+-    have hx_ne : (x1 : Aff) ≠ ⊥ := by simp [x1]
++    have hx_ne : (x1 : Aff) ≠ ⊥ := WithBot.coe_ne_bot
+     exact (WithBot.bot_lt_iff_ne_bot (x := (x1 : Aff))).2 hx_ne
+   rcases h x1 y2 hx with ⟨n, hn⟩
+   -- Since `op x1 x1 = x1`, all iterates of `(op x1)` at `x1` are constant.
+@@ -117,7 +124,7 @@ theorem not_op_archimedean_candidate :
+         (y := ((⟨2, by decide⟩ : PNat), (0 : ℕ)))).2 ?_
+     exact Or.inl (by
+       -- `1 < 2` in `PNat`
+-      exact (PNat.coe_lt_coe _ _).2 (by decide))
++      exact (PNat.coe_lt_coe _ _).2 (by change (1 : ℕ) < 2; omega))
+   have : ¬ y2 < x1 := not_lt_of_ge (le_of_lt hx1_lt_y2)
+   exact this hn'
+ 
+diff --git a/KnuthSkilling/ShoreJohnson/Proof.lean b/KnuthSkilling/ShoreJohnson/Proof.lean
+index 6e6178d6cef98439bca310d10f8c308e1ecfe4d9..632b055e59e38af8d90a2b04189d4d8b497ff892 100644
+--- a/KnuthSkilling/ShoreJohnson/Proof.lean
++++ b/KnuthSkilling/ShoreJohnson/Proof.lean
+@@ -238,7 +238,7 @@ theorem mul_cauchy_Ioc_eq_const_mul_log
+   have hψ_meas : Measurable ψ := by
+     have hset : MeasurableSet {t : ℝ | 0 ≤ t} := measurableSet_Ici
+     have hnegφ : Measurable fun t : ℝ => -φ (-t) := by
+-      simpa using (hφ_meas.comp (measurable_neg : Measurable fun t : ℝ => -t)).neg
++      exact (hφ_meas.comp (measurable_neg : Measurable fun t : ℝ => -t)).neg
+     exact Measurable.ite hset hφ_meas hnegφ
+ 
+   have hψ_add : CauchyEquation ψ := by
+diff --git a/KnuthSkilling/Variational/Main.lean b/KnuthSkilling/Variational/Main.lean
+index bb4b5c3ddf44a3e51ec9c85b517746f4343b28fa..a793b122e6d18d6ee98bb809f75e53e4b2b619e4 100644
+--- a/KnuthSkilling/Variational/Main.lean
++++ b/KnuthSkilling/Variational/Main.lean
+@@ -186,11 +186,11 @@ theorem cauchyEquation_measurable_linear (f : ℝ → ℝ)
+       map_zero' := CauchyEquation.map_zero hCauchy
+       map_add' := hCauchy }
+   have hMeasF : Measurable (F : ℝ → ℝ) := by
+-    simpa [F] using hMeas
++    exact hMeas
+   have hContF : Continuous (F : ℝ → ℝ) :=
+     MeasureTheory.Measure.AddMonoidHom.continuous_of_measurable F hMeasF
+   have hCont : Continuous f := by
+-    simpa [F] using hContF
++    exact hContF
+   exact cauchyEquation_continuous_linear f hCauchy hCont
+ 
+ /-! ## The Variational Equation -/
+@@ -363,7 +363,8 @@ theorem variationalEquation_solution_measurable
+     have hEq : transformToAdditive phi = fun u : ℝ => H' (Real.exp u) - c1 - mu 1 := by
+       funext u
+       simp [transformToAdditive, hphi_eq (Real.exp u) (Real.exp_pos u)]
+-    simpa [hEq] using (hH'exp.sub measurable_const).sub measurable_const
++    rw [hEq]
++    exact (hH'exp.sub measurable_const).sub measurable_const
+ 
+   -- Step 6: Apply Cauchy solution
+   obtain ⟨C, hC⟩ := cauchyEquation_measurable_linear _ hpsi_cauchy hpsi_measurable
+diff --git a/UniversalAI/BayesianAgents.lean b/UniversalAI/BayesianAgents.lean
+index b6a7b0e4c684c9f94a17ebe16e7245cf28af0b23..45adac31d60c25e966e3c91c83321fc6bb647128 100644
+--- a/UniversalAI/BayesianAgents.lean
++++ b/UniversalAI/BayesianAgents.lean
+@@ -55,7 +55,11 @@ inductive Action : Type
+   | left : Action
+   | right : Action
+   | stay : Action
+-  deriving DecidableEq, Fintype, Repr
++  deriving DecidableEq, Repr
++
++instance : Fintype Action where
++  elems := {.left, .right, .stay}
++  complete value := by cases value <;> simp
+ 
+ /-- Observations from the environment (binary for simplicity). -/
+ abbrev Observation := Bool
+diff --git a/UniversalAI/InfiniteHistory.lean b/UniversalAI/InfiniteHistory.lean
+index 9056f4772343397107321877a9e6c5720de8dc0b..14cb86e997c8f0c7bda91248b3a452b596cd3baa 100644
+--- a/UniversalAI/InfiniteHistory.lean
++++ b/UniversalAI/InfiniteHistory.lean
+@@ -224,7 +224,8 @@ theorem measurable_discountedUtilityTrunc
+   intro n hn
+   have h_at := measurable_reward_at (Action := Action) (Percept := Percept)
+     (reward := reward) (k := n) h_reward
+-  simpa [discountedUtilityTrunc] using (measurable_const.mul h_at)
++  convert (measurable_const (a := w n)).mul h_at using 1
++  rfl
+ 
+ omit [MeasurableSpace Action] [MeasurableSpace Percept] in
+ theorem summable_discountedUtility_of_bound
+diff --git a/lake-manifest.json b/lake-manifest.json
+index ee4ffc964e870a39c4109cbb55ab66db2b95d0f3..87127240119b5ddb4f570cca48f64c2eef207cdf 100644
+--- a/lake-manifest.json
++++ b/lake-manifest.json
+@@ -1,106 +1,129 @@
+-{"version": "1.2.0",
+- "packagesDir": ".lake/packages",
+- "packages":
+- [{"url": "https://github.com/leanprover-community/mathlib4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fabf563a7c95a166b8d7b6efca11c8b4dc9d911f",
+-   "name": "mathlib",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": false,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/zariuq/OrderedSemigroups.git",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "",
+-   "rev": "dd82826dfce02bedabbad75734e4f055939369f6",
+-   "name": "ordered_semigroups",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "dd82826dfce02bedabbad75734e4f055939369f6",
+-   "inherited": false,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/plausible",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "63045536fe95024e6c18fc7b48e03f506701c5bc",
+-   "name": "plausible",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/LeanSearchClient",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "c5d5b8fe6e5158def25cd28eb94e4141ad97c843",
+-   "name": "LeanSearchClient",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/import-graph",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "5c7542ed018c78194f1e2b903eaf6a792b74c03d",
+-   "name": "importGraph",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/ProofWidgets4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "24b0d9dc081c5423f8eec7e866c441e5184f29d9",
+-   "name": "proofwidgets",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.lean"},
+-  {"url": "https://github.com/leanprover-community/aesop",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "e3cb2f741431ce31bf73549fb52316a57368b06f",
+-   "name": "aesop",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/quote4",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "f46324995fca5f0483b742e4eb4daec7f4ee50d2",
+-   "name": "Qq",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "master",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover-community/batteries",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover-community",
+-   "rev": "fa08db58b30eb033edcdab331bba000827f9f785",
+-   "name": "batteries",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "main",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"},
+-  {"url": "https://github.com/leanprover/lean4-cli",
+-   "type": "git",
+-   "subDir": null,
+-   "scope": "leanprover",
+-   "rev": "92564e5770e4d09f2d86dfbf8ada1e9c715b384c",
+-   "name": "Cli",
+-   "manifestFile": "lake-manifest.json",
+-   "inputRev": "v4.31.0",
+-   "inherited": true,
+-   "configFile": "lakefile.toml"}],
+- "name": "«ks-foundations-of-inference-lean»",
+- "lakeDir": ".lake",
+- "fixedToolchain": false}
++{
++  "version": "1.2.0",
++  "packagesDir": ".lake/packages",
++  "packages": [
++    {
++      "url": "https://github.com/leanprover-community/mathlib4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "name": "mathlib",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "0df444a360eaa60ab8c11dca51a86af692955474",
++      "inherited": false,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/zariuq/OrderedSemigroups.git",
++      "type": "git",
++      "subDir": null,
++      "scope": "",
++      "rev": "dd82826dfce02bedabbad75734e4f055939369f6",
++      "name": "ordered_semigroups",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "dd82826dfce02bedabbad75734e4f055939369f6",
++      "inherited": false,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/plausible",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "b7eb3304aeae834b12dda98993a37f6a41f6f0bb",
++      "name": "plausible",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/LeanSearchClient",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "5f4d51b81cbd3f6b32b156bfad9056621a040404",
++      "name": "LeanSearchClient",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/import-graph",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "16f02aa7642864af59f1ff0e384a015994db9118",
++      "name": "importGraph",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/ProofWidgets4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4be2e3d5087eeb272cf5a8853b8f9dd025ef5957",
++      "name": "proofwidgets",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.lean"
++    },
++    {
++      "url": "https://github.com/leanprover-community/aesop",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "3448c0bcc5ce01b2d1546e483ec3620e32df3d0e",
++      "name": "aesop",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/quote4",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "92c15be17b7caf78c2ad767ec40f89052d908d81",
++      "name": "Qq",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "master",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover-community/batteries",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover-community",
++      "rev": "4488d40d070b9700d4d5a6aa342f0d40c31b2a2d",
++      "name": "batteries",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "main",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    },
++    {
++      "url": "https://github.com/leanprover/lean4-cli",
++      "type": "git",
++      "subDir": null,
++      "scope": "leanprover",
++      "rev": "6130a47896ce867c6a4a55373441e59e565bad0f",
++      "name": "Cli",
++      "manifestFile": "lake-manifest.json",
++      "inputRev": "v4.33.0",
++      "inherited": true,
++      "configFile": "lakefile.toml"
++    }
++  ],
++  "name": "\u00abks-foundations-of-inference-lean\u00bb",
++  "lakeDir": ".lake",
++  "fixedToolchain": false
++}
+diff --git a/lakefile.toml b/lakefile.toml
+index 17c884b298aea7d49b1db0c3edc934a2a2c97178..afcd85b2792889f776c30770ecf747a00f3e479c 100644
+--- a/lakefile.toml
++++ b/lakefile.toml
+@@ -3,7 +3,6 @@ version = "0.1.0"
+ releaseRepo = "https://github.com/zariuq/ks-foundations-of-inference"
+ preferReleaseBuild = true
+ defaultTargets = ["KnuthSkilling", "Algebra", "Computability", "InformationTheory", "Logic", "ProbabilityTheory", "UniversalAI"]
+-weakLeanArgs = ["-j", "1"]
+ 
+ # Each `lean_lib` uses a recursive glob (`Name.+`) so that `lake build <Name>` builds every module
+ # under that directory by name (most libs have no single root module). The `Exploratory/` directory
+@@ -12,7 +11,7 @@ weakLeanArgs = ["-j", "1"]
+ 
+ [[lean_lib]]
+ name = "KnuthSkilling"
+-globs = ["KnuthSkilling.+"]
++globs = ["KnuthSkilling", "KnuthSkilling.+"]
+ 
+ [[lean_lib]]
+ name = "Algebra"
+@@ -46,4 +45,4 @@ rev = "dd82826dfce02bedabbad75734e4f055939369f6"
+ [[require]]
+ name = "mathlib"
+ scope = "leanprover-community"
+-rev = "v4.31.0"
++rev = "0df444a360eaa60ab8c11dca51a86af692955474"
+diff --git a/lean-toolchain b/lean-toolchain
+index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+--- a/lean-toolchain
++++ b/lean-toolchain
+@@ -1 +1 @@
+-leanprover/lean4:v4.31.0
++leanprover/lean4:v4.33.1

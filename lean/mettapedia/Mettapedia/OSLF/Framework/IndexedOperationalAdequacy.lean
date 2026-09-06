@@ -92,7 +92,8 @@ theorem sat_onSemantic_mk (M : System.{uAtom, uLabel} S) (formula : Formula M.At
     (onSemantic M).sat formula (Quotient.mk S.equations term) ↔ M.sat formula term := by
   have := (quotientCover M).sat_map formula term
   change (onSemantic M).sat (Formula.map id id formula) _ ↔ _ at this
-  rwa [Formula.map_id] at this
+  erw [Formula.map_id] at this
+  exact this
 
 /-- Bisimilarity of authored terms is bisimilarity of their classes. -/
 theorem bisimilar_iff_onSemantic (M : System.{uAtom, uLabel} S) (left right : S.Term) :
@@ -185,7 +186,8 @@ theorem at_sat_iff (diagram : Diagram.{uTerm, uIndex, vIndex} Index)
       (fibreSystem diagram observer stage).sat formula state := by
   have := (atCover diagram observer stage).sat_map formula state
   change (commandSystem diagram observer).sat (Formula.map id id formula) _ ↔ _ at this
-  rwa [Formula.map_id] at this
+  erw [Formula.map_id] at this
+  exact this
 
 /-- Returned commands are bisimilar exactly when their fibre states are. -/
 theorem at_bisimilar_iff (diagram : Diagram.{uTerm, uIndex, vIndex} Index)
@@ -235,7 +237,7 @@ theorem via_not_covered (diagram : Diagram.{uTerm, uIndex, vIndex} Index)
     (state : SemanticTerm (diagram.obj source).theory) : False := by
   have escape : (commandSystem diagram observer).act (cover.mapLabel ()) (cover.mapTerm state)
       (.at target (transportTerm diagram route state)) := by
-    rw [mapVia]
+    erw [mapVia]
     exact ⟨.applyVia route state⟩
   obtain ⟨lifted, _, equal⟩ := cover.liftAct escape
   rw [mapVia lifted] at equal
@@ -273,7 +275,8 @@ theorem route_psat (diagram : Diagram.{uTerm, uIndex, vIndex} Index)
     (fibreSystem diagram observer target).psat formula (transportTerm diagram route state) := by
   have := (routeTranslation diagram observer route).psat_map formula holds
   change (fibreSystem diagram observer target).psat (PosFormula.map id id formula) _ at this
-  rwa [PosFormula.map_id] at this
+  erw [PosFormula.map_id] at this
+  exact this
 
 /-- A covered stage map is a cover of fibre systems. -/
 def routeCover (diagram : CoveredDiagram.{uTerm, uIndex, vIndex} Index)
@@ -310,7 +313,8 @@ theorem route_sat_iff (diagram : CoveredDiagram.{uTerm, uIndex, vIndex} Index)
   have := (routeCover diagram observer route).sat_map formula state
   change (fibreSystem diagram.toOperational observer target).sat (Formula.map id id formula) _ ↔ _
     at this
-  rwa [Formula.map_id] at this
+  erw [Formula.map_id] at this
+  exact this
 
 /-- Covered stage maps are exact for bisimilarity. -/
 theorem route_bisimilar_iff (diagram : CoveredDiagram.{uTerm, uIndex, vIndex} Index)

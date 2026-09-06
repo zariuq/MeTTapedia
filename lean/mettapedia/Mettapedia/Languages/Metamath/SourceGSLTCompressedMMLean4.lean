@@ -130,57 +130,34 @@ def decodeCompressedStep
 def decodeCompressedForInStep
     (invalidPolicy : CompressedInvalidBytePolicy)
     (savePlacement : CompressedSavePlacement) (byte : UInt8)
-    (state : MProd (List ParserState.CompressedAction)
-      Metamath.Verify.CompressedPhase) :
+    (state : Metamath.Verify.CompressedPhase × List ParserState.CompressedAction) :
     Except ProofCheckFail
-      (ForInStep (MProd (List ParserState.CompressedAction)
-        Metamath.Verify.CompressedPhase)) :=
-  let acts := state.fst
-  let phase := state.snd
-  if (decide ('A'.toUInt8 ≤ byte) &&
-      decide (byte ≤ 'Z'.toUInt8)) = true then
+      (ForInStep (Metamath.Verify.CompressedPhase × List ParserState.CompressedAction)) :=
+  let phase := state.1
+  let acts := state.2
+  if (decide ('A'.toUInt8 ≤ byte) && decide (byte ≤ 'Z'.toUInt8)) = true then
     if byte ≤ 'T'.toUInt8 then
-      let index := 20 * phase.accumulator +
-        (byte - 'A'.toUInt8).toNat
-      do
-        pure PUnit.unit
-        pure (.yield ⟨ParserState.CompressedAction.step index :: acts,
-          .justCompletedStep⟩)
+      let index := 20 * phase.accumulator + (byte - 'A'.toUInt8).toNat
+      pure (.yield (.justCompletedStep, ParserState.CompressedAction.step index :: acts))
     else if byte < 'Z'.toUInt8 then
-      do
-        pure PUnit.unit
-        pure (.yield ⟨acts, .openIndex
-          (5 * phase.accumulator + (byte - 'T'.toUInt8).toNat)⟩)
+      pure (.yield (.openIndex (5 * phase.accumulator + (byte - 'T'.toUInt8).toNat), acts))
     else
       match phase with
       | .justCompletedStep =>
           let next := match savePlacement with
             | .immediatelyAfterUse => .betweenSteps
             | .repeatableAfterUse => .justCompletedStep
-          do
-            pure PUnit.unit
-            pure (.yield ⟨ParserState.CompressedAction.save :: acts,
-              next⟩)
-      | .betweenSteps | .openIndex _ => do
-          throw (.proofCheck .proofParseError)
-          pure (.yield ⟨acts, phase⟩)
+          pure (.yield (next, ParserState.CompressedAction.save :: acts))
+      | .betweenSteps | .openIndex _ => throw (.proofCheck .proofParseError)
   else if byte = '?'.toUInt8 then
     match phase with
-    | .openIndex _ => do
-        throw (.proofCheck .proofParseError)
-        pure (.yield ⟨acts, phase⟩)
-    | .betweenSteps | .justCompletedStep => do
-        pure PUnit.unit
-        pure (.yield ⟨ParserState.CompressedAction.unknown :: acts,
-          .betweenSteps⟩)
+    | .openIndex _ => throw (.proofCheck .proofParseError)
+    | .betweenSteps | .justCompletedStep =>
+        pure (.yield (.betweenSteps, ParserState.CompressedAction.unknown :: acts))
   else
     match invalidPolicy with
-    | .reject => do
-        throw (.proofCheck .proofParseError)
-        pure (.yield ⟨acts, phase⟩)
-    | .ignore => do
-        pure ()
-        pure (.yield ⟨acts, phase⟩)
+    | .reject => throw (.proofCheck .proofParseError)
+    | .ignore => pure (.yield (phase, acts))
 
 open Mettapedia.Languages.Metamath.ByteSliceForInSupport
 
@@ -197,24 +174,33 @@ theorem decodeCompressed_eq_fold
   unfold ParserState.decodeCompressed
   change (do
     let result ← ByteSlice.forIn tk
-      (⟨[], phase⟩ : MProd (List ParserState.CompressedAction)
-        Metamath.Verify.CompressedPhase)
+      (phase, ([] : List ParserState.CompressedAction))
       (decodeCompressedForInStep invalidPolicy savePlacement)
-    pure (result.fst.reverse, result.snd)) = _
+    pure (result.2.reverse, result.1)) = _
   rw [byteSlice_forIn_except_yield tk _
-    (decodeCompressedStep invalidPolicy savePlacement)]
-  intro byte state
-  rcases state with ⟨acts, current⟩
-  unfold decodeCompressedForInStep decodeCompressedStep
-  split <;> rename_i hAZ
-  · split <;> rename_i hAT
-    · rfl
-    · split <;> rename_i hZ
+    (fun state byte =>
+      (decodeCompressedStep invalidPolicy savePlacement ⟨state.2, state.1⟩ byte).map
+        (fun next => (next.snd, next.fst)))]
+  · rw [foldlM_except_encode_state (sliceList tk)
+      (decodeCompressedStep invalidPolicy savePlacement)
+      (fun state => (state.snd, state.fst))
+      (fun state => ⟨state.2, state.1⟩)
+      (fun state => by cases state; rfl) ⟨[], phase⟩]
+    cases (sliceList tk).foldlM (decodeCompressedStep invalidPolicy savePlacement)
+      (⟨[], phase⟩ : MProd (List ParserState.CompressedAction)
+        Metamath.Verify.CompressedPhase) <;> rfl
+  · intro byte state
+    rcases state with ⟨current, acts⟩
+    unfold decodeCompressedForInStep decodeCompressedStep
+    split <;> rename_i hAZ
+    · split <;> rename_i hAT
       · rfl
-      · cases current <;> cases savePlacement <;> rfl
-  · split <;> rename_i hQ
-    · cases current <;> rfl
-    · cases invalidPolicy <;> rfl
+      · split <;> rename_i hZ
+        · rfl
+        · cases current <;> cases savePlacement <;> rfl
+    · split <;> rename_i hQ
+      · cases current <;> rfl
+      · cases invalidPolicy <;> rfl
 
 theorem subA_toNat (byte : UInt8) (h : 65 ≤ byte.toNat) :
     (byte - 'A'.toUInt8).toNat = byte.toNat - 65 := by

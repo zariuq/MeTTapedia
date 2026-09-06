@@ -581,6 +581,7 @@ private theorem communicationGeneratedCore_typed :
   · exact .cons communicationGeneratedInput_typed
       (.cons communicationGeneratedOutput_typed (.nil _ _))
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem communicationGeneratedSigned_typed :
     HasType rhoCIGSLT.costWholeLanguage FreeTypeContext.empty []
       (.apply costSignedConstructorName

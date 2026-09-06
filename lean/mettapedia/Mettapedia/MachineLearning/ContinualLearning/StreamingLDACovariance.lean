@@ -142,6 +142,8 @@ theorem scalar_covarianceUpdate :
   fin_cases i
   fin_cases j
   norm_num [covarianceUpdate, scatterIncrement, Matrix.vecMulVec]
+  erw [one_smul]
+  norm_num
 
 /-- Negative boundary: zero shrinkage cannot make the zero covariance
 invertible. -/

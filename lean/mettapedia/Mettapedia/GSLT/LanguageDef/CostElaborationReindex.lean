@@ -493,6 +493,21 @@ def map {source target : CIGSLT} (morphism : source.Morphism target)
       _ = (morphism.underlying.structural.structural.mapConstructor
             preimage.sourceConstructor).1.params.map
           (mapTermParam (color.symbols target)) := rfl
+  algebraMap := by
+    let sourceSymbols :=
+      morphism.underlying.structural.structural.symbols
+    let generatedSymbols := costLanguageDefSymbolMap sourceSymbols
+    calc
+      (target.materializeDeclaredCostConstructor
+          (morphism.mapDeclaredCostConstructor constructor)).algebra? =
+          (mapGrammarRule generatedSymbols
+            (source.materializeDeclaredCostConstructor constructor)).algebra? :=
+        congrArg GrammarRule.algebra?
+          (morphism.materialize_mapDeclaredCostConstructor constructor)
+      _ = (source.materializeDeclaredCostConstructor constructor).algebra? := rfl
+      _ = preimage.sourceConstructor.1.algebra? := preimage.algebraMap
+      _ = (morphism.underlying.structural.structural.mapConstructor
+            preimage.sourceConstructor).1.algebra? := rfl
 
 end CostStaticConstructorPreimage
 
@@ -582,7 +597,7 @@ theorem map_comp {first second third : CIGSLT}
 /-- Computational witness that occurrence reindexing distributes over list
 append.  Keeping this proof reducible lets dependent boundary tables transport
 without an opaque equality cast. -/
-def map_append {source target : CIGSLT}
+theorem map_append {source target : CIGSLT}
     (morphism : source.Morphism target) :
     (left right : List CostRegionOccurrence) →
       (left ++ right).map (CostRegionOccurrence.map morphism) =
@@ -1046,7 +1061,9 @@ theorem castContent_mapStatic_typed {source target : CIGSLT}
     ((boundary.mapStatic morphism scope).castContent
         contentEquality).typed = boundary.typed.map morphism scope := by
   apply TypedCostRegionBoundary.ext
-  simp
+  exact (castContent_typed_boundary contentEquality
+    (boundary.mapStatic morphism scope)).trans
+      (mapStatic_typed_boundary morphism scope boundary)
 
 @[simp]
 theorem map_typed_boundary {source target : CIGSLT}
@@ -1203,7 +1220,7 @@ theorem map_nil {source target : CIGSLT}
 
 /-- Mapping distributes over chronological table append.  In particular,
 duplicate boundary occurrences keep their left-to-right positions. -/
-def map_append {source target : CIGSLT}
+theorem map_append {source target : CIGSLT}
     (morphism : source.Morphism target)
     (scope : CostGeneratedReflectiveScopePreserving morphism)
     (color : CostStaticColor)
@@ -1299,9 +1316,9 @@ theorem map_append_of {source target : CIGSLT}
   subst leftTargetOccurrences
   subst rightTargetOccurrences
   have leftNatural' : leftTarget = map morphism scope color leftSource := by
-    simpa using leftNatural
+    exact (cast_self _ leftTarget).symm.trans leftNatural
   have rightNatural' : rightTarget = map morphism scope color rightSource := by
-    simpa using rightNatural
+    exact (cast_self _ rightTarget).symm.trans rightNatural
   rw [leftNatural', rightNatural']
   let appendEquality := CostRegionOccurrence.map_append morphism
     leftSourceOccurrences rightSourceOccurrences
@@ -1311,7 +1328,8 @@ theorem map_append_of {source target : CIGSLT}
   have mapped := map_append morphism scope color leftSource rightSource
   have inverse := congrArg
     (TypedCostRegionBoundaryTable.cast appendEquality.symm) mapped
-  simpa [TypedCostRegionBoundaryTable.cast_trans] using inverse.symm
+  exact inverse.symm.trans
+    ((cast_trans _ _ _).trans (cast_self _ _))
 
 end TypedCostRegionBoundaryTable
 

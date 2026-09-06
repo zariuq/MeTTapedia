@@ -247,7 +247,11 @@ theorem scalarAffine_biasObstruction_negativeExample :
     ext i j
     fin_cases i
     fin_cases j
-    norm_num [scalarAffinePhase, Matrix.mul_apply, Fin.sum_univ_succ]
+    refine (Matrix.mul_apply (M := (scalarAffinePhase 1 1).linear)
+      (N := (scalarAffinePhase 2 0).linear) (i := 0) (k := 0)).trans ?_
+    refine Eq.trans ?_ (Matrix.mul_apply (M := (scalarAffinePhase 2 0).linear)
+      (N := (scalarAffinePhase 1 1).linear) (i := 0) (k := 0)).symm
+    norm_num [scalarAffinePhase, Fin.sum_univ_succ]
   · intro h
     have hbias := h.2
     have hcoordinate := congrFun hbias 0

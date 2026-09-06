@@ -195,18 +195,8 @@ theorem denote_mkApps {L : Language.{u}} {M : Type w} (s : Structure L M)
           (fun i => HenkinModel.denote (standardModel s) (v i) ρ)
   | 0, t, v => rfl
   | k + 1, t, v => by
-      calc
-        HenkinModel.denote (standardModel s)
-            (Term.mkApps (τ := τ) (.app t (v 0)) (fun i => v i.succ)) ρ =
-          Const.applyCurried (τ := τ) (k := k)
-            (HenkinModel.denote (standardModel s) (.app t (v 0)) ρ)
-            (fun i => HenkinModel.denote (standardModel s) (v i.succ) ρ) := by
-              exact denote_mkApps s (ρ := ρ) (τ := τ)
-                (t := .app t (v 0)) (v := fun i => v i.succ)
-        _ = Const.applyCurried (τ := τ) (k := k)
-            (HenkinModel.denote (standardModel s) t ρ
-              (HenkinModel.denote (standardModel s) (v 0) ρ))
-            (fun i => HenkinModel.denote (standardModel s) (v i.succ) ρ) := rfl
+      exact denote_mkApps s (ρ := ρ) (τ := τ)
+        (t := .app t (v 0)) (v := fun i => v i.succ)
 
 theorem denote_embedSemiterm {L : Language.{u}} {M : Type w} (s : Structure L M)
     {n : ℕ} (t : ClosedSemiterm L n) (e : Fin n → M) :
@@ -215,6 +205,7 @@ theorem denote_embedSemiterm {L : Language.{u}} {M : Type w} (s : Structure L M)
   induction t generalizing e with
   | bvar x =>
       simp [embedSemiterm]
+      rfl
   | fvar x =>
       nomatch x
   | @func k f v ih =>
@@ -226,14 +217,15 @@ theorem denote_embedSemiterm {L : Language.{u}} {M : Type w} (s : Structure L M)
           (fun i =>
             HenkinModel.denote (standardModel s) (embedSemiterm (v i)) (envVal s e)) =
         ULift.up (s.func f fun i => Semiterm.val s e Empty.elim (v i))
-      rw [Const.applyCurried_curryVec]
+      refine (Const.applyCurried_curryVec (τ := indTy)
+        (fun w => ULift.up (s.func f fun i => (w i).down)) _).trans ?_
       have hv :
           (fun i =>
             (HenkinModel.denote (standardModel s) (embedSemiterm (v i)) (envVal s e)).down) =
           (fun i => Semiterm.val s e Empty.elim (v i)) := by
         funext i
         exact congrArg ULift.down (ih i e)
-      rw [hv]
+      exact congrArg (fun values => ULift.up (s.func f values)) hv
 
 theorem denote_embedSemiformula_iffAux {L : Language.{u}} {M : Type w} (s : Structure L M) :
     ∀ {n : ℕ} (φ : Semisentence L n) (e : Fin n → M),
@@ -253,7 +245,12 @@ theorem denote_embedSemiformula_iffAux {L : Language.{u}} {M : Type w} (s : Stru
           (Const.curryVec (τ := propTy) (k := _) (fun w => ULift.up (s.rel r fun i => (w i).down)))
           (fun i => HenkinModel.denote (standardModel s) (embedSemiterm (v i)) (envVal s e))).down ↔
         Semiformula.EvalAux s Empty.elim e (Semiformula.rel r v)
-      simp [Const.applyCurried_curryVec, denote_embedSemiterm, Semiformula.EvalAux]
+      have h := Const.applyCurried_curryVec (τ := propTy)
+        (fun w => ULift.up (s.rel r fun i => (w i).down))
+        (fun i => HenkinModel.denote (standardModel s) (embedSemiterm (v i)) (envVal s e))
+      exact Iff.of_eq ((congrArg ULift.down h).trans
+        (congrArg (fun values => s.rel r values)
+          (funext fun i => congrArg ULift.down (denote_embedSemiterm s (v i) e))))
   | _, .nrel r v, e => by
       change
         (HenkinModel.denote (standardModel s)
@@ -271,7 +268,12 @@ theorem denote_embedSemiformula_iffAux {L : Language.{u}} {M : Type w} (s : Stru
             (Const.curryVec (τ := propTy) (k := _) (fun w => ULift.up (s.rel r fun i => (w i).down)))
             (fun i => HenkinModel.denote (standardModel s) (embedSemiterm (v i)) (envVal s e))).down ↔
           Structure.rel r (fun i => Semiterm.val s e Empty.elim (v i))
-        simp [Const.applyCurried_curryVec, denote_embedSemiterm]
+        have h := Const.applyCurried_curryVec (τ := propTy)
+          (fun w => ULift.up (s.rel r fun i => (w i).down))
+          (fun i => HenkinModel.denote (standardModel s) (embedSemiterm (v i)) (envVal s e))
+        exact Iff.of_eq ((congrArg ULift.down h).trans
+          (congrArg (fun values => s.rel r values)
+            (funext fun i => congrArg ULift.down (denote_embedSemiterm s (v i) e))))
   | _, .and φ ψ, e => by
       simpa [embedSemiformula, Semiformula.EvalAux] using
         show
@@ -307,8 +309,13 @@ theorem denote_embedSemiformula_iffAux {L : Language.{u}} {M : Type w} (s : Stru
       constructor
       · rintro ⟨x, -, hx⟩
         refine ⟨x.down, ?_⟩
-        rw [envVal_extend] at hx
-        exact (denote_embedSemiformula_iffAux s (φ := φ) (e := x.down :> e)).mp hx
+        have heq := congrArg
+          (fun ρ : HenkinModel.Valuation (standardModel s) (indTy :: CtxOfArity _) =>
+            (HenkinModel.denote (standardModel s) (embedSemiformula φ) ρ).down)
+          (envVal_extend s e x)
+        exact (denote_embedSemiformula_iffAux s (φ := φ) (e := x.down :> e)).mp
+          (heq.mp hx)
+
       · rintro ⟨x, hx⟩
         refine ⟨ULift.up x, trivial, ?_⟩
         have hx' :

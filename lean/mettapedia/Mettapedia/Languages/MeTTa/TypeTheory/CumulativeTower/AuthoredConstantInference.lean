@@ -197,9 +197,9 @@ theorem unaryOrdinal_injective : Function.Injective unaryOrdinal := by
 
 theorem generatedRuleId_injective : Function.Injective generatedRuleId := by
   intro left right equality
-  have lengthEquality := congrArg (fun ruleId => ruleId.value.length) equality
-  simp [generatedRuleId, unaryOrdinal_length] at lengthEquality
-  omega
+  apply unaryOrdinal_injective
+  exact (String.append_right_inj "prime-authored-constant.").mp
+    (congrArg RuleId.value equality)
 
 def generatedRule (ordinal : Nat) {declarations : List SourceDeclaration}
     (active : ActiveConstant declarations) : RuleSchema :=
@@ -605,24 +605,13 @@ private theorem example_elaborates :
     elaborate exampleSource = exampleDeclarations :=
   elaborate_quote exampleDeclarations
 
+set_option maxHeartbeats 2000000 in
 private theorem example_delta_disjoint :
     (constantFactDelta exampleSource).disjointFrom
       basePresentation.1 = true := by
   unfold constantFactDelta
   rw [example_elaborates]
-  simp [basePresentation, generatedRules, exampleDeclarations,
-    activeInventory, liftOther?,
-    generatedRule, generatedRuleId, unaryOrdinal, formedTypingExtension,
-    ValidatedCalculusLanguageExtension.target, formedTypingDelta, contextFormationExtension,
-    contextFormationDelta, CalculusLanguageExtension.apply,
-    CalculusLanguageExtension.disjointFrom,
-    DeclarationAwareCheckedContext.Structural.checked,
-    DeclarationAwareStructuralTyping.checked,
-    DeclarationAwareStructuralTyping.definition,
-    DeclarationAwareStructuralTyping.definition,
-    DeclarationAwareStructuralTyping.Data.definition,
-    DeclarationAwareDataLanguage.definition]
-  decide
+  decide +kernel
 
 private theorem example_delta_policy :
     (constantFactDelta exampleSource).policyHolds basePresentation.1
@@ -643,6 +632,7 @@ private theorem example_delta_policy :
     DeclarationAwareDataLanguage.definition]
 
 set_option maxRecDepth 10000 in
+set_option maxHeartbeats 2000000 in
 private theorem example_target_valid :
     ((constantFactDelta exampleSource).apply
       basePresentation.1).isValid = true := by
@@ -658,62 +648,7 @@ private theorem example_target_valid :
     simpa [constantFactDelta, example_elaborates] using
       example_target_language_validate
   rw [languageValidate]
-  simp [basePresentation, generatedRules, exampleDeclarations,
-    activeInventory, liftOther?,
-    generatedRule, generatedRuleId, unaryOrdinal, ActiveConstant.claim,
-    ActiveConstant.sourceIndex, formedTypingExtension,
-    ValidatedCalculusLanguageExtension.target, formedTypingDelta, contextFormationExtension,
-    contextFormationDelta, CalculusLanguageExtension.apply,
-    encodeConstantClaim, constantFactPattern, exampleName, exampleEntry,
-    shadowedEntry, FirstConstant.index,
-    DeclarationAwarePatternCodec.encodeNat,
-    DeclarationAwarePatternCodec.encodeChars,
-    DeclarationAwarePatternCodec.encodeString,
-    DeclarationAwarePatternCodec.encodeDeclName,
-    DeclarationAwarePatternCodec.encodeLevel,
-    DeclarationAwarePatternCodec.encodeTowerHead,
-    DeclarationAwarePatternCodec.towerHeadCodec,
-    DeclarationAwarePatternCodec.encodeTm,
-    DeclarationAwareCheckedContext.Structural.checked, formedTypingRule,
-    formedHasTypePattern, DeclarationAwareStructuralTyping.checked,
-    DeclarationAwareStructuralTyping.definition,
-    DeclarationAwareStructuralTyping.definition,
-    DeclarationAwareStructuralTyping.Data.definition,
-    DeclarationAwareStructuralTyping.legacyGroundRule,
-    DeclarationAwareStructuralTyping.sortRule,
-    DeclarationAwareStructuralTyping.reflRule,
-    DeclarationAwareStructuralTyping.piFormRule,
-    DeclarationAwareStructuralTyping.hasTypePattern,
-    DeclarationAwareStructuralTyping.tmHeadPattern,
-    DeclarationAwareStructuralTyping.tmReflPattern,
-    DeclarationAwareStructuralTyping.tmIdPattern,
-    DeclarationAwareStructuralTyping.tmPiPattern,
-    DeclarationAwareStructuralTyping.headSortPattern,
-    DeclarationAwareStructuralTyping.levelSuccPattern,
-    DeclarationAwareStructuralTyping.levelMaxPattern,
-    DeclarationAwareStructuralTyping.natSuccPattern,
-    DeclarationAwareStructuralTyping.ctxSnocPattern,
-    contextNilRule, contextSnocRule, contextFormedPattern,
-    encodeLevelSpine, levelSpineNilConstructor, levelSpineSnocConstructor,
-    DeclarationAwareDataLanguage.dataConstructor,
-    DeclarationAwareDataLanguage.definition,
-    DeclarationAwareDataLanguage.constructorArities,
-    DeclarationAwareDataLanguage.kernelDataType, TypeDecl.plain,
-    encodeTowerHead, Tower.zero, encodeLevel, encodeNat, encodeCtx,
-    CalculusLanguageDef.ruleIds, CalculusLanguageDef.judgmentSignatureValid,
-    CalculusLanguageDef.judgmentHeads, CalculusLanguageDef.conversionDeclarationValid,
-    CalculusLanguageDef.lookupJudgment?, RuleSchema.isValidIn,
-    RuleSchema.isLocallyValid, RuleSchema.metavariableNames,
-    RuleSchema.occurrences, RuleSchema.patterns,
-    patternMetavariableOccurrencesAt, patternsMetavariableOccurrencesAt,
-    patternHasNoCollectionRest, patternsHaveNoCollectionRest,
-    CalculusLanguageDef.judgmentSchemaValid, fixedConstructorsValid,
-    fixedConstructorListsValid, languageHasConstructorArity,
-    Pattern.isWellScoped, Pattern.isWellScopedAt,
-    Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
-    Pattern.hasCanonicalBinderMetadataList, Pattern.zipHead,
-    Pattern.mapHead, Pattern.evalHead]
-  decide
+  decide +kernel
 
 private def exampleExtension : ValidatedCalculusLanguageExtension basePresentation where
   extension := constantFactDelta exampleSource

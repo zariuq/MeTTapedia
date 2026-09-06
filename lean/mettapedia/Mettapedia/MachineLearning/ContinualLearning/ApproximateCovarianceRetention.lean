@@ -161,6 +161,7 @@ theorem featureDriftSq_eq_zero_of_covarianceResidual_zero
 
 /-! ## Executable tightness boundary -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The certificate can be tight: residual `1/100` and update one-norm `100`
 produce unit stored-output drift.  Residual magnitude alone is therefore not
 a retention budget. -/

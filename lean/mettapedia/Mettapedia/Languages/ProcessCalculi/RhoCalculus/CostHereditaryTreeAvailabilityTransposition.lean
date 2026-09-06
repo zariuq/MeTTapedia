@@ -170,7 +170,6 @@ private theorem boundary_getDecoration_weight_lt
   termination_by trees.weight
   decreasing_by
     simp [CostRegionBoundaryTrees.weight]
-    omega
 
 private theorem boundary_getEntry_weight_lt
     {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
@@ -219,11 +218,11 @@ private theorem argument_normalize_eq_of_unambiguous
   termination_by first.weight
   decreasing_by
     simp [CostRegionArgumentTrees.weight]
-    omega
 
 set_option maxRecDepth 5000
 set_option maxHeartbeats 300000
 
+set_option backward.isDefEq.respectTransparency false in
 mutual
   /-- Hereditary rho normalization is invariant when an ambient binder suffix
   is moved into the active availability of an object tree.  The two trees may

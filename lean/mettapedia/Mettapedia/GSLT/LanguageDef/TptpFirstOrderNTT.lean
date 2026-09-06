@@ -31,10 +31,10 @@ open Mettapedia.GSLT.LanguageDef.CarrierWellSorted
 /-- The structural native type at one authored carrier sort.  Both its sort
 and its predicate are generated from the supplied `LanguageDef`. -/
 def carrierNativeType (language : LanguageDef)
-    (equationsEmpty : language.equations = []) (sort : String) :
+    (equationFree : language.isEquationFree = true) (sort : String) :
     langNativeType language sort where
   sort := sort
-  pred := equationPredicateOfEquationFree equationsEmpty (fun term =>
+  pred := equationPredicateOfEquationFree equationFree (fun term =>
     checkHasType language WellSorted.FreeTypeContext.empty [] term
       (.base sort) = true)
 

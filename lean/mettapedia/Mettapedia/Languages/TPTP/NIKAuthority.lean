@@ -429,7 +429,7 @@ theorem boolStatusPredicate_iff_meaning
       ClassicalModelSemantics.EquiSatisfiableRelation,
       boolSatisfiesAll_iff_all_true, boolSatisfiable_iff_all_true,
       boolSemantics.satisfies_negate] <;>
-    simp [boolSemantics]
+    simp [boolSemantics, ClassicalModelSemantics.SatisfiesAll]
 
 def finiteRuleFamily :
     RuleAuthorityFamily Bool boolSemantics.commonStatusMeaning where

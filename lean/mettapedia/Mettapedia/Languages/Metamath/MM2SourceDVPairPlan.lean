@@ -274,6 +274,7 @@ theorem pairPlanStep_exact
   cases step
   exact ⟨rfl, rfl⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The exact source-derived planning step is classified by the native type
 generated through OSLF from the planning GSLT. -/
 theorem pairPlan_compile_inhabits_native_type

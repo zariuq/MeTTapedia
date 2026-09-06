@@ -352,7 +352,7 @@ theorem currentComposite_runs_promotion
         (CommonCurrent.refl LanguageOperationNIKAdmission.Canary.dependencies
           (false, false))).run =
       (programTranslation model promoteProgram).mapTerm := by
-  rw [activeComposite_run_is_composedProgram]
+  erw [activeComposite_run_is_composedProgram]
   rw [zero_prime_eq_promote
     (Quiver.Path.comp promoteProgram (identityProgram .prime))]
 

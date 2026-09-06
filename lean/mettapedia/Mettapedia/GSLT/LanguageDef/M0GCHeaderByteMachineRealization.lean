@@ -30,7 +30,7 @@ open Mettapedia.GSLT.LanguageDef.M0GCCheckedByteMachineIR
 
 /-! ## Typed register assignment -/
 
-def shape : RegisterShape where
+abbrev shape : RegisterShape where
   byteCount := 0
   word16Count := 3
   word32Count := 8

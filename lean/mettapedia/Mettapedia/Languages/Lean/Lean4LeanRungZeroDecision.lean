@@ -309,7 +309,7 @@ def coreRawStepDecisionOfNoDelta
   decideStep := betaHeadDecideStep
   correct := by
     intro source target
-    rw [betaHeadDecideStep_correct]
+    erw [betaHeadDecideStep_correct]
     exact (coreRawHeadGSLT_step_iff_betaHead_of_no_delta environment
       universeParameters noDelta source target).symm
 
@@ -326,7 +326,7 @@ theorem satisfies_exactBetaHeadTargetType_iff_event
     (gsltOSLF betaHeadGSLT).satisfies source
         (exactBetaHeadTargetType target).pred <->
       Nonempty (BetaHeadEvent source target) := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  erw [satisfies_exactTargetNativeType_iff_step]
   rfl
 
 /-- The independently executable decision accepts exactly the generated NTT
@@ -336,7 +336,7 @@ theorem betaHeadStepDecision_accepts_iff_ntt
     betaHeadStepDecision.decideStep source target = true <->
       (gsltOSLF betaHeadGSLT).satisfies source
         (exactBetaHeadTargetType target).pred := by
-  rw [betaHeadStepDecision.correct,
+  erw [betaHeadStepDecision.correct,
     satisfies_exactBetaHeadTargetType_iff_event]
   rfl
 
@@ -351,7 +351,7 @@ theorem coreRawStepDecisionOfNoDelta_accepts_iff_ntt
       (gsltOSLF (coreRawHeadGSLT environment universeParameters)).satisfies
         source
         (exactCoreRawHeadTargetType environment universeParameters target).pred := by
-  rw [(coreRawStepDecisionOfNoDelta environment universeParameters
+  erw [(coreRawStepDecisionOfNoDelta environment universeParameters
       noDelta).correct,
     satisfies_exactCoreRawHeadTargetType_iff_event]
   rfl
@@ -506,7 +506,7 @@ theorem runBetaHead_result_inhabits_closure_ntt
     (fuel : Nat) (source : VExpr) :
     (gsltOSLF betaHeadGSLT.closure).satisfies source
       (exactBetaHeadClosureTargetType (runBetaHead fuel source).term).pred := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  erw [satisfies_exactTargetNativeType_iff_step]
   exact ⟨runBetaHead fuel source |>.term,
     (runBetaHead_trace fuel source).toMultiStep, rfl⟩
 
@@ -518,7 +518,7 @@ theorem runBetaHead_result_inhabits_coreRaw_closure_ntt
       source
       (exactCoreRawHeadClosureTargetType environment universeParameters
         (runBetaHead fuel source).term).pred := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  erw [satisfies_exactTargetNativeType_iff_step]
   exact ⟨runBetaHead fuel source |>.term,
     (runBetaHead_trace fuel source).toCoreRawMultiStep
       environment universeParameters, rfl⟩

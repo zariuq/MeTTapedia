@@ -992,7 +992,7 @@ theorem BindingSubrecord.semanticLoopFree {before after : Bindings}
   intro name hcycle
   apply hafter name
   exact Relation.TransGen.mono
-    (fun _ _ hstep => hsubrecord.classDepends hnonvariable hstep) hcycle
+    (fun _ _ hstep => hsubrecord.classDepends hnonvariable hstep) _ _ hcycle
 
 theorem bindingSubrecord_assign_of_not_isBound (bindings : Bindings)
     (key : String) (value : Atom)

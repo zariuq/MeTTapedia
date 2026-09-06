@@ -245,6 +245,19 @@ theorem sourceLanguage?_equations_empty {source : SourceProgram}
       subst language
       rfl
 
+/-- The generated rewrite core has neither authored equations nor declared
+collection laws. -/
+theorem sourceLanguage?_isEquationFree {source : SourceProgram}
+    {language : LanguageDef} (compiled : sourceLanguage? source = some language) :
+    language.isEquationFree = true := by
+  unfold sourceLanguage? at compiled
+  cases equation : rewriteDeclarations? (semanticDeclarations source) with
+  | none => simp [equation] at compiled
+  | some rules =>
+      simp [equation] at compiled
+      subst language
+      rfl
+
 structure LessonPair where
   petta : SourceProgram
   he : SourceProgram

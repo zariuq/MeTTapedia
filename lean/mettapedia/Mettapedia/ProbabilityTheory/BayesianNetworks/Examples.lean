@@ -81,7 +81,7 @@ theorem chainGraph_acyclic : chainGraph.IsAcyclic := by
     exact absurd this (by decide)
 
 /-- The chain Bayesian network. -/
-noncomputable def chainBN : BayesianNetwork Three where
+noncomputable abbrev chainBN : BayesianNetwork Three where
   graph := chainGraph
   acyclic := chainGraph_acyclic
   stateSpace := fun _ => Bool
@@ -498,11 +498,11 @@ theorem chain_descendants_C_empty :
     exact False.elim (Set.notMem_empty _ hu)
 
 theorem chain_graph_descendants_C_empty :
-    chainBN.graph.descendants Three.C = (∅ : Set Three) := by
+    chainGraph.descendants Three.C = (∅ : Set Three) := by
   simpa [BayesianNetwork.descendants] using chain_descendants_C_empty
 
 theorem chain_graph_parents_C :
-    chainBN.graph.parents Three.C = ({Three.B} : Set Three) := by
+    chainGraph.parents Three.C = ({Three.B} : Set Three) := by
   simpa [BayesianNetwork.parents] using chain_parents_C
 
 theorem chain_nonDescExceptParentsSelf_C :

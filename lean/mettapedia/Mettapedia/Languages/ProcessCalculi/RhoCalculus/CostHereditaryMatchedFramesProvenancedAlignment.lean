@@ -2483,6 +2483,7 @@ end RhoStaticNonBoundaryPlanStopCommonApex
 
 namespace RhoStaticPlanBoundaryRestoration
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Close one pair of reached boundary roots as a semantic leaf.
 
 The reached-plan producer supplies equality of the active availability fibre.

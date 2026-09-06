@@ -393,18 +393,21 @@ theorem factorRoundTrip_not_reflexive :
       (Cat.Hom.isoMk observationFactors.{u}).hom := by
   simp [interpretCell, factorCell, semanticCellAlgebra,
     interpretGenerator]
+  rfl
 
 @[simp] theorem interpret_operationalUnitCell :
     interpretCell.{u} operationalUnitCell =
       operationalEvidence.{u}.toCat.unit := by
   simp [interpretCell, operationalUnitCell, semanticCellAlgebra,
     interpretGenerator]
+  rfl
 
 @[simp] theorem interpret_factorCellInverse :
     interpretCell.{u} factorCellInverse =
       (Cat.Hom.isoMk observationFactors.{u}).inv := by
   simp [interpretCell, factorCellInverse, semanticCellAlgebra,
     interpretGenerator]
+  rfl
 
 /-- Semantics validates the authored comparison as an isomorphism while the
 raw syntax continues to retain the two-step receipt. -/

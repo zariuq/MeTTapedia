@@ -339,6 +339,7 @@ noncomputable def identityAtArity {Domain : Type} [Nonempty Domain]
     identityAtArity arity function arity arguments = function arguments := by
   simp [identityAtArity]
 
+set_option backward.isDefEq.respectTransparency false in
 @[simp] theorem generatedApplication_value_overrideIdentity_exact
     {Domain : Type} [Nonempty Domain]
     (source : LO.FirstOrder.Structure Source.Language Domain)
@@ -353,6 +354,7 @@ noncomputable def identityAtArity {Domain : Type} [Nonempty Domain]
   simp [generatedApplication, LO.FirstOrder.Semiterm.val_func,
     extendStructure, overrideIdentity]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem TermGeneratedBelow.value_eq_of_agreeBelow {Domain : Type}
     (source : LO.FirstOrder.Structure Source.Language Domain)
     {depth bound : Nat} {term : Term depth}
@@ -771,6 +773,7 @@ theorem skolemize_existentialFree (source : Source.Formula 0) :
 
 /-! ## Model restriction -/
 
+set_option backward.isDefEq.respectTransparency false in
 theorem translateTerm_value_exact {Domain : Type}
     (target : LO.FirstOrder.Structure language Domain)
     {sourceDepth targetDepth : Nat}
@@ -1179,6 +1182,7 @@ def expected : Formula 0 :=
   .all (.rel (.predicate p)
     ![.bvar 0, generatedApplication 1 0])
 
+set_option backward.isDefEq.respectTransparency false in
 theorem source_skolemizes_exactly :
     (skolemize source).formula = expected := by
   simp [skolemize, source, expected, skolemizeFrom, underUniversal,
@@ -1186,10 +1190,12 @@ theorem source_skolemizes_exactly :
   funext index
   fin_cases index <;> rfl
 
+set_option backward.isDefEq.respectTransparency false in
 theorem source_introduces_exact_symbol :
     (skolemize source).introduced = [⟨0, 1⟩] := by
   simp [skolemize, source, skolemizeFrom]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem source_frontier_exact :
     (skolemize source).next = 1 := by
   simp [skolemize, source, skolemizeFrom]
@@ -1206,6 +1212,7 @@ both universal binders even if a concrete source reused their spellings. -/
 def nestedSource : Source.Formula 0 :=
   .all (.all (.ex (.rel (.predicate p) ![.bvar 2, .bvar 0])))
 
+set_option backward.isDefEq.respectTransparency false in
 theorem nested_source_introduces_binary_symbol :
     (skolemize nestedSource).introduced = [⟨0, 2⟩] := by
   simp [skolemize, nestedSource, skolemizeFrom]
@@ -1247,6 +1254,7 @@ def expected : Formula 0 :=
 theorem source_was_not_prenex : Not (Prenex source) :=
   Mettapedia.GSLT.LanguageDef.TptpFofPrenexSemantics.Canary.source_not_prenex
 
+set_option backward.isDefEq.respectTransparency false in
 theorem source_prenex_skolemizes_exactly :
     (prenexSkolemize source).formula = expected := by
   change
@@ -1258,6 +1266,7 @@ theorem source_prenex_skolemizes_exactly :
     underExistential, generatedApplication, translateTerm,
     Matrix.constant_eq_singleton]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem source_introduces_exact_constant :
     (prenexSkolemize source).introduced = [⟨0, 0⟩] := by
   change

@@ -460,8 +460,7 @@ theorem environmentLayout_covered :
   intro step _required
   rcases step with ⟨⟩
   refine ⟨environmentLink, rfl, ?_⟩
-  simp [Attestation.CurrentAt, environmentLink,
-    environmentAuthenticatedOccurrence]
+  rfl
 
 /-- The complete canary inhabits all five requirements simultaneously.  Its
 R5 component is the ordered reset/increment history from the replay canary. -/

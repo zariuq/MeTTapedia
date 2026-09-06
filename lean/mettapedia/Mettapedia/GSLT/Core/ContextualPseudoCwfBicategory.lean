@@ -573,7 +573,6 @@ theorem leftUnit_comprehensionIso_hom
     PseudoCwfMorphism.identity_comprehensionIso_hom,
     PseudoCwfMorphism.identity_mapType]
   simp [PseudoCwfMorphism.identity]
-  exact Category.id_comp _
 
 set_option backward.isDefEq.respectTransparency false in
 /-- The selected comprehension comparison of a right-unital composite is
@@ -906,6 +905,7 @@ theorem associatorInvFamily_naturality
         (second.base.obj (first.base.obj ⟨Γ⟩))).val).inv.naturality
       (((first.comp (second.comp third)).mapTypeFunctor Γ).map arrow)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The inverse associator's fibre component satisfies the corrected
 comprehension square. -/
 theorem associatorInvFamily_comprehension_coherence

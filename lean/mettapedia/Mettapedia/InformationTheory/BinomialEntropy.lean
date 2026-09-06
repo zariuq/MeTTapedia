@@ -148,8 +148,8 @@ entropy lemmas above quantify how much *smaller* an off-center term is. -/
 theorem choose_mul_choose_le_choose_add (a b i j : ℕ) :
     a.choose i * b.choose j ≤ (a + b).choose (i + j) := by
   rw [Nat.add_choose_eq]
-  have hmem : ((i, j) : ℕ × ℕ) ∈ Finset.antidiagonal (i + j) :=
-    Finset.mem_antidiagonal.mpr rfl
+  have hmem : ((i, j) : ℕ × ℕ) ∈ Finset.HasAntidiagonal.antidiagonal (i + j) :=
+    Finset.HasAntidiagonal.mem_antidiagonal.mpr rfl
   exact Finset.single_le_sum
     (f := fun ij : ℕ × ℕ => a.choose ij.1 * b.choose ij.2)
     (fun p _ => Nat.zero_le _) hmem

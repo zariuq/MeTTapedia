@@ -460,7 +460,9 @@ theorem finiteStage_replays :
       (stagedToWaist.{u, v}.mapClaim ()
         Mettapedia.GSLT.LanguageDef.AtomlessBooleanFirstOrderDecision.Canary.properPartSentence)
       (stagedToWaist.{u, v}.mapCertificate () ()) = true := by
-  rw [stagedToWaist.{u, v}.check_commutes]
+  refine (stagedToWaist.{u, v}.check_commutes ()
+    Mettapedia.GSLT.LanguageDef.AtomlessBooleanFirstOrderDecision.Canary.properPartSentence
+    ()).trans ?_
   exact
     Mettapedia.GSLT.LanguageDef.GenerativeCantorSemanticGrounding.Canary.properPart_replays
 
@@ -472,7 +474,9 @@ theorem setOperation_replays :
       (setOperationToWaist.{u, v}.mapCertificate ()
         Mettapedia.Languages.Megalodon.SetOperationSemanticAuthority.AxiomTag.unionIntro.proof) =
       true := by
-  rw [setOperationToWaist.{u, v}.check_commutes]
+  refine (setOperationToWaist.{u, v}.check_commutes ()
+    Mettapedia.Languages.Megalodon.SetOperationSemanticAuthority.unionIntroFormula
+    Mettapedia.Languages.Megalodon.SetOperationSemanticAuthority.AxiomTag.unionIntro.proof).trans ?_
   exact
     Mettapedia.Languages.Megalodon.SetOperationSemanticAuthority.Canary.unionIntro_replays
 
@@ -484,7 +488,9 @@ theorem structuralType_replays :
       (structuralToWaist.{u, v}.mapCertificate ()
         Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareFormedTyping.Examples.simplePiIntrinsic.raw) =
       true := by
-  rw [structuralToWaist.{u, v}.check_commutes]
+  refine (structuralToWaist.{u, v}.check_commutes ()
+    Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareFormedTyping.Examples.simplePiQuery
+    Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareFormedTyping.Examples.simplePiIntrinsic.raw).trans ?_
   exact
     Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DeclarationAwareNIKAuthority.simplePi_replays
 
@@ -496,7 +502,9 @@ theorem dependentPi_replays :
       (dependentPiToWaist.{u, v}.mapCertificate ()
         Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceDependentPiExperiment.NIKProfile.canonicalCertificate) =
       true := by
-  rw [dependentPiToWaist.{u, v}.check_commutes]
+  refine (dependentPiToWaist.{u, v}.check_commutes ()
+    Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceDependentPiExperiment.NIKProfile.canonicalCandidate
+    Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceDependentPiExperiment.NIKProfile.canonicalCertificate).trans ?_
   exact
     Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceDependentPiExperiment.NIKProfile.canonical_certificate_replays
 
@@ -506,7 +514,9 @@ theorem ordinaryStone_replays :
       (ordinaryStoneInclusion.{u, v}.mapClaim () perfectStoneClaim)
       (ordinaryStoneInclusion.{u, v}.mapCertificate ()
         perfectStoneCertificate) = true := by
-  rw [ordinaryStoneInclusion.{u, v}.check_commutes]
+  refine (ordinaryStoneInclusion.{u, v}.check_commutes ()
+    perfectStoneClaim
+    perfectStoneCertificate).trans ?_
   exact perfectStone_certificate_accepted
 
 theorem freePerspective_replays_same_certificate :
@@ -515,7 +525,9 @@ theorem freePerspective_replays_same_certificate :
       (freePerspectiveInclusion.{u, v}.mapClaim () perfectStoneClaim)
       (freePerspectiveInclusion.{u, v}.mapCertificate ()
         perfectStoneCertificate) = true := by
-  rw [freePerspectiveInclusion.{u, v}.check_commutes]
+  refine (freePerspectiveInclusion.{u, v}.check_commutes ()
+    perfectStoneClaim
+    perfectStoneCertificate).trans ?_
   exact free_checker_accepts_perfectStone
 
 theorem freePerspective_has_extra_meaning :

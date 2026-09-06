@@ -221,6 +221,10 @@ theorem nonorthonormal_memory_breaks_scaledCoordinate_action :
   have entry := congrFun equality ()
   norm_num [effectiveWeight, scaledWeightProjection, projector,
     Matrix.mulVec, Matrix.mul_apply] at entry
+  erw [Matrix.add_apply, Matrix.sub_apply] at entry
+  repeat (erw [Matrix.mul_apply] at entry; norm_num [Matrix.transpose_apply] at entry)
+  erw [Matrix.transpose_apply] at entry
+  norm_num at entry
 
 #print axioms effectiveWeight_identityScale
 #print axioms effectiveWeight_mul_memory

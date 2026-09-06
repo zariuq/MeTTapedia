@@ -81,22 +81,28 @@ theorem universal_value (offset : Int) (position : Nat) :
         ((spec offset (fun _ : Nat => True)).index position) = Int.ofNat position := by
   simp
 
-theorem empty_has_no_first : ¬ Available (fun _ : Nat => False) 0 := by
+private theorem empty_unavailable (position : Nat) :
+    ¬ Available (fun _ : Nat => False) position := by
   intro available
-  have finite : (setOf (fun _ : Nat => False)).Finite := by
-    simpa only [setOf_false] using (Set.finite_empty : (∅ : Set Nat).Finite)
-  have := available finite
-  simp at this
+  have finite : (setOf (fun _ : Nat => False)).Finite :=
+    (Set.finite_empty : (∅ : Set Nat).Finite)
+  have below := available finite
+  have empty : finite.toFinset = ∅ := by
+    apply Finset.eq_empty_iff_forall_notMem.mpr
+    intro n member
+    exact (Set.Finite.mem_toFinset finite).mp member
+  rw [empty] at below
+  exact Nat.not_lt_zero position below
+
+theorem empty_has_no_first : ¬ Available (fun _ : Nat => False) 0 :=
+  empty_unavailable 0
 
 theorem empty_domain_is_empty (offset : Int) (position : Nat) :
     ¬ (spec offset (fun _ : Nat => False)).Domain
       ((spec offset (fun _ : Nat => False)).index position) := by
   intro inDomain
-  have available := (domain_index_iff offset (fun _ : Nat => False) position).mp inDomain
-  have finite : (setOf (fun _ : Nat => False)).Finite := by
-    simpa only [setOf_false] using (Set.finite_empty : (∅ : Set Nat).Finite)
-  have below := available finite
-  simp at below
+  exact empty_unavailable position
+    ((domain_index_iff offset (fun _ : Nat => False) position).mp inDomain)
 
 #print axioms value_satisfies
 #print axioms value_strictly_increases

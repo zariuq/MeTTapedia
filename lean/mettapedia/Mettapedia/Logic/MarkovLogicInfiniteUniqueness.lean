@@ -1496,7 +1496,9 @@ theorem le_finiteRegionSupSeminorm
     (ha : a ∈ Λ) :
     d a ≤ finiteRegionSupSeminorm Λ d := by
   by_cases hΛ : Λ.Nonempty
-  · simpa [finiteRegionSupSeminorm, hΛ] using (Finset.le_sup' d ha)
+  · unfold finiteRegionSupSeminorm
+    rw [dif_pos hΛ]
+    exact Finset.le_sup' d ha
   · exact (hΛ ⟨a, ha⟩).elim
 
 omit [DecidableEq Atom] in

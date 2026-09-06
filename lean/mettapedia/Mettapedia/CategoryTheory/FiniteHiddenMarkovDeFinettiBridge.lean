@@ -67,9 +67,11 @@ theorem measurable_observedWordProb_borel
         | nil =>
             simp [FiniteHiddenMarkovModel.observationWeight]
         | cons v vs =>
-            simpa [FiniteHiddenMarkovModel.observationWeight,
-              FiniteHiddenMarkovModel.emissionProb] using
-              measurable_const.mul (ih vs)
+            convert (measurable_const (a := (emission u : Measure (Fin obs)) {v})).mul (ih vs) using 1
+            funext θ
+            simp [FiniteHiddenMarkovModel.observationWeight,
+              FiniteHiddenMarkovModel.emissionProb]
+            rfl
   exact
     (measurable_wordProb_borel (k := latent) (List.ofFn xs)).mul
       (hweight (List.ofFn xs) ys)
@@ -511,7 +513,7 @@ theorem observedWordWeightViaProbMarkov_eq_finiteDiracMixture
       ∫⁻ i : Fin n,
         observedWordProb (latent := latent) (obs := obs) ⟨g i, emission⟩ ys
           ∂(μ : Measure (Fin n)) := by
-            simpa [finiteHMMLatentMixingLaw, p, μ, g, hg] using hmap
+            exact hmap
     _ =
       ∑ i : Fin n,
         ((μ : Measure (Fin n)) {i}) *

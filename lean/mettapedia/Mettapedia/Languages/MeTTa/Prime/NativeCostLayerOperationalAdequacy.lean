@@ -62,8 +62,8 @@ cost layer operational boundary. -/
     {source : CostConfig Ground} {left right : CostedEvent Ground}
     (separation : CostEffectSeparation Ground source left right) :
     (compiledOperationalSchedule separation).workSpan = ⟨2, 1⟩ := by
-  rw [compiledOperationalSchedule, OperationalSchedule.workSpan_ofIndexed]
-  exact separation.schedule_workSpan
+  exact (OperationalSchedule.workSpan_ofIndexed
+    (compiledSchedule separation PUnit.unit)).trans separation.schedule_workSpan
 
 /-! ## Finite families and valid colourings -/
 
@@ -125,8 +125,11 @@ theorem analyzeOperational_isSome_iff {Ground : Type} [DecidableEq Ground]
     (source : CostConfig Ground) (left right : CostedEvent Ground) :
     (analyzeOperational? source left right).isSome = true ↔
       left.consumed + right.consumed ≤ source := by
-  simp only [analyzeOperational?, Option.isSome_map]
-  exact analyzeAndSchedule_isSome_iff source left right
+  exact (congrArg (· = true) (Option.isSome_map
+    (f := fun result => (⟨result.1.target, OperationalSchedule.ofIndexed result.2⟩ :
+      Σ target : CostConfig Ground, OperationalSchedule Ground source target))
+    (x := analyzeAndSchedule source left right PUnit.unit))).to_iff.trans
+      (analyzeAndSchedule_isSome_iff source left right)
 
 namespace Examples
 

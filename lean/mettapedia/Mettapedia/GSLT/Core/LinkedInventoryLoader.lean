@@ -467,7 +467,7 @@ theorem valueMapNTT_comp (earlier : Source → Target)
   | _ state =>
       change predicate (Quotient.mk _ ((state.map earlier).map later)) ↔
         predicate (Quotient.mk _ (state.map (later ∘ earlier)))
-      rw [State.map_comp]
+      erw [State.map_comp]
 
 /-- Exact local reflection for opaque-value transport in the abstract
 finite-inventory loader.  This is separate from the linked representation so
@@ -555,7 +555,7 @@ theorem finiteValueMapNTT_comp (earlier : Source → Target)
         predicate
           (Quotient.mk _
             (FiniteInventoryLoader.State.map (later ∘ earlier) state))
-      rw [FiniteInventoryLoader.State.map_comp]
+      erw [FiniteInventoryLoader.State.map_comp]
 
 /-- Map a proof-relevant linked-row path without erasing its occurrence
 identity or administrative cursor states. -/
@@ -734,7 +734,7 @@ theorem loweringNTT_valueMap_naturality (translation : Source → Target) :
         predicate
           (Quotient.mk _
             (lowerState (FiniteInventoryLoader.State.map translation state)))
-      rw [map_lowerState]
+      erw [map_lowerState]
 
 /-- Lower a complete proof-relevant abstract path without erasing its
 intermediate occurrence states. -/

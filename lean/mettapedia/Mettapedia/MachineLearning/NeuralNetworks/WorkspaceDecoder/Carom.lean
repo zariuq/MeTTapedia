@@ -700,7 +700,7 @@ theorem oblique_positiveEnergy_zeroConnectionRemainderAtOrigin :
   · funext i
     fin_cases i <;>
       simp [quadraticConnectionRemainder, obliqueFirstTask, obliqueSecondTask,
-        QuadraticTask.gradient]
+        QuadraticTask.gradient, Matrix.mulVec, dotProduct]
 
 /-- Crown correction: InterferenceGram energy and the connection remainder
 are different diagnostics.  Positive energy can coexist with zero remainder

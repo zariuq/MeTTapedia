@@ -92,15 +92,11 @@ theorem supportsReadout_pullback_iff_of_surjective
       run := sourceRealization.run
       agrees := ?_ }⟩
     intro policy target
+    change family.Policy at policy
     obtain ⟨source, maps⟩ := surjective target
-    calc
-      sourceRealization.run policy (readout target) =
-          sourceRealization.run policy (readout (mapState source)) := by
-        rw [maps]
-      _ = (family.pullback mapState).decide policy source :=
-        sourceRealization.agrees policy source
-      _ = family.decide policy target := by
-        simp [maps]
+    exact (congrArg (sourceRealization.run policy ∘ readout) maps.symm).trans
+      ((sourceRealization.agrees policy source).trans
+        (congrArg (family.decide policy) maps))
   · exact family.supportsReadout_pullback mapState
 
 /-! ## Positive and negative controls -/

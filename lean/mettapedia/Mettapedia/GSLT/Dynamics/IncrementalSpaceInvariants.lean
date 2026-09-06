@@ -250,13 +250,15 @@ def atomToDimerFragment : FragmentUpdate Species where
 
 theorem dimerization_balanced :
     Balanced massSummary dimerizationFragment := by
-  norm_num [Balanced, massSummary, dimerizationFragment, mass]
+  change (Multiset.map mass {.atom, .atom}).sum = (Multiset.map mass {.dimer}).sum
+  norm_num [mass]
 
 /-- Negative control: a rewrite that mints one unit of mass is rejected by the
 same local check. -/
 theorem atomToDimer_not_balanced :
     ¬ Balanced massSummary atomToDimerFragment := by
-  norm_num [Balanced, massSummary, atomToDimerFragment, mass]
+  change (Multiset.map mass {.atom}).sum ≠ (Multiset.map mass {.dimer}).sum
+  norm_num [mass]
 
 def dimerizationUpdate : FramedUpdate Species where
   source := {.atom, .atom, .atom}
@@ -328,7 +330,10 @@ inductive Cell where
   | left
   | middle
   | right
-deriving DecidableEq, Fintype, Repr
+deriving DecidableEq, Repr
+
+instance : Fintype Cell :=
+  ⟨{.left, .middle, .right}, by intro x; cases x <;> simp⟩
 
 def lineEdges : Finset (Cell × Cell) :=
   {(.left, .middle), (.middle, .right)}

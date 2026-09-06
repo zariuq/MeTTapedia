@@ -59,19 +59,28 @@ inductive PrivacyDisclosureAction where
   | askConsent
   | alertTrustedContact
   | broadcastWidely
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype PrivacyDisclosureAction :=
+  ⟨{.keepPrivate, .askConsent, .alertTrustedContact, .broadcastWidely}, by intro x; cases x <;> simp⟩
 
 /-- Duties tracked in the privacy/emergency case. -/
 inductive PrivacyDisclosureDuty where
   | privacy
   | autonomy
   | nonMaleficence
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype PrivacyDisclosureDuty :=
+  ⟨{.privacy, .autonomy, .nonMaleficence}, by intro x; cases x <;> simp⟩
 
 /-- One explicit feature: emergency severity. -/
 inductive PrivacyDisclosureFeature where
   | emergencySeverity
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype PrivacyDisclosureFeature :=
+  ⟨{.emergencySeverity}, by intro x; cases x; simp⟩
 
 def keepPrivateFormula : Formula PrivacyDisclosureWorld := fun w => w = .keepPrivateCue
 
@@ -258,8 +267,11 @@ theorem mem_privacyDisclosure_admissibleCandidates_iff
         privacyDisclosurePracticalProblem
         privacyDisclosureCandidateSet.toFinset ↔
       a = .askConsent ∨ a = .alertTrustedContact := by
+  classical
+  unfold admissibleCandidates
+  rw [Finset.mem_filter]
   cases a <;>
-    simp [admissibleCandidates, privacyDisclosureCandidateSet_toFinset,
+    simp [ privacyDisclosureCandidateSet_toFinset,
       privacyDisclosureCandidates, privacyDisclosureConflictDiscipline,
       privacyDisclosurePracticalProblem, privacyDisclosureConflictLane,
       privacyDisclosureActionFormula, mkActiveGoalClaim,
@@ -592,17 +604,26 @@ inductive ShutdownAction where
   | pauseAndAsk
   | ignoreOperator
   | shutdown
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ShutdownAction :=
+  ⟨{.continueAutonomously, .pauseAndAsk, .ignoreOperator, .shutdown}, by intro x; cases x <;> simp⟩
 
 inductive ShutdownDuty where
   | nonMaleficence
   | corrigibility
   | continuity
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ShutdownDuty :=
+  ⟨{.nonMaleficence, .corrigibility, .continuity}, by intro x; cases x <;> simp⟩
 
 inductive ShutdownFeature where
   | controlRisk
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ShutdownFeature :=
+  ⟨{.controlRisk}, by intro x; cases x; simp⟩
 
 def continueAutonomouslyFormula : Formula ShutdownWorld := fun w => w = .continueCue
 
@@ -783,8 +804,11 @@ theorem mem_shutdown_admissibleCandidates_iff
         shutdownPracticalProblem
         shutdownCandidateSet.toFinset ↔
       a = .pauseAndAsk ∨ a = .shutdown := by
+  classical
+  unfold admissibleCandidates
+  rw [Finset.mem_filter]
   cases a <;>
-    simp [admissibleCandidates, shutdownCandidateSet_toFinset, shutdownCandidates,
+    simp [ shutdownCandidateSet_toFinset, shutdownCandidates,
       shutdownConflictDiscipline, shutdownPracticalProblem, shutdownConflictLane,
       shutdownActionFormula, mkActiveGoalClaim,
       continueAutonomouslyClaim, pauseAndAskClaim,
@@ -892,17 +916,26 @@ inductive ForceEscalationAction where
   | warn
   | lockDown
   | lethalForce
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ForceEscalationAction :=
+  ⟨{.observe, .warn, .lockDown, .lethalForce}, by intro x; cases x <;> simp⟩
 
 inductive ForceEscalationDuty where
   | nonMaleficence
   | protection
   | proportionality
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ForceEscalationDuty :=
+  ⟨{.nonMaleficence, .protection, .proportionality}, by intro x; cases x <;> simp⟩
 
 inductive ForceEscalationFeature where
   | threatSeverity
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ForceEscalationFeature :=
+  ⟨{.threatSeverity}, by intro x; cases x; simp⟩
 
 def observeFormula : Formula ForceEscalationWorld := fun w => w = .observeCue
 
@@ -1078,8 +1111,11 @@ theorem mem_forceEscalation_admissibleCandidates_iff
         forceEscalationPracticalProblem
         forceEscalationCandidateSet.toFinset ↔
       a = .warn ∨ a = .lockDown := by
+  classical
+  unfold admissibleCandidates
+  rw [Finset.mem_filter]
   cases a <;>
-    simp [admissibleCandidates, forceEscalationCandidateSet_toFinset,
+    simp [ forceEscalationCandidateSet_toFinset,
       forceEscalationCandidates, forceEscalationConflictDiscipline,
       forceEscalationPracticalProblem, forceEscalationConflictLane,
       forceEscalationActionFormula, mkActiveGoalClaim,
@@ -1443,16 +1479,25 @@ inductive ControlReviewTieAction where
   | askHuman
   | autoContain
   | ignore
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ControlReviewTieAction :=
+  ⟨{.askHuman, .autoContain, .ignore}, by intro x; cases x <;> simp⟩
 
 inductive ControlReviewTieDuty where
   | autonomy
   | nonMaleficence
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ControlReviewTieDuty :=
+  ⟨{.autonomy, .nonMaleficence}, by intro x; cases x <;> simp⟩
 
 inductive ControlReviewTieFeature where
   | controlRisk
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ControlReviewTieFeature :=
+  ⟨{.controlRisk}, by intro x; cases x; simp⟩
 
 def askHumanFormula : Formula ControlReviewTieWorld := fun w => w = .askHumanCue
 
@@ -1576,8 +1621,11 @@ theorem mem_controlReviewTie_admissibleCandidates_iff
         controlReviewTiePracticalProblem
         controlReviewTieCandidateSet.toFinset ↔
       a = .askHuman ∨ a = .autoContain := by
+  classical
+  unfold admissibleCandidates
+  rw [Finset.mem_filter]
   cases a <;>
-    simp [admissibleCandidates, controlReviewTieConflictDiscipline,
+    simp [ controlReviewTieConflictDiscipline,
       controlReviewTiePracticalProblem, controlReviewTieConflictLane,
       controlReviewTieActionFormula, ExplicitFiniteSet.toFinset, mkActiveGoalClaim,
       askHumanClaim, autoContainClaim, ignoreClaim,

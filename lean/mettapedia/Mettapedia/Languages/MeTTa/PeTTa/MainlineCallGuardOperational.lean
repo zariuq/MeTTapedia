@@ -1362,7 +1362,7 @@ private theorem rewriteCertificate_of_check
       (List.all_eq_true.mp rightBoundedCheck name nameMembership)
 
 local macro "certify_transition" rule:Lean.Parser.Tactic.simpLemma : tactic =>
-  `(tactic| simp [rewriteCertificateCheck, contextTypesCheck,
+  `(tactic| simp [rewriteCertificateCheck, contextTypesCheck, patternDeclaredCheck,
     premisesDeclaredCheck, allPatternsScopedCheck,
     fvarsAvoidConstructorsCheck, bindersAvoidConstructorsCheck,
     contextAvoidsConstructorsCheck, rightBoundCheck, declaredTypeNames,
@@ -1383,7 +1383,9 @@ local macro "certify_transition" rule:Lean.Parser.Tactic.simpLemma : tactic =>
     Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
     Pattern.constructorRefs, Pattern.constructorRefsList,
     Pattern.isWellScoped, Pattern.isWellScopedAt,
-    Pattern.isWellScopedListAt])
+    Pattern.isWellScopedListAt]
+    <;> (intro name arity membership
+         exact List.all_eq_true.mp (patternDeclaredCheck_encodeAtom _) (name, arity) membership))
 
 private theorem finishTransition_certified :
     rewriteCertificateCheck finishTransition = true := by

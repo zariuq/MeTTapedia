@@ -332,29 +332,34 @@ theorem symm_reifyWith
         cospan.reifyWith resolve leg pattern := by
   intro pattern
   induction pattern using Pattern.inductionOn with
-  | hbvar index => simp [reifyWith]
+  | hbvar index =>
+      exact (reifyWith.eq_1 cospan.symm resolve leg index).trans
+        (reifyWith.eq_1 cospan resolve leg index).symm
   | hfvar name =>
-      cases resolve name <;>
-        simp [reifyWith, CostStaticAtomKeyCospan.symm, commonAtomName]
+      exact (reifyWith.eq_2 cospan.symm resolve leg name).trans
+        (reifyWith.eq_2 cospan resolve leg name).symm
   | happly constructor arguments inductionHypothesis =>
-      simp only [reifyWith, Pattern.apply.injEq, true_and]
-      apply List.map_congr_left
-      intro argument membership
-      exact inductionHypothesis argument membership
+      exact (reifyWith.eq_3 cospan.symm resolve leg constructor arguments).trans
+        ((congrArg (Pattern.apply constructor)
+          (List.map_congr_left inductionHypothesis)).trans
+          (reifyWith.eq_3 cospan resolve leg constructor arguments).symm)
   | hlambda binder body inductionHypothesis =>
-      simp only [reifyWith, Pattern.lambda.injEq, true_and]
-      exact inductionHypothesis
+      exact (reifyWith.eq_4 cospan.symm resolve leg binder body).trans
+        ((congrArg (Pattern.lambda binder) inductionHypothesis).trans
+          (reifyWith.eq_4 cospan resolve leg binder body).symm)
   | hmultiLambda arity binders body inductionHypothesis =>
-      simp only [reifyWith, Pattern.multiLambda.injEq, true_and]
-      exact inductionHypothesis
+      exact (reifyWith.eq_5 cospan.symm resolve leg arity binders body).trans
+        ((congrArg (Pattern.multiLambda arity binders) inductionHypothesis).trans
+          (reifyWith.eq_5 cospan resolve leg arity binders body).symm)
   | hsubst body replacement bodyHypothesis replacementHypothesis =>
-      simp only [reifyWith, Pattern.subst.injEq]
-      exact ⟨bodyHypothesis, replacementHypothesis⟩
+      exact (reifyWith.eq_6 cospan.symm resolve leg body replacement).trans
+        ((congrArg₂ Pattern.subst bodyHypothesis replacementHypothesis).trans
+          (reifyWith.eq_6 cospan resolve leg body replacement).symm)
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [reifyWith, Pattern.collection.injEq, true_and, and_true]
-      apply List.map_congr_left
-      intro element membership
-      exact inductionHypothesis element membership
+      exact (reifyWith.eq_7 cospan.symm resolve leg collectionType elements rest).trans
+        ((congrArg (fun values => Pattern.collection collectionType values rest)
+          (List.map_congr_left inductionHypothesis)).trans
+          (reifyWith.eq_7 cospan resolve leg collectionType elements rest).symm)
 
 @[simp]
 theorem symm_commonSupport

@@ -187,8 +187,8 @@ theorem duplicate_result_occurrences_share_value_receipt :
         (needAnswerPattern result
           (receiptFor model space revisionTerm subject result))
         (semanticNeedAnswers model space revisionTerm subject) = 2 := by
-  rw [semanticNeedAnswers_count, duplicateEvaluation]
-  rfl
+  exact (semanticNeedAnswers_count model space revisionTerm subject result).trans
+    (by rw [duplicateEvaluation]; rfl)
 
 /-- One exact occurrence of the duplicated result.  This is the information
 retained by Prime's semantic answer carrier and omitted by the value-level
@@ -368,7 +368,12 @@ theorem need_rewrite_bag_adequate (model : QueryFirstModel)
       MeTTaZero.queryRequestPattern, MeTTaZero.queryAnswerPattern,
       MeTTaZero.evaluationRequestPattern, MeTTaZero.evaluationAnswerPattern,
       needRequestPattern,
-      MeTTaZero.metavariable, matchPatternForRule,
+      MeTTaZero.metavariable, matchPatternForRule, matchPatternForRuleUsing,
+    Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
       matchPatternForRuleUsing, applyBindingsForRule,
       applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
       applyBindings]
@@ -397,7 +402,12 @@ macro "prime_step_simp" : tactic =>
         MeTTaZero.queryRequestPattern, MeTTaZero.queryAnswerPattern,
         MeTTaZero.evaluationRequestPattern, MeTTaZero.evaluationAnswerPattern,
         needRequestPattern, needAnswerPattern, reflectedEvaluationPattern,
-        MeTTaZero.metavariable, matchPatternForRule,
+        MeTTaZero.metavariable, matchPatternForRule, matchPatternForRuleUsing,
+    Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
         matchPatternForRuleUsing, applyBindingsForRule,
         applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
         applyBindings])
@@ -677,6 +687,8 @@ noncomputable def evaluationRealization (model : QueryFirstModel)
         simp [observeSemanticOccurrence, observeAuthoredArtifact,
           EvaluationOccurrence.semanticComparison, compileEvaluation,
           evaluationRouteComparison]
+        exact ⟨(directEvaluationPath_length model.toPrimeModel space subject result occurrence copy).symm,
+          (lazyEvaluationPath_length model.toPrimeModel space subject result occurrence copy).symm⟩
 
 @[simp] theorem evaluationRealization_observation (model : QueryFirstModel)
     (space : model.Space) (spaceTerm : Pattern)

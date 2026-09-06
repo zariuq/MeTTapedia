@@ -56,6 +56,7 @@ theorem rhoPairSourceReflectiveDecl_mem :
     ReflectionExtension.rhoReflectionProfile.presentations
   simp [ReflectionExtension.rhoReflectionProfile]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The base Quote/Drop collapse as a source-language reflective occurrence
 between the two decoration skeletons. -/
 def rhoPairCollapseWitness :
@@ -207,6 +208,7 @@ theorem rhoPairQuoteReset_reached_mappedSourceTypes_ne :
   exact (show "Proc" ≠ "Name" by decide)
     (costBaseSortName_injective (TypeExpr.base.inj equality))
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The same lawful pair also refutes cancellation of root canonical
 equality through its unequal contexts.  After the complete source-to-static
 map and binder reinsertion, the reached children are still `PDrop a` and

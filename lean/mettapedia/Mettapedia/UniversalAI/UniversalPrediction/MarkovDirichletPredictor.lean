@@ -82,11 +82,11 @@ instance : AddCommMonoid (TransCounts k) where
   nsmul n c := ⟨fun i j => n * c.counts i j⟩
   nsmul_zero c := by
     ext i j
-    simp
+    exact Nat.zero_mul _
   nsmul_succ n c := by
     ext i j
-    -- `nsmul` on `ℕ` is multiplication, so this is `Nat.succ_mul` plus commutativity of addition.
-    simp [Nat.succ_mul, Nat.add_comm]
+    change (n + 1) * c.counts i j = n * c.counts i j + c.counts i j
+    exact Nat.succ_mul _ _
 
 /-- Increment exactly the transition counter `(prev,next)`. -/
 def bump (c : TransCounts k) (prev next : Fin k) : TransCounts k :=

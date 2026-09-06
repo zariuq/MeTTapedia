@@ -374,7 +374,7 @@ private theorem emptyParallel_typed
         baseParallelRule (baseParallelRule_mem configuration)
     · exact nextBaseParallelRule_params configuration
     · exact .nil [] _
-  simpa [sourceSort, CostStaticColor.symbols, costBaseStaticSymbols,
+  simpa [sourceSort, CostStaticColor.mapLangSort, CostStaticColor.symbols, costBaseStaticSymbols,
     costBaseLanguageDefSymbolMap, costBaseConstructor] using typed
 
 private def emptyParallel
@@ -629,7 +629,8 @@ private theorem rhoBaseEmptyElaborationAt_normalized_pattern
     (rhoBaseEmptyElaborationAt configuration node sourceSortEq
       patternEq).normalizeErasure.1 =
       .apply (costBaseConstructorName "PZero") [] := by
-  rw [CostOpenElaboration.normalizeErasure_pattern]
+  refine (CostOpenElaboration.normalizeErasure_pattern
+    (rhoBaseEmptyElaborationAt configuration node sourceSortEq patternEq)).trans ?_
   rw [rhoBaseEmptyElaborationAt_normalize_eq configuration node sourceSortEq patternEq]
   apply Eq.trans
     (CostRegionTree.normalize_static_eq_normalizeRaw_of_entries_eq_nil
@@ -741,13 +742,14 @@ private theorem rhoBaseEmptyElaborationAt_normalizedHereditary_pattern
         have reifiedFrame :
             (emptyNode.reifiedSourceFrame environment).1 =
               .collection .hashBag [] none := by
-          rw [CostStaticRegionNode.reifiedSourceFrame_pattern]
-          change environment.reify (.collection .hashBag [] none) = _
-          simp [CostStaticAtomEnvironment.reify]
+          refine (CostStaticRegionNode.reifiedSourceFrame_pattern emptyNode environment).trans ?_
+          exact CostStaticAtomEnvironment.reify.eq_7 environment .hashBag [] none
         change (CostStaticRegionNode.normalizeHereditary emptyNode values).1 = _
         unfold CostStaticRegionNode.normalizeHereditary
-        rw [CostStaticRegionNode.normalizeHereditaryWithInventory_pattern]
-        rw [CostStaticRegionNode.normalizeHereditaryRawWithInventory_eq_sourceAction]
+        refine (CostStaticRegionNode.normalizeHereditaryWithInventory_pattern
+          emptyNode values inventory).trans ?_
+        refine (CostStaticRegionNode.normalizeHereditaryRawWithInventory_eq_sourceAction
+          emptyNode values inventory).trans ?_
         rw [reifiedFrame]
         simp only [canonicalizeByDepths, canonicalizeListByDepths,
           normalizeParallelElementsBy, sortPatternsBy,
@@ -868,14 +870,15 @@ theorem rhoCostNormalizeOpenHereditary_baseEmptyRepresentative :
       have reifiedFrame :
           (rhoBaseEmptyNode.reifiedSourceFrame environment).1 =
             .collection .hashBag [] none := by
-        rw [CostStaticRegionNode.reifiedSourceFrame_pattern]
-        change environment.reify (.collection .hashBag [] none) = _
-        simp [CostStaticAtomEnvironment.reify]
+        refine (CostStaticRegionNode.reifiedSourceFrame_pattern rhoBaseEmptyNode environment).trans ?_
+        exact CostStaticAtomEnvironment.reify.eq_7 environment .hashBag [] none
       change (CostStaticRegionNode.normalizeHereditary rhoBaseEmptyNode
         values).1 = _
       unfold CostStaticRegionNode.normalizeHereditary
-      rw [CostStaticRegionNode.normalizeHereditaryWithInventory_pattern]
-      rw [CostStaticRegionNode.normalizeHereditaryRawWithInventory_eq_sourceAction]
+      refine (CostStaticRegionNode.normalizeHereditaryWithInventory_pattern
+        rhoBaseEmptyNode values inventory).trans ?_
+      refine (CostStaticRegionNode.normalizeHereditaryRawWithInventory_eq_sourceAction
+        rhoBaseEmptyNode values inventory).trans ?_
       rw [reifiedFrame]
       simp only [canonicalizeByDepths, canonicalizeListByDepths,
         normalizeParallelElementsBy, sortPatternsBy,

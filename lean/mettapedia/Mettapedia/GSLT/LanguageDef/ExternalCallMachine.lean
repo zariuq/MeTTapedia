@@ -319,7 +319,7 @@ private theorem externalCallLanguage_rewrites_validate :
   rcases membership with
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
   all_goals
-    simp [LanguageDef.validateRewrite, externalCallLanguage, externalCallLanguageTransitions, ctor,
+    simp [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff, externalCallLanguage, externalCallLanguageTransitions, ctor,
       typed, v, a, query, run, halted, stepReceipt, externalReceipt,
       commonContext, consumeFuel, fetch, branchRule, callRule,
       returnFaultRule, fuelExhaustedRule, branchZeroTransition,

@@ -269,7 +269,13 @@ theorem gaussianInformation_add_positiveExample :
     ((⟨fun _ : Unit => 2, fun _ _ => 3⟩ : GaussianInformation Unit) +
       ⟨fun _ : Unit => 5, fun _ _ => 7⟩) =
         ⟨fun _ : Unit => 7, fun _ _ => 10⟩ := by
-  apply GaussianInformation.ext' <;> funext <;> norm_num
+  apply GaussianInformation.ext'
+  · funext i
+    change (2 : ℝ) + 5 = 7
+    norm_num
+  · funext i j
+    change (3 : ℝ) + 7 = 10
+    norm_num
 
 /-- Zero information is the additive identity but is not a proper Gaussian
 belief on a nonempty coordinate space. -/

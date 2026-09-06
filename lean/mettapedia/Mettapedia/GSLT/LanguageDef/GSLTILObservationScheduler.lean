@@ -106,7 +106,7 @@ theorem identity_workOnly_supports_workSelection :
     (identityRoute.pullbackObservation workOnly
       ).SupportsMaxSelection WorkSpan.work := by
   apply identityRoute.pullbackObservation_supportsMaxSelection workOnly
-  rw [ObservationDiscipline.supportsMaxSelection_iff]
+  erw [ObservationDiscipline.supportsMaxSelection_iff]
   intro first second sameReadout
   exact sameReadout
 

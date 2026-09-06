@@ -589,7 +589,9 @@ private theorem rewrites_validate :
   simp only [List.mem_cons, List.mem_nil_iff, or_false] at rewriteMember
   rcases rewriteMember with rfl | rfl
   all_goals
-    simp [LanguageDef.validateRewrite, language, definition, queryRewrite,
+    dsimp only [LanguageDef.validateRewrite, language, definition,
+      ExtendedLanguageDef.toLanguageDef, ExtendedLanguageDef.addLayer, queryRewrite, evaluationRewrite]
+    simp [queryRewrite,
       evaluationRewrite, queryRequestPattern, queryAnswerPattern,
       evaluationRequestPattern, evaluationAnswerPattern, metavariable,
       atomType, spaceType, processType, alternativesType,
@@ -701,9 +703,10 @@ def logicOnlySource : authoredExtensionGSLT.Term :=
     authoredExtensionComposition.elaborate language logicOnlySource =
       some (logicDeclarations, []) := by
   unfold authoredExtensionComposition logicOnlySource
-  rw [CompositionalLayer.product_elaborates_left_only,
-    CompositionalLayer.elaborate_quote]
-  rfl
+  rw [CompositionalLayer.product_elaborates_left_only]
+  exact (congrArg (Option.map (fun value =>
+    (value, (oracleAuthoringLayer.system language).emptyPayload)))
+    (CompositionalLayer.elaborate_quote logicAuthoringLayer language logicDeclarations)).trans rfl
 
 /-- Adding the grounding declaration changes the typed oracle payload.  It is
 therefore a genuine composed library, not behavior smuggled into the core or
@@ -728,8 +731,8 @@ theorem authoredArrayRealization_compile_quote :
         (authoredExtensionComposition.toCoGSLTLayer.quote language
           authoredExtensionDeclarations) =
       some (logicDeclarations.toArray, [groundApplyDeclaration].toArray) := by
-  rw [CoGSLTLayer.Realization.compileTerm_quote]
-  rfl
+  exact (CoGSLTLayer.Realization.compileTerm_quote authoredArrayRealization
+    language authoredExtensionDeclarations).trans rfl
 
 /-! ### One elaborator for the composed authoring language -/
 

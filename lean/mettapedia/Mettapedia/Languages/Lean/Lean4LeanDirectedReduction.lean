@@ -313,7 +313,7 @@ theorem satisfies_exactCoreRawHeadTargetType_iff_event
         source
         (exactCoreRawHeadTargetType environment universeParameters target).pred <->
       Nonempty (CoreRawHeadEvent environment universeParameters source target) := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  erw [satisfies_exactTargetNativeType_iff_step]
   rfl
 
 /-- Exact raw-step decision is the first executable comparison contract.  A
@@ -328,7 +328,7 @@ theorem rawStepDecision_accepts_iff_exactCoreRawHeadTargetType
       (gsltOSLF (coreRawHeadGSLT environment universeParameters)).satisfies
         source
         (exactCoreRawHeadTargetType environment universeParameters target).pred := by
-  rw [decision.correct]
+  erw [decision.correct]
   exact (satisfies_exactCoreRawHeadTargetType_iff_event environment
     universeParameters source target).symm
 
@@ -352,7 +352,7 @@ theorem reductionNormalizer_result_inhabits_closure_ntt
       source
       (exactCoreRawHeadClosureTargetType environment universeParameters
         (normalizer.normalize source)).pred := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  erw [satisfies_exactTargetNativeType_iff_step]
   exact ⟨normalizer.normalize source, normalizer.reduces source, rfl⟩
 
 /-- The same realization contract exposes terminality separately from
@@ -403,7 +403,7 @@ theorem satisfies_exactCoreHeadTargetType_iff_event
           expectedType target).pred <->
       Nonempty (CoreHeadEvent environment universeParameters context
         expectedType source target) := by
-  rw [satisfies_exactTargetNativeType_iff_step]
+  erw [satisfies_exactTargetNativeType_iff_step]
   rfl
 
 /-- Any inhabitant of the typed exact-target type also inhabits the raw
@@ -438,7 +438,7 @@ theorem coreHeadNativeClaim_meaning_iff_event
       Nonempty (CoreHeadEvent environment universeParameters context
         expectedType source target) := by
   unfold coreHeadNativeClaim
-  rw [exactStepNativeClaim_meaning_iff_step]
+  erw [exactStepNativeClaim_meaning_iff_step]
   rfl
 
 /-- The load-bearing OSLF-to-Lean4Lean comparison: every inhabitant of the
@@ -488,7 +488,7 @@ theorem stepDecision_accepts_iff_exactCoreHeadTargetType
           source
           (exactCoreHeadTargetType environment universeParameters context
             expectedType target).pred := by
-  rw [decision.correct]
+  erw [decision.correct]
   exact (satisfies_exactCoreHeadTargetType_iff_event environment
     universeParameters context expectedType source target).symm
 

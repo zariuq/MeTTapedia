@@ -49,7 +49,11 @@ inductive ModeledUtilizationRegime where
   | separableTypedHoles
   | varyingObservationNoise
   | contextDependentRouting
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype ModeledUtilizationRegime where
+  elems := {.wellSpecifiedScalarQuadratic, .contractivePCInference, .prospectivePCPlasticity, .stationaryIndependentGaussian, .positiveProcessDrift, .knownObservationOverlap, .fixedLinearDistortion, .finiteBimodalDecision, .separableTypedHoles, .varyingObservationNoise, .contextDependentRouting}
+  complete := by intro regime; cases regime <;> simp
 
 /-- The recommender is a direct regime decision table. -/
 def recommendationFor : ModeledUtilizationRegime → Recommendation

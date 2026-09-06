@@ -1034,11 +1034,13 @@ theorem leatta_minimal_unify_bad_arity_eval_message :
     Metta.Minimal.isFinal, Metta.Minimal.finalPair,
     Metta.Minimal.MinEnv.ofAtomsGT, Metta.Minimal.extractRules,
     Metta.callGrounded, Metta.GroundingTable.lookup,
-    Metta.instantiate,
+    Metta.instantiate, Metta.Minimal.errAtom,
     Metta.Minimal.St.init, Metta.Minimal.World.empty,
-    leattaBadUnifyThreeArgs, leattaBadUnifyThreeArgsError,
-    Metta.Minimal.errAtom, Metta.Minimal.unifyBadArityMessage]
-  exact ⟨[], rfl⟩
+    leattaBadUnifyThreeArgs, leattaBadUnifyThreeArgsError]
+  refine ⟨[], ?_⟩
+  dsimp only [List.filter, List.map, Metta.Minimal.isFinal, Metta.Minimal.finalPair]
+  simp [Metta.instantiate, Metta.Minimal.emptyA]
+  rfl
 
 /-- The malformed-`unify` minimal-interpreter message is not the HE reserved
 arity-error symbol. -/
@@ -1046,9 +1048,13 @@ theorem leatta_minimal_unify_bad_arity_message_not_HE_reserved_symbol :
     leattaBadUnifyThreeArgsError ≠
       Metta.Minimal.errAtom leattaBadUnifyThreeArgs
         "IncorrectNumberOfArguments" := by
-  intro h
-  simp [leattaBadUnifyThreeArgsError, leattaBadUnifyThreeArgs,
-    Metta.Minimal.errAtom, Metta.Minimal.unifyBadArityMessage] at h
+  intro equality
+  have messageEquality := congrArg (fun atom => match atom with
+    | .expr [_, _, .sym message] => message
+    | _ => "") equality
+  change Metta.Minimal.unifyBadArityMessage leattaBadUnifyThreeArgs = "IncorrectNumberOfArguments" at messageEquality
+  have distinct : Metta.Minimal.unifyBadArityMessage leattaBadUnifyThreeArgs ≠ "IncorrectNumberOfArguments" := by decide +kernel
+  exact distinct messageEquality
 
 theorem HE_unify_bad_arity_three_args_mettaCall :
     MettaCall Space.empty GroundedDispatch.none
@@ -1063,11 +1069,7 @@ theorem leatta_minimal_unify_bad_arity_error_is_HE_bad_arity_translation :
     leattaBadUnifyThreeArgsError =
       LeaTTaBridge.toLeaTTaAtom
         (mkUnifyBadArityError heBadUnifyThreeArgs) := by
-  simp [leattaBadUnifyThreeArgsError, leattaBadUnifyThreeArgs,
-    heBadUnifyThreeArgs, mkUnifyBadArityError, mkErrorMessage,
-    unifyBadArityMessage, Atom.error, LeaTTaBridge.toLeaTTaAtom,
-    LeaTTaBridge.toLeaTTaAtoms, Metta.Minimal.errAtom,
-    Metta.Minimal.unifyBadArityMessage]
+  rfl
 
 /-- Exact malformed-`unify` branch agreement: LeaTTa's minimal executable
 readout and the HE declarative reference interface the same bad-arity error for a

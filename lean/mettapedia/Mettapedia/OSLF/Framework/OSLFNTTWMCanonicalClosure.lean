@@ -139,6 +139,7 @@ structure CanonicalTransportGoalArgs
   ψ : CategoryTheory.Subfunctor modal.Dm
   goal : CanonicalGoalArgs ctx cat fa
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Full composed star endpoint over canonical modal-subobject semantics. -/
 theorem oslf_ntt_wm_star_sound
     (lang : LanguageDef) (s : LangSort lang)
@@ -248,6 +249,7 @@ theorem oslf_ntt_wm_star_sound
     with ⟨hPack, hEv⟩
   exact ⟨hModal.1, hModal.2, (hPack p).2, hEv⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Step endpoint specialization of `oslf_ntt_wm_star_sound`. -/
 theorem oslf_ntt_wm_step_sound
     (lang : LanguageDef) (s : LangSort lang)
@@ -331,6 +333,7 @@ theorem oslf_ntt_wm_step_sound
     (Xobj := Xobj) (Xgr := Xgr)
     (p := p) (q := q) (hstar := hstar) (φcat := φcat)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Star endpoint wrapper with policy synthesized from path-order and controlled
 step-policy assumptions. -/
 theorem oslf_ntt_wm_star_sound_of_pathOrder
@@ -428,6 +431,7 @@ theorem oslf_ntt_wm_star_sound_of_pathOrder
     (Xobj := Xobj) (Xgr := Xgr)
     (p := p) (q := q) (hstar := hstar) (φcat := φcat)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Step endpoint wrapper with policy synthesized from path-order and controlled
 step-policy assumptions. -/
 theorem oslf_ntt_wm_step_sound_of_pathOrder
@@ -525,6 +529,7 @@ theorem oslf_ntt_wm_step_sound_of_pathOrder
     (Xobj := Xobj) (Xgr := Xgr)
     (p := p) (q := q) (hstep := hstep) (φcat := φcat)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Formula-level star endpoint:
 OSLF->NTT formula triangle plus canonical modal-subobject + WM star closure. -/
 theorem oslf_formula_ntt_wm_star_sound
@@ -630,6 +635,7 @@ theorem oslf_formula_ntt_wm_star_sound
       (p := p) (q := q) (hstar := hstar) (φcat := φcat)
   exact ⟨hFormula, hCore⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Formula-level step endpoint:
 OSLF->NTT formula triangle plus canonical modal-subobject + WM step closure. -/
 theorem oslf_formula_ntt_wm_step_sound
@@ -735,6 +741,7 @@ theorem oslf_formula_ntt_wm_step_sound
       (p := p) (q := q) (hstep := hstep) (φcat := φcat)
   exact ⟨hFormula, hCore⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Formula-level star endpoint wrapper with policy synthesized from path-order
 and controlled-step-policy assumptions. -/
 theorem oslf_formula_ntt_wm_star_sound_of_pathOrder
@@ -839,6 +846,7 @@ theorem oslf_formula_ntt_wm_star_sound_of_pathOrder
     (Xobj := Xobj) (Xgr := Xgr)
     (p := p) (q := q) (hstar := hstar) (φcat := φcat)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Formula-level star endpoint with a reusable canonical-closure context. -/
 theorem oslf_formula_ntt_wm_star_sound_ctx
     (ctx : CanonicalClosureContext)
@@ -1335,6 +1343,7 @@ theorem canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal
     (hφTop := transportGoal.hφTop)
     (goal := transportGoal.goal)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Transport-goal bundled endpoint exposing direct Σ/Π transport inequalities
 plus WM fixpoint closure, while routing through the compact transport-pack API
 with an explicit ΠΣ rule-pack parameter. -/
@@ -1409,6 +1418,7 @@ theorem canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal
     hPack.1.piSigma_transport transportGoal.χ transportGoal.ψ
   exact ⟨hPiSigma.1, hPiSigma.2, hPack.2⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Transport-goal bundled endpoint exposing direct Σ/Π transport inequalities
 plus WM fixpoint closure, via the canonical Prop-12 ΠΣ rule-pack
 compatibility instantiation. -/
@@ -1456,6 +1466,7 @@ theorem canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal
       (C := ConstructorObj ctx.lang))
     (transportGoal := transportGoal)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Formula-level step endpoint wrapper with policy synthesized from path-order
 and controlled-step-policy assumptions. -/
 theorem oslf_formula_ntt_wm_step_sound_of_pathOrder
@@ -1560,6 +1571,7 @@ theorem oslf_formula_ntt_wm_step_sound_of_pathOrder
     (Xobj := Xobj) (Xgr := Xgr)
     (p := p) (q := q) (hstep := hstep) (φcat := φcat)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Unified endpoint: consume the Topos-facing representable Π/Σ transport
 package (routed through Prop-12) together with the formula-level path-order
 star closure endpoint. -/
@@ -1660,6 +1672,7 @@ theorem oslf_formula_ntt_wm_star_internalLogic_endpoint_of_pathOrder
       (p := p) (q := q) (hstar := hstar) (φcat := φcat)
   exact ⟨hTransport, hClosure.1, hClosure.2.2.2.1, hClosure.2.2.2.2⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Canary: composed star closure still discharges WM evidence obligations when
 the Topos-facing Π/Σ transport endpoint is the logic entry point. -/
 theorem oslf_formula_ntt_wm_star_wmObligation_via_topos_transport_canary_of_pathOrder
@@ -1820,6 +1833,7 @@ theorem canonical_star_to_fixpoint_endpoint
       (State := SemEState) (Query := SemEQuery) R W0 ({p} : Set SemEQuery) 1 hq1
   exact ⟨hp0, hq1, hqLfp⟩
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Combined canonical endpoint:
 consume the explicit representable Π/Σ rule-pack transport package and the
 canonical star-to-fixpoint closure theorem under one shared context. -/

@@ -317,7 +317,7 @@ theorem oneStep_comparison_not_loses :
         (beta.readout oneStep trivial
           (context := (PUnit : cwf.Con ())) (type := boolType))).LosesProgramInformation := by
   rw [Mettapedia.Computability.SplitReadoutComparison.not_loses_iff_faithful]
-  rw [beta.faithful_iff_quote_splice oneStep trivial]
+  erw [beta.faithful_iff_quote_splice oneStep trivial]
   exact eta.quote_splice oneStep trivial
 
 theorem oneStep_roundtrip (code :

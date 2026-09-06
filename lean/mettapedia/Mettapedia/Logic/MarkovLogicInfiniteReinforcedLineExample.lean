@@ -421,7 +421,7 @@ theorem exists_reinforcedLine_firstDomainWall_of_origin_false
   let W : InfiniteWorld LineNode :=
     patch (reinforcedLineExhaustion.region n) x linePlusBoundary
   have hBoundary : W (n + 1) = true := by
-    simp [W, reinforcedLineExhaustion, linePlusBoundary]
+    simp [W, patch, reinforcedLineExhaustion, linePlusBoundary]
   let P : Nat → Prop := fun m => W m = true
   have hExists : ∃ m : Nat, P m := ⟨n + 1, hBoundary⟩
   let j : Nat := Nat.find hExists
@@ -964,7 +964,9 @@ theorem reinforcedLine_originFalseDomainWallMass_le_invFactor_mul_originTrueQuer
                     M.finiteVolumeWeight Λ (reinforcedLineFlipPrefix n k x)
                       linePlusBoundary := by
                   rw [← hboost]
-            simp [hwallTrue, hsatTrue, hweightInv]
+            rw [if_pos hwallTrue]
+            exact hweightInv.le.trans_eq
+              (congrArg (fun value => factor⁻¹ * value) (if_pos hsatTrue)).symm
           · simp [hwall]
     _ = factor⁻¹ *
         (∑ x : LocalAssignment LineNode Λ,
@@ -1032,7 +1034,7 @@ theorem reinforcedLine_originFalseQueryMass_le_sum_domainWallMass
       Finset.single_le_sum hnonneg hkRange
     have htermk : term k = M.finiteVolumeWeight Λ x linePlusBoundary := by
       simp [term, hwallAt]
-    simpa [hsatFalse, term, htermk] using hsingle
+    exact (if_pos hsatFalse).le.trans ((congrArg (fun value => value ≤ ∑ j ∈ Finset.range (n + 1), term j) htermk).mp hsingle)
   · simp [hsatFalse]
 
 theorem reinforcedLine_originFalseQueryMass_le_wallFactorSum_mul_originTrueQueryMass
@@ -1088,7 +1090,7 @@ theorem reinforcedLine_clauseData_eval_spinFlip_eq_flip
       reinforcedLineClauseFlip, reinforcedLineClassicalSpec,
       reinforcedLineClause, WeightedGroundClause.eval,
       classicalWeightedClause, lineForwardClause_holds_spinFlip_iff_backward,
-      lineBackwardClause_holds_spinFlip_iff_forward]
+      lineBackwardClause_holds_spinFlip_iff_forward] <;> rfl
 
 theorem reinforcedLine_finiteVolumeWeight_spinFlip
     (edgeLogWeight : Nat → ℝ) (Λ : Region LineNode)
@@ -1153,7 +1155,7 @@ theorem reinforcedLine_originSpin_queryMass_spinFlip
         (lineOriginSpinLocalQueryInRegion Λ hOrigin b)
     · have hxFlipSat : satisfiesConstraints (lineSpinFlipLocalAssignment x)
           (lineOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := hsat.1 hxSat
-      simp [hxSat, hxFlipSat]
+      refine (if_pos hxSat).trans (Eq.trans ?_ (if_pos hxFlipSat).symm)
       simpa [lineSpinFlipLocalAssignment_involutive] using
         (reinforcedLine_finiteVolumeWeight_spinFlip
           edgeLogWeight Λ (lineSpinFlipLocalAssignment x) ξ)

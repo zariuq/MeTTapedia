@@ -236,6 +236,7 @@ private theorem filterByFrame_eq_taggedVariableNames
           rw [List.filterMap_cons]
           simp only [Metamath.Verify.Sym.value, if_neg hcnot,
             taggedVariableNames]
+          erw [if_neg hcnot]
           exact ih hrespect.2
       | var variableName =>
           simp only [symbolRespectsFrame] at hrespect
@@ -244,6 +245,7 @@ private theorem filterByFrame_eq_taggedVariableNames
           rw [List.filterMap_cons]
           simp only [Metamath.Verify.Sym.value, if_pos hmem,
             taggedVariableNames]
+          erw [if_pos hmem]
           exact congrArg (List.cons variableName) (ih hrespect.2)
 
 /-- The executable frame gate is exactly what makes runtime name-filtering

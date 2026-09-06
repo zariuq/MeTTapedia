@@ -386,7 +386,7 @@ theorem higherOrderLongWordWeightViaProbMarkov_eq_finiteDiracMixture
         MarkovDeFinettiHard.wordProb (g i)
           (higherOrderEncodedContextWord (k := k) (m := m) xs hxs)
           ∂(μ : Measure (Fin n)) := by
-            simpa [finiteHigherOrderEncodedMixingLaw, p, μ, g, hg] using hmap
+            exact hmap
     _ =
       ∑ i : Fin n,
         ((μ : Measure (Fin n)) {i}) *

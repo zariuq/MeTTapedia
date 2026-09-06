@@ -1831,7 +1831,7 @@ theorem sparse_typed_program_rejected_by_physical_admission :
       Terms.ofList, maximumDepth, slotRange, sparseWireProgram,
       sparseWireRule, scalarNode, Node.locallyValid, Rule.locallyValid,
       scalarNodeFieldsAreZero, bytesNulFree, bytesNonempty]
-    exact denseReject
+    simp only [denseReject, ↓reduceIte]
   have rejected : admit? sparseWireProgram = none := by
     unfold admit?
     rw [sparseWireProgram_rules]

@@ -374,7 +374,9 @@ private theorem sourceLanguage_valid : sourceLanguage.validate = [] := by
     change List.Mem rewrite [contextualRewrite] at membership
     have equality := List.mem_singleton.mp membership
     subst rewrite
-    simp [LanguageDef.validateRewrite, sourceLanguage, contextualRewrite,
+    dsimp only [LanguageDef.validateRewrite, sourceLanguage, contextualRewrite]
+    simp only [List.flatMap_nil, List.nil_append]
+    simp [
       ternaryTerm, termType, LanguageDef.validatePatternConstructors,
       LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
       LanguageDef.patternBinderNames, Pattern.constructorRefs,

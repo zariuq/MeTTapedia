@@ -586,7 +586,7 @@ theorem ground_not_convertible_to_formationMarker :
   intro path
   have accepted :=
     normalizationInvariant.decideConversion_eq_true_iff.mpr path
-  rw [genericDecision_eq_regularDecision] at accepted
+  erw [genericDecision_eq_regularDecision] at accepted
   rw [regular_rejects_u0_u1] at accepted
   contradiction
 

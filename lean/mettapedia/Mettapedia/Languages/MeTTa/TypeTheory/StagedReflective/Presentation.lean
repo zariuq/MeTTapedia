@@ -816,12 +816,12 @@ def nativeGradingWitness : GradingWitness stageModeTheory where
   grading := nativeCostGrading
   a := stageOfNat 1
   b := stageOfNat 0
-  f := ⟨by simp [stageOfNat], 0⟩
+  f := ⟨Nat.zero_le 1, 0⟩
   nontrivial := by
     intro zeroCost
     have firstCoordinate := congrFun zeroCost (0 : Fin 2)
-    simp [nativeCostGrading, stageRouteCost, stageOfNat, stageIndex,
-      nativeCostZero] at firstCoordinate
+    change (1 : Nat) - 0 = 0 at firstCoordinate
+    omega
 
 /-- Witness for `evidenceFibration`: evidence decorations attach to terms
 from *outside* the kernel — a commutative evidence monoid and a measure on
@@ -2988,7 +2988,8 @@ theorem nativeConversion_lambdaPi_agrees (left right :
     nativeDecidedConversion.decide (.lambdaPi left) (.lambdaPi right) =
       lambdaPiDecidedConversion.decide left right := by
   apply Bool.eq_iff_iff.mpr
-  rw [nativeDecidedConversion.correct, lambdaPiDecidedConversion.correct]
+  refine (nativeDecidedConversion.correct (.lambdaPi left) (.lambdaPi right)).trans
+    (Iff.trans ?_ (lambdaPiDecidedConversion.correct left right).symm)
   constructor
   · rintro ⟨common, leftEqual, rightEqual⟩
     simpa [LambdaPiEvaluatedConversion,

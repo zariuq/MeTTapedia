@@ -150,8 +150,6 @@ noncomputable instance [Fintype V] [DecidableEq V] :
   evidence_zero q := by
     classical
     dsimp [evidence]
-    change (0 : Multiset BinaryEvidence).sum = 0
-    exact Multiset.sum_zero
 
 /-! ### Singleton-CPT bridge -/
 
@@ -1378,6 +1376,12 @@ namespace ChainExample
 
 open Mettapedia.ProbabilityTheory.BayesianNetworks.Examples
 open BNWorldModel
+
+noncomputable local instance
+    [∀ v : Three, Fintype (chainBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (chainBN.stateSpace v)] :
+    BinaryWorldModel (State (bn := chainBN)) (AtomQuery (BNQuery.Atom (bn := chainBN))) :=
+  BNWorldModel.instBinaryWorldModelStateAtomQueryAtomOfFintypeOfDecidableEq (bn := chainBN)
 
 theorem chain_hciCA_of_dsep
     (cpt : chainBN.DiscreteCPT)

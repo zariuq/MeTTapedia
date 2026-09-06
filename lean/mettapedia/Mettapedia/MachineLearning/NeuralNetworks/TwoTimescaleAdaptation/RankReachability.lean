@@ -118,10 +118,15 @@ noncomputable def firstRowMatrixMap :
   toFun input row column := if row = 0 then input 0 column else 0
   map_add' left right := by
     ext row column
-    fin_cases row <;> simp
+    change (if row = 0 then left 0 column + right 0 column else 0) =
+      (if row = 0 then left 0 column else 0) +
+      (if row = 0 then right 0 column else 0)
+    split_ifs <;> simp
   map_smul' scalar input := by
     ext row column
-    fin_cases row <;> simp
+    change (if row = 0 then scalar * input 0 column else 0) =
+      scalar * (if row = 0 then input 0 column else 0)
+    split_ifs <;> simp
 
 /-- Every matrix in the first-row update space factors through one adapter
 dimension. -/
@@ -131,9 +136,11 @@ theorem firstRowMatrixMap_rankOne_reachable
   let left : Matrix (Fin 2) (Fin 1) ℝ :=
     fun row _ => if row = 0 then 1 else 0
   refine ⟨left, input, ?_⟩
+  change (left * input : Matrix (Fin 2) (Fin 2) ℝ) =
+    fun row column => if row = 0 then input 0 column else 0
   ext row column
-  fin_cases row <;>
-    simp [Matrix.mul_apply, left, firstRowMatrixMap]
+  simp only [Matrix.mul_apply]
+  fin_cases row <;> simp [left]
 
 /-- A rank-one adapter update space facing a full two-dimensional fast state. -/
 noncomputable def rankOneSlowFullFastModel :

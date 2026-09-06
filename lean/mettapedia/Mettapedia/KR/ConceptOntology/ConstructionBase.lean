@@ -319,7 +319,11 @@ sample or the whole tiny world. -/
 inductive ControlIndexicality where
   | sampled
   | total
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ControlIndexicality where
+  elems := {.sampled, .total}
+  complete x := by cases x <;> simp
 
 def constructionBase : ConstructionBase where
   Phenomena := Animal
@@ -408,7 +412,11 @@ inductive ToyLoopObj where
   | order1
   | order2
   | order3
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype ToyLoopObj where
+  elems := {.order1, .order2, .order3}
+  complete x := by cases x <;> simp
 
 def orderOf : ToyLoopObj → ℕ
   | .order1 => 1

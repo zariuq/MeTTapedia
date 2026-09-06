@@ -398,13 +398,19 @@ private def exactMiddleStep :
       DisplayedRewriteSite.rewrite, source, sourceLanguage,
       contextualRewrite, ternaryTerm, middleBefore, exactBindings,
       leftValue, focusValue, rightValue, matchPattern, matchArgs,
-      mergeBindings]
+      mergeBindings, Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?]
   premises := .nil exactBindings
   result := by
     simp [applyBindingsForRule, applyBindingsForRuleUsing, middleTyping,
       middleSite, DisplayedRewriteSite.rewrite, source, sourceLanguage,
       contextualRewrite, exactBindings, leftValue, focusValue, rightValue,
-      applyBindings]
+      applyBindings, Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?]
 
 /-- Positive control: the selected non-root occurrence produces its exact
 authored right-hand side. -/
@@ -427,7 +433,10 @@ theorem middle_occurrence_cannot_invent_left_result :
         source, sourceLanguage, contextualRewrite, ternaryTerm, middleBefore,
         leftValue, focusValue, rightValue, matchPattern, matchArgs,
         mergeBindings, premisesUsing, applyBindingsForRule,
-        applyBindingsForRuleUsing, applyBindings] at member
+        applyBindingsForRuleUsing, applyBindings, Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
+        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
+        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?] at member
 
 /-- Universe classification and behavioral occurrence are independent axes.
 Changing the constant universe profile from `star` to `box` leaves the exact

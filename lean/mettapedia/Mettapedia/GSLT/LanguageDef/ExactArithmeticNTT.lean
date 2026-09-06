@@ -88,17 +88,14 @@ def exactArithmetic : LanguageDef := {
     evaluateRule "arith:frem" "ExactIntegerFRem"]
 }
 
-set_option maxHeartbeats 4000000 in
-set_option maxRecDepth 100000 in
-private theorem exactArithmetic_rewrites_validate :
-    ∀ rewrite ∈ exactArithmetic.rewrites,
-      LanguageDef.validateRewrite exactArithmetic rewrite = [] := by
-  intro rewrite membership
-  simp only [exactArithmetic, List.mem_cons, List.mem_nil_iff, or_false]
-    at membership
-  rcases membership with rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  all_goals
-    simp [LanguageDef.validateRewrite, exactArithmetic, evaluateRule, ctor,
+section RewriteValidation
+
+set_option maxHeartbeats 4000000
+set_option maxRecDepth 100000
+
+local macro "arith_validate_row" : tactic =>
+  `(tactic|
+    simp [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff, exactArithmetic, evaluateRule, ctor,
       v, a, LanguageDef.validatePatternConstructors,
       LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
       LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
@@ -108,7 +105,60 @@ private theorem exactArithmetic_rewrites_validate :
       Pattern.constructorRefsList, Pattern.freeFvarNames,
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain,
-      TypeExpr.baseNames]
+      TypeExpr.baseNames])
+
+private theorem add_row_valid :
+    LanguageDef.validateRewrite exactArithmetic
+      (evaluateRule "arith:add" "ExactIntegerAdd") = [] := by
+  arith_validate_row
+
+private theorem sub_row_valid :
+    LanguageDef.validateRewrite exactArithmetic
+      (evaluateRule "arith:sub" "ExactIntegerSub") = [] := by
+  arith_validate_row
+
+private theorem mul_row_valid :
+    LanguageDef.validateRewrite exactArithmetic
+      (evaluateRule "arith:mul" "ExactIntegerMul") = [] := by
+  arith_validate_row
+
+private theorem tquot_row_valid :
+    LanguageDef.validateRewrite exactArithmetic
+      (evaluateRule "arith:tquot" "ExactIntegerTQuot") = [] := by
+  arith_validate_row
+
+private theorem fquot_row_valid :
+    LanguageDef.validateRewrite exactArithmetic
+      (evaluateRule "arith:fquot" "ExactIntegerFQuot") = [] := by
+  arith_validate_row
+
+private theorem trem_row_valid :
+    LanguageDef.validateRewrite exactArithmetic
+      (evaluateRule "arith:trem" "ExactIntegerTRem") = [] := by
+  arith_validate_row
+
+private theorem frem_row_valid :
+    LanguageDef.validateRewrite exactArithmetic
+      (evaluateRule "arith:frem" "ExactIntegerFRem") = [] := by
+  arith_validate_row
+
+private theorem exactArithmetic_rewrites_validate :
+    ∀ rewrite ∈ exactArithmetic.rewrites,
+      LanguageDef.validateRewrite exactArithmetic rewrite = [] := by
+  intro rewrite membership
+  change rewrite ∈ exactArithmetic.rewrites at membership
+  simp only [exactArithmetic, List.mem_cons, List.mem_nil_iff, or_false]
+    at membership
+  rcases membership with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · exact add_row_valid
+  · exact sub_row_valid
+  · exact mul_row_valid
+  · exact tquot_row_valid
+  · exact fquot_row_valid
+  · exact trem_row_valid
+  · exact frem_row_valid
+
+end RewriteValidation
 
 set_option maxHeartbeats 4000000 in
 set_option maxRecDepth 100000 in

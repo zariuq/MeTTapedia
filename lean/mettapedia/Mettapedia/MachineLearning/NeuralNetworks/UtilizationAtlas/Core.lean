@@ -140,7 +140,12 @@ inductive OutcomeMetric where
   | communicationCost
   | stateDimension
   | stateCost
-  deriving DecidableEq, Fintype, Repr
+  deriving DecidableEq, Repr
+
+instance : Fintype OutcomeMetric where
+  elems := {.targetRisk, .sourceForgetting, .inferenceRounds, .serialWork,
+    .communicationCost, .stateDimension, .stateCost}
+  complete metric := by cases metric <;> simp
 
 /-- Embed each outcome coordinate into the reals solely for a uniform order;
 the natural-number coordinates remain exact natural-number counts. -/

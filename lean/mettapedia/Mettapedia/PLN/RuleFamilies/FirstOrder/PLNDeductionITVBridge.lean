@@ -37,7 +37,11 @@ inductive DeductionAtom where
   | notABNotC
   | notANotBC
   | notANotBNotC
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype DeductionAtom where
+  elems := {.abc, .abNotC, .aNotBC, .aNotBNotC, .notABC, .notABNotC, .notANotBC, .notANotBNotC}
+  complete x := by cases x <;> simp
 
 namespace DeductionAtom
 

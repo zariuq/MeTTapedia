@@ -24,7 +24,11 @@ inductive Stage where
   | pendingZar -- awaiting human approval
   | rejected   -- security review rejected
   | promoted   -- approved and placed
-  deriving DecidableEq, Fintype
+  deriving DecidableEq
+
+instance : Fintype Stage where
+  elems := { .«in», .out, .work, .pendingZar, .rejected, .promoted }
+  complete x := by cases x <;> simp
 
 /-- Transition authorization. -/
 inductive TransitionAuth where

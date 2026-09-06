@@ -6567,7 +6567,9 @@ mutual
           (collectDeclaredCostStaticBoundaryOccurrencesAt_apply source color
             outer ((color.symbols source).constructor rule.label)
               (mapPatternList (color.symbols source) arguments)) table
-        rw [abstractCostStaticRegionFromTableAt.eq_3]
+        refine (abstractCostStaticRegionFromTableAt.eq_3 source color outer
+          ((color.symbols source).constructor rule.label)
+          (mapPatternList (color.symbols source) arguments) table).trans ?_
         change abstractCostStaticApplicationFromTable source color outer
             ((color.symbols source).constructor rule.label)
             (mapPatternList (color.symbols source) arguments)
@@ -6615,7 +6617,9 @@ mutual
         change abstractCostStaticRegionFromTableAt source color outer
             (.lambda binder (mapPattern (color.symbols source) body)) table =
           .lambda binder (retagCostRegionFreeVariables body)
-        rw [abstractCostStaticRegionFromTableAt.eq_4]
+        refine (abstractCostStaticRegionFromTableAt.eq_4 source color outer
+          binder
+          (mapPattern (color.symbols source) body) table).trans ?_
         exact congrArg (Pattern.lambda binder)
           (bodyTyped.abstractCostStaticRegionFromTableAt_mapCostStatic source color
             (outer.comp (.lambda binder .hole)) table)
@@ -6625,7 +6629,9 @@ mutual
             (.multiLambda arity binders
               (mapPattern (color.symbols source) body)) table =
           .multiLambda arity binders (retagCostRegionFreeVariables body)
-        rw [abstractCostStaticRegionFromTableAt.eq_5]
+        refine (abstractCostStaticRegionFromTableAt.eq_5 source color outer
+          arity binders
+          (mapPattern (color.symbols source) body) table).trans ?_
         exact congrArg (Pattern.multiLambda arity binders)
           (bodyTyped.abstractCostStaticRegionFromTableAt_mapCostStatic source color
             (outer.comp (.multiLambda arity binders .hole)) table)
@@ -6649,7 +6655,9 @@ mutual
             (mapPattern (color.symbols source) replacement)
         let divided := TypedCostRegionBoundaryTable.split bodyOccurrences
           replacementOccurrences table
-        rw [abstractCostStaticRegionFromTableAt.eq_6]
+        refine (abstractCostStaticRegionFromTableAt.eq_6 source color outer
+          (mapPattern (color.symbols source) body)
+          (mapPattern (color.symbols source) replacement) table).trans ?_
         exact congrArg₂ Pattern.subst
           (bodyTyped.abstractCostStaticRegionFromTableAt_mapCostStatic source color
             (outer.comp (.substBody .hole
@@ -6666,7 +6674,9 @@ mutual
               (mapPatternList (color.symbols source) elements) rest) table =
           .collection collectionType (retagCostRegionFreeVariableList elements)
             (rest.map costRegionSourceVariableName)
-        rw [abstractCostStaticRegionFromTableAt.eq_7]
+        refine (abstractCostStaticRegionFromTableAt.eq_7 source color outer
+          collectionType
+          (mapPatternList (color.symbols source) elements) rest table).trans ?_
         exact congrArg
           (fun mappedElements =>
             Pattern.collection collectionType mappedElements
@@ -6681,7 +6691,9 @@ mutual
               (mapPatternList (color.symbols source) elements) rest) table =
           .collection collectionType (retagCostRegionFreeVariableList elements)
             (rest.map costRegionSourceVariableName)
-        rw [abstractCostStaticRegionFromTableAt.eq_7]
+        refine (abstractCostStaticRegionFromTableAt.eq_7 source color outer
+          collectionType
+          (mapPatternList (color.symbols source) elements) rest table).trans ?_
         exact congrArg
           (fun mappedElements =>
             Pattern.collection collectionType mappedElements
@@ -6975,15 +6987,13 @@ mutual
         .apply constructor arguments := by
     cases decoded with
     | none =>
-        simp only [costStaticApplicationBoundaryOccurrences] at table resolves
         cases table with
         | cons boundary content tail =>
             cases tail
             have resolved : resolveBoundary
                 (costRegionBoundaryVariableName boundary.boundary) =
                   some boundary.boundary.content :=
-              resolves boundary (by
-                simp [TypedCostRegionBoundaryTable.entries])
+              resolves boundary (List.mem_cons_self)
             simp only [abstractCostStaticApplicationFromTable]
             change restoreCostStaticSkeleton color resolveBoundary
                 (.fvar (costRegionBoundaryVariableName boundary.boundary)) =
@@ -6992,7 +7002,6 @@ mutual
               decodeCostRegionSourceVariableName_boundary, resolved]
             exact content
     | some sourceConstructor =>
-        simp only [costStaticApplicationBoundaryOccurrences] at table resolves
         have argumentsResult :=
           restore_abstractCostStaticApplyRegionFromTable_of_resolves source color
             outer constructor [] arguments table resolveBoundary resolves
@@ -7447,6 +7456,9 @@ structure CostStaticConstructorPreimage (source : CIGSLT)
   parametersMap :
     (source.materializeDeclaredCostConstructor constructor).params =
       sourceConstructor.1.params.map (mapTermParam (color.symbols source))
+  algebraMap :
+    (source.materializeDeclaredCostConstructor constructor).algebra? =
+      sourceConstructor.1.algebra?
 
 /-- The intrinsic generated constructor determines its authored static
 preimage uniquely.  The proof uses validated source-label uniqueness and the
@@ -7504,7 +7516,8 @@ def costStaticConstructorPreimage (source : CIGSLT)
               wrapped := wrapped
               labelMap := rfl
               categoryMap := rfl
-              parametersMap := ?_ }
+              parametersMap := ?_
+              algebraMap := rfl }
           exact costBaseConstructor_params_eq_map_of_mem_wrappedLabels source
             sourceConstructor.1 sourceConstructor.2 wrappedLabel
       | wrapped =>
@@ -7519,7 +7532,8 @@ def costStaticConstructorPreimage (source : CIGSLT)
               wrapped := declared
               labelMap := rfl
               categoryMap := ?_
-              parametersMap := ?_ }
+              parametersMap := ?_
+              algebraMap := rfl }
           · simp [CIGSLT.materializeDeclaredCostConstructor,
               costWrappedConstructor, CostStaticColor.symbols,
               costWrappedStaticSymbols]
@@ -12408,7 +12422,7 @@ theorem exists_mem_buildForColorCandidates_of_plan
   obtain ⟨candidate, built⟩ := Option.isSome_iff_exists.mp rootSome
   refine ⟨candidate, ?_, ?_⟩
   · rw [CostStaticRootNode.mem_buildForColorCandidates_iff]
-    exact ⟨⟨sourceSort.1, sourceSort.2⟩, by simpa using built⟩
+    exact ⟨sourceSort, built⟩
   · exact CostStaticRootNode.buildFor?_fields term color sourceSort built
 
 /-- The complete two-colour candidate family.  Base-first ordering is only a
@@ -13194,7 +13208,8 @@ theorem normalizeCostStaticStratum_skeletonIn_eq
       node.skeleton.recontextualizeFree preserves =
         node.skeletonIn globalTable entriesSubset := by
     apply Subtype.ext
-    simp
+    exact (ReflectiveWellSorted.OpenTerm.recontextualizeFree_pattern node.skeleton preserves).trans
+      (node.skeletonIn_pattern globalTable entriesSubset).symm
   have natural :=
     source.openCanonical.normalizeRecontextualizeFree node.skeleton preserves
   unfold normalizeCostStaticStratum
@@ -13305,11 +13320,9 @@ def mappedThickenedSkeleton {source : CIGSLT}
       CostStaticColor.mapLangSort_name] using
       mappedTyped.thickenAmbientBVars (inner := []) node.thinning
   · rw [CostStaticBinderThinning.hasCanonicalBinderMetadata_thickenAmbientBVars]
-    simpa only [mapped, WellSorted.OpenTerm.mapCostStatic_pattern] using
-      mapped.2.2.1
+    exact mapped.2.2.1
   · rw [CostStaticBinderThinning.isObjectPattern_thickenAmbientBVars]
-    simpa only [mapped, WellSorted.OpenTerm.mapCostStatic_pattern] using
-      mapped.2.2.2.1
+    exact mapped.2.2.2.1
   · simpa [WellSorted.ScopeSafeAt] using
       (mappedTyped.thickenAmbientBVars (inner := []) node.thinning).isWellScopedAt
 
@@ -13339,8 +13352,10 @@ def mappedThickenedReflectiveSkeleton {source : CIGSLT}
   have mappedOrdinaryScope :
       (mapPattern (color.symbols source) node.skeleton.toCore.1).isWellScopedAt
           node.sourceBound.length = true := by
-    simpa only [mapped, WellSorted.OpenTerm.mapCostStatic_pattern,
-      List.length_map] using mapped.2.1.isWellScopedAt
+    have scope : (mapPattern (color.symbols source) node.skeleton.toCore.1).isWellScopedAt
+        (node.sourceBound.map (mapTypeExpr (color.symbols source))).length = true :=
+      mapped.2.1.isWellScopedAt
+    simpa only [List.length_map] using scope
   have mappedScope := reflectiveScopeSafeAt_mapCostStatic source color
     sourceScope mappedOrdinaryScope
   refine ⟨node.mappedThickenedSkeleton.1,
@@ -13405,6 +13420,7 @@ theorem normalizedThickenedSkeletonRaw_equationEquiv
     {source : CIGSLT} {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     (node : CostStaticRegionNode source color targetFree)
+    (derivedStable : DerivedEquationMapCostStaticStable source color)
     (stable : SupportedEquationAmbientRenamingStable
       (profile := source.costWholeReflectionProfile)
       source.costWholeLanguage) :
@@ -13414,7 +13430,7 @@ theorem normalizedThickenedSkeletonRaw_equationEquiv
       (node.thinning.thickenAmbientBVars 0
         (mapPattern (color.symbols source) node.skeleton.1)) := by
   have normalized := normalizeCostStaticStratum_equationEquiv
-    source color node.skeleton
+    source color derivedStable node.skeleton
   have renamed := equationEquiv_renameAmbientBVarsAt stable
     node.thinning.toTargetIndex node.thinning.toTargetIndex_strictMono 0
       normalized
@@ -13479,8 +13495,10 @@ def normalizedThickenedReflectiveSkeleton {source : CIGSLT}
   have mappedOrdinaryScope :
       (mapPattern (color.symbols source) normalizedSource.toCore.1).isWellScopedAt
           node.sourceBound.length = true := by
-    simpa only [mapped, WellSorted.OpenTerm.mapCostStatic_pattern,
-      List.length_map] using mapped.2.1.isWellScopedAt
+    have scope : (mapPattern (color.symbols source) normalizedSource.toCore.1).isWellScopedAt
+        (node.sourceBound.map (mapTypeExpr (color.symbols source))).length = true :=
+      mapped.2.1.isWellScopedAt
+    simpa only [List.length_map] using scope
   have mappedScope := reflectiveScopeSafeAt_mapCostStatic source color
     sourceScope mappedOrdinaryScope
   refine ⟨node.normalizedThickenedSkeleton.1,
@@ -13832,8 +13850,10 @@ def mappedThickenedReflectiveOpenTerm
   have mappedOrdinaryScope :
       (mapPattern (color.symbols source) term.term.toCore.1).isWellScopedAt
           sourceBound.length = true := by
-    simpa only [mapped, WellSorted.OpenTerm.mapCostStatic_pattern,
-      List.length_map] using mapped.2.1.isWellScopedAt
+    have scope : (mapPattern (color.symbols source) term.term.toCore.1).isWellScopedAt
+        (sourceBound.map (mapTypeExpr (color.symbols source))).length = true :=
+      mapped.2.1.isWellScopedAt
+    simpa only [List.length_map] using scope
   have mappedScope := reflectiveScopeSafeAt_mapCostStatic source color
     term.term.2.2 mappedOrdinaryScope
   have mappedScopeCore : ReflectiveWellSorted.ReflectiveScopeSafeAt
@@ -14786,7 +14806,7 @@ theorem CostRegionTree.exists_buildStatic?_eq_some
     CostRegionBoundaryTrees.exists_build?_eq_some decompose
       node.finiteBoundaryTable succeeds
   exact ⟨.static node children, by
-    simp [CostRegionTree.buildStatic?, childrenBuilt]⟩
+    exact (congrArg (Option.map (CostRegionTree.static node)) childrenBuilt).trans rfl⟩
 
 /-- Inversion for one completed static node.  A successful result contains
 exactly the recursively built finite boundary forest; no other tree
@@ -14808,7 +14828,12 @@ theorem CostRegionTree.buildStatic?_eq_some_iff
   unfold CostRegionTree.buildStatic?
   cases childrenBuilt : CostRegionBoundaryTrees.build? decompose
       node.finiteBoundaryTable with
-  | none => simp
+  | none =>
+      constructor
+      · intro impossible
+        cases impossible
+      · rintro ⟨_, impossible, _⟩
+        cases impossible
   | some children =>
       simp only [Option.map_some, Option.some.injEq]
       constructor
@@ -19315,8 +19340,12 @@ mutual
         have normalized := node.normalizeRawWith_equationEquiv
           laws.mappedGeneratorAction children.normalizeValues valuesEquivalent
           (laws.canonicalPathSafe node)
-        simpa only [CostRegionTree.normalize,
-          CostStaticRegionNode.normalizeWithReflective_pattern] using normalized
+        simp only [CostRegionTree.normalize]
+        exact Eq.mpr (congrArg
+          (fun pattern => ReflectiveEquationSemantics.ReflectiveEquationEquiv
+            source.costWholeReflectionProfile defaultBasePremises
+            source.costWholeLanguage pattern node.term.1)
+          (node.normalizeWithReflective_pattern children.normalizeValues)) normalized
     | @CostRegionTree.neutralApplicationOrdinary _ _ available outer rule
         arguments membership notBareCollection constructor materializes neutral
         ordinary children => by

@@ -374,7 +374,7 @@ theorem minNextUtility_bounds (U : Utility) (h : History)
     have h_le :
         minNextUtility U h ≤ U (h ++ [HistElem.per (Percept.mk false false)]) := by
       unfold minNextUtility
-      simpa using
+      exact
         (Finset.inf'_le (s := Finset.univ)
           (f := fun p : Percept => U (h ++ [HistElem.per p]))
           (h := Finset.mem_univ (Percept.mk false false)))
@@ -616,7 +616,7 @@ theorem choquet_value_lower_semicomputable (ν : Semimeasure) (U : Utility)
       let p : Percept := Percept.mk false false
       calc Finset.inf' Finset.univ Finset.univ_nonempty (fun p' => U (h ++ [HistElem.per p']))
           ≤ U (h ++ [HistElem.per p]) := by
-              simpa using
+              exact
                 (Finset.inf'_le (s := Finset.univ)
                   (f := fun p' => U (h ++ [HistElem.per p']))
                   (h := Finset.mem_univ p))
@@ -1977,7 +1977,7 @@ lemma valueChoquet_eq_integral_capacity (ν : Semimeasure) (U : Utility) (h : Hi
         intro p
         have h_min_le : minNextUtility U h ≤ U (h ++ [HistElem.per p]) := by
           unfold minNextUtility
-          simpa using
+          exact
             (Finset.inf'_le (s := Finset.univ)
               (f := fun p : Percept => U (h ++ [HistElem.per p]))
               (h := Finset.mem_univ p))
@@ -2605,7 +2605,7 @@ noncomputable def capacityAtLevel_lower_semicomputable (ν : Semimeasure) (U : U
         intro p
         have h_min_le : minNextUtility U h ≤ U (h ++ [HistElem.per p]) := by
           unfold minNextUtility
-          simpa using
+          exact
             (Finset.inf'_le (s := Finset.univ)
               (f := fun p : Percept => U (h ++ [HistElem.per p]))
               (h := Finset.mem_univ p))

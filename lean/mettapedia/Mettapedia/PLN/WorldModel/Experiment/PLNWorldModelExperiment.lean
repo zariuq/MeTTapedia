@@ -111,7 +111,9 @@ theorem wmQueryEq_of_blackwellFactor
     simpa [hpred] using congrArg Not (congrArg p (hfactor θ))
   apply BinaryEvidence.ext'
   · simp [BinaryWorldModel.evidence, experimentEvidence, queryOf, pullbackQuery, queryHolds, hpred]
+    rfl
   · simp [BinaryWorldModel.evidence, experimentEvidence, queryOf, pullbackQuery, queryHolds, hpredNeg]
+    rfl
 
 /-- Strength equality transport for Blackwell-style factorization. -/
 theorem queryStrength_eq_of_blackwellFactor

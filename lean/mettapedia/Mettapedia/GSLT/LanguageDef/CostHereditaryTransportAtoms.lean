@@ -632,8 +632,7 @@ theorem exists_resolve_normalizedAtom_eq_getDecoration
         simp [CostRegionBoundaryTrees.normalizeValues,
           TypedCostRegionBoundaryTable.Values.resolve,
           CostRegionBoundaryTrees.getDecoration]
-        apply Subtype.ext
-        rfl) (fun tailIndex => by
+        erw [Fin.cases_zero, if_pos rfl] <;> rfl) (fun tailIndex => by
         obtain ⟨resolved, resolution, atomEq⟩ :=
           children.exists_resolve_normalizedAtom_eq_getDecoration unambiguous
             tailIndex
@@ -680,14 +679,15 @@ theorem exists_resolve_normalizedAtom_eq_getDecoration
             ?_, ?_⟩
           · simp [CostRegionBoundaryTrees.normalizeValues,
               TypedCostRegionBoundaryTable.Values.resolve,
-              CostRegionBoundaryTrees.getDecoration, keyEq]
-            apply Subtype.ext
-            rfl
-          · simpa [CostRegionBoundaryTrees.getDecoration] using headAtomEq
+              CostRegionBoundaryTrees.getDecoration]
+            erw [Fin.cases_succ, if_pos keyEq] <;> rfl
+          · exact headAtomEq
         · refine ⟨resolved, ?_, atomEq⟩
-          simpa [CostRegionBoundaryTrees.normalizeValues,
+          simp only [CostRegionBoundaryTrees.normalizeValues,
             TypedCostRegionBoundaryTable.Values.resolve,
-            CostRegionBoundaryTrees.getDecoration, keyEq] using resolution)
+            CostRegionBoundaryTrees.getDecoration]
+          erw [Fin.cases_succ, if_neg keyEq]
+          exact resolution)
         index
   termination_by trees.weight
   decreasing_by

@@ -20,6 +20,7 @@ open Mettapedia.OSLF.MeTTaIL.MatchSpec
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.Reflection
 open Mettapedia.OSLF.MeTTaIL.Substitution
+open Mettapedia.GSLT.LanguageDef.EquationSemantics
 open Mettapedia.GSLT.LanguageDef.ReflectiveEquationSemantics
 open Mettapedia.GSLT.LanguageDef.WellSorted
 
@@ -93,7 +94,8 @@ theorem binderOccurrenceLanguage_valid :
       parallelRule, nameBinderRule, quoteDropEquation,
       LanguageDef.typeNames, TypeDecl.plain, TypeExpr.name, TypeExpr.proc,
       TypeExpr.baseType,
-      LanguageDef.validateEquation, LanguageDef.validatePatternConstructors,
+      LanguageDef.validateEquation, LanguageDef.validateTypeExpr_eq_nil_iff,
+      LanguageDef.validatePatternConstructors,
       LanguageDef.validateRulePatterns,
       LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
       Pattern.constructorRefs, Pattern.constructorRefsList,
@@ -472,6 +474,41 @@ private theorem equationInstanceAt_canonicalize_eq
       simp [applyBindings, canonicalize, canonicalizeList, presentation,
         Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
 
+private theorem derivedInstance_canonicalize_eq
+    {left right : Pattern}
+    (derived : DerivedInstance binderOccurrenceLanguage left right) :
+    canonicalize presentation left = canonicalize presentation right := by
+  have noSet {rule : GrammarRule}
+      (declaration : CollectionCarrierRule binderOccurrenceLanguage rule .hashSet) :
+      False := by
+    rcases declaration with ⟨authored, parameter, elementType, parameters⟩
+    simp only [binderOccurrenceLanguage, List.mem_cons, List.not_mem_nil,
+      or_false] at authored
+    rcases authored with rfl | rfl | rfl | rfl | rfl <;>
+      simp [zeroRule, dropRule, quoteRule, parallelRule, nameBinderRule,
+        TypeExpr.proc, TypeExpr.name, TypeExpr.baseType, TypeExpr.bag,
+        TypeExpr.funType] at parameters
+  have noAlgebra {rule : GrammarRule} {kind : CollType}
+      {algebra : CollectionAlgebra}
+      (declaration : AlgebraRule binderOccurrenceLanguage rule kind algebra) :
+      False := by
+    have authored := declaration.authored
+    have declared := declaration.declared
+    simp only [binderOccurrenceLanguage, List.mem_cons, List.not_mem_nil,
+      or_false] at authored
+    rcases authored with rfl | rfl | rfl | rfl | rfl <;>
+      simp [zeroRule, dropRule, quoteRule, parallelRule, nameBinderRule]
+        at declared
+  cases derived with
+  | bagPerm _ _ permutation =>
+      exact canonicalize_parallel_permutation presentation permutation
+  | setPerm declaration _ _ => exact (noSet declaration).elim
+  | setDedup declaration _ => exact (noSet declaration).elim
+  | flatten declaration _ _ => exact (noAlgebra declaration).elim
+  | singleton declaration _ _ => exact (noAlgebra declaration).elim
+  | unitElim declaration _ _ => exact (noAlgebra declaration).elim
+  | emptyUnit declaration _ _ => exact (noAlgebra declaration).elim
+
 private theorem equationContextStep_canonicalize_eq
     {left right : Pattern}
     (step : ReflectiveEquationContextStep binderOccurrenceProfile
@@ -481,9 +518,11 @@ private theorem equationContextStep_canonicalize_eq
   | core coreStep =>
       cases coreStep with
       | @inContext context redex contractum equationInstance =>
-          obtain ⟨fuel, bounded⟩ := equationInstance
-          exact canonicalize_fill_congr presentation context
-            (equationInstanceAt_canonicalize_eq bounded)
+          apply canonicalize_fill_congr presentation context
+          rcases equationInstance with authored | derived
+          · obtain ⟨fuel, bounded⟩ := authored
+            exact equationInstanceAt_canonicalize_eq bounded
+          · exact derivedInstance_canonicalize_eq derived
   | @reflectiveInContext context declaration reflectedLeft reflectedRight
       membership representatives =>
       have declarationEquality : declaration = presentation := by

@@ -352,7 +352,9 @@ def independentParallel {Event : Type uEvent} (eventCost : Event -> WorkSpan) :
   algebra := parallelAlgebra
   commutative := by
     intro left right
+    change WorkSpan at left right
     simp [parallelAlgebra, WorkSpan.parallel_comm]
+    rfl
 
 /-- A work-only scheduler score forgets critical-path span. -/
 def workOnly {Event : Type uEvent} (eventCost : Event -> WorkSpan) :

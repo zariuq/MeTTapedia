@@ -122,7 +122,7 @@ theorem repaired_getTypes_rejects_failed_argument_match :
     .expr [.sym ":", .sym "b", .sym "B"]] := rfl
   rw [show badLeaApplication = .expr [.sym "g", .sym "b"] from rfl,
     Metta.Minimal.getTypes.eq_10 _ _ _ (by simp)]
-  simp [hg, hb, hexpr, hatoms, Metta.Minimal.typeInferenceAvoid,
+  simp [Metta.Minimal.cartesian, hg, hb, hexpr, hatoms, Metta.Minimal.typeInferenceAvoid,
     Metta.Atom.vars, Metta.Minimal.freshenArgumentTypes,
     Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
     Metta.Minimal.matchApplicationTypeArguments, Metta.Minimal.matchType,
@@ -186,117 +186,117 @@ well-founded wrappers (`Bindings.vars`, `resolutionFuel`) are rewritten
 away, plain `rfl` evaluates the loop check. -/
 
 private theorem vars_b1 : Metta.Bindings.vars
-    [.val "#############################################x#2"
+    [.val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])] =
-    ["#############################################x#2", "#########y#0"] := by
+    ["###########x#2", "#########y#0"] := by
   simp [Metta.Bindings.vars, Metta.Atom.vars]
   rfl
 
 private theorem vars_b2a : Metta.Bindings.vars
-    [.val "#############################################y#2"
+    [.val "###########y#2"
       (.expr [.sym "f", .var "#####################x#1"])] =
-    ["#############################################y#2",
+    ["###########y#2",
      "#####################x#1"] := by
   simp [Metta.Bindings.vars, Metta.Atom.vars]
   rfl
 
 private theorem vars_b2 : Metta.Bindings.vars
-    [.val "#############################################y#2"
+    [.val "###########y#2"
       (.expr [.sym "f", .var "#####################x#1"]),
-     .val "#############################################x#2"
+     .val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])] =
-    ["#############################################y#2",
+    ["###########y#2",
      "#####################x#1",
-     "#############################################x#2",
+     "###########x#2",
      "#########y#0"] := by
   simp [Metta.Bindings.vars, Metta.Atom.vars]
   rfl
 
 private theorem fuel_b1 : ∀ z, Metta.Bindings.resolutionFuel
-    [.val "#############################################x#2"
+    [.val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])] (.var z) = 6 := by
   intro z
   simp [Metta.Bindings.resolutionFuel,
     Metta.Bindings.relationResolutionFuel, Metta.Atom.size]
 
 private theorem fuel_b2a : ∀ z, Metta.Bindings.resolutionFuel
-    [.val "#############################################y#2"
+    [.val "###########y#2"
       (.expr [.sym "f", .var "#####################x#1"])] (.var z) = 6 := by
   intro z
   simp [Metta.Bindings.resolutionFuel,
     Metta.Bindings.relationResolutionFuel, Metta.Atom.size]
 
 private theorem fuel_b2 : ∀ z, Metta.Bindings.resolutionFuel
-    [.val "#############################################y#2"
+    [.val "###########y#2"
       (.expr [.sym "f", .var "#####################x#1"]),
-     .val "#############################################x#2"
+     .val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])] (.var z) = 10 := by
   intro z
   simp [Metta.Bindings.resolutionFuel,
     Metta.Bindings.relationResolutionFuel, Metta.Atom.size]
 
 private theorem loop_b1 : Metta.Bindings.hasLoop
-    [.val "#############################################x#2"
+    [.val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])] = false := by
   simp only [Metta.Bindings.hasLoop, vars_b1, fuel_b1]
   rfl
 
 private theorem loop_b2a : Metta.Bindings.hasLoop
-    [.val "#############################################y#2"
+    [.val "###########y#2"
       (.expr [.sym "f", .var "#####################x#1"])] = false := by
   simp only [Metta.Bindings.hasLoop, vars_b2a, fuel_b2a]
   rfl
 
 private theorem loop_b2 : Metta.Bindings.hasLoop
-    [.val "#############################################y#2"
+    [.val "###########y#2"
       (.expr [.sym "f", .var "#####################x#1"]),
-     .val "#############################################x#2"
+     .val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])] = false := by
   simp only [Metta.Bindings.hasLoop, vars_b2, fuel_b2]
   rfl
 
 private theorem atoms_arg1 : Metta.matchAtoms
-    (.var "#############################################x#2")
+    (.var "###########x#2")
     (.expr [.sym "f", .var "#########y#0"]) =
-    [[.val "#############################################x#2"
+    [[.val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])]] := by
   simp [Metta.matchAtoms, Metta.matchAtomsWith, Metta.Subst.occurs, loop_b1]
 
 private theorem atoms_arg2 : Metta.matchAtoms
-    (.var "#############################################y#2")
+    (.var "###########y#2")
     (.expr [.sym "f", .var "#####################x#1"]) =
-    [[.val "#############################################y#2"
+    [[.val "###########y#2"
       (.expr [.sym "f", .var "#####################x#1"])]] := by
   simp [Metta.matchAtoms, Metta.matchAtomsWith, Metta.Subst.occurs, loop_b2a]
 
 private theorem merge_arg1 : Metta.Bindings.merge []
-    [.val "#############################################x#2"
+    [.val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])] =
-    [[.val "#############################################x#2"
+    [[.val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])]] := by
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
     Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
     Metta.Bindings.removeVal]
 
 private theorem horder_b1 : Metta.Bindings.eqVarsInOrder
-    [.val "#############################################x#2"
+    [.val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])] = [] := by
   simp [Metta.Bindings.eqVarsInOrder]
 
 private theorem heqco_b1 : ∀ z, Metta.Bindings.eqClassOrdered
-    [.val "#############################################x#2"
+    [.val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])] z = [z] := by
   intro z
   simp [Metta.Bindings.eqClassOrdered, horder_b1]
 
 private theorem merge_arg2 : Metta.Bindings.merge
-    [.val "#############################################x#2"
+    [.val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])]
-    [.val "#############################################y#2"
+    [.val "###########y#2"
       (.expr [.sym "f", .var "#####################x#1"])] =
-    [[.val "#############################################y#2"
+    [[.val "###########y#2"
         (.expr [.sym "f", .var "#####################x#1"]),
-      .val "#############################################x#2"
+      .val "###########x#2"
         (.expr [.sym "f", .var "#########y#0"])]] := by
   simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
     Metta.Bindings.addVarBinding, Metta.Bindings.addValRaw,
@@ -304,9 +304,9 @@ private theorem merge_arg2 : Metta.Bindings.merge
     Metta.Bindings.lookupVal, heqco_b1]
 
 private theorem red_arg1 : Metta.Minimal.matchReduced []
-    (.var "#############################################x#2")
+    (.var "###########x#2")
     (.expr [.sym "f", .var "#########y#0"]) =
-    some [.val "#############################################x#2"
+    some [.val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])] := by
   rw [Metta.Minimal.matchReduced] <;>
     simp [atoms_arg1, merge_arg1, loop_b1,
@@ -318,13 +318,13 @@ private theorem red_arg1 : Metta.Minimal.matchReduced []
         fun _ _ => rfl)]
 
 private theorem red_arg2 : Metta.Minimal.matchReduced
-    [.val "#############################################x#2"
+    [.val "###########x#2"
       (.expr [.sym "f", .var "#########y#0"])]
-    (.var "#############################################y#2")
+    (.var "###########y#2")
     (.expr [.sym "f", .var "#####################x#1"]) =
-    some [.val "#############################################y#2"
+    some [.val "###########y#2"
         (.expr [.sym "f", .var "#####################x#1"]),
-      .val "#############################################x#2"
+      .val "###########x#2"
         (.expr [.sym "f", .var "#########y#0"])] := by
   rw [Metta.Minimal.matchReduced] <;>
     simp [atoms_arg2, merge_arg2, loop_b2,
@@ -340,13 +340,13 @@ binding state `b2`: fresh function-type binders map to fresh argument-type
 values, so no spelling participates in a dependency cycle. -/
 private theorem match_freshened_args :
     Metta.Minimal.matchApplicationTypeArguments []
-      [.var "#############################################x#2",
-        .var "#############################################y#2"]
+      [.var "###########x#2",
+        .var "###########y#2"]
       [.expr [.sym "f", .var "#########y#0"],
         .expr [.sym "f", .var "#####################x#1"]] =
-      some [.val "#############################################y#2"
+      some [.val "###########y#2"
           (.expr [.sym "f", .var "#####################x#1"]),
-        .val "#############################################x#2"
+        .val "###########x#2"
           (.expr [.sym "f", .var "#########y#0"])] := by
   simp [Metta.Minimal.matchApplicationTypeArguments,
     Metta.Minimal.matchType, red_arg1, red_arg2,
@@ -358,9 +358,9 @@ private theorem match_freshened_args :
       fun _ _ => rfl)]
 
 private theorem inst_ret : Metta.instantiate
-    [.val "#############################################y#2"
+    [.val "###########y#2"
         (.expr [.sym "f", .var "#####################x#1"]),
-      .val "#############################################x#2"
+      .val "###########x#2"
         (.expr [.sym "f", .var "#########y#0"])] (Metta.Atom.sym "R") =
     Metta.Atom.sym "R" := by
   simp [Metta.instantiate, Metta.Bindings.resolveAtom]
@@ -403,13 +403,11 @@ theorem repaired_freshening_dissolves_cyclic_spelling_capture :
       ["x", "y", "y", "x", "x", "y", "y", "x", "#########y#0"] 1 "x" =
       "#####################x#1" := rfl
   have hn3x : Metta.Minimal.captureAvoidingName
-      ["x", "y", "y", "x", "x", "y", "y", "x", "#########y#0",
-        "#####################x#1"] 2 "x" =
-      "#############################################x#2" := rfl
+      ["x", "y", "y", "x", "x", "y", "y", "x", "y", "x"] 2 "x" =
+      "###########x#2" := rfl
   have hn3y : Metta.Minimal.captureAvoidingName
-      ["x", "y", "y", "x", "x", "y", "y", "x", "#########y#0",
-        "#####################x#1"] 2 "y" =
-      "#############################################y#2" := rfl
+      ["x", "y", "y", "x", "x", "y", "y", "x", "y", "x"] 2 "y" =
+      "###########y#2" := rfl
   have havoid : Metta.Minimal.typeInferenceAvoid cyclicApplicationEnv
       (.expr [.sym "cyclic-g", .sym "cyclic-a", .sym "cyclic-b"])
       [.expr [.sym "->", .var "x", .var "y", .sym "R"],
@@ -425,19 +423,18 @@ theorem repaired_freshening_dissolves_cyclic_spelling_capture :
       Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
       Metta.Atom.vars, hn1, hn2]
   have hfunT : Metta.Minimal.freshenTypeCandidate
-      ["x", "y", "y", "x", "x", "y", "y", "x", "#########y#0",
-        "#####################x#1"] 2
+      ["x", "y", "y", "x", "x", "y", "y", "x", "y", "x"] 2
       (.expr [.sym "->", .var "x", .var "y", .sym "R"]) =
       .expr [.sym "->",
-        .var "#############################################x#2",
-        .var "#############################################y#2",
+        .var "###########x#2",
+        .var "###########y#2",
         .sym "R"] := by
     simp [Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
       hn3x, hn3y]
   rw [show cyclicLeaApplication =
       .expr [.sym "cyclic-g", .sym "cyclic-a", .sym "cyclic-b"] from rfl,
     Metta.Minimal.getTypes.eq_10 _ _ _ (by simp)]
-  simp [hcg, hca, hcb, hexpr, havoid, hargTs, hfunT, Metta.Atom.vars,
+  simp [Metta.Minimal.cartesian, hcg, hca, hcb, hexpr, havoid, hargTs, hfunT, Metta.Atom.vars,
     match_freshened_args, inst_ret, List.dropLast, List.getLast?]
 
 private theorem badApplication_g_type

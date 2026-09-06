@@ -98,6 +98,7 @@ private theorem toValuation_val_arbitraryConfig_eq_evalConst
       cases h
       simp [ValuationBridge.toValuation, VariableElimination.Factor.evalConst,
         valuationFullAssign_empty_eq_emptyAssign]
+      rfl
 
 /-- The bundled scoped-valuation query lane computes the same exact weight as
 the operational VE query interface. -/

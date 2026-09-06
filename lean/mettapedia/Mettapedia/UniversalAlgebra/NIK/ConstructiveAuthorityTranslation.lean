@@ -103,6 +103,7 @@ def compilePayload
           .node conclusion (.congruence operation left right) n
             (fun position => translation.compilePayload (children position))
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The computational payload realizes its compositional node budget exactly
 on every source tree, independently of replay validity. -/
 theorem compilePayload_nodeCount
@@ -137,6 +138,7 @@ theorem compilePayload_nodeCount
           exact congrArg (1 + ·) <| Finset.sum_congr rfl fun position _member =>
             compilePayload_nodeCount translation (children position)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Successful payload compilation preserves the physical root conclusion. -/
 theorem compilePayload_concl_of_valid
     (translation : AxiomCertificateTranslation source target) :
@@ -325,6 +327,7 @@ def compile (translation : AxiomCertificateTranslation source target)
   else
     rejectedCertificate target sourceCertificate.concl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Structural compilation preserves the physical root conclusion on every
 input. -/
 theorem compile_concl
@@ -339,6 +342,7 @@ theorem compile_concl
     exact (translation.compileAccepted sourceCertificate accepted).concludes
   · simp [compile, accepted]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Structural compilation preserves the replay-validity bit exactly. -/
 theorem compile_valid
     (translation : AxiomCertificateTranslation source target)
@@ -358,6 +362,7 @@ theorem compile_valid
     rw [rejected]
     simp [compile, accepted]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- On an accepted source certificate, total compilation has exactly the
 compositional node count above. -/
 theorem compile_nodeCount_of_valid
@@ -445,6 +450,7 @@ theorem preservesEntails
   exact sourceEntails Carrier model
     (translation.targetModel_satisfies_source model satisfiesTarget)
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The total structural compiler is an exact native NIK authority
 translation. -/
 def authorityTranslation

@@ -89,6 +89,7 @@ theorem pathWorkSpan_compose {theory : GSLT}
   apply WorkSpan.ext <;>
     simp [pathWorkSpan, composePath, WorkSpan.sequential,
       EventPath.pathLength_append]
+  all_goals exact EventPath.pathLength_append presentation (firstPath context) (secondPath context)
 
 /-! ## Proof-relevant concurrent schedules -/
 

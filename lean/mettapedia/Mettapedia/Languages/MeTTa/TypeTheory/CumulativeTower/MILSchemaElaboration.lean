@@ -480,13 +480,13 @@ def examplePrimitiveMeaning :
   | _, _, .father => ⟨FatherEvidence⟩
   | _, _, .successor => ⟨SuccessorEvidence⟩
 
-def exampleVocabulary : Vocabulary where
+abbrev exampleVocabulary : Vocabulary where
   SortCode := ExampleSort
   Carrier := ExampleCarrier
   Primitive := ExamplePrimitive
   meaning := examplePrimitiveMeaning
 
-def exampleHigherOrderVocabulary : HigherOrderVocabulary where
+abbrev exampleHigherOrderVocabulary : HigherOrderVocabulary where
   toVocabulary := exampleVocabulary
   listSort := .list
   listCarrier := fun _ => Equiv.refl _
@@ -521,13 +521,13 @@ primitive declarations are endosorted and chain preserves the shared index. -/
 theorem exampleHypothesis_endpoints_eq
     {source target : ExampleSort}
     (hypothesis : Hypothesis exampleVocabulary source target) :
-    source = target :=
-  match hypothesis with
-  | .primitive symbol => by cases symbol <;> rfl
-  | .chain earlier later =>
-      (exampleHypothesis_endpoints_eq earlier).trans
-        (exampleHypothesis_endpoints_eq later)
-termination_by sizeOf hypothesis
+    source = target := by
+  refine Hypothesis.rec (motive := fun source target _ => source = target)
+    ?_ ?_ hypothesis
+  · intro source target symbol
+    cases symbol <;> rfl
+  · intro source middle target earlier later earlierIH laterIH
+    exact earlierIH.trans laterIH
 
 /-- A person-to-number candidate is absent from the typed hypothesis space;
 it is not generated and then rejected by example testing. -/
@@ -589,16 +589,15 @@ theorem exampleHigherOrderHypothesis_endpoints_eq
     {source target : ExampleSort}
     (hypothesis : HigherOrderHypothesis
       exampleHigherOrderVocabulary source target) :
-    source = target :=
-  match hypothesis with
-  | .primitive symbol => by cases symbol <;> rfl
-  | .chain earlier later =>
-      (exampleHigherOrderHypothesis_endpoints_eq earlier).trans
-        (exampleHigherOrderHypothesis_endpoints_eq later)
-  | .map element =>
-      congrArg ExampleSort.list
-        (exampleHigherOrderHypothesis_endpoints_eq element)
-termination_by sizeOf hypothesis
+    source = target := by
+  refine HigherOrderHypothesis.rec
+    (motive := fun source target _ => source = target) ?_ ?_ ?_ hypothesis
+  · intro source target symbol
+    cases symbol <;> rfl
+  · intro source middle target earlier later earlierIH laterIH
+    exact earlierIH.trans laterIH
+  · intro source target element ih
+    exact congrArg ExampleSort.list ih
 
 /-- List lifting does not permit a person relation to masquerade as a
 number-list relation. -/

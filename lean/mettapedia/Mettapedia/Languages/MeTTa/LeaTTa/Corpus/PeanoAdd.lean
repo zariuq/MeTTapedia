@@ -277,6 +277,10 @@ private theorem peano_bne_empty_true (n : Nat) : (peano n != emptyA) = true := b
   | zero => rfl
   | succ n => rfl
 
+private theorem peano_stop_false (n : Nat) :
+    (peano n == emptyA || (peano n).isError) = false := by
+  cases n <;> rfl
+
 private theorem expr_bne_empty_true (xs : List Metta.Atom) :
     (Metta.Atom.expr xs != emptyA) = true := by
   rfl
@@ -293,8 +297,8 @@ private theorem peano_beq_addZero_false (n : Nat) :
 
 private theorem addArgs_errorGuard_none (a b : Nat) :
     (([peano a, peano b].zip [peano a, peano b]).find?
-      (fun ho => ho.1.isError && ho.1 != ho.2)) = none := by
-  simp [peano_isError_false, peano_bne_self_false]
+      (fun ho => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
+  simp [peano_stop_false, peano_bne_self_false]
 
 private theorem callGrounded_add_noReduce (args : List Metta.Atom) :
     callGrounded (MinEnv.ofAtomsGT addRules stdGroundings).gt "add" args =
@@ -311,7 +315,10 @@ private def recursionNeutralApplicationPolicy_add (w : World) (args : List Metta
     (hstatic : StaticPeanoEvalWorld w) :
     RecursionNeutralApplicationPolicy addEnv w "add" args
       (List.replicate args.length true) false :=
-  .ofUntypedTuple (selectFunctionType_add_untypedTuple w args hstatic)
+  .ofUntypedTuple (selectFunctionType_add_untypedTuple w args hstatic) (by
+    apply ApplicationPlanCorresponds.ofUntypedTuple
+    exact selectFunctionTypeForExpectedFrom_undefined_exhausted
+      addEnv w "add" args hstatic.2.1)
 
 private theorem addEnv_Z_candidates : addEnv.candidates (mSym "Z") = [] := by
   simp [addEnv, addRules, mE, mSym, mVar, MinEnv.candidates, extractRules, headKey,
@@ -327,7 +334,10 @@ private def recursionNeutralApplicationPolicy_S (w : World) (args : List Metta.A
     (hstatic : StaticPeanoEvalWorld w) :
     RecursionNeutralApplicationPolicy addEnv w "S" args
       (List.replicate args.length true) false :=
-  .ofUntypedTuple (selectFunctionType_S_untypedTuple w args hstatic)
+  .ofUntypedTuple (selectFunctionType_S_untypedTuple w args hstatic) (by
+    apply ApplicationPlanCorresponds.ofUntypedTuple
+    exact selectFunctionTypeForExpectedFrom_undefined_exhausted
+      addEnv w "S" args hstatic.2.2)
 
 private theorem addEnv_S_candidates (a : Metta.Atom) :
     addEnv.candidates (mE "S" [a]) = [] := by
@@ -972,6 +982,12 @@ theorem interpretFuelAddZeroKernelReadoutOfStaticEq (fuel n : Nat) (st : St)
     instantiate_eq_self_of_vars_nil _ (peano_vars_nil n)
   simp [interpretFuel, hstep, heval, finItem, isFinal, finalPair, hclosed,
     peano_bne_empty_true]
+  have filtered := filtered_final_singleton (peano n)
+    (renameBindings (counterSuffix st.counter)
+      [Metta.BindingRel.val "n" (peano n)]).reverse
+    (by rw [hclosed]; exact peano_bne_empty_true n)
+  rw [hclosed] at filtered
+  exact filtered
 
 /-- Exact executable query interface for the recursive Peano rule over a static world. The base rule
 misses `(add (S m) n)`, and the recursive rule contributes the only item. -/
@@ -1380,6 +1396,13 @@ theorem interpretFuelAddSuccKernelReadoutOfStaticEq (fuel m n : Nat) (st : St)
       expr_bne_empty_true [Metta.Atom.sym "S", addQuery m n]
   simp [interpretFuel, hstep, heval, finItem, isFinal, finalPair, hclosed,
     hnotEmpty]
+  have filtered := filtered_final_singleton (mE "S" [addQuery m n])
+    (renameBindings (counterSuffix (st.counter + 1))
+      [Metta.BindingRel.val "n" (peano n),
+       Metta.BindingRel.val "m" (peano m)]).reverse
+    (by rw [hclosed]; exact hnotEmpty)
+  rw [hclosed] at filtered
+  exact filtered
 
 /-- After the recursive Peano rule fires, the already-proven sub-computation lifts under `S`.
 This is the decomposition point an evaluator bridge should hand to the induction hypothesis. -/
@@ -1558,7 +1581,7 @@ private theorem mettaEvalAddClosed_eq_of_arg_singletons_and_root_eval
     (hxClosed : x.vars = []) (hyClosed : y.vars = [])
     (hx : mettaEval addEnv fuel st [] x = ([(x', [])], st₁))
     (hy : mettaEval addEnv fuel st₁ [] y = ([(y', [])], st₂))
-    (hNoErr : (([x', y'].zip [x, y]).find? (fun ho => ho.1.isError && ho.1 != ho.2)) = none)
+    (hNoErr : (([x', y'].zip [x, y]).find? (fun ho => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none)
     (hRoot : interpretFuel addEnv (fuel + 1) st₂ [evalItemNil (mE "add" [x', y'])] [] =
       ([(root, rootBnd)], stRoot))
     (hRootNotNotReducible : (root == notReducibleA) = false)
@@ -1737,7 +1760,7 @@ theorem mettaEvalPeanoSelf_sufficient_static (n extra : Nat) (st : St)
             ([(peano n, [])], st) := ih extra st hstatic
       have hS :=
         mettaEvalS_eq_of_arg_singleton_static_from (extra + n + 1) st st
-          (peano n) (peano n) hArg (peano_isError_false n) hstatic hstatic.staticWorld
+          (peano n) (peano n) hArg (peano_stop_false n) hstatic hstatic.staticWorld
       have hrestrict :
           restrictBnd (peano n).vars ((Bindings.merge [] []).head?.getD []) = [] := by
         rw [peano_vars_nil n]
@@ -1812,7 +1835,7 @@ theorem mettaEvalS_readout_sound_of_addQuery_singleton_static_from
   exact
     mettaEvalS_readout_sound_of_arg_singleton_static_from fuel st stArg
       (addQuery m n) (peano (m + n)) hArg (addReachesSumKernelContext m n)
-      (addQuery_vars_nil m n) (peano_isError_false (m + n)) hEvalStatic hstatic
+      (addQuery_vars_nil m n) (peano_stop_false (m + n)) hEvalStatic hstatic
 
 /-- Selected-readout `S` constructor congruence for the full evaluator.
 
@@ -1905,7 +1928,7 @@ theorem mettaEvalS_readout_sound_of_addQuery_member_static_from
     mettaEvalS_readout_sound_of_arg_member_static_from fuel st stArg
       (addQuery m n) (peano (m + n)) argPairs hArg hmemArg
       (addReachesSumKernelContext m n) (addQuery_vars_nil m n)
-      (peano_isError_false (m + n)) hEvalStatic hstatic
+      (peano_stop_false (m + n)) hEvalStatic hstatic
 
 /-- Recursive Peano `add` step for the full evaluator, in induction-handoff form.
 
@@ -1995,7 +2018,7 @@ private theorem mettaEvalAdd_eq_sufficient_static (a b extra : Nat) (st : St)
         exact hb0
       have hNoErr :
           (([mSym "Z", peano b].zip [mSym "Z", peano b]).find?
-            (fun ho => ho.1.isError && ho.1 != ho.2)) = none := by
+            (fun ho => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
         simpa [mSym, peano] using addArgs_errorGuard_none 0 b
       have hFold :
           mettaEval addEnv (extra + b + 2 + 1) st [] (mE "add" [mSym "Z", peano b]) =
@@ -2050,7 +2073,7 @@ private theorem mettaEvalAdd_eq_sufficient_static (a b extra : Nat) (st : St)
         have hS :=
           mettaEvalS_eq_of_arg_singleton_static_from (extra + b + 2 * a + 3)
             stRoot stIH (addQuery a b) (peano (a + b)) hIH
-            (peano_isError_false (a + b)) hstaticRoot hstaticIH.staticWorld
+            (peano_stop_false (a + b)) hstaticRoot hstaticIH.staticWorld
         have hrestrict :
             restrictBnd (addQuery a b).vars ((Bindings.merge [] []).head?.getD []) = [] := by
           rw [addQuery_vars_nil a b]
@@ -2063,7 +2086,7 @@ private theorem mettaEvalAdd_eq_sufficient_static (a b extra : Nat) (st : St)
         exact hS'
       have hNoErr :
           (([peano (a + 1), peano b].zip [peano (a + 1), peano b]).find?
-            (fun ho => ho.1.isError && ho.1 != ho.2)) = none := by
+            (fun ho => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
         simpa using addArgs_errorGuard_none (a + 1) b
       have hRootNotSelf :
           (mE "S" [addQuery a b] == mE "add" [peano (a + 1), peano b]) = false := by

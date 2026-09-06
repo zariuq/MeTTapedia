@@ -495,7 +495,7 @@ theorem pipeline_resume_from_zero (model : Model)
         ((pipelineDriver model).runReport (.classified request) () 0) 2 =
       .completed
         (.observed request (produce model request) (run model request)) () := by
-  simp
+  exact pipeline_runReport_two model request
 
 /-- Running the reified control pipeline to completion and observing its
 public result agrees exactly with the generic interpreter over the authored
@@ -508,8 +508,6 @@ theorem completed_runReport_agrees_with_authored (model : Model)
       (authoredRealization model).compile () request := by
   dsimp only
   rw [pipeline_runReport_two]
-  simpa [completedPipelineArtifact, stagedRealization,
-    PipelineControl.publicAnswers] using
-    stagedRealization_agrees_with_authored model request
+  exact stagedRealization_agrees_with_authored model request
 
 end Mettapedia.Languages.MeTTa.MeTTaZeroStagedAdequacy

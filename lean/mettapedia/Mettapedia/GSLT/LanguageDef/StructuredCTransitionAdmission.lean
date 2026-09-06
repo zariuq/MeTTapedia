@@ -71,7 +71,9 @@ theorem effectValueTransition_rewriteAt_exact
         (rewriteAt (engineBasePremises relationEnv) language 0) rule
         (run (consStatement (a "structured-c:effect" [expression]) rest)
           environment receipt)) = _
-  simp [transitions, applyRuleUsing,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    transitions, applyRuleUsing,
     matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
     emptyTransition, appendEmptyTransition, appendConsTransition,
@@ -163,7 +165,9 @@ theorem ifValueTransition_rewriteAt_exact
         (run (consStatement
           (a "structured-c:if" [condition, thenBranch, elseBranch]) rest)
           environment receipt)) = _
-  simp [transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
     emptyTransition, appendEmptyTransition, appendConsTransition,
     assignValueTransition, assignFaultTransition,
@@ -203,7 +207,9 @@ theorem whileExpandTransition_rewriteAt_exact
         (run (consStatement
           (a "structured-c:while" [condition, body]) rest)
           environment receipt)) = _
-  simp [transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
     emptyTransition, appendEmptyTransition, appendConsTransition,
     assignValueTransition, assignFaultTransition,
@@ -229,7 +235,9 @@ theorem appendEmptyTransition_rewriteAt_exact
         (rewriteAt (engineBasePremises relationEnv) language 0) rule
         (run (appendStatements nilStatements continuation)
           environment receipt)) = _
-  simp [transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing,
     emptyTransition, appendEmptyTransition, appendConsTransition,
     assignValueTransition, assignFaultTransition,
@@ -256,7 +264,9 @@ theorem appendConsTransition_rewriteAt_exact
         (rewriteAt (engineBasePremises relationEnv) language 0) rule
         (run (appendStatements (consStatement statement tail) continuation)
           environment receipt)) = _
-  simp [transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing,
     emptyTransition, appendEmptyTransition, appendConsTransition,
     assignValueTransition, assignFaultTransition,
@@ -278,7 +288,9 @@ theorem halted_rewriteAt_empty
       applyRuleUsing (engineBasePremises relationEnv) language
         (rewriteAt (engineBasePremises relationEnv) language 0) rule
         (halted outcome environment receipt)) = []
-  simp [transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing,
     emptyTransition, appendEmptyTransition, appendConsTransition,
     assignValueTransition, assignFaultTransition,
@@ -336,7 +348,9 @@ theorem returnValueTransition_rewriteAt_exact
         (rewriteAt (engineBasePremises relationEnv) language 0) rule
         (run (consStatement (a "structured-c:return" [expression]) rest)
           environment receipt)) = _
-  simp [transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
     emptyTransition, appendEmptyTransition, appendConsTransition,
     assignValueTransition, assignFaultTransition,
@@ -415,7 +429,9 @@ theorem declareValueTransition_rewriteAt_exact
         (run (consStatement
           (a "structured-c:declare" [variableName, type, expression]) rest)
           environment receipt)) = _
-  simp [transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
     emptyTransition, appendEmptyTransition, appendConsTransition,
     assignValueTransition, assignFaultTransition,
@@ -497,7 +513,9 @@ theorem switchValueTransition_rewriteAt_exact
         (run (consStatement
           (a "structured-c:switch" [scrutinee, cases, defaultBranch]) rest)
           environment receipt)) = _
-  simp [transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
+  simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
     emptyTransition, appendEmptyTransition, appendConsTransition,
     assignValueTransition, assignFaultTransition,

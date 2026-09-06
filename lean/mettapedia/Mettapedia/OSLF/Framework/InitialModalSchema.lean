@@ -157,22 +157,22 @@ theorem hom_eq_fold (A : ModalAlgebra.{u}) (h : ModalHom formulas A) :
   | .bot => h.map_bot
   | .atom a => h.map_atom a
   | .and φ ψ => by
-      rw [show OSLFFormula.and φ ψ = formulas.and φ ψ from rfl, h.map_and,
+      erw [show OSLFFormula.and φ ψ = formulas.and φ ψ from rfl, h.map_and,
         hom_eq_fold A h φ, hom_eq_fold A h ψ]
       rfl
   | .or φ ψ => by
-      rw [show OSLFFormula.or φ ψ = formulas.or φ ψ from rfl, h.map_or,
+      erw [show OSLFFormula.or φ ψ = formulas.or φ ψ from rfl, h.map_or,
         hom_eq_fold A h φ, hom_eq_fold A h ψ]
       rfl
   | .imp φ ψ => by
-      rw [show OSLFFormula.imp φ ψ = formulas.imp φ ψ from rfl, h.map_imp,
+      erw [show OSLFFormula.imp φ ψ = formulas.imp φ ψ from rfl, h.map_imp,
         hom_eq_fold A h φ, hom_eq_fold A h ψ]
       rfl
   | .dia φ => by
-      rw [show OSLFFormula.dia φ = formulas.dia φ from rfl, h.map_dia, hom_eq_fold A h φ]
+      erw [show OSLFFormula.dia φ = formulas.dia φ from rfl, h.map_dia, hom_eq_fold A h φ]
       rfl
   | .box φ => by
-      rw [show OSLFFormula.box φ = formulas.box φ from rfl, h.map_box, hom_eq_fold A h φ]
+      erw [show OSLFFormula.box φ = formulas.box φ from rfl, h.map_box, hom_eq_fold A h φ]
       rfl
 
 /-- **Initiality.**  The term algebra has exactly one homomorphism into every

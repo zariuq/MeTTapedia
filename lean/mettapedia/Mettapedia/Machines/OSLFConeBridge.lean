@@ -51,7 +51,7 @@ theorem langDiamondUsing_eq_stepImage_swap
       semanticDiamond (langGSLTUsing relEnv lang) φ from rfl]
   rw [descend_semanticDiamond]
   ext source
-  rw [equationQuotientDiamond, gsltDiamond_spec]
+  erw [equationQuotientDiamond, gsltDiamond_spec]
   change (∃ target,
       SemanticStep (langGSLTUsing relEnv lang) source target ∧
         descendPredicate (langGSLTUsing relEnv lang) φ target) ↔

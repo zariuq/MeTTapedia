@@ -104,11 +104,7 @@ theorem compiledCarrierName_mem_typeNames
   have retained := demand.requiredCarrier_mem_objects typingMembership required
   rw [compiledCarrierName_of_mem demand retained,
     SelectedNativeTypeFoundation.definition_typeNames]
-  simpa [SelectedNativeTypeFoundation.stableCarrierNames,
-    SelectedNativeTypeFoundation.stableCarrierTypes,
-    CarrierObjectLanguageDef.carrierSignature, LanguageDef.typeNames] using
-    (CarrierObjectNameLookup.indexed_name_mem_typeNames
-      (request := demand.carrierObjects) retained)
+  exact CarrierObjectNameLookup.indexed_name_mem_typeNames retained
 
 /-- Contextual modal declaration at one exact occurrence slot. -/
 def modalRuleAt {source : ValidatedLanguageDef}

@@ -181,9 +181,10 @@ theorem generated_reindex_append_square
       functor.map
         (FoundationMorphism.reindex (request.append residual)
           structural sortInjective) := by
-  rw [← functor.map_comp, ← functor.map_comp]
-  exact congrArg functor.map
-    (reindex_append_square request residual structural sortInjective)
+  exact (functor.map_comp _ _).symm.trans
+    ((congrArg functor.map
+      (reindex_append_square request residual structural sortInjective)).trans
+      (functor.map_comp _ _))
 
 /-! ## Positive and negative controls -/
 

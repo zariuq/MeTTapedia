@@ -166,12 +166,12 @@ def deriveLiterals? : (clause : Clause) ->
         deriveLiteralsNil)
   | literal :: clause => do
       let child <- deriveLiterals? clause
-      match literal with
+      match hLiteral : literal with
       | .positive atom =>
           if atomValid : argumentValidAt 0 atom = true then
             if restValid : argumentValidAt 0 (encodeClause clause) = true then
               some (by
-                simpa [LiteralsDerivation, encodeClause, encodeLiteral] using
+                simpa [LiteralsDerivation, encodeClause, encodeLiteral, hLiteral] using
                   deriveLiteralsPositive atom (encodeClause clause)
                     atomValid restValid child)
             else none
@@ -180,7 +180,7 @@ def deriveLiterals? : (clause : Clause) ->
           if atomValid : argumentValidAt 0 atom = true then
             if restValid : argumentValidAt 0 (encodeClause clause) = true then
               some (by
-                simpa [LiteralsDerivation, encodeClause, encodeLiteral] using
+                simpa [LiteralsDerivation, encodeClause, encodeLiteral, hLiteral] using
                   deriveLiteralsNegative atom (encodeClause clause)
                     atomValid restValid child)
             else none

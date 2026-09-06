@@ -780,6 +780,7 @@ def formulaHeight {depth : Nat} :
         (TptpFofAlphaExplicitNnfLanguageDef.encodeBinderId binder) := by
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The authored transformation has exactly the independent labeller's one
 result.  The equality preserves the source, the initial frontier, the complete
 alpha-explicit target, and the final frontier; consequently it also excludes

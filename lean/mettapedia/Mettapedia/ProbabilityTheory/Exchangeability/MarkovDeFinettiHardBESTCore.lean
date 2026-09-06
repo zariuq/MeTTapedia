@@ -46,7 +46,7 @@ def totalEdgeTokens (G : EulerGraph k) : ℕ :=
   ∑ a : Fin k, outDegG (k := k) G a
 
 /-- Edge-token type: one token per multiplicity copy of each directed edge `(a,b)`. -/
-def edgeTok (G : EulerGraph k) : Type :=
+abbrev edgeTok (G : EulerGraph k) : Type :=
   Σ a : Fin k, Σ b : Fin k, Fin (G a b)
 
 instance instFintypeEdgeTok (G : EulerGraph k) : Fintype (edgeTok (k := k) G) := by
@@ -158,8 +158,8 @@ lemma totalEdgeTokens_graphOfState_eq_of_mem_stateFinset
 lemma card_edgeTok_graphOfState_eq_of_mem_stateFinset
     {N : ℕ} {s : MarkovState k} (hs : s ∈ stateFinset k N) :
     Fintype.card (edgeTok (k := k) (graphOfState (k := k) s)) = N := by
-  simpa [card_edgeTok] using
-    totalEdgeTokens_graphOfState_eq_of_mem_stateFinset (k := k) hs
+  exact (card_edgeTok _).trans
+    (totalEdgeTokens_graphOfState_eq_of_mem_stateFinset (k := k) hs)
 
 /-- Euler-trail balance equations for states that arise from length-`N` trajectories. -/
 lemma flow_balance_graphOfState_of_mem_stateFinset

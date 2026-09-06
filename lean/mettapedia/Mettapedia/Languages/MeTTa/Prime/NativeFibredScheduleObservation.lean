@@ -57,7 +57,8 @@ def workScheduler (Ground : Type u) :
 maximum selection on every observed Prime schedule. -/
 theorem workScheduler_supports_workSelection (Ground : Type u) :
     (workScheduler Ground).SupportsMaxSelection WorkSpan.work := by
-  rw [Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture.SchedulerReadout.supportsMaxSelection_iff_constantOnReadoutFibers]
+  apply (Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture.SchedulerReadout.supportsMaxSelection_iff_constantOnReadoutFibers
+    (workScheduler Ground) WorkSpan.work).mpr
   intro first second firstMember secondMember sameWork
   exact sameWork
 
@@ -191,8 +192,9 @@ same declared domain.  Their equal work scores therefore cannot support a
 span-maximizing policy through the work-only scheduler view. -/
 theorem workScheduler_not_supports_spanSelection :
     ¬ (workScheduler Ground).SupportsMaxSelection WorkSpan.span := by
-  rw [Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture.SchedulerReadout.supportsMaxSelection_iff_constantOnReadoutFibers]
-  intro constant
+  intro supported
+  have constant := @(Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture.SchedulerReadout.supportsMaxSelection_iff_constantOnReadoutFibers
+    (workScheduler Ground) WorkSpan.span).mp supported
   have oneMember :=
     (scheduleArchitecture Ground).observed_container_mem
       (familyOperationalSchedule oneColourFamily)

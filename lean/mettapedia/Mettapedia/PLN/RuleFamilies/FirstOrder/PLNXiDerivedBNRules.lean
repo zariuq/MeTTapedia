@@ -60,6 +60,13 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 
 open scoped Classical ENNReal
 
+noncomputable local instance
+    [∀ v : Three, Fintype (chainBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (chainBN.stateSpace v)] :
+    BinaryWorldModel (BNWorldModel.State (bn := chainBN))
+      (AtomQuery (BNQuery.Atom (bn := chainBN))) :=
+  BNWorldModel.instBinaryWorldModelStateAtomQueryAtomOfFintypeOfDecidableEq (bn := chainBN)
+
 /-! ## §0 Type Aliases -/
 
 /-- All CPTs in the chain BN satisfy the local Markov property. -/
@@ -948,7 +955,8 @@ private lemma fork_qS_link_toReal (cpt : forkBN.DiscreteCPT) (a b : Three)
   rw [queryStrength_singleton_eq_queryProb]
   · rw [queryProb_link_eq_jointMeasure cpt a b true true ha]
     rw [Set.inter_comm]; rw [ENNReal.toReal_div]; simp [Measure.real]
-  · simp only [queryProb]; rw [linkProbVE_eq_jointMeasure_eventEq]
+  · refine (congrArg (fun value => value ≤ 1)
+      (linkProbVE_eq_jointMeasure_eventEq (bn := forkBN) cpt a b true true)).mpr ?_
     split
     · exact zero_le_one
     · exact le_trans (ENNReal.div_le_div_right (measure_mono Set.inter_subset_left) _)
@@ -959,8 +967,8 @@ private lemma fork_qS_prop_toReal (cpt : forkBN.DiscreteCPT) (v : Three) :
       (AtomQuery.prop (⟨v, true⟩ : BNQuery.Atom (bn := forkBN)))).toReal =
     cpt.jointMeasure.real (eventEq (bn := forkBN) v true) := by
   rw [queryStrength_singleton_eq_queryProb]
-  · rw [queryProb_prop_eq_jointMeasure]; simp [Measure.real]
-  · rw [queryProb_prop_eq_jointMeasure]; exact prob_le_one
+  · exact congrArg ENNReal.toReal (queryProb_prop_eq_jointMeasure (bn := forkBN) cpt v true)
+  · exact (queryProb_prop_eq_jointMeasure (bn := forkBN) cpt v true).le.trans prob_le_one
 
 /-- **Tier A→B Composition for Source Rule (Fork BN)**:
 For the fork BN `A ← B → C` with singleton CPT state,
@@ -1297,8 +1305,7 @@ private lemma collider_queryProb_prop_eq
     (cpt : colliderBN.DiscreteCPT) (v : Three) (val : Bool) :
     queryProb (bn := colliderBN) cpt (AtomQuery.prop ⟨v, val⟩) =
       cpt.jointMeasure (eventEq (bn := colliderBN) v val) := by
-  simp only [queryProb]
-  rw [propProbVE_eq_jointMeasure_eventEq]
+  exact propProbVE_eq_jointMeasure_eventEq (bn := colliderBN) cpt v val
 
 omit
   [(v : Three) → Inhabited (colliderBN.stateSpace v)]
@@ -1438,6 +1445,14 @@ open Mettapedia.ProbabilityTheory.BayesianNetworks
 open Mettapedia.ProbabilityTheory.BayesianNetworks.Examples
 
 noncomputable section
+
+noncomputable local instance
+    [∀ v : Three, Fintype (chainBN.stateSpace v)]
+    [∀ v : Three, DecidableEq (chainBN.stateSpace v)] :
+    BinaryWorldModel (BNWorldModel.State (bn := chainBN))
+      (AtomQuery (BNQuery.Atom (bn := chainBN))) :=
+  PLNXiDerivedBNRules.instBinaryWorldModelStateThreeAtomQueryAtomChainBNOfFintypeOfDecidableEqStateSpace
+
 
 /-! ## Generic Unit-Sort Lift -/
 

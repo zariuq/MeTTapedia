@@ -59,6 +59,11 @@ def presentedRhoProcessEquiv :
   closedProcessEquiv
 
 @[simp]
+theorem presentedRhoProcessEquiv_apply_symm (process : RhoProcess) :
+    presentedRhoProcessEquiv (presentedRhoProcessEquiv.symm process) = process :=
+  Equiv.apply_symm_apply _ _
+
+@[simp]
 theorem presentedRhoProcessEquiv_pattern (term : rhoReflectiveGSLT.Term) :
     (presentedRhoProcessEquiv term).1 = term.1 :=
   rfl
@@ -569,7 +574,9 @@ theorem presentedClosedCommTarget_ne_presentedClosedNil :
   intro equal
   have mapped := congrArg presentedRhoProcessEquiv equal
   rw [presentedClosedCommTarget, presentedClosedNil] at mapped
-  simp only [Equiv.apply_symm_apply] at mapped
+  have mapped : closedCommTarget = closedNil :=
+    (presentedRhoProcessEquiv_apply_symm _).symm.trans
+      (mapped.trans (presentedRhoProcessEquiv_apply_symm _))
   have patternEqual := congrArg Subtype.val mapped
   simp [closedCommTarget, closedNil] at patternEqual
 

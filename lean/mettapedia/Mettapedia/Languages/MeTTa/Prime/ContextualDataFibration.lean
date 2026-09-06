@@ -166,7 +166,8 @@ theorem translation_mapBaseEl_pattern
     (term : (fibre source).BaseEl sort) :
     ((translation morphism).mapBaseEl term).1 =
       mapPattern morphism.route.symbols term.1 := by
-  simp only [translation, OpenTerm.reindex_pattern, OpenTerm.map_pattern]
+  exact (OpenTerm.reindex_pattern _ _ _ _).trans
+    (OpenTerm.map_pattern morphism.route term)
 
 theorem translation_mapType_id (code : ContextualLanguage)
     (type : DataType (fibre code).BaseType) :
@@ -207,8 +208,8 @@ theorem translation_mapInterpret_id (code : ContextualLanguage)
       simp only [FibreTranslation.mapInterpret]
       apply heq_of_eq
       apply Subtype.ext
-      rw [translation_mapBaseEl_pattern]
-      exact mapPattern_id value.1
+      exact (translation_mapBaseEl_pattern (ContextualMorphism.id code) value).trans
+        (mapPattern_id value.1)
   | data payload inductionHypothesis =>
       rcases value with ⟨stamp, inner⟩
       simp only [FibreTranslation.mapInterpret, translation, DataType.map_data]
@@ -234,9 +235,11 @@ theorem translation_mapInterpret_comp
       simp only [DataType.map_base, FibreTranslation.mapInterpret]
       apply heq_of_eq
       apply Subtype.ext
-      rw [translation_mapBaseEl_pattern, translation_mapBaseEl_pattern,
-        translation_mapBaseEl_pattern]
-      exact mapPattern_comp earlier.route.symbols later.route.symbols value.1
+      exact (translation_mapBaseEl_pattern (ContextualMorphism.comp earlier later) value).trans
+        ((mapPattern_comp earlier.route.symbols later.route.symbols value.1).trans
+          ((congrArg (mapPattern later.route.symbols)
+            (translation_mapBaseEl_pattern earlier value)).symm.trans
+            (translation_mapBaseEl_pattern later ((translation earlier).mapBaseEl value)).symm))
   | data payload inductionHypothesis =>
       rcases value with ⟨stamp, inner⟩
       simp only [FibreTranslation.mapInterpret, translation, DataType.map_data]

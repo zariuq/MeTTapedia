@@ -357,6 +357,7 @@ def runObserved
     active.policyActive.runKey policy
       (resultOnlyCatalog.readout selected.candidate receipt))
 
+set_option backward.isDefEq.respectTransparency false in
 @[simp] theorem runObserved_eq
     {projection : PrefixProjection}
     {valid : prefixProjectionValid projection = true}

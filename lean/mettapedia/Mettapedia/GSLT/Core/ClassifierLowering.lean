@@ -189,7 +189,7 @@ theorem targetPathAtAuthored_length
     (stage : Stage Input Outcome Class Row) (input : Input) :
     (targetPathAtAuthored stage input).length = 2 := by
   unfold targetPathAtAuthored
-  rw [transportTarget_length]
+  erw [transportTarget_length]
   rfl
 
 /-- Lower one source step without eliminating its proposition-valued proof

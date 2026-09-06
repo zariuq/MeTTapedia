@@ -76,7 +76,11 @@ class OrthomodularLattice (α : Type*) extends Lattice α, BoundedOrder α where
 incompatible one.  Foulis's firefly box; a qubit with two bases. -/
 inductive MO2 : Type where
   | bot | top | a | a' | b | b'
-deriving DecidableEq, Repr, Fintype
+deriving DecidableEq, Repr
+
+instance : Fintype MO2 where
+  elems := {.bot, .top, .a, .a', .b, .b'}
+  complete := by intro x; cases x <;> simp
 
 namespace MO2
 

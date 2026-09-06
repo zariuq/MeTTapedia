@@ -262,7 +262,7 @@ theorem excludedMiddle_of_models_propBivalence
       ∀ x : Ty.denote M.Carrier o,
         M.adm o x →
           x.down ∨ ¬ x.down := by
-    simpa [propBivalence, HenkinModel.models, PreModel.models,
+    simpa [HenkinModel.Eqv, PreModel.Eqv, propBivalence, HenkinModel.models, PreModel.models,
       HenkinModel.denote, PreModel.denote, HenkinModel.extend, PreModel.extend]
       using h
   simpa using hAll (.up p) (M.prop_mem (.up p))
@@ -275,7 +275,7 @@ theorem models_propBivalence_of_excludedMiddle
     (hEM : ∀ p : Prop, p ∨ ¬ p) :
     HenkinModel.models M.toHenkinModel propBivalence := by
   unfold propBivalence
-  simp [HenkinModel.models, PreModel.models, PreModel.denote, PreModel.extend]
+  simp [HenkinModel.Eqv, PreModel.Eqv, HenkinModel.models, PreModel.models, PreModel.denote, PreModel.extend]
   intro x hx
   rcases hEM x.down with hp | hnp
   · exact Or.inl hp

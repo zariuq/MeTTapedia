@@ -234,7 +234,8 @@ def executionFibreEquiv
     simp
   right_inv witness := by
     rcases witness with ⟨value, targetWitness⟩
-    simp
+    exact congrArg (Sigma.mk value)
+      ((hosting.fibreEquiv initial value).apply_symm_apply targetWitness)
 
 /-- The exact execution-fibre equivalence uses the same forward route map as
 the underlying behavioral hosting. -/

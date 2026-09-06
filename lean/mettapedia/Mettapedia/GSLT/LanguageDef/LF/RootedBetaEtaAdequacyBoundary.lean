@@ -39,12 +39,12 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 private theorem rule_mem_of_lookup {ruleInstance : RuleInstance}
     {rule : RuleSchema}
     (lookup :
-      checked.presentation.1.lookupRule? ruleInstance.ruleId = some rule) :
+      checked.definition.1.lookupRule? ruleInstance.ruleId = some rule) :
     rule ∈
       [betaRule, etaRule, appCongruenceRule, piCongruenceRule,
         lamCongruenceRule] := by
   unfold CalculusLanguageDef.lookupRule? at lookup
-  simpa [CheckedGSLT.definition, checked, source, presentation, language] using
+  simpa [CheckedGSLT.definition, checked, source, LFRootedBetaEtaConversion.definition, language] using
     (List.mem_of_find?_eq_some lookup)
 
 private theorem instantiates_apply_head_eq
@@ -124,7 +124,7 @@ private theorem arguments_four
 by a proof-relevant derivation reconstructed by the generic checker. -/
 theorem beta_rule_has_derivation :
     Nonempty
-      (Derivation checked.presentation (converts betaSource typeTerm)) := by
+      (Derivation checked.definition (converts betaSource typeTerm)) := by
   have hcheck := beta_certificate_accepts
   simp only [betaCertificate, check, Bool.and_eq_true,
     decide_eq_true_eq] at hcheck
@@ -136,7 +136,7 @@ theorem no_lambda_left_rule_application
     {body target : Pattern} {ruleInstance : RuleInstance}
     {premises : List Pattern}
     (application :
-      RuleApplication checked.presentation ruleInstance premises
+      RuleApplication checked.definition ruleInstance premises
         (converts (.lambda none body) target)) :
     False := by
   rcases application with
@@ -158,7 +158,7 @@ theorem no_lambda_left_rule_application
 conversion. -/
 theorem no_lambda_left_derivation (body target : Pattern) :
     ¬ Nonempty
-      (Derivation checked.presentation
+      (Derivation checked.definition
         (converts (.lambda none body) target)) := by
   rintro ⟨derivation⟩
   cases derivation with
@@ -170,7 +170,7 @@ its second child has exactly the impossible wrapper-conversion shape.  The
 other four rules cannot instantiate to a product-headed source. -/
 theorem no_pi_left_derivation (domain body target : Pattern) :
     ¬ Nonempty
-      (Derivation checked.presentation
+      (Derivation checked.definition
         (converts (pi domain body) target)) := by
   rintro ⟨derivation⟩
   cases derivation with

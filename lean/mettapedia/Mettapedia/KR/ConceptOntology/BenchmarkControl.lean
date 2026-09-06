@@ -93,13 +93,21 @@ inductive Animal where
   | robin
   | penguin
   | bat
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype Animal where
+  elems := {.robin, .penguin, .bat}
+  complete x := by cases x <;> simp
 
 inductive Trait where
   | winged
   | warmBlooded
   | flies
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+instance : Fintype Trait where
+  elems := {.winged, .warmBlooded, .flies}
+  complete x := by cases x <;> simp
 
 def context : BinaryFcaBenchmarkContext Animal Trait where
   evidence

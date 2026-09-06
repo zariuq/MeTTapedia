@@ -234,7 +234,7 @@ theorem endpointReadout_not_faithful : Not endpointReadout.Faithful := by
 pair alone. -/
 theorem revision_does_not_descend :
     Not (endpointReadout.FactorsObserver RevisionOrigin.revision) := by
-  rw [endpointReadout.factorsObserver_iff_fibreInvariant]
+  erw [endpointReadout.factorsObserver_iff_fibreInvariant]
   intro invariant
   have equalRevisions := invariant
     (left := closedClaim 0) (right := closedClaim 1) rfl

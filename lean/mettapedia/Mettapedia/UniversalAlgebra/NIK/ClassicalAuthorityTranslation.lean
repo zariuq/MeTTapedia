@@ -163,6 +163,7 @@ theorem classicalCompileCertificate_check_commutes
   rw [classicalCompileCertificate_valid]
   simp only [classicalCompileCertificate_concl]
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Consequence equivalence lifts classically to an exact translation between
 the native equational replay authorities. -/
 noncomputable def classicalAuthorityTranslation
@@ -228,6 +229,7 @@ noncomputable def derivedExtensionAuthorityTranslation :
     AuthorityTranslation (contract derivedExtension) (contract equationSystem) :=
   classicalAuthorityTranslation derivedExtension_sameConsequences
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The added equation has an accepted source certificate whose transported
 certificate is accepted by the original monoid checker. -/
 theorem derived_equation_certificate_transports :

@@ -495,7 +495,8 @@ theorem forkPath_length_le_one
     (path : EventPath forkPresentation source target) :
     EventPath.pathLength forkPresentation path ≤ 1 := by
   have bounded := forkRewritePath_length_le_one (EventPath.erase _ path)
-  simpa only [EventPath.erase_length] using bounded
+  erw [EventPath.erase_length] at bounded
+  exact bounded
 
 /-- Preservation cannot be strengthened to unconditional path reflection:
 the non-injective route exposes a valid two-event target history with no

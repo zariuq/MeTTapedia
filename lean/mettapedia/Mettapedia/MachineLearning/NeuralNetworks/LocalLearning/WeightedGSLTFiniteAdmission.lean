@@ -197,7 +197,11 @@ inductive BranchState where
   | start
   | good
   | bad
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype BranchState where
+  elems := {.start, .good, .bad}
+  complete state := by cases state <;> simp
 
 inductive BranchStep : BranchState → BranchState → Prop where
   | toGood : BranchStep .start .good

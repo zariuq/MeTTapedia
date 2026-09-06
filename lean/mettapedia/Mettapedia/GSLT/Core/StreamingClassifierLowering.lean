@@ -158,7 +158,7 @@ theorem consumePathAtAuthored_length
     (state : State) (item : Item) (remaining : List Item) :
     (consumePathAtAuthored stage state item remaining).length = 2 := by
   unfold consumePathAtAuthored
-  rw [Mettapedia.GSLT.ClassifierLowering.transportTarget_length]
+  erw [Mettapedia.GSLT.ClassifierLowering.transportTarget_length]
   rfl
 
 /-- End-of-stream is a separately retained target transition. -/
@@ -324,8 +324,8 @@ theorem targetRunPath_length
   induction items generalizing state with
   | nil => rfl
   | cons item remaining inductionHypothesis =>
-      simp only [targetRunPath, Route.length_append, List.length_cons]
-      rw [consumePathAtAuthored_length]
+      simp only [targetRunPath, List.length_cons]
+      erw [Route.length_append, consumePathAtAuthored_length]
       calc
         2 + (targetRunPath stage
             (stage.authoredRun (state, item)) remaining).length =

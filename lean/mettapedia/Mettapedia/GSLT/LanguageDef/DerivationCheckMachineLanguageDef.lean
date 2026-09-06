@@ -534,7 +534,7 @@ private theorem rewrites_validate :
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
   all_goals
     simp (config := { maxSteps := 2000000 })
-      [LanguageDef.validateRewrite, language, terms, ctor, typed, v, a,
+      [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff, language, terms, ctor, typed, v, a,
       query, run, halted, instructionsNil, instructionsCons, nodesCons,
       node, rootNone, rootSome, decisionFault, decisionState, outcomeFault,
       commonContext,

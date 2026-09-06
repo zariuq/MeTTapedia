@@ -308,6 +308,7 @@ def historicalTargetIso
       (G.substitutionIso substitution A).symm ≪≫
     (transformation.baseNaturalityReindexIso substitution A).symm
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Following the historical target comparison by the left staged lift is
 the concrete path obtained by lifting the base transformation, applying the
 inverse target substitution comparison, and lifting the translated source
@@ -403,6 +404,7 @@ theorem historicalTargetIso_hom_composedExtensionSubstitution
         (fun inner => D.toCwf.compS substitutionLift inner)
         comparisonNaturality
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The historical substitution-coherence square follows from the corrected
 comprehension square.  The proof pastes the cartesian-lift preservation laws
 of `F` and `G` around the corrected square, then cancels the canonical
@@ -639,7 +641,6 @@ theorem substitution_coherence
           apply congrArg asSemantic
           dsimp only [sourceMappedPrefix]
           simp only [D.toCwf.comp_assoc]
-          rfl
         _ = asSemantic (D.toCwf.compS rhoTargetTarget.hom
             (D.toCwf.compS
               (D.toCwf.compS targetMappedLift sourceBaseComponent)
@@ -739,7 +740,6 @@ theorem substitution_coherence
             (transformation.family Γ sourceAfter).substitution
             sourceComparison.hom.substitution := by
       simp only [rightPath, TypeOver.Hom.comp_substitution]
-      rfl
     change D.toCwf.compS composedLift reindexedFamily.substitution =
       D.toCwf.compS composedLift
         (rightPath ≫ targetTail.hom).substitution
@@ -778,7 +778,6 @@ theorem substitution_coherence
           apply congrArg asSemantic
           rw [rightPathExpansion]
           simp only [D.toCwf.comp_assoc]
-          rfl
         _ = asSemantic (D.toCwf.compS
             (D.toCwf.compS composedLift targetTail.hom.substitution)
             rightPath.substitution) := by
@@ -936,6 +935,7 @@ def verticalFamily
       (second.base.app ⟨Γ⟩) (first.base.app ⟨Γ⟩)
       (H.mapTypeObject A)).inv
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Fibre naturality of the displayed vertical composite. -/
 theorem verticalFamily_naturality
     (first : CorrectedTransformationData F G)
@@ -1060,6 +1060,7 @@ theorem verticalFamily_naturality
         (Category.assoc firstA (alphaPullback.map secondA)
           (comparison.inv.app (H.mapTypeObject A)))
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The displayed vertical composite satisfies the corrected comprehension
 square by pasting the two input squares around pullback naturality. -/
 theorem verticalFamily_comprehension_coherence
@@ -1255,6 +1256,7 @@ def vertical
   comprehension_coherence :=
     verticalFamily_comprehension_coherence first second
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Identity corrected transformation data.  Its fibre component is the
 inverse of the canonical identity-reindexing comparison because displayed
 components point from the untranslated object into its reindexing. -/
@@ -1380,6 +1382,10 @@ instance baseForgetfulFunctor_faithful :
     (baseForgetfulFunctor (C := C) (D := D)).Faithful where
   map_injective equality := ext_of_base_eq _ _ equality
 
+local instance (Γ : Type) :
+    Category.{0} (TypeOver familiesCwfWithTerminal.toCwf Γ) :=
+  TypeOver.instCategory (C := familiesCwfWithTerminal.toCwf) (Γ := Γ)
+
 /-! ## Positive and negative controls -/
 
 /-- The identity corrected transformation uses the canonical cartesian
@@ -1391,6 +1397,7 @@ theorem identity_family
     (identity F).family Γ A =
       (TypeOver.identityObjectIso (F.mapTypeObject A)).inv := rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- A Boolean-negating displayed component cannot masquerade as the identity
 2-cell.  Although it has the correct source and target, it violates the
 corrected comprehension square. -/

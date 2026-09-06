@@ -203,6 +203,7 @@ def mkPred {Γ : List (SimpleTy Base)}
     pointCarrierVal (M := M)
       ((mkPred (M := M) f).toContinuousMap γ) = f γ := by
   simp [mkPred]
+  rfl
 
 @[simp] theorem lift_apply_consCtx
     {Γ Δ : List (SimpleTy Base)} {τ : SimpleTy Base}
@@ -286,12 +287,12 @@ end SimpleTopologicalInterpretation
     pointCarrierVal (M := M)
       (((quantInterp M).toPropositional.top Γ).toContinuousMap γ) = M.topP := by
   unfold SimplePropositionalInterpretation.top
-  rw [SimpleTopologicalInterpretation.CtxTerm.reindex_apply]
+  erw [SimpleTopologicalInterpretation.CtxTerm.reindex_apply]
   change pointCarrierVal (M := M)
       (((mkPred (M := M) fun _ => M.topP).toContinuousMap)
         ((SimpleTopologicalInterpretation.CtxHom.terminal (simpleInterp M) Γ).toContinuousMap γ)) =
     M.topP
-  rw [mkPred_val]
+  erw [mkPred_val]
 
 @[simp] theorem bot_val
     {Γ : List (SimpleTy Base)}
@@ -299,12 +300,12 @@ end SimpleTopologicalInterpretation
     pointCarrierVal (M := M)
       (((quantInterp M).toPropositional.bot Γ).toContinuousMap γ) = M.botP := by
   unfold SimplePropositionalInterpretation.bot
-  rw [SimpleTopologicalInterpretation.CtxTerm.reindex_apply]
+  erw [SimpleTopologicalInterpretation.CtxTerm.reindex_apply]
   change pointCarrierVal (M := M)
       (((mkPred (M := M) fun _ => M.botP).toContinuousMap)
         ((SimpleTopologicalInterpretation.CtxHom.terminal (simpleInterp M) Γ).toContinuousMap γ)) =
     M.botP
-  rw [mkPred_val]
+  erw [mkPred_val]
 
 @[simp] theorem conj_val
     {Γ : List (SimpleTy Base)}
@@ -316,7 +317,7 @@ end SimpleTopologicalInterpretation
         (pointCarrierVal (M := M) (p.toContinuousMap γ))
         (pointCarrierVal (M := M) (q.toContinuousMap γ)) := by
   unfold SimplePropositionalInterpretation.conj
-  rw [SimpleTopologicalInterpretation.CtxTerm.reindex_apply]
+  erw [SimpleTopologicalInterpretation.CtxTerm.reindex_apply]
   change pointCarrierVal (M := M)
       (((mkPred (M := M) fun (δ : ((simpleInterp M).ctxSpace [.prop, .prop]).Carrier) =>
           M.andP (headVal (M := M) δ)
@@ -325,7 +326,7 @@ end SimpleTopologicalInterpretation
       M.andP
         (pointCarrierVal (M := M) (p.toContinuousMap γ))
         (pointCarrierVal (M := M) (q.toContinuousMap γ))
-  rw [mkPred_val]
+  erw [mkPred_val]
   unfold SimplePropositionalInterpretation.pairSubst
   have hhead :
       headVal (M := M)
@@ -411,7 +412,7 @@ end SimpleTopologicalInterpretation
         (pointCarrierVal (M := M) (p.toContinuousMap γ))
         (pointCarrierVal (M := M) (q.toContinuousMap γ)) := by
   unfold SimplePropositionalInterpretation.disj
-  rw [SimpleTopologicalInterpretation.CtxTerm.reindex_apply]
+  erw [SimpleTopologicalInterpretation.CtxTerm.reindex_apply]
   change pointCarrierVal (M := M)
       (((mkPred (M := M) fun (δ : ((simpleInterp M).ctxSpace [.prop, .prop]).Carrier) =>
           M.orP (headVal (M := M) δ)
@@ -420,7 +421,7 @@ end SimpleTopologicalInterpretation
       M.orP
         (pointCarrierVal (M := M) (p.toContinuousMap γ))
         (pointCarrierVal (M := M) (q.toContinuousMap γ))
-  rw [mkPred_val]
+  erw [mkPred_val]
   unfold SimplePropositionalInterpretation.pairSubst
   have hhead :
       headVal (M := M)
@@ -506,7 +507,7 @@ end SimpleTopologicalInterpretation
         (pointCarrierVal (M := M) (p.toContinuousMap γ))
         (pointCarrierVal (M := M) (q.toContinuousMap γ)) := by
   unfold SimplePropositionalInterpretation.impl
-  rw [SimpleTopologicalInterpretation.CtxTerm.reindex_apply]
+  erw [SimpleTopologicalInterpretation.CtxTerm.reindex_apply]
   change pointCarrierVal (M := M)
       (((mkPred (M := M) fun (δ : ((simpleInterp M).ctxSpace [.prop, .prop]).Carrier) =>
           M.impP (headVal (M := M) δ)
@@ -515,7 +516,7 @@ end SimpleTopologicalInterpretation
       M.impP
         (pointCarrierVal (M := M) (p.toContinuousMap γ))
         (pointCarrierVal (M := M) (q.toContinuousMap γ))
-  rw [mkPred_val]
+  erw [mkPred_val]
   unfold SimplePropositionalInterpretation.pairSubst
   have hhead :
       headVal (M := M)
@@ -905,25 +906,11 @@ namespace SimpleQuantifiedFormula
               ApplicativeStructure.Env.extend M.toApplicativeStructure
                 (simpleInterp.decodeEnv (M := M) γ) x v :=
         simpleInterp.decodeEnv_consCtx_apply (M := M) x γ
-      calc
-        pointCarrierVal (M := M)
-            ((Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.SimpleQuantifiedInterpretation.eval
-                (quantInterp M) φ).toContinuousMap
-              (simpleInterp.consCtx (M := M) x γ))
-            =
-          SemilocalModel.eval M.toSemilocalModel
-            (simpleInterp.decodeEnv (M := M) (simpleInterp.consCtx (M := M) x γ))
-            (Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.toFormula φ) := by
-            exact ih (simpleInterp.consCtx (M := M) x γ)
-        _ =
-          SemilocalModel.eval M.toSemilocalModel
-            (ApplicativeStructure.Env.extend M.toApplicativeStructure
-              (simpleInterp.decodeEnv (M := M) γ) x)
-            (Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.toFormula φ) := by
-            exact SemilocalModel.eval_env_ext
-              (S := M.toSemilocalModel)
-              (t := Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.toFormula φ)
-              (hρ := henv)
+      exact (ih (simpleInterp.consCtx (M := M) x γ)).trans
+        (SemilocalModel.eval_env_ext
+          (S := M.toSemilocalModel)
+          (t := Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.toFormula φ)
+          (hρ := henv))
   | @ex Γ τ φ ih =>
       rw [Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.SimpleQuantifiedInterpretation.eval,
         Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.toFormula,
@@ -940,25 +927,11 @@ namespace SimpleQuantifiedFormula
               ApplicativeStructure.Env.extend M.toApplicativeStructure
                 (simpleInterp.decodeEnv (M := M) γ) x v :=
         simpleInterp.decodeEnv_consCtx_apply (M := M) x γ
-      calc
-        pointCarrierVal (M := M)
-            ((Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.SimpleQuantifiedInterpretation.eval
-                (quantInterp M) φ).toContinuousMap
-              (simpleInterp.consCtx (M := M) x γ))
-            =
-          SemilocalModel.eval M.toSemilocalModel
-            (simpleInterp.decodeEnv (M := M) (simpleInterp.consCtx (M := M) x γ))
-            (Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.toFormula φ) := by
-            exact ih (simpleInterp.consCtx (M := M) x γ)
-        _ =
-          SemilocalModel.eval M.toSemilocalModel
-            (ApplicativeStructure.Env.extend M.toApplicativeStructure
-              (simpleInterp.decodeEnv (M := M) γ) x)
-            (Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.toFormula φ) := by
-            exact SemilocalModel.eval_env_ext
-              (S := M.toSemilocalModel)
-              (t := Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.toFormula φ)
-              (hρ := henv)
+      exact (ih (simpleInterp.consCtx (M := M) x γ)).trans
+        (SemilocalModel.eval_env_ext
+          (S := M.toSemilocalModel)
+          (t := Mettapedia.AutoBooks.Codex.IntuitionisticHOL.SimpleQuantifiedFormula.toFormula φ)
+          (hρ := henv))
 
 theorem truth_eval_eq_formulaTruth
     {Γ : List (SimpleTy Base)}

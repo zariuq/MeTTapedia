@@ -84,6 +84,7 @@ lean/mettapedia/results/
 lean/mettapedia/data/
 !lean/mettapedia/scripts/
 lean/mettapedia/scripts/*
+!lean/mettapedia/scripts/generate_self_interp_checkpoints.lean
 !lean/mettapedia/scripts/oeis_program_discovery_fixture.py
 !lean/mettapedia/scripts/test_oeis_program_discovery_fixture.py
 !lean/mettapedia/scripts/test_metamath_mm2_raw_unit.sh

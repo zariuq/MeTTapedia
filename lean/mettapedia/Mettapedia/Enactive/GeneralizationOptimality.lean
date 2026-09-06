@@ -238,7 +238,11 @@ inductive Candidate where
   | lower
   | maxLeft
   | maxRight
-deriving DecidableEq, Fintype
+deriving DecidableEq
+
+instance : Fintype Candidate where
+  elems := {.lower, .maxLeft, .maxRight}
+  complete := by intro value; cases value <;> simp
 
 def candidates : Finset Candidate := Finset.univ
 

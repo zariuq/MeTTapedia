@@ -1622,6 +1622,18 @@ theorem baseName_mem_of_validateTypeExpr_eq_nil
   by_contra missing
   simp [missing] at component
 
+/-- Type-expression validation succeeds exactly when every referenced base
+sort is declared. This interface also applies beneath compound types. -/
+theorem validateTypeExpr_eq_nil_iff
+    (knownTypes : List String) (context : String) (ty : TypeExpr) :
+    validateTypeExpr knownTypes context ty = [] ↔
+      ∀ name ∈ ty.baseNames, name ∈ knownTypes := by
+  constructor
+  · intro clean name membership
+    exact baseName_mem_of_validateTypeExpr_eq_nil
+      knownTypes context ty clean membership
+  · exact validateTypeExpr_eq_nil_of_baseNames knownTypes context ty
+
 mutual
 
 private def validateSyntaxPatternOp

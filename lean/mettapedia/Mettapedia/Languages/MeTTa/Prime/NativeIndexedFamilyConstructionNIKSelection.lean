@@ -312,7 +312,7 @@ def preservingOperation {presented : PresentedCandidate}
 
 /-- The stronger family is constructible only from the actual declaration
 preservation theorem. -/
-def family {presented : PresentedCandidate}
+abbrev family {presented : PresentedCandidate}
     (typed : TypedNativePresentation presented)
     (preserves :
       presented.candidate.signature.DeclaredPreserves Tower.rules) :

@@ -270,6 +270,8 @@ theorem finsetPathEvidence_strength {α : Type*} [DecidableEq α] (W q : Finset 
   simp only [BinaryEvidence.toStrength, finsetPathEvidence, BinaryEvidence.total]
   have hTotal : ((W ∩ q).card : ℝ≥0∞) + (W \ q).card = W.card := by
     exact_mod_cast Finset.card_inter_add_card_sdiff W q
-  rw [if_neg (by rw [hTotal]; exact hW), hTotal]
+  change (if ((W ∩ q).card : ℝ≥0∞) + (W \ q).card = 0 then 0
+    else (W ∩ q).card / (((W ∩ q).card : ℝ≥0∞) + (W \ q).card)) = _
+  rw [hTotal, if_neg hW]
 
 end Mettapedia.OSLF.PathMap.PLNBridge

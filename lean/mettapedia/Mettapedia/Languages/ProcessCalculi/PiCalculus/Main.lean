@@ -1384,6 +1384,7 @@ theorem userObs_excludes_ns_z_of_encodingFresh
     "ns_z" ∉ N := by
   exact ns_z_notin_obs_of_subset_freeNames (P := P) (N := N) hobs hfresh
 
+set_option backward.isDefEq.respectTransparency false in
 /-- User-observation hygiene corollary for `n_init`. -/
 theorem userObs_excludes_n_init_of_encodingFresh
     {N : Finset String} {P : Process}
@@ -1392,9 +1393,9 @@ theorem userObs_excludes_n_init_of_encodingFresh
     "n_init" ∉ N := by
   exact reserved_notin_obs_of_subset_freeNames
     (P := P) (N := N) (r := "n_init") hobs hfresh (by
-      simp [fullEncodeReservedNames]
-      decide +kernel)
+      simp [fullEncodeReservedNames])
 
+set_option backward.isDefEq.respectTransparency false in
 /-- User-observation hygiene corollary for `v_init`. -/
 theorem userObs_excludes_v_init_of_encodingFresh
     {N : Finset String} {P : Process}
@@ -1403,9 +1404,9 @@ theorem userObs_excludes_v_init_of_encodingFresh
     "v_init" ∉ N := by
   exact reserved_notin_obs_of_subset_freeNames
     (P := P) (N := N) (r := "v_init") hobs hfresh (by
-      simp [fullEncodeReservedNames]
-      decide +kernel)
+      simp [fullEncodeReservedNames])
 
+set_option backward.isDefEq.respectTransparency false in
 /-- User-observation hygiene corollary for `ns_x`. -/
 theorem userObs_excludes_ns_x_of_encodingFresh
     {N : Finset String} {P : Process}
@@ -1414,8 +1415,7 @@ theorem userObs_excludes_ns_x_of_encodingFresh
     "ns_x" ∉ N := by
   exact reserved_notin_obs_of_subset_freeNames
     (P := P) (N := N) (r := "ns_x") hobs hfresh (by
-      simp [fullEncodeReservedNames]
-      decide +kernel)
+      simp [fullEncodeReservedNames])
 
 /-- User-observation hygiene (general reserved-name form):
 under `N ⊆ fn(P)` and `EncodingFresh P`, any reserved full-encode name is
@@ -1429,6 +1429,7 @@ theorem userObs_excludes_reserved_name_of_encodingFresh
   exact reserved_notin_obs_of_subset_freeNames
     (P := P) (N := N) (r := r) hobs hfresh hr
 
+set_option backward.isDefEq.respectTransparency false in
 /-- User-observation hygiene corollary for `ns_seed`. -/
 theorem userObs_excludes_ns_seed_of_encodingFresh
     {N : Finset String} {P : Process}
@@ -1437,8 +1438,7 @@ theorem userObs_excludes_ns_seed_of_encodingFresh
     "ns_seed" ∉ N := by
   exact userObs_excludes_reserved_name_of_encodingFresh
     (P := P) (N := N) (r := "ns_seed") hobs hfresh (by
-      simp [fullEncodeReservedNames]
-      decide +kernel)
+      simp [fullEncodeReservedNames])
 
 /-- Bundled user-observation hygiene result for all concrete reserved
 full-encode names/channels. -/

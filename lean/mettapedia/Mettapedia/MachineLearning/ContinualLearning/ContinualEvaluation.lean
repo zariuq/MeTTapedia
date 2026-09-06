@@ -348,7 +348,8 @@ theorem endpoint_sampling_reports_no_drop :
       (s := orderedPairs endpointWindow)
       (fun pair => stabilityGapTrace pair.1 - stabilityGapTrace pair.2)
       hmem
-    simpa [stabilityGapTrace] using hle
+    norm_num only [stabilityGapTrace] at hle
+    exact hle
 
 theorem continual_sampling_exposes_unit_drop :
     maximalDrop stabilityGapTrace continualWindow
@@ -368,7 +369,8 @@ theorem continual_sampling_exposes_unit_drop :
       (s := orderedPairs continualWindow)
       (fun pair => stabilityGapTrace pair.1 - stabilityGapTrace pair.2)
       hmem
-    simpa [stabilityGapTrace] using hle
+    norm_num only [stabilityGapTrace] at hle
+    exact hle
 
 theorem coarser_sampling_can_hide_all_observed_forgetting :
     maximalDrop stabilityGapTrace endpointWindow

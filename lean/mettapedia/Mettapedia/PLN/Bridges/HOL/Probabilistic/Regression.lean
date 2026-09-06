@@ -89,7 +89,8 @@ theorem regression_nat_geometric_flag_half :
         MeasureTheory.Measure natFlagSpace.Idx)
       flagSentence =
       (1 / 2 : ℝ≥0∞) := by
-  rw [sentenceProb, natFlagSpace_sentenceEvent_flag]
+  unfold sentenceProb
+  erw [natFlagSpace_sentenceEvent_flag]
   have hsingleton :
       ProbabilityTheory.geometricMeasure halfUnitInterval ({0} : Set Nat) =
         (1 / 2 : ℝ≥0∞) := by

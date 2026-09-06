@@ -252,6 +252,7 @@ def identityReplayAdmissionAt
 
 /-! ## Constructional transport and associativity -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Extend one provenance record through a suffix while retaining the
 original source endpoint. -/
 def mapThrough

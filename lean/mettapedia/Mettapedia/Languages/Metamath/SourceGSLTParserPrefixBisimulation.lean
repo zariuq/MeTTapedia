@@ -1224,31 +1224,31 @@ example :
 theorem toMath_eq_fold (token : ByteSlice) :
     Metamath.Verify.toMath token =
       (((sliceBytes token).foldl
-          (fun (result : MProd Bool String) byte =>
+          (fun (result : Prod Bool String) byte =>
             ⟨if Metamath.Verify.isMathChar byte then result.fst else false,
               result.snd.push (Metamath.Verify.uint8ToChar byte)⟩)
           ⟨true, ""⟩).fst,
         ((sliceBytes token).foldl
-          (fun (result : MProd Bool String) byte =>
+          (fun (result : Prod Bool String) byte =>
             ⟨if Metamath.Verify.isMathChar byte then result.fst else false,
               result.snd.push (Metamath.Verify.uint8ToChar byte)⟩)
           ⟨true, ""⟩).snd) := by
   have run_eq : Metamath.Verify.toMath token =
-      (fun (result : MProd Bool String) => (result.fst, result.snd))
+      (fun (result : Prod Bool String) => (result.fst, result.snd))
         (ByteSlice.forIn (m := Id) token
-          (⟨true, ""⟩ : MProd Bool String)
+          (⟨true, ""⟩ : Prod Bool String)
           (fun byte result =>
             if Metamath.Verify.isMathChar byte = true then
               pure (ForInStep.yield
                 (⟨result.fst,
                   result.snd.push (Metamath.Verify.uint8ToChar byte)⟩ :
-                    MProd Bool String))
+                    Prod Bool String))
             else
               pure (ForInStep.yield
                 (⟨false,
                   result.snd.push (Metamath.Verify.uint8ToChar byte)⟩ :
-                    MProd Bool String)))) := rfl
-  rw [run_eq, byteSlice_forIn_yield (β := MProd Bool String) token _
+                    Prod Bool String)))) := rfl
+  rw [run_eq, byteSlice_forIn_yield (β := Prod Bool String) token _
     (fun byte result =>
       ⟨if Metamath.Verify.isMathChar byte then result.fst else false,
         result.snd.push (Metamath.Verify.uint8ToChar byte)⟩)
@@ -1261,7 +1261,7 @@ theorem toMath_eq_fold (token : ByteSlice) :
 theorem mathFold_fst (bytes : List UInt8) :
     ∀ (initialValid : Bool) (initialText : String),
       (bytes.foldl
-          (fun (result : MProd Bool String) byte =>
+          (fun (result : Prod Bool String) byte =>
             ⟨if Metamath.Verify.isMathChar byte then result.fst else false,
               result.snd.push (Metamath.Verify.uint8ToChar byte)⟩)
           ⟨initialValid, initialText⟩).fst =
@@ -1278,7 +1278,7 @@ theorem mathFold_fst (bytes : List UInt8) :
 theorem mathFold_snd (bytes : List UInt8) :
     ∀ (initialValid : Bool) (initialText : String),
       (bytes.foldl
-          (fun (result : MProd Bool String) byte =>
+          (fun (result : Prod Bool String) byte =>
             ⟨if Metamath.Verify.isMathChar byte then result.fst else false,
               result.snd.push (Metamath.Verify.uint8ToChar byte)⟩)
           ⟨initialValid, initialText⟩).snd =

@@ -147,6 +147,7 @@ theorem chronological_pair_workSpan :
       (fun _ => leftThenRightPath) PUnit.unit = ⟨2, 2⟩ :=
   by
     simp [pathWorkSpan, leftThenRightPath, EventPath.pathLength]
+    rfl
 
 /-- Product independence licenses one two-event wave: work remains two while
 span falls to one. -/

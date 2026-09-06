@@ -383,9 +383,8 @@ def chainModel : Model := structuralModel fun _ => 0
 /-- Bare Zero exposes only the first link of the chain. -/
 @[simp] theorem chain_evaluateOne_a :
     evaluateOne chainModel chainSpace chainA = {chainB} := by
-  rw [evaluateOne_of_interpreted]
-  · exact chain_interpretedResults_a
-  · simp
+  exact (evaluateOne_of_interpreted chainModel chainSpace chainA
+    (by rw [chain_interpretedResults_a]; simp)).trans chain_interpretedResults_a
 
 /-- In particular, the second-link result is not a direct one-step answer. -/
 theorem chain_c_not_mem_evaluateOne_a :

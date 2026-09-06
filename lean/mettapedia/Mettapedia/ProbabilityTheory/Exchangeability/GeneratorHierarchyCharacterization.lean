@@ -153,7 +153,7 @@ theorem levelTower_collapse
             (fun μ : Measure (MarkovParam k) =>
               ∫⁻ θ, wordProb (k := k) θ xs ∂μ) :=
         Measure.measurable_lintegral (measurable_wordProb (k := k) xs)
-      rw [lintegral_map hF (measurable_iterJoin (MarkovParam k) n)]
+      erw [lintegral_map hF (measurable_iterJoin (MarkovParam k) n)]
       refine lintegral_congr_ae ?_
       exact (And.right hP).mono fun τ hτ =>
         levelTower_collapse xs n τ hτ

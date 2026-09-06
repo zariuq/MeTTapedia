@@ -152,8 +152,10 @@ theorem packetExperimentEvidence_pos_eq_countP
     (packetExperimentEvidence packets query).pos =
       packets.countP (fun packet ↦ packet.claim = query) := by
   classical
-  simp [packetExperimentEvidence, experimentEvidence, packetExperimentQuery,
-    packetExperimentChannel, queryOf, queryHolds]
+  exact congrArg (fun count : Nat => (count : ENNReal))
+    (Multiset.countP_congr (s := packets)
+      (p := fun packet => queryHolds packet (packetExperimentQuery query))
+      (p' := fun packet => packet.claim = query) rfl (fun _ _ => rfl))
 
 end ExperimentView
 

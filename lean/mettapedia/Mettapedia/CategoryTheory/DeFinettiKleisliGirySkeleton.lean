@@ -972,7 +972,7 @@ lemma partialTraj_thetaIidStep_map_thetaFromPrefix_eq_dirac
           (Preorder.frestrictLe₂ (Nat.zero_le n)) := by
     funext x
     unfold thetaFromPrefix
-    simp [thetaPrefixZeroIdx]
+    rfl
   have hmapmap :
       (((ProbabilityTheory.Kernel.partialTraj thetaIidStep 0 n) (thetaToPrefix0 θ)).map
         (fun x : ThetaBoolPrefix n => thetaFromPrefix x)) =
@@ -1138,16 +1138,9 @@ lemma partialTraj_thetaIidStep_nextLaw_eq_thetaBernoulli
     change IsProbabilityMeasure
       ((ProbabilityTheory.Kernel.partialTraj thetaIidStep 0 n) (thetaToPrefix0 θ))
     infer_instance
-  calc
-    ((ProbabilityTheory.Kernel.partialTraj thetaIidStep 0 n) (thetaToPrefix0 θ)).bind
-        (thetaIidStep n)
-        = μ.bind (thetaIidStep n) := by
-            rfl
-    _ = μ.bind (ProbabilityTheory.Kernel.const (ThetaBoolPrefix n) (thetaBernoulliKernel θ)) := hcongr
-    _ = μ Set.univ • (thetaBernoulliKernel θ) := by
-          exact (MeasureTheory.Measure.const_comp (μ := μ) (ν := (thetaBernoulliKernel θ)))
-    _ = thetaBernoulliKernel θ := by
-          simp [measure_univ]
+  exact hcongr.trans
+    ((MeasureTheory.Measure.const_comp (μ := μ) (ν := thetaBernoulliKernel θ)).trans
+      (by simp [measure_univ]))
 
 private theorem partialTraj_dropThetaPrefix_map_snoc
     (θ : LatentTheta) (n : ℕ) (xs : Fin n → Bool) (b : Bool) :
@@ -3282,8 +3275,8 @@ theorem allSourcesKleisli_finiteMass_of_allSourcesKleisli_markovOnly
     change (κhom.1 a).map (finSuppPermuteSeq τ) = κhom.1 a
     have : (CategoryTheory.CategoryStruct.comp κhom (finSuppPermKleisliHom τ)).1 a =
         (κhom.1 a).bind (fun ω => Measure.dirac (finSuppPermuteSeq τ ω)) := rfl
-    rw [this, Measure.bind_dirac_eq_map _ (measurable_finSuppPermuteSeq τ)] at ha
-    exact ha
+    exact (Measure.bind_dirac_eq_map _ (measurable_finSuppPermuteSeq τ)).symm.trans
+      (this.symm.trans ha)
   -- ===== Normalized morphism =====
   haveI hdec_c : DecidablePred (fun a : A.of.carrier => c a = 0) := fun a => Classical.dec _
   let κ_norm_fn : A.of.carrier → Measure GlobalBinarySeq :=

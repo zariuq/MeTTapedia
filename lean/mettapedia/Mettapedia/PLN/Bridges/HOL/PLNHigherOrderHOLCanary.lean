@@ -743,6 +743,7 @@ theorem canary_hol_two_weightedCapacity_normalized :
   unfold Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.FuzzyCapacity.IsNormalized
   simp [fixtureTwoWeightedCapacity, fixtureTwoLeftObj, fixtureTwoRightObj]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem canary_hol_two_predLeft_holds_iff (x : FixtureTwoPredObj) :
     Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateHoldsAt
       (Base := FixtureBase) (Const := FixtureTwoConst)
@@ -762,6 +763,7 @@ theorem canary_hol_two_predLeft_holds_iff (x : FixtureTwoPredObj) :
               fixtureTwoModel_constDen_left,
               fixtureTwoPredLeft, fixtureTwoLeftObj]
 
+set_option backward.isDefEq.respectTransparency false in
 theorem canary_hol_two_predRight_holds_iff (x : FixtureTwoPredObj) :
     Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLInheritanceBridge.predicateHoldsAt
       (Base := FixtureBase) (Const := FixtureTwoConst)
@@ -1277,7 +1279,7 @@ theorem canary_hol_two_weightedQFMNoisyOr_hull_dual_lower :
         intro k j
         fin_cases j <;> norm_num)
 
-def fixtureSingletonModelSpace (M : HenkinModel FixtureBase FixtureConst) :
+abbrev fixtureSingletonModelSpace (M : HenkinModel FixtureBase FixtureConst) :
     ModelSpace FixtureBase FixtureConst where
   Idx := Unit
   instMeasurableSpace := inferInstance
@@ -1306,16 +1308,16 @@ def fixtureSingletonModelSpace (M : HenkinModel FixtureBase FixtureConst) :
     rw [hEvent]
     split <;> simp
 
-def fixtureModelSpace : ModelSpace FixtureBase FixtureConst :=
+abbrev fixtureModelSpace : ModelSpace FixtureBase FixtureConst :=
   fixtureSingletonModelSpace fixtureModel
 
-def fixtureEmptyModelSpace : ModelSpace FixtureBase FixtureConst :=
+abbrev fixtureEmptyModelSpace : ModelSpace FixtureBase FixtureConst :=
   fixtureSingletonModelSpace fixtureEmptyModel
 
-noncomputable def fixtureHierarchicalState : HierarchicalState FixtureBase FixtureConst :=
+noncomputable abbrev fixtureHierarchicalState : HierarchicalState FixtureBase FixtureConst :=
   HierarchicalState.ofConstantMeasure fixtureModelSpace (MeasureTheory.Measure.dirac ())
 
-noncomputable def fixtureEmptyHierarchicalState :
+noncomputable abbrev fixtureEmptyHierarchicalState :
     HierarchicalState FixtureBase FixtureConst :=
   HierarchicalState.ofConstantMeasure fixtureEmptyModelSpace (MeasureTheory.Measure.dirac ())
 
@@ -1418,7 +1420,8 @@ theorem canary_hol_twoModelSpace_topBotIff_event :
 theorem canary_hol_twoModelSpace_topBotIff_sentenceProb_half :
     sentenceProb fixtureTwoModelSpace fixtureBoolUniformMeasure fixturePredTopBotIff =
       (1 / 2 : ℝ≥0∞) := by
-  rw [sentenceProb, canary_hol_twoModelSpace_topBotIff_event]
+  unfold sentenceProb
+  erw [canary_hol_twoModelSpace_topBotIff_event]
   have h :=
     ProbabilityTheory.uniformOn_univ (Ω := Bool) (s := ({true} : Set Bool))
   change ProbabilityTheory.uniformOn (Set.univ : Set Bool) ({true} : Set Bool) =
@@ -1431,7 +1434,7 @@ theorem canary_hol_twoModelUniform_topBotIff_value_half :
   unfold Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCredalBridge.credalHOLFormulaValue
   rw [hierarchicalProbQueryStrength_eq_sentenceProb]
   unfold fixtureTwoModelUniformState
-  rw [hierarchicalSentenceProb_ofConstantMeasure_eq_sentenceProb]
+  erw [hierarchicalSentenceProb_ofConstantMeasure_eq_sentenceProb]
   rw [canary_hol_twoModelSpace_topBotIff_sentenceProb_half]
   norm_num
 
@@ -2216,12 +2219,12 @@ theorem canary_hol_credalPredicateVocabularySimilarityTopTop_ITV :
     canary_hol_credalPredicateVocabularySimilarityTopTop_interval_one
   dsimp
   constructor
-  · rw [Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCredalBridge.credalPredicateVocabularySimilarityITV_lower]
+  · erw [Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCredalBridge.credalPredicateVocabularySimilarityITV_lower]
     simpa [Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets.constInterval] using congrArg
       Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets.Interval.lower
       hInterval
   constructor
-  · rw [Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCredalBridge.credalPredicateVocabularySimilarityITV_upper]
+  · erw [Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCredalBridge.credalPredicateVocabularySimilarityITV_upper]
     simpa [Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets.constInterval] using congrArg
       Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets.Interval.upper
       hInterval
@@ -2324,12 +2327,12 @@ theorem canary_hol_credalPredicateVocabularyPureExtensionalSimilarityTopTop_ITV 
     canary_hol_credalPredicateVocabularyPureExtensionalSimilarityTopTop_interval_one
   dsimp
   constructor
-  · rw [Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCredalBridge.credalPredicateVocabularyPureExtensionalSimilarityITV_lower]
+  · erw [Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCredalBridge.credalPredicateVocabularyPureExtensionalSimilarityITV_lower]
     simpa [Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets.constInterval] using congrArg
       Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets.Interval.lower
       hInterval
   constructor
-  · rw [Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCredalBridge.credalPredicateVocabularyPureExtensionalSimilarityITV_upper]
+  · erw [Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCredalBridge.credalPredicateVocabularyPureExtensionalSimilarityITV_upper]
     simpa [Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets.constInterval] using congrArg
       Mettapedia.ProbabilityTheory.ImpreciseProbability.CredalSets.Interval.upper
       hInterval

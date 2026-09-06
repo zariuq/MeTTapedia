@@ -196,17 +196,12 @@ theorem selected_public_binding_is_not_seeded_into_evaluation :
         resolveAtom ([] : Metta.Bindings) 1 (.var "t") = .var "t" := by
       simp [resolveAtom, instantiate_nil]
     simp [restrictBnd, restrictBndRaw, resolveEmpty, Metta.Bindings.merge]
-  have emptyRetention :
-      restrictBnd
-          (expectedApplicationRetentionScope [] [(.var "t" : Metta.Atom)])
-          [] = [] := by
-    simpa [expectedApplicationRetentionScope, variableVars] using
-      emptyRestriction
   simp [evaluateExpectedApplication, evaluateExpectedApplicationFrom,
     policies, returnsNotAtom,
     echoExpected, emitUnresolvedT, instantiate_nil, variableNotSelf,
     variableNotError, variableNotNotReducible, variableNotApplication,
-    emptyRetention]
+    emptyA,
+    variableVars, emptyRestriction, emptyMerge]
 
 /-- POSITIVE repair canary: the expected-return assignment visible in the
 post-instantiation expression/expected scope becomes the initial application
@@ -215,7 +210,7 @@ theorem selected_public_binding_is_seeded_into_expected_application :
     selectedApplicationInitialBindings []
       (.expr [.sym "f", .var "t"]) (.var "t")
       selectedWithPublicBinding = [[.val "t" (.sym "B")]] := by
-  rw [selectedApplicationInitialBindings, selectedApplicationVisibleBindings,
+  rw [selectedApplicationInitialBindings, selectedApplicationInitialBindingsFromTheory,
     visibleScope_eq]
   change
     Metta.Bindings.merge []
@@ -230,7 +225,7 @@ theorem selected_private_binding_does_not_leak_into_expected_application :
       (selectedApplicationInitialBindings []
         (.expr [.sym "f", .var "t"]) (.var "t")
         selectedWithPrivateBinding).flatten := by
-  rw [selectedApplicationInitialBindings, selectedApplicationVisibleBindings,
+  rw [selectedApplicationInitialBindings, selectedApplicationInitialBindingsFromTheory,
     visibleScope_eq, restrict_public_with_private, merge_public]
   simp
 
@@ -401,7 +396,7 @@ theorem ground_expected_application_seed_is_neutral :
       expectedApplicationVisibleScope
         (.expr [.sym "f", .sym "a"]) (.sym "B") = [] := by
     simp [expectedApplicationVisibleScope, Metta.Atom.vars]
-  rw [selectedApplicationInitialBindings, selectedApplicationVisibleBindings,
+  rw [selectedApplicationInitialBindings, selectedApplicationInitialBindingsFromTheory,
     hscope]
   change
     Metta.Bindings.merge []

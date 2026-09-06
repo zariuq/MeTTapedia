@@ -242,7 +242,6 @@ private theorem toBaseStep?_sinks_eq (ef : ExecFact) (step : BaseStep)
   · rename_i q r _ _ _ _
     have heq := Option.some.inj h
     cases step
-    simp at heq
     obtain ⟨rfl, rfl, _⟩ := heq
     simpa using r
   all_goals (try cases h)

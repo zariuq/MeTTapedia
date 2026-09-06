@@ -279,6 +279,7 @@ end ReflectiveContextSupport.AvailabilityTransposedRestoresTogether
 
 namespace CostStaticRegionNode
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Authored-frame availability alignment transports through the actual Cost
 symbol map and the endpoint binder thinnings to the generated target frames.
 The large endpoint may append ambient target binders, but scopedness and the

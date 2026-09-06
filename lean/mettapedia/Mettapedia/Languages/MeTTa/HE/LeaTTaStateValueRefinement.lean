@@ -197,14 +197,16 @@ theorem leatta_ordered_state_type_rejects_number_parameter :
     intro avoid position
     simp [Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars]
   have hcheck :
-      Metta.Minimal.typeCheckArgsOutcome stateApplicabilityEnv
+      Metta.Minimal.typeCheckArgsDetailedOutcome stateApplicabilityEnv
           Metta.Minimal.World.empty [.sym "Number"] 0 [] [forgedLeaStateValue] =
-        .failure 1 (.sym "Number") (.expr [.sym "StateMonad", .sym "Number"]) := by
-    simp [Metta.Minimal.typeCheckArgsOutcome, hprep, htypes, hmatch, hfreshened,
+        .failure ⟨1, .sym "Number", .expr [.sym "StateMonad", .sym "Number"]⟩ [] := by
+    simp [Metta.Minimal.typeCheckArgsDetailedOutcome,
+      Metta.Minimal.typeCheckArgsDetailedOutcomeScoped, Metta.Minimal.scanActualTypes, hprep, htypes, hmatch, hfreshened,
       Metta.instantiate]
   rw [Metta.Minimal.typeMismatch, Metta.Minimal.selectFunctionType, hopPrep, hopTypes]
   simp [Metta.Minimal.scanFunctionTypeCandidates, hcheck,
-    Metta.Minimal.FunctionTypeScanOutcome.prependError]
+    Metta.Minimal.FunctionTypeScanOutcome.prependErrors,
+    Metta.Minimal.TypeCheckArgsError.toFunctionTypeError]
 
 /-- Permanent precision canary: positive type evidence is not an exact runtime
 lookup relation and therefore cannot soundly support negative applicability

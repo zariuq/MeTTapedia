@@ -1339,8 +1339,10 @@ theorem collateral_quarantine_and_unsound_merge_change_routing_fixture :
     AuthenticatedEdgeCreditState.hindsightCredit,
     AuthenticatedEdgeCreditState.reserve, primaryRouteWeight,
     unsoundMergeHindsightIntoDirect]
-  intro equality
-  cases equality
+  constructor
+  · intro equality; cases equality
+  · rw [if_neg (by intro equality; cases equality)]
+    norm_num
 
 /-! ## Root projection still loses query routing -/
 

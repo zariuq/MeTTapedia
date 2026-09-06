@@ -128,7 +128,7 @@ theorem eventCountCompatible
       (erasureRefinement interpretation presentation) := by
   intro source target execution
   change some (erase execution).length = some (events execution).length
-  rw [events_length_eq_erase_length]
+  exact congrArg some (events_length_eq_erase_length execution).symm
 
 /-- Exact event-count compatibility decorates the semantic erasure cell with
 the observation square required by NIK admission. -/

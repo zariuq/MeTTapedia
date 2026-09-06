@@ -87,7 +87,8 @@ theorem allows_root (s : PrefixSelector) (hroot : ([] : BytePath) ∈ s)
 theorem restrictPaths_mem_iff {paths selector : Finset BytePath} {p : BytePath} :
     p ∈ restrictPaths paths selector ↔ p ∈ paths ∧ Allows selector p := by
   classical
-  simp [restrictPaths, Allows]
+  unfold restrictPaths
+  exact Finset.mem_filter
 
 theorem restrictPaths_root_identity (paths selector : Finset BytePath)
     (hroot : ([] : BytePath) ∈ selector) :
@@ -140,7 +141,8 @@ theorem mem_composeSelectors_iff {left right : PrefixSelector} {q : BytePath} :
     q ∈ composeSelectors left right ↔
       (q ∈ left ∧ Allows right q) ∨ (q ∈ right ∧ Allows left q) := by
   classical
-  simp [composeSelectors, Allows]
+  unfold composeSelectors
+  erw [Finset.mem_union, Finset.mem_filter, Finset.mem_filter]
 
 theorem allows_composeSelectors_iff (left right : PrefixSelector) (p : BytePath) :
     Allows (composeSelectors left right) p ↔ Allows left p ∧ Allows right p := by

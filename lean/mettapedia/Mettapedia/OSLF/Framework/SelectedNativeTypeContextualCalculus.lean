@@ -48,7 +48,7 @@ def AuxiliaryKind.tag : AuxiliaryKind → Char
 
 def auxiliaryLabel (kind : AuxiliaryKind) (slot : Nat) : String :=
   String.ofList
-    ("$oslf:contextual:".toList ++ kind.tag :: ':' ::
+    (['$', 'o', 's', 'l', 'f', ':', 'c', 'o', 'n', 't', 'e', 'x', 't', 'u', 'a', 'l', ':'] ++ kind.tag :: ':' ::
       List.replicate slot 's')
 
 /-- Decode exactly the occurrence-local support-constructor namespace. -/
@@ -123,18 +123,19 @@ theorem auxiliaryLabel_of_decodeAuxiliaryLabel?_eq_some
 theorem auxiliaryLabel_injective (kind : AuxiliaryKind) :
     Function.Injective (auxiliaryLabel kind) := by
   intro first second equality
-  have lengths := congrArg String.length equality
-  simp [auxiliaryLabel, AuxiliaryKind.tag] at lengths
-  omega
+  have decoded := congrArg decodeAuxiliaryLabel? equality
+  simpa only [decodeAuxiliaryLabel?_auxiliaryLabel, Option.some.injEq,
+    Prod.mk.injEq, true_and] using decoded
 
 theorem auxiliaryLabel_ne_of_kind_ne
     {first second : AuxiliaryKind} (different : first ≠ second)
     (firstSlot secondSlot : Nat) :
     auxiliaryLabel first firstSlot ≠ auxiliaryLabel second secondSlot := by
   intro equality
-  have lists := congrArg String.toList equality
-  cases first <;> cases second <;>
-    simp [auxiliaryLabel, AuxiliaryKind.tag] at lists different
+  have decoded := congrArg decodeAuxiliaryLabel? equality
+  have kinds := congrArg (Option.map Prod.fst) decoded
+  simp only [decodeAuxiliaryLabel?_auxiliaryLabel, Option.map_some] at kinds
+  exact different (Option.some.inj kinds)
 
 inductive RuleKind
   | formation
@@ -149,7 +150,7 @@ def RuleKind.tag : RuleKind → Char
 
 def ruleName (kind : RuleKind) (slot : Nat) : String :=
   String.ofList
-    ("$oslf:contextual-rule:".toList ++ kind.tag :: ':' ::
+    (['$', 'o', 's', 'l', 'f', ':', 'c', 'o', 'n', 't', 'e', 'x', 't', 'u', 'a', 'l', '-', 'r', 'u', 'l', 'e', ':'] ++ kind.tag :: ':' ::
       List.replicate slot 's')
 
 def indexedMetavariable (stem : String) (index : Nat) : String :=

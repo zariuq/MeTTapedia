@@ -158,7 +158,7 @@ theorem combine_activateAt
         (rightState.activateAt cached current) := by
   by_cases same : cached = current
   · subst current
-    simp
+    simp [activateAt]
   · simp [activateAt, same, invalidate, State.combine]
 
 /-- The same revision law holds for genuinely dependent Sigma premises; the
@@ -176,7 +176,7 @@ theorem combineDependent_activateAt
         (nextState.activateAt cached current) := by
   by_cases same : cached = current
   · subst current
-    simp
+    simp [activateAt]
   · simp [activateAt, same, invalidate, State.combineDependent]
 
 /-! ## Reusable earned-capability records -/

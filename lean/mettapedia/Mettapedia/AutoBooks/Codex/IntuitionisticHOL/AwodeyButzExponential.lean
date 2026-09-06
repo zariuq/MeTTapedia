@@ -473,8 +473,9 @@ noncomputable def exp (F E : EtaleSpace X) : EtaleSpace X where
           exact (chartHomeomorph f).apply_symm_apply p
         have hApply :=
           congrArg (fun q : chartRangeOfLocalMorphism f => expProj F E q.1) hEq
-        simpa [chartToRange, sectionMapOfLocalMorphism, expProj] using hApply
-      simpa [hComp] using hSubOpenEmb.comp hSymm
+        exact hApply
+      convert hSubOpenEmb.comp hSymm using 1
+      exact hComp.symm
 
 theorem sameGerm_eval_eq {F E : EtaleSpace X} {a b : ExpRaw F E} {y : F.Carrier}
     (h : ExpRaw.SameGerm a b) (hy : F.proj y = a.1) :
@@ -798,6 +799,7 @@ theorem curry_proj {F E G : EtaleSpace X}
   funext x
   change expProj F E (curry f hf x) = G.proj x
   simp [curry, expProj]
+  rfl
 
 /--
 Uncurrying: a morphism G → E^F over X corresponds to a morphism G × F → E over X.
@@ -814,8 +816,7 @@ noncomputable def uncurry {F E G : EtaleSpace X}
     exact
       ((g.continuous.comp (prodFst G F).continuous).prodMk (prodSnd G F).continuous).subtype_mk
         fun p => by
-          simpa [Function.comp_apply, prodFst, prodSnd, Function.Pullback.fst, Function.Pullback.snd] using
-            (congrFun hg p.fst).trans p.property
+          exact (congrFun hg p.fst).trans p.property
 
 theorem uncurry_proj {F E G : EtaleSpace X}
     (g : C(G.Carrier, (exp F E).Carrier))
@@ -858,9 +859,11 @@ theorem curry_uncurry {F E G : EtaleSpace X}
             (localMorphismAlongSection (uncurry g hg) (uncurry_proj g hg) s)
             ⟨G.proj x, hx⟩ := by
       simp [curry, s, sectionMapOfLocalMorphism]
+      rfl
     have hxChart : g x ∈ chartRangeOfLocalMorphism a.2.morphism := by
       refine ⟨⟨a.1, a.2.mem_nbhd⟩, ?_⟩
       simp [ha, sectionMapOfLocalMorphism]
+      rfl
     let overlapSub : Set Us := { u | g (s.toContinuousMap u) ∈ chartRangeOfLocalMorphism a.2.morphism }
     have hoverlapSub : IsOpen overlapSub := by
       change IsOpen ((fun u : Us => g (s.toContinuousMap u)) ⁻¹' chartRangeOfLocalMorphism a.2.morphism)
@@ -964,6 +967,7 @@ theorem uncurry_curry {F E G : EtaleSpace X}
         curry f hf p.fst =
           sectionMapOfLocalMorphism (localMorphismAlongSection f hf s) ⟨G.proj p.fst, hx⟩ := by
       simp [curry, s, sectionMapOfLocalMorphism]
+      rfl
     have hbaseF : F.proj p.snd ∈ s.domain := by
       exact p.property ▸ hx
     have hsArg :
@@ -1060,8 +1064,7 @@ noncomputable def localMorphismOfExpSection (E F : EtaleSpace X) (U : Opens X)
     let q : (prod (exp F E) F).Carrier :=
       ⟨(s.toContinuousMap ⟨F.proj e.val, e.property⟩, e.val), by
         simpa [Function.comp_apply] using congrFun s.proj_comp ⟨F.proj e.val, e.property⟩⟩
-    simpa [q, Function.comp_apply, prodSnd, Function.Pullback.fst, Function.Pullback.snd] using
-      evalMorphism_proj F E q
+    exact (evalMorphism_proj F E q).trans q.property
 
 theorem expSectionOfLocalMorphism_localMorphismOfExpSection
     (E F : EtaleSpace X) (U : Opens X) (s : (exp F E).SectionOn U) :
@@ -1080,6 +1083,7 @@ theorem expSectionOfLocalMorphism_localMorphismOfExpSection
     have hxChart : s.toContinuousMap x ∈ chartRangeOfLocalMorphism a.2.morphism := by
       refine ⟨⟨a.1, a.2.mem_nbhd⟩, ?_⟩
       simp [ha, sectionMapOfLocalMorphism]
+      rfl
     let overlapSub : Set U := { u | s.toContinuousMap u ∈ chartRangeOfLocalMorphism a.2.morphism }
     have hoverlapSub : IsOpen overlapSub := by
       change IsOpen ((fun u : U => s.toContinuousMap u) ⁻¹' chartRangeOfLocalMorphism a.2.morphism)
@@ -1155,8 +1159,7 @@ theorem localMorphismOfExpSection_expSectionOfLocalMorphism
       ext e
       have hEval :=
         evalAtGerm_sectionMapOfLocalMorphism f ⟨F.proj e.val, e.property⟩ e.val rfl
-      simpa [localMorphismOfExpSection, expSectionOfLocalMorphism, evalMorphism,
-        Function.comp_apply, Function.Pullback.fst, Function.Pullback.snd] using hEval
+      exact hEval
 
 end EtaleSpace
 

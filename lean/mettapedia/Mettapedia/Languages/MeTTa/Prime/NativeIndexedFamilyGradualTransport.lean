@@ -139,11 +139,11 @@ theorem substituteRequest_comp
     ⟨targetArity, targetContext, laterSubstitution, laterTyped⟩
   simp [substituteRequest, RequestSubstitution.comp]
   constructor
-  · rfl
+  · exact Presentation.subst_subComp laterSubstitution earlierSubstitution left
   constructor
-  · rfl
+  · exact Presentation.subst_subComp laterSubstitution earlierSubstitution right
   constructor
-  · rfl
+  · exact Presentation.subst_subComp laterSubstitution earlierSubstitution type
   apply equationOccurrence_heq_of_fields
       (Presentation.subst_subComp laterSubstitution earlierSubstitution left)
       (Presentation.subst_subComp laterSubstitution earlierSubstitution right)

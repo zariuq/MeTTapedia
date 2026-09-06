@@ -205,6 +205,17 @@ theorem zeroDown_up_parameter_invisible
       lowRankApply base scale secondUp 0 input := by
   simp [lowRankApply]
 
+private theorem lowRankApply_scalar (upValue downValue : ℝ) :
+    lowRankApply (rankBudget := 1)
+      (fun _ : Unit => fun _ : Unit => (0 : ℝ)) 1
+      (fun _ : Unit => fun _ : Fin 1 => upValue)
+      (fun _ : Fin 1 => fun _ : Unit => downValue)
+      (fun _ : Unit => 1) () = upValue * downValue := by
+  simp [lowRankApply, Matrix.mulVec, dotProduct]
+  left
+  change (1 : ℝ) * upValue = upValue
+  ring
+
 /-- Positive first-update fixture: a nonzero input factor leaves the zeroed
 output factor trainable even though the initial update itself is zero. -/
 theorem zeroUp_but_up_direction_live_scalar :
@@ -213,11 +224,8 @@ theorem zeroUp_but_up_direction_live_scalar :
     let input : Unit → ℝ := fun _ => 1
     lowRankApply base 1 (fun _ _ => 0) down input = 0 ∧
       lowRankApply base 1 (fun _ _ => 1) down input = 1 := by
-  dsimp
-  constructor <;>
-    funext output <;>
-    cases output <;>
-    simp [lowRankApply, Matrix.mulVec, dotProduct, Matrix.mul_apply]
+  constructor <;> funext output <;> cases output <;>
+    simpa using lowRankApply_scalar _ 1
 
 /-- At the asymmetric initialization, the scalar output-factor derivative is
 exactly one in the live fixture. -/
@@ -229,18 +237,7 @@ theorem zeroUp_up_hasDerivAt_scalar :
       (fun upValue : ℝ =>
         lowRankApply base 1 (fun _ _ => upValue) down input ())
       1 0 := by
-  dsimp
-  have hfunction :
-      (fun upValue : ℝ =>
-        lowRankApply (rankBudget := 1)
-          (fun _ : Unit => fun _ : Unit => (0 : ℝ)) 1
-          (fun _ : Unit => fun _ : Fin 1 => upValue)
-          (fun _ : Fin 1 => fun _ : Unit => 1)
-          (fun _ : Unit => 1) ()) =
-        id := by
-    funext upValue
-    simp [lowRankApply, Matrix.mulVec, dotProduct, Matrix.mul_apply]
-  rw [hfunction]
+  simp only [lowRankApply_scalar, mul_one]
   exact hasDerivAt_id (0 : ℝ)
 
 /-- In the same fixture, the scalar input-factor derivative is exactly zero
@@ -253,7 +250,7 @@ theorem zeroUp_down_hasDerivAt_zero_scalar :
       (fun downValue : ℝ =>
         lowRankApply base 1 up (fun _ _ => downValue) input ())
       0 0 := by
-  simpa [lowRankApply, Matrix.mulVec, dotProduct, Matrix.mul_apply] using
+  simpa only [lowRankApply_scalar, zero_mul] using
     hasDerivAt_const (x := (0 : ℝ)) (c := (0 : ℝ))
 
 /-- If both factors are zero, neither factor family has a first-order
