@@ -24,7 +24,7 @@ namespace Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGrounding
 
 open Mettapedia.GSLT.LanguageDef.AtomlessBooleanFirstOrderDecision
 open Mettapedia.GSLT.LanguageDef.GenerativeCantorSemanticGrounding
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 
 universe u v
@@ -58,8 +58,8 @@ private abbrev atlasLayer :=
 
 /-! ## The two retained guests enter both new hosts -/
 
-def stagedToPrime : AuthorityTranslation stagedContract primeContract :=
-  AuthorityTranslation.comp
+def stagedToPrime : CertifiedTranslation stagedContract primeContract :=
+  CertifiedTranslation.comp
     Mettapedia.Languages.MeTTa.PrimePluralNIKGenerativeAtomlessGrounding.stagedToPrime.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist.priorInclusion.{u, v}
 
@@ -71,8 +71,8 @@ theorem stagedToPrime_conservative :
     Mettapedia.Languages.MeTTa.PrimePluralNIKGenerativeAtomlessGrounding.stagedToPrime_conservative.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist.priorInclusion_conservative.{u, v}
 
-def setCoreToPrime : AuthorityTranslation setCoreContract primeContract :=
-  AuthorityTranslation.comp
+def setCoreToPrime : CertifiedTranslation setCoreContract primeContract :=
+  CertifiedTranslation.comp
     Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGrounding.setCoreToPrime.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist.priorInclusion.{u, v}
 
@@ -84,9 +84,9 @@ theorem setCoreToPrime_conservative :
     Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGrounding.setCoreToPrime_conservative.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist.priorInclusion_conservative.{u, v}
 
-def stagedToAtlas : AuthorityTranslation
+def stagedToAtlas : CertifiedTranslation
     stagedContract atlasLayer.toAuthorityContract :=
-  AuthorityTranslation.comp
+  CertifiedTranslation.comp
     Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGrounding.stagedToExtendedAtlas
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGroundAtlas.priorInclusion
 
@@ -98,9 +98,9 @@ theorem stagedToAtlas_conservative :
     Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGrounding.stagedToExtendedAtlas_conservative
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGroundAtlas.priorInclusion_conservative
 
-def setCoreToAtlas : AuthorityTranslation
+def setCoreToAtlas : CertifiedTranslation
     setCoreContract atlasLayer.toAuthorityContract :=
-  AuthorityTranslation.comp
+  CertifiedTranslation.comp
     Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGrounding.setCoreToExtendedAtlas
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGroundAtlas.priorInclusion
 
@@ -114,14 +114,14 @@ theorem setCoreToAtlas_conservative :
 
 /-! ## The operation guest enters both hosts directly -/
 
-def operationToPrime : AuthorityTranslation operationContract primeContract :=
+def operationToPrime : CertifiedTranslation operationContract primeContract :=
   Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist.operationInclusion.{u, v}
 
 theorem operationToPrime_conservative :
     operationToPrime.{u, v}.toTheoryTranslation.Conservative :=
   Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist.operationInclusion_conservative.{u, v}
 
-def operationToAtlas : AuthorityTranslation
+def operationToAtlas : CertifiedTranslation
     operationContract atlasLayer.toAuthorityContract :=
   Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGroundAtlas.operationToAtlas
 

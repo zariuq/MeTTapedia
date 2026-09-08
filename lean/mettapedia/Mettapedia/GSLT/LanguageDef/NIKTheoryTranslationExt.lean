@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 
 /-!
 # Extensionality for semantic NIK theory translations
@@ -11,7 +11,7 @@ exact authority translations.
 
 set_option autoImplicit false
 
-namespace Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory.TheoryTranslation
+namespace Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory.TheoryTranslation
 
 open Mettapedia.GSLT.LanguageDef.CheckerAuthorityFamily
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
@@ -51,4 +51,4 @@ theorem ext_data
       subst claimFunctionEqual
       rfl
 
-end Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory.TheoryTranslation
+end Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory.TheoryTranslation

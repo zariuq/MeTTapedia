@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.Core.IndexedOperational
+import Mettapedia.GSLT.Core.SemanticImplementation
 import Mettapedia.GSLT.Core.OperationalRealization
 import Mettapedia.GSLT.Logic.HennessyMilnerTransport
 import Mettapedia.GSLT.LanguageDef.StructuralCategory
@@ -10,18 +10,19 @@ import Mettapedia.OSLF.Framework.TypeSynthesis
 
 An intermediate representation of a compiler is not a host-language
 inductive with an erasure map.  It is a language definition, and its meaning
-is the equation-saturated GSLT that definition generates under the relation
+is the GSLT modulo equations that definition generates under the relation
 environment its premises consult.  A compiler pass between two such
 representations is a morphism of those GSLTs: a term map that respects the
 equations, maps steps, and lifts every step leaving a translated term back to
-the source.  Passes compose, the composite pass has the composite cover, and
-the category of representations forgets to the covered operational category.
+the source up to the target equations.  Passes compose, the composite pass has
+the composite cover, and the category of representations forgets to the
+semantic covered operational category.
 
 Consequences that hold for every pass, before any particular representation
 is authored: bisimilarity is preserved; with observations carried exactly,
 every Hennessy–Milner formula is preserved and reflected, so native types of
 the generated OSLF transport exactly along the pass; and a term map with one
-escaping target step admits no pass at all.  The lax variant, a forward pass,
+escaping target step permits no pass at all.  The lax variant, a forward pass,
 keeps only step preservation and is what a stage map that adds behaviour can
 still be.
 -/
@@ -40,7 +41,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
-universe uAtom uAtom'
+universe uAtom uAtom' uIndex vIndex
 
 /-! ## Representations -/
 
@@ -52,7 +53,7 @@ structure IRLanguage where
 
 namespace IRLanguage
 
-/-- The meaning of a representation is the equation-saturated GSLT its
+/-- The meaning of a representation is the GSLT modulo equations its
 definition generates.  There is no second semantics. -/
 def semantics (ir : IRLanguage) : GSLT :=
   langGSLTUsing ir.relations ir.definition.language
@@ -70,10 +71,10 @@ end IRLanguage
 
 /-! ## Passes -/
 
-/-- An exact pass: a covered translation between the semantics of two
-representations. -/
+/-- An exact pass: an equation-class-covered translation between the semantics
+of two representations. -/
 abbrev Pass (source target : IRLanguage) :=
-  CoveredTranslation source.semantics target.semantics
+  SemanticCoveredTranslation source.semantics target.semantics
 
 /-- A forward pass: step preservation only.  A stage map that adds behaviour
 at translated terms is a forward pass and not a pass. -/
@@ -86,11 +87,11 @@ variable {source middle target : IRLanguage}
 
 /-- The identity pass. -/
 def id (ir : IRLanguage) : Pass ir ir :=
-  CoveredTranslation.id ir.semantics
+  SemanticCoveredTranslation.id ir.semantics
 
 /-- Passes compose in execution order. -/
 def comp (earlier : Pass source middle) (later : Pass middle target) : Pass source target :=
-  CoveredTranslation.comp earlier later
+  SemanticCoveredTranslation.comp earlier later
 
 @[simp]
 theorem comp_mapTerm (earlier : Pass source middle) (later : Pass middle target) :
@@ -115,7 +116,7 @@ theorem toRealization_mapTerm (pass : Pass source target) :
 theorem preservesBisimilar (pass : Pass source target) {left right : source.semantics.Term}
     (bisimilar : source.semantics.Bisimilar left right) :
     target.semantics.Bisimilar (pass.mapTerm left) (pass.mapTerm right) :=
-  pass.cover.preservesBisimilar bisimilar
+  SemanticCoveredTranslation.preservesBisimilar pass bisimilar
 
 /-! ### Observations carried along a pass -/
 
@@ -135,7 +136,7 @@ def systemCover (pass : Pass source target)
       targetObserved.observes (mapAtom atom) (pass.mapTerm term)) :
     SystemCover (System.ofObserved sourceObserved sourceResp)
       (System.ofObserved targetObserved targetResp) :=
-  SystemCover.ofStepCover pass.cover pass.mapEquiv sourceObserved targetObserved
+  SemanticCoveredTranslation.systemCover pass sourceObserved targetObserved
     sourceResp targetResp mapAtom observes_iff
 
 /-- Every Hennessy–Milner formula is preserved and reflected along a pass
@@ -189,33 +190,47 @@ instance : CategoryTheory.Category IRLanguage where
   id := Pass.id
   comp := Pass.comp
   id_comp _ := by
-    apply CoveredTranslation.ext
+    apply SemanticCoveredTranslation.ext
     rfl
   comp_id _ := by
-    apply CoveredTranslation.ext
+    apply SemanticCoveredTranslation.ext
     rfl
   assoc _ _ _ := by
-    apply CoveredTranslation.ext
+    apply SemanticCoveredTranslation.ext
     rfl
 
-/-- Representations forget to the covered operational category: the
-functor is the semantics on objects and the identity on passes. -/
-def toCoveredTheory : CategoryTheory.Functor IRLanguage CoveredTheory where
+/-- Representations first forget to the category whose arrows cover target
+steps up to target equations.  No representative equality is assumed here. -/
+def toSemanticCoveredTheory :
+    CategoryTheory.Functor IRLanguage SemanticCoveredTheory where
   obj ir := ⟨ir.semantics⟩
   map pass := pass
   map_id _ := rfl
   map_comp _ _ := rfl
+
+/-- Quotienting each represented language by its equations turns an IR pass
+into a literal covered translation.  This is the canonical interface to the
+existing indexed GSLT machinery. -/
+def toCoveredTheory : CategoryTheory.Functor IRLanguage CoveredTheory :=
+  CategoryTheory.Functor.comp toSemanticCoveredTheory quotientCoverage
+
+/-- A categorical pipeline of language representations induces an existing
+`CoveredDiagram` after quotient completion.  Host compiler data may realize
+the arrows, but it is not another public semantic node. -/
+def quotientCoveredDiagram
+    {Index : Type uIndex} [CategoryTheory.Category.{vIndex} Index]
+    (pipeline : CategoryTheory.Functor Index IRLanguage) :
+    CoveredDiagram Index :=
+  CategoryTheory.Functor.comp pipeline toCoveredTheory
 
 /-! ## The obstruction -/
 
 /-- A term map under which one target step leaves the image of the source
 is not the term map of any pass. -/
 theorem no_pass_of_escape {source target : IRLanguage} (translation : ForwardPass source target)
-    (escape : ImageEscapingStep source.semantics target.semantics translation.mapTerm) :
+    (escape : EquationClassEscapingStep source.semantics target.semantics translation.mapTerm) :
     ¬ ∃ pass : Pass source target, pass.mapTerm = translation.mapTerm := by
-  rintro ⟨pass, equal⟩
-  apply escape.not_stepCover
-  exact ⟨equal ▸ pass.cover⟩
+  exact escape.not_semanticCoveredTranslation
 
 /-! ## Canaries on an authored representation -/
 
@@ -247,5 +262,7 @@ end Canary
 #print axioms Pass.sat_map
 #print axioms Pass.bisimilar_map_iff
 #print axioms no_pass_of_escape
+#print axioms toCoveredTheory
+#print axioms quotientCoveredDiagram
 
 end Mettapedia.GSLT.LanguageDef.IRPass

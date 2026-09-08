@@ -131,7 +131,7 @@ def contractum {profile : ReflectionProfile} {base : BasePremiseEvaluator}
 def isEquation {profile : ReflectionProfile} {base : BasePremiseEvaluator}
     {language : LanguageDef} {left right : Pattern} :
     ReflectiveAuthoredGeneratorWitness profile base language left right → Bool
-  | .core _ => true
+  | .core witness => witness.isEquation
   | .reflective .. => false
 
 end ReflectiveAuthoredGeneratorWitness

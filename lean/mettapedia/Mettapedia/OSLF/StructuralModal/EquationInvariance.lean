@@ -4,7 +4,7 @@ import Mettapedia.OSLF.StructuralModal.Formula
 # Equation invariance of the structural-modal formula language
 
 The behavioural formers (`diamond`, `box`) are interpreted over the
-equation-saturated step of the language, so they cannot distinguish
+step modulo equations of the language, so they cannot distinguish
 representatives that the equations identify.  The spatial former `headed`
 reads the outermost constructor of the representative itself, and that is not
 an equation-invariant observation: in rho the singleton parallel wrapper and

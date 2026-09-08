@@ -251,7 +251,7 @@ def comp {first middle last : SemanticPresentation}
 authority translation as its ground action. -/
 def map {source target : SemanticPresentation}
     (embedding : BindingSemanticEmbedding source target) :
-    AuthorityTranslation (contract source) (contract target) :=
+    CertifiedTranslation (contract source) (contract target) :=
   CertificateGSLTHeterogeneousAuthority.map embedding.toSemanticEmbedding
 
 /-- Exact checker replay, including rejection, is inherited by the generated

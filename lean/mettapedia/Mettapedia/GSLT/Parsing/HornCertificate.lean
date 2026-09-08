@@ -99,6 +99,15 @@ mutual
         pure (.cons groundedHead groundedTail)
 end
 
+@[simp] theorem instantiateTerm_var_nil (identifier : Nat) :
+    instantiateTerm [] (.var identifier) = none := rfl
+
+@[simp] theorem instantiateTerm_var_cons (identifier candidate : Nat)
+    (value : GroundTerm) (rest : Substitution) :
+    instantiateTerm ((candidate, value) :: rest) (.var identifier) =
+      if identifier = candidate then some value
+      else instantiateTerm rest (.var identifier) := rfl
+
 def instantiateAtom
     (substitution : Substitution) (atom : Atom) : Option GroundAtom := do
   let grounded ← instantiateTerms substitution atom.arguments

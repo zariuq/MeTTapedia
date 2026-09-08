@@ -175,7 +175,7 @@ noncomputable def semE (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem) 
 
 /-! ## Canonical evidence-valued OSLF semantics -/
 
-/-- Evidence-valued interpretation over the equation-saturated operational
+/-- Evidence-valued interpretation over the modulo-equations operational
 relation.  Atomic evidence has already descended through the language's
 equation theory. -/
 noncomputable def langSemEUsing

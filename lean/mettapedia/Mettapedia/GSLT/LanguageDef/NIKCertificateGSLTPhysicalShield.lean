@@ -91,7 +91,7 @@ chronological replay for every article and submitted claim. -/
 
 /-- Lossless encoding of logical wire articles into the physical CeTTa ABI. -/
 def wireToPhysical (presentation : SoundPresentation Meaning) :
-    AuthorityTranslation (wireContract presentation)
+    CertifiedTranslation (wireContract presentation)
       (physicalContract presentation) where
   mapKind := id
   mapSignature := id
@@ -109,9 +109,9 @@ def wireToPhysical (presentation : SoundPresentation Meaning) :
 /-- The intrinsic proof-object authority lowers to the physical ABI by
 chronological linearization followed by exact CeTTa encoding. -/
 def nativeToPhysical (presentation : SoundPresentation Meaning) :
-    AuthorityTranslation (contract presentation)
+    CertifiedTranslation (contract presentation)
       (physicalContract presentation) :=
-  AuthorityTranslation.comp (nativeToWire presentation)
+  CertifiedTranslation.comp (nativeToWire presentation)
     (wireToPhysical presentation)
 
 /-- The physical certificate produced directly from an intrinsic certificate. -/
@@ -135,8 +135,8 @@ from intrinsic proofs and one from already-linearized wire articles. -/
 structure PhysicalShieldTower (presentation : SoundPresentation Meaning) where
   logical : ShieldSpan presentation
   physical : AuthorityContract (theory presentation)
-  lowerPhysical : AuthorityTranslation (contract presentation) physical
-  encodeWire : AuthorityTranslation logical.wire physical
+  lowerPhysical : CertifiedTranslation (contract presentation) physical
+  encodeWire : CertifiedTranslation logical.wire physical
 
 /-- The canonical intrinsic/raw/wire/physical shield tower. -/
 def physicalShieldTower (presentation : SoundPresentation Meaning) :

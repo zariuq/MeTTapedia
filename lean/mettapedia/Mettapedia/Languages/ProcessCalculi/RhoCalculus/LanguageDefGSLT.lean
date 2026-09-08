@@ -143,7 +143,7 @@ def rhoLanguageDefGSLT : GSLT where
   rewrites_resp_left := rhoProcessRewrites_resp_left
   rewrites_resp_right := rhoProcessRewrites_resp_right
 
-/-- Every authored base step embeds into the equation-saturated rho GSLT. -/
+/-- Every authored base step embeds into the modulo-equations rho GSLT. -/
 theorem rhoRewriteSystem_reduces_to_gsltStep
     {source target : RhoProcess}
     (step : rhoRewriteSystem.Reduces source target) :

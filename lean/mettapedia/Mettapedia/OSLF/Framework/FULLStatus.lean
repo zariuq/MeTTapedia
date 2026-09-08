@@ -70,7 +70,7 @@ structure Milestone where
     `status = missing` means no complete implementation/theorem yet. -/
 def tracker : List Milestone :=
   [ { area := "OSLF Core"
-      title := "LanguageDef → equation-saturated GSLT → OSLF pipeline"
+      title := "LanguageDef → GSLT modulo equations → OSLF pipeline"
       status := .done
       codeRef := "Mettapedia/OSLF/Framework/TypeSynthesis.lean: langGSLTUsing / langOSLFUsing; Mettapedia/GSLT/LanguageDef/ReflectiveSemanticCategory.lean: InterpretedPresentation.toGSLTUsing / toOSLFUsing; Mettapedia/OSLF/Framework/GSLTTypeSynthesis.lean: gsltOSLF"
       note := "Every LanguageDef OSLF consumer now goes through the sole equation-aware GSLT-to-OSLF constructor. The semantic step is E;R;E, predicates carry equation-invariance evidence, and an equation-free presentation is proved to recover the primitive relation rather than selecting a second semantics." }

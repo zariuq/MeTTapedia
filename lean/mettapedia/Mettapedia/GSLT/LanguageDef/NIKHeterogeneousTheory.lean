@@ -11,7 +11,7 @@ and checkers may all differ.
 The conservative sum construction is the minimal plural authority waist.  It
 hosts two exact authorities without adding cross-kernel theorems or converting
 one proof language into the other.  Cross-kernel transport is a separately
-authored `AuthorityTranslation` and therefore carries its own semantic and
+authored `CertifiedTranslation` and therefore carries its own semantic and
 replay obligations.
 -/
 
@@ -174,7 +174,7 @@ end TheoryTranslation
 /-- A heterogeneous authority translation transports native evidence and
 makes replay commute exactly.  Scope preservation is deliberately not a
 field: it follows from exact replay and the two endpoint authority theorems. -/
-structure AuthorityTranslation
+structure CertifiedTranslation
     {SourceKind TargetKind : Type uKind}
     {source : TheoryFamily.{uSignature, uKind, uClaim} SourceKind}
     {target : TheoryFamily.{uSignature, uKind, uClaim} TargetKind}
@@ -199,7 +199,7 @@ structure AuthorityTranslation
     source.Meaning kind claim ->
       target.Meaning (mapKind kind) (mapClaim kind claim)
 
-namespace AuthorityTranslation
+namespace CertifiedTranslation
 
 variable {SourceKind MiddleKind TargetKind : Type uKind}
     {source : TheoryFamily.{uSignature, uKind, uClaim} SourceKind}
@@ -214,7 +214,7 @@ variable {SourceKind MiddleKind TargetKind : Type uKind}
 
 /-- Exact replay derives theorem-scope preservation across different kernels. -/
 theorem scope_preserved
-    (translation : AuthorityTranslation sourceContract targetContract)
+    (translation : CertifiedTranslation sourceContract targetContract)
     (kind : SourceKind) (claim : source.Claim kind)
     (inScope : source.Scope kind claim) :
     target.Scope (translation.mapKind kind)
@@ -229,7 +229,7 @@ theorem scope_preserved
 
 /-- Forget native evidence transport only after deriving the semantic map. -/
 def toTheoryTranslation
-    (translation : AuthorityTranslation sourceContract targetContract) :
+    (translation : CertifiedTranslation sourceContract targetContract) :
     TheoryTranslation source target where
   mapKind := translation.mapKind
   mapSignature := translation.mapSignature
@@ -241,7 +241,7 @@ def toTheoryTranslation
 /-- Identity authority translation. -/
 def identity (contract :
     AuthorityContract.{uKind, uCertificate, uSignature, uClaim} source) :
-    AuthorityTranslation contract contract where
+    CertifiedTranslation contract contract where
   mapKind := id
   mapSignature := id
   signature_commutes := by intro kind; rfl
@@ -253,9 +253,9 @@ def identity (contract :
 /-- Exact authority translations compose without choosing a universal claim
 or certificate representation. -/
 def comp
-    (earlier : AuthorityTranslation sourceContract middleContract)
-    (later : AuthorityTranslation middleContract targetContract) :
-    AuthorityTranslation sourceContract targetContract where
+    (earlier : CertifiedTranslation sourceContract middleContract)
+    (later : CertifiedTranslation middleContract targetContract) :
+    CertifiedTranslation sourceContract targetContract where
   mapKind kind := later.mapKind (earlier.mapKind kind)
   mapSignature signature := later.mapSignature (earlier.mapSignature signature)
   signature_commutes := by
@@ -275,16 +275,16 @@ def comp
       (earlier.meaning_preserved kind claim meaningful)
 
 @[simp] theorem comp_mapClaim
-    (earlier : AuthorityTranslation sourceContract middleContract)
-    (later : AuthorityTranslation middleContract targetContract)
+    (earlier : CertifiedTranslation sourceContract middleContract)
+    (later : CertifiedTranslation middleContract targetContract)
     (kind : SourceKind) (claim : source.Claim kind) :
     (comp earlier later).mapClaim kind claim =
       later.mapClaim (earlier.mapKind kind) (earlier.mapClaim kind claim) :=
   rfl
 
 @[simp] theorem comp_mapCertificate
-    (earlier : AuthorityTranslation sourceContract middleContract)
-    (later : AuthorityTranslation middleContract targetContract)
+    (earlier : CertifiedTranslation sourceContract middleContract)
+    (later : CertifiedTranslation middleContract targetContract)
     (kind : SourceKind)
     (certificate : sourceContract.Certificate kind) :
     (comp earlier later).mapCertificate kind certificate =
@@ -292,7 +292,7 @@ def comp
         (earlier.mapCertificate kind certificate) :=
   rfl
 
-end AuthorityTranslation
+end CertifiedTranslation
 
 /-! ## Conservative coproduct of independent kernels -/
 
@@ -346,7 +346,7 @@ def contract : AuthorityContract (theory left right) where
 
 /-- The left authority enters the coproduct without reinterpretation. -/
 def leftInclusion :
-    AuthorityTranslation leftContract
+    CertifiedTranslation leftContract
       (contract left right leftContract rightContract) where
   mapKind := Sum.inl
   mapSignature := Sum.inl
@@ -358,7 +358,7 @@ def leftInclusion :
 
 /-- The right authority enters the coproduct without reinterpretation. -/
 def rightInclusion :
-    AuthorityTranslation rightContract
+    CertifiedTranslation rightContract
       (contract left right leftContract rightContract) where
   mapKind := Sum.inr
   mapSignature := Sum.inr
@@ -467,7 +467,7 @@ theorem wrong_kernel_certificate_rejected :
 /-- A semantically false, replay-breaking claim map cannot be installed as a
 cross-kernel authority translation merely because both kernels coexist. -/
 theorem no_constant_one_translation :
-    ¬ (exists translation : AuthorityTranslation leftContract rightContract,
+    ¬ (exists translation : CertifiedTranslation leftContract rightContract,
       forall claim,
         (show Nat from translation.mapClaim .only claim) = 1) := by
   rintro ⟨translation, mapsOne⟩
@@ -477,8 +477,8 @@ theorem no_constant_one_translation :
     (mapsOne true).symm.trans mappedMeaning
   omega
 
-#print axioms AuthorityTranslation.scope_preserved
-#print axioms AuthorityTranslation.comp
+#print axioms CertifiedTranslation.scope_preserved
+#print axioms CertifiedTranslation.comp
 #print axioms Coproduct.leftInclusion_conservative
 #print axioms Coproduct.rightInclusion_conservative
 #print axioms wrong_kernel_certificate_rejected

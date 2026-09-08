@@ -1,5 +1,5 @@
 diff --git a/lake-manifest.json b/lake-manifest.json
-index a4c3aef5b2b8ec543b4c8f259ad14a8b9d5edfb0..e4d92b2877679df88a62a58e62fc551a08729bb9 100644
+index a4c3aef..e4d92b2 100644
 --- a/lake-manifest.json
 +++ b/lake-manifest.json
 @@ -1,96 +1,117 @@
@@ -217,7 +217,7 @@ index a4c3aef5b2b8ec543b4c8f259ad14a8b9d5edfb0..e4d92b2877679df88a62a58e62fc551a
 +  "fixedToolchain": false
 +}
 diff --git a/lakefile.toml b/lakefile.toml
-index 8338ba98e287114a4effb24b89406599cbbc0de7..57e8eca441e8862cba3e48a3ab2ad4e9bdd4fc3f 100644
+index 8338ba9..57e8eca 100644
 --- a/lakefile.toml
 +++ b/lakefile.toml
 @@ -5,7 +5,7 @@ defaultTargets = ["Metatheory"]
@@ -230,7 +230,7 @@ index 8338ba98e287114a4effb24b89406599cbbc0de7..57e8eca441e8862cba3e48a3ab2ad4e9
  [[lean_lib]]
  name = "Metatheory"
 diff --git a/lean-toolchain b/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8..a8afa7d 100644
 --- a/lean-toolchain
 +++ b/lean-toolchain
 @@ -1 +1 @@

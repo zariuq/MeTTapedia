@@ -6,7 +6,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
 # Hennessy–Milner adequacy for rho
 
 The established rho GSLT has closed processes as terms, canonical-form
-equality as its equations, and the equation-saturated authored step.  Any
+equality as its equations, and the modulo-equations authored step.  Any
 family of equation-invariant predicates serves as its observation set, and
 the generic adequacy theorem applies once the step is image-finite modulo
 the equations.

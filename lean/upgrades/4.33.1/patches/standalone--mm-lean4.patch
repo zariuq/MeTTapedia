@@ -1,5 +1,5 @@
 diff --git a/Metamath/DBCaseAnalysis.lean b/Metamath/DBCaseAnalysis.lean
-index b77b83c1920aa3f62e196c710d2d690fa58cdfac..1d318f9b541b2f5782624edab79bd52740747c03 100644
+index b77b83c..1d318f9 100644
 --- a/Metamath/DBCaseAnalysis.lean
 +++ b/Metamath/DBCaseAnalysis.lean
 @@ -457,8 +457,6 @@ theorem insert_success_new (db : DB) (pos : Pos) (label : String) (obj : String
@@ -45,7 +45,7 @@ index b77b83c1920aa3f62e196c710d2d690fa58cdfac..1d318f9b541b2f5782624edab79bd527
          · unfold DB.error at h_err
            simp [Option.isSome, h] at h_err
 diff --git a/Metamath/DeclarativeSpec.lean b/Metamath/DeclarativeSpec.lean
-index 6bc43a036f4344f237b373adddf09c48e07aac48..32ef90709bf35bfdb81d4b454de4d7dc46361aca 100644
+index 6bc43a0..32ef907 100644
 --- a/Metamath/DeclarativeSpec.lean
 +++ b/Metamath/DeclarativeSpec.lean
 @@ -50,9 +50,7 @@ variables are replaced by the substitution function. -/
@@ -88,7 +88,7 @@ index 6bc43a036f4344f237b373adddf09c48e07aac48..32ef90709bf35bfdb81d4b454de4d7dc
  
  theorem HH_cons {axs Γ σ c f hyps}
 diff --git a/Metamath/Legacy/CompatThms.lean b/Metamath/Legacy/CompatThms.lean
-index 24528b341d3c5459a0517d4c39042bd72d18367a..69670fe34eb735cef0819ead1d8398beca837fcf 100644
+index 24528b3..69670fe 100644
 --- a/Metamath/Legacy/CompatThms.lean
 +++ b/Metamath/Legacy/CompatThms.lean
 @@ -96,7 +96,7 @@ theorem checkSinglePass_eq_checkTwoPassLegacy_of_sharedExpandedBytes
@@ -110,7 +110,7 @@ index 24528b341d3c5459a0517d4c39042bd72d18367a..69670fe34eb735cef0819ead1d8398be
  /-- Specialized IO bridge: if both front-ends report the same include read-failure
  payload, both checkers are equal. -/
 diff --git a/Metamath/ParserLoopInduction.lean b/Metamath/ParserLoopInduction.lean
-index 26f1fcdae9a18f4442abe1026df84051f5ba466b..7e1fffea8f21bc9fa6789abaec361ef0cd5e587a 100644
+index 26f1fcd..7e1fffe 100644
 --- a/Metamath/ParserLoopInduction.lean
 +++ b/Metamath/ParserLoopInduction.lean
 @@ -1548,7 +1548,6 @@ theorem feedTokens_hyps_behavior (s : ParserState) (arr : Array Sym) (p : Tokens
@@ -130,7 +130,7 @@ index 26f1fcdae9a18f4442abe1026df84051f5ba466b..7e1fffea8f21bc9fa6789abaec361ef0
              simp
              left
 diff --git a/Metamath/ParserOperations.lean b/Metamath/ParserOperations.lean
-index b013a336867a3d11018af3a0fcd4793542ba2962..e489c06455f28998ccdc3cec9ad0e72ac519ceae 100644
+index b013a33..e489c06 100644
 --- a/Metamath/ParserOperations.lean
 +++ b/Metamath/ParserOperations.lean
 @@ -4119,7 +4119,6 @@ theorem feedTokens_ax_db (s : ParserState) (arr : Array Sym) (pos : Pos) (l : St
@@ -158,7 +158,7 @@ index b013a336867a3d11018af3a0fcd4793542ba2962..e489c06455f28998ccdc3cec9ad0e72a
      (s.feedTokens arr ⟨.ess, pos, l⟩).db
          = (ParserState.withAt l (fun _ =>
 diff --git a/Metamath/PrefixWitnessCheckBytes.lean b/Metamath/PrefixWitnessCheckBytes.lean
-index 867cfe2bed9c913515d88b8360adda575d6924f1..6e215864d7cb4a11cc2e44590d0613105591069e 100644
+index 867cfe2..6e21586 100644
 --- a/Metamath/PrefixWitnessCheckBytes.lean
 +++ b/Metamath/PrefixWitnessCheckBytes.lean
 @@ -5737,45 +5737,32 @@ theorem resolvePushWithIO_ok_post (rp : String → IO System.FilePath)
@@ -225,7 +225,7 @@ index 867cfe2bed9c913515d88b8360adda575d6924f1..6e215864d7cb4a11cc2e44590d061310
  /-- Inversion of one driver-loop layer: a successful run is a phase result
  that either finishes immediately or resolves one push and recurses with one
 diff --git a/Metamath/Spec/Bridge.lean b/Metamath/Spec/Bridge.lean
-index 363a6f0be297746970cc9bb666be0d56b25e9066..7463fd9e80860ed292cec24a961c1b4cc5a6dd84 100644
+index 363a6f0..7463fd9 100644
 --- a/Metamath/Spec/Bridge.lean
 +++ b/Metamath/Spec/Bridge.lean
 @@ -834,9 +834,7 @@ theorem Hyp.toMarioFormula_roundtrip_floating (c : Constant) (v : Variable) (var
@@ -240,7 +240,7 @@ index 363a6f0be297746970cc9bb666be0d56b25e9066..7463fd9e80860ed292cec24a961c1b4c
  /-- Soundness for floating conversion: If a MarioFormula came from converting
      a floating hypothesis, then converting it back recovers a floating hypothesis
 diff --git a/Metamath/Spec/Equivalence.lean b/Metamath/Spec/Equivalence.lean
-index 1a4c49011d6fd5fe66737114273df8d7b450aafe..011a1deb95ab735e6070bf719ff402a8f59a8be7 100644
+index 1a4c490..011a1de 100644
 --- a/Metamath/Spec/Equivalence.lean
 +++ b/Metamath/Spec/Equivalence.lean
 @@ -265,6 +265,7 @@ theorem hypToMarioFormula_floating_expr (vm : VarMap) (c : Constant) (v : Variab
@@ -269,7 +269,7 @@ index 1a4c49011d6fd5fe66737114273df8d7b450aafe..011a1deb95ab735e6070bf719ff402a8
                    ih (σ v_hyp) h_in_stack
  
 diff --git a/Metamath/StoredStatementSoundness.lean b/Metamath/StoredStatementSoundness.lean
-index 8f17bf25b83019e96fda9d7b3e30955720b8273d..13cfd83639d657037e4054c9f247df5d2e59f0df 100644
+index 8f17bf2..13cfd83 100644
 --- a/Metamath/StoredStatementSoundness.lean
 +++ b/Metamath/StoredStatementSoundness.lean
 @@ -626,12 +626,13 @@ theorem expr_mem_iff_mem_vars {e : Metamath.Expr} {v : Metamath.VR} :
@@ -292,7 +292,7 @@ index 8f17bf25b83019e96fda9d7b3e30955720b8273d..13cfd83639d657037e4054c9f247df5d
  theorem expr_subst_congr_on_vars {σ τ : Metamath.VR → Metamath.Expr}
      (e : Metamath.Expr) (h : ∀ v, v ∈ e.vars → σ v = τ v) :
 diff --git a/Metamath/Tests/CheckSinglePassParity.lean b/Metamath/Tests/CheckSinglePassParity.lean
-index 72a5293b77bd658e32ebd6a08ce8cf21ef3ceb6d..32a32886a340ddad4479e4252a3a2f46a3370d40 100644
+index 72a5293..32a3288 100644
 --- a/Metamath/Tests/CheckSinglePassParity.lean
 +++ b/Metamath/Tests/CheckSinglePassParity.lean
 @@ -195,15 +195,24 @@ def runCheckSinglePassParitySuite : IO Unit := do
@@ -342,7 +342,7 @@ index 72a5293b77bd658e32ebd6a08ce8cf21ef3ceb6d..32a32886a340ddad4479e4252a3a2f46
    runNoTrailingWhitespaceNestedIncludeRegression
    runIncludeDepthOverflowRegression
 diff --git a/Metamath/Verify.lean b/Metamath/Verify.lean
-index e6da09024b22330d03b3543b6bdc5a8a761a2c87..15e83aa33bce20adc1943790e41d28371a00f743 100644
+index e6da090..15e83aa 100644
 --- a/Metamath/Verify.lean
 +++ b/Metamath/Verify.lean
 @@ -1239,7 +1239,7 @@ structure DB where
@@ -380,7 +380,7 @@ index e6da09024b22330d03b3543b6bdc5a8a761a2c87..15e83aa33bce20adc1943790e41d2837
  /-- The include-driver loop: alternate pure phases (`runPureSteps`) with
  include resolutions (`resolvePushWithIO`).  `fuel` bounds only the number of
 diff --git a/Metamath/VerifyDBConfigThms.lean b/Metamath/VerifyDBConfigThms.lean
-index 54f9cbb24e48676d90f7f264290327ba27448361..08477284ee3f40ee8b720406c24ba293fa66d81e 100644
+index 54f9cbb..0847728 100644
 --- a/Metamath/VerifyDBConfigThms.lean
 +++ b/Metamath/VerifyDBConfigThms.lean
 @@ -187,10 +187,17 @@ namespace DB
@@ -406,7 +406,7 @@ index 54f9cbb24e48676d90f7f264290327ba27448361..08477284ee3f40ee8b720406c24ba293
  @[simp] theorem insertAxiom_config (db : DB) (pos : Pos) (l : String) (fmla : Formula) :
      (db.insertAxiom pos l fmla).config = db.config := by
 diff --git a/lake-manifest.json b/lake-manifest.json
-index 06175ad086a95d250024dad47b3fd69b0cce63f0..c38e23ff0743d9d2646e950d6ea3c0c775af289c 100644
+index 06175ad..c38e23f 100644
 --- a/lake-manifest.json
 +++ b/lake-manifest.json
 @@ -1,16 +1,21 @@
@@ -448,7 +448,7 @@ index 06175ad086a95d250024dad47b3fd69b0cce63f0..c38e23ff0743d9d2646e950d6ea3c0c7
 +  "fixedToolchain": false
 +}
 diff --git a/lakefile.lean b/lakefile.lean
-index 12bf2ddbda83d4cd5aef0a42a6f63ec4664b6967..6afe9fa6cc60b192213be75822536102b4aea020 100644
+index 12bf2dd..6afe9fa 100644
 --- a/lakefile.lean
 +++ b/lakefile.lean
 @@ -5,7 +5,7 @@ package «mm-lean4» where
@@ -461,7 +461,7 @@ index 12bf2ddbda83d4cd5aef0a42a6f63ec4664b6967..6afe9fa6cc60b192213be75822536102
  @[default_target]
  lean_lib Metamath where
 diff --git a/lean-toolchain b/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8..a8afa7d 100644
 --- a/lean-toolchain
 +++ b/lean-toolchain
 @@ -1 +1 @@
@@ -469,14 +469,14 @@ index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b4
 +leanprover/lean4:v4.33.1
 diff --git a/test_databases/include_cycle/literal_child.mm b/test_databases/include_cycle/literal_child.mm
 new file mode 100644
-index 0000000000000000000000000000000000000000..f2eff3f1b030dcc98091a9c0160bda77bfc68477
+index 0000000..f2eff3f
 --- /dev/null
 +++ b/test_databases/include_cycle/literal_child.mm
 @@ -0,0 +1 @@
 +$[ test_databases/include_cycle/literal_root.mm $]
 diff --git a/test_databases/include_cycle/literal_root.mm b/test_databases/include_cycle/literal_root.mm
 new file mode 100644
-index 0000000000000000000000000000000000000000..09708e14982ec7b96daa2b38bc6736b02a5e41b2
+index 0000000..09708e1
 --- /dev/null
 +++ b/test_databases/include_cycle/literal_root.mm
 @@ -0,0 +1 @@

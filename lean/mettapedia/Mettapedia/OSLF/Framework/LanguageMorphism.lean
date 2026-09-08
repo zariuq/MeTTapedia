@@ -41,7 +41,7 @@ open Mettapedia.OSLF.Formula
 
 /-! ## Multi-Step Reduction for Generic Languages
 
-Reflexive-transitive closure of the equation-saturated semantic one-step
+Reflexive-transitive closure of the modulo-equations semantic one-step
 relation for any `LanguageDef`.
 This parallels `ReducesStar` from the ρ-calculus but works for any language. -/
 

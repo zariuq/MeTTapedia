@@ -404,16 +404,16 @@ theorem rfc8259_parser_pack_inventory :
       rfc8259ParserPackPlan.structural.length = 45 := by
   decide +kernel
 
-/-- Concrete positive control: the start production retains its three
-nonterminal children at slots 0, 1, and 2, while the appended EOF occupies no
-child slot. -/
+/-- Concrete positive control: the authored start production retains its
+three nonterminal children at slots 0, 1, and 2.  EOF belongs only to the
+separate whole-input entry. -/
 theorem rfc8259_text_parserpack_shape :
     rfc8259ParserPackPlan.structural.head?.map (fun production =>
       (production.label, production.resultSort,
         production.items, production.childSlots)) =
       some ("json:text", "JsonText",
         [.nonterminal "JsonWs", .nonterminal "JsonValue",
-         .nonterminal "JsonWs", .terminal .eof],
+         .nonterminal "JsonWs"],
         [0, 1, 2]) := by
   decide +kernel
 
@@ -732,9 +732,8 @@ private def whitespaceEmptySourceDerivation
       (.node "json:ws-empty" cursor cursor []) := by
   refine SourcePlanDerivesAt.structural whitespaceEmptySourceOccurrence.val
     whitespaceEmptySourceOccurrence.isLt
-    (by rfl) (by rfl) ?_ ?_
-  · exact .nil
-  · exact .nonstart (by decide)
+    (by rfl) (by rfl) ?_
+  exact .nil
 
 private def nullValueSourceDerivation :
     SourcePlanDerivesAt jsonTerminalScalars? rfc8259ParserProfile
@@ -742,11 +741,10 @@ private def nullValueSourceDerivation :
       (.node "json:value-null" 0 4 []) := by
   refine SourcePlanDerivesAt.structural nullValueSourceOccurrence.val
     nullValueSourceOccurrence.isLt
-    (by rfl) (by rfl) ?_ ?_
-  · exact .terminal (by rfl)
+    (by rfl) (by rfl) ?_
+  exact .terminal (by rfl)
       (.cons (by rfl) <| .cons (by rfl) <|
         .cons (by rfl) <| .cons (by rfl) (.nil 4)) .nil
-  · exact .nonstart (by decide)
 
 private def nullTextSourceDerivation :
     SourcePlanRootDerives jsonTerminalScalars? rfc8259ParserProfile
@@ -757,11 +755,10 @@ private def nullTextSourceDerivation :
          .node "json:ws-empty" 4 4 []]) := by
   refine SourcePlanDerivesAt.structural textSourceOccurrence.val
     textSourceOccurrence.isLt
-    (by rfl) (by rfl) ?_ ?_
-  · exact .nonterminal (whitespaceEmptySourceDerivation _ 0) <|
+    (by rfl) (by rfl) ?_
+  exact .nonterminal (whitespaceEmptySourceDerivation _ 0) <|
       .nonterminal nullValueSourceDerivation <|
         .nonterminal (whitespaceEmptySourceDerivation _ 4) .nil
-  · exact .start rfl rfl
 
 private def whitespaceEmptyPackDerivation
     (input : List Nat) (cursor : Nat) :
@@ -793,13 +790,12 @@ private def nullTextPackDerivation :
     textPackOccurrence.isLt (by rfl) (by rfl) ?_
   exact .nonterminal (whitespaceEmptyPackDerivation _ 0) <|
     .nonterminal nullValuePackDerivation <|
-      .nonterminal (whitespaceEmptyPackDerivation _ 4) <|
-        .terminal (.eof rfl) .nil
+      .nonterminal (whitespaceEmptyPackDerivation _ 4) .nil
 
 /-- The complete RFC presentation has an exact proof-fibre equivalence at the
 whole-input `null` CST.  This is stronger than equality of parse success: both
 directions retain the selected physical productions, zero-width whitespace
-occurrences, spans, and the administrative EOF evidence. -/
+occurrences, and spans.  The synthetic entry separately checks EOF. -/
 def rfc8259_null_proof_fibre_equiv :
     SourcePlanRootDerives jsonTerminalScalars? rfc8259ParserProfile
         compiledSyntaxRules [110, 117, 108, 108]
@@ -841,8 +837,7 @@ def rfc8259NullCertificate : Certificate :=
             .terminal (.char 117) 1 2 <|
               .terminal (.char 108) 2 3 <|
                 .terminal (.char 108) 3 4 (.nil 4)) <|
-        .nonterminal "JsonWs" 4 4 (.structural 1 4 4 (.nil 4)) <|
-          .terminal .eof 4 4 (.nil 4)
+        .nonterminal "JsonWs" 4 4 (.structural 1 4 4 (.nil 4)) (.nil 4)
 
 /-- Certificate erasure exposes exactly the expected portable data rather
 than retaining a hidden Lean proof object. -/

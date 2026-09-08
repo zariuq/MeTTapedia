@@ -624,7 +624,6 @@ mutual
     termination_by small.weight
     decreasing_by
       all_goals simp [CostRegionArgumentTrees.weight]
-      all_goals omega
 
   /-- The tree theorem lifts pointwise through a homogeneous collection. -/
   theorem CostRegionElementTrees.normalize_patterns_eq_of_availableSuffix
@@ -659,7 +658,6 @@ mutual
     termination_by small.weight
     decreasing_by
       all_goals simp [CostRegionElementTrees.weight]
-      all_goals omega
 end
 
 end CostStaticRegionNode

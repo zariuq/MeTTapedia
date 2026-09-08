@@ -125,9 +125,9 @@ theorem vec_reorder_not_equivalent (base : BasePremiseEvaluator) :
 /-- The vector presentation's saturated step is its authored step. -/
 theorem vecLanguage_saturated_iff_step (base : BasePremiseEvaluator)
     (source target : Pattern) :
-    EquationSaturatedStep base vecLanguage source target ↔
+    StepModuloEquations base vecLanguage source target ↔
       Step base vecLanguage source target :=
-  equationSaturatedStep_iff_step_of_no_generators vecLanguage_equationFree
+  stepModuloEquations_iff_step_of_no_generators vecLanguage_equationFree
     source target
 
 /-! ## The live rho presentation -/

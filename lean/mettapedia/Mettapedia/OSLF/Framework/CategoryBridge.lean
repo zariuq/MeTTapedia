@@ -290,7 +290,7 @@ paired with its proof of equation invariance.
 abbrev PredLattice (lang : LanguageDef) : Type :=
   EquationPredicate (langGSLT lang)
 
-/-- Admit a raw predicate generator through its least equation-saturated
+/-- Admit a raw predicate generator through its least modulo-equations
 extension. -/
 def PredLattice.mk (lang : LanguageDef) (φ : Pattern → Prop) : PredLattice lang :=
   saturatePredicate (langGSLT lang) φ

@@ -1,5 +1,5 @@
 diff --git a/CertifyingDatalog/GraphValidation/Dfs.lean b/CertifyingDatalog/GraphValidation/Dfs.lean
-index 65f1f44a5208cbbcd8a9c0939a3368fd22cee524..eb19c3a34e874d91eb3f088eaa52f1367a14ad49 100644
+index 65f1f44..eb19c3a 100644
 --- a/CertifyingDatalog/GraphValidation/Dfs.lean
 +++ b/CertifyingDatalog/GraphValidation/Dfs.lean
 @@ -243,7 +243,11 @@ section Dfs
@@ -16,7 +16,7 @@ index 65f1f44a5208cbbcd8a9c0939a3368fd22cee524..eb19c3a34e874d91eb3f088eaa52f136
        is_front := by simp [Walk.prependPredecessor]
  
 diff --git a/CertifyingDatalog/GraphValidation/Validation.lean b/CertifyingDatalog/GraphValidation/Validation.lean
-index 7848c7c23e1258c86218ebd8fa06d4bf7c34272e..4f68e3126364e747f14de0790b00338de90f4593 100644
+index 7848c7c..4f68e31 100644
 --- a/CertifyingDatalog/GraphValidation/Validation.lean
 +++ b/CertifyingDatalog/GraphValidation/Validation.lean
 @@ -116,7 +116,8 @@ namespace Graph
@@ -30,7 +30,7 @@ index 7848c7c23e1258c86218ebd8fa06d4bf7c34272e..4f68e3126364e747f14de0790b00338d
      simp only [and_congr_right_iff]
      intro _
 diff --git a/CertifyingDatalog/GraphValidation/Walks.lean b/CertifyingDatalog/GraphValidation/Walks.lean
-index d23960b2115b2a13f2a978dcdd950280cc4b1681..6e6b1006fae03cf51062f973a51d9fbd817da4aa 100644
+index d23960b..6e6b100 100644
 --- a/CertifyingDatalog/GraphValidation/Walks.lean
 +++ b/CertifyingDatalog/GraphValidation/Walks.lean
 @@ -70,7 +70,7 @@ namespace Walk
@@ -149,7 +149,7 @@ index d23960b2115b2a13f2a978dcdd950280cc4b1681..6e6b1006fae03cf51062f973a51d9fbd
      let cyc := (w'.tail.takeUntil (w'.1.head hw')).prependPredecessor b hb'
      simp only [reachableFromCycle]
 diff --git a/CertifyingDatalog/OrderedGraphValidation.lean b/CertifyingDatalog/OrderedGraphValidation.lean
-index 818c52cc681092a95c72bf2c265700283a2a5bae..dec8a05dc4b84a4c428a8d7030e0721c68eb5fc6 100644
+index 818c52c..dec8a05 100644
 --- a/CertifyingDatalog/OrderedGraphValidation.lean
 +++ b/CertifyingDatalog/OrderedGraphValidation.lean
 @@ -165,9 +165,7 @@ namespace OrderedProofGraph
@@ -164,7 +164,7 @@ index 818c52cc681092a95c72bf2c265700283a2a5bae..dec8a05dc4b84a4c428a8d7030e0721c
          simp only [Fin.getElem_fin, List.mem_attach, forall_const,
            Subtype.forall, List.mem_map, true_and, Subtype.exists, forall_exists_index]
 diff --git a/CertifyingDatalog/TreeValidation.lean b/CertifyingDatalog/TreeValidation.lean
-index 874e25bc7653711af12a08b9dcce14c15295985b..b10c27812fb6f3ada7b87e5a96a1731b21981a0c 100644
+index 874e25b..b10c278 100644
 --- a/CertifyingDatalog/TreeValidation.lean
 +++ b/CertifyingDatalog/TreeValidation.lean
 @@ -3,7 +3,7 @@ import CertifyingDatalog.Datalog
@@ -177,7 +177,7 @@ index 874e25bc7653711af12a08b9dcce14c15295985b..b10c27812fb6f3ada7b87e5a96a1731b
  
  variable {τ: Signature} [DecidableEq τ.vars] [DecidableEq τ.constants] [DecidableEq τ.relationSymbols] [Hashable τ.constants] [Hashable τ.vars] [Hashable τ.relationSymbols]
 diff --git a/CertifyingDatalog/Unification.lean b/CertifyingDatalog/Unification.lean
-index 684e8a31005e073c44157058299e333c5502777c..63e2bbcfe92e165a60b99d6c4c9dd7a134dfe411 100644
+index 684e8a3..63e2bbc 100644
 --- a/CertifyingDatalog/Unification.lean
 +++ b/CertifyingDatalog/Unification.lean
 @@ -67,20 +67,20 @@ section TermMatching
@@ -213,7 +213,7 @@ index 684e8a31005e073c44157058299e333c5502777c..63e2bbcfe92e165a60b99d6c4c9dd7a1
      lemma matchTermIsMinimal [DecidableEq τ.vars] [DecidableEq τ.constants] {s: Substitution τ} {t: Term τ} {c: τ.constants} (h : (s.matchTerm t c).isSome) : ∀ s' : Substitution τ, s ⊆ s' ∧ s'.applyTerm t = c -> ((s.matchTerm t c).get h) ⊆ s' := by
        intro s' ⟨subset, apply_t⟩
 diff --git a/lake-manifest.json b/lake-manifest.json
-index e891dabd0f31678e465ffcbc2db56c4a224e5d6e..520f6ee861f1872002d6a949144205dd8e408f11 100644
+index e891dab..520f6ee 100644
 --- a/lake-manifest.json
 +++ b/lake-manifest.json
 @@ -1,96 +1,117 @@
@@ -431,7 +431,7 @@ index e891dabd0f31678e465ffcbc2db56c4a224e5d6e..520f6ee861f1872002d6a949144205dd
 +  "fixedToolchain": false
 +}
 diff --git a/lakefile.lean b/lakefile.lean
-index 21a649cfc9bd5fe456cc977d083df7899e9c0935..78436faf3b081a5fc3364537d817b68b4bcec0d8 100644
+index 21a649c..78436fa 100644
 --- a/lakefile.lean
 +++ b/lakefile.lean
 @@ -10,7 +10,7 @@ lean_lib «CertifyingDatalog» {
@@ -444,7 +444,7 @@ index 21a649cfc9bd5fe456cc977d083df7899e9c0935..78436faf3b081a5fc3364537d817b68b
  @[default_target]
  lean_exe «certifyingDatalog» where
 diff --git a/lean-toolchain b/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8..a8afa7d 100644
 --- a/lean-toolchain
 +++ b/lean-toolchain
 @@ -1 +1 @@

@@ -79,7 +79,7 @@ private def higherOrderInclusion :=
 /-- The independently meaningful implication authority reaches the plural
 waist by a retained two-stage composition. -/
 def implicationInclusion :=
-  AuthorityTranslation.comp
+  CertifiedTranslation.comp
     (Coproduct.leftInclusion implicationTheory megalodonTheory
       implicationContract megalodonContract)
     higherOrderInclusion
@@ -87,7 +87,7 @@ def implicationInclusion :=
 /-- The selected Megalodon authority reaches the plural waist through the
 other inner coproduct injection. -/
 def megalodonInclusion :=
-  AuthorityTranslation.comp
+  CertifiedTranslation.comp
     (Coproduct.rightInclusion implicationTheory megalodonTheory
       implicationContract megalodonContract)
     higherOrderInclusion
@@ -183,7 +183,7 @@ rejected Megalodon replay.  Coexistence alone therefore cannot justify an
 invented cross-kernel adapter. -/
 theorem no_replay_breaking_dtt_to_megalodon :
     ¬ (exists translation :
-        AuthorityTranslation dttContract megalodonContract,
+        CertifiedTranslation dttContract megalodonContract,
       (megalodonContract.checker (translation.mapKind ())).check
           (translation.mapClaim () simplePiQuery)
           (translation.mapCertificate () simplePiIntrinsic.raw) = false) := by

@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTStoneQualificationBoundary
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 import Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGrounding
 
 /-!
@@ -28,7 +28,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.Languages.MeTTa.PrimePluralNIKSetTypeUltrainfiniteWaist
 
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.GSLT.LanguageDef.CertificateGSLTHeterogeneousAuthority
 open Mettapedia.GSLT.LanguageDef.CertificateGSLTStoneGunkSemanticAuthority
@@ -87,14 +87,14 @@ private def stoneInclusion :=
   Coproduct.rightInclusion priorTheory.{u, v} stoneTheory priorContract.{u, v}
     stoneContract
 
-def ordinaryStoneInclusion : AuthorityTranslation ordinaryContract contract :=
-  AuthorityTranslation.comp
+def ordinaryStoneInclusion : CertifiedTranslation ordinaryContract contract :=
+  CertifiedTranslation.comp
     (Coproduct.leftInclusion ordinaryTheory freeTheory ordinaryContract
       freeContract)
     stoneInclusion.{u, v}
 
-def freePerspectiveInclusion : AuthorityTranslation freeContract contract :=
-  AuthorityTranslation.comp
+def freePerspectiveInclusion : CertifiedTranslation freeContract contract :=
+  CertifiedTranslation.comp
     (Coproduct.rightInclusion ordinaryTheory freeTheory ordinaryContract
       freeContract)
     stoneInclusion.{u, v}
@@ -158,8 +158,8 @@ private abbrev dependentPiTheory :=
 private abbrev dependentPiContract :=
   Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceDependentPiExperiment.NIKProfile.contract.{u, v}
 
-def stagedToWaist : AuthorityTranslation stagedContract contract :=
-  AuthorityTranslation.comp
+def stagedToWaist : CertifiedTranslation stagedContract contract :=
+  CertifiedTranslation.comp
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGrounding.stagedToPrime.{u, v}
     priorInclusion.{u, v}
 
@@ -171,8 +171,8 @@ theorem stagedToWaist_conservative :
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGrounding.stagedToPrime_conservative.{u, v}
     priorInclusion_conservative.{u, v}
 
-def setCoreToWaist : AuthorityTranslation setCoreContract contract :=
-  AuthorityTranslation.comp
+def setCoreToWaist : CertifiedTranslation setCoreContract contract :=
+  CertifiedTranslation.comp
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGrounding.setCoreToPrime.{u, v}
     priorInclusion.{u, v}
 
@@ -184,8 +184,8 @@ theorem setCoreToWaist_conservative :
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGrounding.setCoreToPrime_conservative.{u, v}
     priorInclusion_conservative.{u, v}
 
-def setOperationToWaist : AuthorityTranslation setOperationContract contract :=
-  AuthorityTranslation.comp
+def setOperationToWaist : CertifiedTranslation setOperationContract contract :=
+  CertifiedTranslation.comp
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGrounding.operationToPrime.{u, v}
     priorInclusion.{u, v}
 
@@ -197,9 +197,9 @@ theorem setOperationToWaist_conservative :
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGrounding.operationToPrime_conservative.{u, v}
     priorInclusion_conservative.{u, v}
 
-private def dependentPiToBoolean : AuthorityTranslation dependentPiContract
+private def dependentPiToBoolean : CertifiedTranslation dependentPiContract
     Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist.contract :=
-  AuthorityTranslation.comp
+  CertifiedTranslation.comp
     Mettapedia.Languages.MeTTa.PrimePluralNIKDependentPiWaist.dependentPiInclusion.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist.primeInclusion.{u, v}
 
@@ -211,9 +211,9 @@ private theorem dependentPiToBoolean_conservative :
     Mettapedia.Languages.MeTTa.PrimePluralNIKDependentPiWaist.dependentPiInclusion_conservative.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist.primeInclusion_conservative.{u, v}
 
-private def dependentPiToAtomless : AuthorityTranslation dependentPiContract
+private def dependentPiToAtomless : CertifiedTranslation dependentPiContract
     Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.contract :=
-  AuthorityTranslation.comp dependentPiToBoolean.{u, v}
+  CertifiedTranslation.comp dependentPiToBoolean.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.priorInclusion.{u, v}
 
 private theorem dependentPiToAtomless_conservative :
@@ -224,9 +224,9 @@ private theorem dependentPiToAtomless_conservative :
     dependentPiToBoolean_conservative.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.priorInclusion_conservative.{u, v}
 
-private def dependentPiToPrior : AuthorityTranslation dependentPiContract
+private def dependentPiToPrior : CertifiedTranslation dependentPiContract
     priorContract :=
-  AuthorityTranslation.comp dependentPiToAtomless.{u, v}
+  CertifiedTranslation.comp dependentPiToAtomless.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist.priorInclusion.{u, v}
 
 private theorem dependentPiToPrior_conservative :
@@ -237,8 +237,8 @@ private theorem dependentPiToPrior_conservative :
     dependentPiToAtomless_conservative.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist.priorInclusion_conservative.{u, v}
 
-def dependentPiToWaist : AuthorityTranslation dependentPiContract contract :=
-  AuthorityTranslation.comp dependentPiToPrior.{u, v} priorInclusion.{u, v}
+def dependentPiToWaist : CertifiedTranslation dependentPiContract contract :=
+  CertifiedTranslation.comp dependentPiToPrior.{u, v} priorInclusion.{u, v}
 
 theorem dependentPiToWaist_conservative :
     dependentPiToWaist.{u, v}.toTheoryTranslation.Conservative :=
@@ -248,7 +248,7 @@ theorem dependentPiToWaist_conservative :
     dependentPiToPrior_conservative.{u, v}
     priorInclusion_conservative.{u, v}
 
-private def structuralToBase : AuthorityTranslation structuralContract
+private def structuralToBase : CertifiedTranslation structuralContract
     Mettapedia.Languages.MeTTa.PrimePluralNIKWaist.contract :=
   Mettapedia.Languages.MeTTa.PrimePluralNIKWaist.dttInclusion
 
@@ -256,9 +256,9 @@ private theorem structuralToBase_conservative :
     structuralToBase.toTheoryTranslation.Conservative :=
   Mettapedia.Languages.MeTTa.PrimePluralNIKWaist.dttInclusion_conservative
 
-private def structuralToSetCore : AuthorityTranslation structuralContract
+private def structuralToSetCore : CertifiedTranslation structuralContract
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetCoreWaist.contract :=
-  AuthorityTranslation.comp structuralToBase
+  CertifiedTranslation.comp structuralToBase
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetCoreWaist.primeInclusion
 
 private theorem structuralToSetCore_conservative :
@@ -268,9 +268,9 @@ private theorem structuralToSetCore_conservative :
     structuralToBase_conservative
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetCoreWaist.primeInclusion_conservative
 
-private def structuralToDependentPi : AuthorityTranslation structuralContract
+private def structuralToDependentPi : CertifiedTranslation structuralContract
     Mettapedia.Languages.MeTTa.PrimePluralNIKDependentPiWaist.contract :=
-  AuthorityTranslation.comp structuralToSetCore
+  CertifiedTranslation.comp structuralToSetCore
     Mettapedia.Languages.MeTTa.PrimePluralNIKDependentPiWaist.primeInclusion.{u, v}
 
 private theorem structuralToDependentPi_conservative :
@@ -280,9 +280,9 @@ private theorem structuralToDependentPi_conservative :
     structuralToSetCore_conservative
     Mettapedia.Languages.MeTTa.PrimePluralNIKDependentPiWaist.primeInclusion_conservative.{u, v}
 
-private def structuralToBoolean : AuthorityTranslation structuralContract
+private def structuralToBoolean : CertifiedTranslation structuralContract
     Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist.contract :=
-  AuthorityTranslation.comp structuralToDependentPi.{u, v}
+  CertifiedTranslation.comp structuralToDependentPi.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist.primeInclusion.{u, v}
 
 private theorem structuralToBoolean_conservative :
@@ -293,9 +293,9 @@ private theorem structuralToBoolean_conservative :
     structuralToDependentPi_conservative.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist.primeInclusion_conservative.{u, v}
 
-private def structuralToAtomless : AuthorityTranslation structuralContract
+private def structuralToAtomless : CertifiedTranslation structuralContract
     Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.contract :=
-  AuthorityTranslation.comp structuralToBoolean.{u, v}
+  CertifiedTranslation.comp structuralToBoolean.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.priorInclusion.{u, v}
 
 private theorem structuralToAtomless_conservative :
@@ -306,9 +306,9 @@ private theorem structuralToAtomless_conservative :
     structuralToBoolean_conservative.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist.priorInclusion_conservative.{u, v}
 
-private def structuralToPrior : AuthorityTranslation structuralContract
+private def structuralToPrior : CertifiedTranslation structuralContract
     priorContract :=
-  AuthorityTranslation.comp structuralToAtomless.{u, v}
+  CertifiedTranslation.comp structuralToAtomless.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist.priorInclusion.{u, v}
 
 private theorem structuralToPrior_conservative :
@@ -319,8 +319,8 @@ private theorem structuralToPrior_conservative :
     structuralToAtomless_conservative.{u, v}
     Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist.priorInclusion_conservative.{u, v}
 
-def structuralToWaist : AuthorityTranslation structuralContract contract :=
-  AuthorityTranslation.comp structuralToPrior.{u, v} priorInclusion.{u, v}
+def structuralToWaist : CertifiedTranslation structuralContract contract :=
+  CertifiedTranslation.comp structuralToPrior.{u, v} priorInclusion.{u, v}
 
 theorem structuralToWaist_conservative :
     structuralToWaist.{u, v}.toTheoryTranslation.Conservative :=
@@ -359,7 +359,7 @@ def Role.face : Role -> Face
   | .ordinaryStone => .ordinaryStoneGround
   | .freeStonePerspective => .perspectivalStoneGround
 
-def hostObject : AuthorityObject where
+def hostObject : CertifiedTheory where
   Kind := Kind
   family := theory.{u, v}
   contract := contract.{u, v}

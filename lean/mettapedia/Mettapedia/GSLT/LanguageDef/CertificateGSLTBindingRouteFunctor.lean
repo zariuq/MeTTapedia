@@ -25,7 +25,7 @@ namespace Mettapedia.GSLT.LanguageDef.CertificateGSLTBindingRouteFunctor
 open CategoryTheory
 open scoped CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.GSLT.LanguageDef.CertificateGSLTHeterogeneousAuthority
 open Mettapedia.GSLT.LanguageDef.CertificateGSLTBindingAuthority
@@ -53,7 +53,7 @@ abbrev Route (source target : BindingPresentation) :=
 /-- The generator action sends each presentation to its exact generated
 authority and each authored binding embedding to its exact authority
 translation. -/
-def generatorAuthority : BindingPresentation ⥤q AuthorityObject where
+def generatorAuthority : BindingPresentation ⥤q CertifiedTheory where
   obj presentation := generatedAuthority presentation.semantic
   map embedding := BindingSemanticEmbedding.map embedding
 
@@ -62,7 +62,7 @@ routes.  `Paths.lift` supplies identity, composition, and uniqueness from the
 generator action. -/
 def generationFunctor :
     CategoryTheory.Functor
-      (CategoryTheory.Paths BindingPresentation) AuthorityObject :=
+      (CategoryTheory.Paths BindingPresentation) CertifiedTheory :=
   CategoryTheory.Paths.lift generatorAuthority
 
 @[simp] theorem generationFunctor_obj (presentation : BindingPresentation) :
@@ -111,7 +111,7 @@ theorem generationFunctor_map_comp
 presentations and primitive binding embeddings. -/
 theorem generationFunctor_unique
     (candidate : CategoryTheory.Functor
-      (CategoryTheory.Paths BindingPresentation) AuthorityObject)
+      (CategoryTheory.Paths BindingPresentation) CertifiedTheory)
     (agreesOnGenerators :
       Prefunctor.comp (CategoryTheory.Paths.of BindingPresentation)
           candidate.toPrefunctor = generatorAuthority) :

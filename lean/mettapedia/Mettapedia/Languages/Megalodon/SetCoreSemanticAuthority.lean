@@ -312,11 +312,10 @@ theorem reflexive_native_accepted (body : ClosedFormula) :
     (reflexiveProof body) (Formula.erase (.imp body body)) = true
   unfold checkProof
   rw [Formula.mathdataNormalize_erase]
-  have bodyProposition :
-      checkProposition environment 0 [] body.erase = true := by
-    simpa [setContext] using Formula.checkProposition_erase body
+  have bodyType : inferTerm environment 0 [] body.erase = some .prop := by
+    simpa [setContext] using Formula.infer_erase body
   simp [checkNormalizedProof, reflexiveProof, inferProof,
-    Formula.erase, bodyProposition]
+    Formula.erase, bodyType]
 
 /-- Every covered semantic claim has a concrete witness in the live selected
 Mathdata theorem scope. -/

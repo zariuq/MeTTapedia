@@ -1,5 +1,5 @@
 diff --git a/Computability/CantorSpace.lean b/Computability/CantorSpace.lean
-index ebb94336306d260578fc4e1fe4b15569ff7d29bf..5b2a2151584adf99129e46ac019ac283931e92c0 100644
+index ebb9433..5b2a215 100644
 --- a/Computability/CantorSpace.lean
 +++ b/Computability/CantorSpace.lean
 @@ -309,8 +309,7 @@ theorem coinMeasure_cylinderSet (n : ℕ) (bits : Fin n → Bool) :
@@ -13,7 +13,7 @@ index ebb94336306d260578fc4e1fe4b15569ff7d29bf..5b2a2151584adf99129e46ac019ac283
    rw [Finset.prod_const, Finset.card_range]
  
 diff --git a/KnuthSkilling/Additive/Counterexamples/BenV2Theorem1.lean b/KnuthSkilling/Additive/Counterexamples/BenV2Theorem1.lean
-index 8877c3e63e8f0293829f8acdf8e4875b2c583b48..01eb307de770e42d0e282b459ccf2a995acc7354 100644
+index 8877c3e..01eb307 100644
 --- a/KnuthSkilling/Additive/Counterexamples/BenV2Theorem1.lean
 +++ b/KnuthSkilling/Additive/Counterexamples/BenV2Theorem1.lean
 @@ -37,7 +37,7 @@ theorem exists_assoc_strictMono_noncomm :
@@ -26,7 +26,7 @@ index 8877c3e63e8f0293829f8acdf8e4875b2c583b48..01eb307de770e42d0e282b459ccf2a99
  /-- A tiny meta-lemma: an order-reflecting additive regrading forces commutativity. -/
  theorem commutative_of_representation
 diff --git a/KnuthSkilling/Additive/Counterexamples/GoertzelLemma7.lean b/KnuthSkilling/Additive/Counterexamples/GoertzelLemma7.lean
-index 22ecd0e7568536cb29ac5c2c30e6a216adcfa40a..6efa0b54e753e7ab2e50de98853753f18bb4a612 100644
+index 22ecd0e..6efa0b5 100644
 --- a/KnuthSkilling/Additive/Counterexamples/GoertzelLemma7.lean
 +++ b/KnuthSkilling/Additive/Counterexamples/GoertzelLemma7.lean
 @@ -80,21 +80,22 @@ noncomputable def F2 : AtomFamily ℝ≥0 2 :=
@@ -75,7 +75,7 @@ index 22ecd0e7568536cb29ac5c2c30e6a216adcfa40a..6efa0b54e753e7ab2e50de98853753f1
    have h0' :
        ((iterate_op (α := ℝ≥0) (F2.atoms 0) (r 0) : ℝ≥0) : ℝ) = (r 0 : ℝ) := by
 diff --git a/KnuthSkilling/Additive/Counterexamples/KSSeparationNotDerivable.lean b/KnuthSkilling/Additive/Counterexamples/KSSeparationNotDerivable.lean
-index a0e2e17b604c1e7ac5680084867e02410b3ba0fe..f943f1a1de55c68632dec2b41e89d1979829bfa3 100644
+index a0e2e17..f943f1a 100644
 --- a/KnuthSkilling/Additive/Counterexamples/KSSeparationNotDerivable.lean
 +++ b/KnuthSkilling/Additive/Counterexamples/KSSeparationNotDerivable.lean
 @@ -21,7 +21,7 @@ These are minimal *formal* blockers against any proof attempt that tries to dedu
@@ -88,7 +88,7 @@ index a0e2e17b604c1e7ac5680084867e02410b3ba0fe..f943f1a1de55c68632dec2b41e89d197
  theorem exists_knuthskilling_not_separation :
      ∃ (α : Type) (_ : KnuthSkillingAlgebra α), ¬ KnuthSkilling.KSSeparation α := by
 diff --git a/KnuthSkilling/Additive/Counterexamples/SemidirectNoSeparation.lean b/KnuthSkilling/Additive/Counterexamples/SemidirectNoSeparation.lean
-index 6408ac537b8b232281a7b1db231fd122c3161526..ab2df396db87fb2be464a1f6341c4d399ef5f46d 100644
+index 6408ac5..ab2df39 100644
 --- a/KnuthSkilling/Additive/Counterexamples/SemidirectNoSeparation.lean
 +++ b/KnuthSkilling/Additive/Counterexamples/SemidirectNoSeparation.lean
 @@ -72,7 +72,9 @@ theorem baseOp_assoc (p q r : SDBase) : baseOp (baseOp p q) r = baseOp p (baseOp
@@ -144,7 +144,7 @@ index 6408ac537b8b232281a7b1db231fd122c3161526..ab2df396db87fb2be464a1f6341c4d39
  /-!
  ## `KSSeparation` fails in this model
 diff --git a/KnuthSkilling/Additive/Proofs/DirectCuts/DirectCuts.lean b/KnuthSkilling/Additive/Proofs/DirectCuts/DirectCuts.lean
-index 921d0c55d40dd3588e8949ca26f6b77a069ee470..842f7e351431c45110172f57a14d2c3ab6fde636 100644
+index 921d0c5..842f7e3 100644
 --- a/KnuthSkilling/Additive/Proofs/DirectCuts/DirectCuts.lean
 +++ b/KnuthSkilling/Additive/Proofs/DirectCuts/DirectCuts.lean
 @@ -1409,8 +1409,7 @@ theorem cutSet_pnat_add_closed (a x y : α) (_hcomm : ∀ u v : α, op u v = op
@@ -158,7 +158,7 @@ index 921d0c55d40dd3588e8949ca26f6b77a069ee470..842f7e351431c45110172f57a14d2c3a
      have h_distrib : iterate_op_pnat (op x y) (n₁ * n₂) =
                       op (iterate_op_pnat x (n₁ * n₂)) (iterate_op_pnat y (n₁ * n₂)) := by
 diff --git a/KnuthSkilling/Bridges/MathlibBridge.lean b/KnuthSkilling/Bridges/MathlibBridge.lean
-index a53b027a6af110da2902bbd35fe792b0fa7ffb9e..f5e1eb263e06c8d20644a53303547adc449fbbd9 100644
+index a53b027..f5e1eb2 100644
 --- a/KnuthSkilling/Bridges/MathlibBridge.lean
 +++ b/KnuthSkilling/Bridges/MathlibBridge.lean
 @@ -68,12 +68,12 @@ def instAddCommMonoid {α : Type*} [KnuthSkillingAlgebraBase α]
@@ -177,7 +177,7 @@ index a53b027a6af110da2902bbd35fe792b0fa7ffb9e..f5e1eb263e06c8d20644a53303547adc
      ext
      simpa [val_add] using (op_assoc x.val y.val z.val)
 diff --git a/KnuthSkilling/Core/HeytingBounds.lean b/KnuthSkilling/Core/HeytingBounds.lean
-index 22bd0f3889030fe1952d3e8ecba49ef0d3192e15..ce2554344982176a65458803fbb97c957c8fbf8c 100644
+index 22bd0f3..ce25543 100644
 --- a/KnuthSkilling/Core/HeytingBounds.lean
 +++ b/KnuthSkilling/Core/HeytingBounds.lean
 @@ -186,25 +186,73 @@ theorem heytingWidth_nonneg (ν : ModularValuation α) (a : α) : 0 ≤ heytingW
@@ -260,7 +260,7 @@ index 22bd0f3889030fe1952d3e8ecba49ef0d3192e15..ce2554344982176a65458803fbb97c95
  - In classical logic: knowing ¬a tells you everything about a
  - In intuitionistic logic: ¬a only bounds a from above
 diff --git a/KnuthSkilling/Core/HeytingValuation.lean b/KnuthSkilling/Core/HeytingValuation.lean
-index 076377366b1a4aee9ad37650192398c71109e7ff..0df84ab34a4c5bfd620ec9601c593019fe4e5d67 100644
+index 0763773..0df84ab 100644
 --- a/KnuthSkilling/Core/HeytingValuation.lean
 +++ b/KnuthSkilling/Core/HeytingValuation.lean
 @@ -1,5 +1,5 @@
@@ -293,7 +293,7 @@ index 076377366b1a4aee9ad37650192398c71109e7ff..0df84ab34a4c5bfd620ec9601c593019
  ## References
  
 diff --git a/KnuthSkilling/Core/LEMSatisfiability.lean b/KnuthSkilling/Core/LEMSatisfiability.lean
-index d6faad5eb401f7fa6c159430094351a402868a68..fa395f096ba7e24cfe75997efc9552b71ef4f2eb 100644
+index d6faad5..fa395f0 100644
 --- a/KnuthSkilling/Core/LEMSatisfiability.lean
 +++ b/KnuthSkilling/Core/LEMSatisfiability.lean
 @@ -153,7 +153,11 @@ inductive Chain3 : Type
@@ -310,7 +310,7 @@ index d6faad5eb401f7fa6c159430094351a402868a68..fa395f096ba7e24cfe75997efc9552b7
  namespace Chain3
  
 diff --git a/KnuthSkilling/Core/RegularityLEMCounterexample.lean b/KnuthSkilling/Core/RegularityLEMCounterexample.lean
-index aec3ba0cd17e9cf8f332b6f4e7b5e30fd5d85afa..6d3defb9da617058f038c3a0cef19d3b23d3f241 100644
+index aec3ba0..6d3defb 100644
 --- a/KnuthSkilling/Core/RegularityLEMCounterexample.lean
 +++ b/KnuthSkilling/Core/RegularityLEMCounterexample.lean
 @@ -145,7 +145,11 @@ inductive H5 : Type
@@ -327,7 +327,7 @@ index aec3ba0cd17e9cf8f332b6f4e7b5e30fd5d85afa..6d3defb9da617058f038c3a0cef19d3b
  namespace H5
  
 diff --git a/KnuthSkilling/Core/SymmetricalFoundation.lean b/KnuthSkilling/Core/SymmetricalFoundation.lean
-index e9179c893e74323d3146d142d502b99692d5c943..a7e5f0a3dfa52f22954e0f7a6e862fc762c48462 100644
+index e9179c8..a7e5f0a 100644
 --- a/KnuthSkilling/Core/SymmetricalFoundation.lean
 +++ b/KnuthSkilling/Core/SymmetricalFoundation.lean
 @@ -333,7 +333,7 @@ theorem mean_bornRule_sum_unit_phases :
@@ -340,7 +340,7 @@ index e9179c893e74323d3146d142d502b99692d5c943..a7e5f0a3dfa52f22954e0f7a6e862fc7
      exact Continuous.intervalIntegrable (by continuity) _ _
  
 diff --git a/KnuthSkilling/Core/TotalityImprecision.lean b/KnuthSkilling/Core/TotalityImprecision.lean
-index 48284ba8f158e3fb8c10a6219eb640e2126c4c0a..e1ee9845e961369bb38f2ceb89d476f722ca6e78 100644
+index 48284ba..e1ee984 100644
 --- a/KnuthSkilling/Core/TotalityImprecision.lean
 +++ b/KnuthSkilling/Core/TotalityImprecision.lean
 @@ -1,32 +1,30 @@
@@ -602,7 +602,7 @@ index 48284ba8f158e3fb8c10a6219eb640e2126c4c0a..e1ee9845e961369bb38f2ceb89d476f7
  
  end KnuthSkilling.TotalityImprecision
 diff --git a/KnuthSkilling/Examples/ImpreciseOn7Element.lean b/KnuthSkilling/Examples/ImpreciseOn7Element.lean
-index 19a45593b58d1ed174958cdc3dc3efb3865f36e5..8ebf82cb2190543e7d4101089bedd3976c535721 100644
+index 19a4559..8ebf82c 100644
 --- a/KnuthSkilling/Examples/ImpreciseOn7Element.lean
 +++ b/KnuthSkilling/Examples/ImpreciseOn7Element.lean
 @@ -57,7 +57,11 @@ inductive ConfigState
@@ -619,7 +619,7 @@ index 19a45593b58d1ed174958cdc3dc3efb3865f36e5..8ebf82cb2190543e7d4101089bedd397
  namespace ConfigState
  
 diff --git a/KnuthSkilling/Examples/PreciseVsImpreciseGrounded.lean b/KnuthSkilling/Examples/PreciseVsImpreciseGrounded.lean
-index 7a11ab5e9cdd4abd86fd299bc42729439f5a9da9..5753d634820a3c4c3e44a60b56ba390570f7e74e 100644
+index 7a11ab5..5753d63 100644
 --- a/KnuthSkilling/Examples/PreciseVsImpreciseGrounded.lean
 +++ b/KnuthSkilling/Examples/PreciseVsImpreciseGrounded.lean
 @@ -41,7 +41,11 @@ inductive State
@@ -636,7 +636,7 @@ index 7a11ab5e9cdd4abd86fd299bc42729439f5a9da9..5753d634820a3c4c3e44a60b56ba3905
  /-- Events are subsets of states, forming a Boolean algebra.
  
 diff --git a/KnuthSkilling/Experimental/RepresentationTheorem/Explorations/AffineNoSeparation.lean b/KnuthSkilling/Experimental/RepresentationTheorem/Explorations/AffineNoSeparation.lean
-index d6668610f71fbd2673913b5ff3271d3995620241..0798b6b3f164975a06f06e5d520555dfd2b14ab0 100644
+index d666861..0798b6b 100644
 --- a/KnuthSkilling/Experimental/RepresentationTheorem/Explorations/AffineNoSeparation.lean
 +++ b/KnuthSkilling/Experimental/RepresentationTheorem/Explorations/AffineNoSeparation.lean
 @@ -57,7 +57,10 @@ def fst : Aff → ℕ
@@ -701,7 +701,7 @@ index d6668610f71fbd2673913b5ff3271d3995620241..0798b6b3f164975a06f06e5d520555df
    exact this hn'
  
 diff --git a/KnuthSkilling/ShoreJohnson/Proof.lean b/KnuthSkilling/ShoreJohnson/Proof.lean
-index 6e6178d6cef98439bca310d10f8c308e1ecfe4d9..632b055e59e38af8d90a2b04189d4d8b497ff892 100644
+index 6e6178d..632b055 100644
 --- a/KnuthSkilling/ShoreJohnson/Proof.lean
 +++ b/KnuthSkilling/ShoreJohnson/Proof.lean
 @@ -238,7 +238,7 @@ theorem mul_cauchy_Ioc_eq_const_mul_log
@@ -714,7 +714,7 @@ index 6e6178d6cef98439bca310d10f8c308e1ecfe4d9..632b055e59e38af8d90a2b04189d4d8b
  
    have hψ_add : CauchyEquation ψ := by
 diff --git a/KnuthSkilling/Variational/Main.lean b/KnuthSkilling/Variational/Main.lean
-index bb4b5c3ddf44a3e51ec9c85b517746f4343b28fa..a793b122e6d18d6ee98bb809f75e53e4b2b619e4 100644
+index bb4b5c3..a793b12 100644
 --- a/KnuthSkilling/Variational/Main.lean
 +++ b/KnuthSkilling/Variational/Main.lean
 @@ -186,11 +186,11 @@ theorem cauchyEquation_measurable_linear (f : ℝ → ℝ)
@@ -742,7 +742,7 @@ index bb4b5c3ddf44a3e51ec9c85b517746f4343b28fa..a793b122e6d18d6ee98bb809f75e53e4
    -- Step 6: Apply Cauchy solution
    obtain ⟨C, hC⟩ := cauchyEquation_measurable_linear _ hpsi_cauchy hpsi_measurable
 diff --git a/UniversalAI/BayesianAgents.lean b/UniversalAI/BayesianAgents.lean
-index b6a7b0e4c684c9f94a17ebe16e7245cf28af0b23..45adac31d60c25e966e3c91c83321fc6bb647128 100644
+index b6a7b0e..45adac3 100644
 --- a/UniversalAI/BayesianAgents.lean
 +++ b/UniversalAI/BayesianAgents.lean
 @@ -55,7 +55,11 @@ inductive Action : Type
@@ -759,7 +759,7 @@ index b6a7b0e4c684c9f94a17ebe16e7245cf28af0b23..45adac31d60c25e966e3c91c83321fc6
  /-- Observations from the environment (binary for simplicity). -/
  abbrev Observation := Bool
 diff --git a/UniversalAI/InfiniteHistory.lean b/UniversalAI/InfiniteHistory.lean
-index 9056f4772343397107321877a9e6c5720de8dc0b..14cb86e997c8f0c7bda91248b3a452b596cd3baa 100644
+index 9056f47..14cb86e 100644
 --- a/UniversalAI/InfiniteHistory.lean
 +++ b/UniversalAI/InfiniteHistory.lean
 @@ -224,7 +224,8 @@ theorem measurable_discountedUtilityTrunc
@@ -773,7 +773,7 @@ index 9056f4772343397107321877a9e6c5720de8dc0b..14cb86e997c8f0c7bda91248b3a452b5
  omit [MeasurableSpace Action] [MeasurableSpace Percept] in
  theorem summable_discountedUtility_of_bound
 diff --git a/lake-manifest.json b/lake-manifest.json
-index ee4ffc964e870a39c4109cbb55ab66db2b95d0f3..87127240119b5ddb4f570cca48f64c2eef207cdf 100644
+index ee4ffc9..8712724 100644
 --- a/lake-manifest.json
 +++ b/lake-manifest.json
 @@ -1,106 +1,129 @@
@@ -1013,7 +1013,7 @@ index ee4ffc964e870a39c4109cbb55ab66db2b95d0f3..87127240119b5ddb4f570cca48f64c2e
 +  "fixedToolchain": false
 +}
 diff --git a/lakefile.toml b/lakefile.toml
-index 17c884b298aea7d49b1db0c3edc934a2a2c97178..afcd85b2792889f776c30770ecf747a00f3e479c 100644
+index 17c884b..afcd85b 100644
 --- a/lakefile.toml
 +++ b/lakefile.toml
 @@ -3,7 +3,6 @@ version = "0.1.0"
@@ -1040,7 +1040,7 @@ index 17c884b298aea7d49b1db0c3edc934a2a2c97178..afcd85b2792889f776c30770ecf747a0
 -rev = "v4.31.0"
 +rev = "0df444a360eaa60ab8c11dca51a86af692955474"
 diff --git a/lean-toolchain b/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8..a8afa7d 100644
 --- a/lean-toolchain
 +++ b/lean-toolchain
 @@ -1 +1 @@

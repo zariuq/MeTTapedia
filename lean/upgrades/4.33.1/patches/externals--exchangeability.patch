@@ -1,5 +1,5 @@
 diff --git a/Exchangeability/DeFinetti/ViaKoopman/InfraGeneralized.lean b/Exchangeability/DeFinetti/ViaKoopman/InfraGeneralized.lean
-index 58d1f19fe15ff0dcfa264d02089a881dba1a9fec..d62ed09c83752dfb856120cbbf12adf407d89d2b 100644
+index 58d1f19f..d62ed09c 100644
 --- a/Exchangeability/DeFinetti/ViaKoopman/InfraGeneralized.lean
 +++ b/Exchangeability/DeFinetti/ViaKoopman/InfraGeneralized.lean
 @@ -553,7 +553,7 @@ lemma integrable_mul_of_ae_bdd_left
@@ -12,7 +12,7 @@ index 58d1f19fe15ff0dcfa264d02089a881dba1a9fec..d62ed09c83752dfb856120cbbf12adf4
  /-- Conditional expectation is L¹-Lipschitz: moving the integrand changes the CE by at most
  the L¹ distance. This is a standard property following from Jensen's inequality. -/
 diff --git a/Exchangeability/DeFinetti/ViaL2/BlockAvgDef.lean b/Exchangeability/DeFinetti/ViaL2/BlockAvgDef.lean
-index d8a4f0d8703ee6a580ded9987da2159eaa8578de..03c36d596cc172e0151ac3a81058c05c3cc019b4 100644
+index d8a4f0d8..03c36d59 100644
 --- a/Exchangeability/DeFinetti/ViaL2/BlockAvgDef.lean
 +++ b/Exchangeability/DeFinetti/ViaL2/BlockAvgDef.lean
 @@ -59,7 +59,7 @@ lemma blockAvg_measurable
@@ -25,7 +25,7 @@ index d8a4f0d8703ee6a580ded9987da2159eaa8578de..03c36d596cc172e0151ac3a81058c05c
  lemma blockAvg_abs_le_one
      {Ω α : Type*} [MeasurableSpace Ω]
 diff --git a/lake-manifest.json b/lake-manifest.json
-index 1557670901736331c470d2fb12da7a1cbcce085f..a53784ded1b28835463eb4ed23149512ddacb7a7 100644
+index 15576709..a53784de 100644
 --- a/lake-manifest.json
 +++ b/lake-manifest.json
 @@ -1,96 +1,117 @@
@@ -243,7 +243,7 @@ index 1557670901736331c470d2fb12da7a1cbcce085f..a53784ded1b28835463eb4ed23149512
 +  "fixedToolchain": false
 +}
 diff --git a/lakefile.toml b/lakefile.toml
-index 958f6e39805df285296f70598e107795c7116aef..abcfd30422e451ebdfaf6b6e09a8c84f624d841c 100644
+index 958f6e39..abcfd304 100644
 --- a/lakefile.toml
 +++ b/lakefile.toml
 @@ -7,7 +7,7 @@ weakLeanArgs = ["-j", "1"]
@@ -256,7 +256,7 @@ index 958f6e39805df285296f70598e107795c7116aef..abcfd30422e451ebdfaf6b6e09a8c84f
  [[lean_lib]]
  name = "ForMathlib"
 diff --git a/lean-toolchain b/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8b..a8afa7d1 100644
 --- a/lean-toolchain
 +++ b/lean-toolchain
 @@ -1 +1 @@

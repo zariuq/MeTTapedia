@@ -1,5 +1,23 @@
+diff --git a/Metamath/AllM.lean b/Metamath/AllM.lean
+index f159abd..db59d20 100644
+--- a/Metamath/AllM.lean
++++ b/Metamath/AllM.lean
+@@ -92,7 +92,7 @@ theorem allM_true_of_mem {α} (p : α → Option Bool) {xs : List α}
+ This eliminates eta-expansion issues when pattern-matching lambdas are
+ elaborated differently than projection lambdas.
+ -/
+-@[simp] theorem pair_eta₂ {α β γ} (f : α → β → γ) :
++theorem pair_eta₂ {α β γ} (f : α → β → γ) :
+   (fun (p : α × β) => f p.fst p.snd) = (fun (a, b) => f a b) := rfl
+ 
+ /-- Congruence for allM in the function argument.
+@@ -125,4 +125,3 @@ end List
+ 
+ **Next step:** Phase 3 - Implement toSubstTyped using these lemmas
+ -/
+-
 diff --git a/Metamath/DeclarativeSpec.lean b/Metamath/DeclarativeSpec.lean
-index 29576e410d216c0c2814a2752647fa3651567ed1..3823d4ebcdcc910983f0d7f85af9544602f709ff 100644
+index 29576e4..3823d4e 100644
 --- a/Metamath/DeclarativeSpec.lean
 +++ b/Metamath/DeclarativeSpec.lean
 @@ -50,9 +50,7 @@ variables are replaced by the substitution function. -/
@@ -41,8 +59,121 @@ index 29576e410d216c0c2814a2752647fa3651567ed1..3823d4ebcdcc910983f0d7f85af95446
    | _, h => nomatch h
  
  theorem HH_cons {axs Γ σ c f hyps}
+diff --git a/Metamath/ErrorCodeSemantics.lean b/Metamath/ErrorCodeSemantics.lean
+index e808cb1..53bd03d 100644
+--- a/Metamath/ErrorCodeSemantics.lean
++++ b/Metamath/ErrorCodeSemantics.lean
+@@ -1,14 +1,14 @@
+ /-
+-ErrorCodeSemantics — Total evidence extraction for all 55 ParseErrorCode constructors.
++ErrorCodeSemantics — Total evidence extraction for every ParseErrorCode constructor.
+ 
+ This module proves that every decoded parser error code carries a concrete,
+ family-specific evidence payload.  Combined with the existing semantic layer
+-(`parseErrorCode?_ruleSemantic_sound`, 55/55), this gives a fully certified
++(`parseErrorCode?_ruleSemantic_sound`, all constructors), this gives a fully certified
+ error-code ↔ evidence-shape correspondence.
+ 
+ **Main results (all sorry-free):**
+ 
+-1. `CodePayloadWitness`  — per-code evidence shape predicate (55 branches)
++1. `CodePayloadWitness`  — per-code evidence shape predicate
+ 2. `DB.parseErrorCode?_guardFacts_total` — total DB-level evidence extraction
+ 3. `checkBytes_parseErrorCode?_guardFacts_total` — bytes-level lift
+ 4. `checkBytes_parseErrorCode?_fullyCertified` — payload ∧ semantic bundle
+@@ -34,7 +34,8 @@ open Metamath.Verify
+ whose shape matches the error family and constructor for `code`.
+ Each branch is the *tightest* statement extractable from the evidence layer. -/
+ 
+-/-- Per-code evidence shape predicate.  55 branches, one per `ParseErrorCode` constructor. -/
++/-- Per-code evidence shape predicate, one branch per `ParseErrorCode`
++constructor. -/
+ @[simp] def CodePayloadWitness (s : DB) : ParseErrorCode → Prop
+   -- CompressedSaveError (1)
+   | .cantSaveEmptyStack =>
+@@ -61,7 +62,7 @@ Each branch is the *tightest* statement extractable from the evidence layer. -/
+       ∃ tok, s.errorEvidence? = some (.tokenForm (.unknownStatementType tok))
+   | .nestedCommentDelimiter =>
+       s.errorEvidence? = some (.tokenForm .nestedCommentDelimiter)
+-  -- ScopeDeclError (13)
++  -- ScopeDeclError
+   | .cantPopGlobalScope => s.errorEvidence? = some (.scopeDecl .cantPopGlobalScope)
+   | .constMustBeOutermost => s.errorEvidence? = some (.scopeDecl .constMustBeOutermost)
+   | .duplicateSymbolOrAssert =>
+@@ -77,6 +78,9 @@ Each branch is the *tightest* statement extractable from the evidence layer. -/
+       ∃ v, s.errorEvidence? = some (.scopeDecl (.variableAlreadyHasFloatHyp v))
+   | .duplicateDisjointVariable =>
+       ∃ sym, s.errorEvidence? = some (.scopeDecl (.duplicateDisjointVariable sym))
++  | .disjointStatementTooShort =>
++      ∃ actual,
++        s.errorEvidence? = some (.scopeDecl (.disjointStatementTooShort actual))
+   | .tokenNotInScope =>
+       ∃ sym, s.errorEvidence? = some (.scopeDecl (.tokenNotInScope sym))
+   | .tokenNotVariable =>
+@@ -162,7 +166,7 @@ matching the `CodePayloadWitness` shape.  The proof combines:
+   `parseErrorCode?_ruleSemantic_sound` + family case analysis) -/
+ 
+ /-- Total evidence extraction: every decoded code has a `CodePayloadWitness`.
+-Covers all 55 `ParseErrorCode` constructors. -/
++Covers every `ParseErrorCode` constructor. -/
+ theorem DB.parseErrorCode?_guardFacts_total (s : DB) (code : ParseErrorCode) :
+     s.parseErrorCode? = some code → CodePayloadWitness s code := by
+   intro h
+@@ -357,6 +361,8 @@ theorem DB.parseErrorCode?_guardFacts_total (s : DB) (code : ParseErrorCode) :
+                DB.ScopeDeclViolation] at h_rule
+     obtain ⟨err, h_ev, h_code_eq⟩ := h_rule
+     cases err <;> simp_all [ScopeDeclError.code]
++  | disjointStatementTooShort =>
++    exact DB.parseErrorCode?_disjointStatementTooShort_payload_inversion s h
+   | tokenNotInScope =>
+     exact DB.parseErrorCode?_tokenNotInScope_guardFacts s h
+   | tokenNotVariable =>
+diff --git a/Metamath/KernelClean.lean b/Metamath/KernelClean.lean
+index 4cb0fdc..533b3de 100644
+--- a/Metamath/KernelClean.lean
++++ b/Metamath/KernelClean.lean
+@@ -2403,9 +2403,10 @@ This lemma eliminates eta-expansion issues between different lambda representati
+ - `(fun cv => checkFloat σ cv.1 cv.2)` (projection form)
+ 
+ These are definitionally equal but elaboration doesn't always recognize this.
+-The @[simp] attribute enables automatic normalization during proof search.
++The lemma is invoked explicitly where this normalization is needed; making a
++lambda-headed equality globally simp-active causes overly broad matching.
+ -/
+-@[simp] theorem uncurry_checkFloat
++theorem uncurry_checkFloat
+     (σ : Std.HashMap String Verify.Formula) :
+   (fun (cv : Spec.Constant × Spec.Variable) => checkFloat σ cv.1 cv.2) =
+   (fun (c, v) => checkFloat σ c v) := by
+@@ -2524,7 +2525,7 @@ theorem toSubstTyped_of_allM_true
+ 
+ section
+ 
+-attribute [-simp] uncurry_checkFloat allM_pair_eta_checkFloat List.pair_eta₂
++attribute [-simp] allM_pair_eta_checkFloat
+ 
+ theorem toSubstTyped_sigma_of_lookup
+     (fr : Spec.Frame) (σ_impl : Std.HashMap String Verify.Formula)
+diff --git a/Metamath/KernelExtras.lean b/Metamath/KernelExtras.lean
+index e24c3a7..d36a388 100644
+--- a/Metamath/KernelExtras.lean
++++ b/Metamath/KernelExtras.lean
+@@ -50,7 +50,7 @@ This eliminates eta-expansion issues between different lambda representations:
+ 
+ Used throughout checkHyp proofs for allM/match alignment.
+ -/
+-@[simp] theorem pair_eta₂ {α β γ} (f : α → β → γ) :
++theorem pair_eta₂ {α β γ} (f : α → β → γ) :
+   (fun p : α × β => f p.1 p.2) = (fun (a, b) => f a b) := rfl
+ 
+ /-! ## Arithmetic helpers for offset calculations -/
+@@ -235,4 +235,3 @@ that `k == k'` would imply `k = k'` for lawful `BEq`, contradicting `h`.
+ end HashMap
+ 
+ end KernelExtras
+-
 diff --git a/Metamath/Legacy/CompatThms.lean b/Metamath/Legacy/CompatThms.lean
-index 24528b341d3c5459a0517d4c39042bd72d18367a..69670fe34eb735cef0819ead1d8398beca837fcf 100644
+index 24528b3..69670fe 100644
 --- a/Metamath/Legacy/CompatThms.lean
 +++ b/Metamath/Legacy/CompatThms.lean
 @@ -96,7 +96,7 @@ theorem checkSinglePass_eq_checkTwoPassLegacy_of_sharedExpandedBytes
@@ -64,10 +195,75 @@ index 24528b341d3c5459a0517d4c39042bd72d18367a..69670fe34eb735cef0819ead1d8398be
  /-- Specialized IO bridge: if both front-ends report the same include read-failure
  payload, both checkers are equal. -/
 diff --git a/Metamath/ParserLoopInduction.lean b/Metamath/ParserLoopInduction.lean
-index e34b97039b34a827d169848436cc44c367dd53ef..27b596a0729e372e0fe1484b84259feb29943ca5 100644
+index e34b970..c833d5b 100644
 --- a/Metamath/ParserLoopInduction.lean
 +++ b/Metamath/ParserLoopInduction.lean
-@@ -1485,7 +1485,6 @@ theorem feedTokens_hyps_behavior (s : ParserState) (arr : Array Sym) (p : Tokens
+@@ -90,14 +90,17 @@ theorem ParserState_mkErrorFromEvidence_sets_error_bool (s : ParserState) (pos :
+   simp [ParserState.mkErrorFromEvidence, ParserState.withDB]
+ 
+ /-- `requestInclude` always sets an interrupt-like parser error. -/
+-theorem ParserState_requestInclude_sets_error (s : ParserState) (includePath : String) :
+-    (s.requestInclude includePath).db.error? ≠ none := by
++theorem ParserState_requestInclude_sets_error (s : ParserState)
++    (resume : TokenParser) (includePath : String) :
++    (s.requestInclude resume includePath).db.error? ≠ none := by
+   simp [ParserState.requestInclude]
+ 
+ /-- Boolean form of `ParserState_requestInclude_sets_error`. -/
+-theorem ParserState_requestInclude_sets_error_bool (s : ParserState) (includePath : String) :
+-    (s.requestInclude includePath).db.error = true := by
+-  exact (error_iff_error?_ne_none _).2 (ParserState_requestInclude_sets_error s includePath)
++theorem ParserState_requestInclude_sets_error_bool (s : ParserState)
++    (resume : TokenParser) (includePath : String) :
++    (s.requestInclude resume includePath).db.error = true := by
++  exact (error_iff_error?_ne_none _).2
++    (ParserState_requestInclude_sets_error s resume includePath)
+ /-- label either preserves db or sets error -/
+ theorem label_preserves_error (s : ParserState) (pos : Pos) (tk : ByteSlice) :
+     s.db.error? ≠ none → (s.label pos tk).db.error? ≠ none := by
+@@ -547,7 +550,10 @@ theorem feedToken_preserves_error (s : ParserState) (pos : Nat) (tk : ByteSlice)
+         · exact h_err
+       · simp [h_comment, h_include]
+         split
+-        · exact h_err
++        · split
++          · exact ParserState_mkErrorFromEvidence_sets_error
++              s (s.mkPos pos) _
++          · exact h_err
+         · apply withMath_preserves_error
+           · intro s' tk' h_err'
+             exact djvars_loop_preserves_error arr s' (s.mkPos pos) tk' h_err'
+@@ -588,7 +594,7 @@ theorem feedToken_preserves_error (s : ParserState) (pos : Nat) (tk : ByteSlice)
+           · exact h_err
+           · exact ParserState_mkErrorFromEvidence_sets_error s pos' _
+         · exact ParserState_mkErrorFromEvidence_sets_error s pos' _
+-  | includePath includePos =>
++  | includePath resume includePos =>
+     by_cases h_comment : tk.eqArray "$(".toAscii = true
+     · simp [h_comment, h_err]
+     · by_cases h_include : tk.eqArray "$[".toAscii = true
+@@ -604,9 +610,9 @@ theorem feedToken_preserves_error (s : ParserState) (pos : Nat) (tk : ByteSlice)
+           split
+           · exact ParserState_mkErrorFromEvidence_sets_error s includePos _
+           · split
+-            · exact ParserState_requestInclude_sets_error s _
++            · exact ParserState_requestInclude_sets_error s resume _
+             · exact h_err
+-  | includeClose includePos includePath =>
++  | includeClose resume includePos includePath =>
+     by_cases h_comment : tk.eqArray "$(".toAscii = true
+     · simp [h_comment, h_err]
+     · by_cases h_include : tk.eqArray "$[".toAscii = true
+@@ -616,7 +622,7 @@ theorem feedToken_preserves_error (s : ParserState) (pos : Nat) (tk : ByteSlice)
+         · exact h_err
+       · simp [h_comment, h_include]
+         split
+-        · exact ParserState_requestInclude_sets_error s includePath
++        · exact ParserState_requestInclude_sets_error s resume includePath
+         · exact ParserState_mkErrorFromEvidence_sets_error s includePos _
+   | proof pr =>
+     by_cases h_comment : tk.eqArray "$(".toAscii = true
+@@ -1485,7 +1491,6 @@ theorem feedTokens_hyps_behavior (s : ParserState) (arr : Array Sym) (p : Tokens
          right; right
          apply withAt_propagates_error
          simp [ParserState.mkErrorFromEvidence, ParserState.withDB]
@@ -75,7 +271,7 @@ index e34b97039b34a827d169848436cc44c367dd53ef..27b596a0729e372e0fe1484b84259feb
        | none =>
          simp only [ParserState.withDB, Id_bind_eq]
          by_cases h_ok : (s.db.insertHyp pos l true arr).error? = none
-@@ -1517,7 +1516,6 @@ theorem feedTokens_hyps_behavior (s : ParserState) (arr : Array Sym) (p : Tokens
+@@ -1517,7 +1522,6 @@ theorem feedTokens_hyps_behavior (s : ParserState) (arr : Array Sym) (p : Tokens
          cases h_int : s.db.interrupt with
          | true =>
              simp [h_int, ParserState.withDB, Verify.DB.error]
@@ -83,8 +279,52 @@ index e34b97039b34a827d169848436cc44c367dd53ef..27b596a0729e372e0fe1484b84259feb
          | false =>
              simp
              left
+@@ -1693,7 +1697,12 @@ theorem feedToken_frame_behavior (s : ParserState) (pos : Nat) (tk : ByteSlice)
+       ·
+         simp [h_comment, h_include]
+         split
+-        · left; rfl
++        · split
++          · left
++            simp [ParserState.mkErrorFromEvidence,
++              ParserState.withDB, DB.mkErrorFromEvidence,
++              DB.mkErrorWithEvidence]
++          · left; rfl
+         ·
+           cases djvars_withMath_hyps_behavior arr s (s.mkPos pos) tk with
+           | inl h => left; exact h
+@@ -1799,7 +1808,7 @@ theorem feedToken_frame_behavior (s : ParserState) (pos : Nat) (tk : ByteSlice)
+         · right; right; right
+           simp [h_kw]
+           exact ParserState_mkErrorFromEvidence_sets_error_bool s pos' _
+-  | includePath includePos =>
++  | includePath resume includePos =>
+     by_cases h_comment : tk.eqArray "$(".toAscii = true
+     · left; simp [h_comment]
+     · by_cases h_include : tk.eqArray "$[".toAscii = true
+@@ -1820,9 +1829,9 @@ theorem feedToken_frame_behavior (s : ParserState) (pos : Nat) (tk : ByteSlice)
+             exact ParserState_mkErrorFromEvidence_sets_error_bool s includePos _
+           · split
+             · right; right; right
+-              exact ParserState_requestInclude_sets_error_bool s _
++              exact ParserState_requestInclude_sets_error_bool s resume _
+             · left; rfl
+-  | includeClose includePos includePath =>
++  | includeClose resume includePos includePath =>
+     by_cases h_comment : tk.eqArray "$(".toAscii = true
+     · left; simp [h_comment]
+     · by_cases h_include : tk.eqArray "$[".toAscii = true
+@@ -1835,7 +1844,7 @@ theorem feedToken_frame_behavior (s : ParserState) (pos : Nat) (tk : ByteSlice)
+         simp [h_comment, h_include]
+         split
+         · right; right; right
+-          exact ParserState_requestInclude_sets_error_bool s includePath
++          exact ParserState_requestInclude_sets_error_bool s resume includePath
+         · right; right; right
+           exact ParserState_mkErrorFromEvidence_sets_error_bool s includePos _
+   | proof pr =>
 diff --git a/Metamath/ParserOperations.lean b/Metamath/ParserOperations.lean
-index b2bb5c837633d9cab4e429585591b60db915fd0e..1e694de920376397457334fa1abb228c8d870618 100644
+index b2bb5c8..e16654d 100644
 --- a/Metamath/ParserOperations.lean
 +++ b/Metamath/ParserOperations.lean
 @@ -4115,7 +4115,6 @@ theorem feedTokens_ax_db (s : ParserState) (arr : Array Sym) (pos : Pos) (l : St
@@ -111,8 +351,746 @@ index b2bb5c837633d9cab4e429585591b60db915fd0e..1e694de920376397457334fa1abb228c
    calc
      (s.feedTokens arr ⟨.ess, pos, l⟩).db
          = (ParserState.withAt l (fun _ =>
+@@ -4486,6 +4483,45 @@ theorem feedTokens_success_float_shape
+           (.scopeDecl .expectedConstantAndVariable)
+     exact (h_bad h_success).elim
+ 
++/-- Every successful non-theorem formula delimiter returns the token parser to
++statement-boundary mode.  The theorem case is deliberately excluded because
++its delimiter enters proof mode instead. -/
++theorem feedTokens_nonthm_success_tokp_start
++    (s : ParserState) (arr : Array Sym) (kind : TokensKind)
++    (pos : Pos) (label : String) (nonTheorem : kind ≠ .thm)
++    (success : (s.feedTokens arr ⟨kind, pos, label⟩).db.error? = none) :
++    (s.feedTokens arr ⟨kind, pos, label⟩).tokp = .start := by
++  have head : Formula.hasConstHead arr = true :=
++    feedTokens_success_hasConstHead s arr ⟨kind, pos, label⟩ success
++  cases kind with
++  | float =>
++      have shape : Formula.isFloatShape arr = true := by
++        by_cases shape : Formula.isFloatShape arr = true
++        · exact shape
++        · have failure :
++              (s.feedTokens arr ⟨.float, pos, label⟩).db.error? ≠ none := by
++            simpa [ParserState.feedTokens, head, shape] using
++              withAt_mkErrorFromEvidence_error_ne_none label s pos
++                (.scopeDecl .expectedConstantAndVariable)
++          exact (failure success).elim
++      simp [ParserState.feedTokens, head, shape, ParserState.withAt_tokp]
++  | ess =>
++      have gate : ParserState.topLevelEssViolation? s.db = none := by
++        cases gate : ParserState.topLevelEssViolation? s.db with
++        | none => rfl
++        | some error =>
++            have failure :
++                (s.feedTokens arr ⟨.ess, pos, label⟩).db.error? ≠ none := by
++              simpa [ParserState.feedTokens, head, gate] using
++                withAt_mkErrorFromEvidence_error_ne_none label s pos
++                  (.scopeDecl error)
++            exact (failure success).elim
++      simp [ParserState.feedTokens, head, gate, ParserState.withAt_tokp]
++  | ax =>
++      simp [ParserState.feedTokens, head, ParserState.withAt_tokp]
++  | thm =>
++      exact (nonTheorem rfl).elim
++
+ theorem feedTokens_maintains_wf
+     (s : ParserState) (arr : Array Sym) (tokp : TokensParser)
+     (h_wf : WellFormedDB s.db)
+@@ -4750,6 +4786,10 @@ the claimed formula respects that frame.
+ def TokpInv (db : DB) : TokenParser → Prop
+   | .comment p =>
+       TokpInv db p
++  | .includePath resume _ =>
++      TokpInv db resume
++  | .includeClose resume _ _ =>
++      TokpInv db resume
+   | .djvars arr =>
+       ∀ v ∈ arr.toList, db.isVar v = true
+   | .math arr _ =>
+@@ -4791,6 +4831,27 @@ the current token-parser state satisfies `TokpInv`. -/
+ def ParserStateInv (s : ParserState) : Prop :=
+   WellFormedDB s.db ∧ WellScopedDBWithScopes s.db ∧ ScopesOk s.db ∧ TokpInv s.db s.tokp
+ 
++/-- Consuming an include request raised from an error-free state preserves the
++full parser invariant whenever the restored continuation satisfies its token
++mode component.  This is the invariant-level driver boundary used for token
++splicing. -/
++theorem clearIncludeRequest_requestInclude_maintains_stateInv
++    (s : ParserState) (resume : TokenParser) (includePath : String)
++    (h_inv : ParserStateInv s) (h_resume : TokpInv s.db resume)
++    (h_errorFree : s.db.error? = none) :
++    ParserStateInv
++      (clearIncludeRequest (s.requestInclude resume includePath)) := by
++  have h_state :
++      clearIncludeRequest (s.requestInclude resume includePath) =
++        { s with tokp := resume } := by
++    cases s with
++    | mk db tokp charp line linepos sourceFile =>
++        simp only [ParserState.requestInclude, clearIncludeRequest]
++        congr
++        exact h_errorFree.symm
++  rw [h_state]
++  exact ⟨h_inv.1, h_inv.2.1, h_inv.2.2.1, h_resume⟩
++
+ theorem FormulaSymbolsDeclared.nil (db : DB) :
+     FormulaSymbolsDeclared db (#[] : Formula) := by
+   intro s h_mem
+@@ -7731,6 +7792,64 @@ theorem djvars_loop_maintains_wf
+         simpa [h_gate] using h_success
+       exact (h_bad h_success').elim
+ 
++/-- An error-free `$d` terminator has accumulated at least two variables.
++This is the parser-side inversion of the Metamath book Section 4.2.4 arity
++requirement. -/
++theorem feedToken_djvars_terminator_size_ge_two
++    (s : ParserState) (i : Nat) (tk : ByteSlice) (arr : Array String)
++    (h_tokp : s.tokp = .djvars arr)
++    (h_open : tk.eqArray "$(".toAscii ≠ true)
++    (h_include : tk.eqArray "$[".toAscii ≠ true)
++    (h_end : tk.eqArray "$.".toAscii = true)
++    (h_success : (s.feedToken i tk).db.error? = none) :
++    2 ≤ arr.size := by
++  apply Nat.le_of_not_gt
++  intro h_short
++  have h_bad : (s.feedToken i tk).db.error? ≠ none := by
++    simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end,
++      h_short, ParserState.mkErrorFromEvidence,
++      ParserState.mkErrorWithEvidence, ParserState.mkError,
++      ParserState.withDB, DB.mkErrorWithEvidence, DB.mkError]
++  exact h_bad h_success
++
++/-- Gate-origin: at a `$d` terminator with fewer than two accumulated
++variables, `feedToken` emits exactly the structured too-short evidence,
++carrying the observed count.  Together with
++`feedToken_djvars_terminator_size_ge_two` this pins both directions at the
++branch: success iff at least two variables, this error iff fewer. -/
++theorem feedToken_djvars_short_terminator_evidence
++    (s : ParserState) (i : Nat) (tk : ByteSlice) (arr : Array String)
++    (h_tokp : s.tokp = .djvars arr)
++    (h_open : tk.eqArray "$(".toAscii ≠ true)
++    (h_include : tk.eqArray "$[".toAscii ≠ true)
++    (h_end : tk.eqArray "$.".toAscii = true)
++    (h_short : arr.size < 2) :
++    (s.feedToken i tk).db.errorEvidence? =
++      some (.scopeDecl (.disjointStatementTooShort arr.size)) := by
++  simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end,
++    h_short, ParserState.mkErrorFromEvidence,
++    ParserState.mkErrorWithEvidence, ParserState.withDB,
++    DB.mkErrorFromEvidence, DB.mkErrorWithEvidence]
++
++/-- Exact `$d` terminator gate: from an error-free input state, the parser
++accepts the terminator precisely when at least two distinct active variables
++have been accumulated. -/
++theorem feedToken_djvars_terminator_errorFree_iff_size_ge_two
++    (s : ParserState) (i : Nat) (tk : ByteSlice) (arr : Array String)
++    (h_tokp : s.tokp = .djvars arr)
++    (h_open : tk.eqArray "$(".toAscii ≠ true)
++    (h_include : tk.eqArray "$[".toAscii ≠ true)
++    (h_end : tk.eqArray "$.".toAscii = true)
++    (h_errorFree : s.db.error? = none) :
++    (s.feedToken i tk).db.error? = none ↔ 2 ≤ arr.size := by
++  constructor
++  · exact feedToken_djvars_terminator_size_ge_two s i tk arr
++      h_tokp h_open h_include h_end
++  · intro h_size
++    have h_notShort : ¬ arr.size < 2 := Nat.not_lt.mpr h_size
++    simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end,
++      h_notShort, h_errorFree]
++
+ /-- In `.djvars` mode, successful `feedToken` preserves `WellFormedDB`. -/
+ theorem feedToken_djvars_maintains_wf
+     (s : ParserState) (i : Nat) (tk : ByteSlice) (arr : Array String)
+@@ -7757,8 +7876,12 @@ theorem feedToken_djvars_maintains_wf
+         simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+       simpa [h_db_eq] using h_wf
+     · by_cases h_end : tk.eqArray "$.".toAscii
+-      · have h_db_eq : (s.feedToken i tk).db = s.db := by
+-          simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end]
++      · have h_size := feedToken_djvars_terminator_size_ge_two
++          s i tk arr h_tokp h_open h_include h_end h_success
++        have h_not_short : ¬ arr.size < 2 := Nat.not_lt.mpr h_size
++        have h_db_eq : (s.feedToken i tk).db = s.db := by
++          simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end,
++            h_not_short]
+         simpa [h_db_eq] using h_wf
+       · by_cases h_math_ok : (toMath tk).fst = true
+         · let tk' := (toMath tk).snd
+@@ -7856,8 +7979,12 @@ theorem feedToken_djvars_maintains_scopedWithScopes
+         simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+       simpa [h_db_eq] using h_scoped
+     · by_cases h_end : tk.eqArray "$.".toAscii
+-      · have h_db_eq : (s.feedToken i tk).db = s.db := by
+-          simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end]
++      · have h_size := feedToken_djvars_terminator_size_ge_two
++          s i tk arr h_tokp h_open h_include h_end h_success
++        have h_not_short : ¬ arr.size < 2 := Nat.not_lt.mpr h_size
++        have h_db_eq : (s.feedToken i tk).db = s.db := by
++          simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end,
++            h_not_short]
+         simpa [h_db_eq] using h_scoped
+       · by_cases h_math_ok : (toMath tk).fst = true
+         · let tk' := (toMath tk).snd
+@@ -7921,8 +8048,12 @@ theorem feedToken_djvars_maintains_scopesOk
+         simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+       simpa [h_db_eq] using h_ok
+     · by_cases h_end : tk.eqArray "$.".toAscii
+-      · have h_db_eq : (s.feedToken i tk).db = s.db := by
+-          simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end]
++      · have h_size := feedToken_djvars_terminator_size_ge_two
++          s i tk arr h_tokp h_open h_include h_end h_success
++        have h_not_short : ¬ arr.size < 2 := Nat.not_lt.mpr h_size
++        have h_db_eq : (s.feedToken i tk).db = s.db := by
++          simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end,
++            h_not_short]
+         simpa [h_db_eq] using h_ok
+       · by_cases h_math_ok : (toMath tk).fst = true
+         · let tk' := (toMath tk).snd
+@@ -7969,7 +8100,11 @@ theorem feedToken_djvars_maintains_tokpInv
+         simpa [h_tokp] using h_tokp_inv
+       simpa [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none, TokpInv] using h_tokp'
+     · by_cases h_end : tk.eqArray "$.".toAscii
+-      · simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end, TokpInv]
++      · have h_size := feedToken_djvars_terminator_size_ge_two
++          s i tk arr h_tokp h_open h_include h_end h_success
++        have h_not_short : ¬ arr.size < 2 := Nat.not_lt.mpr h_size
++        simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end,
++          h_not_short, TokpInv]
+       · by_cases h_math_ok : (toMath tk).fst = true
+         · let tk' := (toMath tk).snd
+           have h_success_loop :
+@@ -8495,9 +8630,12 @@ theorem feedToken_proof_maintains_tokpInv
+                 ParserState.mkErrorFromEvidence, ParserState.mkErrorWithEvidence, ParserState.mkError,
+                 ParserState.withDB, DB.mkErrorWithEvidence, DB.mkError]
+             exact (h_bad h_success).elim
+-      have h_tokp_out : (s.feedToken i tk).tokp = .includePath (s.mkPos i) := by
++      have h_tokp_out :
++          (s.feedToken i tk).tokp = .includePath (.proof pr) (s.mkPos i) := by
++        simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
++      have h_db_out : (s.feedToken i tk).db = s.db := by
+         simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+-      simpa [h_tokp_out, TokpInv]
++      simpa [h_tokp_out, h_db_out, h_tokp, TokpInv] using h_tokp_inv
+     · let s0 : ParserState := { s with tokp := default }
+       by_cases h_end : tk.eqArray "$.".toAscii
+       · have h_tokp_start : (s0.finishProof pr).tokp = .start := finishProof_tokp_start s0 pr
+@@ -8552,9 +8690,13 @@ theorem feedToken_math_thm_delim_maintains_tokpInv
+               ParserState.mkErrorFromEvidence, ParserState.mkErrorWithEvidence, ParserState.mkError,
+               ParserState.withDB, DB.mkErrorWithEvidence, DB.mkError]
+           exact (h_bad h_success).elim
+-    have h_tokp_eq : (s.feedToken i tk).tokp = .includePath (s.mkPos i) := by
++    have h_tokp_eq :
++        (s.feedToken i tk).tokp =
++          .includePath (.math arr ⟨.thm, pos, label⟩) (s.mkPos i) := by
++      simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
++    have h_db_eq : (s.feedToken i tk).db = s.db := by
+       simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+-    simpa [h_tokp_eq, TokpInv]
++    simpa [h_tokp_eq, h_db_eq, TokpInv] using h_decl
+   · have h_success_feedTokens :
+       (s.feedTokens arr ⟨.thm, pos, label⟩).db.error? = none := by
+       simpa [ParserState.feedToken, h_tokp, h_open, h_include, h_delim] using h_success
+@@ -8656,7 +8798,8 @@ theorem feedToken_math_continue_maintains_tokpInv
+           exact (h_bad h_success).elim
+     have h_db_eq : (s.feedToken i tk).db = s.db := by
+       simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+-    have h_tokp_eq : (s.feedToken i tk).tokp = .includePath (s.mkPos i) := by
++    have h_tokp_eq :
++        (s.feedToken i tk).tokp = .includePath (.math arr p) (s.mkPos i) := by
+       simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+     simpa [h_db_eq, h_tokp_eq, TokpInv]
+   · by_cases h_math_ok : (toMath tk).fst = true
+@@ -9240,7 +9383,9 @@ theorem feedToken_maintains_tokpInv
+                       (s.mkErrorFromEvidence pos (.tokenForm (.unknownStatementType (toLabel tk).snd))).tokp := by
+                   simp [ParserState.mkErrorFromEvidence, ParserState.withDB, TokpInv, h_tokp]
+                 simpa [ParserState.feedToken, h_tokp, h_open, h_include, h_cmd] using h_inv_err
+-  | includePath includePos =>
++  | includePath resume includePos =>
++      have h_resume_inv : TokpInv s.db resume := by
++        simpa [h_tokp, TokpInv] using h_tokp_inv
+       by_cases h_open : tk.eqArray "$(".toAscii
+       · simpa [ParserState.feedToken, h_tokp, h_open, TokpInv]
+       · by_cases h_include : tk.eqArray "$[".toAscii
+@@ -9270,13 +9415,16 @@ theorem feedToken_maintains_tokpInv
+                 exact (h_bad h_success).elim
+             | ok includePath =>
+                 by_cases h_inline : closesInline
+-                · have h_req : (s.requestInclude includePath).db.error? ≠ none :=
+-                    Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error s includePath
+-                  have h_eq : s.feedToken i tk = s.requestInclude includePath := by
++                · have h_req : (s.requestInclude resume includePath).db.error? ≠ none :=
++                    Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error
++                      s resume includePath
++                  have h_eq : s.feedToken i tk = s.requestInclude resume includePath := by
+                     simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end, rawPath, closesInline, h_norm, h_inline]
+                   exact (h_req (by simpa [h_eq] using h_success)).elim
+                 · simpa [ParserState.feedToken, h_tokp, h_open, h_include, h_end, rawPath, closesInline, h_norm, h_inline, TokpInv]
+-  | includeClose includePos includePath =>
++  | includeClose resume includePos includePath =>
++      have h_resume_inv : TokpInv s.db resume := by
++        simpa [h_tokp, TokpInv] using h_tokp_inv
+       by_cases h_open : tk.eqArray "$(".toAscii
+       · simpa [ParserState.feedToken, h_tokp, h_open, TokpInv]
+       · by_cases h_include : tk.eqArray "$[".toAscii
+@@ -9290,9 +9438,10 @@ theorem feedToken_maintains_tokpInv
+           | none =>
+               simpa [ParserState.feedToken, h_tokp, h_open, h_include, h_gate, TokpInv]
+         · by_cases h_close : tk.eqArray "$]".toAscii
+-          · have h_req : (s.requestInclude includePath).db.error? ≠ none :=
+-              Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error s includePath
+-            have h_eq : s.feedToken i tk = s.requestInclude includePath := by
++          · have h_req : (s.requestInclude resume includePath).db.error? ≠ none :=
++              Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error
++                s resume includePath
++            have h_eq : s.feedToken i tk = s.requestInclude resume includePath := by
+               simp [ParserState.feedToken, h_tokp, h_open, h_include, h_close]
+             exact (h_req (by simpa [h_eq] using h_success)).elim
+           · have h_bad : (s.feedToken i tk).db.error? ≠ none := by
+@@ -9490,7 +9639,7 @@ theorem feedToken_maintains_wf
+               simp [ParserState.feedToken, h_tokp, h_open, h_include, h_cmd,
+                 ParserState.mkErrorFromEvidence, ParserState.mkErrorWithEvidence, ParserState.mkError, ParserState.withDB, DB.mkErrorWithEvidence, DB.mkError]
+             exact (h_bad h_success).elim
+-  | includePath includePos =>
++  | includePath resume includePos =>
+       by_cases h_open : tk.eqArray "$(".toAscii
+       · have h_db_eq : (s.feedToken i tk).db = s.db := by
+           simp [ParserState.feedToken, h_tokp, h_open]
+@@ -9526,15 +9675,16 @@ theorem feedToken_maintains_wf
+                 exact (h_bad h_success).elim
+             | ok includePath =>
+                 by_cases h_inline : closesInline
+-                · have h_req : (s.requestInclude includePath).db.error? ≠ none :=
+-                    Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error s includePath
+-                  have h_eq : s.feedToken i tk = s.requestInclude includePath := by
++                · have h_req : (s.requestInclude resume includePath).db.error? ≠ none :=
++                    Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error
++                      s resume includePath
++                  have h_eq : s.feedToken i tk = s.requestInclude resume includePath := by
+                     simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end, rawPath, closesInline, h_norm, h_inline]
+                   exact (h_req (by simpa [h_eq] using h_success)).elim
+                 · have h_db_eq : (s.feedToken i tk).db = s.db := by
+                     simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end, rawPath, closesInline, h_norm, h_inline]
+                   simpa [h_db_eq] using h_wf
+-  | includeClose includePos includePath =>
++  | includeClose resume includePos includePath =>
+       by_cases h_open : tk.eqArray "$(".toAscii
+       · have h_db_eq : (s.feedToken i tk).db = s.db := by
+           simp [ParserState.feedToken, h_tokp, h_open]
+@@ -9554,9 +9704,10 @@ theorem feedToken_maintains_wf
+             simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+           simpa [h_db_eq] using h_wf
+         · by_cases h_close : tk.eqArray "$]".toAscii
+-          · have h_req : (s.requestInclude includePath).db.error? ≠ none :=
+-              Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error s includePath
+-            have h_eq : s.feedToken i tk = s.requestInclude includePath := by
++          · have h_req : (s.requestInclude resume includePath).db.error? ≠ none :=
++              Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error
++                s resume includePath
++            have h_eq : s.feedToken i tk = s.requestInclude resume includePath := by
+               simp [ParserState.feedToken, h_tokp, h_open, h_include, h_close]
+             exact (h_req (by simpa [h_eq] using h_success)).elim
+           · have h_bad : (s.feedToken i tk).db.error? ≠ none := by
+@@ -9787,7 +9938,7 @@ theorem feedToken_maintains_scopedWithScopes
+               simp [ParserState.feedToken, h_tokp, h_open, h_include, h_cmd,
+                 ParserState.mkErrorFromEvidence, ParserState.mkErrorWithEvidence, ParserState.mkError, ParserState.withDB, DB.mkErrorWithEvidence, DB.mkError]
+             exact (h_bad h_success).elim
+-  | includePath includePos =>
++  | includePath resume includePos =>
+       by_cases h_open : tk.eqArray "$(".toAscii
+       · have h_db_eq : (s.feedToken i tk).db = s.db := by
+           simp [ParserState.feedToken, h_tokp, h_open]
+@@ -9823,15 +9974,16 @@ theorem feedToken_maintains_scopedWithScopes
+                 exact (h_bad h_success).elim
+             | ok includePath =>
+                 by_cases h_inline : closesInline
+-                · have h_req : (s.requestInclude includePath).db.error? ≠ none :=
+-                    Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error s includePath
+-                  have h_eq : s.feedToken i tk = s.requestInclude includePath := by
++                · have h_req : (s.requestInclude resume includePath).db.error? ≠ none :=
++                    Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error
++                      s resume includePath
++                  have h_eq : s.feedToken i tk = s.requestInclude resume includePath := by
+                     simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end, rawPath, closesInline, h_norm, h_inline]
+                   exact (h_req (by simpa [h_eq] using h_success)).elim
+                 · have h_db_eq : (s.feedToken i tk).db = s.db := by
+                     simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end, rawPath, closesInline, h_norm, h_inline]
+                   simpa [h_db_eq] using h_scoped
+-  | includeClose includePos includePath =>
++  | includeClose resume includePos includePath =>
+       by_cases h_open : tk.eqArray "$(".toAscii
+       · have h_db_eq : (s.feedToken i tk).db = s.db := by
+           simp [ParserState.feedToken, h_tokp, h_open]
+@@ -9851,9 +10003,10 @@ theorem feedToken_maintains_scopedWithScopes
+             simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+           simpa [h_db_eq] using h_scoped
+         · by_cases h_close : tk.eqArray "$]".toAscii
+-          · have h_req : (s.requestInclude includePath).db.error? ≠ none :=
+-              Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error s includePath
+-            have h_eq : s.feedToken i tk = s.requestInclude includePath := by
++          · have h_req : (s.requestInclude resume includePath).db.error? ≠ none :=
++              Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error
++                s resume includePath
++            have h_eq : s.feedToken i tk = s.requestInclude resume includePath := by
+               simp [ParserState.feedToken, h_tokp, h_open, h_include, h_close]
+             exact (h_req (by simpa [h_eq] using h_success)).elim
+           · have h_bad : (s.feedToken i tk).db.error? ≠ none := by
+@@ -10081,7 +10234,7 @@ theorem feedToken_maintains_scopesOk
+               simp [ParserState.feedToken, h_tokp, h_open, h_include, h_cmd,
+                 ParserState.mkErrorFromEvidence, ParserState.mkErrorWithEvidence, ParserState.mkError, ParserState.withDB, DB.mkErrorWithEvidence, DB.mkError]
+             exact (h_bad h_success).elim
+-  | includePath includePos =>
++  | includePath resume includePos =>
+       by_cases h_open : tk.eqArray "$(".toAscii
+       · have h_db_eq : (s.feedToken i tk).db = s.db := by
+           simp [ParserState.feedToken, h_tokp, h_open]
+@@ -10117,15 +10270,16 @@ theorem feedToken_maintains_scopesOk
+                 exact (h_bad h_success).elim
+             | ok includePath =>
+                 by_cases h_inline : closesInline
+-                · have h_req : (s.requestInclude includePath).db.error? ≠ none :=
+-                    Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error s includePath
+-                  have h_eq : s.feedToken i tk = s.requestInclude includePath := by
++                · have h_req : (s.requestInclude resume includePath).db.error? ≠ none :=
++                    Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error
++                      s resume includePath
++                  have h_eq : s.feedToken i tk = s.requestInclude resume includePath := by
+                     simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end, rawPath, closesInline, h_norm, h_inline]
+                   exact (h_req (by simpa [h_eq] using h_success)).elim
+                 · have h_db_eq : (s.feedToken i tk).db = s.db := by
+                     simp [ParserState.feedToken, h_tokp, h_open, h_include, h_end, rawPath, closesInline, h_norm, h_inline]
+                   simpa [h_db_eq] using h_ok
+-  | includeClose includePos includePath =>
++  | includeClose resume includePos includePath =>
+       by_cases h_open : tk.eqArray "$(".toAscii
+       · have h_db_eq : (s.feedToken i tk).db = s.db := by
+           simp [ParserState.feedToken, h_tokp, h_open]
+@@ -10145,9 +10299,10 @@ theorem feedToken_maintains_scopesOk
+             simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+           simpa [h_db_eq] using h_ok
+         · by_cases h_close : tk.eqArray "$]".toAscii
+-          · have h_req : (s.requestInclude includePath).db.error? ≠ none :=
+-              Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error s includePath
+-            have h_eq : s.feedToken i tk = s.requestInclude includePath := by
++          · have h_req : (s.requestInclude resume includePath).db.error? ≠ none :=
++              Metamath.ParserLoopInduction.ParserState_requestInclude_sets_error
++                s resume includePath
++            have h_eq : s.feedToken i tk = s.requestInclude resume includePath := by
+               simp [ParserState.feedToken, h_tokp, h_open, h_include, h_close]
+             exact (h_req (by simpa [h_eq] using h_success)).elim
+           · have h_bad : (s.feedToken i tk).db.error? ≠ none := by
+@@ -10602,11 +10757,11 @@ theorem done_no_error_wellScoped_of_stateInv
+           exfalso
+           simp [ParserState.done, h_no_err, h_db_err_false, h_charp, h_tokp, DB.error,
+             Bind.bind, Id.run, Pure.pure, DB.mkParseError, DB.mkErrorFromEvidence, DB.mkErrorWithEvidence] at h_done
+-      | includePath includePos =>
++      | includePath resume includePos =>
+           exfalso
+           simp [ParserState.done, h_no_err, h_db_err_false, h_charp, h_tokp, DB.error,
+             Bind.bind, Id.run, Pure.pure, DB.mkParseError, DB.mkErrorFromEvidence, DB.mkErrorWithEvidence] at h_done
+-      | includeClose includePos includePath =>
++      | includeClose resume includePos includePath =>
+           exfalso
+           simp [ParserState.done, h_no_err, h_db_err_false, h_charp, h_tokp, DB.error,
+             Bind.bind, Id.run, Pure.pure, DB.mkParseError, DB.mkErrorFromEvidence, DB.mkErrorWithEvidence] at h_done
+@@ -10668,11 +10823,11 @@ theorem done_no_error_wellScoped_of_stateInv
+           exfalso
+           simp [ParserState.done, h_no_err, h_db_err_false, h_feed_ok, h_feed_err_false, h_charp, h_tokp, DB.error,
+             Bind.bind, Id.run, Pure.pure, DB.mkParseError, DB.mkErrorFromEvidence, DB.mkErrorWithEvidence] at h_done
+-      | includePath includePos =>
++      | includePath resume includePos =>
+           exfalso
+           simp [ParserState.done, h_no_err, h_db_err_false, h_feed_ok, h_feed_err_false, h_charp, h_tokp, DB.error,
+             Bind.bind, Id.run, Pure.pure, DB.mkParseError, DB.mkErrorFromEvidence, DB.mkErrorWithEvidence] at h_done
+-      | includeClose includePos includePath =>
++      | includeClose resume includePos includePath =>
+           exfalso
+           simp [ParserState.done, h_no_err, h_db_err_false, h_feed_ok, h_feed_err_false, h_charp, h_tokp, DB.error,
+             Bind.bind, Id.run, Pure.pure, DB.mkParseError, DB.mkErrorFromEvidence, DB.mkErrorWithEvidence] at h_done
+diff --git a/Metamath/PrefixWitnessCheckBytes.lean b/Metamath/PrefixWitnessCheckBytes.lean
+index a383b31..5e1eede 100644
+--- a/Metamath/PrefixWitnessCheckBytes.lean
++++ b/Metamath/PrefixWitnessCheckBytes.lean
+@@ -166,18 +166,42 @@ private def proofGhostCore (db : DB) (pr : ProofState) : Prop :=
+ /-- Ghost invariant for proof-mode execution.
+     - `.proof pr`: core ghost conditions for `pr`
+     - `.comment inner`: recursively tracks ghost through comment nesting
++    - `.includePath resume _` and `.includeClose resume _ _`: recursively
++      track the suspended mode through include administration
+     - Other modes: trivially `True`
+ 
+-    The recursive definition on `.comment` makes entering/exiting comments
+-    transparent to the ghost: `ProofGhost db (.comment p) = ProofGhost db p`.
++    The recursive clauses make comment and include administration transparent
++    to the ghost.
+ 
+     In strict mode (`rejectUnknownSteps = true`), this ghost is maintained
+     through the entire feed loop when combined with `ParserStateInv`. -/
+ def ProofGhost (db : DB) : TokenParser → Prop
+   | .proof pr => proofGhostCore db pr
+   | .comment inner => ProofGhost db inner
++  | .includePath resume _ => ProofGhost db resume
++  | .includeClose resume _ _ => ProofGhost db resume
+   | _ => True
+ 
++/-- Consuming an include request preserves the proof-execution ghost carried
++by the restored parser continuation. -/
++theorem clearIncludeRequest_requestInclude_maintains_proofGhost
++    (s : ParserState) (resume : TokenParser) (includePath : String)
++    (h_ghost : ProofGhost s.db resume)
++    (h_errorFree : s.db.error? = none) :
++    ProofGhost
++      (clearIncludeRequest (s.requestInclude resume includePath)).db
++      (clearIncludeRequest (s.requestInclude resume includePath)).tokp := by
++  have h_state :
++      clearIncludeRequest (s.requestInclude resume includePath) =
++        { s with tokp := resume } := by
++    cases s with
++    | mk db tokp charp line linepos sourceFile =>
++        simp only [ParserState.requestInclude, clearIncludeRequest]
++        congr
++        exact h_errorFree.symm
++  rw [h_state]
++  exact h_ghost
++
+ /-! ## Per-event prefix provability
+ 
+ The payoff theorems: when `finishProof` succeeds (triggered by "$." token in
+@@ -1010,9 +1034,13 @@ theorem feedToken_proof_maintains_ghost
+               simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate,
+                 ParserState.mkErrorFromEvidence, ParserState.withDB]
+             exact (h_bad h_success).elim
+-      have h_tokp_result : (s.feedToken i tk).tokp = .includePath (s.mkPos i) := by
++      have h_tokp_result :
++          (s.feedToken i tk).tokp = .includePath (.proof pr) (s.mkPos i) := by
++        simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
++      have h_db_result : (s.feedToken i tk).db = s.db := by
+         simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+-      simp [ProofGhost, h_tokp_result]
++      rw [h_db_result, h_tokp_result]
++      exact h_ghost
+     · by_cases h_end : tk.eqArray "$.".toAscii
+       · -- Case 2: "$." → finishProof → exits proof mode
+         let s0 : ParserState := { s with tokp := default }
+@@ -1265,14 +1293,22 @@ private theorem withAt_mkError_ne_none
+   withAt_preserves_error label _
+     (ParserState_mkErrorFromEvidence_sets_error s pos ev)
+ 
+-/-- `ProofGhost` is trivially `True` for simple (non-proof, non-comment) token parsers.
+-    Comments are excluded because `ProofGhost db (.comment inner)` recurses into `inner`. -/
+-private theorem proofGhost_trivial {db : DB} {tp : TokenParser}
+-    (h_np : ∀ pr, tp ≠ .proof pr) (h_nc : ∀ inner, tp ≠ .comment inner) :
+-    ProofGhost db tp := by
+-  cases tp with
+-  | proof pr => exact absurd rfl (h_np pr)
+-  | comment inner => exact absurd rfl (h_nc inner)
++/-- No proof mode occurs beneath the administrative wrappers of a token-parser
++mode. -/
++private def ProofModeAbsent : TokenParser → Prop
++  | .proof _ => False
++  | .comment inner => ProofModeAbsent inner
++  | .includePath resume _ => ProofModeAbsent resume
++  | .includeClose resume _ _ => ProofModeAbsent resume
++  | _ => True
++
++private theorem proofGhost_of_proofModeAbsent {db : DB} {tp : TokenParser}
++    (h : ProofModeAbsent tp) : ProofGhost db tp := by
++  induction tp with
++  | proof pr => exact h.elim
++  | comment inner ih => exact ih h
++  | includePath resume position ih => exact ih h
++  | includeClose resume position path ih => exact ih h
+   | _ => exact trivial
+ 
+ /-- `djvars_loop_aux` preserves `ProofGhost` when the input tokp is a simple
+@@ -1281,26 +1317,24 @@ private theorem proofGhost_trivial {db : DB} {tp : TokenParser}
+     Follows the `Nat.rec` pattern from `djvars_loop_aux_db_config` (Verify.lean). -/
+ private theorem djvars_loop_aux_proofGhost
+     (arr_dj : Array String) (s : ParserState) (pos : Pos) (tk : String) (i : Nat)
+-    (h_np : ∀ pr, s.tokp ≠ .proof pr)
+-    (h_nc : ∀ inner, s.tokp ≠ .comment inner) :
++    (h_absent : ProofModeAbsent s.tokp) :
+     ProofGhost (ParserState.djvars_loop_aux arr_dj s pos tk i).db
+               (ParserState.djvars_loop_aux arr_dj s pos tk i).tokp := by
+   refine Nat.rec
+     (motive := fun m => ∀ i (s : ParserState), arr_dj.size - i = m →
+-      (∀ pr, s.tokp ≠ .proof pr) →
+-      (∀ inner, s.tokp ≠ .comment inner) →
++      ProofModeAbsent s.tokp →
+       ProofGhost (ParserState.djvars_loop_aux arr_dj s pos tk i).db
+                 (ParserState.djvars_loop_aux arr_dj s pos tk i).tokp)
+-    ?base ?step (arr_dj.size - i) i s rfl h_np h_nc
++    ?base ?step (arr_dj.size - i) i s rfl h_absent
+   · -- Base: ¬ i < arr_dj.size → result is { s with tokp := .djvars _ }
+-    intro i s hs h_np h_nc
++    intro i s hs h_absent
+     have hi : ¬ i < arr_dj.size := by
+       intro hi
+       have hpos : arr_dj.size - i > 0 := Nat.sub_pos_of_lt hi
+       simp [hs] at hpos
+     simp [ParserState.djvars_loop_aux, hi, ProofGhost]
+   · -- Step: i < arr_dj.size
+-    intro m ih i s hs h_np h_nc
++    intro m ih i s hs h_absent
+     have hi : i < arr_dj.size := by
+       by_cases hi' : i < arr_dj.size
+       · exact hi'
+@@ -1312,9 +1346,9 @@ private theorem djvars_loop_aux_proofGhost
+     simp only [hi, ↓reduceDIte]
+     split  -- on arr_dj[i] == tk
+     · -- Duplicate: mkErrorFromEvidence preserves tokp = s.tokp
+-      exact proofGhost_trivial h_np h_nc
++      exact proofGhost_of_proofModeAbsent h_absent
+     · -- Not duplicate: recurse with withDB (preserves tokp)
+-      exact ih (i + 1) _ hs' h_np h_nc
++      exact ih (i + 1) _ hs' h_absent
+ 
+ /-- `feedTokens` always produces an output satisfying ProofGhost.
+     For `.float/.ess/.ax`: output tokp is `.start` → True.
+@@ -1466,7 +1500,7 @@ theorem feedToken_maintains_ghost
+         | simp [ProofGhost, h_tokp, ParserState.mkErrorFromEvidence,
+             ParserState.withDB]
+         | exact djvars_loop_aux_proofGhost _ s _ _ 0
+-            (by intro pr; simp [h_tokp]) (by intro inner; simp [h_tokp])
++            (by simp [ProofModeAbsent, h_tokp])
+   | math arr' p =>
+     by_cases h_open : tk.eqArray "$(".toAscii
+     · simp [ParserState.feedToken, h_tokp, h_open, ProofGhost]
+@@ -1483,7 +1517,9 @@ theorem feedToken_maintains_ghost
+                 simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate,
+                   ParserState.mkErrorFromEvidence, ParserState.withDB]
+               exact (h_bad h_success_ft).elim
+-        have h_tokp_eq : (s.feedToken i tk).tokp = .includePath (s.mkPos i) := by
++        have h_tokp_eq :
++            (s.feedToken i tk).tokp =
++              .includePath (.math arr' p) (s.mkPos i) := by
+           simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+         simp [h_include, h_gate_none, ProofGhost] at h_success ⊢
+       · by_cases h_delim : tk.eqArray p.k.delim
+@@ -1494,21 +1530,21 @@ theorem feedToken_maintains_ghost
+         · -- Not delimiter → withMath → stays .math → True
+           simp [h_include] at h_success ⊢
+           simp only [h_delim] at h_success ⊢
+-          have h_np : ∀ pr, s.tokp ≠ .proof pr := by intro pr; simp [h_tokp]
+-          have h_nc : ∀ inner, s.tokp ≠ .comment inner := by intro inner; simp [h_tokp]
++          have h_absent : ProofModeAbsent s.tokp := by
++            simp [ProofModeAbsent, h_tokp]
+           -- Unfold withMath and eliminate false=true conditions
+           simp only [ParserState.withMath, Bool.false_eq_true, ite_false]
+           split
+           · -- toMath fails → mkErrorFromEvidence → tokp unchanged → non-proof
+-            exact proofGhost_trivial h_np h_nc
++            exact proofGhost_of_proofModeAbsent h_absent
+           · -- toMath succeeds → match on db.find? in Id monad
+             try simp [Id.run]
+             split
+             · exact trivial  -- const → .math → True
+             · exact trivial  -- var → .math → True
+             · split  -- match mathSymbolViolation?
+-              · exact proofGhost_trivial h_np h_nc  -- some err → mkError
+-              · exact proofGhost_trivial h_np h_nc  -- none → mkError
++              · exact proofGhost_of_proofModeAbsent h_absent
++              · exact proofGhost_of_proofModeAbsent h_absent
+   | label pos' lab =>
+     by_cases h_open : tk.eqArray "$(".toAscii
+     · simp [ParserState.feedToken, h_tokp, h_open, ProofGhost]
+@@ -1518,9 +1554,12 @@ theorem feedToken_maintains_ghost
+         | simp_all [ProofGhost, ParserState.mkErrorFromEvidence,
+             ParserState.withDB]
+ 
+-  | includePath includePos =>
++  | includePath resume includePos =>
++    have h_resume_ghost : ProofGhost s.db resume := by
++      simpa [h_tokp, ProofGhost] using h_ghost
+     by_cases h_open : tk.eqArray "$(".toAscii
+-    · simp [ParserState.feedToken, h_tokp, h_open, ProofGhost]
++    · simpa [ParserState.feedToken, h_tokp, h_open, ProofGhost] using
++        h_resume_ghost
+     · by_cases h_include : tk.eqArray "$[".toAscii
+       · have h_gate_none :
+           includeDirectiveViolation? s.db.config s.db.scopes.size true i = none := by
+@@ -1531,10 +1570,14 @@ theorem feedToken_maintains_ghost
+                 simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate,
+                   ParserState.mkErrorFromEvidence, ParserState.withDB]
+               exact (h_bad h_success).elim
+-        have h_tokp_eq : (s.feedToken i tk).tokp = .includePath (s.mkPos i) := by
++        have h_tokp_eq :
++            (s.feedToken i tk).tokp =
++              .includePath (.includePath resume includePos) (s.mkPos i) := by
++          simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
++        have h_db_eq : (s.feedToken i tk).db = s.db := by
+           simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+-        rw [h_tokp_eq]
+-        trivial
++        rw [h_db_eq, h_tokp_eq]
++        exact h_resume_ghost
+       · by_cases h_close : tk.eqArray "$]".toAscii
+         · have h_bad : (s.feedToken i tk).db.error? ≠ none := by
+             simp [ParserState.feedToken, h_tokp, h_open, h_include, h_close,
+@@ -1551,21 +1594,28 @@ theorem feedToken_maintains_ghost
+               exact (h_bad h_success).elim
+           | ok includePath =>
+               by_cases h_inline : closesInline
+-              · have h_req : (s.requestInclude includePath).db.error? ≠ none :=
+-                  ParserState_requestInclude_sets_error s includePath
+-                have h_eq : s.feedToken i tk = s.requestInclude includePath := by
++              · have h_req : (s.requestInclude resume includePath).db.error? ≠ none :=
++                  ParserState_requestInclude_sets_error s resume includePath
++                have h_eq : s.feedToken i tk = s.requestInclude resume includePath := by
+                   simp [ParserState.feedToken, h_tokp, h_open, h_include, h_close,
+                     rawPath, closesInline, h_norm, h_inline]
+                 exact (h_req (by simpa [h_eq] using h_success)).elim
+               · have h_tokp_eq :
+-                  (s.feedToken i tk).tokp = .includeClose includePos includePath := by
++                  (s.feedToken i tk).tokp =
++                    .includeClose resume includePos includePath := by
++                  simp [ParserState.feedToken, h_tokp, h_open, h_include, h_close,
++                    rawPath, closesInline, h_norm, h_inline]
++                have h_db_eq : (s.feedToken i tk).db = s.db := by
+                   simp [ParserState.feedToken, h_tokp, h_open, h_include, h_close,
+                     rawPath, closesInline, h_norm, h_inline]
+-                rw [h_tokp_eq]
+-                trivial
+-  | includeClose includePos includePath =>
++                rw [h_db_eq, h_tokp_eq]
++                exact h_resume_ghost
++  | includeClose resume includePos includePath =>
++    have h_resume_ghost : ProofGhost s.db resume := by
++      simpa [h_tokp, ProofGhost] using h_ghost
+     by_cases h_open : tk.eqArray "$(".toAscii
+-    · simp [ParserState.feedToken, h_tokp, h_open, ProofGhost]
++    · simpa [ParserState.feedToken, h_tokp, h_open, ProofGhost] using
++        h_resume_ghost
+     · by_cases h_include : tk.eqArray "$[".toAscii
+       · have h_gate_none :
+           includeDirectiveViolation? s.db.config s.db.scopes.size true i = none := by
+@@ -1576,14 +1626,19 @@ theorem feedToken_maintains_ghost
+                 simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate,
+                   ParserState.mkErrorFromEvidence, ParserState.withDB]
+               exact (h_bad h_success).elim
+-        have h_tokp_eq : (s.feedToken i tk).tokp = .includePath (s.mkPos i) := by
++        have h_tokp_eq :
++            (s.feedToken i tk).tokp =
++              .includePath (.includeClose resume includePos includePath)
++                (s.mkPos i) := by
++          simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
++        have h_db_eq : (s.feedToken i tk).db = s.db := by
+           simp [ParserState.feedToken, h_tokp, h_open, h_include, h_gate_none]
+-        rw [h_tokp_eq]
+-        trivial
++        rw [h_db_eq, h_tokp_eq]
++        exact h_resume_ghost
+       · by_cases h_close : tk.eqArray "$]".toAscii
+-        · have h_req : (s.requestInclude includePath).db.error? ≠ none :=
+-            ParserState_requestInclude_sets_error s includePath
+-          have h_eq : s.feedToken i tk = s.requestInclude includePath := by
++        · have h_req : (s.requestInclude resume includePath).db.error? ≠ none :=
++            ParserState_requestInclude_sets_error s resume includePath
++          have h_eq : s.feedToken i tk = s.requestInclude resume includePath := by
+             simp [ParserState.feedToken, h_tokp, h_open, h_include, h_close]
+           exact (h_req (by simpa [h_eq] using h_success)).elim
+         · have h_bad : (s.feedToken i tk).db.error? ≠ none := by
 diff --git a/Metamath/Spec/Bridge.lean b/Metamath/Spec/Bridge.lean
-index 363a6f0be297746970cc9bb666be0d56b25e9066..7463fd9e80860ed292cec24a961c1b4cc5a6dd84 100644
+index 363a6f0..7463fd9 100644
 --- a/Metamath/Spec/Bridge.lean
 +++ b/Metamath/Spec/Bridge.lean
 @@ -834,9 +834,7 @@ theorem Hyp.toMarioFormula_roundtrip_floating (c : Constant) (v : Variable) (var
@@ -127,7 +1105,7 @@ index 363a6f0be297746970cc9bb666be0d56b25e9066..7463fd9e80860ed292cec24a961c1b4c
  /-- Soundness for floating conversion: If a MarioFormula came from converting
      a floating hypothesis, then converting it back recovers a floating hypothesis
 diff --git a/Metamath/Spec/Equivalence.lean b/Metamath/Spec/Equivalence.lean
-index 1a4c49011d6fd5fe66737114273df8d7b450aafe..011a1deb95ab735e6070bf719ff402a8f59a8be7 100644
+index 1a4c490..011a1de 100644
 --- a/Metamath/Spec/Equivalence.lean
 +++ b/Metamath/Spec/Equivalence.lean
 @@ -265,6 +265,7 @@ theorem hypToMarioFormula_floating_expr (vm : VarMap) (c : Constant) (v : Variab
@@ -156,19 +1134,60 @@ index 1a4c49011d6fd5fe66737114273df8d7b450aafe..011a1deb95ab735e6070bf719ff402a8
                    ih (σ v_hyp) h_in_stack
  
 diff --git a/Metamath/Tests/CheckSinglePassParity.lean b/Metamath/Tests/CheckSinglePassParity.lean
-index c88ef42678219972ff4cc0d90dff88a099ffae24..6d4a9d4a1008eab3f554fc25538ca17d03ed3fba 100644
+index c88ef42..72a5293 100644
 --- a/Metamath/Tests/CheckSinglePassParity.lean
 +++ b/Metamath/Tests/CheckSinglePassParity.lean
-@@ -62,7 +62,7 @@ private def runParityCaseExpectCode
+@@ -42,6 +42,18 @@ private def assertShapeEq (label : String) (legacy single : DBShape) : IO Unit :
+   if legacy != single then
+     throw <| IO.userError s!"{label}: shape mismatch\nlegacy={repr legacy}\nsingle={repr single}"
+ 
++/-- Rejected runs agree on rejection observables.  Their partial database
++states need not agree: the two-pass checker rejects before parsing, whereas
++the single-pass checker retains the prefix consumed before the exact error
++site. -/
++private def assertErrorShapeEq
++    (label : String) (legacy single : DBShape) : IO Unit := do
++  if legacy.hasError != single.hasError ||
++      legacy.parseErrorCode != single.parseErrorCode ||
++      legacy.evidenceCode != single.evidenceCode then
++    throw <| IO.userError
++      s!"{label}: rejection mismatch\nlegacy={repr legacy}\nsingle={repr single}"
++
+ private def runParityCase (label path : String) (config : ModeConfig := {}) : IO Unit := do
+   let dbLegacy ← checkTwoPassLegacy path config
+   let dbSingle ← checkSinglePass path config
+@@ -53,7 +65,7 @@ private def runParityCaseExpectCode
+     (config : ModeConfig := {}) : IO Unit := do
+   let dbLegacy ← checkTwoPassLegacy path config
+   let dbSingle ← checkSinglePass path config
+-  assertShapeEq label (dbShape dbLegacy) (dbShape dbSingle)
++  assertErrorShapeEq label (dbShape dbLegacy) (dbShape dbSingle)
+   if dbLegacy.parseErrorCode? != some expected then
+     throw <| IO.userError
+       s!"{label}: legacy parseErrorCode mismatch, expected {repr expected}, got {repr dbLegacy.parseErrorCode?}"
+@@ -62,7 +74,20 @@ private def runParityCaseExpectCode
        s!"{label}: single-pass parseErrorCode mismatch, expected {repr expected}, got {repr dbSingle.parseErrorCode?}"
    IO.println s!"✓ {label}"
  
 -/-- Regression: include-depth fuel overflow must decode to includeCycleDetected.
++private def runParityCaseExpectAccept
++    (label path : String) (config : ModeConfig := {}) : IO Unit := do
++  let dbLegacy ← checkTwoPassLegacy path config
++  let dbSingle ← checkSinglePass path config
++  assertShapeEq label (dbShape dbLegacy) (dbShape dbSingle)
++  if dbLegacy.error then
++    throw <| IO.userError
++      s!"{label}: legacy checker rejected unexpectedly with {repr dbLegacy.parseErrorCode?}"
++  if dbSingle.error then
++    throw <| IO.userError
++      s!"{label}: single-pass checker rejected unexpectedly with {repr dbSingle.parseErrorCode?}"
++  IO.println s!"✓ {label}"
++
 +/-- Regression: include-depth fuel overflow must decode to includeDepthExceeded.
  Also checked for legacy/single-pass parity. -/
  def runIncludeDepthOverflowRegression : IO Unit := do
    let path := "test_databases/include_depth/root_depth.mm"
-@@ -71,11 +71,11 @@ def runIncludeDepthOverflowRegression : IO Unit := do
+@@ -71,11 +96,83 @@ def runIncludeDepthOverflowRegression : IO Unit := do
    let dbSingle ← checkSinglePass path cfg
    assertShapeEq "include-depth-overflow" (dbShape dbLegacy) (dbShape dbSingle)
    match dbSingle.parseErrorCode? with
@@ -180,11 +1199,643 @@ index c88ef42678219972ff4cc0d90dff88a099ffae24..6d4a9d4a1008eab3f554fc25538ca17d
        throw <| IO.userError
 -        s!"include-depth-overflow: expected includeCycleDetected, got {repr code}"
 +        s!"include-depth-overflow: expected includeDepthExceeded, got {repr code}"
++
++/-- A parser-originated include placement error must retain the exact position
++computed during the streaming pass.  Re-encoding it as a driver error would
++collapse this position to the generic preprocessing location. -/
++def runSinglePassIncludePositionRegression : IO Unit := do
++  let path := "test_databases/include_splicing/djvars_accept_main.mm"
++  let db ← checkSinglePass path VerifierMode.zar.toConfig
++  match db.error? with
++  | some ⟨.error pos _, _⟩ =>
++      if pos.line != 2 || pos.col != 5 then
++        throw <| IO.userError
++          s!"single-pass include position: expected 2:5, got {pos}"
++      IO.println "✓ single-pass include error preserves parser position"
++  | _ =>
++      throw <| IO.userError
++        "single-pass include position: expected positioned parser error"
++
++/-- Regression for files whose last byte belongs to a token.  Every file in
++this in-memory include chain deliberately has no trailing whitespace; the
++single-pass driver must flush each pending token before popping its frame, and
++must still dispatch an include whose closing `$]` is the root or child EOF. -/
++def runNoTrailingWhitespaceNestedIncludeRegression : IO Unit := do
++  let config := VerifierMode.zar.toConfig
++  let reads ← IO.mkRef 0
++  let realPath : String → IO System.FilePath :=
++    fun path => pure (System.FilePath.mk path)
++  let readFile : String → IO ByteArray := fun path => do
++    reads.modify (· + 1)
++    if path.endsWith "root.mm" then
++      return "$[ child.mm $]".toUTF8
++    else if path.endsWith "child.mm" then
++      return "$[ leaf.mm $]".toUTF8
++    else if path.endsWith "leaf.mm" then
++      return "$c wff $.".toUTF8
++    else
++      throw <| IO.userError s!"unexpected in-memory include path: {path}"
++  let st0 : IncludeDriverState := {
++    parser := singlePassInitialState config
++    base := 0
++    processing := Std.HashSet.emptyWithCapacity 4
++    seen := Std.HashSet.emptyWithCapacity 4
++    stack := []
++  }
++  let result ← processFileSinglePassWithIO
++    realPath readFile "root.mm" config config.maxIncludeDepth st0
++  let projected : Except IncludeError (ParserState × Nat × Std.HashSet String) :=
++    match result with
++    | .error err => .error err
++    | .ok st => .ok (st.parser, st.base, st.seen)
++  let db := finalizeSinglePassResult config projected
++  if db.error then
++    match db.error? with
++    | some ⟨.error pos msg, idx⟩ =>
++        throw <| IO.userError
++          s!"no-trailing-whitespace nested include rejected at {pos} (index {idx}): {msg}"
++    | some ⟨.includeRequest sourceFile includePath, idx⟩ =>
++        throw <| IO.userError
++          s!"unconsumed include request at index {idx}: {sourceFile} -> {includePath}"
++    | some ⟨.ax .., _⟩ =>
++        throw <| IO.userError "unexpected axiom interrupt"
++    | some ⟨.thm .., _⟩ =>
++        throw <| IO.userError "unexpected theorem interrupt"
++    | none =>
++        throw <| IO.userError "database reports an error without an interrupt"
++  if db.objects.size != 1 then
++    throw <| IO.userError
++      s!"no-trailing-whitespace nested include: expected one object, got {db.objects.size}"
++  let readCount ← reads.get
++  if readCount != 3 then
++    throw <| IO.userError
++      s!"single-pass read count: expected exactly three files once each, got {readCount} reads"
++  IO.println "✓ nested EOF includes remain single-pass and preserve the final tokens"
  
  /-- End-to-end parity checks between two-pass legacy and single-pass checker. -/
  def runCheckSinglePassParitySuite : IO Unit := do
+@@ -98,6 +195,34 @@ def runCheckSinglePassParitySuite : IO Unit := do
+     "include_cycle_violation"
+     "test_databases/include_cycle/root_cycle.mm"
+     .includeCycleDetected
++  runParityCaseExpectAccept
++    "token_splicing_resumes_djvars"
++    "test_databases/include_splicing/djvars_accept_main.mm"
++    VerifierMode.exe.toConfig
++  runParityCaseExpectCode
++    "empty_token_splice_preserves_unclosed_djvars"
++    "test_databases/include_splicing/djvars_empty_main.mm"
++    .unclosedDjvars
++    VerifierMode.exe.toConfig
++  runParityCaseExpectCode
++    "strict_mode_rejects_djvars_splice"
++    "test_databases/include_splicing/djvars_accept_main.mm"
++    .includeInsideStatement
++    VerifierMode.zar.toConfig
++  runParityCaseExpectAccept
++    "token_splicing_resumes_normal_proof_start"
++    "test_databases/include_splicing/normal_start_main.mm"
++    VerifierMode.exe.toConfig
++  runParityCaseExpectAccept
++    "token_splicing_resumes_active_normal_proof"
++    "test_databases/include_splicing/normal_active_main.mm"
++    VerifierMode.exe.toConfig
++  runParityCaseExpectAccept
++    "token_splicing_resumes_compressed_proof"
++    "test_databases/include_splicing/compressed_main.mm"
++    VerifierMode.exe.toConfig
++  runSinglePassIncludePositionRegression
++  runNoTrailingWhitespaceNestedIncludeRegression
+   runIncludeDepthOverflowRegression
+   IO.println "=== parity suite passed ==="
+ 
+diff --git a/Metamath/Verify.lean b/Metamath/Verify.lean
+index cb07d15..057dd8f 100644
+--- a/Metamath/Verify.lean
++++ b/Metamath/Verify.lean
+@@ -71,7 +71,7 @@ instance : Inhabited ModeConfig := ⟨{}⟩
+ 
+ namespace ModeConfig
+ 
+-/-- Zar mode: strict spec compliance (150/150 on the current metamath-test suite). -/
++/-- Zar mode: strict spec compliance against the full metamath-test suite. -/
+ def zar : ModeConfig := {}
+ 
+ /-- Knife mode: Stricter - rejects incomplete proofs, top-level $e -/
+@@ -80,8 +80,7 @@ def knife : ModeConfig := {
+   rejectToplevelEss := true
+ }
+ 
+-/-- Exe mode: more permissive compatibility mode (147/150 on the current
+-    metamath-test suite).
++/-- Exe mode: more permissive metamath.exe-compatibility profile.
+     NOTE: allowConstInnerScope = false because metamath.exe rejects direct $c
+     in inner scope. -/
+ def exe : ModeConfig := {
+@@ -417,6 +416,7 @@ inductive ParseErrorCode
+   | invalidLabel
+   | invalidMathString
+   | duplicateDisjointVariable
++  | disjointStatementTooShort
+   | tokenNotInScope
+   | tokenNotVariable
+   | unknownStepQuestionRejected
+@@ -504,6 +504,7 @@ namespace ParseErrorCode
+   | .invalidLabel => "invalid label '<label>'"
+   | .invalidMathString => "invalid math string '<math>'"
+   | .duplicateDisjointVariable => "duplicate disjoint variable '<sym>'"
++  | .disjointStatementTooShort => "$d statement must contain at least two variables"
+   | .tokenNotInScope => "symbol '<sym>' not in scope"
+   | .tokenNotVariable => "symbol '<sym>' is not a variable"
+   | .unknownStepQuestionRejected => "unknown step '?' not allowed (config rejects incomplete proofs)"
+@@ -564,6 +565,7 @@ def toNat : ParseErrorCode → Nat
+   | .invalidLabel => 29
+   | .invalidMathString => 30
+   | .duplicateDisjointVariable => 31
++  | .disjointStatementTooShort => 56
+   | .tokenNotInScope => 32
+   | .tokenNotVariable => 33
+   | .unknownStepQuestionRejected => 34
+@@ -623,6 +625,7 @@ def ofNat? : Nat → Option ParseErrorCode
+   | 29 => some .invalidLabel
+   | 30 => some .invalidMathString
+   | 31 => some .duplicateDisjointVariable
++  | 56 => some .disjointStatementTooShort
+   | 32 => some .tokenNotInScope
+   | 33 => some .tokenNotVariable
+   | 34 => some .unknownStepQuestionRejected
+@@ -684,6 +687,7 @@ def specClause : ParseErrorCode → SpecClause
+   | .invalidLabel => .sec4_2_1_labels
+   | .invalidMathString => .sec4_1_1_whitespace
+   | .duplicateDisjointVariable => .sec4_2_4_djvars
++  | .disjointStatementTooShort => .sec4_2_4_djvars
+   | .tokenNotInScope => .sec4_2_4_djvars
+   | .tokenNotVariable => .sec4_2_4_djvars
+   | .unknownStepQuestionRejected => .sec4_4_6_unknownProof
+@@ -796,6 +800,7 @@ inductive ScopeDeclError where
+   | expectedConstantAndVariable
+   | variableAlreadyHasFloatHyp (v : String)
+   | duplicateDisjointVariable (sym : String)
++  | disjointStatementTooShort (actual : Nat)
+   | tokenNotInScope (sym : String)
+   | tokenNotVariable (sym : String)
+   | tokenNotConstantOrVariable (sym : String)
+@@ -814,6 +819,7 @@ def code : ScopeDeclError → ParseErrorCode
+   | .expectedConstantAndVariable => .expectedConstantAndVariable
+   | .variableAlreadyHasFloatHyp _ => .variableAlreadyHasFloatHyp
+   | .duplicateDisjointVariable _ => .duplicateDisjointVariable
++  | .disjointStatementTooShort _ => .disjointStatementTooShort
+   | .tokenNotInScope _ => .tokenNotInScope
+   | .tokenNotVariable _ => .tokenNotVariable
+   | .tokenNotConstantOrVariable _ => .tokenNotConstantOrVariable
+@@ -829,6 +835,9 @@ def message : ScopeDeclError → String
+   | .expectedConstantAndVariable => "expected a constant and a variable"
+   | .variableAlreadyHasFloatHyp v => "variable '" ++ v ++ "' already has $f hypothesis"
+   | .duplicateDisjointVariable sym => "duplicate disjoint variable '" ++ sym ++ "'"
++  | .disjointStatementTooShort actual =>
++      "$d statement must contain at least two variables (found " ++
++        toString actual ++ ")"
+   | .tokenNotInScope sym => "symbol '" ++ sym ++ "' not in scope"
+   | .tokenNotVariable sym => "symbol '" ++ sym ++ "' is not a variable"
+   | .tokenNotConstantOrVariable sym => "symbol '" ++ sym ++ "' is not a constant or variable"
+@@ -1160,6 +1169,11 @@ def InvalidLabelViolation (s : DB) : Prop :=
+ def DuplicateDisjointVariableViolation (s : DB) : Prop :=
+   s.ScopeDeclViolation .duplicateDisjointVariable
+ 
++/-- Concrete parser violation for a `$d` statement with fewer than two
++variables, as required by Metamath book Section 4.2.4. -/
++def DisjointStatementTooShortViolation (s : DB) : Prop :=
++  s.ScopeDeclViolation .disjointStatementTooShort
++
+ /-- Concrete parser violation for out-of-scope `$d` symbol use. -/
+ def TokenNotInScopeViolation (s : DB) : Prop :=
+   s.ScopeDeclViolation .tokenNotInScope
+@@ -1172,6 +1186,10 @@ def Sec4_2_1_LabelSyntaxViolation (s : DB) : Prop :=
+ def Sec4_2_4_DjvarsDuplicateViolation (s : DB) : Prop :=
+   s.DuplicateDisjointVariableViolation
+ 
++/-- Metamath book §4.2.4 predicate for a `$d` statement with fewer than two variables. -/
++def Sec4_2_4_DjvarsArityViolation (s : DB) : Prop :=
++  s.DisjointStatementTooShortViolation
++
+ /-- Metamath book §4.2.4 predicate for `$d` variable scope violations. -/
+ def Sec4_2_4_DjvarsScopeViolation (s : DB) : Prop :=
+   s.TokenNotInScopeViolation
+@@ -1184,6 +1202,12 @@ def InvalidLabelPayloadWitness (s : DB) : Prop :=
+ def TopLevelEssentialPayloadWitness (s : DB) : Prop :=
+   s.errorEvidence? = some (.scopeDecl (.topLevelEssentialNotAllowed))
+ 
++/-- Payload witness for a degenerate `$d` statement, retaining the number of
++variables seen before the terminator. -/
++def DisjointStatementTooShortPayloadWitness (s : DB) : Prop :=
++  ∃ actual,
++    s.errorEvidence? = some (.scopeDecl (.disjointStatementTooShort actual))
++
+ /-- Payload witness for `.tokenNotInScope` carrying symbol + gate booleans. -/
+ def TokenNotInScopePayloadWitness (s : DB) : Prop :=
+   ∃ sym,
+@@ -1211,6 +1235,7 @@ def HighValueShapeViolation (s : DB) (code : ParseErrorCode) : Prop :=
+   match code with
+   | .invalidLabel => s.InvalidLabelViolation
+   | .duplicateDisjointVariable => s.DuplicateDisjointVariableViolation
++  | .disjointStatementTooShort => s.DisjointStatementTooShortViolation
+   | .tokenNotInScope => s.TokenNotInScopeViolation
+   | _ => True
+ 
+@@ -1258,6 +1283,7 @@ def RuleSemanticViolation (s : DB) (code : ParseErrorCode) : Prop :=
+   match code with
+   | .invalidLabel => s.InvalidLabelViolation
+   | .duplicateDisjointVariable => s.DuplicateDisjointVariableViolation
++  | .disjointStatementTooShort => s.DisjointStatementTooShortViolation
+   | .tokenNotInScope => s.TokenNotInScopeViolation
+   | .cantSaveEmptyStack => s.CompressedSaveViolation
+   | .unclosedBlock => s.DoneModeViolation .unclosedBlock
+@@ -1778,8 +1804,8 @@ inductive TokenParser
+   | djvars : Array String → TokenParser
+   | math : Array Sym → TokensParser → TokenParser
+   | label : Pos → String → TokenParser
+-  | includePath : Pos → TokenParser
+-  | includeClose : Pos → String → TokenParser
++  | includePath : TokenParser → Pos → TokenParser
++  | includeClose : TokenParser → Pos → String → TokenParser
+   | proof : ProofState → TokenParser
+   deriving Inhabited
+ 
+@@ -1791,8 +1817,10 @@ def TokenParser.toString : TokenParser → String
+   | .djvars s => s!"djvars {s}"
+   | .math s p => s!"math {s} {p}"
+   | .label pos l => s!"at {pos}: ? {l}"
+-  | .includePath pos => s!"at {pos}: include path"
+-  | .includeClose pos path => s!"at {pos}: include close {path}"
++  | .includePath resume pos =>
++      s!"at {pos}: include path (resume {toString resume})"
++  | .includeClose resume pos path =>
++      s!"at {pos}: include close {path} (resume {toString resume})"
+   | .proof p => ToString.toString p
+ 
+ instance : ToString TokenParser := ⟨TokenParser.toString⟩
+@@ -1824,9 +1852,10 @@ def mkErrorWithEvidence (s : ParserState) (pos : Pos) (msg : String) (ev : Error
+ def mkErrorFromEvidence (s : ParserState) (pos : Pos) (ev : ErrorEvidence) : ParserState :=
+   s.withDB fun db => db.mkErrorFromEvidence pos ev
+ 
+-@[inline] def requestInclude (s : ParserState) (includePath : String) : ParserState :=
++@[inline] def requestInclude (s : ParserState) (resume : TokenParser)
++    (includePath : String) : ParserState :=
+   { s with
+-      tokp := .start
++      tokp := resume
+       db := { s.db with error? := some ⟨.includeRequest s.sourceFile includePath, default⟩ } }
+ 
+ def normalizeIncludePath (sourceFile : String) (rawPath : String) : Except IncludeError String := do
+@@ -1923,27 +1952,45 @@ inductive CompressedAction
+   | save
+   | unknown
+ 
++/-- Decode one byte of a compressed proof.  The action list is stored in
++    reverse order while scanning, matching `decodeCompressed`. -/
++def decodeCompressedByte
++    (acts : List CompressedAction) (chr : Nat) (c : UInt8) :
++    Except ProofCheckFail (List CompressedAction × Nat) :=
++  let code := c.toNat
++  if 65 ≤ code && code ≤ 84 then
++    .ok (.step (20 * chr + (code - 65)) :: acts, 0)
++  else if 85 ≤ code && code ≤ 89 then
++    .ok (acts, 5 * chr + (code - 84))
++  else if code = 90 then
++    .ok (.save :: acts, 0)
++  else if code = 63 then
++    .ok (.unknown :: acts, 0)
++  else
++    .error (.proofCheck .proofParseError)
++
++/-- Scan the remaining bytes of a compressed token from left to right.  This
++    named recursion exposes the exact iterator used by `decodeCompressed` to
++    refinement proofs without changing its reverse-action accumulator. -/
++def decodeCompressedLoop (tk : ByteSlice) :
++    (remaining : Nat) → remaining ≤ tk.size →
++      List CompressedAction → Nat →
++      Except ProofCheckFail (List CompressedAction × Nat)
++  | 0, _, acts, chr => .ok (acts, chr)
++  | remaining + 1, h, acts, chr =>
++      have hi : tk.size - 1 - remaining < tk.size := by omega
++      match decodeCompressedByte
++          acts chr tk[tk.size - 1 - remaining] with
++      | .ok (nextActs, nextChr) =>
++          decodeCompressedLoop tk remaining
++            (Nat.le_of_succ_le h) nextActs nextChr
++      | .error err => .error err
++
+ /-- Decode a compressed proof token into actions and the updated accumulator. -/
+ def decodeCompressed (tk : ByteSlice) (chr : Nat) :
+     Except ProofCheckFail (List CompressedAction × Nat) := do
+-  let mut chr := chr
+-  let mut acts : List CompressedAction := []
+-  for c in tk do
+-    if 'A'.toUInt8 ≤ c && c ≤ 'Z'.toUInt8 then
+-      if c ≤ 'T'.toUInt8 then
+-        let n := 20 * chr + (c - 'A'.toUInt8).toNat
+-        acts := CompressedAction.step n :: acts
+-        chr := 0
+-      else if c < 'Z'.toUInt8 then
+-        chr := 5 * chr + (c - 'T'.toUInt8).toNat
+-      else
+-        acts := CompressedAction.save :: acts
+-        chr := 0
+-    else if c = '?'.toUInt8 then
+-      acts := CompressedAction.unknown :: acts
+-      chr := 0
+-    else
+-      throw (.proofCheck .proofParseError)
++  let (acts, chr) ←
++    decodeCompressedLoop tk tk.size (Nat.le_refl _) [] chr
+   return (acts.reverse, chr)
+ 
+ def applyCompressedActions (db : DB) (pr : ProofState) (acts : List CompressedAction) :
+@@ -2093,7 +2140,7 @@ def feedToken (s : ParserState) (pos : Nat) (tk : ByteSlice) : ParserState :=
+       | some err =>
+           s.mkErrorFromEvidence pos (.includeErr err)
+       | none =>
+-          { s with tokp := .includePath pos }
++          { s with tokp := .includePath p pos }
+     else
+     match p with
+     | .comment _ => unreachable!
+@@ -2110,7 +2157,13 @@ def feedToken (s : ParserState) (pos : Nat) (tk : ByteSlice) : ParserState :=
+     | .const => s.sym pos tk .const
+     | .var => s.sym pos tk .var
+     | .djvars arr =>
+-      if tk.eqArray "$.".toAscii then { s with tokp := .start } else
++      if tk.eqArray "$.".toAscii then
++        if arr.size < 2 then
++          s.mkErrorFromEvidence pos
++            (.scopeDecl (.disjointStatementTooShort arr.size))
++        else
++          { s with tokp := .start }
++      else
+       s.withMath pos tk fun s tk => djvars_loop arr s pos tk
+     | .math arr p =>
+       if tk.eqArray p.k.delim then
+@@ -2143,7 +2196,7 @@ def feedToken (s : ParserState) (pos : Nat) (tk : ByteSlice) : ParserState :=
+       else
+         let ty := (toLabel tk).2
+         s.mkErrorFromEvidence pos (.tokenForm (.unknownStatementType ty))
+-    | .includePath includePos =>
++    | .includePath resume includePos =>
+       if tk.eqArray "$]".toAscii then
+         s.mkErrorFromEvidence includePos (.includeErr (.emptyPathBeforeNormalization s.sourceFile))
+       else
+@@ -2153,12 +2206,12 @@ def feedToken (s : ParserState) (pos : Nat) (tk : ByteSlice) : ParserState :=
+             s.mkErrorFromEvidence includePos (.includeErr err)
+         | .ok includePath =>
+             if closesInline then
+-              s.requestInclude includePath
++              s.requestInclude resume includePath
+             else
+-              { s with tokp := .includeClose includePos includePath }
+-    | .includeClose includePos includePath =>
++              { s with tokp := .includeClose resume includePos includePath }
++    | .includeClose resume includePos includePath =>
+       if tk.eqArray "$]".toAscii then
+-        s.requestInclude includePath
++        s.requestInclude resume includePath
+       else
+         s.mkErrorFromEvidence includePos (.tokenForm (.notACommand tk.toString))
+     | .proof pr =>
+@@ -2246,8 +2299,8 @@ def done (s : ParserState) (base : Nat) : DB := Id.run do
+     | .ax => db.mkParseError base .unclosedAx
+     | .thm => db.mkParseError base .unclosedThm
+   | .label pos lab => db.mkErrorFromEvidence pos (.tokenForm (.notACommand lab))
+-  | .includePath pos => db.mkErrorFromEvidence pos (.tokenForm (.notACommand "$["))
+-  | .includeClose pos _ => db.mkErrorFromEvidence pos (.tokenForm (.notACommand "$["))
++  | .includePath _ pos => db.mkErrorFromEvidence pos (.tokenForm (.notACommand "$["))
++  | .includeClose _ pos _ => db.mkErrorFromEvidence pos (.tokenForm (.notACommand "$["))
+   | .proof _ => db.mkParseError base .unclosedProof
+ 
+ 
+@@ -2373,20 +2426,27 @@ def scanIncludes (contents : ByteArray) (fname : String) (config : ModeConfig :=
+       i := i + 1
+       continue
+ 
+-    -- Track scope depth for strict mode validation
+-    if i + 1 < contents.size && contents[i]! == '$'.toUInt8 then
+-      let c := Metamath.Verify.uint8ToChar (contents[i+1]!)
+-      if c == '{' then
+-        scopeDepth := scopeDepth + 1
+-      else if c == '}' then
+-        scopeDepth := max 0 (scopeDepth - 1)
+-      else if c == '.' then
+-        inStatement := false  -- Statement terminator
+-
+-    -- Track if we're entering a statement (simplified: after $f, $e, $a, $p)
+-    if i + 1 < contents.size && contents[i]! == '$'.toUInt8 then
+-      let c := Metamath.Verify.uint8ToChar (contents[i+1]!)
+-      if c == 'f' || c == 'e' || c == 'a' || c == 'p' then
++    -- Track statement boundaries at token starts.  `$c`, `$v`, and `$d`
++    -- begin with their keyword; labeled statements begin with the label, so a
++    -- four-keyword (`$f`/`$e`/`$a`/`$p`) heuristic is incomplete.  Outside
++    -- comments, only `$.`, `${`, and `$}` leave the scanner between
++    -- statements; `$[` preserves the current state until its placement gate
++    -- below has run.
++    let atTokenStart := i == 0 || isWhitespace contents[i - 1]!
++    if atTokenStart then
++      if i + 1 < contents.size && contents[i]! == '$'.toUInt8 then
++        let c := Metamath.Verify.uint8ToChar (contents[i+1]!)
++        if c == '{' then
++          scopeDepth := scopeDepth + 1
++          inStatement := false
++        else if c == '}' then
++          scopeDepth := max 0 (scopeDepth - 1)
++          inStatement := false
++        else if c == '.' then
++          inStatement := false
++        else if c != '[' then
++          inStatement := true
++      else if !isWhitespace contents[i]! then
+         inStatement := true
+ 
+     -- Look for $[ token (only outside comments)
+@@ -2462,6 +2522,15 @@ def includePreprocessErrorDB (config : ModeConfig) (err : IncludeError) : DB :=
+     let s := s.feedAll base chunk
+     (s, base + chunk.size)
+ 
++/-- Finalize the one token already buffered by `feedAll`, without rereading
++source bytes or manufacturing a second input pass.  Resetting `charp` makes the
++result safe to resume after an include request. -/
++@[inline] def flushPendingToken (s : ParserState) : ParserState :=
++  match s.charp with
++  | .ws => s
++  | .token pos tk =>
++      { s.feedToken pos tk.toSlice with charp := .ws }
++
+ /-- Extract a driver-level include request from parser error payloads. -/
+ @[inline] def parserIncludeRequestOfError? (err : Error) :
+     Option IncludeRequest :=
+@@ -2471,11 +2540,11 @@ def includePreprocessErrorDB (config : ModeConfig) (err : IncludeError) : DB :=
+   | _ =>
+       none
+ 
+-/-- Extract include preprocessor errors emitted via parser evidence payload. -/
+-@[inline] def parserIncludeErrorOfDB? (db : DB) : Option IncludeError :=
+-  match db.errorEvidence? with
+-  | some (.includeErr err) => some err
+-  | _ => none
++/-- Clear a driver-consumed include request without changing the suspended
++token-parser continuation.  This is used only after
++`parserIncludeRequestOfError?` has identified the interrupt payload. -/
++@[inline] def clearIncludeRequest (s : ParserState) : ParserState :=
++  { s with db := { s.db with error? := none } }
+ 
+ /-- Build an include stack frame from a file path under depth/cycle/duplicate guards.
+ Returns:
+@@ -2523,8 +2592,32 @@ def stepFrame (st : IncludeDriverState) : FrameStep :=
+         .fed { st with parser := s1, base := base1,
+                        stack := { frame with needsSep := false } :: rest }
+       else if frame.offset >= frame.contents.size then
+-        -- frame exhausted: pop it (pure, no IO)
+-        .fed { st with processing := st.processing.erase frame.canonStr, stack := rest }
++        match st.parser.charp with
++        | .ws =>
++            -- The frame is exhausted and has no pending token: pop it.
++            .fed { st with processing := st.processing.erase frame.canonStr,
++                           stack := rest }
++        | .token _ _ =>
++            -- `feedAll` deliberately retains the final token until a boundary.
++            -- Flush that one buffered token while this file frame is still live,
++            -- so a terminal `$]` can request its child before the frame is popped.
++            let sInput := { st.parser with sourceFile := frame.fname }
++            let s1 := flushPendingToken sInput
++            match s1.db.error? with
++            | some ⟨err, consumed⟩ =>
++                match parserIncludeRequestOfError? err with
++                | some (.pushFile sourceFile includeFile) =>
++                    let parentFrame := { frame with needsSep := true }
++                    let sCleared := clearIncludeRequest s1
++                    .push sourceFile includeFile frame.nextDepth
++                      { st with parser := sCleared, base := st.base + consumed,
++                                stack := parentFrame :: rest }
++                | none =>
++                    .fed { st with parser := s1, base := st.base + consumed }
++            | none =>
++                .fed { st with parser := s1,
++                               processing := st.processing.erase frame.canonStr,
++                               stack := rest }
+       else
+         let chunk := frame.contents.extract frame.offset frame.contents.size
+         let sInput := { st.parser with sourceFile := frame.fname }
+@@ -2534,7 +2627,7 @@ def stepFrame (st : IncludeDriverState) : FrameStep :=
+             match parserIncludeRequestOfError? err with
+             | some (.pushFile sourceFile includeFile) =>
+                 let parentFrame := { frame with offset := frame.offset + consumed, needsSep := true }
+-                let sCleared := { s1 with db := { s1.db with error? := none } }
++                let sCleared := clearIncludeRequest s1
+                 .push sourceFile includeFile frame.nextDepth
+                   { st with parser := sCleared, base := st.base + consumed,
+                             stack := parentFrame :: rest }
+@@ -2542,7 +2635,7 @@ def stepFrame (st : IncludeDriverState) : FrameStep :=
+                 .fed { st with parser := s1, base := st.base + consumed }
+         | none =>
+             .fed { st with parser := s1, base := st.base + chunk.size,
+-                           processing := st.processing.erase frame.canonStr, stack := rest }
++                           stack := { frame with offset := frame.contents.size } :: rest }
+ 
+ /-- Single-pass include-aware parser driver parameterized by filesystem hooks.
+ Reads each file once, scans `$[ ... $]` directives on the fly, and streams non-include
+@@ -2566,17 +2659,16 @@ def processFileSinglePassWithIO
+       repeat
+         match stepFrame st with
+         | .done st' =>
+-            let dbAtBoundary := st'.parser.done st'.base
+-            match parserIncludeErrorOfDB? dbAtBoundary with
+-            | some err => return .error err
+-            | none     => return .ok st'
++            -- `finalizeSinglePassResult` is the sole owner of EOF finality.
++            -- Returning the streaming state here avoids evaluating a pending
++            -- final token twice.
++            return .ok st'
+         | .fed st' =>
+-            -- Check for include-preprocessing errors embedded in DB evidence
+-            match parserIncludeErrorOfDB? st'.parser.db with
+-            | some incErr => return .error incErr
+-            | none =>
+-                if st'.parser.db.error then return .ok st'
+-                st := st'
++            -- Parser-originated errors already carry their exact position and
++            -- terminate this pass.  Driver-originated IO/include failures use
++            -- the `Except` branch instead.
++            if st'.parser.db.error then return .ok st'
++            st := st'
+         | .push sourceFile includeFile nextDepth st' =>
+             let baseDir := System.FilePath.parent sourceFile |>.getD "."
+             let fullPath := baseDir / includeFile
+diff --git a/Metamath/VerifyClauseThms.lean b/Metamath/VerifyClauseThms.lean
+index 8c0337c..bb15027 100644
+--- a/Metamath/VerifyClauseThms.lean
++++ b/Metamath/VerifyClauseThms.lean
+@@ -29,6 +29,9 @@ theorem parseErrorCode_specClause_invalidLabel :
+ theorem parseErrorCode_specClause_duplicateDisjointVariable :
+     ParseErrorCode.specClause .duplicateDisjointVariable = .sec4_2_4_djvars := rfl
+ 
++theorem parseErrorCode_specClause_disjointStatementTooShort :
++    ParseErrorCode.specClause .disjointStatementTooShort = .sec4_2_4_djvars := rfl
++
+ theorem parseErrorCode_specClause_tokenNotInScope :
+     ParseErrorCode.specClause .tokenNotInScope = .sec4_2_4_djvars := rfl
+ 
+@@ -89,6 +92,13 @@ theorem duplicateDisjointVariable_violation_implies_sec4_2_4_duplicate
+   intro h
+   simpa [DB.Sec4_2_4_DjvarsDuplicateViolation] using h
+ 
++theorem disjointStatementTooShort_violation_implies_sec4_2_4_arity
++    (s : DB) :
++    s.DisjointStatementTooShortViolation →
++    s.Sec4_2_4_DjvarsArityViolation := by
++  intro h
++  simpa [DB.Sec4_2_4_DjvarsArityViolation] using h
++
+ theorem tokenNotInScope_violation_implies_sec4_2_4_scope
+     (s : DB) :
+     s.TokenNotInScopeViolation →
+@@ -120,6 +130,13 @@ theorem checkBytes_duplicateDisjointVariable_implies_clause
+   intro h_code
+   exact ⟨.duplicateDisjointVariable, h_code, rfl⟩
+ 
++theorem checkBytes_disjointStatementTooShort_implies_clause
++    (arr : ByteArray) (config : ModeConfig) :
++    (checkBytes arr config).parseErrorCode? = some .disjointStatementTooShort →
++    (checkBytes arr config).ParserSpecClauseViolation .sec4_2_4_djvars := by
++  intro h_code
++  exact ⟨.disjointStatementTooShort, h_code, rfl⟩
++
+ theorem checkBytes_tokenNotInScope_implies_clause
+     (arr : ByteArray) (config : ModeConfig) :
+     (checkBytes arr config).parseErrorCode? = some .tokenNotInScope →
+diff --git a/Metamath/VerifyConformanceThms.lean b/Metamath/VerifyConformanceThms.lean
+index 5f5f0ad..2ccedf8 100644
+--- a/Metamath/VerifyConformanceThms.lean
++++ b/Metamath/VerifyConformanceThms.lean
+@@ -55,6 +55,20 @@ theorem checkBytes_duplicateDisjointVariable_implies_sec4_2_4_duplicate
+   exact duplicateDisjointVariable_violation_implies_sec4_2_4_duplicate (s := checkBytes arr config)
+     h_vio
+ 
++theorem checkBytes_disjointStatementTooShort_implies_sec4_2_4_arity
++    (arr : ByteArray) (config : ModeConfig) :
++    (checkBytes arr config).parseErrorCode? = some .disjointStatementTooShort →
++    (checkBytes arr config).Sec4_2_4_DjvarsArityViolation := by
++  intro h_code
++  have h_sem :=
++    DB.parseErrorCode?_semantic_sound (s := checkBytes arr config) .disjointStatementTooShort h_code
++  have h_rule : (checkBytes arr config).RuleSemanticViolation .disjointStatementTooShort :=
++    h_sem.2.2
++  have h_vio : (checkBytes arr config).DisjointStatementTooShortViolation := by
++    simpa [DB.RuleSemanticViolation, DB.DisjointStatementTooShortViolation] using h_rule
++  exact disjointStatementTooShort_violation_implies_sec4_2_4_arity (s := checkBytes arr config)
++    h_vio
++
+ theorem checkBytes_tokenNotInScope_implies_sec4_2_4_scope
+     (arr : ByteArray) (config : ModeConfig) :
+     (checkBytes arr config).parseErrorCode? = some .tokenNotInScope →
 diff --git a/Metamath/VerifyDBConfigThms.lean b/Metamath/VerifyDBConfigThms.lean
-index 0da192f114906d7883ff46655bbfa2cd14b4d999..050862c8b07273b80c255369df13db1d6c3cc979 100644
+index 0da192f..050862c 100644
 --- a/Metamath/VerifyDBConfigThms.lean
 +++ b/Metamath/VerifyDBConfigThms.lean
 @@ -145,10 +145,17 @@ namespace DB
@@ -209,8 +1860,300 @@ index 0da192f114906d7883ff46655bbfa2cd14b4d999..050862c8b07273b80c255369df13db1d
  
  @[simp] theorem insertAxiom_config (db : DB) (pos : Pos) (l : String) (fmla : Formula) :
      (db.insertAxiom pos l fmla).config = db.config := by
+diff --git a/Metamath/VerifyDBPayloadThms.lean b/Metamath/VerifyDBPayloadThms.lean
+index b669e10..c311b18 100644
+--- a/Metamath/VerifyDBPayloadThms.lean
++++ b/Metamath/VerifyDBPayloadThms.lean
+@@ -36,6 +36,7 @@ theorem parseErrorCode?_topLevelEssentialNotAllowed_payload_inversion
+   | expectedConstantAndVariable => cases h_err_code
+   | variableAlreadyHasFloatHyp v => cases h_err_code
+   | duplicateDisjointVariable sym => cases h_err_code
++  | disjointStatementTooShort actual => cases h_err_code
+   | tokenNotInScope sym =>
+       simp [ScopeDeclError.code] at h_err_code
+   | tokenNotVariable sym => cases h_err_code
+@@ -62,6 +63,7 @@ theorem parseErrorCode?_tokenNotInScope_payload_inversion
+   | expectedConstantAndVariable => cases h_err_code
+   | variableAlreadyHasFloatHyp v => cases h_err_code
+   | duplicateDisjointVariable sym => cases h_err_code
++  | disjointStatementTooShort actual => cases h_err_code
+   | tokenNotInScope sym =>
+       simp [ScopeDeclError.code] at h_err_code
+       exact ⟨sym, by simpa using h_ev⟩
+@@ -89,6 +91,7 @@ theorem parseErrorCode?_tokenNotConstantOrVariable_payload_inversion
+   | expectedConstantAndVariable => cases h_err_code
+   | variableAlreadyHasFloatHyp v => cases h_err_code
+   | duplicateDisjointVariable sym => cases h_err_code
++  | disjointStatementTooShort actual => cases h_err_code
+   | tokenNotInScope sym =>
+       simp [ScopeDeclError.code] at h_err_code
+   | tokenNotVariable sym => cases h_err_code
+@@ -99,6 +102,33 @@ theorem parseErrorCode?_tokenNotConstantOrVariable_payload_inversion
+       simp [ScopeDeclError.code] at h_err_code
+   | outOfOrderHypothesesInFrame => cases h_err_code
+ 
++/-- Inversion: decoded `.disjointStatementTooShort` retains the number of
++variables consumed before the `$d` terminator. -/
++theorem parseErrorCode?_disjointStatementTooShort_payload_inversion
++    (s : DB) :
++    s.parseErrorCode? = some .disjointStatementTooShort →
++    s.DisjointStatementTooShortPayloadWitness := by
++  intro h_code
++  have h_rule := parseErrorCode?_ruleSemantic_sound s
++    .disjointStatementTooShort h_code
++  rcases h_rule with ⟨err, h_ev, h_err_code⟩
++  cases err with
++  | cantPopGlobalScope => cases h_err_code
++  | constMustBeOutermost => cases h_err_code
++  | duplicateSymbolOrAssert label => cases h_err_code
++  | firstSymbolNotConstant => cases h_err_code
++  | hypothesisSymbolsNotInFrame => cases h_err_code
++  | outOfOrderHypothesesInFrame => cases h_err_code
++  | expectedConstantAndVariable => cases h_err_code
++  | variableAlreadyHasFloatHyp v => cases h_err_code
++  | duplicateDisjointVariable v => cases h_err_code
++  | disjointStatementTooShort actual =>
++      exact ⟨actual, by simpa using h_ev⟩
++  | tokenNotInScope v => cases h_err_code
++  | tokenNotVariable v => cases h_err_code
++  | tokenNotConstantOrVariable symbol => cases h_err_code
++  | topLevelEssentialNotAllowed => cases h_err_code
++
+ /-- Inversion: decoded `.includeInInnerScope` carries include payload with position+depth. -/
+ theorem parseErrorCode?_includeInInnerScope_payload_inversion
+     (s : DB) :
+diff --git a/Metamath/VerifyDoneThms.lean b/Metamath/VerifyDoneThms.lean
+index a8c2766..fd5c0ec 100644
+--- a/Metamath/VerifyDoneThms.lean
++++ b/Metamath/VerifyDoneThms.lean
+@@ -76,8 +76,8 @@ theorem done_parseErrorCode?_ws
+           | .ax => some .unclosedAx
+           | .thm => some .unclosedThm
+       | .label _ _ => some .notACommand
+-      | .includePath _ => some .notACommand
+-      | .includeClose _ _ => some .notACommand
++      | .includePath _ _ => some .notACommand
++      | .includeClose _ _ _ => some .notACommand
+       | .proof _ => some .unclosedProof := by
+   unfold ParserState.done
+   simp [h_charp, h_no_err, DB.error, DB.parseErrorCode?, DB.mkParseError, DB.mkErrorFromEvidence,
+@@ -93,9 +93,9 @@ theorem done_parseErrorCode?_ws
+       simp
+   case label pos lab =>
+     simp [ErrorEvidence.code, TokenFormError.code]
+-  case includePath pos =>
++  case includePath resume pos =>
+     simp [ErrorEvidence.code, TokenFormError.code]
+-  case includeClose pos path =>
++  case includeClose resume pos path =>
+     simp [ErrorEvidence.code, TokenFormError.code]
+ 
+ /-- EOF inversion (token case): `done` returns the code dictated by the parser mode after
+@@ -120,8 +120,8 @@ theorem done_parseErrorCode?_token
+           | .ax => some .unclosedAx
+           | .thm => some .unclosedThm
+       | TokenParser.label _ _ => some .notACommand
+-      | TokenParser.includePath _ => some .notACommand
+-      | TokenParser.includeClose _ _ => some .notACommand
++      | TokenParser.includePath _ _ => some .notACommand
++      | TokenParser.includeClose _ _ _ => some .notACommand
+       | TokenParser.proof _ => some .unclosedProof := by
+   unfold ParserState.done
+   simp [h_charp, h_no_err, h_feed_no_err, DB.error, DB.parseErrorCode?, DB.mkParseError,
+@@ -137,9 +137,9 @@ theorem done_parseErrorCode?_token
+       simp
+   case label pos lab =>
+     simp [ErrorEvidence.code, TokenFormError.code]
+-  case includePath pos =>
++  case includePath resume pos =>
+     simp [ErrorEvidence.code, TokenFormError.code]
+-  case includeClose pos path =>
++  case includeClose resume pos path =>
+     simp [ErrorEvidence.code, TokenFormError.code]
+ 
+ end Verify
+diff --git a/Metamath/VerifyIncludeThms.lean b/Metamath/VerifyIncludeThms.lean
+index a03a264..d03164f 100644
+--- a/Metamath/VerifyIncludeThms.lean
++++ b/Metamath/VerifyIncludeThms.lean
+@@ -7,6 +7,86 @@ import Metamath.VerifyClauseThms
+ namespace Metamath
+ namespace Verify
+ 
++/-! ## Include-continuation laws -/
++
++/-- The parser mode is not the temporary wrapper used while scanning a
++Metamath comment. -/
++def TokenParser.OutsideComment : TokenParser → Prop
++  | .comment _ => False
++  | _ => True
++
++/-- Raising an include request restores exactly the parser mode suspended at
++the `$[` token. -/
++@[simp] theorem ParserState.requestInclude_tokp
++    (s : ParserState) (resume : TokenParser) (includePath : String) :
++    (s.requestInclude resume includePath).tokp = resume := rfl
++
++/-- Clearing a driver-consumed include request changes only the database error
++field, never the token-parser continuation. -/
++@[simp] theorem clearIncludeRequest_tokp (s : ParserState) :
++    (clearIncludeRequest s).tokp = s.tokp := rfl
++
++/-- The request/driver boundary therefore preserves the suspended parser mode
++end to end. -/
++@[simp] theorem clearIncludeRequest_requestInclude_tokp
++    (s : ParserState) (resume : TokenParser) (includePath : String) :
++    (clearIncludeRequest (s.requestInclude resume includePath)).tokp = resume :=
++  rfl
++
++/-- Once the driver consumes an include request raised from an error-free
++parser state, clearing that request restores the complete parser state except
++for the explicitly selected continuation. -/
++theorem clearIncludeRequest_requestInclude_eq_of_errorFree
++    (s : ParserState) (resume : TokenParser) (includePath : String)
++    (h_errorFree : s.db.error? = none) :
++    clearIncludeRequest (s.requestInclude resume includePath) =
++      { s with tokp := resume } := by
++  cases s with
++  | mk db tokp charp line linepos sourceFile =>
++      simp only [ParserState.requestInclude, clearIncludeRequest]
++      congr
++      exact h_errorFree.symm
++
++/-- An accepted include opener stores the entire current parser mode as its
++continuation.  This is the mode-independent preservation law behind token
++splicing. -/
++theorem ParserState.feedToken_includeOpen_tokp
++    (s : ParserState) (i : Nat) (tk : ByteSlice) (resume : TokenParser)
++    (h_tokp : s.tokp = resume)
++    (h_outside : resume.OutsideComment)
++    (h_comment : tk.eqArray "$(".toAscii = false)
++    (h_include : tk.eqArray "$[".toAscii = true)
++    (h_gate : includeDirectiveViolation? s.db.config s.db.scopes.size
++      (match resume with | .start => false | _ => true) i = none) :
++    (s.feedToken i tk).tokp = .includePath resume (s.mkPos i) := by
++  cases resume <;>
++    simp only [TokenParser.OutsideComment] at h_outside
++  all_goals simp_all [ParserState.feedToken]
++
++/-- In token-splicing modes, an include opener encountered during `$d`
++accumulation therefore stores that entire accumulator as its continuation. -/
++theorem ParserState.feedToken_djvars_includeOpen_tokp
++    (s : ParserState) (i : Nat) (tk : ByteSlice) (vars : Array String)
++    (h_tokp : s.tokp = .djvars vars)
++    (h_comment : tk.eqArray "$(".toAscii = false)
++    (h_include : tk.eqArray "$[".toAscii = true)
++    (h_gate : includeDirectiveViolation? s.db.config s.db.scopes.size true i = none) :
++    (s.feedToken i tk).tokp = .includePath (.djvars vars) (s.mkPos i) := by
++  exact s.feedToken_includeOpen_tokp i tk (.djvars vars) h_tokp
++    (by trivial) h_comment h_include h_gate
++
++/-- Closing a parsed include directive raises the request with the stored
++continuation restored. -/
++theorem ParserState.feedToken_includeClose_eq_requestInclude
++    (s : ParserState) (i : Nat) (tk : ByteSlice)
++    (resume : TokenParser) (includePos : Pos) (includePath : String)
++    (h_tokp : s.tokp = .includeClose resume includePos includePath)
++    (h_comment : tk.eqArray "$(".toAscii = false)
++    (h_nested : tk.eqArray "$[".toAscii = false)
++    (h_close : tk.eqArray "$]".toAscii = true) :
++    s.feedToken i tk = s.requestInclude resume includePath := by
++  simp [ParserState.feedToken, h_tokp, h_comment, h_nested, h_close]
++
+ theorem includeDirectiveViolation?_inInnerScope_iff
+     (config : ModeConfig) (scopeDepth : Nat) (inStatement : Bool) (pos : Nat) :
+     includeDirectiveViolation? config scopeDepth inStatement pos = some (.inInnerScope pos scopeDepth inStatement config.allowIncludeInnerScope) ↔
+diff --git a/Metamath/VerifyParserStateThms.lean b/Metamath/VerifyParserStateThms.lean
+index 2b81b85..8e30b33 100644
+--- a/Metamath/VerifyParserStateThms.lean
++++ b/Metamath/VerifyParserStateThms.lean
+@@ -244,7 +244,7 @@ namespace ParserState
+         · split <;> simp [ParserState.mkErrorFromEvidence_db_config]
+         ·
+           split
+-          · rfl
++          · split <;> simp [ParserState.mkErrorFromEvidence_db_config]
+           · simp [ParserState.djvars_loop_db_config]
+   | math arr' p =>
+       simp only []
+diff --git a/Metamath/VerifyRuleCaseThms.lean b/Metamath/VerifyRuleCaseThms.lean
+index 44958a8..f3c2b40 100644
+--- a/Metamath/VerifyRuleCaseThms.lean
++++ b/Metamath/VerifyRuleCaseThms.lean
+@@ -20,6 +20,15 @@ theorem checkBytes_parseErrorCode?_duplicateDisjointVariable_violation
+   have h_rule := checkBytes_parseErrorCode?_ruleSemantic_sound arr config .duplicateDisjointVariable h_code
+   simpa [DB.RuleSemanticViolation, DB.DuplicateDisjointVariableViolation] using h_rule
+ 
++theorem checkBytes_parseErrorCode?_disjointStatementTooShort_violation
++    (arr : ByteArray) (config : ModeConfig) :
++    (checkBytes arr config).parseErrorCode? = some .disjointStatementTooShort →
++    (checkBytes arr config).DisjointStatementTooShortViolation := by
++  intro h_code
++  have h_rule :=
++    checkBytes_parseErrorCode?_ruleSemantic_sound arr config .disjointStatementTooShort h_code
++  simpa [DB.RuleSemanticViolation, DB.DisjointStatementTooShortViolation] using h_rule
++
+ theorem checkBytes_parseErrorCode?_tokenNotInScope_violation
+     (arr : ByteArray) (config : ModeConfig) :
+     (checkBytes arr config).parseErrorCode? = some .tokenNotInScope →
+@@ -340,6 +349,14 @@ theorem checkBytes_parseErrorCode?_duplicateDisjointVariable_ruleClause
+   intro h_code
+   exact checkBytes_parseErrorCode?_ruleClauseSemantic_sound arr config .duplicateDisjointVariable h_code
+ 
++theorem checkBytes_parseErrorCode?_disjointStatementTooShort_ruleClause
++    (arr : ByteArray) (config : ModeConfig) :
++    (checkBytes arr config).parseErrorCode? = some .disjointStatementTooShort →
++    (checkBytes arr config).RuleClauseSemanticViolation .disjointStatementTooShort := by
++  intro h_code
++  exact
++    checkBytes_parseErrorCode?_ruleClauseSemantic_sound arr config .disjointStatementTooShort h_code
++
+ theorem checkBytes_parseErrorCode?_tokenNotInScope_ruleClause
+     (arr : ByteArray) (config : ModeConfig) :
+     (checkBytes arr config).parseErrorCode? = some .tokenNotInScope →
+diff --git a/Metamath/VerifySinglePassThms.lean b/Metamath/VerifySinglePassThms.lean
+index bf55cd7..275c4c1 100644
+--- a/Metamath/VerifySinglePassThms.lean
++++ b/Metamath/VerifySinglePassThms.lean
+@@ -15,6 +15,36 @@ Legacy two-pass compatibility/equivalence theorems are isolated in
+     (config : ModeConfig) (err : IncludeError) :
+     finalizeSinglePassResult config (.error err) = includePreprocessErrorDB config err := rfl
+ 
++/-- A terminal parser error returned by the streaming include driver is
++preserved exactly by finalization.  In particular, its source position and
++the prefix database produced by the single pass are not re-encoded or fed a
++second time. -/
++theorem finalizeSinglePassResult_ok_of_parserError
++    (config : ModeConfig) (s : ParserState) (base : Nat)
++    (seen : Std.HashSet String) (h_error : s.db.error? ≠ none) :
++    finalizeSinglePassResult config (.ok (s, base, seen)) = s.db := by
++  have h_some : s.db.error?.isSome = true :=
++    Option.isSome_iff_ne_none.mpr h_error
++  have h_done : s.done base = s.db := by
++    unfold ParserState.done
++    simp [DB.error, h_some]
++  simp [finalizeSinglePassResult, h_done, h_error]
++
++/-- Flushing the sole token retained at a file boundary always restores the
++character scanner to its whitespace state, so child-file processing can
++resume without replaying any source byte. -/
++@[simp] theorem flushPendingToken_charp (s : ParserState) :
++    (flushPendingToken s).charp = .ws := by
++  cases h : s.charp <;> simp [flushPendingToken, h]
++
++/-- On a pending token, the EOF flush performs exactly one `feedToken`
++transition and clears that buffer. -/
++theorem flushPendingToken_of_token
++    (s : ParserState) (pos : Nat) (tk : ByteSliceT)
++    (h : s.charp = .token pos tk) :
++    flushPendingToken s = { s.feedToken pos tk.toSlice with charp := .ws } := by
++  simp [flushPendingToken, h]
++
+ /-- Single-pass file processor immediately returns the depth-limit include error when
+ called with zero fuel. -/
+ @[simp] theorem processFileSinglePass_zeroFuel
 diff --git a/lake-manifest.json b/lake-manifest.json
-index 06175ad086a95d250024dad47b3fd69b0cce63f0..c38e23ff0743d9d2646e950d6ea3c0c775af289c 100644
+index 06175ad..c38e23f 100644
 --- a/lake-manifest.json
 +++ b/lake-manifest.json
 @@ -1,16 +1,21 @@
@@ -252,7 +2195,7 @@ index 06175ad086a95d250024dad47b3fd69b0cce63f0..c38e23ff0743d9d2646e950d6ea3c0c7
 +  "fixedToolchain": false
 +}
 diff --git a/lakefile.lean b/lakefile.lean
-index 87252a66589cb0de501b6f0ed5f73c326c1282f7..a1265f2406dd744511bbf86de9f9283dbdb68005 100644
+index 87252a6..a1265f2 100644
 --- a/lakefile.lean
 +++ b/lakefile.lean
 @@ -5,7 +5,7 @@ package «mm-lean4» where
@@ -265,9 +2208,95 @@ index 87252a66589cb0de501b6f0ed5f73c326c1282f7..a1265f2406dd744511bbf86de9f9283d
  @[default_target]
  lean_lib Metamath where
 diff --git a/lean-toolchain b/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8..a8afa7d 100644
 --- a/lean-toolchain
 +++ b/lean-toolchain
 @@ -1 +1 @@
 -leanprover/lean4:v4.31.0
 +leanprover/lean4:v4.33.1
+diff --git a/test_databases/include_splicing/compressed_child.mm b/test_databases/include_splicing/compressed_child.mm
+new file mode 100644
+index 0000000..341da7e
+--- /dev/null
++++ b/test_databases/include_splicing/compressed_child.mm
+@@ -0,0 +1 @@
++B $.
+diff --git a/test_databases/include_splicing/compressed_main.mm b/test_databases/include_splicing/compressed_main.mm
+new file mode 100644
+index 0000000..5af5158
+--- /dev/null
++++ b/test_databases/include_splicing/compressed_main.mm
+@@ -0,0 +1,5 @@
++$c wff $.
++$v x $.
++vx $f wff x $.
++ax $a wff x $.
++th $p wff x $= ( ax ) A $[ compressed_child.mm $]
+diff --git a/test_databases/include_splicing/djvars_accept_child.mm b/test_databases/include_splicing/djvars_accept_child.mm
+new file mode 100644
+index 0000000..a825335
+--- /dev/null
++++ b/test_databases/include_splicing/djvars_accept_child.mm
+@@ -0,0 +1 @@
++y $.
+diff --git a/test_databases/include_splicing/djvars_accept_main.mm b/test_databases/include_splicing/djvars_accept_main.mm
+new file mode 100644
+index 0000000..290b90c
+--- /dev/null
++++ b/test_databases/include_splicing/djvars_accept_main.mm
+@@ -0,0 +1,3 @@
++$c wff $.
++$v x y $.
++$d x $[ djvars_accept_child.mm $]
+diff --git a/test_databases/include_splicing/djvars_empty_child.mm b/test_databases/include_splicing/djvars_empty_child.mm
+new file mode 100644
+index 0000000..34fe615
+--- /dev/null
++++ b/test_databases/include_splicing/djvars_empty_child.mm
+@@ -0,0 +1 @@
++$( intentionally contributes no tokens $)
+diff --git a/test_databases/include_splicing/djvars_empty_main.mm b/test_databases/include_splicing/djvars_empty_main.mm
+new file mode 100644
+index 0000000..b474971
+--- /dev/null
++++ b/test_databases/include_splicing/djvars_empty_main.mm
+@@ -0,0 +1,3 @@
++$c wff $.
++$v x $.
++$d x $[ djvars_empty_child.mm $]
+diff --git a/test_databases/include_splicing/normal_active_child.mm b/test_databases/include_splicing/normal_active_child.mm
+new file mode 100644
+index 0000000..a78a840
+--- /dev/null
++++ b/test_databases/include_splicing/normal_active_child.mm
+@@ -0,0 +1 @@
++ax $.
+diff --git a/test_databases/include_splicing/normal_active_main.mm b/test_databases/include_splicing/normal_active_main.mm
+new file mode 100644
+index 0000000..96633a4
+--- /dev/null
++++ b/test_databases/include_splicing/normal_active_main.mm
+@@ -0,0 +1,5 @@
++$c wff $.
++$v x $.
++vx $f wff x $.
++ax $a wff x $.
++th $p wff x $= vx $[ normal_active_child.mm $]
+diff --git a/test_databases/include_splicing/normal_start_child.mm b/test_databases/include_splicing/normal_start_child.mm
+new file mode 100644
+index 0000000..f234257
+--- /dev/null
++++ b/test_databases/include_splicing/normal_start_child.mm
+@@ -0,0 +1 @@
++vx ax $.
+diff --git a/test_databases/include_splicing/normal_start_main.mm b/test_databases/include_splicing/normal_start_main.mm
+new file mode 100644
+index 0000000..608520f
+--- /dev/null
++++ b/test_databases/include_splicing/normal_start_main.mm
+@@ -0,0 +1,5 @@
++$c wff $.
++$v x $.
++vx $f wff x $.
++ax $a wff x $.
++th $p wff x $= $[ normal_start_child.mm $]

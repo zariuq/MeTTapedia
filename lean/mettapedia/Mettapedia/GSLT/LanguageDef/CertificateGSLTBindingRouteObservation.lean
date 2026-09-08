@@ -29,7 +29,7 @@ namespace Mettapedia.GSLT.LanguageDef.CertificateGSLTBindingRouteObservation
 open CategoryTheory
 open scoped CategoryTheory
 open Mettapedia.GSLT.Core
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.GSLT.LanguageDef.CertificateGSLTHeterogeneousAuthority
 open Mettapedia.GSLT.LanguageDef.CertificateGSLTBindingRouteFunctor
@@ -57,7 +57,7 @@ def quotientRouteFunctor :
 
 /-- Exact generated authority realized on its observer quotient. -/
 def faithfulGenerationFunctor :
-    CategoryTheory.Functor GeneratedAuthorityQuotient AuthorityObject :=
+    CategoryTheory.Functor GeneratedAuthorityQuotient CertifiedTheory :=
   CategoryTheory.Quotient.lift GeneratedAuthorityRelation generationFunctor
     (by
       intro source target first second sameGenerated
@@ -96,7 +96,7 @@ instance faithfulGenerationFunctor_faithful :
 triangle with exact route generation. -/
 theorem faithfulGenerationFunctor_unique
     (candidate :
-      CategoryTheory.Functor GeneratedAuthorityQuotient AuthorityObject)
+      CategoryTheory.Functor GeneratedAuthorityQuotient CertifiedTheory)
     (commutes :
       CategoryTheory.Functor.comp quotientRouteFunctor candidate =
         generationFunctor) :

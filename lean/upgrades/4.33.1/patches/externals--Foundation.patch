@@ -1,5 +1,5 @@
 diff --git a/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean b/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean
-index 5092521da75d27ca98b1433658f61f13807e4e7d..e390cdea3809fd11c70efe5857c58b831b3233c0 100644
+index 5092521d..e390cdea 100644
 --- a/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean
 +++ b/Foundation/FirstOrder/Arithmetic/PeanoMinus/Q.lean
 @@ -116,8 +116,8 @@ lemma lt_def : a < b ↔ ∃ c, a + c + 1 = b := by
@@ -14,7 +14,7 @@ index 5092521da75d27ca98b1433658f61f13807e4e7d..e390cdea3809fd11c70efe5857c58b83
      apply Iff.trans (show some m < some n ↔ m < n by rfl);
      apply Iff.trans Nat.iff_lt_exists_add_succ;
 diff --git a/Foundation/FirstOrder/Arithmetic/R0/Representation.lean b/Foundation/FirstOrder/Arithmetic/R0/Representation.lean
-index fb21ed928de1aac0450ac0132044f17c3a3eec39..6b4b07a029790cb81df34622194e13053b8468bd 100644
+index fb21ed92..6b4b07a0 100644
 --- a/Foundation/FirstOrder/Arithmetic/R0/Representation.lean
 +++ b/Foundation/FirstOrder/Arithmetic/R0/Representation.lean
 @@ -207,11 +207,15 @@ private lemma models_codeAux {c : Code k} {f : List.Vector ℕ k →. ℕ} (hc :
@@ -54,7 +54,7 @@ index fb21ed928de1aac0450ac0132044f17c3a3eec39..6b4b07a029790cb81df34622194e1305
  
  lemma models_code {c : Code k} {f : List.Vector ℕ k →. ℕ} (hc : c.eval f) (y : ℕ) (v : Fin k → ℕ) :
 diff --git a/Foundation/FirstOrder/Arithmetic/Schemata.lean b/Foundation/FirstOrder/Arithmetic/Schemata.lean
-index ed6e7d0c27b869517cfa0eb5ca3047bc72bd262d..c3ae1cca592c5b826c553338ecf7e556a51f381d 100644
+index ed6e7d0c..c3ae1cca 100644
 --- a/Foundation/FirstOrder/Arithmetic/Schemata.lean
 +++ b/Foundation/FirstOrder/Arithmetic/Schemata.lean
 @@ -191,7 +191,8 @@ instance models_InductionScheme_alt : V ⊧ₘ* InductionScheme ℒₒᵣ (Arith
@@ -88,7 +88,7 @@ index ed6e7d0c27b869517cfa0eb5ca3047bc72bd262d..c3ae1cca592c5b826c553338ecf7e556
  instance : Entailment.Consistent (𝗜𝗡𝗗 Γ k) := (𝗜𝗡𝗗 Γ k).consistent_of_sound (Eq ⊥) rfl
  
 diff --git a/Foundation/FirstOrder/Basic/Calculus.lean b/Foundation/FirstOrder/Basic/Calculus.lean
-index d6e0ffd770e9ffc93c47095b989f7e126d2ae8c0..0dc04b9c09884dbc6bfe0413c88f3f59c38ee76c 100644
+index d6e0ffd7..0dc04b9c 100644
 --- a/Foundation/FirstOrder/Basic/Calculus.lean
 +++ b/Foundation/FirstOrder/Basic/Calculus.lean
 @@ -309,7 +309,7 @@ def compact {Γ : Sequent L} : 𝓢 ⟹ Γ → (s : { s : Finset (SyntacticFormu
@@ -183,7 +183,7 @@ index d6e0ffd770e9ffc93c47095b989f7e126d2ae8c0..0dc04b9c09884dbc6bfe0413c88f3f59
  end Theory
  
 diff --git a/Foundation/FirstOrder/Basic/Eq.lean b/Foundation/FirstOrder/Basic/Eq.lean
-index bf5733e39aceb46c562f891fecba0abe6ecfeffc..6ef0978cd4d2822269c01b9ab52e48c9719673a7 100644
+index bf5733e3..6ef0978c 100644
 --- a/Foundation/FirstOrder/Basic/Eq.lean
 +++ b/Foundation/FirstOrder/Basic/Eq.lean
 @@ -187,7 +187,14 @@ lemma rel_mk {k} (r : L.Rel k) (v : Fin k → M) : Structure.rel (M := QuotEq L
@@ -220,7 +220,7 @@ index bf5733e39aceb46c562f891fecba0abe6ecfeffc..6ef0978cd4d2822269c01b9ab52e48c9
    case _ => simp [*]
  
 diff --git a/Foundation/FirstOrder/Basic/Model.lean b/Foundation/FirstOrder/Basic/Model.lean
-index 3f7f20d8e0d87442181aebc748ea0e837e1b80fa..c14456027ab7ee5f304c8c16778f2ef9a0e83580 100644
+index 3f7f20d8..c1445602 100644
 --- a/Foundation/FirstOrder/Basic/Model.lean
 +++ b/Foundation/FirstOrder/Basic/Model.lean
 @@ -128,6 +128,9 @@ variable {L₁ L₂ M}
@@ -254,7 +254,7 @@ index 3f7f20d8e0d87442181aebc748ea0e837e1b80fa..c14456027ab7ee5f304c8c16778f2ef9
  end sigma
  
 diff --git a/Foundation/FirstOrder/Basic/Syntax/Rew.lean b/Foundation/FirstOrder/Basic/Syntax/Rew.lean
-index 44f408dfbf74969809b2e6458a5cb83ff26626cf..6df7544f47eb9e0accc3ba0357190fabe56ccc4f 100644
+index 44f408df..6df7544f 100644
 --- a/Foundation/FirstOrder/Basic/Syntax/Rew.lean
 +++ b/Foundation/FirstOrder/Basic/Syntax/Rew.lean
 @@ -456,6 +456,9 @@ def toEmpty [DecidableEq ξ] {n : ℕ} : (φ : Semiformula L ξ n) → φ.freeVa
@@ -268,7 +268,7 @@ index 44f408dfbf74969809b2e6458a5cb83ff26626cf..6df7544f47eb9e0accc3ba0357190fab
  @[simp] lemma toEmpty_emb [DecidableEq ξ] (φ : Semisentence L n) : (Rewriting.emb φ : Semiformula L ξ n).toEmpty (by simp) = φ := by
    induction φ using rec' <;> simp [toEmpty, rew_rel, rew_nrel, *]
 diff --git a/Foundation/FirstOrder/Bootstrapping/Syntax/Formula/Functions.lean b/Foundation/FirstOrder/Bootstrapping/Syntax/Formula/Functions.lean
-index 33ee42d8e5b8c310cd0e805f54f59a4cc646be2e..66bd078b596521599581d9f7fe42d58cb34042c5 100644
+index 33ee42d8..66bd078b 100644
 --- a/Foundation/FirstOrder/Bootstrapping/Syntax/Formula/Functions.lean
 +++ b/Foundation/FirstOrder/Bootstrapping/Syntax/Formula/Functions.lean
 @@ -395,8 +395,8 @@ noncomputable def blueprint : UformulaRec1.Blueprint where
@@ -294,7 +294,7 @@ index 33ee42d8e5b8c310cd0e805f54f59a4cc646be2e..66bd078b596521599581d9f7fe42d58c
  end Substs
  
 diff --git a/Foundation/FirstOrder/Bootstrapping/Syntax/Proof/Basic.lean b/Foundation/FirstOrder/Bootstrapping/Syntax/Proof/Basic.lean
-index 6437218499dfd26367eaded8f8a7a78629210edb..87a567b08e513c3ad9a1e0dd591463c483022194 100644
+index 64372184..87a567b0 100644
 --- a/Foundation/FirstOrder/Bootstrapping/Syntax/Proof/Basic.lean
 +++ b/Foundation/FirstOrder/Bootstrapping/Syntax/Proof/Basic.lean
 @@ -487,7 +487,14 @@ noncomputable abbrev provabilityPred (σ : Sentence L) : Sentence ℒₒᵣ := T
@@ -314,7 +314,7 @@ index 6437218499dfd26367eaded8f8a7a78629210edb..87a567b08e513c3ad9a1e0dd591463c4
  variable {T}
  
 diff --git a/Foundation/FirstOrder/Completeness/SearchTree.lean b/Foundation/FirstOrder/Completeness/SearchTree.lean
-index 68ae6084119fa95e35eae607905435ef327dcefb..7d5c39a000bd2a0bc76b949a1e9d3f7660f7cf57 100644
+index 68ae6084..7d5c39a0 100644
 --- a/Foundation/FirstOrder/Completeness/SearchTree.lean
 +++ b/Foundation/FirstOrder/Completeness/SearchTree.lean
 @@ -182,7 +182,8 @@ lemma chain_monotone (nwf : ¬WellFounded (SearchTree.Lt T Γ)) {s u : ℕ} (h :
@@ -328,7 +328,7 @@ index 68ae6084119fa95e35eae607905435ef327dcefb..7d5c39a000bd2a0bc76b949a1e9d3f76
  lemma chain_spec' (nwf : ¬WellFounded (SearchTree.Lt T Γ)) (c : Code L) (i : ℕ) :
      ⛓️[(encode c).pair i + 1] ≺[c] ⛓️[(encode c).pair i] := (chain_spec nwf _).toRedux
 diff --git a/Foundation/FirstOrder/Completeness/SubLanguage.lean b/Foundation/FirstOrder/Completeness/SubLanguage.lean
-index dd728e04687918787522a6fa9cf5e9398aeaa07a..f730fe22c34a8b2bfd86a6822a2af03434ceb76a 100644
+index dd728e04..f730fe22 100644
 --- a/Foundation/FirstOrder/Completeness/SubLanguage.lean
 +++ b/Foundation/FirstOrder/Completeness/SubLanguage.lean
 @@ -65,7 +65,13 @@ def toSubLanguage' (pf : ∀ k, L.Func k → Prop) (pr : ∀ k, L.Rel k → Prop
@@ -368,7 +368,7 @@ index dd728e04687918787522a6fa9cf5e9398aeaa07a..f730fe22c34a8b2bfd86a6822a2af034
  noncomputable def languageFuncIndexed (φ : Semiformula L ξ n) (k) : Finset (L.Func k) :=
    Finset.preimage (langFunc φ) (Sigma.mk k) (Set.injOn_of_injective sigma_mk_injective)
 diff --git a/Foundation/FirstOrder/Hauptsatz.lean b/Foundation/FirstOrder/Hauptsatz.lean
-index 2ba243176554f2a1eed8f4807dab9731932b85b4..945df574a1dd1762a9cf053de1d4f142254140ac 100644
+index 2ba24317..945df574 100644
 --- a/Foundation/FirstOrder/Hauptsatz.lean
 +++ b/Foundation/FirstOrder/Hauptsatz.lean
 @@ -332,7 +332,7 @@ def ofMinimalProof {φ : SyntacticFormulaᵢ L} : 𝗠𝗶𝗻¹ ⊢! φ → ⊩
@@ -390,7 +390,7 @@ index 2ba243176554f2a1eed8f4807dab9731932b85b4..945df574a1dd1762a9cf053de1d4f142
      let b : [.rel R v] ⊓ q ⊩ rel R v := (relRefl R v).monotone (StrongerThan.minLeLeft _ _)
      dq.implyEquiv ([.rel R v] ⊓ q) (StrongerThan.minLeRight _ _) b
 diff --git a/Foundation/FirstOrder/Incompleteness/Dense.lean b/Foundation/FirstOrder/Incompleteness/Dense.lean
-index 9609bd32735ff1218c721d52a8eb010159673d73..a4d8c51c96f96a54581d2099100d39e685ac11c3 100644
+index 9609bd32..a4d8c51c 100644
 --- a/Foundation/FirstOrder/Incompleteness/Dense.lean
 +++ b/Foundation/FirstOrder/Incompleteness/Dense.lean
 @@ -71,7 +71,7 @@ lemma FirstOrder.Arithmetic.dense (T : Theory ℒₒᵣ) [𝗜𝚺₁ ⪯ T] [T.
@@ -403,7 +403,7 @@ index 9609bd32735ff1218c721d52a8eb010159673d73..a4d8c51c96f96a54581d2099100d39e6
  
  instance (T : Theory ℒₒᵣ) [𝗜𝚺₁ ⪯ T] [T.Δ₁] : DenselyOrdered (LindenbaumAlgebra T) where
 diff --git a/Foundation/FirstOrder/Intuitionistic/Deduction.lean b/Foundation/FirstOrder/Intuitionistic/Deduction.lean
-index 362c503dfb63fd9a3069b523c50675a2e33b1f9e..4eb44593173846db622477c83de6e857a2d70e00 100644
+index 362c503d..4eb44593 100644
 --- a/Foundation/FirstOrder/Intuitionistic/Deduction.lean
 +++ b/Foundation/FirstOrder/Intuitionistic/Deduction.lean
 @@ -243,7 +243,7 @@ def rewrite (f : ℕ → SyntacticTerm L) : Λ ⊢! φ → Λ ⊢! Rew.rewrite f
@@ -416,7 +416,7 @@ index 362c503dfb63fd9a3069b523c50675a2e33b1f9e..4eb44593173846db622477c83de6e857
    | all₂ => show ‖HilbertProofᵢ.cast _ _‖ = _; rw [depth_cast]; rfl
    | ex₁ => show ‖HilbertProofᵢ.cast _ _‖ = _; rw [depth_cast]; rfl
 diff --git a/Foundation/FirstOrder/SetTheory/Universe.lean b/Foundation/FirstOrder/SetTheory/Universe.lean
-index 30b0a5560a046ee308a008d872a11018975c065c..622f5ca270136869602b9c0c1213a6e9f21e8b83 100644
+index 30b0a556..622f5ca2 100644
 --- a/Foundation/FirstOrder/SetTheory/Universe.lean
 +++ b/Foundation/FirstOrder/SetTheory/Universe.lean
 @@ -74,7 +74,7 @@ noncomputable instance : QPF.{u + 1, u + 1, u + 1} UniverseFunctor.{u} where
@@ -445,7 +445,7 @@ index 30b0a5560a046ee308a008d872a11018975c065c..622f5ca270136869602b9c0c1213a6e9
  lemma wellFounded : WellFounded (α := Universe.{u}) (· ∈ ·) := ⟨ind fun x ih ↦ Acc.intro x ih⟩
  
 diff --git a/Foundation/Logic/Semantics.lean b/Foundation/Logic/Semantics.lean
-index 7d017fda1e2d7bc4298d579f74f789e20c9c6dc3..42745b60a17a1efad8a163e18fc141f5e508a3b2 100644
+index 7d017fda..42745b60 100644
 --- a/Foundation/Logic/Semantics.lean
 +++ b/Foundation/Logic/Semantics.lean
 @@ -208,7 +208,11 @@ instance empty' (𝓜 : M) : 𝓜 ⊧* (∅ : Set F) := ⟨by simp⟩
@@ -462,7 +462,7 @@ index 7d017fda1e2d7bc4298d579f74f789e20c9c6dc3..42745b60a17a1efad8a163e18fc141f5
  end ModelsSet
  
 diff --git a/Foundation/Modal/Boxdot/GL_S.lean b/Foundation/Modal/Boxdot/GL_S.lean
-index 918904a5035bbee732e3a2cc2c4d173a783ecf42..a71fa730e9aa7e6e00cb48697dbfbac2c1433328 100644
+index 918904a5..a71fa730 100644
 --- a/Foundation/Modal/Boxdot/GL_S.lean
 +++ b/Foundation/Modal/Boxdot/GL_S.lean
 @@ -25,11 +25,21 @@ lemma iff_provable_boxdot_GL_provable_boxdot_S : Modal.GL ⊢ φᵇ ↔ Modal.S
@@ -489,7 +489,7 @@ index 918904a5035bbee732e3a2cc2c4d173a783ecf42..a71fa730e9aa7e6e00cb48697dbfbac2
        apply Satisfies.fconj_def.mpr;
        intro ψ hψ;
 diff --git a/Foundation/Modal/Kripke/ExtendRoot.lean b/Foundation/Modal/Kripke/ExtendRoot.lean
-index 0f69092300facc95170f439114297a7d240f381c..b4b12fd3b54a0f491f652761b190046078dd0644 100644
+index 0f690923..b4b12fd3 100644
 --- a/Foundation/Modal/Kripke/ExtendRoot.lean
 +++ b/Foundation/Modal/Kripke/ExtendRoot.lean
 @@ -130,11 +130,21 @@ lemma not_root_of_from_root' [F.IsTree r] {x : F.extendRoot n} (h : extendRoot.r
@@ -517,7 +517,7 @@ index 0f69092300facc95170f439114297a7d240f381c..b4b12fd3b54a0f491f652761b1900460
  lemma eq_inr_of_root_rel [F.IsTree r] {x : F.extendRoot 1} (h : extendRoot.root ≺ x) :
      ∃ x₀ : F, x = x₀ := by
 diff --git a/Foundation/Modal/Kripke/Logic/GL/Unnecessitation.lean b/Foundation/Modal/Kripke/Logic/GL/Unnecessitation.lean
-index d6185eeb7f2e1f1c719c841ead9bbf44ed1e04e8..03f0f6deb56b91ea83db12a7573910be59166ae7 100644
+index d6185eeb..03f0f6de 100644
 --- a/Foundation/Modal/Kripke/Logic/GL/Unnecessitation.lean
 +++ b/Foundation/Modal/Kripke/Logic/GL/Unnecessitation.lean
 @@ -43,7 +43,7 @@ lemma imply_boxdot_plain_of_imply_box_box : Modal.GL ⊢ □φ ➝ □ψ → Mod
@@ -530,7 +530,7 @@ index d6185eeb7f2e1f1c719c841ead9bbf44ed1e04e8..03f0f6deb56b91ea83db12a7573910be
  
  theorem unnecessitation! : Modal.GL ⊢ □φ → Modal.GL ⊢ φ := by
 diff --git a/Foundation/Modal/Kripke/Logic/GLPoint3.lean b/Foundation/Modal/Kripke/Logic/GLPoint3.lean
-index 1b2bd2b978e8cdfd1665cac28e65b043ce3b0302..2f9bbd991685f5440a55595193f27d36ab56f191 100644
+index 1b2bd2b9..2f9bbd99 100644
 --- a/Foundation/Modal/Kripke/Logic/GLPoint3.lean
 +++ b/Foundation/Modal/Kripke/Logic/GLPoint3.lean
 @@ -117,7 +117,7 @@ private instance complete.filteredModel.isFiniteGLPoint3 : Frame.IsFiniteGLPoint
@@ -543,7 +543,7 @@ index 1b2bd2b978e8cdfd1665cac28e65b043ce3b0302..2f9bbd991685f5440a55595193f27d36
      . tauto;
      . apply Frame.p_connected' Rvx Rvy ?_;
 diff --git a/Foundation/Modal/Kripke/Logic/Grz/Completeness.lean b/Foundation/Modal/Kripke/Logic/Grz/Completeness.lean
-index ed01159087cd2bb92ca33ce24cbe587ff767394c..307cfdf2388146106493a8a3c979bb83ddf01c3e 100644
+index ed011590..307cfdf2 100644
 --- a/Foundation/Modal/Kripke/Logic/Grz/Completeness.lean
 +++ b/Foundation/Modal/Kripke/Logic/Grz/Completeness.lean
 @@ -186,6 +186,16 @@ lemma truthlemma {X : (miniCanonicalModel 𝓢 φ).World} (q_sub : ψ ∈ φ.sub
@@ -605,7 +605,7 @@ index ed01159087cd2bb92ca33ce24cbe587ff767394c..307cfdf2388146106493a8a3c979bb83
  lemma complete_of_mem_miniCanonicalFrame
    (C : Kripke.FrameClass)
 diff --git a/Foundation/Modal/Kripke/Rank.lean b/Foundation/Modal/Kripke/Rank.lean
-index 6a8830cd0fbdaf3ed705c08e3b5c37967b45eff5..a56b1e7a6cbcece34e4fa0bb2065c15349690d26 100644
+index 6a8830cd..a56b1e7a 100644
 --- a/Foundation/Modal/Kripke/Rank.lean
 +++ b/Foundation/Modal/Kripke/Rank.lean
 @@ -127,13 +127,12 @@ lemma eq_original_height : Frame.rank (x : F.extendRoot 1) = Frame.rank x := by
@@ -637,7 +637,7 @@ index 6a8830cd0fbdaf3ed705c08e3b5c37967b45eff5..a56b1e7a6cbcece34e4fa0bb2065c153
  end
  
 diff --git a/Foundation/Modal/Kripke/Rooted.lean b/Foundation/Modal/Kripke/Rooted.lean
-index 57880bce16a212a402713a2ed7cce5652dffd2c2..6205cc89ec6c55d3ca75593ac80dd1232b1c85f4 100644
+index 57880bce..6205cc89 100644
 --- a/Foundation/Modal/Kripke/Rooted.lean
 +++ b/Foundation/Modal/Kripke/Rooted.lean
 @@ -224,7 +224,7 @@ lemma trans_rel_of_origin_trans_rel {hx hy} (Rxy : F.Rel.TransGen x y)
@@ -650,7 +650,7 @@ index 57880bce16a212a402713a2ed7cce5652dffd2c2..6205cc89ec6c55d3ca75593ac80dd123
        constructor;
        . simpa;
 diff --git a/Foundation/Modal/Kripke/Tree.lean b/Foundation/Modal/Kripke/Tree.lean
-index 21a62bbeb7e1d5c5c640682bbc8cb99e26ea0f28..66947018cfd22f2553cdf40dde317c892bb14619 100644
+index 21a62bbe..66947018 100644
 --- a/Foundation/Modal/Kripke/Tree.lean
 +++ b/Foundation/Modal/Kripke/Tree.lean
 @@ -116,7 +116,7 @@ instance : (F.mkTreeUnravelling r).IsRootedBy treeUnravelling.root where
@@ -672,7 +672,7 @@ index 21a62bbeb7e1d5c5c640682bbc8cb99e26ea0f28..66947018cfd22f2553cdf40dde317c89
  
  instance instIsTree : (F.mkTransTreeUnravelling r).IsTree (mkTransTreeUnravelling.root) where
 diff --git a/Foundation/Modal/Logic/D/Basic.lean b/Foundation/Modal/Logic/D/Basic.lean
-index f8cc8140f071a9898551c2b56e0392f174a6edb5..cd3c1303cff17ebf330e7d3c864014b7da71e811 100644
+index f8cc8140..cd3c1303 100644
 --- a/Foundation/Modal/Logic/D/Basic.lean
 +++ b/Foundation/Modal/Logic/D/Basic.lean
 @@ -187,7 +187,7 @@ instance : (tailModel₀ M o).IsRootedBy (tailModel₀.root) where
@@ -698,7 +698,7 @@ index f8cc8140f071a9898551c2b56e0392f174a6edb5..cd3c1303cff17ebf330e7d3c864014b7
  protected def pMorphism_original : M →ₚ (tailModel₀ M o) where
    toFun := embed_original
 diff --git a/Foundation/Modal/LogicSymbol.lean b/Foundation/Modal/LogicSymbol.lean
-index 5cb9000aaa2b2262af56c599132ea38d761b4626..3eed4e6c7676949659b288a333857de967f4231f 100644
+index 5cb9000a..3eed4e6c 100644
 --- a/Foundation/Modal/LogicSymbol.lean
 +++ b/Foundation/Modal/LogicSymbol.lean
 @@ -356,7 +356,7 @@ prefix:90 "□'" => List.LO.box
@@ -720,7 +720,7 @@ index 5cb9000aaa2b2262af56c599132ea38d761b4626..3eed4e6c7676949659b288a333857de9
  @[simp, grind =] lemma eq_diaItr_conn : (◇^[n]'(ψ :: s)) = (◇^[n]ψ) :: (◇^[n]'s) := by induction s <;> simp_all [diaItr];
  @[simp, grind =] lemma eq_dia_conn : (◇' (ψ :: s)) = (◇ψ) :: ◇'s := eq_diaItr_conn (n := 1)
 diff --git a/Foundation/Modal/Neighborhood/AxiomGeach.lean b/Foundation/Modal/Neighborhood/AxiomGeach.lean
-index ddbbc90ddfff08e9ff8c104fd5542dcca35afa1d..867a9804a360cc0cb614ab114befa15336154cf1 100644
+index ddbbc90d..867a9804 100644
 --- a/Foundation/Modal/Neighborhood/AxiomGeach.lean
 +++ b/Foundation/Modal/Neighborhood/AxiomGeach.lean
 @@ -183,7 +183,10 @@ protected def isGeachean (g) [Entailment.HasAxiomGeach g 𝓢]
@@ -782,7 +782,7 @@ index ddbbc90ddfff08e9ff8c104fd5542dcca35afa1d..867a9804a360cc0cb614ab114befa153
        sorry;
      . assumption;
 diff --git a/Foundation/Modal/Neighborhood/Completeness.lean b/Foundation/Modal/Neighborhood/Completeness.lean
-index 38f07ad059d9970cfb645a7be9c33862fe3dfae3..053e8d9ba6353b9d179f223e3af820daed714da7 100644
+index 38f07ad0..053e8d9b 100644
 --- a/Foundation/Modal/Neighborhood/Completeness.lean
 +++ b/Foundation/Modal/Neighborhood/Completeness.lean
 @@ -153,7 +153,7 @@ attribute [simp, grind] def_𝒩 def_V
@@ -839,7 +839,7 @@ index 38f07ad059d9970cfb645a7be9c33862fe3dfae3..053e8d9ba6353b9d179f223e3af820da
  end relativeBasicCanonicity
  
 diff --git a/Foundation/Modal/Neighborhood/Filtration.lean b/Foundation/Modal/Neighborhood/Filtration.lean
-index d74870d698e2d543036fc62547ff6cfb2daab66a..8fb11168cfa731dd88b3799f01ee4776f5b82c04 100644
+index d74870d6..8fb11168 100644
 --- a/Foundation/Modal/Neighborhood/Filtration.lean
 +++ b/Foundation/Modal/Neighborhood/Filtration.lean
 @@ -206,22 +206,21 @@ attribute [simp] Filtration.B_def Filtration.V_def
@@ -915,7 +915,7 @@ index d74870d698e2d543036fc62547ff6cfb2daab66a..8fb11168cfa731dd88b3799f01ee4776
          . suffices ∀ Yi ∈ Ys, ∀ ψ, □ψ ∈ T → Yi = 【M ψ】 → ⟦w⟧ ∉ 【M (□ψ)】 by simpa [Vs];
            rintro _ _ ψ hψ rfl;
 diff --git a/Foundation/Modal/Neighborhood/IntersectionClosure.lean b/Foundation/Modal/Neighborhood/IntersectionClosure.lean
-index bff16794755ede2eea44903a7dae27ef3735f3ee..f46cbceba413eba7401f5546e5e135784bd986c4 100644
+index bff16794..f46cbceb 100644
 --- a/Foundation/Modal/Neighborhood/IntersectionClosure.lean
 +++ b/Foundation/Modal/Neighborhood/IntersectionClosure.lean
 @@ -62,8 +62,22 @@ lemma symm_𝒩 : F.quasiFiltering.𝒩 = F.supplementation.intersectionClosure.
@@ -967,7 +967,7 @@ index bff16794755ede2eea44903a7dae27ef3735f3ee..f46cbceba413eba7401f5546e5e13578
        refine ⟨?_, ?_, ?_⟩;
        . simpa [Zs];
 diff --git a/Foundation/Modal/Neighborhood/Supplementation.lean b/Foundation/Modal/Neighborhood/Supplementation.lean
-index bd8c7b8653d6e8742533833d04f7d3572311e370..3bbc22988c13e0ce01a93b315847e5d854fd1aaf 100644
+index bd8c7b86..3bbc2298 100644
 --- a/Foundation/Modal/Neighborhood/Supplementation.lean
 +++ b/Foundation/Modal/Neighborhood/Supplementation.lean
 @@ -59,7 +59,7 @@ lemma itl_reduce : F.supplementation.supplementation.box X = F.supplementation.b
@@ -1004,7 +1004,7 @@ index bd8c7b8653d6e8742533833d04f7d3572311e370..3bbc22988c13e0ce01a93b315847e5d8
      tauto;
  
 diff --git a/Foundation/Modal/Tableau.lean b/Foundation/Modal/Tableau.lean
-index be1d4a520fc0a5fd623d6d1e903c114f405d4674..a84668850050abbcaa4277d739c4594f53a6eeb2 100644
+index be1d4a52..a8466885 100644
 --- a/Foundation/Modal/Tableau.lean
 +++ b/Foundation/Modal/Tableau.lean
 @@ -13,7 +13,7 @@ variable {α : Type*}
@@ -1017,7 +1017,7 @@ index be1d4a520fc0a5fd623d6d1e903c114f405d4674..a84668850050abbcaa4277d739c4594f
  namespace Tableau
  
 diff --git a/Foundation/Propositional/ConsistentTableau.lean b/Foundation/Propositional/ConsistentTableau.lean
-index 31d74f69543e24790801cc5e3158d27413ebe772..d8356f21ce57c1dd351e07dd0eeaeee5f5284193 100644
+index 31d74f69..d8356f21 100644
 --- a/Foundation/Propositional/ConsistentTableau.lean
 +++ b/Foundation/Propositional/ConsistentTableau.lean
 @@ -14,7 +14,7 @@ variable {α : Type*}
@@ -1030,7 +1030,7 @@ index 31d74f69543e24790801cc5e3158d27413ebe772..d8356f21ce57c1dd351e07dd0eeaeee5
  namespace Tableau
  
 diff --git a/Foundation/Propositional/FMT/Completeness.lean b/Foundation/Propositional/FMT/Completeness.lean
-index d027e483ef68196b43e9db7549cd1f52edad0d95..36ec7686931b25824d9e9d279ba6f1710efaed4a 100644
+index d027e483..36ec7686 100644
 --- a/Foundation/Propositional/FMT/Completeness.lean
 +++ b/Foundation/Propositional/FMT/Completeness.lean
 @@ -112,16 +112,16 @@ lemma next_consistent (H_consis : H.Consistent L) : (next L ψ H).Consistent L :
@@ -1067,7 +1067,7 @@ index d027e483ef68196b43e9db7549cd1f52edad0d95..36ec7686931b25824d9e9d279ba6f171
    | hor => apply Iff.trans $ ConsistentSaturatedHintikkaPair.iff_mem_or hsub; grind;
    | himp χ ξ ihχ ihξ =>
 diff --git a/Foundation/Propositional/Kripke/AxiomKrieselPutnam.lean b/Foundation/Propositional/Kripke/AxiomKrieselPutnam.lean
-index a1b86a80b1c788e366fe3443a9f0742ca00bcdc2..540f748b70ae033f3ade7025edbd49acbe3e72b0 100644
+index a1b86a80..540f748b 100644
 --- a/Foundation/Propositional/Kripke/AxiomKrieselPutnam.lean
 +++ b/Foundation/Propositional/Kripke/AxiomKrieselPutnam.lean
 @@ -121,10 +121,12 @@ instance [Entailment.HasAxiomKrieselPutnam 𝓢] : (canonicalFrame 𝓢).Satisfi
@@ -1105,7 +1105,7 @@ index a1b86a80b1c788e366fe3443a9f0742ca00bcdc2..540f748b70ae033f3ade7025edbd49ac
                  intro φ;
                  simp only [Set.mem_inter_iff, Set.mem_image, Set.mem_setOf_eq, Finset.coe_filter, and_imp, forall_exists_index, Γ₁, ΓNyz];
 diff --git a/Foundation/Propositional/Kripke/AxiomWLEM.lean b/Foundation/Propositional/Kripke/AxiomWLEM.lean
-index 865778f35de71c62668de5c1981d83ce42898e8e..c54682fd0948cf7d3cf2b850b7b3fbe762ca1425 100644
+index 865778f3..c54682fd 100644
 --- a/Foundation/Propositional/Kripke/AxiomWLEM.lean
 +++ b/Foundation/Propositional/Kripke/AxiomWLEM.lean
 @@ -84,7 +84,8 @@ instance [Entailment.HasAxiomWLEM 𝓢] : (canonicalFrame 𝓢).IsPiecewiseStron
@@ -1119,7 +1119,7 @@ index 865778f35de71c62668de5c1981d83ce42898e8e..c54682fd0948cf7d3cf2b850b7b3fbe7
    intro Γ Δ;
    intro hΓ hΔ h;
 diff --git a/Foundation/Propositional/Kripke/Completeness.lean b/Foundation/Propositional/Kripke/Completeness.lean
-index 0b782f4341902604a51cbf1c695897ab8ecbbaf7..45fad01d428588205d761e29a09d3ca501dffc80 100644
+index 0b782f43..45fad01d 100644
 --- a/Foundation/Propositional/Kripke/Completeness.lean
 +++ b/Foundation/Propositional/Kripke/Completeness.lean
 @@ -122,10 +122,14 @@ private lemma truthlemma.himp
@@ -1141,7 +1141,7 @@ index 0b782f4341902604a51cbf1c695897ab8ecbbaf7..45fad01d428588205d761e29a09d3ca5
  lemma iff_valid_on_canonicalModel_deducible : (Kripke.canonicalModel 𝓢) ⊧ φ ↔ 𝓢 ⊢ φ := by
    constructor;
 diff --git a/Foundation/Propositional/Tait/Calculus.lean b/Foundation/Propositional/Tait/Calculus.lean
-index f45985c97b44c11645a8b5a2b3ceb96ef7f0ddd1..49fc0de24780b385b1b89661c85f85c30328d0cb 100644
+index f45985c9..49fc0de2 100644
 --- a/Foundation/Propositional/Tait/Calculus.lean
 +++ b/Foundation/Propositional/Tait/Calculus.lean
 @@ -93,7 +93,10 @@ def compact {Γ : Sequent α} : T ⟹ Γ → (s : { s : Finset (NNFormula α) //
@@ -1207,7 +1207,7 @@ index f45985c97b44c11645a8b5a2b3ceb96ef7f0ddd1..49fc0de24780b385b1b89661c85f85c3
  @[simp] lemma consistent_theory_iff :
      Entailment.Consistent (Entailment.theory T) ↔ Entailment.Consistent T := by simp [←Entailment.not_inconsistent_iff_consistent, inconsistent_theory_iff]
 diff --git a/Foundation/ProvabilityLogic/Classification/Trace.lean b/Foundation/ProvabilityLogic/Classification/Trace.lean
-index e3ad24426511be601434025ebbfe89876ead2fe2..72a6d1ecddb479489e3454c4d832c9c7b4e54765 100644
+index e3ad2442..72a6d1ec 100644
 --- a/Foundation/ProvabilityLogic/Classification/Trace.lean
 +++ b/Foundation/ProvabilityLogic/Classification/Trace.lean
 @@ -473,11 +473,12 @@ lemma provable_TBB_of_mem_trace {n : ℕ} (h : n ∈ (T.ProvabilityLogic U).trac
@@ -1244,7 +1244,7 @@ index e3ad24426511be601434025ebbfe89876ead2fe2..72a6d1ecddb479489e3454c4d832c9c7
  
    have H₁ : 𝗜𝚺₁ ⊢ (S.realization B ➝ S.realization (∼⩕ n ∈ (cofinite_of_not_subset_S h).toFinset, TBB n)) := by
 diff --git a/Foundation/ProvabilityLogic/GL/Completeness.lean b/Foundation/ProvabilityLogic/GL/Completeness.lean
-index 2afc582f0e370f6e311aa0cd40de10aa6d3482b3..a556c6f051e06c62bb05fca382559365371cedd3 100644
+index 2afc582f..a556c6f0 100644
 --- a/Foundation/ProvabilityLogic/GL/Completeness.lean
 +++ b/Foundation/ProvabilityLogic/GL/Completeness.lean
 @@ -24,6 +24,8 @@ theorem unprovable_realization_exists
@@ -1268,7 +1268,7 @@ index 2afc582f0e370f6e311aa0cd40de10aa6d3482b3..a556c6f051e06c62bb05fca382559365
  
  /-- Arithmetical completeness of $\mathsf{GL}$-/
 diff --git a/Foundation/ProvabilityLogic/S/Completeness.lean b/Foundation/ProvabilityLogic/S/Completeness.lean
-index 0e5b0057766418f028c42612f0fd36788211c4c7..f024327b0c80e577b5a19303799716755ac07515 100644
+index 0e5b0057..f024327b 100644
 --- a/Foundation/ProvabilityLogic/S/Completeness.lean
 +++ b/Foundation/ProvabilityLogic/S/Completeness.lean
 @@ -38,12 +38,13 @@ variable {M₁ : Kripke.Model} {r₁ : M₁} [M₁.IsFiniteTree r₁] {A : Formu
@@ -1324,7 +1324,7 @@ index 0e5b0057766418f028c42612f0fd36788211c4c7..f024327b0c80e577b5a1930379971675
      exact this <| by
        simpa [models_iff, S, SolovaySentences.standard_σ_def] using FirstOrder.Arithmetic.Bootstrapping.SolovaySentences.solovay_root_sound
 diff --git a/Foundation/Vorspiel/AdjunctiveSet.lean b/Foundation/Vorspiel/AdjunctiveSet.lean
-index 2f15515c621cf65917d19d4116d67b644550a15b..d26483db3a930aa6cd5cdc0ff31482f3bc158a1d 100644
+index 2f15515c..d26483db 100644
 --- a/Foundation/Vorspiel/AdjunctiveSet.lean
 +++ b/Foundation/Vorspiel/AdjunctiveSet.lean
 @@ -24,6 +24,7 @@ class AdjunctiveSet (β : outParam Type*) (α : Type*) extends Membership β α,
@@ -1344,7 +1344,7 @@ index 2f15515c621cf65917d19d4116d67b644550a15b..d26483db3a930aa6cd5cdc0ff31482f3
    not_mem_empty := by simp
    mem_cons_iff := by simp [Adjoin.adjoin]
 diff --git a/Foundation/Vorspiel/Arithmetic.lean b/Foundation/Vorspiel/Arithmetic.lean
-index 0d31be69c9438117d78bc1d99d734ccd55152e3b..e7a6cbe6c5a645c8365053ebd7eb68de52447ae8 100644
+index 0d31be69..e7a6cbe6 100644
 --- a/Foundation/Vorspiel/Arithmetic.lean
 +++ b/Foundation/Vorspiel/Arithmetic.lean
 @@ -9,6 +9,27 @@ public import Mathlib.Logic.Godel.GodelBetaFunction
@@ -1486,7 +1486,7 @@ index 0d31be69c9438117d78bc1d99d734ccd55152e3b..e7a6cbe6c5a645c8365053ebd7eb68de
        ball_pos_iff, Bool.decide_and, PFun.coe_val, eq_some_iff, mem_map_iff, mem_rfind,
        mem_some_iff, F]
 diff --git a/Foundation/Vorspiel/Computability.lean b/Foundation/Vorspiel/Computability.lean
-index 89058065d5277a8ce17cdf9dced355b3e00318a0..4fc305815e955dbd7c3ff67d91276459011105a5 100644
+index 89058065..4fc30581 100644
 --- a/Foundation/Vorspiel/Computability.lean
 +++ b/Foundation/Vorspiel/Computability.lean
 @@ -13,7 +13,16 @@ namespace Part
@@ -1508,7 +1508,7 @@ index 89058065d5277a8ce17cdf9dced355b3e00318a0..4fc305815e955dbd7c3ff67d91276459
      · rintro ⟨a, ha, v, hv, rfl⟩ i; cases i using Fin.cases <;> simp [ha, hv]
      · intro h; exact ⟨w.head, by simpa using h 0, w.tail,
 diff --git a/lake-manifest.json b/lake-manifest.json
-index 286d5cd3a966ab4550435c0875f051bc96cce2fe..6acb3ac3a643c734080adf1e14eaa0116027c96a 100644
+index 286d5cd3..6acb3ac3 100644
 --- a/lake-manifest.json
 +++ b/lake-manifest.json
 @@ -1,146 +1,177 @@
@@ -1836,7 +1836,7 @@ index 286d5cd3a966ab4550435c0875f051bc96cce2fe..6acb3ac3a643c734080adf1e14eaa011
 +  "fixedToolchain": false
 +}
 diff --git a/lakefile.toml b/lakefile.toml
-index 30f7f9d5aa606aab62d0d73c4f551e5844317b4f..be7a7b10779029539fbaa36ed3d59138c7cb2eaa 100644
+index 30f7f9d5..be7a7b10 100644
 --- a/lakefile.toml
 +++ b/lakefile.toml
 @@ -13,12 +13,12 @@ weak.linter.style.multiGoal = true
@@ -1855,7 +1855,7 @@ index 30f7f9d5aa606aab62d0d73c4f551e5844317b4f..be7a7b10779029539fbaa36ed3d59138
  [[lean_lib]]
  name = "Foundation"
 diff --git a/lean-toolchain b/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8b..a8afa7d1 100644
 --- a/lean-toolchain
 +++ b/lean-toolchain
 @@ -1 +1 @@

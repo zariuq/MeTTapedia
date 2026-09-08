@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 
 /-!
 # Derivability shadows and semantic qualification
@@ -27,7 +27,7 @@ open CategoryTheory
 open Mettapedia.GSLT.LanguageDef.KernelAuthority
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 
 universe uKind uSignature uClaim uCertificate
 
@@ -89,7 +89,7 @@ def qualification
     {theory : TheoryFamily.{uSignature, uKind, uClaim} Kind}
     (contract :
       AuthorityContract.{uKind, uCertificate, uSignature, uClaim} theory) :
-    AuthorityTranslation (derivabilityContract contract) contract where
+    CertifiedTranslation (derivabilityContract contract) contract where
   mapKind := id
   mapSignature := id
   signature_commutes := by intro _kind; rfl
@@ -116,8 +116,8 @@ def qualification
 /-- Bundle the derivability shadow of one exact authority object. -/
 def derivabilityObject
     (object :
-      AuthorityObject.{uKind, uSignature, uClaim, uCertificate}) :
-    AuthorityObject.{uKind, uSignature, uClaim, uCertificate} where
+      CertifiedTheory.{uKind, uSignature, uClaim, uCertificate}) :
+    CertifiedTheory.{uKind, uSignature, uClaim, uCertificate} where
   Kind := object.Kind
   family := derivabilityTheory object.family
   contract := derivabilityContract object.contract
@@ -126,7 +126,7 @@ def derivabilityObject
 meaning, because exact replay already transports proof scope. -/
 def derivabilityMap
     {source target :
-      AuthorityObject.{uKind, uSignature, uClaim, uCertificate}}
+      CertifiedTheory.{uKind, uSignature, uClaim, uCertificate}}
     (translation : source ⟶ target) :
     derivabilityObject source ⟶ derivabilityObject target where
   mapKind := translation.mapKind
@@ -141,8 +141,8 @@ def derivabilityMap
 the category of exact NIK authorities. -/
 def derivabilityFunctor :
     CategoryTheory.Functor
-      (AuthorityObject.{uKind, uSignature, uClaim, uCertificate})
-      (AuthorityObject.{uKind, uSignature, uClaim, uCertificate}) where
+      (CertifiedTheory.{uKind, uSignature, uClaim, uCertificate})
+      (CertifiedTheory.{uKind, uSignature, uClaim, uCertificate}) where
   obj := derivabilityObject
   map := derivabilityMap
   map_id _object := rfl
@@ -152,11 +152,11 @@ def derivabilityFunctor :
 Every component keeps the checker and all certificate data unchanged. -/
 def semanticQualification : CategoryTheory.NatTrans derivabilityFunctor
     (CategoryTheory.Functor.id
-      (AuthorityObject.{uKind, uSignature, uClaim, uCertificate})) where
+      (CertifiedTheory.{uKind, uSignature, uClaim, uCertificate})) where
   app object := qualification object.contract
   naturality := by
     intro source target translation
-    apply NIKAuthorityCategory.AuthorityTranslation.ext_data
+    apply CertifiedTheoryCategory.CertifiedTranslation.ext_data
     · intro kind
       rfl
     · intro signature
@@ -228,7 +228,7 @@ def contract : AuthorityContract checkerDefinedTheory where
         intro claim inScope
         exact inScope }
 
-def object : AuthorityObject where
+def object : CertifiedTheory where
   Kind := Unit
   family := checkerDefinedTheory
   contract := contract
@@ -236,7 +236,7 @@ def object : AuthorityObject where
 /-- Even a checker-defined object induces a genuine constant functor.  Hence
 mere functoriality cannot certify that meaning was independently authored. -/
 def constantFunctor : CategoryTheory.Functor
-    (CategoryTheory.Discrete Bool) AuthorityObject :=
+    (CategoryTheory.Discrete Bool) CertifiedTheory :=
   (CategoryTheory.Functor.const (CategoryTheory.Discrete Bool)).obj object
 
 theorem constantFunctor_meaning_iff_checker_accepts

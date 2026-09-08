@@ -219,9 +219,6 @@ def language : LanguageDef :=
        reflectedDemandRewrite] }
 
 set_option maxHeartbeats 1000000 in
-attribute [-simp] isolated Fin.Fin1.eq_one
-  LO.LogicalConnective.AndOrClosed.falsum
-  LO.LogicalConnective.AndOrClosed.verum in
 private theorem language_rewrites_validate :
     ∀ rewrite ∈ language.rewrites, LanguageDef.validateRewrite language rewrite = [] := by
   intro rewrite membership
@@ -254,16 +251,12 @@ private theorem language_rewrites_validate :
       needAnswerConstructor, needKeyConstructor,
       requestDependencyConstructor, spaceAtomDependencyConstructor,
       capabilityDependencyConstructor, inertDependencyConstructor,
-      receiptConstructor, constructor, LanguageDef.typeNames, TypeDecl.plain,
-      TypeExpr.baseNames]
+      receiptConstructor, constructor, LanguageDef.typeNames, TypeDecl.plain]
 
   all_goals
     repeat' constructor
 
 set_option maxHeartbeats 1000000 in
-attribute [-simp] isolated Fin.Fin1.eq_one
-  LO.LogicalConnective.AndOrClosed.falsum
-  LO.LogicalConnective.AndOrClosed.verum in
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
   case htypes =>
@@ -395,8 +388,7 @@ theorem language_validate : language.validate = [] := by
       needAnswerConstructor, needKeyConstructor,
       requestDependencyConstructor, spaceAtomDependencyConstructor,
       capabilityDependencyConstructor, inertDependencyConstructor,
-      receiptConstructor, constructor, LanguageDef.typeNames, TypeDecl.plain,
-      TypeExpr.baseNames]
+      receiptConstructor, constructor, LanguageDef.typeNames, TypeDecl.plain]
     apply LanguageDef.validateTypeExpr_eq_nil_of_baseNames
     simp [TypeExpr.baseNames]
   case hrewriteValid => exact language_rewrites_validate

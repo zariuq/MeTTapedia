@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "toolchain": "leanprover/lean4:v4.33.1",
-  "date": "2026-09-06",
+  "date": "2026-09-07",
   "baseline_revision": "ca13bf8d9b6130c2d488bebd4e0d66ae25b32ac7",
   "counts": {
-    "build_pass": 6336,
+    "build_pass": 6699,
     "baseline_source_failure": 30,
     "baseline_resource_boundary": 2,
     "baseline_runtime_failure": 15
@@ -2467,7 +2467,7 @@
     },
     {
       "module": "Mettapedia.Cybernetics",
-      "source_sha256": "5c4b3f8e8850cdc45fbe5ada981a80a420846584556b6cf7a84cf3cdc915cfc9",
+      "source_sha256": "284a0e98ff276d7ea4b2b9b2638375bc0c0e54a773ed07f34b72e6981fdea90a",
       "status": "build_pass"
     },
     {
@@ -2478,6 +2478,41 @@
     {
       "module": "Mettapedia.Cybernetics.ConstrainedVariety",
       "source_sha256": "d3e1324143d4f61977bcf15d509063776fea510220497ec10599bc39038782f9",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Cybernetics.DistinctionCalculus",
+      "source_sha256": "ff618e3b9dbae331a6b22cab54f26acb5952e6c597bd149fc71e508f59c72478",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Cybernetics.DistinctionCalculus.Basic",
+      "source_sha256": "85553d1b852274fd43bb89b5a7509d8ea94513c04b1e88ce0e1f50c321836655",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Cybernetics.DistinctionCalculus.Examples",
+      "source_sha256": "00957e2fff3206b98799e69b7b75380edfdaeea974aae56eacac522731eb2eab",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Cybernetics.DistinctionCalculus.Finite",
+      "source_sha256": "0a575aed46d80c4670c22d6ebe6054ddae2733d3e35045d8eb9cfd2e30d5212c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Cybernetics.DistinctionCalculus.Observation",
+      "source_sha256": "f5c96eb059aded07d0a0550f7d797594d867ce884db078b3480813f04ea17e23",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Cybernetics.DistinctionCalculus.ProofSystem",
+      "source_sha256": "bac55feed562e3482e9f2ce1c1bd9076d172313188141007fb15fbb95f67f77a",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Cybernetics.DistinctionCalculus.Weighted",
+      "source_sha256": "6aa53c2a6cdd7abcbde83a5c16384cbf034357912c1eece622dc8d654ead3778",
       "status": "build_pass"
     },
     {
@@ -3337,7 +3372,7 @@
     },
     {
       "module": "Mettapedia.GSLT",
-      "source_sha256": "a1723e81f558f452a0b3f64374859ef28a5fb367b2d3e56917bd71aceb5393f2",
+      "source_sha256": "a1e68dab7c1cd26c5a0d471be05f1f664bf9032d3e6f20a3d79db42ee8ecb23f",
       "status": "build_pass"
     },
     {
@@ -3592,7 +3627,7 @@
     },
     {
       "module": "Mettapedia.GSLT.Core.GSLT",
-      "source_sha256": "87e8eb776452e4c38f5ec2ebc966b8087301949d588b7ad0efa11d8d63a254c2",
+      "source_sha256": "c889aa844f6e860d56be284d878065a9df82f629eeb9b786e67a24909edbee9d",
       "status": "build_pass"
     },
     {
@@ -3653,6 +3688,11 @@
     {
       "module": "Mettapedia.GSLT.Core.InteractionEvent",
       "source_sha256": "d60595e89c709004f9272fe2fc555a6438fd9a8bed94771de7ae7ab8a1ad0a98",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Core.JudgmentComposition",
+      "source_sha256": "78ad01b37c2dc034d7960e28229f40e2c0856cb895cc9a10cb6fd2c3b40b249f",
       "status": "build_pass"
     },
     {
@@ -3757,7 +3797,17 @@
     },
     {
       "module": "Mettapedia.GSLT.Core.ProofRelevantGSLT",
-      "source_sha256": "9760edc361ce9c2ef91dc72fa7e21d61ff39dea1f2f28889b948238c2661d6e8",
+      "source_sha256": "37574c9cc84b109af0984b5723859348df4ea3a9e53eb2fab20eedbf90790446",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Core.ProofRelevantJudgment",
+      "source_sha256": "927cf4345e62a156616123f9e8fb68eac47a90fcde1c6fff5bd1a01a234ef254",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Core.ProofRelevantTranslationCategory",
+      "source_sha256": "366ba0ae1b344d139a2ef1920a4df1f7632962451affae042d8b61ba37942d71",
       "status": "build_pass"
     },
     {
@@ -3792,7 +3842,7 @@
     },
     {
       "module": "Mettapedia.GSLT.Core.RewritePathInversion",
-      "source_sha256": "1c7f66bba51d70701c8141b2e869fda8d4519e5f71f57b05f16d9e3edf068647",
+      "source_sha256": "b3d3acc9858718da8f011496148878651c49525d8d801e2df92ccb2b55eecb7e",
       "status": "build_pass"
     },
     {
@@ -3813,6 +3863,11 @@
     {
       "module": "Mettapedia.GSLT.Core.SelectionExpansionAnalysis",
       "source_sha256": "fc266ea49050827e6d76e0912d0f068b274c5fb7b876637711b4634c835600fc",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Core.SemanticImplementation",
+      "source_sha256": "710d49782078e2b498a45b28a7526d1fadd3d5eee7602f4b16845c9d22e46186",
       "status": "build_pass"
     },
     {
@@ -4051,6 +4106,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.Dynamics.ContextualStrategyQualification",
+      "source_sha256": "3b51bd59caca3c3dab2451c28d816271f5076761d1d8044096c4011ca62e1a57",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.Dynamics.ContextualWorldMerge",
       "source_sha256": "6ff42deae9871d3930c15440640980ba47b54d8ab8a785ff3f4743099eaee7fe",
       "status": "build_pass"
@@ -4078,16 +4138,7 @@
     {
       "module": "Mettapedia.GSLT.Dynamics.DependentReflectiveProtocolSemanticViews",
       "source_sha256": "c3199eb44c79c40fa22c250a43c009caef3dde9e4f3c1826ff5f60bfd754ce89",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.GSLT.Dynamics.DependentReflectiveProtocolSemanticViews"
-      ],
-      "fork_chain": [
-        "Mettapedia.GSLT.Dynamics.DependentReflectiveProtocolSemanticViews"
-      ],
-      "captured_chain": [
-        "Mettapedia.GSLT.Dynamics.DependentReflectiveProtocolSemanticViews"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.GSLT.Dynamics.DependentSharingObserver",
@@ -4117,11 +4168,6 @@
     {
       "module": "Mettapedia.GSLT.Dynamics.EquationProjectionRevisionAuthority",
       "source_sha256": "79b38b358054e7f3540375bcb1dce9c62c97cdb6ac87a082d0ef0d4d1f870c33",
-      "status": "build_pass"
-    },
-    {
-      "module": "Mettapedia.GSLT.Dynamics.EquationSaturatedProtocol",
-      "source_sha256": "9b0aeacda2b3e5330442ceea514c079f35b69c3342ca7da4a74c3083f321563b",
       "status": "build_pass"
     },
     {
@@ -4280,6 +4326,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.Dynamics.ObserverRelativeControlTransport",
+      "source_sha256": "652336c87cdeb0dbc377b7295b94aa9bc1b72c710998be59b6564f5001975556",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.Dynamics.ObserverRelativeTransformationCrown",
       "source_sha256": "5a178d7a623df94cdb829f3988dcf1cc26cc6905a9d26642c2e020289df4ef97",
       "status": "build_pass"
@@ -4387,6 +4438,11 @@
     {
       "module": "Mettapedia.GSLT.Dynamics.ProofRelevantRelationProtocol",
       "source_sha256": "6946ba7d7b92aa453c70afeebd16afff20b628e38504e2e5e9ae7f20876f8d52",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Dynamics.ProtocolModuloEquations",
+      "source_sha256": "8cadf7c5b130f1a8508f729a61ca53971b0d9839b6fd8db39170c7be9074c4b4",
       "status": "build_pass"
     },
     {
@@ -4601,7 +4657,12 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef",
-      "source_sha256": "1c98c44793bd635b1d091fe1a64eb6441ff7cf418daa62624bc7713963ef12e3",
+      "source_sha256": "8ae49d60d37e27d6365c7b8fb292dc6eeb0ba73959035e7fbc18fd91ba3dd472",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.AdaptiveFiniteMapRefinement",
+      "source_sha256": "079e87f0c9850222b06ec67e43ab6419b45b9b5a802e0c418adecba4e2b45be4",
       "status": "build_pass"
     },
     {
@@ -4641,7 +4702,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.AtomlessBooleanEquationalEmbedding",
-      "source_sha256": "7a53eb907008fab9a84c394a9a8e5cd3f1e9bde7c3a0fa4b704cc5027f6a9b9c",
+      "source_sha256": "aa2ed9816f08045614ed17911a7e4356560e566e18323f7a509205b4130a326b",
       "status": "build_pass"
     },
     {
@@ -4695,6 +4756,56 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.BiformCertificateBoundary",
+      "source_sha256": "548027495973517ff6249d76ef076b6635195faeb87e58a3088acbc9ee7072ac",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.BiformCertificateBoundaryCanary",
+      "source_sha256": "721a09244acbb31f932a179ec8cd9339fa090431e110b1a4574c3f6d44132cd3",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.BiformDependentContext",
+      "source_sha256": "782a1f2f1c591ee9de089711b522cafba97db371b6e102ec346a242d7700a9f6",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.BiformDependentIdentityCanary",
+      "source_sha256": "583b1508fa6129ed07a245d25a9a0b5c840ff58efa365d22b7f0fff8796c75b8",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.BiformObserverControl",
+      "source_sha256": "b41c02f48ad80e57d7710de6fc6177dbe387ec929ef93e63dbd0f622a6117b66",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.BiformObserverControlCanary",
+      "source_sha256": "484cc0634dfbfc63e2585c9c44f122be98e8f4f6baf35df8eb143d3246817de6",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.BiformTheory",
+      "source_sha256": "abfc7cf6e8a44131bf458a13afcfd7bbe719e170096ae5ff4435fe57a3c16e7f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.BiformTheoryCanary",
+      "source_sha256": "84ffa8dead1e7b9618691631bd72b8973905db4f77647859a228e2a88d3c9e69",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.BiformTheoryGraph",
+      "source_sha256": "5fe7e9721c7082fc74d947d2680408f6ed3bb889c792c2ec405bafb3ce07bee6",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.BiformTheoryGraphCanary",
+      "source_sha256": "d2b915699c73ca8e7efc0cd1b659cbe0b1eb57b9354aef3dea2b007b242bffae",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.BinderAlphaSemantics",
       "source_sha256": "65a04c4271ab5aee01d73e0ee18afe8352e581d0a0d7b4a22a14fedbe6545ddf",
       "status": "build_pass"
@@ -4706,12 +4817,12 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.BindingDecisionExactness",
-      "source_sha256": "d23c11090be7d3b68bdd32ebd49469ddfbe2e9ce86931afadc84ac4e90070f07",
+      "source_sha256": "8f96419c45aa0002a4a1f74bd603605a8ebb573f29a861c8c6f7228a1321d9f6",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.BindingDecisionLanguage",
-      "source_sha256": "d902e44a9cee936e6d079e8d009ee8cd458bd1b789e5e328c8583a0b5761edbe",
+      "source_sha256": "c23dfbdf873ce7eb16742572ef50da707ab59bf1e0e3cf336d08a7565dbb7bac",
       "status": "build_pass"
     },
     {
@@ -4726,7 +4837,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.BooleanAlgebraIdentitySemanticBasis",
-      "source_sha256": "34d5a12a2b1aecc1eca89a381e5a5c96552595083f6885b19bf192f00a6b96ce",
+      "source_sha256": "ac191ab5da6bf154dc93304570e004f28870cedc4dc557c6e5968bc3a54f773c",
       "status": "build_pass"
     },
     {
@@ -4810,6 +4921,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT",
+      "source_sha256": "ae9038294e7a62c8fd7ce0ddd684c2c84d22230d9e35293182349d83ba1448a6",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.CanonicalValueIdQueryCompilation",
       "source_sha256": "fa632abfefb66c388f229ae3744df86a458d6ca88e3720b55b7b0f4be234130d",
       "status": "build_pass"
@@ -4841,17 +4957,17 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.CertificateGSLTAuthorityFunctor",
-      "source_sha256": "be5a03de4d7f18093fd32a210c4f643603cc33e0b83377cd441150b50434aa42",
+      "source_sha256": "6300ccf29df9c5e092edfc677213030cdd06ca8f7516840818ba47a1f998267a",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.CertificateGSLTAuthorityFunctorCanary",
-      "source_sha256": "c4f82ede282b362d173daf17de0dcbd5b9ab541080a45b76f4327767ce2498ae",
+      "source_sha256": "993613a771c34ea87d43edbe911f707c87a2851383dd78a2f9ec3b3e476b50d5",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.CertificateGSLTBindingAuthority",
-      "source_sha256": "724fb72ad5204edd3f78b9612a867ac3e11a617218f30e5dfb689c0cf36c988a",
+      "source_sha256": "695751ab99fcc1b1c513fbbaf6d91eb7324404852a973ef5dbc4361521b7ebe3",
       "status": "build_pass"
     },
     {
@@ -4861,7 +4977,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.CertificateGSLTBindingRouteFunctor",
-      "source_sha256": "c7db7b526f917d00ea1cc7576d3125661bd763bf6e18e128ae8d1360174db69a",
+      "source_sha256": "9c609d9188ee6b8bbec360140d1289c648edbbe96483cc69333a37660a0f8823",
       "status": "build_pass"
     },
     {
@@ -4871,7 +4987,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.CertificateGSLTBindingRouteObservation",
-      "source_sha256": "8e84f5b68a0032c575f863849730c13f8f372136180c43481574bfd1aa48fc20",
+      "source_sha256": "9957da6a70984e18d4a7a1947b65961a417cadd81a041c5207c092844afa83c4",
       "status": "build_pass"
     },
     {
@@ -4936,7 +5052,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.CertificateGSLTDerivabilityQualification",
-      "source_sha256": "c4426387c3ab2999ce35ffc10b7393d06b755c3344cb5014e479c28053c84db2",
+      "source_sha256": "6a5f5f2e94360256ba3bd24cc9a1da09a09969abb303de98fbf6d114b31fe87c",
       "status": "build_pass"
     },
     {
@@ -4961,7 +5077,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.CertificateGSLTHeterogeneousAuthority",
-      "source_sha256": "c760634532e293be093c8e63f26da8054fde5edde1df802f1892141979d9e9c9",
+      "source_sha256": "fb1154dec64ce363fdcacee8d9101b7903cf9aa1584cf2276655cd44e4abec19",
       "status": "build_pass"
     },
     {
@@ -5170,8 +5286,33 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.CertificateTransportGraph",
+      "source_sha256": "9ffcb4f8897cc9b93661fac5fd27f4ac7afb4138044e3b6be952ec19f9e6b990",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.CertifiedBiformTheoryGraph",
+      "source_sha256": "cbd2a2fb2a9217da055f720b11e92142b0992877499f2afe0717fc74e7ea41d4",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.CertifiedBiformTheoryGraphCanary",
+      "source_sha256": "af9e0f813d7a46f4b499c07a0f52c2cb500c33735901a2c3fcdb00307f9e8f7a",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.CertifiedMask",
       "source_sha256": "3a8e0d12cbd7c54250fe9e06061dc63ae772f4e1813a99435dfad0d6c6e3e46f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory",
+      "source_sha256": "800d0f95fecad164806eed913ec83811949c80a02253777d860f058ab62f7e11",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.CettaWireTerm",
+      "source_sha256": "8f31120ecc8f94e65f707f011b82e67978de220e539bdf80f641c66d979fb927",
       "status": "build_pass"
     },
     {
@@ -5200,8 +5341,23 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.ClosedTheorySemanticTarget",
+      "source_sha256": "6c457e0cb0bb65f4d2f654714c042d0c68ddfe30d505b80c9fde5cb69509fcb5",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.ColourTagSeparation",
       "source_sha256": "52267eec213d6e68513c8c57e45f3b5248d2845ca51ce15e92dba24d6bdb2a05",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.CompiledAnswerEffectControl",
+      "source_sha256": "f9f6d8b44f06582bb27969af16f606fc3f428a0b6a1fc85a556781ae4e5db69f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.CompiledAnswerEffectProgram",
+      "source_sha256": "599808dc7afe664e555c5965757beb7ac98c0195647daf5cb407f5f931ebf596",
       "status": "build_pass"
     },
     {
@@ -5315,6 +5471,16 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.CompiledRecursiveAnswerProducer",
+      "source_sha256": "15093acd3a3d1d2835567304e238f379084098feb83966f0eef48974ec28419f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.CompleteObservationFailureReuseCompilation",
+      "source_sha256": "38ea50d343d32e4ce515d753b2eb8e30e33e2fb9aba31cc7e7efe8aa6ff9b603",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.CompletenessSpectrum",
       "source_sha256": "635b442f190af4f28e27f3819d2fc4acf5a8a4b4383d956914e78064cf6d1c6e",
       "status": "build_pass"
@@ -5322,6 +5488,11 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.CompletenessSpectrumSAT",
       "source_sha256": "1186fd72c7d4c5993aeab768831b5ee4892de76b129db1617477440c60f328d1",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.ConjunctiveCountFoldCompilation",
+      "source_sha256": "3273deefcb962c45761b699bae0e6eba44a043d8833ac57de50a7651e60ad232",
       "status": "build_pass"
     },
     {
@@ -5661,12 +5832,12 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.CostGeneratedOccurrence",
-      "source_sha256": "5b466794b167dc5b09812e54d8ff9ce893f5ea87632bd8b65bb9e856e3ef5f58",
+      "source_sha256": "bd7184efc396f6f83dc8f2f9151b85707a8349b5edb28dc4f564630129965dc7",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.CostGeneratorHereditaryAlignment",
-      "source_sha256": "066d7dda9a62fc0edd85f15a0d7d05e0a59d36c3749b341501222743efa4c4cd",
+      "source_sha256": "2b521c1ef2cffcc8fbf4d404dc1cc51887f474eed06b3996f79aa7ec82b56dbb",
       "status": "build_pass"
     },
     {
@@ -5946,12 +6117,12 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.CostStaticPlanOccurrenceCoverage",
-      "source_sha256": "ef111f05852ee60f7ae66651034db7c6ff3b5900b03f3e6d384f961356c42ee0",
+      "source_sha256": "947670a2ca961a6431699d08035ee2344d2467e2505c92edf29179011fa5aadb",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.CostStaticPlanPairAlignment",
-      "source_sha256": "bf8460b27b9657f9760d0b3e6e7ab6b26706dbbb022a8530e2d3787737804d00",
+      "source_sha256": "5c68e472bbdfc8075a65e84853896e18f06035fac5c62e611f7bb906efdca4ca",
       "status": "build_pass"
     },
     {
@@ -6012,6 +6183,11 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.DelayedBindingStoreRefinement",
       "source_sha256": "5338efa3eaf00153481b0fde6aaa861b60aaeb1172444ee931ecd93521d7a4b7",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.DelayedObservationAnswerEffectCompilation",
+      "source_sha256": "529512401e37a0af23fcd7e945b3465915034f2c06b2a5ddfaff4a1c45eb6705",
       "status": "build_pass"
     },
     {
@@ -6111,7 +6287,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.DerivedEquationCanaries",
-      "source_sha256": "26d173f1dfc0d548fdef547b44459195d9dcf19db347ee5cc358b1fd23b6f675",
+      "source_sha256": "966206f9002f5c5cf16f1ab571d97f0375caa5b67dba07fe41ac970ed99f5942",
       "status": "build_pass"
     },
     {
@@ -6161,12 +6337,12 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.EquationOccurrence",
-      "source_sha256": "a15403919bd8da32ca00bd76b28c34074ff2036e806ebc9e73326a6b1f026827",
+      "source_sha256": "aa11d96ac9759d59cd715ee5f9aa4bc0b92ae3ecce392f83ac589fb9413ab81b",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.EquationSemantics",
-      "source_sha256": "99f3ce08e314e5f743afe5b195decf996aa3812faa726c6bc1a6508647d80c76",
+      "source_sha256": "fea04e36e6c6b5be1aecd487ed613f69da0873e2e8808b46a710b9fc07ccdf4f",
       "status": "build_pass"
     },
     {
@@ -6280,8 +6456,13 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.FiniteGraphCompletionCacheCompilation",
+      "source_sha256": "b7daa1764779f8150d0a54f131bb1d765c1c75127bd2be10efbb5312755141ad",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.FiniteGroundFactIndexCompilation",
-      "source_sha256": "6b7b5276a4363f24b14070f52bc0592289b122322dc85f0aa36f3c0d2e1ec9f0",
+      "source_sha256": "846aa9d5070e623fe2803e0a8660c673d735cb001c9f0e452e1901f26b24a465",
       "status": "build_pass"
     },
     {
@@ -6327,6 +6508,21 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.FixedHeadBucketCompilation",
       "source_sha256": "9a72ff78c1007ee099640ca20db90d99c55938f95e4ca7a30ec6bc6375c0a264",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.FlatTermDeadBindingCountCompilation",
+      "source_sha256": "aaf0fe02baa6aad4c0c1a88ad01962309662f286585142671f361212547638ba",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.FlatTermExistenceCompilation",
+      "source_sha256": "a9c32ee2875d592adc58daa64b3951296b0fc5e55f67c9177f5d8aeb791017dc",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.FlatTermViewCompilation",
+      "source_sha256": "2464a7f8e2430026cf9092a01c04e4c1e832dd773874a9c36445172aab10f5c6",
       "status": "build_pass"
     },
     {
@@ -6471,12 +6667,12 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.GSLTILObserverRelativeControl",
-      "source_sha256": "82efdc3811d1b809bb1d7874cc15bbfa294c51db89def5a6da9a7fad0f8742ba",
+      "source_sha256": "f4d39dabea0c102e2ff18a65a901f1675bb024486d0d906cc5cf4224b5a9ce00",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.GSLTILObserverTransformationBridge",
-      "source_sha256": "6e255e51357ac66287d7553c283f473b4447b723cee0e3f35320bb41b4e6e9ae",
+      "source_sha256": "5ae5e0d073830e67e4efc17b13bfdf0310a58105b5e3e270080717d958f976ab",
       "status": "build_pass"
     },
     {
@@ -6552,18 +6748,7 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.GSLTILUniversalCandidateComparison",
       "source_sha256": "cdc754a077d8942287e309419331d56b9197f9b7cffc28fe4b95308a615c79a2",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.GSLT.LanguageDef.GSLTILUniversalCandidateComparison"
-      ],
-      "fork_chain": [
-        "Mettapedia.GSLT.LanguageDef.GSLTILUniversalCandidateComparison",
-        "Mettapedia.GSLT.LanguageDef.GSLTILProofSearchInstitutionBridge"
-      ],
-      "captured_chain": [
-        "Mettapedia.GSLT.LanguageDef.GSLTILUniversalCandidateComparison",
-        "Mettapedia.GSLT.LanguageDef.GSLTILProofSearchInstitutionBridge"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.GSLTILUniversalStructure",
@@ -6802,12 +6987,12 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.GenerativeCantorBootstrapGrounding",
-      "source_sha256": "dbd0c4b522e56c0508876a62ca760df2d4018a5ff30d4562b4405e10aaeb57ff",
+      "source_sha256": "80ec306b588061ffaa3d562df8b841569fed722a37186ff6eaf4a6459563e9e3",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.GenerativeCantorSemanticGrounding",
-      "source_sha256": "c47cc455065dd7b4b0b89364c96523fb7fe308911659a5039786e0ac7f856551",
+      "source_sha256": "c2a8341dea379e09aedd597ebfab8f455bd90997e6d5fec5cf5d57789d067023",
       "status": "build_pass"
     },
     {
@@ -6846,6 +7031,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.GuardSupportProjectionCompilation",
+      "source_sha256": "08604f5958e55f4000bf2dacdae2a341825f990e6ae127644b3bae345efdc4a6",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.GuardedRuleMaterialization",
       "source_sha256": "962db49908a81ed754a35b9078a6eec07b2aa5e4fcea52afbb0a5867febbebb4",
       "status": "build_pass"
@@ -6853,6 +7043,21 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.HOL",
       "source_sha256": "fbae05cc7f4b2adf12de7905e23ee57c28425553fc1c3e06b098473162e05572",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.HOLFullDomainTheory",
+      "source_sha256": "7b585572afa92477f0326e759e1a8ab8ac1ef3d0a72121507835cea6d5751399",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.HOLHenkinBiformCanary",
+      "source_sha256": "efee992db219acedb60e95b49e3c51bb744f5871507de2ff35ffb1d3bd2b0d88",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.HOLHenkinTheoryNode",
+      "source_sha256": "a032bf89a7d68950b3354a626251806683bb42d555c86dd9199be74c192e9dc0",
       "status": "build_pass"
     },
     {
@@ -6901,8 +7106,23 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.HOLTypeDerivedConsequence",
+      "source_sha256": "e1cc5425a75063f57c20428a2f355d81e8e5d67b607f7c552768e47961722353",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.IRPass",
-      "source_sha256": "dfeca3954f1240a80c379788117f486302e8cdbdc0175911e54c8a98ee827eed",
+      "source_sha256": "826c0145a0c48c61a8dd53fc363a500c115b9f441e089605509942ec75d297e4",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.IRRunView",
+      "source_sha256": "93884514d21292569389a730e752e391b3c21db670a142750d3cf1c9756bb44d",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.IRRunViewEquationCanary",
+      "source_sha256": "bca3f7e60a58a08715fde85c5e08af1e8bbea190587cb083deb311f120ae85c3",
       "status": "build_pass"
     },
     {
@@ -6952,7 +7172,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.InferenceCettaWireFormat",
-      "source_sha256": "7e011bace0300a4dd6c344b5be0f810afc1c4c46a50e8503d158473da770cfda",
+      "source_sha256": "68b84c9ec017cc986cf6537525f9759e3f6fbf5bb6b792fbf7a81135395574b0",
       "status": "build_pass"
     },
     {
@@ -7036,6 +7256,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.InferenceRuleSupport",
+      "source_sha256": "29612cf9434dac95a00e6f2dfbe473c9ca8055f1a4a74a87144fc556566290ce",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.InferenceRuntimeAdequacy",
       "source_sha256": "ac7489fabd21224358335e02336450b30b9911d41f83b7a33dbd3ff791781af1",
       "status": "build_pass"
@@ -7068,6 +7293,16 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.InferenceSupportIndexedABTLowering",
       "source_sha256": "0d7d5c08baed062835f22d74f0c1acdcd8f85fa33b6fa414d8707e05b83788c3",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.InstitutionConsequence",
+      "source_sha256": "a2bd5d219ab2e45d2f9c6e6aa48f9ffeec1c430b779b2e29bdb07fc0f0e09139",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.InstitutionConsequenceCanary",
+      "source_sha256": "b994ef8df28b3705b57d51d0da95161fd0564a02bf7cdff09b4c97f7484596ca",
       "status": "build_pass"
     },
     {
@@ -7331,6 +7566,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.LogicalListRootObservationCompilation",
+      "source_sha256": "6c57beec385bbfad814e1ce4fbf80d80b729618e4b8c7b071c521cd13f21d56a",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.M0GCAddressedCompleteCheckerControlMachine",
       "source_sha256": "d597646ed3b3427b6d771ef43e84a0957c91a1e31a538518058d3e0bad5cdb11",
       "status": "build_pass"
@@ -7556,6 +7796,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.MatchedIndexJudgment",
+      "source_sha256": "ed178f39e5c2122ab2260f74ce720a9e0cb9bbd990b5d39425418d0c3c2fb4a8",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.MaximalNativeCalculus",
       "source_sha256": "bf09a59237de6c063458266eef1cd5519656f508f17297adfdd338d028cc2d85",
       "status": "build_pass"
@@ -7573,6 +7818,16 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.MeTTaILPatternMatrixCompilationCanary",
       "source_sha256": "78d75ba1fbbe073d82126ea494748122eaad89869bba926631c43312947cf4ea",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.MixedQueryViewCompilation",
+      "source_sha256": "54c5b869ac4799276a73fef9b7eafb983c22cca09dfbe627aea72ad558f72160",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.MonotoneDecisionRefinement",
+      "source_sha256": "503ba7c1d93cbcde30432b850bc83d96c5a44d4faa3313c15b04ca81c77e8c5b",
       "status": "build_pass"
     },
     {
@@ -7596,23 +7851,18 @@
       "status": "build_pass"
     },
     {
-      "module": "Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory",
-      "source_sha256": "eaaa84a6780b3593254fdad675219505fe6fcf059c0762889806db8b42a5f95a",
-      "status": "build_pass"
-    },
-    {
       "module": "Mettapedia.GSLT.LanguageDef.NIKCertificateGSLTOperationalShield",
-      "source_sha256": "91f1d6e75f0cefc1426793cb58e60be80df71b1c75e5ab7b978e201f55c3fdc5",
+      "source_sha256": "1fee7750bf6adae2d077de63663c6a70d158d2392bd2894fcc3fe7e740806d87",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.NIKCertificateGSLTPhysicalShield",
-      "source_sha256": "02829ffe636d86cf8cf9dd08c276d4f62c56b0274283f582fc6035d66470c179",
+      "source_sha256": "319e95c0897f1ce2573f310911cb856e3403205f0c13a91f0c6e03aed2bc79db",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.NIKCertificateGSLTSharedPhysicalShield",
-      "source_sha256": "b4e414f42e7a40ad83c723fafe54683d4fc3ab807faf87f0b6f1ed48c62f148a",
+      "source_sha256": "e0da5d3626e1c746f71669db288a8a47f9bc8b5c51255d87effb954c0f6a94ce",
       "status": "build_pass"
     },
     {
@@ -7632,7 +7882,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.NIKConservativeProofEmbedding",
-      "source_sha256": "bc635681271e487ea5cd5f5e4af4c8c59dffb6314bd0ce946ce716e3a6b5284a",
+      "source_sha256": "cd1d76b8e6ec3c684dc0ca15dd59f8028638fd25e42cce02513b6d114a3d4775",
       "status": "build_pass"
     },
     {
@@ -7652,7 +7902,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.NIKDerivabilitySemanticQualification",
-      "source_sha256": "00c1ec3ad48adfcb2bcc8c09487edb5d87c1e0bbe46a24fc14a730282aceb0bf",
+      "source_sha256": "38c374a66d952d174c7fe602a475077253e83ef6544e763039f9114ef945e1fd",
       "status": "build_pass"
     },
     {
@@ -7672,7 +7922,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory",
-      "source_sha256": "631aeb6204fda403bb68b0a82b03998f329ca55d432a70ba52386d73b9d42d95",
+      "source_sha256": "17d4314bcc894493e71422d64290e5a4657825891646b86ab53094e308a18e8d",
       "status": "build_pass"
     },
     {
@@ -7707,7 +7957,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.NIKMetalogic",
-      "source_sha256": "45c0287025840386df76e000472a3b8ba642e96a813d057b110da70aa12570b2",
+      "source_sha256": "819776724dec00d650e1e635fcb61b8e819a8996f74aba291df54288ca08824c",
       "status": "build_pass"
     },
     {
@@ -7762,7 +8012,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.NIKSemanticGroundDecidabilityFrontier",
-      "source_sha256": "2d81a3ca1e8264a71b8f60f20fa8dfc824f823545fc573f464ef5ba906e0eea5",
+      "source_sha256": "71ddbe1af6442501ed1d3776a6bc5cf196b7710af339a14c10003a8c0a64972f",
       "status": "build_pass"
     },
     {
@@ -7771,13 +8021,13 @@
       "status": "build_pass"
     },
     {
-      "module": "Mettapedia.GSLT.LanguageDef.NIKStagedPipeline",
-      "source_sha256": "7505a28c5417c70844d87c9884e41ba823d3eb98a9ad84346af90fae677aff1d",
+      "module": "Mettapedia.GSLT.LanguageDef.NIKServiceFamily",
+      "source_sha256": "fdac94f8f5132fc2237070c18d865ad890229708fce86629c751de40276dccf4",
       "status": "build_pass"
     },
     {
-      "module": "Mettapedia.GSLT.LanguageDef.NIKTheoryGraph",
-      "source_sha256": "d2b0c67d285c82d4474fe7e2d2aa10e2b058e6d2825d3776dce7e8d60bac71da",
+      "module": "Mettapedia.GSLT.LanguageDef.NIKStagedPipeline",
+      "source_sha256": "7505a28c5417c70844d87c9884e41ba823d3eb98a9ad84346af90fae677aff1d",
       "status": "build_pass"
     },
     {
@@ -7787,7 +8037,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.NIKTheoryTranslationExt",
-      "source_sha256": "ffbde18537b63bb1488ee711233b698bb91e5261f48d9bb151e22ffb1a410268",
+      "source_sha256": "cdebbe49c6e345d6b3a8d546ab40c7d39d8df139a1366ebd7fb1efd9912a4adb",
       "status": "build_pass"
     },
     {
@@ -7797,7 +8047,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.NormalizationPath",
-      "source_sha256": "516b0a4887a172a9ce0ad5f1d921148712403eeaf8ebd2c4ba20c80496c02265",
+      "source_sha256": "bb5e622261c37fc03f3c2cb250f519cab11e0af9d783f71feeba6a6aa0a702c1",
       "status": "build_pass"
     },
     {
@@ -7813,6 +8063,11 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.OpenSystemExtensionBoundary",
       "source_sha256": "b5a31f73b38c02b1f901333d45348cbafe753c675fd7d7507b5aaf66c20cf3a2",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.OperationalModel",
+      "source_sha256": "3659c2049bcf2206f819f1e680b8ed0cf2707db954fccee0879023d0c871b672",
       "status": "build_pass"
     },
     {
@@ -7841,6 +8096,21 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.OrderedMatchMachineAdequacy",
+      "source_sha256": "b5f4d37178444eacbfbd32ea9b7ee4b5e449280ab97f1a0e9ea118526bb9069a",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.OrderedMatchMachineExactness",
+      "source_sha256": "5c685e1181113b6ccf93355d08eb880ead6687656d8492545c07e3ec9098dcdc",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.OrderedMatchMachineLanguage",
+      "source_sha256": "f9f92675571b03979f2fa521ad5cde7564dc79282e2217fbcbd8d11cff0cd3c2",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.OrderedPatternMatrixCompilation",
       "source_sha256": "7109a70711b8071e5f62f3016a95f164313ec0a6a3023ab5c0563079dc063aab",
       "status": "build_pass"
@@ -7848,6 +8118,11 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.OrderedPatternMatrixWildcardColumnCompilation",
       "source_sha256": "747c1108ca85d59de4b2331bf864926f08ab83dfad4ca3f60f74e303a2c06b68",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.OutputConstraintDischargeCompilation",
+      "source_sha256": "38271f7686b77228d649919050e2eac6a22f5dab71ffee71e315e3a362e9d69e",
       "status": "build_pass"
     },
     {
@@ -7886,6 +8161,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.PiInstitutionCategory",
+      "source_sha256": "0864eccff7e1cf9bc0676e2c6b6b52be7d8951025cb0f198db08b6b202422f79",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.PreparedEquationCompilation",
       "source_sha256": "5e1881031da0fce58b718e654b80d797224c37c5669d3f32d3fc97a6513ad5c3",
       "status": "build_pass"
@@ -7893,6 +8173,11 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.PreparedIndexedValueTableCompilation",
       "source_sha256": "0795a605b1e42cac2ee6444b14978075fbf2574b3f5723fd6fc7f791362b5562",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.ProductiveConsumerAbsenceCompilation",
+      "source_sha256": "158227200847dec75c2b84edc5d22b8360993cd12f1bb22fd8067ccd01fcb979",
       "status": "build_pass"
     },
     {
@@ -8026,6 +8311,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.RFC8259ParserPackGSLT",
+      "source_sha256": "e6cb0dbece2c42c3435c20abf47a9f16b1d9c09e693677b05d6dad7cd5b504e6",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.RFC8259ParserPackHeightBound",
       "source_sha256": "620b44a24f5518ba2cecd10ba95e7dcbf19517a9c3e58dc90231ff79d90de787",
       "status": "build_pass"
@@ -8047,7 +8337,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.RFC8259SyntaxNTT",
-      "source_sha256": "8b58cec9b8d9b1e8ec6d59c581eeab61acf5c4f200bbe3c595264465210f54d1",
+      "source_sha256": "ac9e6cce946583c0ecb7f2af816cd54166fd79ebd47b9e9c4a81dbd09631bce2",
       "status": "build_pass"
     },
     {
@@ -8112,7 +8402,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.ReflectiveEquationOccurrence",
-      "source_sha256": "a23964833ce8885522f8bf1078d62778c0ffeb9a9499734a8001df1b3c8e1976",
+      "source_sha256": "a7a2d219cece2cf4962e478c79544dccf9cfdb951af2c035f809d01302bc1344",
       "status": "build_pass"
     },
     {
@@ -8143,6 +8433,16 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.ReflectiveWellSortedChecker",
       "source_sha256": "bee75e2947a5fa84d4a20042abdfe644da0bd89c8c068eb057c7f0def7740566",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.RelationalHeadSkeletonCompilation",
+      "source_sha256": "b4a7473abd02ee2e7a4f182fad1b38badb6ef474c71df026e968804dc81928c4",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.RelationalOutputPatternCompilation",
+      "source_sha256": "60bb8f8cbe35fc8bfa4431630dfe0747826f258d1b9b06efa38b0c9ecb104351",
       "status": "build_pass"
     },
     {
@@ -8186,6 +8486,16 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.RootResolvedBindingViewCompilation",
+      "source_sha256": "e59487586a6256c0bade207e1c3367b4c33f91d55f6ed1adcc2a796b9b0d0eb8",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.RootSupportProjectionCompilation",
+      "source_sha256": "8f8f4dfa00e11fb8ff4df9a1c7fb2827f4d2dfbe0d9bc2766a734094c884aef8",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.RuleMachineCompilation",
       "source_sha256": "47df9961cb8ffdc1a1df163293bf5d33b41590cff53838825616e9b4a960a2ab",
       "status": "build_pass"
@@ -8207,7 +8517,7 @@
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.SemanticCategory",
-      "source_sha256": "f22e80a605fd4231460afb1bdfafaad3c4086cfe1d853af188bcb25a21fbee4e",
+      "source_sha256": "243d70e5291b9fc1c868578700e219bf69401c1636d535dffb1ec6510070e5e2",
       "status": "build_pass"
     },
     {
@@ -8226,8 +8536,23 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.SortedABTRenaming",
+      "source_sha256": "21bd05d334389c66f4fa40443b6f41283c7205b55a88fbb41fce4e51f630debb",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.SortedABTSubstitution",
+      "source_sha256": "61f6766e94863472b0b72b7d4539a60a5f6a5c872fae418dd9e562e45ab549ac",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.SortedABTSubstitutionExamples",
+      "source_sha256": "8a98ed1bbeb01985b72b09710a88593fd858c2419f8292b5b133b77325b010d0",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.SortedSignatureIndexedABT",
-      "source_sha256": "ad109c36ea9bd24deec80250c247f1454b6dcd28c3cc426d1c7061d293c20ad9",
+      "source_sha256": "260d72f83f2ea4b34eeaf734b9951ef13825bc2c1865d07ccb08f29516329d61",
       "status": "build_pass"
     },
     {
@@ -8311,6 +8636,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.StructuredCStraightLine",
+      "source_sha256": "14458909df377476be023d2c1d31f6b5abf14270a08452ea325be6b82f5b864a",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.StructuredCStructuralAdmission",
       "source_sha256": "2109f44e3de3cc222ff9acbcc0bac1daf18377e0eef53985a713fb1edf056eb5",
       "status": "build_pass"
@@ -8341,8 +8671,23 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.LanguageDef.TheoryGraph",
+      "source_sha256": "ad99ec53330083d41e8f0e68d5638ae8c7a037c0bdc1133b93ea185a0dc43ef9",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.TheoryGraphModels",
+      "source_sha256": "37e64199f3353c90878f7cf19db583b60d743a0fbb9ddc07580c9c5ab8348cd9",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.LanguageDef.TheoryGraphModelsCanary",
+      "source_sha256": "2404ce167c1687294dc0827882a39fb492b0a1ee1f5f02c2893e111fc25f9818",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.LanguageDef.TotalGSLT",
-      "source_sha256": "f6151ab6abb549df414c073c34a8599f329ce91a586339249764653876767a1b",
+      "source_sha256": "f9286f8909643f69777840c0833348fab368b7cadfb7108f8e3701f4c590609a",
       "status": "build_pass"
     },
     {
@@ -8508,16 +8853,7 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.TptpFofNnfToAlphaExplicitNTT",
       "source_sha256": "453d3a2b2fcd188960689ea8e6fb0a3c8e658f7409ef2805bb61e7a6526c4647",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.GSLT.LanguageDef.TptpFofNnfToAlphaExplicitNTT"
-      ],
-      "fork_chain": [
-        "Mettapedia.GSLT.LanguageDef.TptpFofNnfToAlphaExplicitNTT"
-      ],
-      "captured_chain": [
-        "Mettapedia.GSLT.LanguageDef.TptpFofNnfToAlphaExplicitNTT"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.TptpFofNormalizationLanguageDef",
@@ -8527,16 +8863,7 @@
     {
       "module": "Mettapedia.GSLT.LanguageDef.TptpFofNormalizationNTT",
       "source_sha256": "6617448c0d6ebd826bac490c7c5e2ee5b1a9855cdf627a590735475d802caaa1",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.GSLT.LanguageDef.TptpFofNormalizationNTT"
-      ],
-      "fork_chain": [
-        "Mettapedia.GSLT.LanguageDef.TptpFofNormalizationNTT"
-      ],
-      "captured_chain": [
-        "Mettapedia.GSLT.LanguageDef.TptpFofNormalizationNTT"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.GSLT.LanguageDef.TptpFofNormalizationSemantics",
@@ -9224,6 +9551,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.Logic.ObserverRefinement",
+      "source_sha256": "dfe66bda159f2c6ed20d6c44b9cfc62ac360b996a29b071a8d9f9ddf086e4dfa",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.Meredith.Bisimulation",
       "source_sha256": "c47646b84aa801fb897f981446f469e54ced5b10877dfad0ab0d74e6a2529266",
       "status": "build_pass"
@@ -9291,6 +9623,21 @@
     {
       "module": "Mettapedia.GSLT.Parsing.BoundedScheduler",
       "source_sha256": "3c7cf69c6f0b2439e162d32817eee4f1c5a862e513a51a2f0e1aaf0b1044da23",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.CanonicalSourceHornElaboration",
+      "source_sha256": "2a631349c1da3e73216a1083b81c6fbeef4adb49f8fa0a301ee255d589294de2",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.CanonicalSourceOperationalGSLT",
+      "source_sha256": "98f69570abfe52ee06ea8c4f55a93213b3208a2468c2ff5e2deecb5679309e66",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.CanonicalSourceQualification",
+      "source_sha256": "95e81d557e9cc962fc81e05fe9a0bda4f2c4b148d4dde027d552182b9930f8af",
       "status": "build_pass"
     },
     {
@@ -9370,7 +9717,7 @@
     },
     {
       "module": "Mettapedia.GSLT.Parsing.ClassAwareParserPackCorrespondence",
-      "source_sha256": "2f25b273434aeda78acb2903d1426611a78f5a79439aa1432d350cd6024b5719",
+      "source_sha256": "46341c04f92be4e613e0c0284acab7b76f1986d598ae7c6be7d2ad379095ea2b",
       "status": "build_pass"
     },
     {
@@ -9391,6 +9738,11 @@
     {
       "module": "Mettapedia.GSLT.Parsing.DynamicEnvironment",
       "source_sha256": "8c3e8a8637636ec8ffbcc7605dc786cf5084d681a19dfd2cc60c28f9e3505264",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.FiniteFactTable",
+      "source_sha256": "63be59d47318740ae0226b8b93903fdcde031080aba1459f9f3aa179441574f6",
       "status": "build_pass"
     },
     {
@@ -9415,12 +9767,37 @@
     },
     {
       "module": "Mettapedia.GSLT.Parsing.HornCertificate",
-      "source_sha256": "34d078f50abc14a99b27a44cd55f3b9bcb281136c165c842381e494e3a2813b6",
+      "source_sha256": "8f0025451c36d88edc111075dbe33cac5ea3e0d6a249a72e1851f5bedddf9797",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.HornCertificateBoundary",
+      "source_sha256": "569a21ad2269f01cacfcf2d6bc5b0faedb172acaa37bc5b7dd1132d90d7c8f12",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.HornCertificateGSLT",
+      "source_sha256": "33286101cc56ad2aa2f5c836491cc1a9dfa1d6a914c43e81f5d0cc6274fa257c",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.GSLT.Parsing.HornChildDiscovery",
       "source_sha256": "ad2e6a82abad91e782223310d65fe073ce4da8090e25ff809fde790742b03601",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.HornEquationContextual",
+      "source_sha256": "f78ec5127c1f231d8c493d76c649b3b232b41a8a39968a6b37c85b7b66719e31",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.HornEquationInstantiation",
+      "source_sha256": "73d0716815a77d80c91036d2e10f12a95ec13cb10845b6cdfbc2b8916717c674",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.HornGroundMatching",
+      "source_sha256": "ae4e8f92b39e0cee8393ba003da59063f8c9c3c5d521a301f216b44e3925fd2e",
       "status": "build_pass"
     },
     {
@@ -9434,6 +9811,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.Parsing.HornIntegerProvider",
+      "source_sha256": "0ace387e70cf8f4f6f04f46683985cd848feef948c17fc6c10daf3b8e522f195",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.Parsing.HornPlan",
       "source_sha256": "3a3ee32263310a62623491b6dbe56eaab3ea7bb5a3e35afe28d194414f4dc37f",
       "status": "build_pass"
@@ -9441,6 +9823,11 @@
     {
       "module": "Mettapedia.GSLT.Parsing.HornProgramChildren",
       "source_sha256": "b9c0ee5b784b29c09e6045c8637007059f5ccb66dc8e550627f9dc5e0ae40c78",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.HornProviderGSLT",
+      "source_sha256": "803fdaf3498ee41ed42188ed495436cb767e77bba9bcc9b11a04093a26322ba1",
       "status": "build_pass"
     },
     {
@@ -9524,6 +9911,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.Parsing.ParserPackSemanticGSLT",
+      "source_sha256": "5a6f65844c17093fa35d56eb8e692d8f42a0a92ccd6fed81faaac55838798af6",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.Parsing.ParserProfileSemantics",
       "source_sha256": "52b53b1027b0e90d99e5d230cb8a4b1259a160490ff532eea09098ef66a36f84",
       "status": "build_pass"
@@ -9531,6 +9923,66 @@
     {
       "module": "Mettapedia.GSLT.Parsing.ParserProfileWire",
       "source_sha256": "d2bd72089622d3dc4d68f4f4a84ecd3559a30efe543cca4191bea36233b9e9b7",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnf",
+      "source_sha256": "b7b38a69584e379dc7ee71531dadacbcb100b6c1fed634a4ef8c16028b506cbb",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnfDenotationCompilation",
+      "source_sha256": "1fb10ef9840acc2b27e1c0410724ad164faf56a85f3fccb48ae966c593430f0d",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnfDenotationValueCodec",
+      "source_sha256": "fa9e0690fefd0f4f1652be6532e9af78ca7efa03fe4fe74f1fc2e69ff30f202b",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnfExclusionLocalModel",
+      "source_sha256": "a3bafd9ce15fd3de86c5cd3795c67fd2da6c87665b68aae09ae46439373f7f58",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnfGraphSemantics",
+      "source_sha256": "59d0496a58f983ae70a4cbe2c41d2fa21a8e7709b8ed951141d5cabfc30414a4",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnfLexicalInhabitation",
+      "source_sha256": "34a1bd438f0afb724423f2066118b2083df763d703a2b37ed8887d0af8cdc93c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnfLexicalScalarSemantics",
+      "source_sha256": "54aefc158d297b67796f6e9297aa65e0066669ebef47aa69191b39c7b7978a9a",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnfSemanticAdmission",
+      "source_sha256": "6fe757292d48095a30e7cfe47974fa599872876cc48fdd4354bd1974c20f3ecd",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnfSourceScalarCodec",
+      "source_sha256": "33fd2455f48f3a24f2895e6016442e6ab4490a8ca0fe336cd074c8c2b4a95372",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnfSourceTextAppend",
+      "source_sha256": "e289a044f8b7a75f3bbb1d95d833075d7d064e431fc7a5fb658229c41ee50dfb",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnfStructuredDenotation",
+      "source_sha256": "8b33bd0679e650447469635c134d749056383b1e81533d102a1554bb4daa096f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Parsing.PlainBnfStructuredValueCodec",
+      "source_sha256": "becec83ff2c6dc18b3fe71b4e87d1d03879f42da2ad708841babde0e1a58f950",
       "status": "build_pass"
     },
     {
@@ -9639,6 +10091,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.GSLT.Tools.CheckCanonicalSourceGSLT",
+      "source_sha256": "718e38ef0ca69fb7a195af483954f08f7689e4211a154024e2c0335e7bb81c77",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.GSLT.Tools.CheckNativeForestWire",
       "source_sha256": "f73ae580d80231765da730eb129cb794613955b1ed260edd2a088ae525875680",
       "status": "build_pass"
@@ -9646,6 +10103,11 @@
     {
       "module": "Mettapedia.GSLT.Tools.CheckRFC8259NativeForestExact",
       "source_sha256": "22cae0345b469c978b9b47a73d4648d48210979f6ee6eefcb3f1f4172c9b37e0",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.GSLT.Tools.ExportPlainBnfDenotationCases",
+      "source_sha256": "e52d3eb4fe0b56b04b08ba42ad9621e8f66be9faeb35c0f8064822c792227e91",
       "status": "build_pass"
     },
     {
@@ -9875,7 +10337,7 @@
     },
     {
       "module": "Mettapedia.GraphTheory.Walk.NativeTypeTheory",
-      "source_sha256": "1efb821c525bcaea8647c8e4baf15115eadce63f5e62b167842f44fe3e4ed715",
+      "source_sha256": "6150fa2d508f81026b57783a275611a4438a9c506e8dcb720d2f22f1b4c282c5",
       "status": "build_pass"
     },
     {
@@ -10321,22 +10783,7 @@
     {
       "module": "Mettapedia.Languages",
       "source_sha256": "677b5a42bbbaf41f5378a97eb5f8bb978c05df90497cf81c10791a72f4ff533f",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages",
-        "Mettapedia.Languages.Lean",
-        "Mettapedia.Languages.Lean.Lean4LeanRungOneDeltaDecision"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages",
-        "Mettapedia.Languages.Lean",
-        "Mettapedia.Languages.Lean.Lean4LeanDirectedReduction"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages",
-        "Mettapedia.Languages.Lean",
-        "Mettapedia.Languages.Lean.Lean4LeanDirectedReduction"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.Agda.CoreGSLT",
@@ -10705,7 +11152,7 @@
     },
     {
       "module": "Mettapedia.Languages.GF.OSLFBridge",
-      "source_sha256": "27a3dfef005a1beb14dbb2d4f6b12298afef63d21731bcf695fcb6e99b21a21a",
+      "source_sha256": "3665858ebc6795e29286fe97ade73cb540663cb1c56f15e21ba07ed5f7b1f310",
       "status": "build_pass"
     },
     {
@@ -10850,7 +11297,7 @@
     },
     {
       "module": "Mettapedia.Languages.GF.Typing",
-      "source_sha256": "8338711baf0558890a4a5e69fcf27fc50e3b8e1a91a5b9bf10262e7f9e16c920",
+      "source_sha256": "b336f2eaab5d2e5b4138c071ed8661f5ee19cc9dc691791661149ae279516769",
       "status": "build_pass"
     },
     {
@@ -10930,7 +11377,7 @@
     },
     {
       "module": "Mettapedia.Languages.GF.WorldModelSemantics",
-      "source_sha256": "21e998cce48f888b4ea5732f3a7902d3b7ffab435528e7a080b3e24cc29b2dd3",
+      "source_sha256": "29f6c39061b4828b6d33c438516bc6cf916e0152ce80d5aee4177785a04fdfc1",
       "status": "build_pass"
     },
     {
@@ -11009,6 +11456,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.KIF.SourceCheck",
+      "source_sha256": "fee158e2ffc4626784654dc39d6844e32ad43f15f99c991e9f786c240fe46d73",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.KIF.Syntax",
       "source_sha256": "791ae0a4db82a7b771a24b4b6ebae451e499746002575a843fa5d3dc3c4dffb4",
       "status": "build_pass"
@@ -11021,19 +11473,7 @@
     {
       "module": "Mettapedia.Languages.Lean",
       "source_sha256": "c222f0409d5b123c9793aca520c76187e99ef92a5522bfdc32b88a7bdeb35e35",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.Lean",
-        "Mettapedia.Languages.Lean.Lean4LeanRungOneDeltaDecision"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.Lean",
-        "Mettapedia.Languages.Lean.Lean4LeanDirectedReduction"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.Lean",
-        "Mettapedia.Languages.Lean.Lean4LeanDirectedReduction"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.Lean.Lean4LeanDirectedReduction",
@@ -11048,41 +11488,12 @@
     {
       "module": "Mettapedia.Languages.Lean.Lean4LeanRungOneDeltaDecision",
       "source_sha256": "a7dcf3d074f372ed049cfe09906326cdeda7fd726c0c540c5e751ffc8345bc7e",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.Lean.Lean4LeanRungOneDeltaDecision"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.Lean.Lean4LeanRungOneDeltaDecision",
-        "Mettapedia.Languages.Lean.Lean4LeanRungZeroDecision",
-        "Mettapedia.Languages.Lean.Lean4LeanDirectedReduction"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.Lean.Lean4LeanRungOneDeltaDecision",
-        "Mettapedia.Languages.Lean.Lean4LeanRungZeroDecision",
-        "Mettapedia.Languages.Lean.Lean4LeanDirectedReduction"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.Lean.Lean4LeanRungTwoTypedBoundary",
       "source_sha256": "52f1b2f81062d3e907347b979fea1d9294bf114df4b8b9cca0f87f414c84a476",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.Lean.Lean4LeanRungTwoTypedBoundary",
-        "Mettapedia.Languages.Lean.Lean4LeanRungOneDeltaDecision"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.Lean.Lean4LeanRungTwoTypedBoundary",
-        "Mettapedia.Languages.Lean.Lean4LeanRungOneDeltaDecision",
-        "Mettapedia.Languages.Lean.Lean4LeanRungZeroDecision",
-        "Mettapedia.Languages.Lean.Lean4LeanDirectedReduction"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.Lean.Lean4LeanRungTwoTypedBoundary",
-        "Mettapedia.Languages.Lean.Lean4LeanRungOneDeltaDecision",
-        "Mettapedia.Languages.Lean.Lean4LeanRungZeroDecision",
-        "Mettapedia.Languages.Lean.Lean4LeanDirectedReduction"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.Lean.Lean4LeanRungZeroDecision",
@@ -11156,7 +11567,7 @@
     },
     {
       "module": "Mettapedia.Languages.MeTTa",
-      "source_sha256": "705c2db21f717f10fd4042a148bbede7b6a36f0cb7b69ee236d5ee30390955be",
+      "source_sha256": "48f2ad6c3a9f0c08c9de12278c102e9303e494a49e160ba6be638e07e7da47a3",
       "status": "build_pass"
     },
     {
@@ -11332,16 +11743,7 @@
     {
       "module": "Mettapedia.Languages.MeTTa.HE.CanonicalEquationBridge",
       "source_sha256": "3de3353549326e5828d58ef74f53377dd3e422818f41be3f0662a9a7ecdc3003",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.HE.CanonicalEquationBridge"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.HE.CanonicalEquationBridge"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.HE.CanonicalEquationBridge"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.HE.CeTTaRuntimeContracts",
@@ -11531,33 +11933,12 @@
     {
       "module": "Mettapedia.Languages.MeTTa.HE.LeaTTaEvaluatorServiceAwareConformance",
       "source_sha256": "b738b872bd6cb7631972e3160c9ffc3bd525ac107364815f14e31a4c9a3adc3f",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaEvaluatorServiceAwareConformance",
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaEvaluatorSuccessPriorityConformance"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaEvaluatorServiceAwareConformance",
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaEvaluatorSuccessPriorityConformance"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaEvaluatorServiceAwareConformance",
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaEvaluatorSuccessPriorityConformance"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.HE.LeaTTaEvaluatorSuccessPriorityConformance",
       "source_sha256": "1efb0729e96db30e4ef421520c2a7e2ebe53d096db004ac2baeed3b3f2f6523d",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaEvaluatorSuccessPriorityConformance"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaEvaluatorSuccessPriorityConformance"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaEvaluatorSuccessPriorityConformance"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.HE.LeaTTaExpectedApplicationBindingRetentionCounterexample",
@@ -11572,16 +11953,7 @@
     {
       "module": "Mettapedia.Languages.MeTTa.HE.LeaTTaExpectedBindingConflictCounterexample",
       "source_sha256": "243942d37aeafdbb03e58d988019ad544df435552d6ce63bbc1ff58f48d0aa2e",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaExpectedBindingConflictCounterexample"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaExpectedBindingConflictCounterexample"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaExpectedBindingConflictCounterexample"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.HE.LeaTTaExpectedBindingThreadingConformance",
@@ -11596,16 +11968,7 @@
     {
       "module": "Mettapedia.Languages.MeTTa.HE.LeaTTaExpectedReturnSelectionCounterexample",
       "source_sha256": "d6f42fa838f3b98e80effa9a3b2ccbf5b6d38291e73f0dbcb7ae20439abacdf9",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaExpectedReturnSelectionCounterexample"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaExpectedReturnSelectionCounterexample"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaExpectedReturnSelectionCounterexample"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.HE.LeaTTaFuelObservability",
@@ -11695,16 +12058,7 @@
     {
       "module": "Mettapedia.Languages.MeTTa.HE.LeaTTaSignatureExpectedCaptureCounterexample",
       "source_sha256": "5999b810b3c7ffbb6c2071009f16cdb63501a865e95e64f606f5dc2b0d940606",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaSignatureExpectedCaptureCounterexample"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaSignatureExpectedCaptureCounterexample"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.HE.LeaTTaSignatureExpectedCaptureCounterexample"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.HE.LeaTTaSpecConformance",
@@ -12309,74 +12663,22 @@
     {
       "module": "Mettapedia.Languages.MeTTa.LeaTTa",
       "source_sha256": "1590d9d38b70f266e871f40dce2d8fe3725f1142eee101a395f23b2fd2dbcd42",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.PeanoAdd"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.PeanoAdd"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.LeaTTa.Corpus",
       "source_sha256": "4ac4b98b13314ef197497c6effa9e6b6a10552dd4b7e9471c42aca97628090d9",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.PeanoAdd"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.PeanoAdd"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength",
       "source_sha256": "41073623388187059ef4c8f458f6df7fcf4683b12dfcdab258ce0edcdea0d4b3",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.PeanoAdd"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.PeanoAdd"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.MatchQuery",
       "source_sha256": "b79abe8d8884a07a3dd60ce5c08a6be6f11004a2729a7dd200956a487af7ac7f",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.MatchQuery",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.MatchQuery",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.PeanoAdd"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.MatchQuery",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.PeanoAdd"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.PeanoAdd",
@@ -12386,21 +12688,7 @@
     {
       "module": "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ReverseInvolution",
       "source_sha256": "65d1851ad9c022bd26c1359546327fd5fe10286673a4545aca12649ee1690596",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ReverseInvolution",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ReverseInvolution",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.PeanoAdd"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ReverseInvolution",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.ListAppendLength",
-        "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.PeanoAdd"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.LeaTTa.Corpus.SelfInterp",
@@ -12524,7 +12812,7 @@
     },
     {
       "module": "Mettapedia.Languages.MeTTa.MeTTaZeroLanguageAdequacy",
-      "source_sha256": "7e9c6d1d5e469dbd4e40c1f55983464e2d5e5cf00dba978176baffd06539d44e",
+      "source_sha256": "643ca6cb5f4451132de9d82a5ff2451761a904653c17fc6a8f8a5926f2cfba0e",
       "status": "build_pass"
     },
     {
@@ -12649,7 +12937,7 @@
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PeTTa",
-      "source_sha256": "d104f7912a352e64ec7301f461787f743f35dd9b6013ddac5dd590675f063444",
+      "source_sha256": "ea9be3d2087acffab3da00a21edc51dd6582b3cb9e8ea572ce210c33b473df65",
       "status": "build_pass"
     },
     {
@@ -12750,6 +13038,11 @@
     {
       "module": "Mettapedia.Languages.MeTTa.PeTTa.LookupPlan",
       "source_sha256": "32fd94c8802a3b33bd0ca116206769d90da1e73b1c1cd9b466df97ac8567de86",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardBiformTheory",
+      "source_sha256": "1bdd159d200224fd0df13f4679f1e4218f14eeee761c5e359d4131f22c5711ef",
       "status": "build_pass"
     },
     {
@@ -12993,6 +13286,21 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardComposedInvocationRealization",
+      "source_sha256": "2d05ab5de906d4cd03194798d73f79115d0c00e9001fafe5d5fbf2875a2a9db8",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardComposedRealization",
+      "source_sha256": "fbb230c4d5a5d19e5ab52ed453ab3429677a6c71b6c157f6e6b17c568e492f85",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardConformanceCorpus",
+      "source_sha256": "5417b8a6d1de2b6c62830ed2f12fed1d3600f06d5b2bd6487dae3678f2644605",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardControl",
       "source_sha256": "ed9c15a694fafa3a4c1836567059ad1da7bdfbf111166a7bbdda5663f6cdefd3",
       "status": "build_pass"
@@ -13003,8 +13311,53 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteBiformTheory",
+      "source_sha256": "34f493bc0cd53a5c0463640ecf6430f296af1fcbe111c8f4af84302f8cd951ab",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteControlProgram",
       "source_sha256": "224423d7ab97c93e61f8fe369695357749f7a51eac66cc39f9937e0df156db94",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteFusedDecisionProgram",
+      "source_sha256": "936e266d3bf92203e9861bc2feacaed3f60adb9d55c30ee4f1b35a2ec0446668",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteMatchMachinePass",
+      "source_sha256": "5ab6c639734343eb012c593db733d98e825337cbb60d29d444fd02ad645a5b15",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteOperational",
+      "source_sha256": "085908707882a581ab57d1ec77ae09dece7bddd7908663033b8c676de161b543",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecutePatternMatrixCompilation",
+      "source_sha256": "a6c3d64617fdde2c64fd94fbd9dd8f36a4adaae77800d64754084cf876af7d07",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteRulePlanCompilation",
+      "source_sha256": "101de4a19c7cb31d4eac401c5f617f92146fcc84210be447b3d91d8333165469",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteSourceDerivedStructuredC",
+      "source_sha256": "c8fe10515870cec30d9546890b969d6e3ca2fb911ff78a52baa017b677b8d2fd",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteStructuredCBiformTheory",
+      "source_sha256": "8f28ba11c000bb55c3062e54a60210c5be466288f93cadf01483d52b2d31b8b8",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteStructuredCPass",
+      "source_sha256": "c42d472bb7b0bcc877f2a2c36c8306c551c159f8da323ab1ccce53b4181c450e",
       "status": "build_pass"
     },
     {
@@ -13013,13 +13366,43 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteStructuredCSemantics",
+      "source_sha256": "22e2ac35f69cd80b351585ff1dd65108bf9eac10c31d4d0acad024228d450472",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteStructuredCTotalRealization",
+      "source_sha256": "b77aa8d3951e43d5d2e73947ab1af23e065c472c38774a53af5843a4bc2b6694",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardExecuteStructuredCTransitionProgram",
+      "source_sha256": "737484e855c96b91f714b6bd0c4a8d11ea6a70e7c1dd5a2db1c690c753f96146",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardFusedDecisionProgram",
       "source_sha256": "0fabf903ef23880469265d55cf80f93af4272e0a3858b81543c6dd9993927202",
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardHOLInvariant",
+      "source_sha256": "bf247a4050767d3f5522cb0bd16065f66bc3feaa62acfe9fa57e3da5a4e46cb2",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardHeadIndexedProjection",
       "source_sha256": "bda2defbd63865656995dfe0715ce50287b742f016f7ac33926e2fca247aa2ae",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardHotStructuredCPass",
+      "source_sha256": "0ab084815e550edcbf5bf81da924e965bd06effbd53a4cd1c7dbb87662308b55",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardMatchMachinePass",
+      "source_sha256": "df9f36846b38b565a8500f39c97adfd0f8a1f6e5c0ca7822de45bd6a0448bbf2",
       "status": "build_pass"
     },
     {
@@ -13095,6 +13478,21 @@
     {
       "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardSourceMatchPlan",
       "source_sha256": "cdf8cc62df24b65dde6887020158e63288c82d3d6ce2b0c62d747c2b7ea79c5b",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardStructuredCBiformTheory",
+      "source_sha256": "ceb2ffbb13c0cc218eee7c34268a6edcc79cffb7fac65170074991ee0a77c755",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardStructuredCExport",
+      "source_sha256": "90d4c7748d22c763ff08d36958a5e11aac81fc7abbb7659460dc6c9ba1374f0c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardStructuredCPass",
+      "source_sha256": "2b5a933dde4c9e57a046cccae5cc33edb819ad377278cd161f7821cb347330aa",
       "status": "build_pass"
     },
     {
@@ -13539,7 +13937,7 @@
     },
     {
       "module": "Mettapedia.Languages.MeTTa.Prime.LanguageDef",
-      "source_sha256": "b0ded85b5347ca6dfd8334ac59ca7516d3763f830e7152ae5bc43580d1619d3c",
+      "source_sha256": "c35e05dfa75bc3a2ff8f0a75f730eec7ce893ef4683edc853f32e658acdee0c7",
       "status": "build_pass"
     },
     {
@@ -13885,21 +14283,7 @@
     {
       "module": "Mettapedia.Languages.MeTTa.Prime.NativePrimeTheoryCrown",
       "source_sha256": "84a04df11e6311145649e0ae12fa389248a707698f15a9c141e26784fa36d116",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.Prime.NativePrimeTheoryCrown",
-        "Mettapedia.GSLT.LanguageDef.GSLTILUniversalCandidateComparison"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.Prime.NativePrimeTheoryCrown",
-        "Mettapedia.GSLT.LanguageDef.GSLTILUniversalCandidateComparison",
-        "Mettapedia.GSLT.LanguageDef.GSLTILProofSearchInstitutionBridge"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.Prime.NativePrimeTheoryCrown",
-        "Mettapedia.GSLT.LanguageDef.GSLTILUniversalCandidateComparison",
-        "Mettapedia.GSLT.LanguageDef.GSLTILProofSearchInstitutionBridge"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.Prime.NativeProgramElaboration",
@@ -14074,16 +14458,7 @@
     {
       "module": "Mettapedia.Languages.MeTTa.Prime.UnitypedDisplayedTypingCoherence",
       "source_sha256": "74d226a8a40c64fd625d854f08d24b931a2044a5d283395cdc96126d9d49422d",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.Prime.UnitypedDisplayedTypingCoherence"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.Prime.UnitypedDisplayedTypingCoherence"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.Prime.UnitypedDisplayedTypingCoherence"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.Prime.UniversalName",
@@ -14146,8 +14521,18 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.PrimeNeedAllocationBound",
+      "source_sha256": "0e4af1537be4f88f56de20cf74caaed3a31b34c77a8f96a764ff3767287fedc2",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.PrimeNeedCacheLaws",
       "source_sha256": "e24459a58e9284b1705bdbb1e1c85487afa4e07d773e8a7fac865052150a653b",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PrimeNeedDependentService",
+      "source_sha256": "18d3d684f5e9f76b1b99355ec7d3259c7ce243fc199fbc1fbd625e6ab976cfcf",
       "status": "build_pass"
     },
     {
@@ -14176,6 +14561,16 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.PrimeNeedLocalStepPaths",
+      "source_sha256": "95692b2a2359312aea3509b6604145323dd6422e9d4680e3b0fc532ac53e5244",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.PrimeNeedLocalSteps",
+      "source_sha256": "cc7723c180986b88613c243f534fcad799de194da0b9c736c77814d59f835b02",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.PrimeNeedProtocolBridge",
       "source_sha256": "c9e2381bbe57e378bc11d43876b0aa708196a91b298e2bb92b2f95b895b4fa30",
       "status": "build_pass"
@@ -14186,68 +14581,73 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.PrimeNeedRepresentation",
+      "source_sha256": "367af8cedb529fd74bad2c2db9d5ea78ff908735a434ad506c5ab781bd2f4d37",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.PrimeNeedWorlds",
       "source_sha256": "8e11339033a03dd977515445c26afbd3b8f5dbcbc13f3f78c46be7953bd8a97b",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKAtomlessBooleanWaist",
-      "source_sha256": "922c8e066d1623fd37b99c956d6a298b94aa20b58079a85bbee84ef70d800b80",
+      "source_sha256": "4fc6d0d25af29d13da8529ada9c04d79e97b49ea4803ff435934545be3dfd92d",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKBooleanIdentityWaist",
-      "source_sha256": "4ddffba313e101313d0d82a014dc099dd108b68ee2bb9c076a140bfc78ebca30",
+      "source_sha256": "996a739d2e47548b3be71a7371c7fc4b8be0e97cffe7a23e1d4d4d2c316daf21",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKDependentPiWaist",
-      "source_sha256": "d76e597b85d5ebb0c45566b43d1ac147492e881547f958fdf31f07658e40d1a0",
+      "source_sha256": "a9b9aecd6af5ff40ecb445355ef4a75b55ab120c71449455cdc815059504518c",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKGenerativeAtomlessGrounding",
-      "source_sha256": "9063dedd4eafd95a5ad2e5d3778f4e918d9483e24c62d60d0f7cbae9e3f99063",
+      "source_sha256": "abd1e1d8127bdfb9a9590b1c2cd24871b55772c2c22836028b837021f0cb1d98",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGroundAtlas",
-      "source_sha256": "fbe54238e9fb0181a986b63043e53a8fc4973d18c65d9684fdc9da14e3641932",
+      "source_sha256": "4b4799dcd323a743ea5e7d9990f7730b74a3118d774303ccb41ff0e6bf94aefe",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKSemanticGrounding",
-      "source_sha256": "46d3b684070eab9ac9b25f5836b4b77b6f2d64fe212fc491d67066c17c6793c9",
+      "source_sha256": "4fe9f1181550960d025e6815501221aaebb2c9a02df775823b0901b53300b303",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKSetCoreWaist",
-      "source_sha256": "9f6a4c32209c9d0a8f07888e945de2ce9cb2e832563963114fe370e3a3f09018",
+      "source_sha256": "bca775919b04ec1f698f90a812d413a6f2bdc210f72087018f7095fa0b37f2a2",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGroundAtlas",
-      "source_sha256": "350779d1b1a3ff7a6b8ad1b75455e0bc567ab85e14fe82e0cfd4845fdff4cfe1",
+      "source_sha256": "49f610527c945eb9d5a6bdb8798f04ba70484ad3707b05ba3dbe0d7176c620ab",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationGrounding",
-      "source_sha256": "1c0f3b4e47dabedfc14ec02e9d509b681eb203d1ea03ea080aeb645ee97c44aa",
+      "source_sha256": "cc888b621f15fdfd7561ce498c6f9148de2b69238fbe7dd61fe3a87d73c2c22d",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKSetOperationWaist",
-      "source_sha256": "54a9400c539765aa998d8223b887d54ad3a1ebcec25e24e5e14a2f2940992f29",
+      "source_sha256": "e8bc12c18e60a5d922294d6ab720903dc6923fae53a996ba5c5e2acc853cccc1",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKSetTypeUltrainfiniteWaist",
-      "source_sha256": "e39929e14f3ed2b244a063e77ee6999965f6645fb09a12fa1fb03b6ec9ca948b",
+      "source_sha256": "5949e504f907168e1cda94e5793a88aa14a96a7c965164adcfa9724094dd020d",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.PrimePluralNIKWaist",
-      "source_sha256": "e1a3b92b5d6f5038079144b130b21137fe844ae05c3396f031567f127eefbbd3",
+      "source_sha256": "352449335406a09458a35183b713e65a83f46ccf0a58e0da84e22a30024d11c2",
       "status": "build_pass"
     },
     {
@@ -14378,16 +14778,7 @@
     {
       "module": "Mettapedia.Languages.MeTTa.Pure.Intrinsic.LeaTTaDIndGEvaluator",
       "source_sha256": "91255d4905a1a45261cddf6d9ecbacf531fd4bac806c4c58ffa6342c72f97521",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.MeTTa.Pure.Intrinsic.LeaTTaDIndGEvaluator"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.MeTTa.Pure.Intrinsic.LeaTTaDIndGEvaluator"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.MeTTa.Pure.Intrinsic.LeaTTaDIndGEvaluator"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.Pure.Intrinsic.NatDecl",
@@ -14846,7 +15237,7 @@
     },
     {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower",
-      "source_sha256": "5e3dccd812ffeb27eafbcc2c4054f22c1fb7dd6b7c133bd40f1665bbafd2e8a9",
+      "source_sha256": "b5309307be0122a543690d09866ebaf08498ee42334cf9208a22296ee15862e0",
       "status": "build_pass"
     },
     {
@@ -14857,6 +15248,11 @@
     {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AlgebraicParallelBoundary",
       "source_sha256": "c492a9e1ca45b2c71e7e09a41fa4dedc43063cf409809dc5df7197ecee9681c0",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.AlgebraicParallelSubstitution",
+      "source_sha256": "3cb5efb773aa25ebd8809ea9cab289ab410537ea1794d60306885d535bafb0b8",
       "status": "build_pass"
     },
     {
@@ -14930,6 +15326,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ConstantExpansion",
+      "source_sha256": "3f9062f0733db31503d49b6e6d3394626841f0d92ede4f3ff26fce114acab64f",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ContextualLadderBridge",
       "source_sha256": "f5c4a5678de56f6a6e25cf60ee0aa9fa80b2ddb1721e005fcb403080112ccc58",
       "status": "build_pass"
@@ -14942,6 +15343,16 @@
     {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ConversionCoherence",
       "source_sha256": "213a02d434cf2aca911e66c7b51a7e0abc48709249a341abed217bd5ecc005c6",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ConversionConservativeExtension",
+      "source_sha256": "68253e87149bc7109beb585972f03832c1cb88e4a648dd2300b92ba51f6d5e55",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.CwfInhabitationInstitution",
+      "source_sha256": "4b1d6ceedb25c2a18bda6b879249808ead1fb98212847b68c51e0de2799d288e",
       "status": "build_pass"
     },
     {
@@ -15080,13 +15491,213 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DefinitionalExpansion",
+      "source_sha256": "f099c450cce041532d20eb1ca7e314ef918f331ec3c750e945156a9b3f5ce9a0",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.DefinitionalExpansionExamples",
+      "source_sha256": "6a6aa0a7fcae9f45838f9407236680bc6668dc6b2274bc496f9662808239e58d",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FirstClassGSLT",
       "source_sha256": "d5c2cb6a4d09da3b8b4531d3032f9232bc321f32b3383e1167d946b7aaee5f42",
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveBeta",
+      "source_sha256": "583f51882c25090ba1a11ca4bebf152a3aa0aaf9de7857b59a53e05b7326ae6a",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveContextConversion",
+      "source_sha256": "05d7e406524288aa9e1862a9244b2405afea95e090c8c0688438707b41d47501",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveDeclarationSpine",
+      "source_sha256": "a698573201ebf01e3f850f3a6655d434149a9f9ccb920b9d251559a604fa66cd",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveDeclarationSpineExamples",
+      "source_sha256": "5563dcfddb9dd052756d89d97819841e34f39ca282bf05656743357418f20459",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveDelta",
+      "source_sha256": "666d7da0705d137cca30767621da8f258c846808d24d8cf7f9d08f3e7411688a",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveDependencies",
+      "source_sha256": "ff964dca5ef165747c81deb7fe6df4c0f2cbe2d2fa351c0a15c3d3de2bf1c43b",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveDependentComputation",
+      "source_sha256": "cab5e76efe3583ed7f91b94d79bf437e871768215931ece3c81db3ea75b49220",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveExamples",
+      "source_sha256": "3eb4a5b8857340a4bacb38caa7130de4d7e7f85eb2fd69875fb91716b130b880",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveHOLInterface",
+      "source_sha256": "f3cdf840f2a5ae8be16adfb7b4c8c010b35c7b4f00764da09b92b3b3580a9ebb",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveHOLInvariant",
+      "source_sha256": "a6f1e7714c0141a0804a6359fd9eba429af5f02baa13be320546743fe1993e44",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveMIL",
+      "source_sha256": "6d582cdc98e2ee3e01eb3ac5bff1c02501a8e413b94ba0bf69aa7b12d3f06e36",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveMILArgumentRecovery",
+      "source_sha256": "b66547bd29489117641f8a570efb9d3ef30d7abe64581a57d4ef5a2890b5e335",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveMILElimination",
+      "source_sha256": "908d44720481bcf5ba7f87b216d74def3b3573b4d65c0e0333ed4618ddab2cbf",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveMILEliminationIota",
+      "source_sha256": "e8950d1a442a3733c8a8ebce9be05d3b9d47c92f8db8cf65615dd035a1ad2248",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveMILIotaPreservation",
+      "source_sha256": "bdd0300b05def282ab90cceaa1eb496f5b123a84d153aa2ea55b5a6077b0c66a",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveMILQualification",
+      "source_sha256": "e1115b395372dd194ee0325ebe9c762ae7ba9eb4fd71e85b73544f9ccb80adf6",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveNativeIdentity",
+      "source_sha256": "1594395f3bde74f094bbf7780fc552a7ce54dee87a7a8cd355a74c8836a5026e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveNativeList",
+      "source_sha256": "ed1f506afb8c9a38d39249799287296ed4c17754f65af65bdc6ca59cd86319f1",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveNativeListDeclarations",
+      "source_sha256": "9d10b609ab2e358fbcbad244502be7f4dd10a7af38a2da6e11c8be6c21544f95",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveNativeListElimination",
+      "source_sha256": "87c55d5d352244f2ada64f0b72aecaead1b7e3615653af9c5cc80d29cf6efcf6",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveNativeListEliminationExamples",
+      "source_sha256": "238de1799632aa3894c9a16cbce69607ead9acba848d81265cabc2c4a6f7b03d",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveNativeListEliminationPreservation",
+      "source_sha256": "576eb37d313cd4e1daefff28c4ce96da8a72c4bb3bdfb4ecbc2e47f64709917f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveNativeRelatorElimination",
+      "source_sha256": "bef3931a8da32b3ee46de936c4f69cbf139153d9701d8b2389ddf6cc345bc06c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveNativeRelatorEliminationExamples",
+      "source_sha256": "36b99f7ac4ff1cbc6e92d8f7c5398671739587fe39769ef7b95681bda3c963c6",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveNativeRelatorEliminationPreservation",
+      "source_sha256": "f869936e8e27ffc3e716d3d0e262a9f80f1434cb5eeae736778359d9a96ab129",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveNativeRelatorQualification",
+      "source_sha256": "50adf155b049cc26fe4c8fa4c36f19e42669d955a8df06184bbd72651202222f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitivePreservationExamples",
+      "source_sha256": "6933d6c2b5c6d9151ac5ec58db45f2d24d2e50037bd3deab3a5c3641c05afcb1",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitivePreservationInstances",
+      "source_sha256": "5a1ff6c8de8a58486994c561ccab94d3297272c7c94bf584b6eea3485cedcedb",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveProjection",
+      "source_sha256": "37b25aa120cdf9ea5aa53153405f506701277f432740f35838cffd9466a71353",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveRegularity",
+      "source_sha256": "fd402929e5570507d3cb2bfbd5e8b6554381ab0748b613c5eb755d9bcdb4ae41",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveRestriction",
+      "source_sha256": "0d1e1d565950abe74d69d67a9d9d864e9de19e57235ff88ee4e3c47382680245",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveRestrictionExamples",
+      "source_sha256": "1db06ce25928323108f523d63ad4c297f98c1649c0fb6312d55cd91fbf55f126",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveRestrictionPreservation",
+      "source_sha256": "584633eab39c7a924cc5c4cea108ce7bc3da5e49fca10d9ab2c22d3d54d50317",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveSimpleFragment",
+      "source_sha256": "96e2e309ad8f12f850c53c3adf772b1e068e09f57fab828848f15520f654394c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveSubjectReduction",
+      "source_sha256": "505f3e435964463c4ac80ca538fc00767ec215bad57c19b87b9ed6bb5d64846d",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveTelescopeSpine",
+      "source_sha256": "e5e3880b80ba4648c98e892f0abe9246eafd5fa0e1df5646d95650e2eaed4513",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveThunkComputation",
+      "source_sha256": "c67fd4a4092e8c66d81eb0df2f0e10f23f6136e74adfa5cadc5693c1a120c6e5",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FormationSensitiveTyping",
+      "source_sha256": "11b620bba3a7bd01f572f4f30119d509a7e68e4ae6885427f731dad24e52e865",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceBetaExperiment",
-      "source_sha256": "185b8f0b7fb5d6df12dd410a393d3d100df3f19ad77117eb0a20f63208c13165",
+      "source_sha256": "972de206bdcdd767198689373b031b2909fe118062aa7e852cb80cf4779738fc",
       "status": "build_pass"
     },
     {
@@ -15220,13 +15831,83 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILConversionCompletion",
+      "source_sha256": "fb63c3fb65b58fe4d60c0524b4313241075cce61f8efc9a794ef8698577c4407",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILConversionDevelopment",
+      "source_sha256": "1c1711fe6ee69911b0c5f595315c469c3286486585b21e300c46f6802055d35f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILConversionDevelopmentChain",
+      "source_sha256": "33c7cbede63605a3d01a5c1940464e4088904addf63eab3fb7a46fd6aaa041a7",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILConversionDevelopmentComplete",
+      "source_sha256": "b958b1733f383369d549f0d12893c53490a1ba571236a6934eecc798972864a7",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILConversionParallel",
+      "source_sha256": "5e4b898d3f5c023087a4e5978cef0a0c48badefbfb4ce94e868a8c7d5306b143",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILConversionParallelCoherence",
+      "source_sha256": "a8867a3dcf2f9b58924346890056719b32b39a8356ef0173481446f85fe8259d",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILConversionParallelSpine",
+      "source_sha256": "f587d29dc0d7e4ab415e19138c2e6c2361ae0ff89cfbf30dcca792327cbf9c9f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILConversionParallelSubstitution",
+      "source_sha256": "d3f8d51a29ca51c71f97bbabdd50a75b3db4aff73d355da98a8db3465d88c505",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILLearnedProofRelevantAdmission",
       "source_sha256": "cef7ccdd188dbe8b84896e96efaa69b15fc435eafe8e83019e627fb43b3d2846",
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILNativeMaterialization",
+      "source_sha256": "bd09cefb53029db5848d2b7c7e625fa6330df3fb13b6571aa3ba5f837c08cc77",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILNativeMaterializationExamples",
+      "source_sha256": "afd4e3859165dc21fc7bb2ffe7b2dd6dea1d016d8cbc001ef32cf5ff700f3806",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILRootConversionCode",
+      "source_sha256": "1325d28b937ceef3a5918872507980f709248bfc7d77da5d22473589d49496b0",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.MILSchemaElaboration",
       "source_sha256": "e8201cc9daaf3aa78aa3f12b4f226d2ab9d929e5b7275023c65ffba9cab442d4",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeConversionAlgebraService",
+      "source_sha256": "e6f5109ce1f59cf5592bf9868d7c43941f28d0de7a21462ba0af3f5510d73353",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeConversionChecking",
+      "source_sha256": "befe26024532066a7d7591a973a056f89dfdd046dd8d168421165739642165d8",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeConversionNeedConsumer",
+      "source_sha256": "073734e1ab624ea5be9e6b330d671330c0e4619448612b7456ba15029ba435d5",
       "status": "build_pass"
     },
     {
@@ -15241,7 +15922,7 @@
     },
     {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedFamilies",
-      "source_sha256": "177f36fcf57f20b5e726475967393f8ca135c71e618a6d06b3f47cf968548f50",
+      "source_sha256": "2cdfebf46e5e021b25c1389960ea111371de998a65778cf2e7908415b229292c",
       "status": "build_pass"
     },
     {
@@ -15252,6 +15933,11 @@
     {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedFamilySource",
       "source_sha256": "e80d06a40dc3355b0dc7a544ac76f15eb0aef559471f4264c6cca1d8de07e75c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeIndexedRootConversionCode",
+      "source_sha256": "b3296b86c880d988fd0df02a3969f58a614892c6a6bb055eccc7e9d9212081ff",
       "status": "build_pass"
     },
     {
@@ -15275,6 +15961,61 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeRelatorConversionChecking",
+      "source_sha256": "9d4ad05050100b2a96ad37e9c111049a7ccd6d33e3e40fba0e7982235621be95",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeRelatorConversionCompletion",
+      "source_sha256": "18001bfa0dff7baa01d84bb93e699eba34230ec85c115ccdaafba21c499a544f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeRelatorConversionDevelopment",
+      "source_sha256": "894409b696a728fa1d7f5f55ca43366769b8707109acefa8a55a2f3723250b9e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeRelatorConversionDevelopmentComplete",
+      "source_sha256": "38f102a5d61dcd64ca1c7d08f54692b9b953c9d079ef3ebd3d93cb8fb78e12a4",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeRelatorConversionDevelopmentRelator",
+      "source_sha256": "6a43aebca46fb84b758b7cc5cc4cb6ee7f337f3568dc8870410cb06826c39fdf",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeRelatorConversionParallel",
+      "source_sha256": "befa0990ca33a856b293c7f76426039ecbd61edbf2a883d2cc597660c527173a",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeRelatorConversionParallelCoherence",
+      "source_sha256": "1c046bfb1cf69e291037213fd44696544c2786c1959320dc90b05834edfd1185",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeRelatorConversionParallelSpine",
+      "source_sha256": "a3402cd4234056cb6fdaf834020405a053175dc426910d57d68f7ef6491eb4bc",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeRelatorConversionParallelSubstitution",
+      "source_sha256": "053c22faff57b9a04babb638b5066cf5ea94910909f0b9581febeb23736d4fd2",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeRelatorRootConversionCode",
+      "source_sha256": "0f864ec9a46bf49a353757c845ba77b4748cd906a641d01d871985b234b90ddf",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.NativeWireData",
+      "source_sha256": "c25020f3b3fd3a0d374cfde3aee0ec13679cecc230975515f3f775b863a113b6",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.OSLFSyntacticModelCanary",
       "source_sha256": "f026958be79bc17cf4b4dccd904063d8ea31f7c2b5f86adff656f011fb5d6697",
       "status": "build_pass"
@@ -15282,6 +16023,226 @@
     {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.OutcomeContract",
       "source_sha256": "8b15ad0ddd9cb4510b1bf4af13f60388c992db913b77073b040dcd4db78d39c3",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedDependentExecution",
+      "source_sha256": "3767206153610f6613cb1023973824a3cc0adc7382041e8dccd19b6c9a72c6f4",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedDistinctionObserver",
+      "source_sha256": "a7ec974f0a764e02d84f54954b3e5a2489f758cc41fe35553e8042c1f0554531",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedEmbedding",
+      "source_sha256": "cefc14ef58684c4765f08806d461157869053f9e60a862521750d8e72b5fe13c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedEquationBoundaries",
+      "source_sha256": "58f65406834080b6f0a078bef8cc421564c186aa5c2c9f59decc170de2b48da9",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedEvaluationEquivalence",
+      "source_sha256": "fc6b2b703c9d565750fd6947ffa31ef37a5ac721303224453612d5d443bca445",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedFunctionPassing",
+      "source_sha256": "030991798f191192b7c1a0bd38c3bddbf9b2bcfc76d0ea8035bdf23cda1b314f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedHigherOrderInference",
+      "source_sha256": "6b0a4f90ffd8876c7f1955db19c933af97127ebebb24b0b2e69d05fd9f213c43",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedImmediateDemand",
+      "source_sha256": "408fd2907c202f9481ad29003552e9af2eff4df2fc532680de11838d62aca63a",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedInferenceAlgebra",
+      "source_sha256": "a36334696527b933266548ae00112ea6f94d46ed86ff4bd23af2341d4d303cbe",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedInferenceAlgebraControls",
+      "source_sha256": "aaa068c28c9f9eff73f6a5d7a989e3baeba728171e260f2d942783cc99ae2d65",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedInferenceFunction",
+      "source_sha256": "fbe59b0ae120d86088f67f86b72aaa52eaaa800b9016162c55b201335404a37e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedInferenceService",
+      "source_sha256": "bbd661188ea28873785d8af9cd652449841a27f94daec464bf229356e747c9e0",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedInferenceWorkload",
+      "source_sha256": "9e90848eb46fa23e51f8d75b903a2cc99482ead71639763da2bbad50205f1296",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedMachine",
+      "source_sha256": "6d9045f8f300fa0c3857beb794a55083146be3b321d405586ab3a90048735f52",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedMachineExamples",
+      "source_sha256": "2721fbb0a6be5231e988943de4855443429f3c041eb98cf78028e5f968e877e7",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedMachineHeapTyping",
+      "source_sha256": "93a9911f886748942dd63633c3ef9196d3ee496cf0c4ad45402b2e220c772b73",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedMachineLocalTyping",
+      "source_sha256": "a6113c2a7481d4565431418a1c60636213a4c99cf1c2303731231ac2c3c4ab6c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedMachinePreservation",
+      "source_sha256": "85eef5da38cf1471b00e3cd2dfa048acba26a2b538c402595b79baefd260d59d",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedMachineRunSegments",
+      "source_sha256": "b65406c3517798c8091b9b08ecc5a2af10c6ee1cdb2a3300b42767283f340b50",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedMatchedIndexData",
+      "source_sha256": "1924ed05a291b4c160d30f036c99ae0d467f0b024d3eeef57ccee162429fb0da",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedMatchedIndexExamples",
+      "source_sha256": "27bd85edb2fbc0ba8634bdfaef4bcad10fa6acac81b1f9c251b79dbb5f6f33d8",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedMatchedIndexService",
+      "source_sha256": "04cae0f0e26c135f431a93af00280798b74a6f2d660dee3c412e9c93e74acaa0",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNativeProofService",
+      "source_sha256": "1fbe7069086ad2c58b0dfebe248a132733cf29196072c1e103c007861158e73f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNativeProofWire",
+      "source_sha256": "4218282a04ede280ce05f45db8b53b4d4d6b31d4557dd66d357994be35658b0d",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalActionReflection",
+      "source_sha256": "4ad0dd30a000bbd8d5fe495c292453b49beb22561a56f65ad7d60b2ce14d298b",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalAdequacy",
+      "source_sha256": "bbebf9d6562136ae28ad3540036a7e787ecabe8f3659023b1ecb5a750df47f1f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalContinuation",
+      "source_sha256": "a03fef87d13883e6174c71a37c8c1e2cca4d4013f7af158b0e33056f5390f9a1",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalEquations",
+      "source_sha256": "a67c9056371c6d712416bda8659dbdb7e18d38c0da9c6883fb9c7e887fe323c3",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalExamples",
+      "source_sha256": "9ee6d1866d1996a8db59835b11e80ba2f40a6660b0b352311248614c17c94175",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalLocalReflection",
+      "source_sha256": "572aa00cf6c73562088ed6af8014cc5260b91db6a09e59dd3cd8a3ddea9e305e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalMachineLaws",
+      "source_sha256": "227b55f3d7be34ad37ea75d88a55c130bd1c7310579080d53948d090bd93fed1",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalMeaning",
+      "source_sha256": "621841c3ca250207c3682353e220af2910e69a4f5905a8f51229d1ecb2331df3",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalProtocolReflection",
+      "source_sha256": "e826b2ae45e3fca6e417f6cd5ff839b06f47abc06994780ac219e25998d5ef2f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalReflection",
+      "source_sha256": "6064d25e1a31eafeb6e7ae80bd821445cb1f9864a324490ba714ae3419d8cda0",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalSemantics",
+      "source_sha256": "9bbf05b517587e60217d210f29391b953473a7a80197e892ad964210f1a7d45e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedNaturalSoundness",
+      "source_sha256": "23affe0a926ad8c03685acaa7511de2bca5bfa24cbb80a418a1d6b5c6740f257",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedPreservationExamples",
+      "source_sha256": "ce0ce5cf6da26f957762748dca83f9366fcf46d960a5b0bb31570db80549515c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedProviderWorkload",
+      "source_sha256": "d5aad61ab38dcbfeea7cc6a819f9c23b765c2de3fb7ad60b933cac9f9dd5a7c1",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedRuntimeTyping",
+      "source_sha256": "6efda41d437e2ec3144e2d13316e34f19f5bcb05946b54ba86591e50264e0a2e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedSubstitution",
+      "source_sha256": "3f8870f68ecf67e6e755bfbe57062115f6afc831d9086c80a96773377cadea8f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedSyntax",
+      "source_sha256": "a06929ea880e045d618410cfbabb340d889b396cdc3d07a562f0592c27136fba",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedTypedSubstitution",
+      "source_sha256": "e902c72b129a407d35df51b2777c5890d4f99e752e7ff47ea6965893ba1323e2",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedTyping",
+      "source_sha256": "4c11ab732b8e44f5232604723b862b27e31353361236b5a2decf763121971da3",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PolarizedNeedTypingExamples",
+      "source_sha256": "a835d03e97d0e7a38f188be502ead924c307ddf87fa578e59cb317437af79279",
       "status": "build_pass"
     },
     {
@@ -15297,6 +16258,21 @@
     {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ProofRelevantSubstitutionCoherence",
       "source_sha256": "d2e1857f915829b058f5e92b7b0353ef4a0ecf24d97b75b4105b8b68d62a18a3",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.PureConversion",
+      "source_sha256": "ffb9c72c867753e7de6edabe6835b1d2f5dbefbdb8dd27edef10e7f9332274f5",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RawInferenceMILWorkload",
+      "source_sha256": "ba547fc248b442cb4c375a1ed14d8b520b5eced71321f0d63f5359d0ced40028",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RawInferenceService",
+      "source_sha256": "8eb8d886b7c22988df56f7d7d01e158faeff9e9cf259e165a73d6609e3469a17",
       "status": "build_pass"
     },
     {
@@ -15365,8 +16341,193 @@
       "status": "build_pass"
     },
     {
-      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentSubstitutionEmbedding",
-      "source_sha256": "d6fee109cea2d0cd504101434f618f931c823e16f72326273439a582030ff0c9",
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedComputation",
+      "source_sha256": "bda592152bd91bc51872147fba0ef0bd7bf6825be5bcc591f9f077d286c9ea10",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedComputationExamples",
+      "source_sha256": "059aabc68d0803384042d7f22246bdb423717e507336a74393e45e08f8058880",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedComputationPreservation",
+      "source_sha256": "e514eade9eba74cf0288fd214ece32b428afbf61efa20df6d3b7a16bf327ffc1",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedComputationQualification",
+      "source_sha256": "227763f0e13704dc97468106f678af0fd09f92539e660f1aa742c7b3ad82d8f5",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedComputationSemantics",
+      "source_sha256": "fc595a3b7b45cf308ea88417a3b28fc1745d0fb726588a6e18d284e2c04c886f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedComputationTyping",
+      "source_sha256": "06c09b8cbdf0a82a646409c4e827510ce4c6a6afab0426cd21d2b7a54d4f41e7",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedComputation",
+      "source_sha256": "0112822bb1c86b7b63b62aa3e6fb3f32e1169487c6b569db66fc984f94694380",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedComputationFunction",
+      "source_sha256": "274e38500de472e63eeb98c5c701f792305ef355fee426506a5c1ec53255e1b7",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedComputationTyping",
+      "source_sha256": "0ee3d7e16a18c5ee680b2d143bc0800be253d777f85dcd8a26509de94fa39ee8",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedImmediateDemand",
+      "source_sha256": "4b078486e3904313dea5b4e30f612e3126fb54978df72042ef622338443a3f9f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedMachine",
+      "source_sha256": "9367ea9253c5c67ab65649592bef1b82d20d0ed5b1d5fee52b1b81b954e3a113",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedMachineAdmission",
+      "source_sha256": "e0fbd1e687f6a67ffdc67b6158602abf19e7a58674c7163934b7549aece6c95d",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedMachineControlTyping",
+      "source_sha256": "0637a7ae72a4f539f2664cc624182e546fc5c2456c5232ab8cdb90a96a297276",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedMachineExamples",
+      "source_sha256": "9fc2b93b9e8a17647c72eb4c029a1d2fdb9aa9001bcca1f3a8906b327f2f76c6",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedMachineLaws",
+      "source_sha256": "2684fe84de3325e422798a5afcc8d63dde661fb7215101a447ebb4cf40b34ef8",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedMachinePreservation",
+      "source_sha256": "b7b43500090bb7f3b74856890f171b5bfccb4ff45691ba8636af870313095613",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedMachinePreservationExamples",
+      "source_sha256": "4d84a20c00d939de238864e2b59ab0f766433b5c75bf2a6f2c6ab696551c2392",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedMachineRunSegments",
+      "source_sha256": "7e423f78ae6ab86b1b935d57ac6676fe04268baedeb7aa1e59edcbbcf1a9a980",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedMachineStackBoundary",
+      "source_sha256": "134d8363414fdab0f2b7ff2ccba25f6d95312eb0812edec09b469de9d8ddbbae",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedMachineTyping",
+      "source_sha256": "29a923be355db6617543f6f4bd1bf4dc40b65e53449aded4071822f559b94764",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedMachineTypingLaws",
+      "source_sha256": "1bac39e1ce6160487b477bf22e9ac73f56c5bc7c8744de21c1912fc980bc7f52",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedNaturalAdequacy",
+      "source_sha256": "12e839dcf84c33003438b446f15988c6ffd6fa348f48fd9b3990ebbfcfd63ec0",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedNaturalMachineLaws",
+      "source_sha256": "5b3e16c7287ff460f7f410c5da45a9bf323bdd1d593401584e8e60e20b80a607",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedNaturalReflection",
+      "source_sha256": "578479c058dcb8332038ca95df11423c2e776504ab9fb7168f106caae3ab34b1",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedNaturalSemantics",
+      "source_sha256": "1617d73d34f9c244da4b89347f0fd21c6c8e1eeb9823fd5a4b9d0afd482f008e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.ScopedNeedNaturalSoundness",
+      "source_sha256": "7f89080d1e638727632421180d2c82ac799ff059f6bcd04d90dff2fff1fd983e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SigmaConversionBoundary",
+      "source_sha256": "a04b036a3d276a625bc6f8b8894b63c3fa080fe982656e262a8d3b1a719488ad",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentConversion",
+      "source_sha256": "a2dd01627a0844360eb953304d25d553d5a486c8414f85ae8033d69e77d00423",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentConversionDecision",
+      "source_sha256": "9804f966d0e9d9a556cc25b98792881704a6a880386d9c4b02d84332f878f709",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentCwf",
+      "source_sha256": "a5c609e3b2fb2b4e7464629048577fb814d2f803d51898b3221ed2e1bd27277e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentCwfMorphism",
+      "source_sha256": "b55934d634d6126927f3991674761d61c6ae6db4848ffb8ae2bddfd02b899a42",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentErasureBoundary",
+      "source_sha256": "3495cb1bf37eaabfc7c8dc286704847a3915e032b2976ebaa04705eac663993e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentInhabitationBoundary",
+      "source_sha256": "7ed67c63d0848dfb9b95c06821471967a7987e1e163647d695dfc7839b736fe8",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentInstitutionBoundary",
+      "source_sha256": "e9fbd04b9d0f003cdc5e0e16e0f8252377661715febca3eff7ec8ede79406de3",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentNormalForms",
+      "source_sha256": "9f952e95b885e3ceeddfa4904edbd4c9f0cdcdc153ce9a4bacf7ab22d7cbec80",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentNormalization",
+      "source_sha256": "afbc3df59dfe7406f96e10059f667a60cfc03dc89f9b06139b742551b6eb1714",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentQuotientCwf",
+      "source_sha256": "9d724ef6fb80b5bd5ffbb9f69adb4df78282099bfb04a3df8f65718d8d91e20c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SimpleFragmentSubstitutionTranslation",
+      "source_sha256": "17d08b6d2d14d6b1d9d1aa536131c1d768427909b6e2a57d28efb4e40096d78c",
       "status": "build_pass"
     },
     {
@@ -15382,6 +16543,16 @@
     {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.SpaceOperationalViewBoundary",
       "source_sha256": "15fc135e1a0b5e6710840076b4348c744aaf172cbd53bb26f72455c425c06277",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.StructuralConversionCode",
+      "source_sha256": "e466f4e29d20dcead26b8dabcd0bb9bfe4f6311fd0d75444a48ce9e1900d4f58",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.StructuralConversionCodeDependencies",
+      "source_sha256": "d1d90c259abf98823fbcb021ddc6fe431d8fc9629f07ca0293dca378f083d14d",
       "status": "build_pass"
     },
     {
@@ -15435,13 +16606,18 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.TowerTheoryNode",
+      "source_sha256": "b4bb574be8625bbdb6a0e6f288714be592bf82650032bc05f2d58e6f719d5a17",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.TypedBetaSubjectReduction",
       "source_sha256": "6ccbbfd30bddf556d0a32cbb4523961186554dad42e6f055569463283afd9c8c",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.TypedSubstitution",
-      "source_sha256": "44c98afa4d1862eb79385626c3a4b036cf708681c997ac72b04f9de3ec1f1ad6",
+      "source_sha256": "8d953d96cf8bb795fae0cf8eaa0fb0bb4a42ba7e938f8c6b4a0d1e224627fcf3",
       "status": "build_pass"
     },
     {
@@ -15526,12 +16702,17 @@
     },
     {
       "module": "Mettapedia.Languages.Megalodon.DefinitionConversionKernel",
-      "source_sha256": "a90bb281f7011525330dd7cad334eeeef8fa8a633d832bbc974bdb657044586c",
+      "source_sha256": "dd0a24bab6b64f7f0d9c0077007912f41bfd61a09d3a27c6941100dfd4c0ce4d",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.Megalodon.DefinitionConversionWireRefinement",
-      "source_sha256": "f364e34b9b09e46352cd71a2a0b412217ce95f8859068147349905bad9f343f5",
+      "source_sha256": "ec89cb6e9db8e03df76b3f8da0e2e0011a212936af82fb6a841dde755399829e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.DefinitionEnvironmentBoundary",
+      "source_sha256": "b027ba4e9b846c616d8184bfa94510e20f9a791d29bd9893746dfe16e18df260",
       "status": "build_pass"
     },
     {
@@ -15540,23 +16721,113 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.Megalodon.EnvironmentDependency",
+      "source_sha256": "9b1ef39a3efe759437538c70597316775b5d7e11e676aa90dba8fcad3b4e652b",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.EnvironmentDependencyCheck",
+      "source_sha256": "1ebdf31e3c2581722bc90563795d59385995d180911ef1dac5116a12b33ed027",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.Megalodon.EnvironmentEmbedding",
-      "source_sha256": "397ef20c52d2ce68bed1f1b8f25cad9dd80130068b7f8382af12668e8838063d",
+      "source_sha256": "f72f7fbae941c01a26e36cb0be3e0c7a7c614cf896ec6bcd486f07c5c2461112",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.Megalodon.EnvironmentKernel",
-      "source_sha256": "a7ddcd52e9130e2b18fa89d9bf6c9ec5d9a836460e64deeab3b11d9d5e6bda9e",
+      "source_sha256": "c7a61782fc409d566dd6174760e920e1a1ded1e4e6a180f1ab39ab51383bf44a",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.Megalodon.EtaConversionKernel",
-      "source_sha256": "0706eed196df9ec31dac668c66cb6c2448de413c96892ade80596ff87c4f28a8",
+      "source_sha256": "d177ea7494192e95234b7e1e13e38e040bb8d7e6715c61bfd0a4f22a86231167",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.Megalodon.EtaEndpointIdentity",
       "source_sha256": "90bd6ff54d75cd4a170a867f2414c2006a5597bd8f583a1b3b7f75b2efc68dce",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinDeltaInterpretation",
+      "source_sha256": "f28933ff023ed8a9734c5cd2ba6281e9fbce018315673a1790aa7861deb20ba7",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinDeltaSemantics",
+      "source_sha256": "4fbbb633297b4872807877b2d728b5c514b217ca3fd6f18f1e21a3e0f7b79cb2",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinDeltaTyping",
+      "source_sha256": "ea702b404f676f48b66073ca950d58c569cb5661781c167439a9393432944c5c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinEqualityInterpretation",
+      "source_sha256": "9bc446a3c1264f5b538b67e86591a8acfdeeebf8d9128113cf2f6841dc91a08e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinErasureInversion",
+      "source_sha256": "df06c850f149810dc775bb36b3c5008f2c41ed6c37d74691470e8955bff4f34b",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinNormalizationExamples",
+      "source_sha256": "3b1dc69148be5919bea4bb145148f71e4bff82908b7112b31599a6bbfca6b8b2",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinNormalizationSemantics",
+      "source_sha256": "1adc283b369996a7924dd61a7b6b16f007d908d57ced3231d7c4420400666644",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinProofSoundness",
+      "source_sha256": "b4cd137b7718c50f06fe02d4398669ff4520f17bbaf19aeb5e33de86c79db28c",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinProofSoundnessExamples",
+      "source_sha256": "6f21f6ba7b36289d9786b575581e0031cc027589433285bcc1b4f59ce8fe5f70",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinTermInterpretation",
+      "source_sha256": "4c3b2543ad839fa54d2c4a3654d6c2736d8457368d8c510e3a2b9a686be5ecbc",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinTermStrengthening",
+      "source_sha256": "6fd9b84ab9d95bf2234466a68a257d15dcae5f3ad07c4ca81742273d51bcc544",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinTermSubstitution",
+      "source_sha256": "bd68f81fa7978701a91f9be4d4c2cc0ab5eb393f9206bbfbeecb516b6094f4cd",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinTermTypeSubstitution",
+      "source_sha256": "affc69a152cea6519cc38bab9175c3d76d7861eb5acfdd91b7a936aba0124b32",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinTransitionInvariantImport",
+      "source_sha256": "f15144c95d974aecbae797c9a0f31d2578ea7d49c11bab7db29e6f163176f903",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinTransitionInvariantProof",
+      "source_sha256": "a248935937e1af2e29332492dd127d066c875960dc72051c46d1928fbbe18879",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.HenkinTypeFragment",
+      "source_sha256": "61604af1b2ab798fb1198694bef1f793c5f1bf3460c68b62452b65e61e851f36",
       "status": "build_pass"
     },
     {
@@ -15571,7 +16842,22 @@
     },
     {
       "module": "Mettapedia.Languages.Megalodon.MathdataKernel",
-      "source_sha256": "f90154793ec92e3b89676ce696450d3ff5ae4e2d71a709faacb790732cd3444d",
+      "source_sha256": "83544d13928ba8a70f1a11935571450c43b54249da82222d25a953a693e84b31",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.MathdataMixedSubstitutionBoundary",
+      "source_sha256": "74f1a5221bba9dfb3b483526d178514d022a8ac7cd87fd86f0907ba9e5279ad6",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.MathdataProofFormation",
+      "source_sha256": "977848d9d0e969d7b32952d8f993564a305827a7f9c99fcf5d842b5ff2c923b5",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.MathdataTypeFormation",
+      "source_sha256": "5bdfa308116f5ed305a8dba52d7ec80e1da3867103030c3a888d7be902fce586",
       "status": "build_pass"
     },
     {
@@ -15580,8 +16866,43 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.Megalodon.NativeDefinitionModel",
+      "source_sha256": "70132d6c10c1e82b61e7f12f4d5411b1fa75e49c0b5f8f917c64718dcb929b4d",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.NativeEnvironmentExtensionExamples",
+      "source_sha256": "69b7d43ec9a773a159c9b7b3c907834e4756f8c63443c7420de9d0190f9a66e9",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.NativeEqualitySpecialization",
+      "source_sha256": "be253c25acc5248259be09d13c543f1d80bda5bd999d0acc571d398f2756fbcd",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.NativeProofEnvironment",
+      "source_sha256": "f1387487eb1e5d01cc28eb51b643d9edc1171dbe93b4fe4c809482d46ef676eb",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.NativeSupport",
+      "source_sha256": "308602148596c5dea53fe05e8919f3acd5c59a43aac87d5ab36c1f6a23de53bc",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.Megalodon.PolymorphicKernel",
-      "source_sha256": "1653ed6248e0138f148f15bb1dce9a88c54464d7f3b7895dd32b44df1b3eb8d2",
+      "source_sha256": "f14a0771ae4435918ede973fc48ba9f1bd91faa09a02bb9360871e0c15557198",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.PreambleDependencyRestriction",
+      "source_sha256": "f7fde6e217dab4a30612abd5719bda60f7ea5c2e3739a929243d825fb503498b",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.Megalodon.PreambleFragmentVertical",
+      "source_sha256": "fb9b7e45efa0263e0c7ca8d85e387e19c402cc6ce50c7907b77892ed4bb3ce69",
       "status": "build_pass"
     },
     {
@@ -15596,7 +16917,7 @@
     },
     {
       "module": "Mettapedia.Languages.Megalodon.SelectedTheoryGraph",
-      "source_sha256": "49f2f97e3a7cc77111293e987d57987c65d66db18ac3f594acc9601cfd170808",
+      "source_sha256": "6468dfb7f41eb8c6e9262f40480b2a94bdfaf8e5a70532c9dec13ecd958329cb",
       "status": "build_pass"
     },
     {
@@ -15606,7 +16927,7 @@
     },
     {
       "module": "Mettapedia.Languages.Megalodon.SetCoreSemanticAuthority",
-      "source_sha256": "bd21cd9bd466e0fd55bf4ab1a050f5c677c3f19aa4e859f4d3781a6fb352ea17",
+      "source_sha256": "190a4391abfdad1c01e92ab62f46a11f47cb72eecef82b48ce4304cf9e076fab",
       "status": "build_pass"
     },
     {
@@ -15616,17 +16937,17 @@
     },
     {
       "module": "Mettapedia.Languages.Megalodon.SignatureEmbedding",
-      "source_sha256": "6bbd149572231a250743e55ca5f5eab4d11506a46f95d4e392187fb049b207a2",
+      "source_sha256": "49d78ea04be66acbf240ee28d2df71f69a2da72f5e3cbd5be485c4ebd66efab0",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.Megalodon.SortedABTRefinement",
-      "source_sha256": "d247d71a33ed2eed6246ba826545eea603a68d9d897da2d1c0224a433b234b32",
+      "source_sha256": "c06b4b4b643494076104809d52e113676908623e19a288680edf50b625bdb167",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.Megalodon.TermABTRefinement",
-      "source_sha256": "5e204df5a78e9459ec7fef4c14f2f5b51b8118555faf621a6e9c456c4b41cb41",
+      "source_sha256": "71f08aeb365f1989d80f5f16a1f42f5d6c09795734a172ed0d42e3cb2a24920f",
       "status": "build_pass"
     },
     {
@@ -15636,27 +16957,13 @@
     },
     {
       "module": "Mettapedia.Languages.Megalodon.TheoryAdmissionKernel",
-      "source_sha256": "dfa5028e1caef883c86f312a17053e9bbb284153a735cbf3894229fc7eefefea",
+      "source_sha256": "2c41a9774062a7655f325fe5150c256e00a65d83bf95f2ffc0f684c1223ff93c",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.Metamath",
       "source_sha256": "04cf81638bc2341522d3a523474b3e82d9039646e4f4fde3869d882e93438891",
-      "status": "baseline_resource_boundary",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath",
-          "Mettapedia.Languages.Metamath.MM2AssembledNormalExecution"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath",
-          "Mettapedia.Languages.Metamath.MM2AssembledNormalExecution"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath",
-          "Mettapedia.Languages.Metamath.MM2AssembledNormalExecution"
-        ]
-      }
+      "status": "baseline_resource_boundary"
     },
     {
       "module": "Mettapedia.Languages.Metamath.AcceptanceEquivalence",
@@ -15706,16 +17013,7 @@
     {
       "module": "Mettapedia.Languages.Metamath.CompressedByteFinalizerMM2Adapter",
       "source_sha256": "0febd2b7cec3468fc762d563bbf60b655e8e4e71f835a76b753624e2e01ee9c3",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.Metamath.CompressedByteFinalizerMM2Adapter"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.Metamath.CompressedByteFinalizerMM2Adapter"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.Metamath.CompressedByteFinalizerMM2Adapter"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.CompressedByteMultiByteIndexProfile",
@@ -16105,18 +17403,7 @@
     {
       "module": "Mettapedia.Languages.Metamath.MM2AssembledNormalExecution",
       "source_sha256": "411d416bc0dcd3e66c34e83822d488c68640f94f057f9d91170449334656afc5",
-      "status": "baseline_resource_boundary",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2AssembledNormalExecution"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2AssembledNormalExecution"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2AssembledNormalExecution"
-        ]
-      }
+      "status": "baseline_resource_boundary"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2AuthoredNormalCapabilityClosure",
@@ -16141,18 +17428,7 @@
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofAZCanary",
       "source_sha256": "1fce9bb88dceae8317d6b78bd8b9957a1b842e44b6ace6bf613b3654a1133f67",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofAZCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofAZCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofAZCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofAssertionBridgeCanary",
@@ -16437,21 +17713,7 @@
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofDecoderCanary",
       "source_sha256": "b4ea1508bdb87002ea70d5f12a6e8d0f7f61b4455428b36010e34eb837b3c30c",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofDecoderCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofIncompletePrefixCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofDecoderCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofIncompletePrefixCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofDecoderCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofIncompletePrefixCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofDecoratedAssertionBridgeOrigin",
@@ -16551,59 +17813,17 @@
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryFinishCanary",
       "source_sha256": "414e1e942df08e1deb68c8e850d640e6895080aee2c55b3e9d93d0903489881c",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryFinishCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad1Canary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad0Canary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryFinishCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad1Canary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad0Canary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryFinishCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad1Canary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad0Canary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad0Canary",
       "source_sha256": "0cf53977a144c5d3db5b8efd569315cf40d36f5a746d5388f915b5089ee3b30d",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad0Canary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad0Canary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad0Canary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad1Canary",
       "source_sha256": "25fc4935f1a7b1588d98111c6af2c9f63607a9b8edaca0828a098012e509dd2e",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad1Canary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad0Canary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad1Canary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad0Canary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad1Canary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryLoad0Canary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofFiniteInventoryRunCanary",
@@ -16653,53 +17873,17 @@
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultAdvanceCanary",
       "source_sha256": "bf525d710d2abe23f9c698beb1a3a53f207397aff73e75223b4b15650ec8b057",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultAdvanceCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultAdvanceCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultAdvanceCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultCanary",
       "source_sha256": "546f6771f7c5aa76df320ebc65fb4895c0368548d77a62ff61aeeba574f4bd2c",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultProbeCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultProbeCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultProbeCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultProbeCanary",
       "source_sha256": "7591bcc728ebc7dbce2b28faeaef542f09d1d8f0591050dfc30ab03d44b99846",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultProbeCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultProbeCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultProbeCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupFaultProofProbeCanary",
@@ -16724,37 +17908,12 @@
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitAdvanceCanary",
       "source_sha256": "10301cde2a62513a5e253545841b221fe7e3ca253bb9a7cde18156336b1222d5",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitAdvanceCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitAdvanceCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitAdvanceCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitCanary",
       "source_sha256": "e239684c41a25b571a2a5d0531f9bac0cb02c56f6d3658b1653c818905503f8b",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitAdvanceCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitAdvanceCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitCanary",
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitAdvanceCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupHitFaultProbeCanary",
@@ -16784,18 +17943,7 @@
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultAdvanceCanary",
       "source_sha256": "3c0fd59f61fd54a85a2bb01f70af10a6c57f7342ee380d406ceb2070775b2476",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultAdvanceCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultAdvanceCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultAdvanceCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultCanary",
@@ -16805,34 +17953,12 @@
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultProbeCanary",
       "source_sha256": "3e63b32a295c0c780058bd4fda51f16fec93834bb4ea53e99a9f96b3e94ec447",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultProbeCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultProbeCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultProbeCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultStallCanary",
       "source_sha256": "8f2e97f6d3b9beaf07416c191ae8d010f9c6fdd4e988fab28fc31d8efbd81c6d",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultStallCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultStallCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultStallCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofHeapLookupReservedFaultTerminalCanary",
@@ -16857,18 +17983,7 @@
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofIncompletePrefixCanary",
       "source_sha256": "f05541122ded2a90df3c8936ae922e57ddbe32e1c8dd68edaf5f7d8772b0ade8",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofIncompletePrefixCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofIncompletePrefixCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofIncompletePrefixCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofInvalidByteCanary",
@@ -16928,18 +18043,7 @@
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofOrderedActivationLoadCanary",
       "source_sha256": "e81a470c587a30f2009189e68bc08ed3fd99e0f3d010cef29100e107c327b8d8",
-      "status": "baseline_runtime_failure",
-      "chains": {
-        "current": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofOrderedActivationLoadCanary"
-        ],
-        "fork": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofOrderedActivationLoadCanary"
-        ],
-        "captured": [
-          "Mettapedia.Languages.Metamath.MM2CompressedProofOrderedActivationLoadCanary"
-        ]
-      }
+      "status": "baseline_runtime_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofOrderedActivationRequestCanary",
@@ -17169,16 +18273,7 @@
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofRuleLoadParametric",
       "source_sha256": "0d2abd6091f532e36c03081c85192981f9707cb2e18f24c250ec4947cf430d2c",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.Metamath.MM2CompressedProofRuleLoadParametric"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.Metamath.MM2CompressedProofRuleLoadParametric"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.Metamath.MM2CompressedProofRuleLoadParametric"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.Metamath.MM2CompressedProofRulePresentationCanary",
@@ -18577,12 +19672,12 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.MORK.MM2MaximalTokenSemantics",
-      "source_sha256": "beb6ef99bb7bd0d128649e4a5e7d23614a6714ca6202b1439c3d9f21f84d7a74",
+      "source_sha256": "a605a7f16db02dca6f621530302ce2b58c599e72875b936eb177bda4e4b357f2",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.MORK.MM2MaximalTokenSyntax",
-      "source_sha256": "c0f519f60bc0662df2024163e2c7390b9782fa9cf4b41fd48eae619059b2eb21",
+      "source_sha256": "85d0a11f63593b0b05d7451b77c68fa0112b7f1d9d8e1809a557ec7ef54968d5",
       "status": "build_pass"
     },
     {
@@ -18627,12 +19722,12 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.MORK.MM2SyntaxNTT",
-      "source_sha256": "3484ec0db8efd1bd1a14bc2b79ece0be4bcad64bf4735f12638928da9785cd95",
+      "source_sha256": "a8921a49a3768314657ae85166b62a073dc4069389540a76d07d3aebe2455cb0",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.MORK.MM2SyntaxSemantics",
-      "source_sha256": "ef9c63a9a2f74eef7c1c49a50baf5b72e1014cd5fe606a1abd82ff699ca088fe",
+      "source_sha256": "3e4a70d5abc0d186f88724915083467e33ef572bdd1efe98b7e739c5cf381db6",
       "status": "build_pass"
     },
     {
@@ -19107,7 +20202,7 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalStepperCompleteness",
-      "source_sha256": "ae247a252939b3050be2e9b86bde222afe82611b3ddd23c6f1fc93232f28eb11",
+      "source_sha256": "8b78664148a66271730b4727106be837c3754eee2bb75fbd7961b18534ff61e1",
       "status": "build_pass"
     },
     {
@@ -19472,7 +20567,7 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostGeneratedOccurrence",
-      "source_sha256": "105a1f227d8f11cc61a7505f8291a1d346e78b61e0fba8437c724a8574370fcf",
+      "source_sha256": "26c4a1c436dd922a041fc6ccaae9eca3d415707d83e8119f1bbf4368f0dc12b9",
       "status": "build_pass"
     },
     {
@@ -19553,20 +20648,7 @@
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCanonicalOccurrenceSupport",
       "source_sha256": "efb232841bd4273811880d4efe8d6739e823f81284294b520e107a33c51e69ce",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCanonicalOccurrenceSupport"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCanonicalOccurrenceSupport",
-        "Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCanonical",
-        "Mettapedia.GSLT.LanguageDef.CostElaborationTransportSound",
-        "Mettapedia.GSLT.LanguageDef.CostElaborationTransport",
-        "Mettapedia.GSLT.LanguageDef.EquationOccurrence"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCanonicalOccurrenceSupport"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCollapsingPlanStopRestoration",
@@ -19965,7 +21047,7 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryTreeAvailabilityTransposition",
-      "source_sha256": "e5cdc8da78bd9159445c5c88581c42f51a97d1745d99a1953bbd71501fb0e528",
+      "source_sha256": "384e17bf9a652a1d167af92506f4dd610c5cfbb7476d71759f6fb86d4c15df36",
       "status": "build_pass"
     },
     {
@@ -20080,7 +21162,7 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.DependentReflectiveCommunicationCell",
-      "source_sha256": "142bfeb948803cab05f9ab9f4ab26c03f9bac1712b931ae933844fde8a82a08d",
+      "source_sha256": "13f9884a6219d98afd2fc5a88f37b8b4856b517ea804a5403f80ef34ef950f85",
       "status": "build_pass"
     },
     {
@@ -20104,13 +21186,8 @@
       "status": "build_pass"
     },
     {
-      "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.EquationSaturatedProtocolBridge",
-      "source_sha256": "46a5435c711038c1925f39e18c9c0f7d270a40898a49c4a2534f076f9dc8cb73",
-      "status": "build_pass"
-    },
-    {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.EquationSubstitution",
-      "source_sha256": "3b2eb2a3b4b6f75e51736d10d1d3c57d64260e77c381697b01b4f3116c24ec1c",
+      "source_sha256": "46ccdfd517de4c54dd5396e71d91eb73d99d6e23bd7670c55fdc06cb22782eb9",
       "status": "build_pass"
     },
     {
@@ -20120,12 +21197,12 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.HennessyMilnerInstance",
-      "source_sha256": "fc8ad07373f35c5636c991b4de22ec28d0d18c09a16ed951dfbed5e13741a5f5",
+      "source_sha256": "f290356338cef266b85ae56324bd70ec2ec1b91f625bb3f11b2c56661836aeb8",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.HennessyMilnerRho",
-      "source_sha256": "48bdf606986276e97108acbd5fc648e1aeccc0f89b65db01fb6f7511c14018c2",
+      "source_sha256": "be6bd0368fceff2c379e1007bf37d980c651a5cbace6598f7ca2cfdb2afd716c",
       "status": "build_pass"
     },
     {
@@ -20150,7 +21227,7 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT",
-      "source_sha256": "e650104ea3dcc7210a6ef90479dfefc0561f8c25174a288d52d44ee212296384",
+      "source_sha256": "9ca504547c6486102aaae094b35535f8015cd190e48d527c78f344c17febf8a7",
       "status": "build_pass"
     },
     {
@@ -20165,7 +21242,7 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefSemanticAgreement",
-      "source_sha256": "5b3010caed297d050164d6ed6ea61c73c1dd348814fb2a6d05280fadaec83e2a",
+      "source_sha256": "97f8b125dc3b9195f25b6229d108e5aa9bc07d70f34a9bbcbe1365b431461656",
       "status": "build_pass"
     },
     {
@@ -20209,6 +21286,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.ProtocolModuloEquationsBridge",
+      "source_sha256": "3382e541211203b089b0b614e5042693a2bd0e62c04ce8ec6ab793d681864e7d",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary",
       "source_sha256": "7c12f19c1f27a2f785b8f561610da528b5a85d2f5bd2f58ae3fe516d2b1df1c9",
       "status": "build_pass"
@@ -20225,7 +21307,7 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.ReductionProtocolComparison",
-      "source_sha256": "2b2ce2834bb2f2cb8a5ae7cb594aba0daa656a1130d9159f54dca25505827269",
+      "source_sha256": "54c8a998cd137b0a879172fd857ad60350fa75bca28db1beade51dddb154a6c5",
       "status": "build_pass"
     },
     {
@@ -20235,7 +21317,7 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.RevisionedTypedCommunicationDemand",
-      "source_sha256": "ca4cfdb65aebcc4e88d8fd980001e0e661f8ec19a04dd902ef72dff1d44cd923",
+      "source_sha256": "bddf3d978aa6aa2b15d39edb86d402858c9f01bb209beff0fd003a9ec5590312",
       "status": "build_pass"
     },
     {
@@ -20305,7 +21387,7 @@
     },
     {
       "module": "Mettapedia.Languages.ProcessCalculi.RhoCalculus.TypedCommunicationProtocol",
-      "source_sha256": "10ffd94a5cf112287556b76a561e497a48442a89853cd2c7f51ff5eaa554c13a",
+      "source_sha256": "273a3414f880021da73f531a0a4c98636058e895dfa0344db1e2ee4c274b3df6",
       "status": "build_pass"
     },
     {
@@ -20349,6 +21431,16 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.SUMO.Native",
+      "source_sha256": "f9828703e59dedfd90cb5b811c07c95e2a051fdc7394bf0acc7218fcabe7a90f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.SUMO.Native.AxiomAudit",
+      "source_sha256": "193ebf3295ab5b0d2bf1009848308c2e30c971035d009ffadca4bd9f1604da72",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.SUMO.Native.Checker",
       "source_sha256": "a0e44e9724fc638ce2e84121a07018fac67420f8aad0ec38412bd431e1ea5afb",
       "status": "build_pass"
@@ -20356,6 +21448,11 @@
     {
       "module": "Mettapedia.Languages.SUMO.Native.Derivation",
       "source_sha256": "1f0fb909788a27081132aba5de7ff3e02c3ca43949795b02ead49bd10ba6e605",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Languages.SUMO.Native.DomainGuardCanary",
+      "source_sha256": "c09c186da67a81e817f05c3d946976cb5f582b7b0e95126e0fa907163662fcdb",
       "status": "build_pass"
     },
     {
@@ -20404,6 +21501,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Languages.SUMO.Native.SourceElaborationCanary",
+      "source_sha256": "9041e45e194a124357828173a775a822840f4a010c7f6c6db3856ee02d6178d2",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Languages.SUMO.Native.SourceElaborationCheck",
       "source_sha256": "bbe6bfc75d3722071474790f5223cc7483985c65f6af1cbce4fd59513deb4320",
       "status": "build_pass"
@@ -20426,19 +21528,7 @@
     {
       "module": "Mettapedia.Languages.TPTP",
       "source_sha256": "6fb703f49a281805ddc923e3f35d6529fcc794ceeb144a0887ec2e023e17204d",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Languages.TPTP",
-        "Mettapedia.GSLT.LanguageDef.TptpFofNormalizationNTT"
-      ],
-      "fork_chain": [
-        "Mettapedia.Languages.TPTP",
-        "Mettapedia.GSLT.LanguageDef.TptpFofNormalizationNTT"
-      ],
-      "captured_chain": [
-        "Mettapedia.Languages.TPTP",
-        "Mettapedia.GSLT.LanguageDef.TptpFofNormalizationNTT"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Languages.TPTP.GroundCNFAuthority",
@@ -20527,7 +21617,7 @@
     },
     {
       "module": "Mettapedia.Logic.BDD.ProbMeTTaADRuntimeCore",
-      "source_sha256": "90b28ac8e66e73b81aa12a706118640257a91baac68ccd53bfb93f305cf22cdf",
+      "source_sha256": "8f2b3e08237093cef771fb78fa7b43953e53d4dd400e5cd0398b83329c5f5e67",
       "status": "build_pass"
     },
     {
@@ -20812,12 +21902,12 @@
     },
     {
       "module": "Mettapedia.Logic.GunkyMereology",
-      "source_sha256": "8a1c10ea9e05a2d584333a12deef4fe5c47fa38cb99165280eb5720c0a9772f8",
+      "source_sha256": "df9a298704eac2959b6faa73861a08361900f92670ab2b9a41a353e3ff189277",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.Logic.HOL",
-      "source_sha256": "791d013fd72475872e14d24af4dd231b5ddd27ab460573ed646b83bf44684110",
+      "source_sha256": "7291ad056e9ad007ac89e6054340cbd5af8ec686bbc293adf8e441b5d4e5f335",
       "status": "build_pass"
     },
     {
@@ -20838,6 +21928,11 @@
     {
       "module": "Mettapedia.Logic.HOL.ClassicalWorld",
       "source_sha256": "ba591b0faf85c14ef0c810d3a060269bbe59db87eff737b3e0778a8272e27396",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.ConstantSubstitutionSemantics",
+      "source_sha256": "600faa5f94e0983d12dcc9d022057ed0228f310ed1b926aeb70d322894bf5c84",
       "status": "build_pass"
     },
     {
@@ -20898,39 +21993,12 @@
     {
       "module": "Mettapedia.Logic.HOL.Embedding.ResponseIndexedIdentityCompatibility",
       "source_sha256": "717209e4c058798c67d531a74ff347028fe14172effd30852e02c2cb07341d0f",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Logic.HOL.Embedding.ResponseIndexedIdentityCompatibility",
-        "Mettapedia.Logic.HOL.Embedding.ResponseIndexedProtocolObservation",
-        "Mettapedia.GSLT.Dynamics.DependentReflectiveProtocolSemanticViews"
-      ],
-      "fork_chain": [
-        "Mettapedia.Logic.HOL.Embedding.ResponseIndexedIdentityCompatibility",
-        "Mettapedia.Logic.HOL.Embedding.ResponseIndexedProtocolObservation",
-        "Mettapedia.GSLT.Dynamics.DependentReflectiveProtocolSemanticViews"
-      ],
-      "captured_chain": [
-        "Mettapedia.Logic.HOL.Embedding.ResponseIndexedIdentityCompatibility",
-        "Mettapedia.Logic.HOL.Embedding.ResponseIndexedProtocolObservation",
-        "Mettapedia.GSLT.Dynamics.DependentReflectiveProtocolSemanticViews"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Logic.HOL.Embedding.ResponseIndexedProtocolObservation",
       "source_sha256": "24b6c3313ff10ab24cf5c72e67f9292497b6e18a6fcb5765ca1db0846fb71660",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.Logic.HOL.Embedding.ResponseIndexedProtocolObservation",
-        "Mettapedia.GSLT.Dynamics.DependentReflectiveProtocolSemanticViews"
-      ],
-      "fork_chain": [
-        "Mettapedia.Logic.HOL.Embedding.ResponseIndexedProtocolObservation",
-        "Mettapedia.GSLT.Dynamics.DependentReflectiveProtocolSemanticViews"
-      ],
-      "captured_chain": [
-        "Mettapedia.Logic.HOL.Embedding.ResponseIndexedProtocolObservation",
-        "Mettapedia.GSLT.Dynamics.DependentReflectiveProtocolSemanticViews"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.Logic.HOL.Embedding.SealedGroundTypeComparison",
@@ -20940,6 +22008,31 @@
     {
       "module": "Mettapedia.Logic.HOL.Embedding.SimpleSliceOfDependent",
       "source_sha256": "cfd095900b841bbd441bd519911e46234c784d774563a05afce025c4b139b950",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.Embedding.WeakTypeComprehension",
+      "source_sha256": "a36d19e5b6ab1b6e647a4da20f48ba83f3ac61782b38a957bffdf5bd3d991c47",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.FullDomainInstitution",
+      "source_sha256": "05d5befc1ebf8e36903999b1cfcbfe0e4ef51b6628723bccb629b97a2019a9dc",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.HenkinInstitution",
+      "source_sha256": "f302ae5a9690b748e7d08f58ac61ee3182c43874dd9892f30726b29a4219eb25",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.HenkinInstitutionCanary",
+      "source_sha256": "5c664419d45017e0cc533ea194a85848e662448bffa09252667bca861fb4aa8a",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.HenkinInstitutionDerivation",
+      "source_sha256": "37b7746a27e4a234db40e1a088a29141583086c8d36c06066df1d0c1926e547c",
       "status": "build_pass"
     },
     {
@@ -21133,6 +22226,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Logic.HOL.Semantics.LogicalRelationModel",
+      "source_sha256": "e688a41317d3b9c9aa65742d5cbcdce2fa26fb4a0fb23bf5b63c9fb49c19ce4c",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Logic.HOL.Semantics.ModelProperties",
       "source_sha256": "d89754448ddce843a36af7f12a2769fa93e570d7dc8241c2fad6d316ba6c29e2",
       "status": "build_pass"
@@ -21183,6 +22281,16 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Logic.HOL.Syntax.PartialConstSubstitution",
+      "source_sha256": "b48246045bc2afc3ec359652e111d8fdda530dc09d0b4c7fd508f9d2526d637d",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.Syntax.PartialRenaming",
+      "source_sha256": "c2419ef0606b56e377a1ccf4bd6789fa61749b2b130711f209f7db8f58d6a2c4",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Logic.HOL.Syntax.Subst",
       "source_sha256": "b7489cfe5aaa7f8e780e60ba4e49bfdae3da05b67c870b8c3579ad9ebd9ea4d6",
       "status": "build_pass"
@@ -21195,6 +22303,16 @@
     {
       "module": "Mettapedia.Logic.HOL.Syntax.Type",
       "source_sha256": "dbb5825fdb2de3f3948a2073aa8998c7d67a4f80e06ca862edc2bfc34a4ac6ae",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.Syntax.TypeSubstitution",
+      "source_sha256": "43bc7d86dee7b03669aa1787f10b427cbdbe358a4e8e64b8f6f7068fd7ef59ff",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.Syntax.TypeSubstitutionComposition",
+      "source_sha256": "61f1fab658d194f828e27d74226b54a5d7f78abab865ab5e0238cbb657dfdd40",
       "status": "build_pass"
     },
     {
@@ -21248,6 +22366,41 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Logic.HOL.TransitionInvariant",
+      "source_sha256": "33fc63fc63b6c476dd6c31e73e8506044c24848e60a968fa18c1839c2191f374",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.TypeDerivedSignature",
+      "source_sha256": "61194b78ab8ec9efbb8a7aa3593f168b7eccc3f12a7e116e375df8864394976f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.TypeDerivedSignatureExamples",
+      "source_sha256": "cb531081532932537dc838ebf7c3fa94b695595ea330246b1742bd72fa3f8ede",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.TypeSubstitutionCompositionSemantics",
+      "source_sha256": "d5cf26ef757fefe00e01e278217d2618a32cbc7af5bca490ab3de1f2500bc9bf",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.TypeSubstitutionDerivation",
+      "source_sha256": "a221d96157e4276f698d4e4c5b44704041c85abbcb137fc0bcb1938d21cd7dfb",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.TypeSubstitutionModelCoherence",
+      "source_sha256": "dff46eb2dcaad252bd735ed7469807b1d237815bc1ae38858da1c966db94e23e",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.HOL.TypeSubstitutionSemantics",
+      "source_sha256": "47dd80e780085f08a6582b79710d70805777821d6f30b84d4d5f840ef758a82f",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Logic.HOL.WitnessedExtension",
       "source_sha256": "4591abf2ed1f3eb83b08cd31e6561264b628b99349697227bbc243b9876122d9",
       "status": "build_pass"
@@ -21265,6 +22418,21 @@
     {
       "module": "Mettapedia.Logic.HOL.WorldEquality",
       "source_sha256": "59244226e20c34adee04fcf0f8ca16f44e5063869269bf5a122c0d9e9d8a555f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.Institution",
+      "source_sha256": "04e7f7c4cc4018acd1e2e0dca3abe168020beb5fb729cb1e90fca56e2ee4cc61",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.InstitutionCanary",
+      "source_sha256": "d57c5098321aa30ab668d48d366566c81eed90e2cf65a6c0560ae8860509afa9",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.InstitutionCategory",
+      "source_sha256": "4ee56bd27a5691693dbf041dc75c485b59426543c701bd3c8c40f37193a6c623",
       "status": "build_pass"
     },
     {
@@ -21759,7 +22927,7 @@
     },
     {
       "module": "Mettapedia.Logic.Metaphysics",
-      "source_sha256": "4945b8335327a88c364b9272bd82e7261b7d489f7499e19fc86de619adc1bff4",
+      "source_sha256": "ed8a5cc7f8f359b3d4d0ec6ff9f444b78e5d13286aad55e81715cd2534f1697f",
       "status": "build_pass"
     },
     {
@@ -21784,7 +22952,12 @@
     },
     {
       "module": "Mettapedia.Logic.Metaphysics.UltrainfinitismCore",
-      "source_sha256": "2d5d03ee1dc47cd1d5eda68b4f8cb74ac0772a6df51cf39c1361a0c6554605eb",
+      "source_sha256": "4b93b51b8abbe1b8a5f671e9b193f824e0e535c25005cec5c51535be1bab418b",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.Logic.Metaphysics.UltrainfinitismLosTransfer",
+      "source_sha256": "f98f8a13e68cf75706f4c3358d83292dd84e753152573e4b4d981c5e15e3df15",
       "status": "build_pass"
     },
     {
@@ -21818,6 +22991,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.Logic.PredicateInstitution",
+      "source_sha256": "0a78722e194aadea51863bf7d80aef51bb9fc8a2fec99e23c6b05f07edd21258",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.Logic.ProbHOL",
       "source_sha256": "9798d17a3993727621177df93041090f9b790ba0dbb597acb04b854e31a3c948",
       "status": "build_pass"
@@ -21844,7 +23022,7 @@
     },
     {
       "module": "Mettapedia.Logic.TheorySimulation",
-      "source_sha256": "337bdf65e431872fd8e91a6ab46d520511dd18f8978b81a25aeae0b9d8699306",
+      "source_sha256": "a4688985534f3470cd3719d5b0112d1691c13fa5cba874f8e29899d78dc1d355",
       "status": "build_pass"
     },
     {
@@ -25269,7 +26447,7 @@
     },
     {
       "module": "Mettapedia.OSLF.CoreMain",
-      "source_sha256": "567dc66f003d1130f2147ce1a9d7a1bc5bef886c0c58c8908cfe8529aed64a64",
+      "source_sha256": "edf29eb7de1f7dc99c6dec64d4784ea49521589667944289e373672f45becb4d",
       "status": "build_pass"
     },
     {
@@ -25279,7 +26457,7 @@
     },
     {
       "module": "Mettapedia.OSLF.Formula",
-      "source_sha256": "1186c276da040cd6528220373704fa3382883b342f16bb521198774fe7a0b5b7",
+      "source_sha256": "bb9bb257e35cbd47e486c58f50ef286488050ad81e27f07e085f8bb563130a90",
       "status": "build_pass"
     },
     {
@@ -25339,7 +26517,7 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.CategoryBridge",
-      "source_sha256": "8db782ee422eafbd5115b4093783ae1b6ac1c373dfd77e7327f4824ddd300ca5",
+      "source_sha256": "d7d991a857c94caede730c45b09b4f6fd3095cb5d0db8a51cfd6c01c442899d8",
       "status": "build_pass"
     },
     {
@@ -25479,17 +26657,17 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.EvidenceSemantics",
-      "source_sha256": "fdecbca5271f9576f70602dc1f48f2a717fd2532d7b7391986794943f24fdb9d",
+      "source_sha256": "139328eba1909810c93bb607cf101f549718a4fcd2f4d4bc2abada9cf3f31355",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.OSLF.Framework.FULLStatus",
-      "source_sha256": "82605540904f17ec047b304ac7e30f31374b667d1e4437ef16afd7b38e5f0057",
+      "source_sha256": "1f758642ee43b074070fe5f13ae793f515365c206bb6c4fc631f8404b4bbc1a4",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.OSLF.Framework.FormulaAdequacy",
-      "source_sha256": "d1f64813dfe6636da4c279d5a70aa6c865093d39f3ef50ba5053e95a81f6353f",
+      "source_sha256": "614204e8dc572e192617c67c871b7b0f0e16e4889905ce81fac985fe1037f3ea",
       "status": "build_pass"
     },
     {
@@ -25504,7 +26682,7 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.GSLTTypeSynthesis",
-      "source_sha256": "5cd4e9f51ff89ca6dba2033b71d6d96b17a069e6e3ed9de1348ced8791a5542c",
+      "source_sha256": "aef99a4e05e83a14025f6dbbce03b174be5a989121846546de67cc43f2f5933f",
       "status": "build_pass"
     },
     {
@@ -25554,7 +26732,7 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.GovernanceInstance",
-      "source_sha256": "b4481edeaabc058bbb5456aad8a60fdf2e4d2e09954bd390de0fbd6f027bf92a",
+      "source_sha256": "8f7197dc43976d8b9957ce36419a6c09c37c5e405c16de5b7012035993dba6e5",
       "status": "build_pass"
     },
     {
@@ -25574,12 +26752,12 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.HypercubeGSLTFunctor",
-      "source_sha256": "b9de1d70070591bb0650c7240e71f30f2116e10ecc2de67db4f9ce9cd176d7f0",
+      "source_sha256": "ecbb0482415167af1bf9a6deae23aef99b65c0658e24636a0da5198553c7ad0a",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.OSLF.Framework.HypercubeTemporalGSLTFunctor",
-      "source_sha256": "d24b2ef828e9fd2771e812f24084d931bc9303c1f412b053cac3fdd55a56e629",
+      "source_sha256": "ad1ce574467d810c57aaee5f2d8a9caf2f6e94709a9ce82e294151359f0e6b6f",
       "status": "build_pass"
     },
     {
@@ -25644,12 +26822,12 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.LanguageMorphism",
-      "source_sha256": "0cc98f83a784ac782279c5ab825b34358d63157688dd94d6bfad071386521367",
+      "source_sha256": "ddb544f3e3f7239de39302d7c2bb1dca504d835e309ca72b0f050fc9698acfb1",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.OSLF.Framework.LanguagePresheafSharing",
-      "source_sha256": "fc4e48688753764dab19b0f1b074bd541a9995c883e3529b5c2f800c8325e018",
+      "source_sha256": "4c19d7256be8227ba2ad3ce6b9acc0cb8ab7cb81e136c05c2005edb4afc40bcb",
       "status": "build_pass"
     },
     {
@@ -25765,16 +26943,7 @@
     {
       "module": "Mettapedia.OSLF.Framework.OSLFNTTWMBridgeRegression",
       "source_sha256": "ec388be02b2da6bd664521a6cc284d245e10935441ee2fa83ca1d542be055e93",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.OSLF.Framework.OSLFNTTWMBridgeRegression"
-      ],
-      "fork_chain": [
-        "Mettapedia.OSLF.Framework.OSLFNTTWMBridgeRegression"
-      ],
-      "captured_chain": [
-        "Mettapedia.OSLF.Framework.OSLFNTTWMBridgeRegression"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure",
@@ -25793,7 +26962,7 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.PLNSelectorGSLT",
-      "source_sha256": "2d15fe3d61542729e3ef79b190daa955018c0cbb3b05cd20f0fa1ec8fed55bc8",
+      "source_sha256": "fe18cc90d6f4c1eec456afdf694b0440a9229f2b628e77870b2a47342a978411",
       "status": "build_pass"
     },
     {
@@ -25823,12 +26992,12 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.PathTypeSynthesis",
-      "source_sha256": "64f9000afb918dbf266d68f8e7873efe555a2afab4a1b9b5164cf69fc68fab9f",
+      "source_sha256": "13ce6e59b230c1692875c3b9fbc2f72482aca9ba47d91030b6175a36e2c415a6",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.OSLF.Framework.PetriNetInstance",
-      "source_sha256": "af597dbd87a6dbd28e146de7c8a29911cf869799e01f62449309b02e740df9d2",
+      "source_sha256": "c6cdbc37a5d5d850e0240b5958f27c8572c2da69e1906ce9ddd7e9cd499ba1d5",
       "status": "build_pass"
     },
     {
@@ -25938,7 +27107,7 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.RhoInstance",
-      "source_sha256": "3d50f717823aa6b8b827e45b61341a02f6ebbb447a56094f156e54011c1959c3",
+      "source_sha256": "9488a04f0d5ff78d0bf352ae80d5a25f3a5ddf780bbc828b833f44ff842b2bc5",
       "status": "build_pass"
     },
     {
@@ -26183,7 +27352,7 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.ToposReduction",
-      "source_sha256": "87b17c53f552c79ccb6e1755b25b58cae9efcec0f08ad779be493376e96d0c03",
+      "source_sha256": "692837cbca22a88f1b83e6d841395ae2dc70059651f2e65433e69928ecfa8a97",
       "status": "build_pass"
     },
     {
@@ -26193,7 +27362,7 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.TypeSynthesis",
-      "source_sha256": "e5b66050bf67c3bf36a4c59d7571dea8a204a173cd9ca8ff5994723fccd8958d",
+      "source_sha256": "b8c0247ca3f46c9d48c194fb18bc1872fa2c26ec3da2c642254ce8dd04715970",
       "status": "build_pass"
     },
     {
@@ -26243,7 +27412,7 @@
     },
     {
       "module": "Mettapedia.OSLF.Framework.WMCalculusOSLFBridge",
-      "source_sha256": "9c6d3852194fe50fba4f46402e30477ec413cd6547be9b473cb6bb89ac165d35",
+      "source_sha256": "1cf16fe6660a369075b1510c4494a9d6b8bdf15dbf86ceafd7dacc9d7b2926b1",
       "status": "build_pass"
     },
     {
@@ -26263,7 +27432,7 @@
     },
     {
       "module": "Mettapedia.OSLF.Main",
-      "source_sha256": "727797c35d68c8802b953e0b627582f38ee68cf4531467fdd71c1f34f2eb2952",
+      "source_sha256": "9f2c3975af9c2b96d92d132a9674abfa1811fd714015c93d211815b861a30dbf",
       "status": "build_pass"
     },
     {
@@ -26373,7 +27542,7 @@
     },
     {
       "module": "Mettapedia.OSLF.MeTTaIL.MeTTaSyntaxQuotation",
-      "source_sha256": "ac07de6aca9627c3570f33ba94e0c4fc23e7a1b007e138d1479cd949372ba408",
+      "source_sha256": "e7a4503e3c26e0d11950f9e90cb20cfdc5891f32c8daedae7d84a5f769ca64f3",
       "status": "build_pass"
     },
     {
@@ -26838,7 +28007,7 @@
     },
     {
       "module": "Mettapedia.OSLF.PathMap.ZipperExecution",
-      "source_sha256": "08631395814b16ef8673d22aa7f001d1954733b757d231ddbd866d607fe4bb9a",
+      "source_sha256": "3ec00faf1bf506e974300ee47d04cde0132be1e0cdd90eb16c9a95fb944fb68f",
       "status": "build_pass"
     },
     {
@@ -26893,7 +28062,7 @@
     },
     {
       "module": "Mettapedia.OSLF.StructuralModal.EquationInvariance",
-      "source_sha256": "552ad292f53ec2271845ea107c7b950ea90f516a31db6815f640fdc9ea49845b",
+      "source_sha256": "67a977da4f376c48e588146734dfaedb1521a215df873d4c7e5e29dc5f89bbdc",
       "status": "build_pass"
     },
     {
@@ -27029,16 +28198,7 @@
     {
       "module": "Mettapedia.OSLF.Tools.ExportMetamathMM2Canary",
       "source_sha256": "59088d28d3db4563414cbb1ee37a53b54895df8e90ab7c06b0ef96bfad98ecf3",
-      "status": "baseline_source_failure",
-      "current_chain": [
-        "Mettapedia.OSLF.Tools.ExportMetamathMM2Canary"
-      ],
-      "fork_chain": [
-        "Mettapedia.OSLF.Tools.ExportMetamathMM2Canary"
-      ],
-      "captured_chain": [
-        "Mettapedia.OSLF.Tools.ExportMetamathMM2Canary"
-      ]
+      "status": "baseline_source_failure"
     },
     {
       "module": "Mettapedia.OSLF.Tools.ExportMetamathMM2RawUnit",
@@ -27061,13 +28221,23 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.OSLF.Tools.ExportPeTTaMainlineCallGuardConformanceCorpus",
+      "source_sha256": "ea41d09812c7bdbeafadb1486314a163eabc1b8b9e64233783bb14fc967c908d",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.OSLF.Tools.ExportPeTTaMainlineCallGuardHotStructuredC",
-      "source_sha256": "4fe0a685cdc93fa8bab15899554cbca1e60b52ee8b801ed42d7b3828e9e8429c",
+      "source_sha256": "34d5a50240c6e84a473ed09fa09493038ce0e893ea34b1af1c4a3bc48914a09a",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.OSLF.Tools.ExportPeTTaMainlineCallGuardHotTransitionStructuredC",
+      "source_sha256": "572a0f7a1b661e43fb1b57e05a4079da10e810163ace4de9a9211cbfc47fd4e9",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.OSLF.Tools.ExportPeTTaMainlineCallGuardStructuredC",
-      "source_sha256": "40c2eb89a3f84b8376a554fd43de4f59f32fde055a335d1c8479b41ce8a7e6a0",
+      "source_sha256": "c0a13f040651c9177616dfe1d73b05edeae2bf0ad8bc2e1496c9b080394e77db",
       "status": "build_pass"
     },
     {
@@ -30807,7 +31977,7 @@
     },
     {
       "module": "Mettapedia.TypeTheory",
-      "source_sha256": "adafcf4efe4179afe364fe37a8a9ab038ae3c51a02d8dadfb1d69dc1f80731fa",
+      "source_sha256": "208f36de890815635379a15ba7f851d40c6a40225a37f0699acf64588e5a1cfd",
       "status": "build_pass"
     },
     {
@@ -30818,6 +31988,11 @@
     {
       "module": "Mettapedia.TypeTheory.Authority",
       "source_sha256": "a90fa8f4225a31c97d75a5d431293187108a4241d91d7d8bb0c266d21aee1b34",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.BehavioralIdentityObserverFactorization",
+      "source_sha256": "62056e2bed81e12fa41755799ef0e23aecd54e18fab0ba901271b2e35edd0600",
       "status": "build_pass"
     },
     {
@@ -30896,6 +32071,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.TypeTheory.ContextualAlgebraSequencing",
+      "source_sha256": "cb9e80686897b97014fda1527ad609037583adec9c45f578ddd48cc4a5012662",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.TypeTheory.ContextualCode",
       "source_sha256": "a116c6cf53dd20ec7abb590b4b0b4faac840a223cdacb49bdd4caa2e5dd10297",
       "status": "build_pass"
@@ -30911,13 +32091,38 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.TypeTheory.ContextualComputationAlgebra",
+      "source_sha256": "ad1c626c58754c7d0f3d7331bb9a16dc0b0e296f5147faedee6da167c73a13f4",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.ContextualComputationAlgebraProducts",
+      "source_sha256": "7aa68c92a3a86d29366c7170bedb49b400e02250d1caab9ba87d2db8f2d481a4",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.TypeTheory.ContextualComputationKleisli",
       "source_sha256": "6656d66fd884bb14ee0fec417126473b7aaa1ed1e0b187f1cd14a2cf6a61fe3d",
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.TypeTheory.ContextualDependentSequencing",
+      "source_sha256": "4ec3ca0e128148a2ca62cd987a8f70e015632c11648fbe0cb9e1a62b8c9c972b",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.TypeTheory.ContextualIdentityTypes",
       "source_sha256": "e15af1603d80f0812fc41ee523b9832b0a263afc184daa08f123a226e5e29a56",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.ContextualKleisliAdjunction",
+      "source_sha256": "c47f0a08b0a762f71472f4c1bdd165e01bcdf1abb74554ae11c7859e2611464b",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.ContextualKleisliProductBoundary",
+      "source_sha256": "8fcbafcfac64bef7d8b2e8a5b5b5f14d291791cc1fbe9a9dd37aba4fb7b57e9f",
       "status": "build_pass"
     },
     {
@@ -30946,6 +32151,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.TypeTheory.ContextualThunkStrategy",
+      "source_sha256": "9749c3f5cdff11948e8a6940d733c28b58527f4c91415cb6ff745cafa46e6388",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.TypeTheory.ConversionDecisionComparison",
       "source_sha256": "f2e2356da3523deb1e876a82ea6d5baa2f4c6381865d30f65e316fd502ffe84d",
       "status": "build_pass"
@@ -30958,6 +32168,16 @@
     {
       "module": "Mettapedia.TypeTheory.CwfDependentRightAdjointComposition",
       "source_sha256": "1e365bc31b71b57922edea07558a16b381fe0842779a7c9943f4ede875f1f9c8",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.CwfInhabitationInstitution",
+      "source_sha256": "3237db73836d8a2497d6bf62bc917cc9b17a289ee8f5b0495a65e4f9f4532ea7",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.CwfSimpleDependentInstitution",
+      "source_sha256": "a0186b24522e20379b5fb4e7d67b875a38a74c6ddc50267ed0f89704201d60c9",
       "status": "build_pass"
     },
     {
@@ -30978,6 +32198,11 @@
     {
       "module": "Mettapedia.TypeTheory.DecidableIdentityRouteStructure",
       "source_sha256": "70cbc31a59fa12ffd5db61f88a4723653da9fe8fa8d51a501b2fef4d766c6f78",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.DependencyDescentCriterion",
+      "source_sha256": "d60bf04033311ac0c5948128ae9c424fa466eb8a117a9523b476238bf6767e4b",
       "status": "build_pass"
     },
     {
@@ -31131,6 +32356,21 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.TypeTheory.GSLTOperationalModeBridge",
+      "source_sha256": "1c5d1e0a2f7adb10a255293e6aa65f164313c7d2f88b75b85d476f44a484c61a",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.GlobalPointReduct",
+      "source_sha256": "0c1515be0f6f081b7ff28dc6275b2398e1249e75c1b7b8d2593a2fd2e395e0e7",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.GuardEvidenceComprehension",
+      "source_sha256": "d97765ac6e051448cb9687df91179e6f76378945a2dfbc49b03e3dd0eeeec7e4",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.TypeTheory.GuardedTimeModeTheory",
       "source_sha256": "ac3e6696b81afc5c7d0dce207203eafbdf945eacc807db42fe8c30037d6e49e5",
       "status": "build_pass"
@@ -31138,6 +32378,11 @@
     {
       "module": "Mettapedia.TypeTheory.IdentityEliminationCapabilities",
       "source_sha256": "d511750281b1c88d789992b4281ae55e6d6a9af159cb9de39b99af9f56ba5422",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.IdentityNotions",
+      "source_sha256": "d298bad43f437b712d4ba85a5231f0fccddcc8befc55c2693ed875407f98dfbc",
       "status": "build_pass"
     },
     {
@@ -31331,6 +32576,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.TypeTheory.ProofRelevantPathContextFunctor",
+      "source_sha256": "6d54fcaa4cab0140b26a9050d773a8987c6ac04b2deb28cc3a275ffc8b76765b",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.TypeTheory.ProofRelevantRouteFamilyBridge",
       "source_sha256": "c0cc3daf3762aa84b815e38f9066e8cc6e0a8ad84ac4483184ce1114068d3168",
       "status": "build_pass"
@@ -31421,6 +32671,11 @@
       "status": "build_pass"
     },
     {
+      "module": "Mettapedia.TypeTheory.ScwfQuotient",
+      "source_sha256": "51e30c14589c8c615731fd561f0404b494765f26795bb73b70fc5e6deefcf22f",
+      "status": "build_pass"
+    },
+    {
       "module": "Mettapedia.TypeTheory.SelectedModalIntroduction",
       "source_sha256": "e79d9046373a863f421c2557145cd74389e7670700e501acbbf069cb6a443273",
       "status": "build_pass"
@@ -31448,6 +32703,21 @@
     {
       "module": "Mettapedia.TypeTheory.SetFamilyTypeOverEssentialImage",
       "source_sha256": "928783c643e295e994ad2b61e187bebbaa26b049f25087dd00ec15fcdcb6fc1f",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.SimpleDependentCapabilitySelection",
+      "source_sha256": "692c7b19e337d3449a8532c43c52d2094cee9878cefd150963b26c56e2328395",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.SimpleDependentInstitutionBridge",
+      "source_sha256": "a82a307736faeedd100d4efd3617e79d0ac647a6438149c6d1652cc6dc970025",
+      "status": "build_pass"
+    },
+    {
+      "module": "Mettapedia.TypeTheory.SimpleDependentInstitutionCategoryCanary",
+      "source_sha256": "2ee903b7a2eba79db2d105792770b2a2c7220c5069cfb0afcefcabfe6dcaf9c6",
       "status": "build_pass"
     },
     {
@@ -32247,7 +33517,7 @@
     },
     {
       "module": "Mettapedia.UniversalAlgebra",
-      "source_sha256": "5560ea2820a2fb4a1d350f05452371ba9f35b0a78af7e7f37672389b84b81e3b",
+      "source_sha256": "b099f6e4d281a7e0ff3b3c18fbc17b2b38cb090daae42926a7974684982cab84",
       "status": "build_pass"
     },
     {
@@ -32322,7 +33592,7 @@
     },
     {
       "module": "Mettapedia.UniversalAlgebra.Instances.MonoidCertificateTranslation",
-      "source_sha256": "82672fc386ccc3b66b67cf725e41da667901b1076acdae1c7bfd536d721bf9a9",
+      "source_sha256": "9b7ae72860d764bd453b2ac46344d0adbbedb5d31fd1e6f8d023e725b473c342",
       "status": "build_pass"
     },
     {
@@ -32386,8 +33656,8 @@
       "status": "build_pass"
     },
     {
-      "module": "Mettapedia.UniversalAlgebra.NIK.ClassicalAuthorityTranslation",
-      "source_sha256": "a100e11012e4ccbe1168236b36afc395e8658932a8bd6f87290cd98358201048",
+      "module": "Mettapedia.UniversalAlgebra.NIK.ClassicalCertifiedTranslation",
+      "source_sha256": "48380bd56c0962409d223eabd5ca24a5ab0836592136c5358b260e7d93c7cdb4",
       "status": "build_pass"
     },
     {
@@ -32396,8 +33666,8 @@
       "status": "build_pass"
     },
     {
-      "module": "Mettapedia.UniversalAlgebra.NIK.ConstructiveAuthorityTranslation",
-      "source_sha256": "3e1b5a13a9ab2d0bc4c1f5ff1bfe06877d353461ca4bd776b84d1c641183b821",
+      "module": "Mettapedia.UniversalAlgebra.NIK.ConstructiveCertifiedTranslation",
+      "source_sha256": "f9577c27849bebe4aea19d4c1a54c855cd465e97d06a70d552859e37bd7a781f",
       "status": "build_pass"
     },
     {
@@ -32412,12 +33682,12 @@
     },
     {
       "module": "Mettapedia.UniversalAlgebra.NIK.Simulation",
-      "source_sha256": "5a48551560189d79bdcb131aa26eb5a0204ad243f2f3051627a23087531df77e",
+      "source_sha256": "8c74d561129b2dc45fa1662feb81eea9e8c0e1672345dc5195fba6e9a4e0eae7",
       "status": "build_pass"
     },
     {
       "module": "Mettapedia.UniversalAlgebra.NIK.TheoryEquivalence",
-      "source_sha256": "b05ec0a7b7963d64c89cdcbdccaae5228d4694445b87e1b12b898b79766a9654",
+      "source_sha256": "69f4817213fd02a9e9a49fc3bbd032472edb16eeb5afbeb7bbfb72db1d8de4df",
       "status": "build_pass"
     },
     {
@@ -32480,6 +33750,24 @@
     "checkRFC8259NativeForestExact",
     "sumoNativeSourceCheck"
   ],
-  "combined_build_jobs": 25072,
-  "mathlib_revision": "0df444a360eaa60ab8c11dca51a86af692955474"
+  "combined_build_jobs": 25363,
+  "mathlib_revision": "0df444a360eaa60ab8c11dca51a86af692955474",
+  "integrated_main_revision": "15deaf0b6f8130ac45fe2270e1d06b14106cb8ea",
+  "additional_dependency_targets": [
+    "Algorithms.MeTTa.Simple.ParserConformance"
+  ],
+  "additional_source_fingerprints": {
+    "lean/algorithms/Algorithms/MeTTa/Simple/Parser.lean": "0c0026837056e1db4d4510e4f5f9f8d38334d6f94dd6a59908ee139a49a8756f",
+    "lean/algorithms/Algorithms/MeTTa/Simple/ParserConformance.lean": "e3d78d435e3a53e38937811da9b12ca0a0a6ff4924189a38f97a1275b0ac6d57"
+  },
+  "followup_checks": [
+    {
+      "date": "2026-09-08",
+      "targets": [
+        "Mettapedia.Logic.BDD.ProbMeTTaADRuntimeCore"
+      ],
+      "jobs": 3268,
+      "reason": "Remove machine-specific source reference from module documentation."
+    }
+  ]
 }

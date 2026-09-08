@@ -115,7 +115,7 @@ def presentedStep
     presentedPrimitiveStep base presentation redex contractum ∧
     (presentedEquationSetoid base presentation).r contractum target
 
-/-- Equation saturation makes changing the source representative admissible. -/
+/-- Closure under equations makes changing the source representative admissible. -/
 theorem presentedStep_resp_left
     (base : BasePremiseEvaluator) (presentation : InteractivePresentation) :
     ∀ {source source' target : presentation.Term},
@@ -131,7 +131,7 @@ theorem presentedStep_resp_left
       redexEquivalent
   · exact (presentedEquationSetoid base presentation).iseqv.refl target
 
-/-- Equation saturation makes changing the target representative admissible. -/
+/-- Closure under equations makes changing the target representative admissible. -/
 theorem presentedStep_resp_right
     (base : BasePremiseEvaluator) (presentation : InteractivePresentation) :
     ∀ {source target target' : presentation.Term},
@@ -161,7 +161,7 @@ def InteractivePresentation.toGSLT
     (presentation : InteractivePresentation) : GSLT :=
   presentedGSLT defaultBasePremises presentation
 
-/-- Every primitive authored reduction embeds into the equation-saturated
+/-- Every primitive authored reduction embeds into the modulo-equations
 GSLT step. -/
 theorem primitiveStep_to_presentedStep
     {base : BasePremiseEvaluator} {presentation : InteractivePresentation}

@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 import Mettapedia.Languages.MeTTa.PrimePluralNIKWaist
 import Mettapedia.Languages.Megalodon.SetCoreSemanticAuthority
 
@@ -23,7 +23,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.MeTTa.PrimePluralNIKSetCoreWaist
 
 open Mettapedia.GSLT.LanguageDef.CheckerAuthorityFamily
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 
 private abbrev primeTheory :=
@@ -164,7 +164,7 @@ theorem selected_certificate_rejected_at_setCore_kind :
 accepted set-core identity certificate to a rejected selected-profile replay.
 Coexistence therefore does not synthesize a semantic bridge. -/
 theorem no_replay_breaking_setCore_to_selected :
-    Not (Exists fun translation : AuthorityTranslation setCoreContract
+    Not (Exists fun translation : CertifiedTranslation setCoreContract
         Mettapedia.Languages.Megalodon.SelectedTheoryProfile.contract =>
       (Mettapedia.Languages.Megalodon.SelectedTheoryProfile.contract.checker
           (translation.mapKind ())).check

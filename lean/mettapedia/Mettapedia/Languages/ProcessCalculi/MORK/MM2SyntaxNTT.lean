@@ -350,10 +350,10 @@ def mm2LexicalSignatures :
 def mm2StructuralSignatures :
     List (String × String × List PackItem) := [
   ("MM2Program", "mm2:program-empty",
-    [.nonterminal "MM2FinalGap", .terminal .eof]),
+    [.nonterminal "MM2FinalGap"]),
   ("MM2Program", "mm2:program-cons",
     [.nonterminal "MM2Gap", .nonterminal "MM2Atom",
-     .nonterminal "MM2Program", .terminal .eof]),
+     .nonterminal "MM2Program"]),
   ("MM2Atom", "mm2:atom-symbol", [.nonterminal "MM2Symbol"]),
   ("MM2Atom", "mm2:atom-variable", [.nonterminal "MM2Variable"]),
   ("MM2Atom", "mm2:atom-expression", [.nonterminal "MM2Expression"]),

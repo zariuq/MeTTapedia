@@ -91,14 +91,11 @@ the implementation pays $O(n)$ per store where SOTA pays $O(\mathrm{arity})$.
 Phase 1d (byte-packing) recovers $\sim$2$\times$; Phase 1f (AtomId-native
 construction) is required to recover the remaining 50--400$\times$.
 
-\paragraph{Council note.}
-\emph{Schulz}: ``Perfect term sharing is the converged design.  But sharing
-with $O(n)$ per store is sharing done wrong.  Fix the construction path.''
-\emph{Conchon--Filli\^{a}tre}: ``Smart constructors enforce sharing at
-construction boundaries.  You never hash a term whose children aren't
-already interned.''
-\emph{Ritchie}: ``Big rewrites go through worse-before-better.  Be honest
-about which phase you're in.  You're not in `better' yet.''
+\paragraph{Construction requirements.}
+Term sharing must avoid a linear scan per store. Smart constructors should
+intern child terms before constructing a parent, so lookup and construction
+use the shared representation directly. Performance claims must be measured
+against the pre-migration baselines.
 
 \subsection{Phase 1d: Canonical Storage ABI}
 

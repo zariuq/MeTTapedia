@@ -30,7 +30,7 @@ about the actual GF→IR→Lean pipeline.
 
 A GF grammar is an operational theory in the hypercube sense:
 term formers = FunDecl, base rewrites = identity eliminations,
-reduction = the equation-saturated LanguageDef step relation. The OSLF
+reduction = the modulo-equations LanguageDef step relation. The OSLF
 framework automatically generates a modal type system (◇ ⊣ □) from this
 operational data.
 

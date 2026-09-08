@@ -14,7 +14,7 @@ continuation has one finite token for every revision up to `r`.
 The resulting cell connects four existing faces without identifying them:
 
 * every exact index supplies a typed COMM step and enters the established
-  equation-saturated rho GSLT;
+  modulo-equations rho GSLT;
 * its continuation is a type in the set-family CwF and is not in the
   constant-family simple fragment;
 * ordered dependent sequencing retains the selected exact communication in a
@@ -38,7 +38,7 @@ open Mettapedia.GSLT.Dynamics.AnswerEffects
 open Mettapedia.GSLT.Dynamics.IndexedPolynomialProtocol
 open Mettapedia.GSLT.Dynamics.ProofRelevantRelationProtocol
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
-open Mettapedia.Languages.ProcessCalculi.RhoCalculus.EquationSaturatedProtocolBridge
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.ProtocolModuloEquationsBridge
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.RevisionedTypedCommunicationDemand
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness

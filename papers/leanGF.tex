@@ -684,7 +684,7 @@ injected as additional premises during entailment verification.
 
 \subsection{Attr/Rel Unification}
 
-Following the council's recommendation (de~Paiva), we unified the
+We unified the
 \code{Attr} and \code{Rel} constructors: \code{Attr(X, P)} is now
 defined as \code{Rel(P, [X])}.  This eliminates a redundant constructor,
 removes 16 separate match arms across 4~files, and makes
@@ -901,8 +901,8 @@ For the real syntax-only lane, the NTT/OSLF layer presently supports:
   for both telescope and Anna witnesses;
 \item theorem-level constructor-family facts over the larger
   \code{project\_core} slice, including unary crossings such as
-  \code{ExistNP : NP \to Cl}, \code{QuestCl : Cl \to QCl}, and
-  \code{UsePron : Pron \to NP};
+  \code{ExistNP : NP $\to$ Cl}, \code{QuestCl : Cl $\to$ QCl}, and
+  \code{UsePron : Pron $\to$ NP};
 \item theorem-level native-type classification of larger real patterns,
   including existential sentences, interrogatives (\code{QS}), and
   progressive clauses, all still on the syntax-only lane;

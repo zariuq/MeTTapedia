@@ -69,10 +69,10 @@ theorem step_iff_mem_rewriteOnce {n m : Nat}
     (theory source target hom).Step before after ↔
       after ∈ rewriteOnce source target hom before := by
   change
-    Mettapedia.GSLT.LanguageDef.EquationSemantics.EquationSaturatedStep
+    Mettapedia.GSLT.LanguageDef.EquationSemantics.StepModuloEquations
       (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises
         (relationEnv source target hom)) language before after ↔ _
-  rw [Mettapedia.GSLT.LanguageDef.EquationSemantics.equationSaturatedStep_iff_step_of_no_generators
+  rw [Mettapedia.GSLT.LanguageDef.EquationSemantics.stepModuloEquations_iff_step_of_no_generators
     (free := rfl)]
   exact step_iff_mem_rewriteAt_one
     (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises

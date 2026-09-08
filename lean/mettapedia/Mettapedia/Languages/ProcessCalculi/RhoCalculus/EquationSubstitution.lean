@@ -284,7 +284,7 @@ theorem rho_authoredEquationSubstitutionStable :
       defaultBasePremises rhoCalc
       left.term.1 right.term.1 := by
     rw [leftEquality, rightEquality]
-    exact .core (.inContext context (Or.inl equationWitness))
+    exact .core (.inContext context (.inl equationWitness))
   have canonicalEquality :
       canonicalize left.term.1 = canonicalize right.term.1 :=
     LanguageDefSemanticAgreement.rhoEquationContextStep_canonicalize_eq
@@ -295,25 +295,24 @@ theorem rho_authoredEquationSubstitutionStable :
     (by simp [rhoReflectionProfile]) left right
   simpa only [CanonicalMatch.derivedCanonicalize_eq] using canonicalEquality
 
-/-- Presentation-derived rho equations remain valid after supported substitution. -/
+/-- Rho's presentation-derived collection laws are stable under supported
+substitution.  The proof follows the same canonical-section route as authored
+equations, but retains the distinct derived generator family. -/
 theorem rho_derivedEquationSubstitutionStable :
     DerivedEquationSubstitutionStable
       (profile := rhoReflectionProfile) rhoCalc := by
   intro source target support bound type assignment left right witness
-  obtain ⟨context, redex, contractum, equationWitness, leftEquality,
+  obtain ⟨context, redex, contractum, lawWitness, leftEquality,
     rightEquality⟩ := witness
   have generator : ReflectiveEquationContextStep rhoReflectionProfile
-      defaultBasePremises rhoCalc
-      left.term.1 right.term.1 := by
+      defaultBasePremises rhoCalc left.term.1 right.term.1 := by
     rw [leftEquality, rightEquality]
-    exact .core (.inContext context (Or.inr equationWitness))
+    exact .core (.inContext context (.inr lawWitness))
   have canonicalEquality :
       canonicalize left.term.1 = canonicalize right.term.1 :=
-    LanguageDefSemanticAgreement.rhoEquationContextStep_canonicalize_eq
-      generator
+    LanguageDefSemanticAgreement.rhoEquationContextStep_canonicalize_eq generator
   apply rho_reflectiveEquationSubstitutionStable assignment
-    (declaration :=
-      rhoReflectivePresentation.toReflectivePresentationDecl)
+    (declaration := rhoReflectivePresentation.toReflectivePresentationDecl)
     (by simp [rhoReflectionProfile]) left right
   simpa only [CanonicalMatch.derivedCanonicalize_eq] using canonicalEquality
 
@@ -323,8 +322,8 @@ substitution. -/
 theorem rho_supportedEquationSubstitutionStable :
     SupportedEquationSubstitutionStable
       (profile := rhoReflectionProfile) rhoCalc :=
-  ⟨rho_authoredEquationSubstitutionStable,
-    rho_derivedEquationSubstitutionStable,
-    rho_reflectiveEquationSubstitutionStable⟩
+  { authored := rho_authoredEquationSubstitutionStable
+    derived := rho_derivedEquationSubstitutionStable
+    reflective := rho_reflectiveEquationSubstitutionStable }
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.EquationSubstitution

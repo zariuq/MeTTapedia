@@ -1,5 +1,5 @@
 import Mettapedia.CategoryTheory.MorphismReachability
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 
 /-!
 # Simulation orders for semantic theory objects
@@ -22,7 +22,7 @@ set_option autoImplicit false
 namespace Mettapedia.Logic.TheorySimulation
 
 open Mettapedia.MorphismReachability
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 

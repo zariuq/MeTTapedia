@@ -141,7 +141,7 @@ theorem zipper_flat_agreement {Z V : Type*}
   hagree
 
 /-- **ZAM semantic-reduction soundness**: if the zipper store agrees with a
-    flat `RelationEnv`, then the equation-saturated relation consumed by OSLF
+    flat `RelationEnv`, then the modulo-equations relation consumed by OSLF
     is identical for both. -/
 theorem zam_semantic_reduction_sound {Z V : Type*}
     [ZipperValues Z V] [ZipperIteration Z]
@@ -161,7 +161,7 @@ theorem zam_semantic_reduction_sound {Z V : Type*}
   rw [heq]
 
 /-- **ZAM soundness for diamond**: zipper-backed and flat-store diamonds agree
-    on the equation saturation of the same authored predicate generator. -/
+    on the closure under equations of the same authored predicate generator. -/
 theorem zam_diamond_sound {Z V : Type*}
     [ZipperValues Z V] [ZipperIteration Z]
     [ZipperStoreValues Z V]
@@ -186,7 +186,7 @@ theorem zam_diamond_sound {Z V : Type*}
   rw [heq]
 
 /-- **ZAM soundness for box**: zipper-backed and flat-store boxes agree on the
-    equation saturation of the same authored predicate generator. -/
+    closure under equations of the same authored predicate generator. -/
 theorem zam_box_sound {Z V : Type*}
     [ZipperValues Z V] [ZipperIteration Z]
     [ZipperStoreValues Z V]

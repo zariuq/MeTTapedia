@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.GenerativeCantorSemanticGrounding
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 import Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas
 
 /-!
@@ -26,7 +26,7 @@ namespace Mettapedia.GSLT.LanguageDef.GenerativeCantorBootstrapGrounding
 open Mettapedia.GSLT.LanguageDef.AtomlessBooleanFirstOrderDecision
 open Mettapedia.GSLT.LanguageDef.AtomlessBooleanFirstOrderNIKAuthority
 open Mettapedia.GSLT.LanguageDef.GenerativeCantorSemanticGrounding
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 
@@ -47,7 +47,7 @@ private abbrev atlasContract :=
 /-- Interpret each finite-stage semantic claim as the corresponding tagged
 `modelSound` claim in the plural lower atlas. -/
 def stagedToAtlasModel :
-    AuthorityTranslation finiteStageContract atlasContract where
+    CertifiedTranslation finiteStageContract atlasContract where
   mapKind := id
   mapSignature := fun _signature => atlasTheory.signatureOf ()
   signature_commutes := by

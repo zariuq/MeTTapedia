@@ -216,7 +216,7 @@ def expandedContract : AuthorityContract expandedTheory where
 
 /-- The decidable fragment enters the larger authority without losing or
 gaining meaning or accepted evidence on its image. -/
-def booleanInclusion : AuthorityTranslation booleanContract expandedContract where
+def booleanInclusion : CertifiedTranslation booleanContract expandedContract where
   mapKind := id
   mapSignature := id
   signature_commutes := by intro _kind; rfl
@@ -241,7 +241,7 @@ theorem booleanInclusion_conservative :
     exact meaningful
 
 /-- The proof-relevant halting lane also enters by exact replay. -/
-def haltingInclusion : AuthorityTranslation haltingContract expandedContract where
+def haltingInclusion : CertifiedTranslation haltingContract expandedContract where
   mapKind := id
   mapSignature := id
   signature_commutes := by intro _kind; rfl

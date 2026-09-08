@@ -1,5 +1,5 @@
 diff --git a/Lean4Lean/Experimental/DomainTheory.lean b/Lean4Lean/Experimental/DomainTheory.lean
-index a20b2b95840c42300636e5fe0a0b5964e8a1a6d5..3274a27093b1a3225e367d26c26deba7329f3c50 100644
+index a20b2b9..3274a27 100644
 --- a/Lean4Lean/Experimental/DomainTheory.lean
 +++ b/Lean4Lean/Experimental/DomainTheory.lean
 @@ -41,7 +41,7 @@ inductive FinElem where
@@ -25,7 +25,7 @@ index a20b2b95840c42300636e5fe0a0b5964e8a1a6d5..3274a27093b1a3225e367d26c26deba7
      induction k with
      | zero =>
 diff --git a/Lean4Lean/Experimental/MoreStepIndexed.lean b/Lean4Lean/Experimental/MoreStepIndexed.lean
-index b533aa77a0986199c9db6a0346bd61ebeafa91a3..cc73eb231f3e22c1b52bd87766b879bb4cd20a00 100644
+index b533aa7..cc73eb2 100644
 --- a/Lean4Lean/Experimental/MoreStepIndexed.lean
 +++ b/Lean4Lean/Experimental/MoreStepIndexed.lean
 @@ -66,7 +66,7 @@ inductive ShapeS (Shape : Type) (n : Nat) : Type where
@@ -82,7 +82,7 @@ index b533aa77a0986199c9db6a0346bd61ebeafa91a3..cc73eb231f3e22c1b52bd87766b879bb
  omit [Params] in
  theorem pull_exists {a : Prop} {p : α → Prop} (z : α) : (a → ∃ b, p b) ↔ ∃ b, a → p b := by
 diff --git a/Lean4Lean/Experimental/SExpr.lean b/Lean4Lean/Experimental/SExpr.lean
-index 4204fccc9df73a643c2abeababbc9cc562c107f8..51bb494bfc4c40399b1d43623c9cba287447d008 100644
+index 4204fcc..51bb494 100644
 --- a/Lean4Lean/Experimental/SExpr.lean
 +++ b/Lean4Lean/Experimental/SExpr.lean
 @@ -62,7 +62,7 @@ def max (l₁ l₂ : SLevel) : SLevel :=
@@ -104,7 +104,7 @@ index 4204fccc9df73a643c2abeababbc9cc562c107f8..51bb494bfc4c40399b1d43623c9cba28
  theorem Subst.instL_lift {σ : Subst} : (σ.instL ls).lift = σ.lift.instL ls := by
    funext i; obtain _|i := i <;> simp [Subst.instL, lift, SExpr.instL]
 diff --git a/Lean4Lean/Experimental/ShapeLogRel.lean b/Lean4Lean/Experimental/ShapeLogRel.lean
-index ac55969e068d2d0269af9d24c823536a818dbddb..e59069da7c97f60fb62399690aaf8a5bbfa1403f 100644
+index ac55969..e59069d 100644
 --- a/Lean4Lean/Experimental/ShapeLogRel.lean
 +++ b/Lean4Lean/Experimental/ShapeLogRel.lean
 @@ -22,12 +22,12 @@ private noncomputable instance : DecidableEq SLevel := fun a b => Classical.prop
@@ -1414,7 +1414,7 @@ index ac55969e068d2d0269af9d24c823536a818dbddb..e59069da7c97f60fb62399690aaf8a5b
      | indTy => simp only [LRS.DefEq.indTy_a]
      | _ => cases hm.isType
 diff --git a/Lean4Lean/Experimental/ShapeLogRelAdequacy.lean b/Lean4Lean/Experimental/ShapeLogRelAdequacy.lean
-index 1bda20410099c650c443089d62b0b101abcfc0f9..2764dc1555ed1f89b01bccc59e9adbb8a1efddd3 100644
+index 1bda204..2764dc1 100644
 --- a/Lean4Lean/Experimental/ShapeLogRelAdequacy.lean
 +++ b/Lean4Lean/Experimental/ShapeLogRelAdequacy.lean
 @@ -142,9 +142,12 @@ theorem LR.adequacy (H : Γ ⊢ M ≡ N : A)
@@ -1434,7 +1434,7 @@ index 1bda20410099c650c443089d62b0b101abcfc0f9..2764dc1555ed1f89b01bccc59e9adbb8
      cases hM with | bot => exact .bot hmem.isType | const a1 _ a3 a4 a5 a6
      cases h1.symm.trans a1
 diff --git a/Lean4Lean/Experimental/StepIndexed.lean b/Lean4Lean/Experimental/StepIndexed.lean
-index 7b32fcacfdbd07f1aba475d72687699e06881923..4453f9b9cc41566e69a28e4b4c01e1fd9766a5b1 100644
+index 7b32fca..4453f9b 100644
 --- a/Lean4Lean/Experimental/StepIndexed.lean
 +++ b/Lean4Lean/Experimental/StepIndexed.lean
 @@ -8,7 +8,7 @@ variable [Params]
@@ -1447,7 +1447,7 @@ index 7b32fcacfdbd07f1aba475d72687699e06881923..4453f9b9cc41566e69a28e4b4c01e1fd
  def Classifier.HasTy (C : Classifier Γ A) (e : SExpr) : Prop := Γ ⊢ e : A ∧ C.HasTy' e
  
 diff --git a/Lean4Lean/Experimental/Thierry2.lean b/Lean4Lean/Experimental/Thierry2.lean
-index 86eb589ba5d9bbb3d83289180bc035295dadac93..39ec0d35a04b5201e76b973922e7d6da0c7b8c77 100644
+index 86eb589..39ec0d3 100644
 --- a/Lean4Lean/Experimental/Thierry2.lean
 +++ b/Lean4Lean/Experimental/Thierry2.lean
 @@ -18,7 +18,7 @@ inductive ShapeS (Shape : Type) : Type where
@@ -1640,7 +1640,7 @@ index 86eb589ba5d9bbb3d83289180bc035295dadac93..39ec0d35a04b5201e76b973922e7d6da
  termination_by 2 * n
  
 diff --git a/Lean4Lean/Theory/Typing/Pattern.lean b/Lean4Lean/Theory/Typing/Pattern.lean
-index 87e77492090d30bc96b3a5b6a15ccf28e861698e..28a628fc1c29fca436322f22deab2c93990b2704 100644
+index 87e7749..28a628f 100644
 --- a/Lean4Lean/Theory/Typing/Pattern.lean
 +++ b/Lean4Lean/Theory/Typing/Pattern.lean
 @@ -86,7 +86,7 @@ theorem Pattern.Matches.uniq {p : Pattern} {e : VExpr} {m1 m2 m1' m2'}
@@ -1662,7 +1662,7 @@ index 87e77492090d30bc96b3a5b6a15ccf28e861698e..28a628fc1c29fca436322f22deab2c93
  
  def Pattern.Check.OK (defeq : VExpr → VExpr → Prop) {p : Pattern}
 diff --git a/Lean4Lean/Theory/VLevel.lean b/Lean4Lean/Theory/VLevel.lean
-index 7816d0f4c86c387c7c1b4c80a1de7fefb9371598..e0b36f24839d5201ce475a06d9c896ccb82ca6b9 100644
+index 7816d0f..e0b36f2 100644
 --- a/Lean4Lean/Theory/VLevel.lean
 +++ b/Lean4Lean/Theory/VLevel.lean
 @@ -35,7 +35,7 @@ def eval : VLevel → Nat
@@ -1703,7 +1703,7 @@ index 7816d0f4c86c387c7c1b4c80a1de7fefb9371598..e0b36f24839d5201ce475a06d9c896cc
  variable (ls : List VLevel) in
  def inst : VLevel → VLevel
 diff --git a/Lean4Lean/Verify/EquivManager.lean b/Lean4Lean/Verify/EquivManager.lean
-index 31a07b2e0fc513401aaea7245e27dd7beccb524a..112c2faadf3b070bdc2d8a4967e3571746be5475 100644
+index 31a07b2..112c2fa 100644
 --- a/Lean4Lean/Verify/EquivManager.lean
 +++ b/Lean4Lean/Verify/EquivManager.lean
 @@ -261,21 +261,21 @@ theorem toNode.WF :
@@ -1743,7 +1743,7 @@ index 31a07b2e0fc513401aaea7245e27dd7beccb524a..112c2faadf3b070bdc2d8a4967e35717
    · apply this .rfl; simp; rintro rfl; exact .rfl
    · apply this .rfl; simp; rintro rfl; exact .rfl
 diff --git a/Lean4Lean/Verify/Expr.lean b/Lean4Lean/Verify/Expr.lean
-index a3eeeb89871fde24ef8a5f8b77d72b93faff99a9..7b912534a297ecca0c706ddc6276c6063662562d 100644
+index a3eeeb8..7b91253 100644
 --- a/Lean4Lean/Verify/Expr.lean
 +++ b/Lean4Lean/Verify/Expr.lean
 @@ -64,7 +64,9 @@ namespace Substring
@@ -1915,7 +1915,7 @@ index a3eeeb89871fde24ef8a5f8b77d72b93faff99a9..7b912534a297ecca0c706ddc6276c606
    apply UInt64.eq_of_toBitVec_eq
    change m.toUInt64.toBitVec ≤ 0xfffff#64 at hm
 diff --git a/Lean4Lean/Verify/Level.lean b/Lean4Lean/Verify/Level.lean
-index 6d63a0a35c53375c6a5dd6fcb8994d1fc974478e..964c2f211e2615fec4746e6f78f06e4c7e3b747f 100644
+index 6d63a0a..964c2f2 100644
 --- a/Lean4Lean/Verify/Level.lean
 +++ b/Lean4Lean/Verify/Level.lean
 @@ -1,3 +1,4 @@
@@ -2208,7 +2208,7 @@ index 6d63a0a35c53375c6a5dd6fcb8994d1fc974478e..964c2f211e2615fec4746e6f78f06e4c
  
  theorem isEquiv_wf (h : isEquiv u v)
 diff --git a/Lean4Lean/Verify/TypeChecker/Basic.lean b/Lean4Lean/Verify/TypeChecker/Basic.lean
-index 6252d89655c3e02ee13760790113f63309cc4856..751258f57de621e7a0cf73277369ae3d538e8963 100644
+index 6252d89..751258f 100644
 --- a/Lean4Lean/Verify/TypeChecker/Basic.lean
 +++ b/Lean4Lean/Verify/TypeChecker/Basic.lean
 @@ -917,7 +917,7 @@ theorem unfoldDefinitionCore.WF {c : VContext} {s : VState} (he : c.TrExprS e e'
@@ -2221,7 +2221,7 @@ index 6252d89655c3e02ee13760790113f63309cc4856..751258f57de621e7a0cf73277369ae3d
      obtain ⟨_, _, _, ⟨⟩, a1, rfl⟩ := wf.unfold_wf eq
      cases h3.symm.trans a1; exact this
 diff --git a/Lean4Lean/Verify/TypeChecker/InferType.lean b/Lean4Lean/Verify/TypeChecker/InferType.lean
-index da5b6f01b9758e1153a0769e611ab5de5434f748..84c072c6d49f97b743721b95feeeef02dbaf2c38 100644
+index da5b6f0..84c072c 100644
 --- a/Lean4Lean/Verify/TypeChecker/InferType.lean
 +++ b/Lean4Lean/Verify/TypeChecker/InferType.lean
 @@ -414,15 +414,17 @@ theorem inferType'.WF
@@ -2255,7 +2255,7 @@ index da5b6f01b9758e1153a0769e611ab5de5434f748..84c072c6d49f97b743721b95feeeef02
      · refine .getEnv <| (M.WF.liftExcept envGet.WF).lift.bind fun _ _ _ h => ?_
        have ⟨_, h, _⟩ := c.trenv.find? h <|
 diff --git a/Lean4Lean/Verify/TypeChecker/IsDefEq.lean b/Lean4Lean/Verify/TypeChecker/IsDefEq.lean
-index 7eddbada6da0e1da3aeba730898ec6e05e8fddbf..5708f8b551cb40bd59f9cdac9dca0c2804948acc 100644
+index 7eddbad..5708f8b 100644
 --- a/Lean4Lean/Verify/TypeChecker/IsDefEq.lean
 +++ b/Lean4Lean/Verify/TypeChecker/IsDefEq.lean
 @@ -15,7 +15,7 @@ theorem isDefEqLambda.WF {c : VContext} {s : VState}
@@ -2456,7 +2456,7 @@ index 7eddbada6da0e1da3aeba730898ec6e05e8fddbf..5708f8b551cb40bd59f9cdac9dca0c28
    split <;> [exact .pure fun _ => h ‹_›; skip]
    exact .pureBind <| .pure nofun
 diff --git a/Lean4Lean/Verify/TypeChecker/Reduce.lean b/Lean4Lean/Verify/TypeChecker/Reduce.lean
-index 549d2a6136da23755f8b99395ed82e9a3aa53197..eecd36c3d30b608e00ae5710249b69049ea8e165 100644
+index 549d2a6..eecd36c 100644
 --- a/Lean4Lean/Verify/TypeChecker/Reduce.lean
 +++ b/Lean4Lean/Verify/TypeChecker/Reduce.lean
 @@ -94,47 +94,56 @@ theorem reduceNat.WF {c : VContext} (he : c.TrExprS e e') :
@@ -2561,7 +2561,7 @@ index 549d2a6136da23755f8b99395ed82e9a3aa53197..eecd36c3d30b608e00ae5710249b6904
 +    · rw [if_neg h2]
 +      exact hP ▸ .pure nofun
 diff --git a/Lean4Lean/Verify/TypeChecker/WHNF.lean b/Lean4Lean/Verify/TypeChecker/WHNF.lean
-index 9815dcdf0fa1b4e2b2f3310f12319f48162401b2..fd3b6964cbb97d4ecf2f1906a386c0645da71741 100644
+index 9815dcd..fd3b696 100644
 --- a/Lean4Lean/Verify/TypeChecker/WHNF.lean
 +++ b/Lean4Lean/Verify/TypeChecker/WHNF.lean
 @@ -29,7 +29,7 @@ theorem reduceProj.WF {c : VContext} {s : VState} (he : c.TrExprS (.proj n i e)
@@ -2641,7 +2641,7 @@ index 9815dcdf0fa1b4e2b2f3310f12319f48162401b2..fd3b6964cbb97d4ecf2f1906a386c064
      split <;> [skip; exact .pure ⟨h1, _, he₁, eq⟩]
      have ⟨a1, _, a2, eq'⟩ := H
 diff --git a/Lean4Lean/Verify/Typing/Lemmas.lean b/Lean4Lean/Verify/Typing/Lemmas.lean
-index 31b7d78a308048465b1a7dbf9eab074f36c1f8e0..0c7f9e59182238f81c1b534bbd967430052a6773 100644
+index 31b7d78..0c7f9e5 100644
 --- a/Lean4Lean/Verify/Typing/Lemmas.lean
 +++ b/Lean4Lean/Verify/Typing/Lemmas.lean
 @@ -1383,7 +1383,7 @@ theorem ofLevel_isNeverZero (h : VLevel.ofLevel Us u = some u') (H : u.isNeverZe
@@ -2663,7 +2663,7 @@ index 31b7d78a308048465b1a7dbf9eab074f36c1f8e0..0c7f9e59182238f81c1b534bbd967430
  theorem ofLevel_mkLevelIMax'
      (h1 : VLevel.ofLevel Us u = some u') (h2 : VLevel.ofLevel Us v = some v') :
 diff --git a/Lean4Lean/Verify/VLCtx.lean b/Lean4Lean/Verify/VLCtx.lean
-index f6c6d08c39a87784f2c6e1b2f8cef183054690fc..7c8681621a458fd8a2c2d33bad1b8a6f6ae2e63b 100644
+index f6c6d08..7c86816 100644
 --- a/Lean4Lean/Verify/VLCtx.lean
 +++ b/Lean4Lean/Verify/VLCtx.lean
 @@ -41,7 +41,7 @@ def VLocalDecl.instL : VLocalDecl → List VLevel → VLocalDecl
@@ -2706,7 +2706,7 @@ index f6c6d08c39a87784f2c6e1b2f8cef183054690fc..7c8681621a458fd8a2c2d33bad1b8a6f
  theorem vlamName_mem_fvars :
      ∀ {Δ : VLCtx} {i}, Δ.vlamName i = some (some fv) → fv.1 ∈ fvars Δ
 diff --git a/lake-manifest.json b/lake-manifest.json
-index 3542863aadf830f336c50b5c2fe72a091597df44..02459dbf7025499255322d6ec50b1b369c1aad61 100644
+index 3542863..02459db 100644
 --- a/lake-manifest.json
 +++ b/lake-manifest.json
 @@ -1,16 +1,21 @@
@@ -2748,7 +2748,7 @@ index 3542863aadf830f336c50b5c2fe72a091597df44..02459dbf7025499255322d6ec50b1b36
 +  "fixedToolchain": false
 +}
 diff --git a/lakefile.toml b/lakefile.toml
-index f862fab7b75a9217be8f026676fbeef89bdbede6..f1d1276d7fe9fdb48d7842e9a498870719278c10 100644
+index f862fab..f1d1276 100644
 --- a/lakefile.toml
 +++ b/lakefile.toml
 @@ -4,7 +4,7 @@ defaultTargets = ["Lean4Lean", "lean4lean", "Lean4Lean.Theory", "Lean4Lean.Verif
@@ -2761,7 +2761,7 @@ index f862fab7b75a9217be8f026676fbeef89bdbede6..f1d1276d7fe9fdb48d7842e9a4988707
  [[lean_lib]]
  name = "Lean4Lean"
 diff --git a/lean-toolchain b/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8..a8afa7d 100644
 --- a/lean-toolchain
 +++ b/lean-toolchain
 @@ -1 +1 @@

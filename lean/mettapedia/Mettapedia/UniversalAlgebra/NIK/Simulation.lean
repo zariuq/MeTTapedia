@@ -14,7 +14,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.UniversalAlgebra.NIK
 
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.Logic.TheorySimulation
 
 universe u

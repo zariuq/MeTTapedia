@@ -2,7 +2,7 @@ import Mettapedia.Algebra.ConcurrentCostValuation
 import Mettapedia.Computability.DependentEvidenceComparison
 import Mettapedia.GSLT.Dynamics.IndexedEvidenceNeedPullback
 import Mettapedia.GSLT.Dynamics.ProofRelevantNeedOwnershipValuation
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.EquationSaturatedProtocolBridge
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ProtocolModuloEquationsBridge
 import Mettapedia.TypeTheory.DependentFamilyObserverFactorization
 import Mettapedia.TypeTheory.GuardedTimeModeTheory
 import Mettapedia.TypeTheory.ExactCodeFamilyRepresentation
@@ -46,7 +46,7 @@ open Mettapedia.GSLT.Dynamics
 open Mettapedia.GSLT.Dynamics.IndexedEventValuation
 open Mettapedia.GSLT.Dynamics.IndexedEvidenceNeedPullback
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
-open Mettapedia.Languages.ProcessCalculi.RhoCalculus.EquationSaturatedProtocolBridge
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.ProtocolModuloEquationsBridge
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.TypedCommunicationProtocol
@@ -353,7 +353,7 @@ theorem committedReceipt_is_typed_rho_communication :
         closedNilCommData.target.1 processTruth :=
   closedNilComm_protocol_control
 
-/-- The same committed receipt enters both the generic equation-saturated
+/-- The same committed receipt enters both the generic modulo-equations
 protocol and the established rho GSLT.  Static equations, operational
 occurrences, and typing remain separate coordinates of this theorem. -/
 theorem committedReceipt_enters_equation_saturated_protocol :

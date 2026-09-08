@@ -38,7 +38,7 @@ theorem langReduces_mono_vertex_temporal {v w : ProbabilityVertex} (h : v ≤ w)
     (activeRulesWithTemporal_subset_of_le h)
     hred
 
-/-- The canonical equation-saturated step is monotone along the temporal
+/-- The canonical step modulo equations is monotone along the temporal
 hypercube.  These presentations have no equation generators, so the proof is
 the identity-equivalence specialization of the one semantic relation. -/
 theorem langSemanticReduces_mono_vertex_temporal

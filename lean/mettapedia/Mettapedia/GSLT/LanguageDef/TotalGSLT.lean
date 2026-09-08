@@ -90,12 +90,12 @@ def of_equation_free {language : LanguageDef}
 end ReductionRespectsEquations
 
 /-- If the authored rewrite relation already respects the generated equation
-theory, the canonical equation-saturated relation adds no new steps. -/
-theorem equationSaturatedStep_iff_langReducesUsing_of_respects
+theory, the canonical modulo-equations relation adds no new steps. -/
+theorem stepModuloEquations_iff_langReducesUsing_of_respects
     (relations : RelationEnv) (language : LanguageDef)
     (laws : ReductionRespectsEquationsUsing relations language)
     (source target : Pattern) :
-    EquationSaturatedStep (engineBasePremises relations) language source target ↔
+    StepModuloEquations (engineBasePremises relations) language source target ↔
       langReducesUsing relations language source target := by
   constructor
   · rintro ⟨redex, contractum, sourceEquivalent, primitive,
@@ -111,15 +111,15 @@ theorem equationSaturatedStep_iff_langReducesUsing_of_respects
         ((equationSetoid (engineBasePremises relations) language).iseqv.symm
           contractumEquivalent)
         targetEquivalent
-  · exact step_to_equationSaturatedStep
+  · exact step_to_stepModuloEquations
 
 /-- The GSLT denoted by a five-field language in a specific relation
-environment.  It is the canonical equation-saturated LanguageDef GSLT.  The
+environment.  It is the canonical modulo-equations LanguageDef GSLT.  The
 compatibility witness proves that this one construction has exactly the
 authored rewrite steps; it does not select a second operational semantics. -/
 def languageGSLTUsing (relations : RelationEnv) (language : LanguageDef)
     (_laws : ReductionRespectsEquationsUsing relations language) : GSLT :=
-  equationSaturatedGSLT (engineBasePremises relations) language
+  gsltModuloEquations (engineBasePremises relations) language
 
 @[simp] theorem languageGSLTUsing_step (relations : RelationEnv)
     (language : LanguageDef)
@@ -127,7 +127,7 @@ def languageGSLTUsing (relations : RelationEnv) (language : LanguageDef)
     (source target : Pattern) :
     (languageGSLTUsing relations language laws).Step source target ↔
       langReducesUsing relations language source target := by
-  exact equationSaturatedStep_iff_langReducesUsing_of_respects
+  exact stepModuloEquations_iff_langReducesUsing_of_respects
     relations language laws source target
 
 @[simp] theorem languageGSLTUsing_equiv (relations : RelationEnv)

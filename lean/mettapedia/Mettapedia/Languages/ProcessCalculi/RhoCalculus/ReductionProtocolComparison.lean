@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLTBridge
 /-!
 # Rho reduction as a dependent protocol
 
-The closed rho GSLT uses an equation-saturated proposition-valued step
+The closed rho GSLT uses an modulo-equations proposition-valued step
 relation.  The underlying rho reduction is Type-valued and can retain a
 specific reduction receipt.  This module exposes that distinction by giving
 the established closed rho system a complete proof-relevant interaction
@@ -37,9 +37,9 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefRewriteSystem
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 
-/-! ## Exact occurrences over the established equation-saturated carrier -/
+/-! ## Exact occurrences over the established modulo-equations carrier -/
 
-/-- One equation-saturated rho step together with a concrete Type-valued raw
+/-- One modulo-equations rho step together with a concrete Type-valued raw
 reduction receipt for its selected middle edge. -/
 structure RewriteOccurrence (source target : RhoProcess) where
   redex : RhoProcess
@@ -119,7 +119,7 @@ def protocolOccurrenceEquiv (source : RhoProcess) :
   (eventEquiv RewriteOccurrence source).trans
     (occurrenceEventEquiv source).symm
 
-/-- The protocol endpoint relation and the established equation-saturated rho
+/-- The protocol endpoint relation and the established modulo-equations rho
 GSLT step relation agree for every pair of closed processes. -/
 theorem protocol_step_iff_languageDef_step
     {source target : RhoProcess} :

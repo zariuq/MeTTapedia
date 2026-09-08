@@ -145,7 +145,7 @@ def liftPriorClaim
   kind := claim.kind
   statement := .inl claim.statement
 
-def priorInclusion : AuthorityTranslation
+def priorInclusion : CertifiedTranslation
     priorLayer.toAuthorityContract layer.toAuthorityContract where
   mapKind := id
   mapSignature := fun _signature => layer.toTheoryFamily.signatureOf ()
@@ -191,7 +191,7 @@ def operationSourceSoundClaim
   kind := .sourceSound
   statement := .inr formula
 
-def operationToAtlas : AuthorityTranslation
+def operationToAtlas : CertifiedTranslation
     operationContract layer.toAuthorityContract where
   mapKind := id
   mapSignature := fun _signature => layer.toTheoryFamily.signatureOf ()

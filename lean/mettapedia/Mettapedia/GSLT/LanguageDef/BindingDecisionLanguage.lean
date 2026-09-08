@@ -694,8 +694,8 @@ theorem language_isEquationFree : language.isEquationFree = true := by decide
 theorem step_iff_mem_executor (source target : Pattern) :
     ir.semantics.Step source target ↔
       target ∈ rewriteStepWithPremisesUsing relationEnv language source := by
-  change EquationSaturatedStep (engineBasePremises relationEnv) language source target ↔ _
-  rw [equationSaturatedStep_iff_step_of_no_generators language_isEquationFree]
+  change StepModuloEquations (engineBasePremises relationEnv) language source target ↔ _
+  rw [stepModuloEquations_iff_step_of_no_generators language_isEquationFree]
   rw [step_iff_rootStep_of_noncontextualRules rules_noncontextual]
   simp [RootStep, rewriteStepWithPremisesUsing, applyRuleWithPremisesUsing]
 

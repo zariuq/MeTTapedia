@@ -149,7 +149,7 @@ def liftPriorClaim
   kind := claim.kind
   statement := .inl claim.statement
 
-def priorInclusion : AuthorityTranslation
+def priorInclusion : CertifiedTranslation
     priorLayer.toAuthorityContract layer.toAuthorityContract where
   mapKind := id
   mapSignature := fun _signature => layer.toTheoryFamily.signatureOf ()
@@ -198,7 +198,7 @@ def setCoreSourceSoundClaim
 
 /-- The external set-core authority enters the atlas at exactly the
 `modelSound` contract kind. -/
-def setCoreToAtlas : AuthorityTranslation
+def setCoreToAtlas : CertifiedTranslation
     setCoreContract layer.toAuthorityContract where
   mapKind := id
   mapSignature := fun _signature => layer.toTheoryFamily.signatureOf ()

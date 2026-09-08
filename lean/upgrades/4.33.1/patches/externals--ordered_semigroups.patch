@@ -1,5 +1,5 @@
 diff --git a/OrderedSemigroups/SemigroupToGroup/MonoidToGroup.lean b/OrderedSemigroups/SemigroupToGroup/MonoidToGroup.lean
-index 3d1882aeb988e6a378ebf87952ea319c795321e8..370751499d14086c6382a2029233feb00571e8f5 100644
+index 3d1882a..3707514 100644
 --- a/OrderedSemigroups/SemigroupToGroup/MonoidToGroup.lean
 +++ b/OrderedSemigroups/SemigroupToGroup/MonoidToGroup.lean
 @@ -36,12 +36,9 @@ abbrev over_one_map (α : Type*) [CommMonoid α] : α →* over_one α
@@ -41,7 +41,7 @@ index 3d1882aeb988e6a378ebf87952ea319c795321e8..370751499d14086c6382a2029233feb0
  instance : CommGroup (with_division α) :=
    { (inferInstance : CommMonoid (with_division α)) with
 diff --git a/OrderedSemigroups/SemigroupToGroup/SemigroupToGroup.lean b/OrderedSemigroups/SemigroupToGroup/SemigroupToGroup.lean
-index c374c6fda7faf24e27f1611b0425eddc3cbfa6f5..28b8e5055376d628839ae9161f2134b4a813222c 100644
+index c374c6f..28b8e50 100644
 --- a/OrderedSemigroups/SemigroupToGroup/SemigroupToGroup.lean
 +++ b/OrderedSemigroups/SemigroupToGroup/SemigroupToGroup.lean
 @@ -102,12 +102,8 @@ theorem compose_subsemigroup {G M : Type u} [Monoid G] [Monoid M]
@@ -75,7 +75,7 @@ index c374c6fda7faf24e27f1611b0425eddc3cbfa6f5..28b8e5055376d628839ae9161f2134b4
      map_le_map_iff' := by
        intro a b
 diff --git a/OrderedSemigroups/SemigroupToGroup/SemigroupToMonoid.lean b/OrderedSemigroups/SemigroupToGroup/SemigroupToMonoid.lean
-index 1100e4ab1bfd53921e5245c691ae1fd4b143994b..441de8e1be63bd88c4ecee88ad1719664ed4ff7f 100644
+index 1100e4a..441de8e 100644
 --- a/OrderedSemigroups/SemigroupToGroup/SemigroupToMonoid.lean
 +++ b/OrderedSemigroups/SemigroupToGroup/SemigroupToMonoid.lean
 @@ -39,8 +39,8 @@ def without_one (α : Type u) [Semigroup α] : Subsemigroup (WithOne α) where
@@ -90,7 +90,7 @@ index 1100e4ab1bfd53921e5245c691ae1fd4b143994b..441de8e1be63bd88c4ecee88ad171966
  
  end Semigroup
 diff --git a/lake-manifest.json b/lake-manifest.json
-index 8213822c518fb589213a51df9d22920179df7b77..9e2eda236af50440b6720343a2567d57b385a1f0 100644
+index 8213822..9e2eda2 100644
 --- a/lake-manifest.json
 +++ b/lake-manifest.json
 @@ -1,96 +1,117 @@
@@ -308,7 +308,7 @@ index 8213822c518fb589213a51df9d22920179df7b77..9e2eda236af50440b6720343a2567d57
 +  "fixedToolchain": false
 +}
 diff --git a/lakefile.lean b/lakefile.lean
-index d48d7ed543fa690eceb059f427fc3a09a0178411..9a8e0ab24a9dcb671a1154a8efe43677a4a77c1e 100644
+index d48d7ed..9a8e0ab 100644
 --- a/lakefile.lean
 +++ b/lakefile.lean
 @@ -9,7 +9,7 @@ package «ordered_semigroups» where
@@ -327,7 +327,7 @@ index d48d7ed543fa690eceb059f427fc3a09a0178411..9a8e0ab24a9dcb671a1154a8efe43677
 -  "https://github.com/leanprover/doc-gen4" @ "main"
 +  "https://github.com/leanprover/doc-gen4" @ "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015"
 diff --git a/lean-toolchain b/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8..a8afa7d 100644
 --- a/lean-toolchain
 +++ b/lean-toolchain
 @@ -1 +1 @@

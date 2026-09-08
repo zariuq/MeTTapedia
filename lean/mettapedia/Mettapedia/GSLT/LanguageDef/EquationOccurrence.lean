@@ -266,57 +266,6 @@ inductive DerivedGeneratorWitness (language : LanguageDef) :
 
 namespace DerivedGeneratorWitness
 
-/-- The authored collection declaration licensing this particular law. -/
-def declaration {language : LanguageDef} {left right : Pattern} :
-    DerivedGeneratorWitness language left right → GrammarRule
-  | .bagPerm rule _ _ _ _ _ => rule
-  | .setPerm rule _ _ _ _ _ => rule
-  | .setDedup rule _ _ _ _ => rule
-  | .flatten rule _ _ _ _ _ _ _ _ => rule
-  | .singleton rule _ _ _ _ _ _ => rule
-  | .unitElim rule _ _ _ _ _ _ _ _ => rule
-  | .emptyUnit rule _ _ _ _ _ _ => rule
-
-theorem declaration_mem {language : LanguageDef} {left right : Pattern}
-    (witness : DerivedGeneratorWitness language left right) :
-    witness.declaration ∈ language.terms := by
-  cases witness with
-  | bagPerm _ _ _ carrier _ _ => exact carrier.authored
-  | setPerm _ _ _ carrier _ _ => exact carrier.authored
-  | setDedup _ _ _ carrier _ => exact carrier.authored
-  | flatten _ _ _ _ _ _ algebra _ _ => exact algebra.authored
-  | singleton _ _ _ _ algebra _ _ => exact algebra.authored
-  | unitElim _ _ _ _ _ _ algebra _ _ => exact algebra.authored
-  | emptyUnit _ _ _ _ algebra _ _ => exact algebra.authored
-
-/-- Derived collection laws always originate in a single collection parameter. -/
-theorem declaration_collection {language : LanguageDef} {left right : Pattern}
-    (witness : DerivedGeneratorWitness language left right) :
-    ∃ name kind elementType,
-      witness.declaration.params = [.simple name (.collection kind elementType)] := by
-  cases witness with
-  | bagPerm _ _ _ carrier _ _ =>
-      obtain ⟨name, elementType, shape⟩ := carrier.selfSorted
-      exact ⟨name, .hashBag, elementType, shape⟩
-  | setPerm _ _ _ carrier _ _ =>
-      obtain ⟨name, elementType, shape⟩ := carrier.selfSorted
-      exact ⟨name, .hashSet, elementType, shape⟩
-  | setDedup _ _ _ carrier _ =>
-      obtain ⟨name, elementType, shape⟩ := carrier.selfSorted
-      exact ⟨name, .hashSet, elementType, shape⟩
-  | flatten rule kind _ _ _ _ algebra _ _ =>
-      obtain ⟨name, shape⟩ := algebra.selfSorted
-      exact ⟨name, kind, .base rule.category, shape⟩
-  | singleton rule kind _ _ algebra _ _ =>
-      obtain ⟨name, shape⟩ := algebra.selfSorted
-      exact ⟨name, kind, .base rule.category, shape⟩
-  | unitElim rule kind _ _ _ _ algebra _ _ =>
-      obtain ⟨name, shape⟩ := algebra.selfSorted
-      exact ⟨name, kind, .base rule.category, shape⟩
-  | emptyUnit rule kind _ _ algebra _ _ =>
-      obtain ⟨name, shape⟩ := algebra.selfSorted
-      exact ⟨name, kind, .base rule.category, shape⟩
-
 /-- Forget the occurrence data and recover the derived law. -/
 def erase {language : LanguageDef} {left right : Pattern} :
     DerivedGeneratorWitness language left right → DerivedInstance language left right

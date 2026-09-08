@@ -440,7 +440,7 @@ def inferProof (environment : Environment) (fuel : Nat) :
         (← inferProof environment fuel typeDepth (type :: termContext)
           shiftedProofContext body)
   | typeDepth, termContext, proofContext, .proofLam proposition body => do
-      if !checkProposition environment typeDepth termContext proposition then none
+      if (← inferTerm environment typeDepth termContext proposition) != .prop then none
       let normalized ← normalize environment fuel proposition
       return .imp normalized
         (← inferProof environment fuel typeDepth termContext
@@ -501,7 +501,7 @@ example :
       some forallIdentityGoal := by
   simp [inferProof, forallIdentityEnvironment, forallIdentityProof,
     forallIdentityGoal, forallIdentityDomain, forallIdentityBody,
-    checkProposition, inferTerm, normalize, deltaNormalize, Tm.normalize,
+    inferTerm, normalize, deltaNormalize, Tm.normalize,
     Tm.normalizeOne, Environment.lookupTerm?, lookupTermList?, Tm.shift,
     Tm.instantiate, Tm.instantiateAt, Tp.plainWellFormed]
 
@@ -514,7 +514,7 @@ example :
     inferProof forallIdentityEnvironment 16 0 [] [] wrongTermApplication =
       none := by
   simp [inferProof, forallIdentityEnvironment, wrongTermApplication,
-    forallIdentityDomain, forallIdentityBody, checkProposition, inferTerm,
+    forallIdentityDomain, forallIdentityBody, inferTerm,
     normalize, deltaNormalize, Tm.normalize, Tm.normalizeOne,
     Environment.lookupTerm?, lookupTermList?, Tp.plainWellFormed]
 
@@ -530,7 +530,7 @@ example :
     inferProof polymorphicEnvironment 16 0 [] [] polymorphicIdentityProof =
       some (.typeAll (.imp (.named "q") (.named "q"))) := by
   simp [inferProof, polymorphicEnvironment, polymorphicIdentityProof,
-    checkProposition, inferTerm, normalize, deltaNormalize, Tm.normalize,
+    inferTerm, normalize, deltaNormalize, Tm.normalize,
     Tm.normalizeOne, Environment.lookupTerm?, lookupTermList?]
 
 example :
@@ -618,7 +618,7 @@ theorem definition_conversion_accepted :
       definitionConversionProof definitionConversionGoal = true := by
   simp [checkProof, checkNormalizedProof, definitionConversionEnvironment,
     definitionConversionProof, definitionConversionGoal,
-    definitionConversionDomain, inferProof, checkProposition, inferTerm,
+    definitionConversionDomain, inferProof, inferTerm,
     normalize, deltaNormalize, Tm.normalize, Tm.normalizeOne,
     Environment.lookupTerm?, lookupTermList?, Tm.instantiate,
     Tm.instantiateAt, Tm.shift]
@@ -636,7 +636,7 @@ theorem opaque_identity_rejected :
       definitionConversionProof definitionConversionGoal = false := by
   simp [checkProof, checkNormalizedProof, opaqueIdentityEnvironment,
     definitionConversionProof, definitionConversionGoal,
-    definitionConversionDomain, inferProof, checkProposition, inferTerm,
+    definitionConversionDomain, inferProof, inferTerm,
     normalize, deltaNormalize, Tm.normalize, Tm.normalizeOne,
     Environment.lookupTerm?, lookupTermList?]
 

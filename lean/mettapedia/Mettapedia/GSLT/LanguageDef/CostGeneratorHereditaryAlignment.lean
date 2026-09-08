@@ -35,8 +35,8 @@ def atRedex
   match witness with
   | .core (.equation _ instanceWitness) =>
       .core (.equation .hole instanceWitness)
-  | .core (.derived _ derivedWitness) =>
-      .core (.derived .hole derivedWitness)
+  | .core (.derived _ lawWitness) =>
+      .core (.derived .hole lawWitness)
   | .reflective _ declaration representatives =>
       .reflective .hole declaration representatives
 

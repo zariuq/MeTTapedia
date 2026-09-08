@@ -1431,14 +1431,14 @@ private def canonicalProgramDerivation :
         (canonicalProgramCST program before.length)
   | before, [], _ => by
       have signature := structuralSignatureAt 0 (by decide)
-        ("MM2Program", "mm2:program-empty", [.terminal .eof]) (by decide)
+        ("MM2Program", "mm2:program-empty", []) (by decide)
       rw [canonicalProgramScalars, canonicalProgramCST]
       refine ParserPackDerivesAt.structural
         (resultSort := "MM2Program") (ruleLabel := "mm2:program-empty")
         0 (structuralPositionValid 0 (by decide)) signature.1
           signature.2.1 ?_
       rw [signature.2.2]
-      exact .terminal (.eof (by simp)) .nil
+      exact .nil
   | before, atom :: rest, safe => by
       simp only [List.all_cons, Bool.and_eq_true] at safe
       let atomScalars := canonicalAtomScalars atom
@@ -1480,8 +1480,8 @@ private def canonicalProgramDerivation :
       | expression children =>
           have whitespaceSignature := structuralSignatureAt 1 (by decide)
             ("MM2Program", "mm2:program-whitespace",
-              [.nonterminal "MM2Whitespace", .nonterminal "MM2Program",
-               .terminal .eof]) (by decide)
+              [.nonterminal "MM2Whitespace", .nonterminal "MM2Program"])
+            (by decide)
           have tailExact :
               ParserPackDerivesAt mm2ParserProfile parserPackPlan
                 (before ++ atomScalars ++ 10 :: restScalars)
@@ -1503,14 +1503,11 @@ private def canonicalProgramDerivation :
                 whitespaceSignature.1 whitespaceSignature.2.1 ?_
             rw [whitespaceSignature.2.2]
             exact .nonterminal lineFeedExact
-              (.nonterminal restExact
-                (.terminal (.eof (by
-                  simp [Nat.add_assoc, Nat.add_comm,
-                    Nat.add_left_comm])) .nil))
+              (.nonterminal restExact .nil)
           have signature := structuralSignatureAt 4 (by decide)
             ("MM2Program", "mm2:program-closed",
-              [.nonterminal "MM2ClosedAtom", .nonterminal "MM2Program",
-               .terminal .eof]) (by decide)
+              [.nonterminal "MM2ClosedAtom", .nonterminal "MM2Program"])
+            (by decide)
           rw [canonicalProgramScalars, canonicalProgramCST]
           dsimp [atomScalars, restScalars] at atomExact tailExact
           refine ParserPackDerivesAt.structural
@@ -1520,9 +1517,7 @@ private def canonicalProgramDerivation :
           rw [signature.2.2]
           have body := ParserPackItemsDeriveAt.nonterminal atomExact
             (ParserPackItemsDeriveAt.nonterminal tailExact
-              (ParserPackItemsDeriveAt.terminal
-                (.eof (by simp [Nat.add_assoc, Nat.add_comm,
-                  Nat.add_left_comm])) ParserPackItemsDeriveAt.nil))
+              ParserPackItemsDeriveAt.nil)
           simpa [canonicalAtomSort, canonicalClassifiedAtom,
             canonicalProgramScalars, List.append_assoc,
             Nat.add_assoc, Nat.add_comm,
@@ -1557,7 +1552,7 @@ private def canonicalProgramDerivation :
           have signature := structuralSignatureAt 5 (by decide)
             ("MM2Program", "mm2:program-open",
               [.nonterminal "MM2OpenAtom",
-               .nonterminal "MM2ProgramAfterOpen", .terminal .eof])
+               .nonterminal "MM2ProgramAfterOpen"])
             (by decide)
           rw [canonicalProgramScalars, canonicalProgramCST]
           dsimp [atomScalars, restScalars] at atomExact tailExact
@@ -1568,9 +1563,7 @@ private def canonicalProgramDerivation :
           rw [signature.2.2]
           have body := ParserPackItemsDeriveAt.nonterminal atomExact
             (ParserPackItemsDeriveAt.nonterminal tailExact
-              (ParserPackItemsDeriveAt.terminal
-                (.eof (by simp [Nat.add_assoc, Nat.add_comm,
-                  Nat.add_left_comm])) ParserPackItemsDeriveAt.nil))
+              ParserPackItemsDeriveAt.nil)
           simpa [canonicalAtomSort, canonicalClassifiedAtom,
             canonicalProgramScalars, List.append_assoc,
             Nat.add_assoc, Nat.add_comm,
@@ -1605,7 +1598,7 @@ private def canonicalProgramDerivation :
           have signature := structuralSignatureAt 5 (by decide)
             ("MM2Program", "mm2:program-open",
               [.nonterminal "MM2OpenAtom",
-               .nonterminal "MM2ProgramAfterOpen", .terminal .eof])
+               .nonterminal "MM2ProgramAfterOpen"])
             (by decide)
           rw [canonicalProgramScalars, canonicalProgramCST]
           dsimp [atomScalars, restScalars] at atomExact tailExact
@@ -1616,9 +1609,7 @@ private def canonicalProgramDerivation :
           rw [signature.2.2]
           have body := ParserPackItemsDeriveAt.nonterminal atomExact
             (ParserPackItemsDeriveAt.nonterminal tailExact
-              (ParserPackItemsDeriveAt.terminal
-                (.eof (by simp [Nat.add_assoc, Nat.add_comm,
-                  Nat.add_left_comm])) ParserPackItemsDeriveAt.nil))
+              ParserPackItemsDeriveAt.nil)
           simpa [canonicalAtomSort, canonicalClassifiedAtom,
             canonicalProgramScalars, List.append_assoc,
             Nat.add_assoc, Nat.add_comm,

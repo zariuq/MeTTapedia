@@ -1,6 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.CostStaticPlanContextView
 import Mettapedia.GSLT.LanguageDef.CostElaborationDecoration
 import Mettapedia.GSLT.LanguageDef.CostElaborationTransport
+import Mettapedia.GSLT.LanguageDef.CostGeneratedOccurrence
 
 /-!
 # Paired nonlinear context views of static-region plans
@@ -33,12 +34,12 @@ open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open WellSorted
 
-/-- The authored source declaration selected by a generator witness, retaining
-equations, collection constructors, and reflective declarations separately. -/
+/-- The authored source declaration selected by a generator witness, with
+the equation/reflection/derived-law distinction preserved. -/
 inductive SourceGeneratorDeclaration : Type where
   | equation (declaration : Equation)
-  | collection (declaration : GrammarRule)
   | reflective (declaration : ReflectivePresentationDecl)
+  | derived (declaration : GrammarRule)
 
 namespace ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
 
@@ -54,7 +55,7 @@ def sourceDeclaration
       match instanceWitness with
       | .forward _ used _ _ _ _ _ => .equation used.1
       | .reverse _ used _ _ _ _ _ => .equation used.1
-  | .core (.derived _ lawWitness) => .collection lawWitness.declaration
+  | .core (.derived _ lawWitness) => .derived lawWitness.rule
   | .reflective _ used _ => .reflective used.1
 
 end ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness

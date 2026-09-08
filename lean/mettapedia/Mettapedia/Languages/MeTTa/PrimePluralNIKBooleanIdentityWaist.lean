@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.BooleanAlgebraIdentityNIKAuthority
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 import Mettapedia.Languages.MeTTa.PrimePluralNIKDependentPiWaist
 
 /-!
@@ -28,7 +28,7 @@ open Mettapedia.GSLT.LanguageDef.BooleanAlgebraIdentityDecision
 open Mettapedia.GSLT.LanguageDef.BooleanAlgebraIdentityNIKAuthority
 open Mettapedia.GSLT.LanguageDef.BooleanAlgebraIdentityDecision.Canary
 open Mettapedia.GSLT.LanguageDef.BooleanAlgebraIdentityNIKAuthority.Canary
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.FourFaceDependentPiExperiment
 

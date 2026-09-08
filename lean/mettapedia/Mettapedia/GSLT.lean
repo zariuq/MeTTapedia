@@ -45,7 +45,12 @@ import Mettapedia.GSLT.Core.ExtensibleScheduleDiscipline
 import Mettapedia.GSLT.Core.UltrainfiniteTransport
 import Mettapedia.GSLT.Core.IndexedOperational
 import Mettapedia.GSLT.Core.IndexedOperationalCanary
+import Mettapedia.GSLT.Core.SemanticImplementation
 import Mettapedia.GSLT.Core.ProofRelevantGSLT
+import Mettapedia.GSLT.Core.ProofRelevantTranslationCategory
+import Mettapedia.GSLT.Core.ProofRelevantJudgment
+import Mettapedia.GSLT.Core.JudgmentComposition
+import Mettapedia.GSLT.Logic.ObserverRefinement
 import Mettapedia.GSLT.Core.WeightedMuScheduler
 import Mettapedia.GSLT.Core.WeightedOccurrenceControl
 import Mettapedia.GSLT.Core.BranchCaptureAlgebra
@@ -59,6 +64,7 @@ import Mettapedia.GSLT.Core.AuthorizedRestoration
 import Mettapedia.GSLT.Core.SelectionExpansionAnalysis
 import Mettapedia.GSLT.Core.GradedSelectionIrreducibility
 import Mettapedia.GSLT.Dynamics.QueryRevision
+import Mettapedia.GSLT.Dynamics.ContextualStrategyQualification
 import Mettapedia.GSLT.Dynamics.InteractionEventValuation
 import Mettapedia.GSLT.Dynamics.EventValuationFunctor
 import Mettapedia.GSLT.Dynamics.PartialObservationProduct
@@ -84,6 +90,7 @@ import Mettapedia.GSLT.Dynamics.CapabilityGeneratedObservationDomain
 import Mettapedia.GSLT.Dynamics.CapabilityGeneratedObservationUniversal
 import Mettapedia.GSLT.Dynamics.IndexedExecutionObservation
 import Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture
+import Mettapedia.GSLT.Dynamics.ObserverRelativeControlTransport
 import Mettapedia.GSLT.Dynamics.ObservationPolicyFamilyUniversal
 import Mettapedia.GSLT.Dynamics.ScheduleObservationFactorization
 import Mettapedia.GSLT.Dynamics.ParallelFuelLease
@@ -151,6 +158,7 @@ import Mettapedia.GSLT.Parsing.HornGuardedSpecialization
 import Mettapedia.GSLT.Parsing.HornSemanticEnumeration
 import Mettapedia.GSLT.Parsing.HornRequestDiscovery
 import Mettapedia.GSLT.Parsing.HornSemanticPlan
+import Mettapedia.GSLT.Parsing.ParserPackSemanticGSLT
 import Mettapedia.GSLT.LanguageDef
 import Mettapedia.GSLT.LanguageDef.KernelAuthority
 import Mettapedia.GSLT.LanguageDef.CheckerAuthorityFamily
@@ -160,7 +168,11 @@ import Mettapedia.GSLT.LanguageDef.SemanticCertificateGSLTCategory
 import Mettapedia.GSLT.LanguageDef.NIKGSLT
 import Mettapedia.GSLT.LanguageDef.NIKIndexedOperational
 import Mettapedia.GSLT.LanguageDef.NIKMetalogic
+import Mettapedia.GSLT.LanguageDef.OperationalModel
+import Mettapedia.GSLT.LanguageDef.InstitutionConsequence
+import Mettapedia.GSLT.LanguageDef.InstitutionConsequenceCanary
 import Mettapedia.GSLT.LanguageDef.NIK
+import Mettapedia.GSLT.LanguageDef.NIKServiceFamily
 import Mettapedia.GSLT.LanguageDef.NIKLowerConsistencyQualification
 import Mettapedia.GSLT.LanguageDef.NIKConservativeProofEmbedding
 import Mettapedia.GSLT.LanguageDef.PettaOrderedLibraryResolution
@@ -185,7 +197,7 @@ import Mettapedia.GSLT.LanguageDef.NIKSemanticGroundSelection
 import Mettapedia.GSLT.LanguageDef.NIKSemanticGroundDecidabilityFrontier
 import Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas
 import Mettapedia.GSLT.LanguageDef.NIKUltrainfiniteGroundProfileSelection
-import Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 import Mettapedia.GSLT.LanguageDef.NIKTheoryTranslationExt
 import Mettapedia.GSLT.LanguageDef.NIKDerivabilitySemanticQualification
 import Mettapedia.GSLT.LanguageDef.NIKInitialRuleClosureAuthority
@@ -287,6 +299,7 @@ import Mettapedia.GSLT.LanguageDef.CArray1ListConstructionHosting
 import Mettapedia.GSLT.LanguageDef.RFC8259ParserProfileNTT
 import Mettapedia.GSLT.LanguageDef.RFC8259ParserProfileWire
 import Mettapedia.GSLT.LanguageDef.RFC8259SyntaxNTT
+import Mettapedia.GSLT.LanguageDef.RFC8259ParserPackGSLT
 import Mettapedia.GSLT.LanguageDef.RFC8259SyntaxLanguageDefWire
 import Mettapedia.GSLT.LanguageDef.RFC8259ParserPackHeightBound
 import Mettapedia.GSLT.LanguageDef.RFC8259ValueSemantics
@@ -302,6 +315,16 @@ import Mettapedia.GSLT.LanguageDef.IRPass
 import Mettapedia.GSLT.LanguageDef.BindingDecisionLanguage
 import Mettapedia.GSLT.LanguageDef.BindingDecisionExactness
 import Mettapedia.GSLT.LanguageDef.BindingDecisionAdequacy
+import Mettapedia.GSLT.LanguageDef.SortedABTRenaming
+import Mettapedia.GSLT.LanguageDef.SortedABTSubstitution
+import Mettapedia.GSLT.LanguageDef.SortedABTSubstitutionExamples
+import Mettapedia.GSLT.LanguageDef.MatchedIndexJudgment
+import Mettapedia.GSLT.LanguageDef.OrderedMatchMachineLanguage
+import Mettapedia.GSLT.LanguageDef.OrderedMatchMachineExactness
+import Mettapedia.GSLT.LanguageDef.OrderedMatchMachineAdequacy
+import Mettapedia.GSLT.LanguageDef.IRRunView
+import Mettapedia.GSLT.LanguageDef.StructuredCStraightLine
+import Mettapedia.GSLT.LanguageDef.IRRunViewEquationCanary
 import Mettapedia.GSLT.LanguageDef.GSLTILSyntax
 import Mettapedia.GSLT.LanguageDef.GSLTILPredicateEquipmentBridge
 import Mettapedia.GSLT.LanguageDef.GSLTILRouteValuationFunctor
@@ -339,6 +362,28 @@ import Mettapedia.GSLT.LanguageDef.MapLanguageDef
 import Mettapedia.GSLT.LanguageDef.StructuralSimulation
 import Mettapedia.GSLT.LanguageDef.ConstructorRoleTransport
 import Mettapedia.GSLT.LanguageDef.DialectGluingMorphisms
+import Mettapedia.GSLT.LanguageDef.HOLHenkinTheoryNode
+import Mettapedia.GSLT.LanguageDef.HOLTypeDerivedConsequence
+import Mettapedia.GSLT.LanguageDef.HOLFullDomainTheory
+import Mettapedia.GSLT.LanguageDef.BiformTheory
+import Mettapedia.GSLT.LanguageDef.BiformTheory
+import Mettapedia.GSLT.LanguageDef.TheoryGraph
+import Mettapedia.GSLT.LanguageDef.TheoryGraphModels
+import Mettapedia.GSLT.LanguageDef.TheoryGraphModelsCanary
+import Mettapedia.GSLT.LanguageDef.BiformTheoryGraph
+import Mettapedia.GSLT.LanguageDef.BiformTheoryGraphCanary
+import Mettapedia.GSLT.LanguageDef.CertifiedBiformTheoryGraph
+import Mettapedia.GSLT.LanguageDef.CertifiedBiformTheoryGraphCanary
+import Mettapedia.GSLT.LanguageDef.BiformObserverControl
+import Mettapedia.GSLT.LanguageDef.BiformObserverControlCanary
+import Mettapedia.GSLT.LanguageDef.ClosedTheorySemanticTarget
+import Mettapedia.GSLT.LanguageDef.BiformCertificateBoundary
+import Mettapedia.GSLT.LanguageDef.BiformCertificateBoundary
+import Mettapedia.GSLT.LanguageDef.BiformCertificateBoundaryCanary
+import Mettapedia.GSLT.LanguageDef.HOLHenkinBiformCanary
+import Mettapedia.GSLT.LanguageDef.BiformTheoryCanary
+import Mettapedia.GSLT.LanguageDef.BiformDependentContext
+import Mettapedia.GSLT.LanguageDef.BiformDependentIdentityCanary
 
 /-!
 # Graph-Structured Lambda Theories (GSLT)

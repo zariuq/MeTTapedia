@@ -29,7 +29,7 @@ namespace Mettapedia.GSLT.LanguageDef.CertificateGSLTDerivabilityQualification
 open CategoryTheory
 open scoped CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
@@ -42,7 +42,7 @@ open Mettapedia.GSLT.LanguageDef.NIKDerivabilitySemanticQualification
 meaning.  This functor has exactly the same checker and certificate transport
 as `generationFunctor`. -/
 def derivabilityGenerationFunctor (Meaning : Pattern -> Prop) :
-    CategoryTheory.Functor (SoundPresentation Meaning) AuthorityObject :=
+    CategoryTheory.Functor (SoundPresentation Meaning) CertifiedTheory :=
   CategoryTheory.Functor.comp (generationFunctor Meaning)
     derivabilityFunctor
 

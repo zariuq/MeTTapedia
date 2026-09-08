@@ -93,6 +93,10 @@ clone_or_sync_repo "externals/TauCeti" "main" \
   "git@github.com:zariuq/TauCeti.git" \
   "https://github.com/TauCetiProject/TauCeti.git"
 
+clone_or_sync_repo "externals/doc-gen4-tauceti" "main" \
+  "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015" "mettapedia-4.33.1" \
+  "https://github.com/leanprover/doc-gen4.git"
+
 clone_or_sync_repo "externals/LeaTTa" "fix/collapse-bare-tuple" \
   "26d05f0663a1083085565b2e161a683542df53a8" "mettapedia-4.33.1" \
   "git@github.com:zariuq/LeaTTa.git"

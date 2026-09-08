@@ -358,7 +358,7 @@ theorem mathdata_accepts_eta_document :
     etaExpansion, etaDomain, etaPredicateTerm, etaFunctionTerm,
     etaTermDeclarations, etaPredicateDeclaration, etaFunctionDeclaration,
     etaPredicateType, etaFunctionType, etaPredicateName, etaParameterName,
-    MathdataKernel.checkProposition, MathdataKernel.inferTerm,
+    MathdataKernel.inferTerm,
     MathdataKernel.normalize, MathdataKernel.deltaNormalize,
     MathdataKernel.Tm.normalize, MathdataKernel.Tm.normalizeOne,
     MathdataKernel.Environment.lookupTerm?, MathdataKernel.lookupTermList?,

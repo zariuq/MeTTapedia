@@ -155,6 +155,7 @@ open Mettapedia.Cybernetics
 open Mettapedia.GSLT
 open Mettapedia.GSLT.Dynamics
 open Mettapedia.GSLT.Dynamics.ObservationTransport
+open Mettapedia.GSLT.Dynamics.ObserverRelativeControlTransport
 open Mettapedia.GSLT.Dynamics.ObserverRelativeTransformationCrown
 
 universe uTerm uIdentity uGuard uView uScore uReceipt
@@ -174,10 +175,11 @@ def eventHistoryRepresentation {source target : GSLT.{uTerm}}
     ObserverPreservingMap (List source.LabeledStep)
       (List target.LabeledStep) View
       (route.pullbackControl targetDiscipline control).contract.observer
-      control.contract.observer where
-  transform := fun events =>
-    events.map (mapEvent route.toOperationalTranslation)
-  preserves := by intro events; rfl
+      control.contract.observer :=
+  eventHistoryRepresentationAlong
+    (route.pullbackCollectedArchitecture targetDiscipline)
+    (route.targetCollectedArchitecture targetDiscipline)
+    (mapEvent route.toOperationalTranslation) (fun value => value) control
 
 @[simp] theorem eventHistoryRepresentation_transform
     {source target : GSLT.{uTerm}}
@@ -210,9 +212,11 @@ def mapAccountedTransformation
     (transformation : AccountedTransformation
       (route.pullbackControl targetDiscipline control) Receipt) :
     AccountedTransformation control Receipt :=
-  AccountedTransformation.ofPruning
-    (route.mapAdmittedPruning targetDiscipline control
-      transformation.toAdmittedPruning)
+  mapAccountedTransformationAlong
+    (route.pullbackCollectedArchitecture targetDiscipline)
+    (route.targetCollectedArchitecture targetDiscipline)
+    (mapEvent route.toOperationalTranslation) (fun value => value)
+    control transformation
 
 @[simp] theorem mapAccountedTransformation_source
     {source target : GSLT.{uTerm}}

@@ -1,5 +1,5 @@
 diff --git a/MeTTaIL/Semantics/Eval.lean b/MeTTaIL/Semantics/Eval.lean
-index 4f0fc5962af592a210b33bfab62b0775b1d479a8..ae791b1fa3ba8e753871fb742fd5daa9adec584a 100644
+index 4f0fc59..ae791b1 100644
 --- a/MeTTaIL/Semantics/Eval.lean
 +++ b/MeTTaIL/Semantics/Eval.lean
 @@ -69,4 +69,17 @@ theorem eval_fixed_of_normal (p : Presentation) (t : AST) (h : IsNormal p t) (fu
@@ -21,7 +21,7 @@ index 4f0fc5962af592a210b33bfab62b0775b1d479a8..ae791b1fa3ba8e753871fb742fd5daa9
 +
  end MeTTaIL
 diff --git a/MeTTaILProofs/CPDecide.lean b/MeTTaILProofs/CPDecide.lean
-index 3a12e42ed1fb6594150fc4e65ab3615246ed378b..c6d721160b49933da94e420779d35a70393ba5cd 100644
+index 3a12e42..c6d7211 100644
 --- a/MeTTaILProofs/CPDecide.lean
 +++ b/MeTTaILProofs/CPDecide.lean
 @@ -67,7 +67,7 @@ theorem rstep_subst {R : List (FOTerm × FOTerm)} (ρ : Nat → FOTerm) {s s' :
@@ -34,7 +34,7 @@ index 3a12e42ed1fb6594150fc4e65ab3615246ed378b..c6d721160b49933da94e420779d35a70
  /-- Joinability is closed under substitution. -/
  theorem joinable_subst {R : List (FOTerm × FOTerm)} (ρ : Nat → FOTerm) {a b : FOTerm}
 diff --git a/MeTTaILProofs/CPRuntime.lean b/MeTTaILProofs/CPRuntime.lean
-index 49e5763201fe62647e9c695e0f2445c4b1767953..d3c7f459870a42f26c9c00b6a8d1193bccc9a920 100644
+index 49e5763..d3c7f45 100644
 --- a/MeTTaILProofs/CPRuntime.lean
 +++ b/MeTTaILProofs/CPRuntime.lean
 @@ -418,7 +418,7 @@ theorem RstepMany_to_RewStep (hν : Function.Injective ν) {R : List (FOTerm ×
@@ -47,7 +47,7 @@ index 49e5763201fe62647e9c695e0f2445c4b1767953..d3c7f459870a42f26c9c00b6a8d1193b
  /-- Backward simulation lifted to many steps: a runtime reduction sequence out of an embedded term stays in
      the embedded fragment and comes from a first-order reduction sequence. -/
 diff --git a/MeTTaILProofs/ConditionalCP.lean b/MeTTaILProofs/ConditionalCP.lean
-index daac47e5da827dccc772fc3c6e7d9e15a6ec2d76..a3673d4ef6896793ce08bc96dbe290b03b079636 100644
+index daac47e..a3673d4 100644
 --- a/MeTTaILProofs/ConditionalCP.lean
 +++ b/MeTTaILProofs/ConditionalCP.lean
 @@ -73,7 +73,7 @@ theorem CRstepN_le_succ (R : List CRule) :
@@ -87,7 +87,7 @@ index daac47e5da827dccc772fc3c6e7d9e15a6ec2d76..a3673d4ef6896793ce08bc96dbe290b0
  /-! ### Bounding the level of a reduction, and firing a rule
  
 diff --git a/MeTTaILProofs/ConditionalCPRuntime.lean b/MeTTaILProofs/ConditionalCPRuntime.lean
-index d1f76e345c71ffe3b60392a2eccf0ad6e6bea958..4ad7f00a2a6bf631b5b7ccb05a0158787c81a88c 100644
+index d1f76e3..4ad7f00 100644
 --- a/MeTTaILProofs/ConditionalCPRuntime.lean
 +++ b/MeTTaILProofs/ConditionalCPRuntime.lean
 @@ -59,7 +59,7 @@ theorem reflTransGen_eq_of_squeeze {r1 r2 : α → α → Prop}
@@ -123,7 +123,7 @@ index d1f76e345c71ffe3b60392a2eccf0ad6e6bea958..4ad7f00a2a6bf631b5b7ccb05a015878
  /-- A semantic congruence premise lifts to the matching `sexp` argument context. -/
  theorem sexpArgCong_squeeze_of_inner {base : Presentation} {lab : Label}
 diff --git a/MeTTaILProofs/CriticalPairs.lean b/MeTTaILProofs/CriticalPairs.lean
-index 4fbbb01caa01d9168615f5dd627362815c214837..3030655e03a2e4e761d0d21d2966b5fbbf928ac3 100644
+index 4fbbb01..3030655 100644
 --- a/MeTTaILProofs/CriticalPairs.lean
 +++ b/MeTTaILProofs/CriticalPairs.lean
 @@ -292,7 +292,7 @@ theorem rstep_context_gen {R : List (FOTerm × FOTerm)} {t : FOTerm} {p : Pos} {
@@ -136,7 +136,7 @@ index 4fbbb01caa01d9168615f5dd627362815c214837..3030655e03a2e4e761d0d21d2966b5fb
  /-! ### Reducing every copy of a variable
  
 diff --git a/MeTTaILProofs/DistributiveLaw.lean b/MeTTaILProofs/DistributiveLaw.lean
-index 3e448c1f1306262e55f11da933348a7178c54bd0..0f91046f27ad97b28d14714ba1b6b3dce3322f6b 100644
+index 3e448c1..0f91046 100644
 --- a/MeTTaILProofs/DistributiveLaw.lean
 +++ b/MeTTaILProofs/DistributiveLaw.lean
 @@ -202,13 +202,11 @@ def composeMonad : Monad C where
@@ -159,7 +159,7 @@ index 3e448c1f1306262e55f11da933348a7178c54bd0..0f91046f27ad97b28d14714ba1b6b3dc
      intro X
      simp only [composeμ, composeη, NatTrans.comp_app, whiskerLeft_app, whiskerRight_app,
 diff --git a/MeTTaILProofs/LambdaConfluence.lean b/MeTTaILProofs/LambdaConfluence.lean
-index d78c06c44154be0ae6c69e4325b52e329ff741d8..e43a122cd4eb536f5c09bd8a36ee1c2cbfc40491 100644
+index d78c06c..e43a122 100644
 --- a/MeTTaILProofs/LambdaConfluence.lean
 +++ b/MeTTaILProofs/LambdaConfluence.lean
 @@ -280,17 +280,17 @@ open Relation
@@ -195,7 +195,7 @@ index d78c06c44154be0ae6c69e4325b52e329ff741d8..e43a122cd4eb536f5c09bd8a36ee1c2c
  /-- **Confluence (Church-Rosser) of beta reduction** for the lambda calculus (no typing hypothesis, so
      it holds for well-typed and ill-typed terms alike). If a term
 diff --git a/MeTTaILProofs/SKIConfluence.lean b/MeTTaILProofs/SKIConfluence.lean
-index f84a482839320934c16a8a7b38a805167998ad0a..3b5d79d7611a5dc8c4e8e81bd2aedf8ffa669b4e 100644
+index f84a482..3b5d79d 100644
 --- a/MeTTaILProofs/SKIConfluence.lean
 +++ b/MeTTaILProofs/SKIConfluence.lean
 @@ -224,7 +224,7 @@ closure of `Step` is Church-Rosser. -/
@@ -208,7 +208,7 @@ index f84a482839320934c16a8a7b38a805167998ad0a..3b5d79d7611a5dc8c4e8e81bd2aedf8f
  /-- A many-step `ParRed` reduction is a many-step `Step` reduction (since each parallel step is a
      finite sequence of single steps). -/
 diff --git a/MettaHyperonFull/Proofs/Basic.lean b/MettaHyperonFull/Proofs/Basic.lean
-index 047816a0f654374a320992bd2781046e2b9d90b5..52b7d4ec2b2f291497b88122a7ee8a56b0141620 100644
+index 047816a..52b7d4e 100644
 --- a/MettaHyperonFull/Proofs/Basic.lean
 +++ b/MettaHyperonFull/Proofs/Basic.lean
 @@ -37,10 +37,8 @@ namespace Atom
@@ -225,7 +225,7 @@ index 047816a0f654374a320992bd2781046e2b9d90b5..52b7d4ec2b2f291497b88122a7ee8a56
      (var : ∀ v, motive (Atom.var v))
      (gnd : ∀ g, motive (Atom.gnd g))
 diff --git a/MettaHyperonFull/Proofs/MultipleSignatureSelection.lean b/MettaHyperonFull/Proofs/MultipleSignatureSelection.lean
-index 0b3661745e5b49089512347073c220c54515ef0a..b5a4ac4f0a710c71626e0d26b0ac7f909bfd1184 100644
+index 0b36617..b5a4ac4 100644
 --- a/MettaHyperonFull/Proofs/MultipleSignatureSelection.lean
 +++ b/MettaHyperonFull/Proofs/MultipleSignatureSelection.lean
 @@ -313,6 +313,10 @@ private theorem multiSignature_interpret_a :
@@ -318,7 +318,7 @@ index 0b3661745e5b49089512347073c220c54515ef0a..b5a4ac4f0a710c71626e0d26b0ac7f90
  /-! ## Published evaluation-boundary canaries -/
  
 diff --git a/book/lake-manifest.json b/book/lake-manifest.json
-index f0864dd4f7c3e39cd32dfea30440e272eefc4d01..aacc6100bfd08418f88eb1c8ebc8a4e666b8f1ff 100644
+index f0864dd..aacc610 100644
 --- a/book/lake-manifest.json
 +++ b/book/lake-manifest.json
 @@ -5,17 +5,17 @@
@@ -376,7 +376,7 @@ index f0864dd4f7c3e39cd32dfea30440e272eefc4d01..aacc6100bfd08418f88eb1c8ebc8a4e6
   "lakeDir": ".lake",
   "fixedToolchain": false}
 diff --git a/book/lakefile.toml b/book/lakefile.toml
-index 31c59a302cc75376c1b0dcbf34b8adb8d999c38b..47efa63234ad50b5700fcd9238b798c730db368e 100644
+index 31c59a3..47efa63 100644
 --- a/book/lakefile.toml
 +++ b/book/lakefile.toml
 @@ -7,7 +7,7 @@ defaultTargets = ["Docs", "docs"]
@@ -389,14 +389,14 @@ index 31c59a302cc75376c1b0dcbf34b8adb8d999c38b..47efa63234ad50b5700fcd9238b798c7
  [[lean_lib]]
  name = "Docs"
 diff --git a/book/lean-toolchain b/book/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8..a8afa7d 100644
 --- a/book/lean-toolchain
 +++ b/book/lean-toolchain
 @@ -1 +1 @@
 -leanprover/lean4:v4.31.0
 +leanprover/lean4:v4.33.1
 diff --git a/docbuild/lake-manifest.json b/docbuild/lake-manifest.json
-index 92cee47c32e719f95c069119dda0f238d8308b57..622342f28364d1ae60a29f372b53134c4a482096 100644
+index 92cee47..622342f 100644
 --- a/docbuild/lake-manifest.json
 +++ b/docbuild/lake-manifest.json
 @@ -1,153 +1,186 @@
@@ -740,7 +740,7 @@ index 92cee47c32e719f95c069119dda0f238d8308b57..622342f28364d1ae60a29f372b53134c
 +  "fixedToolchain": false
 +}
 diff --git a/docbuild/lakefile.toml b/docbuild/lakefile.toml
-index ad2a23a322e810190d2fd7da15e5cd39141989d9..beedb9e803b7b4259d814beccba3f4eb196e4450 100644
+index ad2a23a..beedb9e 100644
 --- a/docbuild/lakefile.toml
 +++ b/docbuild/lakefile.toml
 @@ -20,4 +20,4 @@ path = ".."
@@ -750,14 +750,14 @@ index ad2a23a322e810190d2fd7da15e5cd39141989d9..beedb9e803b7b4259d814beccba3f4eb
 -rev = "v4.31.0"
 +rev = "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015"
 diff --git a/docbuild/lean-toolchain b/docbuild/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8..a8afa7d 100644
 --- a/docbuild/lean-toolchain
 +++ b/docbuild/lean-toolchain
 @@ -1 +1 @@
 -leanprover/lean4:v4.31.0
 +leanprover/lean4:v4.33.1
 diff --git a/lake-manifest.json b/lake-manifest.json
-index dd02a4837ebb270841d49e80208f75a3d70a9b9c..c82bfb59f60aec086495c5750f157c6036de2130 100644
+index dd02a48..c82bfb5 100644
 --- a/lake-manifest.json
 +++ b/lake-manifest.json
 @@ -1,96 +1,117 @@
@@ -975,7 +975,7 @@ index dd02a4837ebb270841d49e80208f75a3d70a9b9c..c82bfb59f60aec086495c5750f157c60
 +  "fixedToolchain": false
 +}
 diff --git a/lakefile.lean b/lakefile.lean
-index 72d0687a989bce0545ef6a328d3876f7cfbaf221..ea7df3efa6e9fcf97073df01cca6922c74d8212f 100644
+index 72d0687..ea7df3e 100644
 --- a/lakefile.lean
 +++ b/lakefile.lean
 @@ -11,11 +11,11 @@ package «MettaHyperonFull» where
@@ -993,7 +993,7 @@ index 72d0687a989bce0545ef6a328d3876f7cfbaf221..ea7df3efa6e9fcf97073df01cca6922c
  @[default_target]
  lean_lib «MettaHyperonFull» where
 diff --git a/lean-toolchain b/lean-toolchain
-index 18640c8b066b182147f324d3aefd8ee48ee45238..a8afa7d1b02d96f0671eba854a8dc4b416beb473 100644
+index 18640c8..a8afa7d 100644
 --- a/lean-toolchain
 +++ b/lean-toolchain
 @@ -1 +1 @@

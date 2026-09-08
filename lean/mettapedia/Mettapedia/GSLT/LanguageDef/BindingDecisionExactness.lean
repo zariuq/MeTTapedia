@@ -18,6 +18,7 @@ namespace Mettapedia.GSLT.LanguageDef.BindingDecisionLanguage
 
 open Mettapedia.GSLT
 open Mettapedia.GSLT.LanguageDef
+open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.LanguageDef.IRPass
 open Mettapedia.GSLT.LanguageDef.PatternPlanBindingDecisionCompilation
 open Mettapedia.GSLT.Core.ConservativeExtension (encodeNat decodeNat? decodeNat?_encodeNat)
@@ -670,7 +671,42 @@ theorem machineStep_of_step {state : MachineState} {target : Pattern}
     ∃ next, machineStep? state = some next ∧ target = encodeState next :=
   (step_iff_machineStep state target).mp step
 
+/-! ## The host machine is a GSLT implementation, not another semantic IR -/
+
+/-- The independent typed state machine implements the language-defined
+GSLT.  The generic wrapper makes its host state type into a GSLT and exposes
+the encoding as an equation-class cover. -/
+def machineImplementation : OperationalImplementation ir.semantics where
+  State := MachineState
+  encode := encodeState
+  encode_injective := encodeState_injective
+  step := fun source target => machineStep? source = some target
+  sound := step_of_machineStep
+  complete := by
+    intro source target step
+    obtain ⟨next, machineStep, targetEqual⟩ := machineStep_of_step step
+    subst target
+    exact ⟨next, machineStep, ir.semantics.equations.iseqv.refl _⟩
+
+@[simp]
+theorem machineImplementation_step_iff (source target : MachineState) :
+    machineImplementation.asGSLT.Step source target <->
+      machineStep? source = some target :=
+  Iff.rfl
+
+/-- There is no behavioral gap between the typed executor and the authored
+language at an encoded state, modulo the authored language equations. -/
+theorem languageStep_iff_machineImplementationStep
+    (source : MachineState) (target : Pattern) :
+    ir.semantics.Step (encodeState source) target <->
+      exists next : MachineState,
+        machineImplementation.asGSLT.Step source next /\
+          ir.semantics.Equiv (encodeState next) target :=
+  machineImplementation.semanticStep_iff_exists_implementationStep source target
+
 #print axioms step_iff_machineStep
 #print axioms encodeState_injective
+#print axioms machineImplementation
+#print axioms languageStep_iff_machineImplementationStep
 
 end Mettapedia.GSLT.LanguageDef.BindingDecisionLanguage

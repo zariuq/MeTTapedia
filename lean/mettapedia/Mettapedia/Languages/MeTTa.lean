@@ -148,6 +148,7 @@ import Mettapedia.Languages.MeTTa.SourceZeroCase
 import Mettapedia.Languages.MeTTa.DemandSemantics
 import Mettapedia.Languages.MeTTa.DemandPrimeObligations
 import Mettapedia.Languages.MeTTa.PrimeNeedCacheLaws
+import Mettapedia.Languages.MeTTa.PrimeNeedDependentService
 import Mettapedia.Languages.MeTTa.PrimeDemandNeedSimulation
 import Mettapedia.OSLF.Framework.PrimeDTTCheckedIntroduction
 import Mettapedia.OSLF.Framework.PrimeDependentWorldModel

@@ -10,6 +10,36 @@ inductive SExpr where
   | list : List SExpr → SExpr
 deriving Repr
 
+mutual
+  def SExpr.decEq : (left right : SExpr) → Decidable (left = right)
+    | .atom left, .atom right =>
+        match (inferInstance : Decidable (left = right)) with
+        | isTrue h => isTrue (by cases h; rfl)
+        | isFalse h => isFalse (fun equality => h (SExpr.atom.inj equality))
+    | .list left, .list right =>
+        match SExpr.listDecEq left right with
+        | isTrue h => isTrue (by cases h; rfl)
+        | isFalse h => isFalse (fun equality => h (SExpr.list.inj equality))
+    | .atom _, .list _ => isFalse (by intro h; cases h)
+    | .list _, .atom _ => isFalse (by intro h; cases h)
+  termination_by left => sizeOf left
+
+  def SExpr.listDecEq : (left right : List SExpr) → Decidable (left = right)
+    | [], [] => isTrue rfl
+    | x :: xs, y :: ys =>
+        match SExpr.decEq x y with
+        | isFalse h => isFalse (fun equality => h (List.cons.inj equality).1)
+        | isTrue h =>
+            match SExpr.listDecEq xs ys with
+            | isFalse h' => isFalse (fun equality => h' (List.cons.inj equality).2)
+            | isTrue h' => isTrue (by cases h; cases h'; rfl)
+    | [], _ :: _ => isFalse (by intro h; cases h)
+    | _ :: _, [] => isFalse (by intro h; cases h)
+  termination_by left => sizeOf left
+end
+
+instance : DecidableEq SExpr := SExpr.decEq
+
 abbrev Stmt := SyntaxCommand
 
 structure ParseError where
@@ -392,7 +422,8 @@ private def stepScan (cfg : ParserDialect) (st : ProgramScanState) (c : Char) : 
     st
   else if st.inComment then
     if c = '\n' then
-      { st with inComment := false, line := st.line + 1 }
+      let st1 := if st.depth = 0 then finalizeCurr st else st
+      { st1 with inComment := false, line := st1.line + 1 }
     else
       st
   else if st.inString then
@@ -411,7 +442,7 @@ private def stepScan (cfg : ParserDialect) (st : ProgramScanState) (c : Char) : 
     else
       st1
   else if lineCommentStart? = some c then
-    { st with inComment := true }
+    { pushChar st ' ' with inComment := true }
   else if c = '\n' then
     if st.depth = 0 then
       let st1 := finalizeCurr st
@@ -450,6 +481,16 @@ private def splitProgramForms (cfg : ParserDialect) (text : String) : Except Par
         .error (mkParseError "unclosed parenthesis" (line := some st.startLine))
       else
         .ok (finalizeCurr st).formsRev.reverse
+
+/-- Read exactly one source S-expression using the existing program scanner
+for comments, balanced parentheses, and strings, before lowering to `Pattern`.
+Atoms and singleton lists remain distinct throughout this route. -/
+def parseSExprWithDetailed (spec : SyntaxSpec) (input : String) :
+    Except ParseError SExpr := do
+  let cfg := parserDialectOf spec
+  match ← splitProgramForms cfg input with
+  | [(_, source)] => parseSingleSExprWith cfg source
+  | _ => .error (mkParseError "expected exactly one source S-expression")
 
 private def coalesceEvalPrefixForms (cfg : ParserDialect) (forms : List (Nat × String)) :
     List (Nat × String) :=

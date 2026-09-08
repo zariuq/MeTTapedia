@@ -493,11 +493,17 @@ private def fullConvertRule : RuleSchema :=
         [m "primitives", m "declarations", m "known"])
       (m "typeDepth") (m "termContext") (m "proofContext") (m "target"))
 
+/-- A proof-lambda hypothesis has ordinary type `Prop`, even though the
+general proposition representative also supports prefix type quantification.
+The extra typing premise matches the native `PLam` check. -/
 private def fullImpIntroRule : RuleSchema :=
   rule "megalodon-def-proof-imp-intro"
     ["primitives", "declarations", "signature", "known", "typeDepth",
       "termContext", "proofContext", "sourceDomain", "domain", "codomain"]
-    [ propositionRepresentative
+    [ EnvironmentKernel.baseHasType
+        (m "signature") (m "typeDepth") (m "termContext")
+        (m "sourceDomain") (a "MTpProp"),
+      propositionRepresentative
         (m "declarations") (m "signature") (m "typeDepth")
         (m "termContext") (m "sourceDomain") (m "domain"),
       fullProves
@@ -1117,7 +1123,7 @@ theorem mathdata_accepts_definition_identity :
     MathdataKernel.inferProof, definitionEnvironment, identityProof,
     definitionGoal, definitionDomain, identityDeclaration,
     parameterDeclaration, definitionParameterName, identityDefinitionName,
-    MathdataKernel.checkProposition, MathdataKernel.inferTerm,
+    MathdataKernel.inferTerm,
     MathdataKernel.normalize, MathdataKernel.deltaNormalize,
     MathdataKernel.Tm.normalize, MathdataKernel.Tm.normalizeOne,
     MathdataKernel.Environment.lookupTerm?, MathdataKernel.lookupTermList?,
@@ -1740,5 +1746,103 @@ theorem definition_identity_direct_and_cogslt :
         identityProof definitionGoal = true ∧
       checkRaw validated definitionIdentityGoal definitionIdentityArticle = true :=
   ⟨mathdata_accepts_definition_identity, definition_identity_article_accepted⟩
+
+/-! ## Prefix formation is not ordinary hypothesis formation -/
+
+namespace FormationBoundary
+
+private def zero : Pattern := a "MNZero"
+private def one : Pattern := a "MNSucc" [zero]
+private def propType : Pattern := a "MTpProp"
+private def emptyTypes : Pattern := a "MTyCtxNil"
+private def emptyProofs : Pattern := a "MPfCtxNil"
+private def emptySignature : Pattern := a "MSigNil"
+private def emptyDeclarations : Pattern := a "MDeclNil"
+private def emptyPrimitives : Pattern := a "MPrimNil"
+private def emptyKnown : Pattern := a "MKnownNil"
+private def emptyEnvironment : Pattern :=
+  a "MFullEnvironment" [emptyPrimitives, emptyDeclarations, emptyKnown]
+
+private def body : Pattern := a "MTmAll" [propType, a "MTmVar" [zero]]
+private def prefixProposition : Pattern := a "MTmTypeAll" [body]
+
+private def bodyTypeArticle : RawProof :=
+  node "megalodon-poly-term-all"
+    [emptySignature, one, emptyTypes, propType, a "MTmVar" [zero]]
+    [ node "megalodon-poly-type-prop" [one],
+      node "megalodon-poly-term-var-zero" [emptySignature, one, emptyTypes, propType] ]
+
+private def prefixFormationArticle : RawProof :=
+  node "megalodon-def-proposition-type-all"
+    [emptyDeclarations, emptySignature, zero, emptyTypes, body, body]
+    [ node "megalodon-def-proposition-plain"
+        [emptyDeclarations, emptySignature, one, emptyTypes, body, body]
+        [ node "megalodon-def-project-nil" [], bodyTypeArticle,
+          node "megalodon-def-path-refl" [emptyDeclarations, body] ] ]
+
+private def prefixHypothesisArticle (continuation : RawProof) : RawProof :=
+  node "megalodon-def-proof-imp-intro"
+    [emptyPrimitives, emptyDeclarations, emptySignature, emptyKnown, zero,
+      emptyTypes, emptyProofs, prefixProposition, prefixProposition, prefixProposition]
+    [prefixFormationArticle, prefixFormationArticle, continuation]
+
+@[simp] private theorem lookup_typeAllRule :
+    definition.lookupRule? (ruleId "megalodon-poly-term-all") =
+      some PolymorphicKernel.typeAllRule := by rfl
+
+@[simp] private theorem lookup_typeVarZeroRule :
+    definition.lookupRule? (ruleId "megalodon-poly-term-var-zero") =
+      some PolymorphicKernel.typeVarZeroRule := by rfl
+
+@[simp] private theorem lookup_plainPropRule :
+    definition.lookupRule? (ruleId "megalodon-poly-type-prop") =
+      some PolymorphicKernel.plainPropRule := by rfl
+
+@[simp] private theorem lookup_propositionPlainRule :
+    definition.lookupRule? (ruleId "megalodon-def-proposition-plain") =
+      some propositionPlainRule := by rfl
+
+@[simp] private theorem lookup_propositionTypeAllRule :
+    definition.lookupRule? (ruleId "megalodon-def-proposition-type-all") =
+      some propositionTypeAllRule := by rfl
+
+@[simp] private theorem lookup_fullImpIntroRule :
+    definition.lookupRule? (ruleId "megalodon-def-proof-imp-intro") =
+      some fullImpIntroRule := by rfl
+
+attribute [local simp] zero one propType emptyTypes emptyProofs emptySignature
+  emptyDeclarations emptyPrimitives emptyKnown emptyEnvironment body prefixProposition
+  bodyTypeArticle prefixFormationArticle prefixHypothesisArticle node
+  propositionPlainRule propositionTypeAllRule fullImpIntroRule
+  PolymorphicKernel.typeAllRule PolymorphicKernel.typeVarZeroRule
+  PolymorphicKernel.plainPropRule projectNilRule pathReflRule
+  projectSignature reductionPath fullProves propositionRepresentative
+  EnvironmentKernel.baseHasType EnvironmentKernel.plainType
+  PolymorphicKernel.plainType PolymorphicKernel.hasType
+  PolymorphicKernel.rule PolymorphicKernel.ruleId PolymorphicKernel.a PolymorphicKernel.m
+  EnvironmentKernel.a rule a m
+  checkRaw checkRawChildren instantiateRule? instantiateSchemas? instantiateSchema?
+  instantiateSchemasAt? instantiateSchemaAt? lookupArgumentAt? validated
+
+/-- The general proposition relation retains legitimate prefix quantification. -/
+theorem prefix_formation_accepted :
+    checkRaw validated
+      (propositionRepresentative emptyDeclarations emptySignature zero emptyTypes
+        prefixProposition prefixProposition) prefixFormationArticle = true := by
+  simp (config := { decide := true })
+
+/-- An accepted prefix-formation proof cannot discharge ordinary hypothesis
+typing, independently of the continuation supplied to implication introduction. -/
+theorem prefix_hypothesis_rejected (continuation : RawProof) :
+    checkRaw validated
+      (fullProves emptyEnvironment zero emptyTypes emptyProofs
+        (a "MTmImp" [prefixProposition, prefixProposition]))
+      (prefixHypothesisArticle continuation) = false := by
+  simp (config := { decide := true })
+
+#print axioms prefix_formation_accepted
+#print axioms prefix_hypothesis_rejected
+
+end FormationBoundary
 
 end Mettapedia.Languages.Megalodon.DefinitionConversionKernel

@@ -30,7 +30,7 @@ set_option autoImplicit false
 namespace Mettapedia.GSLT.LanguageDef.CertificateGSLTHeterogeneousAuthority
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.GSLT.LanguageDef.NIKAuthorityCategory
+open Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 open Mettapedia.GSLT.LanguageDef.NIKHeterogeneousTheory
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.LanguageDef.CertificateGSLT
@@ -109,7 +109,7 @@ def contract (presentation : SemanticPresentation) :
 /-- Bundle a semantic presentation and its generated checker as a NIK
 authority object. -/
 def generatedAuthority (presentation : SemanticPresentation) :
-    AuthorityObject where
+    CertifiedTheory where
   Kind := Unit
   family := theory presentation
   contract := contract presentation
@@ -140,7 +140,7 @@ translation.  Injectivity reflects the retained-conclusion comparison made by
 the target checker back to the source comparison. -/
 def map {source target : SemanticPresentation}
     (translation : SemanticEmbedding source target) :
-    AuthorityTranslation (contract source) (contract target) where
+    CertifiedTranslation (contract source) (contract target) where
   mapKind := id
   mapSignature := fun _ => ⟨target.object, rfl⟩
   signature_commutes := by intro kind; cases kind; rfl

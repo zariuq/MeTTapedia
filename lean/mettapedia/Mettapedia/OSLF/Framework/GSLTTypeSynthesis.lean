@@ -14,7 +14,7 @@ This module keeps the authored term carrier while deriving the semantic
 predicate frame over its equation classes.  A native predicate is therefore a
 predicate on authored terms together with the law that it cannot distinguish
 equation-equivalent presentations.  Raw predicate generators are interpreted
-by their least equation-saturated extension.  The resulting construction is
+by their least modulo-equations extension.  The resulting construction is
 the OSLF of the GSLT; equations are not an optional companion layer.
 
 The construction does not make a relation executable.  Executable evidence
@@ -75,7 +75,7 @@ def sortedGSLTRewriteSystem (theory : GSLT.{uTheory})
   Reduces := theory.Step
 
 /-- Regard an abstract GSLT as a one-sorted OSLF rewrite system.  The GSLT
-step relation is equation-saturated, while the authored term carrier remains
+step relation is modulo-equations, while the authored term carrier remains
 available to parsing, quotation, and execution. -/
 def gsltRewriteSystem (theory : GSLT.{uTheory}) : RewriteSystem :=
   sortedGSLTRewriteSystem theory Unit ()
@@ -377,7 +377,7 @@ theorem saturatePredicate_apply_iff_of_equiv_iff_eq
   · intro holds
     exact ⟨term, (equivIffEq term term).mpr rfl, holds⟩
 
-/-- An already invariant predicate is unchanged by equation saturation. -/
+/-- An already invariant predicate is unchanged by closure under equations. -/
 theorem saturatePredicate_apply_iff_of_invariant
     (theory : GSLT.{uTheory})
     (predicate : theory.Term → Prop)
@@ -398,7 +398,7 @@ def invariantPredicate (theory : GSLT.{uTheory})
     EquationPredicate theory :=
   ⟨predicate, invariant⟩
 
-/-- Raw predicate generators enter OSLF only through equation saturation. -/
+/-- Raw predicate generators enter OSLF only through closure under equations. -/
 instance (theory : GSLT.{uTheory}) :
     Coe (theory.Term → Prop) (EquationPredicate theory) :=
   ⟨saturatePredicate theory⟩
