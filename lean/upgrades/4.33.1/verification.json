@@ -31977,7 +31977,7 @@
     },
     {
       "module": "Mettapedia.TypeTheory",
-      "source_sha256": "208f36de890815635379a15ba7f851d40c6a40225a37f0699acf64588e5a1cfd",
+      "source_sha256": "141aed4cff26d281b759173a3714db99c841363d21f00d584b4ad37a5787a080",
       "status": "build_pass"
     },
     {
@@ -33768,6 +33768,16 @@
       ],
       "jobs": 3268,
       "reason": "Remove machine-specific source reference from module documentation."
+    },
+    {
+      "date": "2026-09-08",
+      "targets": [
+        "Mettapedia",
+        "mettapedia"
+      ],
+      "jobs": 21362,
+      "result": "pass",
+      "reason": "Integrated the latest main TypeTheory entry-point import and interface documentation."
     }
   ]
 }

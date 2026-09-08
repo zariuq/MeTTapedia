@@ -121,4 +121,28 @@ The principal axes remain explicit:
 
 Keeping these axes separate permits later language designs to be compared by
 proved property bundles rather than by names or implementation lineage.
+
+## Identity and model entry points
+
+`ContextualIdentityTypes` states internal contextual identity capabilities;
+its J/beta interface does not bundle substitution stability of J itself.
+`IdentityEliminationCapabilities` instead quantifies over external semantic
+route motives. Its Hedberg theorem requires that external eliminator and a
+proof-relevant decision of route inhabitation, not merely decidable syntax or
+checking of a supplied proof. `ScopedIdentity` retains observable route data.
+These are distinct interfaces, not alternative names for a global K rule.
+
+The object-syntactic J declaration is in the separate cumulative-presentation
+library: `CumulativeTower.NativeIndexedFamilies` defines
+`Prime.Id.eliminate` through the ordinary declaration/application syntax.
+`FormationSensitiveNativeIdentity` supplies refined formation and the exact
+reflexivity root; `FormationSensitiveNativeRelatorQualification` discharges
+the conversion boundaries and proves preservation for the combined native
+List/identity/relator package. None of these results asserts global K,
+normalization of arbitrary extensions, or CeTTa implementation correctness.
+
+`CwfTarskiUniverse.SetFamilies.dependent_capabilities_have_common_set_model`
+jointly models products, sums, contextual J/beta and a Tarski universe. It is
+a set-family compatibility model in Lean's universe hierarchy, not an
+interpretation of the complete cumulative object syntax in HOTG.
 -/

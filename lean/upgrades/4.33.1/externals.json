@@ -611,7 +611,12 @@
       },
       "origin": "git@github.com:zariuq/Foundation.git",
       "patch": "patches/externals--Foundation.patch",
-      "patch_sha256": "3b44516c716443d5113804a8a9f8778058f9662af28fe1db48e9d7e6417801c8"
+      "patch_sha256": "3b44516c716443d5113804a8a9f8778058f9662af28fe1db48e9d7e6417801c8",
+      "published": {
+        "url": "git@github.com:zariuq/Foundation.git",
+        "branch": "lean-upgrade/tauceti-lean__externals__Foundation",
+        "commit": "d37fa8cc888c2417d0aa04aed3ff238f2f76342b"
+      }
     },
     "externals/LeaTTa": {
       "base": "26d05f0663a1083085565b2e161a683542df53a8",
@@ -915,7 +920,12 @@
       },
       "origin": "git@github.com:zariuq/LeaTTa.git",
       "patch": "patches/externals--LeaTTa.patch",
-      "patch_sha256": "7f39cfa76a71c385bb207d148ddc288e9a50ffa1118d94cd411077c71ce41af1"
+      "patch_sha256": "7f39cfa76a71c385bb207d148ddc288e9a50ffa1118d94cd411077c71ce41af1",
+      "published": {
+        "url": "git@github.com:zariuq/LeaTTa.git",
+        "branch": "lean-upgrade/tauceti-lean__externals__LeaTTa",
+        "commit": "e5c5d364158caca098fcb50bfc5f553b01cb38cc"
+      }
     },
     "externals/LeaTTa-vanilla": {
       "base": "40316f04b9a19dd4e948f1158b804434805752b1",
@@ -1214,7 +1224,12 @@
       },
       "origin": "git@github.com:zariuq/LeaTTa.git",
       "patch": "patches/externals--LeaTTa-vanilla.patch",
-      "patch_sha256": "27ac2d5fd42260f1554e3814530f635ed7bad09812385abcfc04f4726627dabe"
+      "patch_sha256": "27ac2d5fd42260f1554e3814530f635ed7bad09812385abcfc04f4726627dabe",
+      "published": {
+        "url": "git@github.com:zariuq/LeaTTa.git",
+        "branch": "lean-upgrade/tauceti-lean__externals__LeaTTa-vanilla",
+        "commit": "c21680176fc31e1636bcd3cfc71d750e22f6569b"
+      }
     },
     "externals/Metatheory": {
       "base": "8f3275528034ceb002e7e3dba0bbeacc8de258c4",
@@ -1308,7 +1323,12 @@
       },
       "origin": "git@github.com:zariuq/Metatheory.git",
       "patch": "patches/externals--Metatheory.patch",
-      "patch_sha256": "e4e5609a7f1d2a5724f0275e5be47ad0299e9d16d961b7b9d17cc7e6750b6d56"
+      "patch_sha256": "e4e5609a7f1d2a5724f0275e5be47ad0299e9d16d961b7b9d17cc7e6750b6d56",
+      "published": {
+        "url": "git@github.com:zariuq/Metatheory.git",
+        "branch": "lean-upgrade/tauceti-lean__externals__Metatheory",
+        "commit": "9bcb1f996378fb88d1389b9b7d2ae24c8b73ded2"
+      }
     },
     "externals/TauCeti": {
       "base": "afb1aacb3632d3236eee756ea1683290c07270a3",
@@ -3240,7 +3260,12 @@
       },
       "origin": "git@github.com:zariuq/TauCeti.git",
       "patch": "patches/externals--TauCeti.patch",
-      "patch_sha256": "eaf414cd985cb421c5208dfc19116cd66ce04e7d34958c2b855b22b609a450e4"
+      "patch_sha256": "eaf414cd985cb421c5208dfc19116cd66ce04e7d34958c2b855b22b609a450e4",
+      "published": {
+        "url": "git@github.com:zariuq/TauCeti.git",
+        "branch": "lean-upgrade/4.33.1",
+        "commit": "96e6fcc5d7ce99124826f8e0f13ed151d6c2abbf"
+      }
     },
     "externals/certifyingDatalog": {
       "base": "91adc633bfd8d2a1565f46ba7876b73dcda55471",
@@ -3371,7 +3396,12 @@
       },
       "origin": "git@github.com:zariuq/CertifyingDatalog.git",
       "patch": "patches/externals--certifyingDatalog.patch",
-      "patch_sha256": "c1820aec71f307e2fa0a42fc35de9d73da53386caad5b13fa7eef5feaa9bbea6"
+      "patch_sha256": "c1820aec71f307e2fa0a42fc35de9d73da53386caad5b13fa7eef5feaa9bbea6",
+      "published": {
+        "url": "git@github.com:zariuq/CertifyingDatalog.git",
+        "branch": "lean-upgrade/tauceti-lean__externals__certifyingDatalog",
+        "commit": "242c273d773265b677868658398d8a35e78b1d5f"
+      }
     },
     "externals/doc-gen4-tauceti": {
       "base": "e2af49a7b7e5e1a9224008c1f15e7aa4f58a4015",
@@ -3458,7 +3488,12 @@
       "origin": "https://github.com/leanprover/doc-gen4.git",
       "patch": "patches/externals--doc-gen4-tauceti.patch",
       "patch_sha256": "79c7abb3db0f3bace828b7bacf08820bfd0acd28f86ac94b12bba630d6401294",
-      "ported_feature_commit": "4cac5a75c52048204e6d015554fbc10ce3f269a2"
+      "ported_feature_commit": "4cac5a75c52048204e6d015554fbc10ce3f269a2",
+      "published": {
+        "url": "git@github.com:zariuq/doc-gen4.git",
+        "branch": "lean-upgrade/tauceti-docgen",
+        "commit": "932691f4ada44325a66733f309c3be773dc55195"
+      }
     },
     "externals/exchangeability": {
       "base": "05330d5c92f4400161d5e31632efcaa4a2d91361",
@@ -3643,7 +3678,12 @@
       },
       "origin": "git@github.com:zariuq/exchangeability.git",
       "patch": "patches/externals--exchangeability.patch",
-      "patch_sha256": "444edb65df53176beebc37d6ba49aaa6cdad534ae286ffdd7c119598bdd5120c"
+      "patch_sha256": "444edb65df53176beebc37d6ba49aaa6cdad534ae286ffdd7c119598bdd5120c",
+      "published": {
+        "url": "git@github.com:zariuq/exchangeability.git",
+        "branch": "lean-upgrade/tauceti-lean__externals__exchangeability",
+        "commit": "715a9df61e8cb4ede79e2adde95dc958f5cf9278"
+      }
     },
     "externals/lean4lean": {
       "base": "ef849dfbd94ab5a6f3ad2793a57b8a1cbe19d923",
@@ -3746,7 +3786,12 @@
       },
       "origin": "git@github.com:zariuq/lean4lean.git",
       "patch": "patches/externals--lean4lean.patch",
-      "patch_sha256": "740ae7f025465a822867b5710200181e8e0eec4d23dfd910e307bfab9baaea2b"
+      "patch_sha256": "740ae7f025465a822867b5710200181e8e0eec4d23dfd910e307bfab9baaea2b",
+      "published": {
+        "url": "git@github.com:zariuq/lean4lean.git",
+        "branch": "lean-upgrade/tauceti-lean__externals__lean4lean",
+        "commit": "8c2a13400be28a96a89072be1f0296e0edbf2d6c"
+      }
     },
     "externals/mm-lean4": {
       "base": "c5bbaa0d6d11dccf614dadd279ca56730887fe78",
@@ -3864,7 +3909,12 @@
       },
       "origin": "git@github.com:zariuq/mm-lean4.git",
       "patch": "patches/externals--mm-lean4.patch",
-      "patch_sha256": "230eeb09b41a611a722f7ff0af2eb8c5e9d14517953e62358e0bd603961554b7"
+      "patch_sha256": "230eeb09b41a611a722f7ff0af2eb8c5e9d14517953e62358e0bd603961554b7",
+      "published": {
+        "url": "git@github.com:zariuq/mm-lean4.git",
+        "branch": "lean-upgrade/tauceti-lean__externals__mm-lean4",
+        "commit": "124dfbe1d65993255f0e5de2f6eea5c28c66726b"
+      }
     },
     "externals/ordered_semigroups": {
       "base": "4324a78c436f2150403159b96b91d0f8692f3b80",
@@ -3911,7 +3961,12 @@
       },
       "origin": "git@github.com:zariuq/OrderedSemigroups.git",
       "patch": "patches/externals--ordered_semigroups.patch",
-      "patch_sha256": "ed77d04931664b2bb4942d85a4a0a44463a38cec7bb66def4890f0437cab1b91"
+      "patch_sha256": "ed77d04931664b2bb4942d85a4a0a44463a38cec7bb66def4890f0437cab1b91",
+      "published": {
+        "url": "git@github.com:zariuq/OrderedSemigroups.git",
+        "branch": "lean-upgrade/tauceti-lean__externals__ordered_semigroups",
+        "commit": "30a63c14fac5a7c14b49f69668a963f4d9388d1a"
+      }
     },
     "externals/provenance": {
       "base": "fe0bb6d4b2a7acf99edb13d672b7483da95937a5",
@@ -3952,7 +4007,12 @@
       },
       "origin": "git@github.com:zariuq/provenance-lean.git",
       "patch": "patches/externals--provenance.patch",
-      "patch_sha256": "df9a1461f5cd7838124f7b9c02415d5a7586264a1702ef252fee062418acf1a7"
+      "patch_sha256": "df9a1461f5cd7838124f7b9c02415d5a7586264a1702ef252fee062418acf1a7",
+      "published": {
+        "url": "git@github.com:zariuq/provenance-lean.git",
+        "branch": "lean-upgrade/tauceti-lean__externals__provenance",
+        "commit": "69ca3c5232338e27dc9600a37fd827158715572e"
+      }
     },
     "standalone/ks-foundations-of-inference": {
       "base": "0072878914cfbc012ccb6ce1d2f1f8840e2b2c6a",
@@ -4198,7 +4258,12 @@
       },
       "origin": "git@github.com:zariuq/ks-foundations-of-inference.git",
       "patch": "patches/standalone--ks-foundations-of-inference.patch",
-      "patch_sha256": "e8b6cdacc19a3c0469fbb772cba79c8fb490aec409cd76ff1ce5e3eb426028de"
+      "patch_sha256": "e8b6cdacc19a3c0469fbb772cba79c8fb490aec409cd76ff1ce5e3eb426028de",
+      "published": {
+        "url": "git@github.com:zariuq/ks-foundations-of-inference.git",
+        "branch": "lean-upgrade/tauceti-lean__standalone__ks-foundations-of-inference",
+        "commit": "47cd19d04da6543e078890bdcfbfdd385d57554b"
+      }
     },
     "standalone/mm-lean4": {
       "base": "54801711a39ebfedab9700c8989deee30196a948",
@@ -4340,7 +4405,12 @@
       },
       "origin": "git@github.com:zariuq/mm-lean4.git",
       "patch": "patches/standalone--mm-lean4.patch",
-      "patch_sha256": "3bca8a8f129a3964d46ca89eae7e5179571a58c31b9043d6157d838044a7977e"
+      "patch_sha256": "3bca8a8f129a3964d46ca89eae7e5179571a58c31b9043d6157d838044a7977e",
+      "published": {
+        "url": "git@github.com:zariuq/mm-lean4.git",
+        "branch": "lean-upgrade/tauceti-lean__standalone__mm-lean4",
+        "commit": "e031768460d5c1053c5e0d540b10560a9618fae3"
+      }
     }
   },
   "schema": 1,

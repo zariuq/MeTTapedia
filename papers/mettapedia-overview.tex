@@ -143,12 +143,14 @@ lake build $(cat ../upgrades/4.33.1/verified-modules.txt) \
   checkRFC8259NativeForestExact sumoNativeSourceCheck \
   Algorithms.MeTTa.Simple.ParserConformance
 \end{verbatim}
-\src{lean/bootstrap_local_repos.sh} clones pinned dependencies and replays
-migration patches, preserving existing checkouts.
+\src{lean/bootstrap_local_repos.sh} clones the published dependency commits and verifies their source
+fingerprints, preserving existing checkouts. Migration patches remain available
+for reproducing the changes from their original bases.
 \src{lean/upgrades/4.33.1/replay.py} provides \texttt{--verify} and \texttt{--apply}.
-Main checkpoint \nolinkurl{15deaf0b6} is integrated and verified in the upgrade
-worktree; all 36 executable checks pass. The merge commit and coordinated
-main checkout handoff remain pending.
+Main checkpoints \nolinkurl{15deaf0b6} and \nolinkurl{1e94193ef} are integrated;
+all 36 executable checks pass. The final TypeTheory entry-point check completes
+21,362 build jobs. All 14 editable dependency branches are published, with exact
+commits recorded in \src{lean/upgrades/4.33.1/externals.json}.
 
 \section*{Reading map}
 

@@ -418,6 +418,7 @@ import Mettapedia.Languages.MeTTa.PrimeNeedAllocationBound
 import Mettapedia.Languages.MeTTa.PrimeNeedLocalSteps
 import Mettapedia.Languages.MeTTa.PrimeNeedLocalStepPaths
 import Mettapedia.Languages.MeTTa.PrimeNeedRepresentation
+import Mettapedia.TypeTheory
 import Mettapedia.TypeTheory.ContextualDependentSequencing
 import Mettapedia.TypeTheory.ContextualKleisliAdjunction
 import Mettapedia.TypeTheory.ContextualKleisliProductBoundary
