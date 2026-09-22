@@ -11,9 +11,13 @@ This file formalizes traces (Definition 3.1) and the reversible envelope S†
 
 * `GSLT.Trace` — A finite sequence of rewrite steps recording causal history
 * `GSLT.ExtendedTerm` — A pair ⟨P, τ⟩ of current term and trace (Definition 3.2)
-* `GSLT.reversibleEnvelope` — The reversible GSLT S† (Definition 3.4)
-* `GSLT.envelopeEmbed` — The embedding η : S → S† (Proposition 3.1)
-* `GSLT.envelopeProject` — The projection π : S† → S (Proposition 3.1)
+* `GSLT.ReversibleStep` — Forward/backward rules on extended terms (Definition 3.3)
+* `GSLT.envelopeEmbed` — The embedding η : S → S† on carriers (Proposition 3.1)
+* `GSLT.envelopeProject` — The projection π : S† → S on carriers (Proposition 3.1)
+
+The GSLT *object* S† (writer `spendLift`, morphisms `η`/`π` in the
+category of GSLTs) lives in `GSLT.Core.WriterGSLT`.  This file is the
+Type-valued path category, not evaluator state.
 
 ## Key Insight
 
@@ -124,7 +128,7 @@ inductive StepDirection where
     - Forward: ⟨l, τ⟩ → ⟨r, entry · τ⟩  (records the step)
     - Backward: ⟨r, entry · τ⟩ → ⟨l, τ⟩  (undoes the step)
 -/
-inductive ReversibleStep : ExtendedTerm S → ExtendedTerm S → Prop where
+inductive ReversibleStep : ExtendedTerm S → ExtendedTerm S → Type where
   /-- Forward rule r⁺: ⟨l, τ⟩ → ⟨r, r(l) · τ⟩ -/
   | forward {l r : S.Term} (h : S.Step l r) (τ : Trace S) :
       ReversibleStep
@@ -164,11 +168,65 @@ def extendedSetoid : Setoid (ExtendedTerm S) where
             fun h1 h2 => extendedEquiv_trans (S := S) h1 h2⟩
 
 /-- Every forward step has a corresponding backward step -/
-theorem reversibleStep_invertible {et1 et2 : ExtendedTerm S}
-    (h : ReversibleStep S et1 et2) : ReversibleStep S et2 et1 := by
-  cases h with
-  | forward h τ => exact ReversibleStep.backward h τ
-  | backward h τ => exact ReversibleStep.forward h τ
+def reversibleStep_invertible {et1 et2 : ExtendedTerm S} :
+    ReversibleStep S et1 et2 → ReversibleStep S et2 et1
+  | .forward h τ => ReversibleStep.backward h τ
+  | .backward h τ => ReversibleStep.forward h τ
+
+/-- A path in the reversible envelope. Endpoints are extended terms, so
+the history is part of the state. -/
+inductive EnvelopePath : ExtendedTerm S → ExtendedTerm S → Type where
+  | nil (et : ExtendedTerm S) : EnvelopePath et et
+  | cons {et eu ev : ExtendedTerm S} :
+      ReversibleStep S et eu → EnvelopePath eu ev → EnvelopePath et ev
+
+section EnvelopePathOps
+variable {S : GSLT}
+
+namespace EnvelopePath
+
+/-- Concatenation of envelope paths. The theory is inferred from the path. -/
+def append {et eu ev : ExtendedTerm S} :
+    EnvelopePath (S := S) et eu → EnvelopePath (S := S) eu ev →
+      EnvelopePath (S := S) et ev
+  | .nil _, q => q
+  | .cons st rest, q => .cons st (append rest q)
+
+@[simp] theorem nil_append {et eu : ExtendedTerm S}
+    (γ : EnvelopePath (S := S) et eu) :
+    append (.nil (S := S) et) γ = γ :=
+  rfl
+
+@[simp] theorem append_nil {et eu : ExtendedTerm S}
+    (γ : EnvelopePath (S := S) et eu) :
+    append γ (.nil (S := S) eu) = γ := by
+  induction γ with
+  | nil => rfl
+  | cons st rest ih => simp [append, ih]
+
+theorem append_assoc {et eu ev ew : ExtendedTerm S}
+    (p : EnvelopePath (S := S) et eu) (q : EnvelopePath (S := S) eu ev)
+    (r : EnvelopePath (S := S) ev ew) :
+    append (append p q) r = append p (append q r) := by
+  induction p with
+  | nil => rfl
+  | cons st rest ih => simp [append, ih]
+
+/-- Reverse every reversible step. Unique-parent inversion. -/
+def reverse {et eu : ExtendedTerm S} :
+    EnvelopePath (S := S) et eu → EnvelopePath (S := S) eu et
+  | .nil et => .nil (S := S) et
+  | .cons st rest =>
+      append (reverse rest)
+        (.cons (reversibleStep_invertible (S := S) st) (.nil (S := S) _))
+
+@[simp] theorem reverse_nil (et : ExtendedTerm S) :
+    reverse (.nil (S := S) et) = .nil (S := S) et :=
+  rfl
+
+end EnvelopePath
+
+end EnvelopePathOps
 
 /-! ## The Embedding η and Projection π
 
@@ -201,9 +259,9 @@ theorem project_embed (t : S.Term) : envelopeProject S (envelopeEmbed S t) = t :
   rfl
 
 /-- η maps S-steps to forward steps in S† -/
-theorem embed_preserves_step {t t' : S.Term} (h : S.Step t t') :
-    ReversibleStep S (envelopeEmbed S t) { current := t', history := [⟨t, t', h⟩] } := by
-  exact ReversibleStep.forward h []
+def embed_preserves_step {t t' : S.Term} (h : S.Step t t') :
+    ReversibleStep S (envelopeEmbed S t) { current := t', history := [⟨t, t', h⟩] } :=
+  ReversibleStep.forward h []
 
 /-! ## Summary
 
@@ -214,6 +272,7 @@ This file establishes:
 3. **ReversibleStep**: Forward and backward rules (Definition 3.3)
 4. **Reversible envelope properties**: Invertibility of steps (Definition 3.4)
 5. **η and π**: Embedding and projection with π ∘ η = id (Proposition 3.1)
+6. **EnvelopePath**: finite paths of reversible steps
 
 **Paper Coverage**: Definitions 3.1–3.4; Proposition 3.1; Remark 3.1
 

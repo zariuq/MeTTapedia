@@ -35,10 +35,24 @@ mutual
           (.multiLambda arity patternNames patternBody)
           (.multiLambda arity termNames termBody) bindings
     | collection :
+        collectionType ≠ .vec →
         MatchBagRelWith equivalent patternElements rest collectionType termElements bindings →
         MatchRelWith equivalent
           (.collection collectionType patternElements rest)
           (.collection collectionType termElements termRest) bindings
+    | vector :
+        MatchArgsRelWith equivalent patternElements termElements bindings →
+        MatchRelWith equivalent
+          (.collection .vec patternElements none) (.collection .vec termElements termRest) bindings
+    | vectorRest :
+        MatchArgsRelWith equivalent patternElements
+          (termElements.take patternElements.length) prefixBindings →
+        mergeBindingsWith equivalent prefixBindings
+          [(restName, .collection .vec (termElements.drop patternElements.length) none)]
+            = some bindings →
+        MatchRelWith equivalent
+          (.collection .vec patternElements (some restName))
+          (.collection .vec termElements termRest) bindings
     | subst :
         MatchRelWith equivalent patternBody termBody bodyBindings →
         MatchRelWith equivalent patternReplacement termReplacement replacementBindings →
@@ -72,6 +86,39 @@ mutual
         MatchBagRelWith equivalent (pattern :: patterns) rest collectionType
           termElements bindings
 end
+
+theorem MatchArgsRelWith.length_eq {equivalent : Pattern → Pattern → Bool}
+    {patterns terms : List Pattern} {bindings : Bindings}
+    (matched : MatchArgsRelWith equivalent patterns terms bindings) :
+    patterns.length = terms.length := by
+  induction patterns generalizing terms bindings with
+  | nil => cases matched; rfl
+  | cons pattern patterns inductionHypothesis =>
+    cases matched with
+    | cons _ tailMatch _ =>
+      exact congrArg Nat.succ (inductionHypothesis tailMatch)
+
+theorem matchRelWith_vectorRest_iff_split {equivalent : Pattern → Pattern → Bool}
+    {patterns terms : List Pattern} {name : String}
+    {termRest : Option String} {bindings : Bindings} :
+    MatchRelWith equivalent (.collection .vec patterns (some name))
+        (.collection .vec terms termRest) bindings ↔
+      ∃ leading trailing prefixBindings,
+        terms = leading ++ trailing ∧
+        MatchArgsRelWith equivalent patterns leading prefixBindings ∧
+        mergeBindingsWith equivalent prefixBindings
+          [(name, .collection .vec trailing none)] = some bindings := by
+  constructor
+  · intro matched
+    cases matched with
+    | collection notVector _ => exact (notVector rfl).elim
+    | vectorRest prefixMatch merged =>
+      exact ⟨_, _, _, (List.take_append_drop _ _).symm, prefixMatch, merged⟩
+  · rintro ⟨leading, trailing, prefixBindings, rfl, prefixMatch, merged⟩
+    have lengthEquality := prefixMatch.length_eq
+    apply MatchRelWith.vectorRest
+    · simpa only [lengthEquality, List.take_left] using prefixMatch
+    · simpa only [lengthEquality, List.drop_left] using merged
 
 private theorem lt_length_of_mem_zipIdx {α : Type*} {values : List α}
     {value : α} {index : Nat} (membership : (value, index) ∈ values.zipIdx) :
@@ -283,12 +330,33 @@ private theorem sound_all (equivalent : Pattern → Pattern → Bool) (bound : N
             next equality =>
               have typesEqual := beq_iff_eq.mp equality
               subst typesEqual
-              exact .collection
-                (bagInduction patternElements rest leftType termElements bindings
-                  (by
-                    have := sizeOf_elems_lt_collection leftType patternElements rest
-                    omega)
-                  membership)
+              cases leftType with
+              | vec =>
+                simp only [beq_self_eq_true, ↓reduceIte] at membership
+                cases rest with
+                | none =>
+                  exact .vector (argumentsInduction patternElements termElements bindings
+                    (by have := sizeOf_elems_lt_collection .vec patternElements none; omega)
+                    membership)
+                | some restName =>
+                  obtain ⟨prefixBindings, prefixMember, mergeEquality⟩ :=
+                    List.mem_filterMap.mp membership
+                  exact .vectorRest
+                    (argumentsInduction patternElements
+                      (termElements.take patternElements.length) prefixBindings
+                      (by
+                        have := sizeOf_elems_lt_collection .vec patternElements (some restName)
+                        omega) prefixMember) mergeEquality
+              | hashBag =>
+                exact .collection (by decide)
+                  (bagInduction patternElements rest .hashBag termElements bindings
+                    (by have := sizeOf_elems_lt_collection .hashBag patternElements rest; omega)
+                    membership)
+              | hashSet =>
+                exact .collection (by decide)
+                  (bagInduction patternElements rest .hashSet termElements bindings
+                    (by have := sizeOf_elems_lt_collection .hashSet patternElements rest; omega)
+                    membership)
             next => simp at membership
         | .collection _ _ _, .bvar _ | .collection _ _ _, .fvar _
         | .collection _ _ _, .apply _ _ | .collection _ _ _, .lambda _ _
@@ -461,15 +529,30 @@ private theorem complete_all (equivalent : Pattern → Pattern → Bool) (bound 
                 have := sizeOf_body_lt_multiLambda arity patternNames patternBody
                 omega)
               bodyRelation
-        | collection bagRelation =>
-            rename_i patternElements rest collectionType termElements termRest
+        | collection notVector bagRelation =>
+            rename_i collectionType patternElements rest termElements termRest
             unfold matchPatternWith
-            simp only [beq_self_eq_true, ↓reduceIte]
+            simp only [beq_self_eq_true, beq_iff_eq, notVector, ↓reduceIte]
             exact bagInduction patternElements rest collectionType termElements _
               (by
                 have := sizeOf_elems_lt_collection collectionType patternElements rest
                 omega)
               bagRelation
+        | vector argumentsRelation =>
+            rename_i patternElements termElements termRest
+            simpa only [matchPatternWith, beq_self_eq_true, ↓reduceIte] using
+              argumentsInduction patternElements termElements _
+                (by have := sizeOf_elems_lt_collection .vec patternElements none; omega)
+                argumentsRelation
+        | vectorRest argumentsRelation mergeEquality =>
+            rename_i patternElements prefixBindings restName termElements termRest
+            simp only [matchPatternWith, beq_self_eq_true, ↓reduceIte]
+            exact List.mem_filterMap.mpr ⟨prefixBindings,
+              argumentsInduction patternElements
+                (termElements.take patternElements.length) prefixBindings
+                (by
+                  have := sizeOf_elems_lt_collection .vec patternElements (some restName)
+                  omega) argumentsRelation, mergeEquality⟩
         | subst bodyRelation replacementRelation mergeEquality =>
             rename_i patternBody termBody bodyBindings patternReplacement
               termReplacement replacementBindings

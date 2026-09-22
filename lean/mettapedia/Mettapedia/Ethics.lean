@@ -3,6 +3,8 @@ import Mettapedia.Ethics.Theory
 import Mettapedia.Ethics.FOETCore
 import Mettapedia.Ethics.Dignity
 import Mettapedia.Ethics.ChoicePoint
+import Mettapedia.Ethics.DeonticValueDivergence
+import Mettapedia.Ethics.NormativeGrades
 import Mettapedia.Ethics.StructuredSentence
 import Mettapedia.Ethics.StructuredParadigms
 import Mettapedia.Ethics.Translation
@@ -10,6 +12,13 @@ import Mettapedia.Ethics.CredalValueAttributionCaseTable
 import Mettapedia.Ethics.CredalValueAttributionExample
 import Mettapedia.Ethics.MoralUndecidability
 import Mettapedia.Ethics.NativeParadigmCapabilities
+import Mettapedia.Ethics.VirtuePossessionUndecidability
+import Mettapedia.Ethics.HostVirtuePossession
+import Mettapedia.Ethics.ChoicePointParadigms
+import Mettapedia.Ethics.VirtueLearning
+import Mettapedia.Ethics.LiberalParadox
+import Mettapedia.Ethics.EncodedEthicsLimits
+import Mettapedia.Ethics.CommunicationLanguage
 import Mettapedia.Ethics.MetaEthicsOntology
 import Mettapedia.Ethics.SourceHierarchyConcordance
 import Mettapedia.Ethics.SourceTaxonomyInference

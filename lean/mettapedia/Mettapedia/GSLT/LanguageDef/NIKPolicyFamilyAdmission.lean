@@ -15,6 +15,10 @@ admission layer its proper home in GSLT:
   lossy readout;
 * staleness prevents activation without destroying that fallback state.
 
+Agreement with a live, revision-indexed interpretation additionally needs a
+dependency-adequacy law. Equality of selected dependency values alone does
+not show that the selection accounts for every change relevant to a consumer.
+
 Exact replay, semantic execution admission, and profitability are independent
 additional capabilities.  They may be displayed over this layer but are not
 silently inferred from policy sufficiency.
@@ -52,7 +56,7 @@ variable {family : PolicyFamily.{uState, uPolicy, uResult} State}
 variable {Key : Type uKey} {readout : State -> Key}
 
 /-- The support witness retained by an admission record. -/
-def supports
+theorem supports
     (admission : PolicyFamilyAdmittedAt dependencies revision family readout) :
     family.SupportsReadout readout :=
   ⟨admission.realization⟩
@@ -96,7 +100,7 @@ structure Active
     (currentRevision : dependencies.Revision) : Prop where
   current : dependencies.SameDependencies revision currentRevision
 
-def activate
+theorem activate
     (admission : PolicyFamilyAdmittedAt dependencies revision family readout)
     (current : dependencies.SameDependencies revision currentRevision) :
     admission.Active currentRevision :=
@@ -162,6 +166,55 @@ def Active.runPrepared
   rw [prepared.encoded_adequate]
   exact admission.realization.agrees policy prepared.state
 
+/-! ## Binding retained policies to live meaning
+
+The live interpretation is supplied independently of the retained runner and
+the selected dependency system. Its policy and result types are fixed on this
+interface; changing those types requires a separately justified transport.
+-/
+
+/-- Every retained policy has its independently declared meaning at the
+revision at which it was admitted. -/
+def RetainedMeaning
+    (live : dependencies.Revision → (policy : family.Policy) → State → family.Result policy)
+    (atRevision : dependencies.Revision) : Prop :=
+  ∀ policy state, family.decide policy state = live atRevision policy state
+
+/-- The chosen dependency values account for every live change visible to
+these policies. The policy family is external to this predicate; selecting an
+empty dependency set does not discharge it. -/
+def DependenciesAdequate
+    (live : dependencies.Revision → (policy : family.Policy) → State → family.Result policy) : Prop :=
+  ∀ first second, dependencies.SameDependencies first second →
+    ∀ policy state, live first policy state = live second policy state
+
+/-- Activation, the retained runner's original meaning, and adequate live
+dependencies together justify reuse at the current revision. The original
+fixed-family agreement theorem alone has no such conclusion. -/
+theorem Active.runPrepared_live
+    {admission : PolicyFamilyAdmittedAt dependencies revision family readout}
+    (active : admission.Active currentRevision)
+    (live : dependencies.Revision → (policy : family.Policy) → State → family.Result policy)
+    (retained : RetainedMeaning live revision)
+    (adequate : DependenciesAdequate live)
+    (prepared : admission.PreparedState) (policy : family.Policy) :
+    active.runPrepared prepared policy = live currentRevision policy prepared.state := by
+  exact (active.runPrepared_eq prepared policy).trans
+    ((retained policy prepared.state).trans
+      (adequate revision currentRevision active.current policy prepared.state))
+
+/-- A same-key change visible to even one promised consumer refutes the
+dependency claim, irrespective of whether a retained runner can activate. -/
+theorem not_dependenciesAdequate_of_collision
+    (live : dependencies.Revision → (policy : family.Policy) → State → family.Result policy)
+    {first second : dependencies.Revision}
+    (same : dependencies.SameDependencies first second)
+    (policy : family.Policy) (state : State)
+    (different : live first policy state ≠ live second policy state) :
+    ¬ DependenciesAdequate live := by
+  intro adequate
+  exact different (adequate first second same policy state)
+
 /-- A candidate revision is stale exactly when the selected dependency view
 cannot be transported to it. -/
 def StaleAt
@@ -211,7 +264,7 @@ def admission :
       intro first second sameReadout policy
       exact sameReadout)
 
-def active : admission.Active false :=
+theorem active : admission.Active false :=
   admission.activate (dependencies.sameDependencies_refl false)
 
 def prepared : admission.PreparedState :=
@@ -250,6 +303,8 @@ theorem collapsed_key_has_no_admission :
 end Canary
 
 #print axioms PolicyFamilyAdmittedAt.Active.runPrepared_eq
+#print axioms PolicyFamilyAdmittedAt.Active.runPrepared_live
+#print axioms PolicyFamilyAdmittedAt.not_dependenciesAdequate_of_collision
 #print axioms PolicyFamilyAdmittedAt.supports
 #print axioms PolicyFamilyAdmittedAt.compatibleReadout
 #print axioms PolicyFamilyAdmittedAt.ofSection

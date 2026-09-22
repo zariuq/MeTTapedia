@@ -989,6 +989,11 @@ private def mmRules : List RewriteRule := [
 
 private theorem mm_rewrites_eq : metamathCore.rewrites = mmRules := rfl
 
+/-- No authored Metamath rule binds on its right-hand side, so scope-corrected
+firing and plain binding application agree on every one of them. -/
+private theorem mmRules_binderFree :
+    ∀ r ∈ mmRules, binderFree r.right = true := by decide
+
 /-! ## One-step preservation of `M` -/
 
 private theorem applyBindings_apply (bs : Bindings) (c : String) (args : List Pattern) :
@@ -1613,6 +1618,8 @@ private theorem step_preserves {s q : Pattern} (h : Step s q) : M s = M q := by
       rw [matchPatternForRule_eq_syntactic] at hbs
       rw [applyBindingsForRule_eq_syntactic] at happ
       rw [mm_rewrites_eq] at hr
+      rw [applyRuleBindings,
+        applyBindingsScoped_zero_of_binderFree _ _ _ (mmRules_binderFree _ hr)] at happ
       simp only [mmRules, List.mem_cons, List.not_mem_nil, or_false] at hr
       rcases hr with rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl
       all_goals cases hprem
@@ -1878,7 +1885,9 @@ private theorem contextualTopRule {source target : Pattern}
     exact matched
   · rw [noPremises]
     exact .nil bindings
-  · rw [applyBindingsForRule_eq_syntactic]
+  · rw [applyBindingsForRule_eq_syntactic, applyRuleBindings,
+      applyBindingsScoped_zero_of_binderFree _ _ _
+        (mmRules_binderFree _ (mm_rewrites_eq ▸ member))]
     exact instantiated
 
 private theorem step_BeginCompile (db : Pattern) :

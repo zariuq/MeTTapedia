@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.Core.Composition
-import Mettapedia.Languages.MeTTa.LeafPatchViewKernel
+import Mettapedia.Logic.Unification.BinaryPatternViews
 
 /-!
 # Ground linear-head compilation
@@ -18,7 +18,7 @@ matcher path.
 
 namespace Mettapedia.GSLT.LanguageDef.GroundLinearHeadCompilation
 
-open Mettapedia.Languages.MeTTa.LeafPatchViewKernel
+open Mettapedia.Logic.Unification.BinaryPatternViews
 
 variable {Symbol : Type} [DecidableEq Symbol]
 

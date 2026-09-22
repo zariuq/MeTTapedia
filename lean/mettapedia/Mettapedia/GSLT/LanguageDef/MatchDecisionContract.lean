@@ -610,6 +610,33 @@ theorem conflictsOn_sound {ps : List Path} {o s : Skeleton V}
   obtain ⟨p, _, hp⟩ := List.any_eq_true.mp h
   exact ⟨p, hp⟩
 
+/-- Only positions constrained by the pattern can refute a structural match.
+This drops no binding or cross-position equality obligation of a full unifier. -/
+def demandedPaths (ps : List Path) (pat : Skeleton V) : List Path :=
+  ps.filter fun p => match pat p with
+    | .unknown => false
+    | _ => true
+
+/-- Erasing wildcard observations preserves structural rejection exactly. -/
+theorem conflictsOn_demandedPaths (ps : List Path) (o pat : Skeleton V) :
+    conflictsOn (demandedPaths ps pat) o pat = conflictsOn ps o pat := by
+  unfold conflictsOn demandedPaths
+  rw [List.any_filter]
+  congr 1
+  funext p
+  cases hp : pat p <;> cases ho : o p <;>
+    simp [posConflict, Obs.conflictB, hp, ho]
+
+example : demandedPaths [[], [0]]
+    (fun p => if p = [] then Obs.present (7 : Nat) else Obs.unknown) = [[]] := by
+  decide
+
+/-- A rigid absence observation cannot be erased as a wildcard. -/
+example : conflictsOn [[]] (fun _ => Obs.present (7 : Nat))
+      (fun _ => Obs.absent) ≠
+    conflictsOn [] (fun _ => Obs.present (7 : Nat))
+      (fun _ => Obs.absent) := by decide
+
 /-- Refutations persist as information grows. -/
 theorem conflictsOn_mono_obs {ps : List Path} {o o' s : Skeleton V}
     (hle : o ⊑ₛ o') (h : conflictsOn ps o s = true) :
@@ -1032,5 +1059,68 @@ example : compileOnceCost [artifactA, artifactDifferentRevision] = 2 := by
 example : compileOnceCost [artifactA, artifactDifferentOrder] = 2 := by decide
 
 end ArtifactRepository
+
+
+/-! ## Observation bounds for stable pivot selection -/
+
+namespace Shaped
+
+/-- Occurrences unconstrained at one path survive every observation of it. -/
+def wildcardOccurrences {V : Type*} (p : Path) (source : List (Candidate V)) :=
+  source.filter fun c => match c.pat p with
+    | .unknown => true
+    | _ => false
+
+theorem wildcardOccurrences_sublist_candidates {V : Type*} [DecidableEq V]
+    (p : Path) (o : Skeleton V) (source : List (Candidate V)) :
+    (wildcardOccurrences p source).Sublist (candidates [p] o source) := by
+  apply List.monotone_filter_right
+  intro c hc
+  cases hp : c.pat p <;>
+    simp_all [conflictsOn, posConflict, Obs.conflictB_unknown_right]
+
+/-- A lower bound on candidate count, counting duplicate occurrences. -/
+theorem wildcardOccurrences_length_le {V : Type*} [DecidableEq V]
+    (p : Path) (o : Skeleton V) (source : List (Candidate V)) :
+    (wildcardOccurrences p source).length ≤ (candidates [p] o source).length :=
+  (wildcardOccurrences_sublist_candidates p o source).length_le
+
+end Shaped
+
+/-- One step of a stable minimum-cost pivot selection. Unknown costs do not
+replace an incumbent; equal costs preserve its occurrence identity. -/
+def improvePivot {ι : Type*} (best : Option (ι × Nat)) (path : ι)
+    (cost : Option Nat) : Option (ι × Nat) :=
+  match cost, best with
+  | none, _ => best
+  | some n, none => some (path, n)
+  | some n, some (_, old) => if n < old then some (path, n) else best
+
+/-- Skip an observation whose lower bound cannot improve the incumbent. -/
+def improvePivotBounded {ι : Type*} (best : Option (ι × Nat)) (path : ι)
+    (lower : Nat) (observe : Unit → Option Nat) : Option (ι × Nat) :=
+  match best with
+  | some (_, old) => if old ≤ lower then best else improvePivot best path (observe ())
+  | none => improvePivot best path (observe ())
+
+theorem improvePivotBounded_eq {ι : Type*} (best : Option (ι × Nat)) (path : ι)
+    (lower : Nat) (observe : Unit → Option Nat)
+    (bound : ∀ n, observe () = some n → lower ≤ n) :
+    improvePivotBounded best path lower observe = improvePivot best path (observe ()) := by
+  cases best with
+  | none => rfl
+  | some best =>
+    rcases best with ⟨id, old⟩
+    by_cases h : old ≤ lower
+    · cases hc : observe () with
+      | none => simp [improvePivotBounded, improvePivot, h]
+      | some n =>
+        have hn : ¬ n < old := Nat.not_lt.mpr (h.trans (bound n hc))
+        simp [improvePivotBounded, improvePivot, h, hn]
+    · simp [improvePivotBounded, h]
+
+-- Equal cost preserves the first occurrence; a genuinely better path wins.
+example : improvePivotBounded (some (10, 2)) 20 2 (fun _ => some 2) = some (10, 2) := rfl
+example : improvePivotBounded (some (10, 3)) 20 2 (fun _ => some 2) = some (20, 2) := rfl
 
 end Mettapedia.GSLT.LanguageDef.MatchDecisionContract

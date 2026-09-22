@@ -121,7 +121,7 @@ theorem demo_inhabits_derived_native_type :
   have reduction : langReduces language demoSource demoTarget :=
     (langReducesUsing_iff_execUsing RelationEnv.empty language _ _).2
       ⟨demoFormula.height, executable⟩
-  refine ⟨⟨(demoSource, demoTarget), reduction⟩, rfl, ?_⟩
+  refine ⟨⟨(demoSource, demoTarget), langReduces_to_semantic language reduction⟩, rfl, ?_⟩
   refine ⟨[
     targetPositive (relation "demo:p") arguments,
     targetNegative (relation "demo:q") arguments], rfl, ?_⟩
@@ -144,7 +144,8 @@ theorem demo_evidence_inhabits_derived_native_type :
       langReduces language demoEvidenceSource demoEvidenceTarget :=
     (langReducesUsing_iff_execUsing RelationEnv.empty language _ _).2
       ⟨demoFormula.height + 1, executable⟩
-  refine ⟨⟨(demoEvidenceSource, demoEvidenceTarget), reduction⟩, rfl, ?_⟩
+  refine ⟨⟨(demoEvidenceSource, demoEvidenceTarget),
+    langReduces_to_semantic language reduction⟩, rfl, ?_⟩
   refine ⟨[demoFormula.source, demoTarget], rfl, ?_⟩
   constructor
   · trivial

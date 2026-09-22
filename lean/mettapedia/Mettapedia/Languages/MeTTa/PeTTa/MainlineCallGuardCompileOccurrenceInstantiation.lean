@@ -494,7 +494,10 @@ theorem instantiate_authoredTarget_eq_ruleTarget
         (checkerArguments environment) (authoredTarget demand slot) =
       some (applyBindingsForRule language
         (typingAt demand slot).site.rewrite environment.bindings) := by
-  rw [applyBindingsForRule_eq_syntactic]
+  rw [applyBindingsForRule_eq_syntactic,
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.applyRuleBindings_of_holeSkeletons _
+      (by rw [typingAt_eq_rootTyping]; exact root_left_holeSkeleton _)
+      (by rw [typingAt_eq_rootTyping]; exact root_target_holeSkeleton _)]
   exact instantiate_authoredTarget environment
 
 /-- The same common argument vector reconstructs the displayed focus. -/
@@ -548,12 +551,6 @@ theorem selected_source_occurrenceNames_eq_freeFvarNames
   apply patternOccurrenceNames_eq_freeFvarNames_of_holeSkeleton
   rw [typingAt_eq_rootTyping]
   exact root_left_holeSkeleton _
-
-/-- Every selected cold target is an ambient-hole skeleton. -/
-theorem root_target_holeSkeleton
-    (index : Fin coldSource.language.rewrites.length) :
-    patternHoleSkeleton (rootTyping index).site.rewrite.right = true := by
-  fin_cases index <;> decide +kernel
 
 /-- Target skeleton occurrences are exactly its free variables. -/
 theorem selected_target_occurrenceNames_eq_freeFvarNames
@@ -747,7 +744,14 @@ theorem CheckerActivation.targetForRule_eq (slot : Occurrence)
         activation.instantiation.endpoint.bindings =
       applyBindingsForRule language (typingAt demand slot).site.rewrite
         activation.environment.bindings := by
-  simpa only [applyBindingsForRule_eq_syntactic] using activation.target_eq
+  have leftHole : patternHoleSkeleton (typingAt demand slot).site.rewrite.left = true := by
+    rw [typingAt_eq_rootTyping]; exact root_left_holeSkeleton _
+  have rightHole : patternHoleSkeleton (typingAt demand slot).site.rewrite.right = true := by
+    rw [typingAt_eq_rootTyping]; exact root_target_holeSkeleton _
+  simpa only [applyBindingsForRule_eq_syntactic,
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.applyRuleBindings_of_holeSkeletons _
+      leftHole rightHole]
+    using activation.target_eq
 
 /-! ## Negative control -/
 

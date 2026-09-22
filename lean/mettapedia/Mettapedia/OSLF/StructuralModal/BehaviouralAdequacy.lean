@@ -79,6 +79,11 @@ def toDirectional : Formula → HennessyMilner.Formula PEmpty Direction
   | .headed _ _ => .top
   | .diamond inner => .dia .forward (toDirectional inner)
   | .box inner => .neg (.dia .backward (.neg (toDirectional inner)))
+  -- The target logic has no spatial former, so the collection formers go the
+  -- same way `headed` does.  Every theorem below is gated on the behavioural
+  -- fragment, which contains none of the three.
+  | .emptyColl _ => .top
+  | .cut _ _ _ => .top
 
 theorem sat_toDirectional (relEnv : RelationEnv) (lang : LanguageDef) {formula : Formula}
     (admissible : Admissible formula) (term : Pattern) :
@@ -157,6 +162,8 @@ def toPositive : Formula → PosFormula PEmpty Unit
   | .headed _ _ => .top
   | .diamond inner => .dia () (toPositive inner)
   | .box _ => .top
+  | .emptyColl _ => .top
+  | .cut _ _ _ => .top
 
 theorem psat_toPositive (relEnv : RelationEnv) (lang : LanguageDef) {formula : Formula}
     (positive : Positive formula) (term : Pattern) :

@@ -322,7 +322,7 @@ theorem execute_at (catalog : Catalog) (stage state : Pattern) :
     metavariable, matchPatternForRule, matchPatternForRuleUsing,
     OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
     matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?,
-    applyBindingsForRule, applyBindingsForRuleUsing,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings,
     matchPattern, matchArgs, mergeBindings, applyBindings]
   generalize fibreTargets catalog stage state = targets
   induction targets with
@@ -350,7 +350,7 @@ theorem execute_via (catalog : Catalog)
     metavariable, matchPatternForRule, matchPatternForRuleUsing,
     OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
     matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?,
-    applyBindingsForRule, applyBindingsForRuleUsing,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings,
     matchPattern, matchArgs, mergeBindings, applyBindings]
   generalize fibreTargets catalog sourceStage state = fibreRows
   generalize transportTargets catalog kind route sourceStage targetStage state =

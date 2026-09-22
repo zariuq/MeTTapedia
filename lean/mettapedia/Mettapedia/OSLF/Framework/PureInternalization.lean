@@ -176,13 +176,13 @@ end AuthorityNode
 
 /-- The Pure-shape node over the empty object-rule list, with valuation
 semantics as its meaning. -/
-noncomputable def pureNode :=
+noncomputable def twoSortNode :=
   derivesTheory (HypotheticalRules (Atom := String) [])
     HypotheticalCanary.Valid HypotheticalCanary.rules_valid
 
 /-- Consistency of the Pure node, by model qualification. -/
-theorem pureNode_consistent :
-    ¬ pureNode.Scope () ([], HypotheticalCanary.a) :=
+theorem twoSortNode_consistent :
+    ¬ twoSortNode.Scope () ([], HypotheticalCanary.a) :=
   HypotheticalCanary.atom_not_derivable
 
 /-- The schematic (MM0-shape) canary rules are sound for the
@@ -219,7 +219,7 @@ theorem schematicNode_consistent :
 #print axioms mono_context
 #print axioms deduction
 #print axioms internalize
-#print axioms pureNode_consistent
+#print axioms twoSortNode_consistent
 #print axioms schematicNode_consistent
 
 end Mettapedia.OSLF.Framework.PureInternalization

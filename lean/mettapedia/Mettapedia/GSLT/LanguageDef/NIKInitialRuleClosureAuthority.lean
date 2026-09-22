@@ -30,9 +30,9 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.NIKInitialRuleClosureAuthority
 
+open Mettapedia.Logic
 open Mettapedia.GSLT.LanguageDef.KernelAuthority
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
-open Mettapedia.Logic
 open Mettapedia.OSLF.Framework.InitialModalSchema
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax

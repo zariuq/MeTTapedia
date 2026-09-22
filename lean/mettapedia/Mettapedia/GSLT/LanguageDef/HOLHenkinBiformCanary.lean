@@ -22,6 +22,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.HOLHenkinBiformCanary
 
+open Mettapedia.Logic
 open CategoryTheory
 open scoped CategoryTheory
 open Mettapedia.GSLT
@@ -31,7 +32,6 @@ open Mettapedia.GSLT.LanguageDef.InstitutionConsequence
 open Mettapedia.GSLT.LanguageDef.BiformTheory
 open Mettapedia.GSLT.LanguageDef.BiformCertificateBoundary
 open Mettapedia.GSLT.LanguageDef.ClosedTheorySemanticTarget
-open Mettapedia.Logic
 open Mettapedia.Logic.HOL
 open Mettapedia.Logic.HOL.HenkinInstitution
 open Mettapedia.Logic.HOL.HenkinInstitution.Canary

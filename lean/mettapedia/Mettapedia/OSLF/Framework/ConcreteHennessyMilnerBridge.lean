@@ -63,56 +63,121 @@ variable (M : ConcreteSystem S)
 
 /-! ## Concrete semantics on an arbitrary equation-aware system -/
 
+/-- Scope environments for the concrete reading. -/
+abbrev ScopeEnv (S : GSLT.{uTerm}) := Nat → S.Term → Prop
+
+/-- Extend a concrete scope environment with a new innermost binding. -/
+def ScopeEnv.push (value : S.Term → Prop) (env : ScopeEnv S) : ScopeEnv S
+  | 0 => value
+  | k + 1 => env k
+
+/-- The environment in which no scope variable denotes anything. -/
+def ScopeEnv.empty : ScopeEnv S := fun _ _ => False
+
 /-- Interpret the public formula syntax using the labeled system's sole `Unit`
 label.  Diamond follows forward transitions; box is the categorical
-predecessor-universal right adjoint. -/
-def satisfies : OSLFFormula → S.Term → Prop
+predecessor-universal right adjoint.
+
+A generator is the intersection of the pre-fixed points of its body among the
+predicates of *this* logic — the ones the GSLT's equations cannot see past.
+There is only one frame in play here, so it is written in rather than carried:
+it is the same class `invariantPredicate` selects below, which is why the
+invariance theorem needs no condition on the body.
+
+The three structural connectives read the *shape* of a term — a collection of
+a given kind, a split of one into two, an application under a named head — and
+a labelled system's carrier is opaque: it has transitions and observations and
+nothing else.  So no term of such a system has any of those shapes, and the
+three denote the empty predicate.  That is their honest extension here, not a
+stand-in for one: every theorem in this module ranges over the image of a
+Hennessy--Milner fragment, in which they do not occur. -/
+def satisfiesEnv (env : ScopeEnv S) : OSLFFormula → S.Term → Prop
   | .top, _ => True
   | .bot, _ => False
   | .atom atom, term => M.observes atom term
-  | .and left right, term => satisfies left term ∧ satisfies right term
-  | .or left right, term => satisfies left term ∨ satisfies right term
-  | .imp left right, term => satisfies left term → satisfies right term
+  | .and left right, term => satisfiesEnv env left term ∧ satisfiesEnv env right term
+  | .or left right, term => satisfiesEnv env left term ∨ satisfiesEnv env right term
+  | .imp left right, term => satisfiesEnv env left term → satisfiesEnv env right term
   | .dia body, source =>
-      ∃ target, M.act source target ∧ satisfies body target
+      ∃ target, M.act source target ∧ satisfiesEnv env body target
   | .box body, target =>
-      ∀ source, M.act source target → satisfies body source
+      ∀ source, M.act source target → satisfiesEnv env body source
+  | .var index, term => env index term
+  | .emptyColl _, _ => False
+  | .cut _ _ _, _ => False
+  | .headed _ _, _ => False
+  | .mu body, term =>
+      ∀ candidate : S.Term → Prop,
+        (∀ ⦃left right : S.Term⦄,
+          S.Equiv left right → (candidate left ↔ candidate right)) →
+        (∀ t, satisfiesEnv (ScopeEnv.push candidate env) body t → candidate t) →
+          candidate term
+
+/-- Interpretation of a closed formula. -/
+def satisfies : OSLFFormula → S.Term → Prop :=
+  satisfiesEnv M ScopeEnv.empty
 
 /-- Every concrete formula is invariant under the GSLT equations when its
-atomic observations and labeled steps are invariant. -/
-theorem satisfies_resp : ∀ (formula : OSLFFormula) {left right : S.Term},
-    S.Equiv left right → (satisfies M formula left ↔ satisfies M formula right)
-  | .top, _, _, _ => Iff.rfl
-  | .bot, _, _, _ => Iff.rfl
-  | .atom atom, _, _, equivalent => M.observes_resp atom equivalent
-  | .and first second, _, _, equivalent =>
-      and_congr (satisfies_resp first equivalent)
-        (satisfies_resp second equivalent)
-  | .or first second, _, _, equivalent =>
-      or_congr (satisfies_resp first equivalent)
-        (satisfies_resp second equivalent)
-  | .imp first second, _, _, equivalent =>
-      imp_congr (satisfies_resp first equivalent)
-        (satisfies_resp second equivalent)
-  | .dia body, _, _, equivalent => by
+atomic observations, labeled steps and scope environment are invariant. -/
+theorem satisfiesEnv_resp (formula : OSLFFormula) :
+    ∀ (env : ScopeEnv S),
+      (∀ index, ∀ ⦃left right : S.Term⦄,
+        S.Equiv left right → (env index left ↔ env index right)) →
+      ∀ {left right : S.Term},
+        S.Equiv left right →
+          (satisfiesEnv M env formula left ↔ satisfiesEnv M env formula right) := by
+  induction formula with
+  | top => intro _ _ _ _ _; exact Iff.rfl
+  | bot => intro _ _ _ _ _; exact Iff.rfl
+  | atom atom => intro _ _ _ _ equivalent; exact M.observes_resp atom equivalent
+  | and first second firstIH secondIH =>
+      intro env envInv _ _ equivalent
+      exact and_congr (firstIH env envInv equivalent) (secondIH env envInv equivalent)
+  | or first second firstIH secondIH =>
+      intro env envInv _ _ equivalent
+      exact or_congr (firstIH env envInv equivalent) (secondIH env envInv equivalent)
+  | imp first second firstIH secondIH =>
+      intro env envInv _ _ equivalent
+      exact imp_congr (firstIH env envInv equivalent) (secondIH env envInv equivalent)
+  | dia body bodyIH =>
+      intro env envInv _ _ equivalent
       constructor
       · rintro ⟨target, step, holds⟩
         obtain ⟨target', step', targetEquivalent⟩ :=
           M.act_resp_left equivalent step
-        exact ⟨target', step',
-          (satisfies_resp body targetEquivalent).mp holds⟩
+        exact ⟨target', step', (bodyIH env envInv targetEquivalent).mp holds⟩
       · rintro ⟨target, step, holds⟩
         obtain ⟨target', step', targetEquivalent⟩ := M.act_resp_left
           (S.equations.iseqv.symm equivalent) step
-        exact ⟨target', step',
-          (satisfies_resp body targetEquivalent).mp holds⟩
-  | .box body, _, _, equivalent => by
+        exact ⟨target', step', (bodyIH env envInv targetEquivalent).mp holds⟩
+  | box body bodyIH =>
+      intro env envInv _ _ equivalent
       constructor
       · intro holds source step
         exact holds source
           (M.act_resp_right step (S.equations.iseqv.symm equivalent))
       · intro holds source step
         exact holds source (M.act_resp_right step equivalent)
+  | var index =>
+      intro env envInv _ _ equivalent
+      exact envInv index equivalent
+  | emptyColl _ => intro _ _ _ _ _; exact Iff.rfl
+  | cut _ _ _ _ _ => intro _ _ _ _ _; exact Iff.rfl
+  | headed _ _ _ => intro _ _ _ _ _; exact Iff.rfl
+  | mu body _ =>
+      intro env _ left right equivalent
+      constructor
+      · intro holds candidate candidateInv pre
+        exact (candidateInv equivalent).mp (holds candidate candidateInv pre)
+      · intro holds candidate candidateInv pre
+        exact (candidateInv equivalent).mpr (holds candidate candidateInv pre)
+
+/-- Every concrete formula is invariant under the GSLT equations when its
+atomic observations and labeled steps are invariant. -/
+theorem satisfies_resp (formula : OSLFFormula) {left right : S.Term}
+    (equivalent : S.Equiv left right) :
+    satisfies M formula left ↔ satisfies M formula right :=
+  satisfiesEnv_resp M formula ScopeEnv.empty (fun _ _ _ _ => Iff.rfl) equivalent
 
 /-- A concrete formula denotes an actual native type of the sole generated
 GSLT OSLF. -/

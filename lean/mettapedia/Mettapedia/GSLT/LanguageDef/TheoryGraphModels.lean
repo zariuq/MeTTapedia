@@ -29,9 +29,9 @@ set_option backward.isDefEq.respectTransparency false
 
 namespace Mettapedia.GSLT.LanguageDef.TheoryGraphModels
 
+open Mettapedia.Logic
 open _root_.CategoryTheory
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
-open Mettapedia.Logic
 
 universe uSignature uSignatureHom uSentence uModel uModelHom
 

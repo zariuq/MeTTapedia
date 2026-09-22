@@ -1340,7 +1340,8 @@ private theorem total_start_step_unique
             (resultStore operation first second)) := targetEq.symm
       _ = totalAfterCall operation first second := by
         simp [callValueTransition, callRule,
-          applyBindingsForRule_eq_syntactic, callValueBindings,
+          applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, callValueBindings,
           callFetchedBindings, consumedBindings, runMatchBindings,
           totalAfterCall, totalCallReceipt, targetExternalValue, externalReceipt,
           ExternalCallMachine.externalReceipt, stepReceipt, ExternalCallMachine.stepReceipt,
@@ -1582,6 +1583,7 @@ private theorem total_after_call_step_unique
         targetEq.symm
       _ = compiledExternalCallDone operation first second := by
         simp [returnValueTransition, applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
           returnReadBindings, returnFetchedBindings, consumedBindings,
           runMatchBindings, compiledExternalCallDone, compiledExternalCallOutcome,
           compiledExternalCallReceipt, total, defined, totalCallReceipt,
@@ -2234,7 +2236,8 @@ private theorem guarded_zero_start_step_unique
     simp [final] at admittedEq
     subst admitted
     simp [branchZeroTransition, branchRule,
-      applyBindingsForRule_eq_syntactic, branchReadBindings,
+      applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, branchReadBindings,
       branchFetchedBindings, consumedBindings, runMatchBindings,
       guardedAfterBranch, guardedBranchReceipt,
       stepReceipt, ExternalCallMachine.stepReceipt,
@@ -2270,7 +2273,8 @@ private theorem guarded_nonzero_start_step_unique
     simp [final] at admittedEq
     subst admitted
     simp [branchNonzeroTransition, branchRule,
-      applyBindingsForRule_eq_syntactic, branchReadBindings,
+      applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, branchReadBindings,
       branchFetchedBindings, consumedBindings, runMatchBindings,
       guardedAfterBranch, guardedBranchReceipt,
       stepReceipt, ExternalCallMachine.stepReceipt,
@@ -2305,6 +2309,7 @@ private theorem guarded_decline_step_unique
          simp only [List.mem_singleton] at premises
          subst finalBindings
          simp [returnDeclinedTransition, applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
            consumedBindings, runMatchBindings,
            compiledExternalCallDone, compiledExternalCallOutcome, compiledExternalCallReceipt, undefined,
            guardedBranchReceipt, stepReceipt, ExternalCallMachine.stepReceipt,
@@ -2349,6 +2354,7 @@ private theorem guarded_call_step_unique
          subst finalBindings
          simp [callValueTransition, callRule,
            applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
            callValueBindings, callFetchedBindings, consumedBindings,
            runMatchBindings, guardedAfterCall, guardedExternalReceipt,
            guardedBranchReceipt, targetExternalValue,
@@ -2408,6 +2414,7 @@ private theorem guarded_return_step_unique
          simp only [List.mem_singleton] at premises
          subst finalBindings
          simp [returnValueTransition, applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
            returnReadBindings, returnFetchedBindings, consumedBindings,
            runMatchBindings, compiledExternalCallDone, compiledExternalCallOutcome,
            compiledExternalCallReceipt, hPartial, defined,
@@ -2506,7 +2513,8 @@ private theorem guarded_zero_branch_step
       (by simp [externalCallLanguage, externalCallLanguageTransitions])
       rfl rfl
       (by simp [branchZeroTransition, branchRule,
-        applyBindingsForRule_eq_syntactic, branchReadBindings,
+        applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, branchReadBindings,
         branchFetchedBindings, consumedBindings, runMatchBindings,
         applyBindings, ExternalCallMachine.run, ExternalCallMachine.stepReceipt,
         ExternalCallMachine.a, ExternalCallMachine.v])
@@ -2540,7 +2548,8 @@ private theorem guarded_nonzero_branch_step
       (by simp [externalCallLanguage, externalCallLanguageTransitions])
       rfl rfl
       (by simp [branchNonzeroTransition, branchRule,
-        applyBindingsForRule_eq_syntactic, branchReadBindings,
+        applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, branchReadBindings,
         branchFetchedBindings, consumedBindings, runMatchBindings,
         applyBindings, ExternalCallMachine.run, ExternalCallMachine.stepReceipt,
         ExternalCallMachine.a, ExternalCallMachine.v])
@@ -3050,7 +3059,8 @@ private theorem sourceRule_result
   cases operation <;>
     simp [sourceRule, evaluateRule, sourceFinalBindings,
       sourceInitialBindings, arithmeticSourceDone,
-      applyBindingsForRule_eq_syntactic, applyBindings,
+      applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, applyBindings,
       sourceOutcomePattern, integerAtom, ExactArithmeticNTT.a,
       ExactArithmeticNTT.v, a]
 

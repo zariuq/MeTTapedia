@@ -829,22 +829,22 @@ theorem constructorsWithin_liftBVars {allowed : String → Prop}
       split <;> exact trivial
   | hfvar name => simp [liftBVars]
   | happly constructor arguments inductionHypothesis =>
-      simp only [liftBVars, constructorsWithin_apply]
+      simp only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, constructorsWithin_apply]
       exact ⟨supported.1, supported.2.map fun argument membership =>
         inductionHypothesis argument membership
           (supported.2.of_mem membership) cutoff⟩
   | hlambda binder body inductionHypothesis =>
-      simpa only [liftBVars, constructorsWithin_lambda] using
+      simpa only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, constructorsWithin_lambda] using
         inductionHypothesis supported (cutoff + 1)
   | hmultiLambda arity binders body inductionHypothesis =>
-      simpa only [liftBVars, constructorsWithin_multiLambda] using
+      simpa only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, constructorsWithin_multiLambda] using
         inductionHypothesis supported (cutoff + arity)
   | hsubst body replacement bodyInduction replacementInduction =>
-      simpa only [liftBVars, constructorsWithin_subst] using
+      simpa only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, constructorsWithin_subst] using
         And.intro (bodyInduction supported.1 (cutoff + 1))
           (replacementInduction supported.2 cutoff)
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [liftBVars, constructorsWithin_collection]
+      simp only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, constructorsWithin_collection]
       exact supported.map fun element membership =>
         inductionHypothesis element membership
           (supported.of_mem membership) cutoff
@@ -964,8 +964,23 @@ mutual
         exact matchRel_bindingsWithin body termSupported
     | multiLambda body =>
         exact matchRel_bindingsWithin body termSupported
-    | collection bag =>
+    | collection _ bag =>
         exact matchBagRel_bindingsWithin bag termSupported
+    | vector arguments =>
+        exact matchArgsRel_bindingsWithin arguments termSupported
+    | vectorRest prefixMatch merge =>
+        exact bindingsWithin_merge
+          (matchArgsRel_bindingsWithin prefixMatch (by
+            rw [constructorListWithin_iff_forall]
+            exact fun _ m => termSupported.of_mem (List.mem_of_mem_take m)))
+          (by
+            intro entry membership
+            simp only [List.mem_singleton] at membership
+            subst entry
+            change ConstructorListWithin allowed _
+            rw [constructorListWithin_iff_forall]
+            exact fun _ m => termSupported.of_mem (List.mem_of_mem_drop m))
+          merge
     | subst body replacement merge =>
         exact bindingsWithin_merge
           (matchRel_bindingsWithin body termSupported.1)

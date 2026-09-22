@@ -37,7 +37,6 @@ observations. They are not.
 
 namespace Mettapedia.Languages.GF.SUMO.PainEvidenceWM
 
-open Mettapedia.Logic
 open Mettapedia.Languages.GF.SUMO.EvidenceModel
 
 /-! ## 1. Sources and candidates -/

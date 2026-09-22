@@ -24,6 +24,8 @@ open LO FirstOrder
 open TptpFofSymbolIdentity
 
 attribute [local simp]
+  applyRuleBindings_eq_applyBindings
+  ruleDepthAligned depthAligned depthAlignedList captureDepth captureDepthList
   TptpFofSymbolLanguageDef.a
   TptpFofSymbolLanguageDef.encodeFunctionHead
   TptpFofSymbolLanguageDef.encodePredicateHead
@@ -393,7 +395,9 @@ theorem lookupDecision_equal_rewriteAt_exact (fuel : Nat)
     PatternEqualityDecision.equal, PatternEqualityDecision.different,
     applyRuleUsing, matchPatternForRule_eq_syntactic, premisesUsing,
     premiseStepUsing, matchPattern, matchArgs, mergeBindings,
-    applyBindingsForRule, applyBindings]
+    applyBindingsForRule]
+  rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)]
+  simp only [applyBindings, List.map_nil]
 
 theorem lookupDecision_different_rewriteAt_exact (fuel : Nat)
     (name tail index : Pattern)
@@ -538,6 +542,8 @@ theorem terms_nil_rewriteAt_exact (fuel : Nat) (environment : Pattern) :
     matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
     matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
     applyBindings]
+  rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)]
+  simp only [applyBindings, List.map_nil]
 
 theorem terms_cons_rewriteAt_exact (fuel : Nat)
     (environment head tail headResult tailResult : Pattern)
@@ -639,7 +645,9 @@ local macro "simplify_formula_rows" : tactic =>
       environmentCons, a, v, applyRuleUsing,
       matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
       matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
-      applyBindings])
+      applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 theorem formula_verum_rewriteAt_exact (fuel : Nat)
     (environment : Pattern) :

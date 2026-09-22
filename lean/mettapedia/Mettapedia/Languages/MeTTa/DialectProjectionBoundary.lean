@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.TypeTheory.StagedReflective.Presentation
+import Mettapedia.Languages.MeTTa.Experimental.StagedReflective.Presentation
 import Mettapedia.Languages.MeTTa.HE.TypeSystemGSLT
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTDeterminism
@@ -7,43 +7,47 @@ import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTGuard
 /-!
 # The dialect-projection boundary
 
-The derived native theory is intended to be one spine from which authored HE,
-PeTTa, Prime, and future dialect calculi are obtained by projection plus small,
-named quirk deltas.  The present tree already proves the weaker prerequisite:
-the observed HE and PeTTa requirements are exact projections of the Prime
-requirement bag.
+One question for the staged-reflective candidate is whether a common rule
+presentation can recover authored dialect calculi by projection plus small,
+named quirk deltas.  The finite-list results below do not answer that question:
+under the selected observation-to-requirement policy, the labels assigned to
+the working HE, PeTTa, and Zero profiles are exact filtered sublists of the
+candidate's assigned labels.
 
-That prerequisite is not the authored-calculus theorem.  Rule counts live in
+This is a classification-table property, not a semantic necessity implication
+or an authored-calculus projection theorem.  Rule counts live in
 several different presentations (typing, determinism, guards, operational
 rewrites, and regression suites), and an observation bag cannot determine any
 of them.  This module makes both facts explicit and gives the nondegenerate
 target interface for the later exact calculus instances.
 -/
 
-namespace Mettapedia.Languages.MeTTa.StagedReflective.DialectProjectionBoundary
+open Mettapedia.TypeTheory.Calculi.StagedScopedReflective
+namespace Mettapedia.Languages.MeTTa.Experimental.StagedReflective.DialectProjectionBoundary
 
-/-! ## Exact capability projections already available -/
+/-! ## Exact projections of assigned requirement labels -/
 
-/-- Project the native observed requirement spine onto precisely the
-requirements selected by a dialect bag. -/
-def projectRequirements (bag : ObservationBag) : List Requirement :=
-  primeBag.requirements.filter (fun requirement => requirement ∈ bag.requirements)
+/-- Filter the candidate's assigned labels by those assigned to a working
+dialect profile.  No syntax, judgment, or semantic model is projected. -/
+def projectAssignedRequirements (bag : ObservationBag) : List Requirement :=
+  candidateBag.assignedRequirements.filter
+    (fun requirement => requirement ∈ bag.assignedRequirements)
 
-theorem he_requirements_are_native_projection :
-    projectRequirements heBag = heBag.requirements := by
+theorem he_assignedRequirements_eq_projection :
+    projectAssignedRequirements heBag = heBag.assignedRequirements := by
   decide
 
-theorem petta_requirements_are_native_projection :
-    projectRequirements pettaBag = pettaBag.requirements := by
+theorem petta_assignedRequirements_eq_projection :
+    projectAssignedRequirements pettaBag = pettaBag.assignedRequirements := by
   decide
 
-theorem zero_requirements_are_native_projection :
-    projectRequirements zeroBag = zeroBag.requirements := by
+theorem zero_assignedRequirements_eq_projection :
+    projectAssignedRequirements zeroBag = zeroBag.assignedRequirements := by
   decide
 
-/-- Prime projects to the full observed spine. -/
-theorem prime_requirements_are_identity_projection :
-    projectRequirements primeBag = primeBag.requirements := by
+/-- Filtering the candidate's assigned list by itself retains that list. -/
+theorem candidate_assignedRequirements_eq_identity_projection :
+    projectAssignedRequirements candidateBag = candidateBag.assignedRequirements := by
   decide
 
 /-! ## The honest authored-calculus target -/
@@ -54,7 +58,7 @@ into one authored dialect presentation.
 The equality is the desired "projection plus quirk delta" theorem.  The two
 strictness fields rule out empty/constant witnesses: at least one native rule
 must survive, and the delta must be strictly smaller than the dialect
-calculus.  Concrete HE, PeTTa, and Prime instances require a common finite
+calculus.  Concrete HE, PeTTa, and candidate instances require a common finite
 native rule carrier; they cannot be inferred from observation bags. -/
 structure ExactDialectCalculusProjection
     (NativeRule DialectRule : Type*) where
@@ -106,8 +110,8 @@ theorem he_typing_rule_count : heTypingInventory.ruleCount = 22 :=
 theorem petta_typing_rule_count : pettaTypingInventory.ruleCount = 21 :=
   Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT.calculus_rule_count
 
-/-- HE and PeTTa currently force the same observed typing requirements, yet
-their authored base typing calculi have different sizes. -/
+/-- The working HE and PeTTa profiles list the same observations, yet their
+authored base typing calculi have different sizes. -/
 theorem equal_observations_different_authored_rule_counts :
     heTypingInventory.observations = pettaTypingInventory.observations ∧
       heTypingInventory.ruleCount ≠ pettaTypingInventory.ruleCount := by
@@ -144,4 +148,4 @@ theorem petta_base_and_guard_have_distinct_rule_counts :
   exact ⟨Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT.calculus_rule_count,
     Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTGuard.guard_rule_count⟩
 
-end Mettapedia.Languages.MeTTa.StagedReflective.DialectProjectionBoundary
+end Mettapedia.Languages.MeTTa.Experimental.StagedReflective.DialectProjectionBoundary

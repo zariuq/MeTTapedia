@@ -9,15 +9,16 @@ structure also preserve the OSLF modal semantics:
 
 - **Forward simulation** preserves the positive fragment (atoms, top, bot,
   and, or, diamond) in one direction.
-- **Bisimulation maps** preserve the full formula language (all connectives
-  including implication and box) as an iff.
+- **Bisimulation maps with successor and predecessor lifting** preserve the
+  `modalOnly` fragment, including implication and box, as an iff. Structural
+  connectives, scope variables, and fixed points are outside this theorem.
 
 ## Key Theorems
 
 - `forward_sim_preserves_positive` : forward simulation + atom preservation
     implies `sem R₁ I₁ φ p → sem R₂ I₂ φ (f p)` for positive φ
 - `bisimulation_map_preserves_sem` : bisimulation map implies
-    `sem R₁ I₁ φ p ↔ sem R₂ I₂ φ (f p)` for all φ
+    `sem R₁ I₁ φ p ↔ sem R₂ I₂ φ (f p)` when `modalOnly φ = true`
 - `bisimulation_map_preserves_indistObs` : bisimulation map preserves
     observational equivalence
 
@@ -50,8 +51,8 @@ structure ForwardSimulationMap
   /-- Atom preservation (forward direction). -/
   atoms : ∀ a p, I₁ a p → I₂ a (f p)
 
-/-- A bisimulation map from (R₁, I₁) to (R₂, I₂): both forward and backward
-    simulation conditions hold, sufficient for full formula preservation.
+/-- A bisimulation map from (R₁, I₁) to (R₂, I₂) with both successor and
+    predecessor lifting, sufficient for preservation of the modal-only fragment.
 
     - `forward`: R₁-steps lift to R₂-steps
     - `backward_succ`: every R₂-successor of `f p` is the image of some
@@ -85,8 +86,9 @@ def BisimulationMap.toForwardSim {R₁ R₂ : Pattern → Pattern → Prop}
 /-! ## Formula Fragment Predicates -/
 
 /-- The positive fragment: formulas built from top, bot, atoms, and, or, diamond.
-    No implication, no box. These are the formulas preserved forward by a
-    forward simulation map. -/
+    No implication, no box, and no structural connective — a simulation map
+    tracks behaviour, and the cut reads shape. These are the formulas preserved
+    forward by a forward simulation map. -/
 def IsPositive : OSLFFormula → Prop
   | .top => True
   | .bot => True
@@ -96,6 +98,11 @@ def IsPositive : OSLFFormula → Prop
   | .imp _ _ => False
   | .dia φ => IsPositive φ
   | .box _ => False
+  | .var _ => False
+  | .mu _ => False
+  | .emptyColl _ => False
+  | .cut _ _ _ => False
+  | .headed _ _ => False
 
 /-- Decidability of `IsPositive`. -/
 def decideIsPositive : (φ : OSLFFormula) → Decidable (IsPositive φ)
@@ -113,6 +120,31 @@ def decideIsPositive : (φ : OSLFFormula) → Decidable (IsPositive φ)
   | .imp _ _ => isFalse not_false
   | .dia φ => decideIsPositive φ
   | .box _ => isFalse not_false
+  | .var _ => isFalse not_false
+  | .mu _ => isFalse not_false
+  | .emptyColl _ => isFalse not_false
+  | .cut _ _ _ => isFalse not_false
+  | .headed _ _ => isFalse not_false
+
+/-- A positive formula lies in the modal fragment: no generator, and no
+structural connective. -/
+theorem modalOnly_of_isPositive : ∀ {φ : OSLFFormula},
+    IsPositive φ → OSLFFormula.modalOnly φ = true
+  | .top, _ => rfl
+  | .bot, _ => rfl
+  | .atom _, _ => rfl
+  | .and _ _, h => by
+      simp [OSLFFormula.modalOnly, modalOnly_of_isPositive h.1,
+        modalOnly_of_isPositive h.2]
+  | .or _ _, h => by
+      simp [OSLFFormula.modalOnly, modalOnly_of_isPositive h.1,
+        modalOnly_of_isPositive h.2]
+  | .dia inner, h => modalOnly_of_isPositive (φ := inner) h
+
+/-- A positive formula has no generator. -/
+theorem muFree_of_isPositive {φ : OSLFFormula} (h : IsPositive φ) :
+    OSLFFormula.muFree φ = true :=
+  ((OSLFFormula.modalOnly_iff φ).mp (modalOnly_of_isPositive h)).1
 
 instance : DecidablePred IsPositive := decideIsPositive
 
@@ -145,13 +177,18 @@ theorem forward_sim_preserves_positive
     intro ⟨q, hR, hq⟩
     exact ⟨sim.f q, sim.forward p q hR, ih hpos q hq⟩
   | box _ => exact absurd hpos not_false
+  | var _ => exact absurd hpos not_false
+  | mu _ _ => exact absurd hpos not_false
+  | emptyColl _ => exact absurd hpos not_false
+  | cut _ _ _ _ _ => exact absurd hpos not_false
+  | headed _ _ _ => exact absurd hpos not_false
 
-/-! ## Full Bisimulation-Map Preservation -/
+/-! ## Modal-Only Bisimulation-Map Preservation -/
 
-/-- Bisimulation maps preserve the full OSLF modal semantics as an iff.
+/-- These successor/predecessor-covering maps preserve modal-only semantics.
 
     If `sim` is a bisimulation map from (R₁, I₁) to (R₂, I₂), then for
-    any formula φ and state p:
+    any formula φ satisfying `modalOnly φ = true` and state p:
       `sem R₁ I₁ φ p ↔ sem R₂ I₂ φ (sim.f p)`
 
     This is the main theorem: simulation-style maps between reduction
@@ -160,29 +197,42 @@ theorem bisimulation_map_preserves_sem
     {R₁ R₂ : Pattern → Pattern → Prop}
     {I₁ I₂ : AtomSem}
     (sim : BisimulationMap R₁ R₂ I₁ I₂)
-    (φ : OSLFFormula) (p : Pattern) :
+    (φ : OSLFFormula) (free : OSLFFormula.modalOnly φ = true) (p : Pattern) :
     sem R₁ I₁ φ p ↔ sem R₂ I₂ φ (sim.f p) := by
   induction φ generalizing p with
   | top => exact Iff.rfl
   | bot => exact Iff.rfl
   | atom a => exact sim.atoms a p
-  | and φ ψ ihφ ihψ => exact and_congr (ihφ p) (ihψ p)
-  | or φ ψ ihφ ihψ => exact or_congr (ihφ p) (ihψ p)
-  | imp φ ψ ihφ ihψ => exact imp_congr (ihφ p) (ihψ p)
+  | var _ => simp [OSLFFormula.modalOnly] at free
+  | mu _ _ => simp [OSLFFormula.modalOnly] at free
+  | emptyColl _ => simp [OSLFFormula.modalOnly] at free
+  | cut _ _ _ _ _ => simp [OSLFFormula.modalOnly] at free
+  | headed _ _ _ => simp [OSLFFormula.modalOnly] at free
+  | and φ ψ ihφ ihψ =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      exact and_congr (ihφ free.1 p) (ihψ free.2 p)
+  | or φ ψ ihφ ihψ =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      exact or_congr (ihφ free.1 p) (ihψ free.2 p)
+  | imp φ ψ ihφ ihψ =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      exact imp_congr (ihφ free.1 p) (ihψ free.2 p)
   | dia φ ih =>
+    simp only [OSLFFormula.modalOnly] at free
     constructor
     · rintro ⟨q, hR, hq⟩
-      exact ⟨sim.f q, sim.forward p q hR, (ih q).mp hq⟩
+      exact ⟨sim.f q, sim.forward p q hR, (ih free q).mp hq⟩
     · rintro ⟨q₂, hR₂, hq₂⟩
       obtain ⟨q₁, hR₁, hfq⟩ := sim.backward_succ p q₂ hR₂
-      exact ⟨q₁, hR₁, (ih q₁).mpr (hfq ▸ hq₂)⟩
+      exact ⟨q₁, hR₁, (ih free q₁).mpr (hfq ▸ hq₂)⟩
   | box φ ih =>
+    simp only [OSLFFormula.modalOnly] at free
     constructor
     · intro h q₂ hR₂
       obtain ⟨q₁, hR₁, hfq⟩ := sim.backward_pred p q₂ hR₂
-      exact hfq ▸ (ih q₁).mp (h q₁ hR₁)
+      exact hfq ▸ (ih free q₁).mp (h q₁ hR₁)
     · intro h q₁ hR₁
-      exact (ih q₁).mpr (h (sim.f q₁) (sim.forward q₁ p hR₁))
+      exact (ih free q₁).mpr (h (sim.f q₁) (sim.forward q₁ p hR₁))
 
 /-! ## Corollaries -/
 
@@ -195,19 +245,19 @@ theorem bisimulation_map_preserves_indistObs
     (sim : BisimulationMap R₁ R₂ I₁ I₂)
     (p q : Pattern) :
     indistObs R₁ I₁ p q → indistObs R₂ I₂ (sim.f p) (sim.f q) := by
-  intro hind φ
-  have hp := bisimulation_map_preserves_sem sim φ p
-  have hq := bisimulation_map_preserves_sem sim φ q
-  exact hp.symm.trans ((hind φ).trans hq)
+  intro hind φ free
+  have hp := bisimulation_map_preserves_sem sim φ free p
+  have hq := bisimulation_map_preserves_sem sim φ free q
+  exact hp.symm.trans ((hind φ free).trans hq)
 
 /-- The positive-fragment theorem as a special case of the full theorem. -/
 theorem bisimulation_map_preserves_positive
     {R₁ R₂ : Pattern → Pattern → Prop}
     {I₁ I₂ : AtomSem}
     (sim : BisimulationMap R₁ R₂ I₁ I₂)
-    (φ : OSLFFormula) (_hpos : IsPositive φ) (p : Pattern) :
+    (φ : OSLFFormula) (hpos : IsPositive φ) (p : Pattern) :
     sem R₁ I₁ φ p → sem R₂ I₂ φ (sim.f p) :=
-  (bisimulation_map_preserves_sem sim φ p).mp
+  (bisimulation_map_preserves_sem sim φ (modalOnly_of_isPositive hpos) p).mp
 
 /-! ## Categorical Structure: Identity and Composition
 
@@ -269,22 +319,24 @@ theorem comp_preserves_sem
     {I₁ I₂ I₃ : AtomSem}
     (sim₁ : BisimulationMap R₁ R₂ I₁ I₂)
     (sim₂ : BisimulationMap R₂ R₃ I₂ I₃)
-    (φ : OSLFFormula) (p : Pattern) :
-    (bisimulation_map_preserves_sem (sim₁.comp sim₂) φ p).mp =
-      (bisimulation_map_preserves_sem sim₂ φ (sim₁.f p)).mp ∘
-        (bisimulation_map_preserves_sem sim₁ φ p).mp := by
+    (φ : OSLFFormula) (free : OSLFFormula.modalOnly φ = true) (p : Pattern) :
+    (bisimulation_map_preserves_sem (sim₁.comp sim₂) φ free p).mp =
+      (bisimulation_map_preserves_sem sim₂ φ free (sim₁.f p)).mp ∘
+        (bisimulation_map_preserves_sem sim₁ φ free p).mp := by
   ext; rfl
 
 /-! ## Bridge to Single-System Bisimulation
 
     The existing `bisimulation_invariant_sem` (in `OSLFKSUnificationSketch`)
     proves that a bisimulation equivalence within a single system preserves
-    all formulas. That theorem uses a *relation* between states, while
+    modal-only formulas under both forward and converse bisimulation. That
+    theorem uses a *relation* between states, while
     `bisimulation_map_preserves_sem` uses a *function*.
 
     These are complementary:
-    - Relational bisimulation: `equiv p q → ∀ φ, sem R I φ p ↔ sem R I φ q`
-    - Functional simulation:   `∀ φ p, sem R₁ I₁ φ p ↔ sem R₂ I₂ φ (f p)`
+    - Relational preservation uses forward and converse bisimulation.
+    - Functional preservation uses successor and predecessor lifting.
+    - Both quantify only over `modalOnly` formulas.
 
     The identity bisimulation map recovers the trivial case `p = p`. For the
     full relational case (arbitrary `equiv p q`), the relational theorem is
@@ -294,7 +346,8 @@ theorem comp_preserves_sem
 
     Instead, we provide a clean bridge showing both theorems compose:
     a bisimulation map followed by relational bisimulation still preserves
-    all formulas. -/
+    modal-only formulas. Neither result proves structural or fixed-point
+    preservation. -/
 
 /-- Composition of functional and relational preservation: if a bisimulation
     map sends (R₁, I₁) to (R₂, I₂), and `equiv` is a bisimulation on
@@ -310,10 +363,11 @@ theorem map_then_bisim_preserves_sem
     (hBisim : StepBisimulation R₂ equiv)
     (hBisimRev : StepBisimulation (fun a b => R₂ b a) equiv)
     (hAtom : ∀ a p q, equiv p q → (I₂ a p ↔ I₂ a q))
-    (φ : OSLFFormula) (p : Pattern) (q₂ : Pattern)
+    (φ : OSLFFormula) (free : OSLFFormula.modalOnly φ = true)
+    (p : Pattern) (q₂ : Pattern)
     (hequiv : equiv (sim.f p) q₂) :
     sem R₁ I₁ φ p ↔ sem R₂ I₂ φ q₂ :=
-  (bisimulation_map_preserves_sem sim φ p).trans
-    (bisimulation_invariant_sem hBisim hBisimRev hAtom hequiv φ)
+  (bisimulation_map_preserves_sem sim φ free p).trans
+    (bisimulation_invariant_sem hBisim hBisimRev hAtom hequiv φ free)
 
 end Mettapedia.OSLF.Framework.SimulationPreservation

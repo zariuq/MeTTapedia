@@ -475,7 +475,7 @@ theorem bound_context_free_variable_rejected :
       false := by
   decide +kernel
 
-/-- Collection-rest variables are a separate binding surface and therefore
+/-- Collection-rest variables require separate binding treatment and therefore
 fail closed in the current source-indexed fragment. -/
 theorem collection_rest_rejected :
     topLevelPatternAdmissionCheck

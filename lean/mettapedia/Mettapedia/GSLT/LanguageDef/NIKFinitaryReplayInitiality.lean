@@ -17,11 +17,11 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.NIKFinitaryReplayInitiality
 
+open Mettapedia.Logic
 open CategoryTheory
 open Mettapedia.GSLT.LanguageDef.KernelAuthority
 open Mettapedia.GSLT.LanguageDef.ExactCheckerWireRefinement
 open Mettapedia.GSLT.LanguageDef.NIKInitialRuleClosureAuthority
-open Mettapedia.Logic
 open Mettapedia.Logic.FinitaryRuleSystem
 open Mettapedia.OSLF.Framework.InitialModalSchema
 

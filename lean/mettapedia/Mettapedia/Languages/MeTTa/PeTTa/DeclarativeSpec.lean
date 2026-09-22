@@ -702,8 +702,8 @@ theorem CoreDecl.toPeTTaCmd
       exact PeTTaCmd.removeAtomCmd _ _
   | getAtoms _ =>
       exact PeTTaCmd.getAtomsCmd _
-  | pure _ _ _ hPure =>
-      exact PeTTaCmd.pureEval _ _ _ (PureDecl.toPeTTaEval hPure)
+  | pure _ _ _ hTwoSort =>
+      exact PeTTaCmd.pureEval _ _ _ (PureDecl.toPeTTaEval hTwoSort)
   | progn _ _ _ _ _ _ _ h₁ h₂ =>
       exact PeTTaCmd.prognCmd _ _ _ _ _ _ _
         (CoreDecl.toPeTTaCmd h₁) (CoreDecl.toPeTTaCmd h₂)
@@ -722,8 +722,8 @@ theorem CoreDecl.ofPeTTaCmd
       exact CoreDecl.removeAtom _ _
   | getAtomsCmd _ =>
       exact CoreDecl.getAtoms _
-  | pureEval _ _ _ hPure =>
-      exact CoreDecl.pure _ _ _ (PureDecl.ofPeTTaEval hPure)
+  | pureEval _ _ _ hTwoSort =>
+      exact CoreDecl.pure _ _ _ (PureDecl.ofPeTTaEval hTwoSort)
   | prognCmd _ _ _ _ _ _ _ h₁ h₂ =>
       exact CoreDecl.progn _ _ _ _ _ _ _
         (CoreDecl.ofPeTTaCmd h₁) (CoreDecl.ofPeTTaCmd h₂)

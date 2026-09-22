@@ -1,8 +1,8 @@
 import Mettapedia.Languages.MeTTa.HE.HELanguageDef
 import Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef
-import Mettapedia.Languages.MeTTa.Pure.Core
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core
 import Mettapedia.Languages.MeTTa.MeTTaZero
-import Mettapedia.Languages.MeTTa.Prime.LanguageDef
+import Mettapedia.Languages.MeTTa.PrimeCandidates.LanguageDef
 import Mettapedia.OSLF.Framework.ConstructorCategory
 
 /-!
@@ -73,7 +73,7 @@ theorem fullLegacy_reduces_state :
   decide +kernel
 
 theorem pure_reduces_tm :
-    reductionSorts Mettapedia.Languages.MeTTa.Pure.Core.mettaPure = ["Tm"] := by
+    reductionSorts Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core.twoSortDependent = ["Tm"] := by
   decide +kernel
 
 theorem zero_reduces_process :
@@ -81,7 +81,7 @@ theorem zero_reduces_process :
   decide +kernel
 
 theorem probe_reduces_process :
-    reductionSorts Mettapedia.Languages.MeTTa.Prime.LanguageDef.language = ["Process"] := by
+    reductionSorts Mettapedia.Languages.MeTTa.PrimeCandidates.LanguageDef.language = ["Process"] := by
   decide +kernel
 
 /-- Rho's rewrites are on parallel-composition collections, so its reduction
@@ -106,7 +106,7 @@ theorem fullLegacy_no_quoting_crossing :
   decide +kernel
 
 theorem pure_no_quoting_crossing :
-    hasQuotingCrossing Mettapedia.Languages.MeTTa.Pure.Core.mettaPure "Tm" = false := by
+    hasQuotingCrossing Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core.twoSortDependent "Tm" = false := by
   decide +kernel
 
 theorem zero_no_quoting_crossing :
@@ -114,7 +114,7 @@ theorem zero_no_quoting_crossing :
   decide +kernel
 
 theorem probe_no_quoting_crossing :
-    hasQuotingCrossing Mettapedia.Languages.MeTTa.Prime.LanguageDef.language "Process" = false := by
+    hasQuotingCrossing Mettapedia.Languages.MeTTa.PrimeCandidates.LanguageDef.language "Process" = false := by
   decide +kernel
 
 /-! ## No shared carrier across the family -/
@@ -122,7 +122,7 @@ theorem probe_no_quoting_crossing :
 /-- The reduction sorts of the MeTTa-family presentations, in one list. -/
 def familyReductionSorts : List String :=
   reductionSorts Mettapedia.Languages.MeTTa.HE.LanguageDef.mettaHE ++
-    reductionSorts Mettapedia.Languages.MeTTa.Pure.Core.mettaPure ++
+    reductionSorts Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core.twoSortDependent ++
     reductionSorts Mettapedia.Languages.MeTTa.MeTTaZero.language
 
 /-- Three serialized presentations, three distinct reduction-sort *names*.  A

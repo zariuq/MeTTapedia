@@ -1411,6 +1411,8 @@ theorem languageStep_implies_mork_fireSourceRule
     (hlhs : ∀ rule ∈ lang.rewrites,
       ∃ name, rule.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar name)
     (htrans : ∀ rule ∈ lang.rewrites, morkTranslatable rule.right = true)
+    (haligned : ∀ rule ∈ lang.rewrites,
+      Mettapedia.OSLF.MeTTaIL.Match.ruleDepthAligned rule = true)
     (htransPremises : ∀ rule ∈ lang.rewrites,
       allPremisesTranslatable rule.premises = true)
     (hground : isGroundAtom (morkPatternToAtom q) = true)
@@ -1433,6 +1435,9 @@ theorem languageStep_implies_mork_fireSourceRule
   have matched' : initial ∈ ilMatchPattern rule.left p := by
     simpa using matched
   have targetEq' : ilApplyBindings final rule.right = q := by
+    rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings_eq_applyBindings rule final
+        (haligned rule ruleMember)] at targetEq
     simpa using targetEq
   obtain ⟨name, leftEq⟩ := hlhs rule ruleMember
   obtain ⟨witnesses, chain, nodup, disjoint⟩ :=
@@ -1456,6 +1461,8 @@ theorem languageStep_implies_mork_fireSourceRuleExt
     (hlhs : ∀ rule ∈ lang.rewrites,
       ∃ name, rule.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar name)
     (htrans : ∀ rule ∈ lang.rewrites, morkTranslatable rule.right = true)
+    (haligned : ∀ rule ∈ lang.rewrites,
+      Mettapedia.OSLF.MeTTaIL.Match.ruleDepthAligned rule = true)
     (htransPremises : ∀ rule ∈ lang.rewrites,
       allPremisesTranslatableExt rule.premises = true)
     (hground : isGroundAtom (morkPatternToAtom q) = true)
@@ -1480,6 +1487,9 @@ theorem languageStep_implies_mork_fireSourceRuleExt
   have matched' : initial ∈ ilMatchPattern rule.left p := by
     simpa using matched
   have targetEq' : ilApplyBindings final rule.right = q := by
+    rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings_eq_applyBindings rule final
+        (haligned rule ruleMember)] at targetEq
     simpa using targetEq
   obtain ⟨name, leftEq⟩ := hlhs rule ruleMember
   obtain ⟨witnesses, chain, nodup, disjoint, guards⟩ :=

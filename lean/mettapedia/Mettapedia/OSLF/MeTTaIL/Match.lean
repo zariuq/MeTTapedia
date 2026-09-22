@@ -17,7 +17,8 @@ representation, while authored binder names remain display metadata.
   structurally consistent, including metadata, until a canonical-metadata
   profile is admitted.
 - **Rest variables**: Collection patterns with `some restVar` capture remaining unmatched
-  elements as a collection bound to `restVar`.
+  elements as a collection bound to `restVar`. Vectors match in order and bind
+  only the suffix; bags and sets explore element permutations.
 
 ## References
 
@@ -138,7 +139,15 @@ def matchPattern (pat term : Pattern) : List Bindings :=
     if npat == nconc then matchPattern bodyPat bodyConcrete
     else []
   | .collection ct1 pelems rest1, .collection ct2 telems _rest2 =>
-    if ct1 == ct2 then matchBag pelems rest1 ct1 telems
+    if ct1 == ct2 then
+      if ct1 == .vec then
+        match rest1 with
+        | none => matchArgs pelems telems
+        | some rv =>
+          (matchArgs pelems (telems.take pelems.length)).filterMap fun bindings =>
+            mergeBindings bindings
+              [(rv, .collection .vec (telems.drop pelems.length) none)]
+      else matchBag pelems rest1 ct1 telems
     else []
   | .subst pbody prepl, .subst tbody trepl =>
     (matchPattern pbody tbody).flatMap fun b1 =>
@@ -221,7 +230,15 @@ mutual
     | .collection leftType leftElements leftRest,
         .collection rightType rightElements _ =>
         if leftType == rightType then
-          matchBagWith equivalent leftElements leftRest leftType rightElements
+          if leftType == .vec then
+            match leftRest with
+            | none => matchArgsWith equivalent leftElements rightElements
+            | some name =>
+                (matchArgsWith equivalent leftElements
+                  (rightElements.take leftElements.length)).filterMap fun bindings =>
+                    mergeBindingsWith equivalent bindings
+                      [(name, .collection .vec (rightElements.drop leftElements.length) none)]
+          else matchBagWith equivalent leftElements leftRest leftType rightElements
         else
           []
     | .subst leftBody leftReplacement, .subst rightBody rightReplacement =>
@@ -863,15 +880,531 @@ end
       `applyBindings bs pat` may reorder elements vs. the target `t`. -/
 def Pattern.isMatchCorrect (p : Pattern) : Bool := isMatchCorrectAux p
 
-/-! ## Rule Application -/
+/-! ## Rule Application
+
+NOTE FOR OTHER LANES (2026-09-15): rule firing is now scope-correct.  A matched
+value is shifted from the binder depth at which the rule's left-hand side
+captured it to the depth at which its right-hand side uses it, so a rule that
+moves a metavariable under a binder no longer changes which binder the value
+refers to.  `applyBindings` itself is unchanged; the correction lives in
+`applyBindingsScoped`, which `applyRule` now uses.  If a proof of yours asserted
+the previous reduct, the new one is the corrected reduct and the old statement
+was recording the defect.  `Substitution.liftBVars` was also made structural so
+the kernel can reduce it; `liftBVarsList_eq_map` restores the previous
+`List.map` shape for simp sets that need it. -/
+
+/-! ## Scope-correct binding application
+
+`applyBindings` inserts a matched value wherever its metavariable occurs in the
+right-hand side, unchanged.  That is wrong whenever the two occurrences sit under
+different numbers of binders: a value matched under one binder and inserted under
+two keeps the index it had, and so names a different binder than the one it was
+matched against.  On the rule `lam z. F ~> lam z. lam y. app(F, y)` applied to the
+identity, it turns the identity into self-application.
+
+The correction needs the depth at which the value was captured, and that is a
+static property of the rule's left-hand side rather than data the matcher has to
+carry: a metavariable occurs at one depth in the left-hand side, and the traversal
+of the right-hand side knows its own depth, so the shift is the difference.  No
+change to the binding type is required.
+
+Outward motion -- a metavariable occurring deeper in the left-hand side than in
+the right -- is not corrected, because the value would name binders that do not
+exist at the target; such a rule is ill-formed and the truncated difference
+leaves the value alone rather than inventing a scope for it. -/
+
+mutual
+/-- The binder depth at which a metavariable occurs in a pattern. -/
+def captureDepth (name : String) : Nat → Pattern → Option Nat
+  | d, .fvar x => if x == name then some d else none
+  | _, .bvar _ => none
+  | d, .apply _ args => captureDepthList name d args
+  | d, .lambda _ body => captureDepth name (d + 1) body
+  | d, .multiLambda n _ body => captureDepth name (d + n) body
+  | d, .subst body repl =>
+      match captureDepth name (d + 1) body with
+      | some k => some k
+      | none => captureDepth name d repl
+  | d, .collection _ elems rest =>
+      match captureDepthList name d elems with
+      | some k => some k
+      | none =>
+          match rest with
+          | some restVar => if restVar == name then some d else none
+          | none => none
+
+def captureDepthList (name : String) : Nat → List Pattern → Option Nat
+  | _, [] => none
+  | d, p :: ps =>
+      match captureDepth name d p with
+      | some k => some k
+      | none => captureDepthList name d ps
+end
+
+/-- A zero shift leaves a list of spliced elements alone. -/
+theorem map_liftBVars_zero (ps : List Pattern) :
+    ps.map (Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars 0 0) = ps := by
+  induction ps with
+  | nil => rfl
+  | cons head tail ih =>
+      simp only [List.map_cons,
+        Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero, ih]
+
+/-- What a collection's rest variable contributes, and whether it survives
+unresolved.  A rest variable is a metavariable of the left-hand side like any
+other, so the elements it carries are shifted by the same difference of depths:
+a bag matched `dc` binders deep and re-emitted `d` deep moves its elements by
+`d - dc`.  Without that shift the matcher's choice of which element to place in
+an element metavariable and which to leave to the rest would be observable,
+since the two carriers would transport the same index differently. -/
+def restSplice (lhs : Pattern) (bindings : Bindings) (d : Nat) (ct : CollType) :
+    Option String → List Pattern × Option String
+  | none => ([], none)
+  | some rv =>
+      match bindings.find? (·.1 == rv) with
+      | some (_, .collection boundCt relems none) =>
+          if boundCt == ct then
+            ((match captureDepth rv 0 lhs with
+              | some dc =>
+                  relems.map (Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars 0 (d - dc))
+              | none => relems), none)
+          else ([], some rv)
+      | _ => ([], some rv)
+
+mutual
+/-- Binding application that keeps a matched value pointing at the binder it was
+matched against, by shifting it from the depth at which the rule's left-hand side
+captured it to the depth at which the right-hand side uses it. -/
+def applyBindingsScoped (lhs : Pattern) (bindings : Bindings) :
+    Nat → Pattern → Pattern
+  | d, .fvar x =>
+    match bindings.find? (·.1 == x) with
+    | some (_, val) =>
+        match captureDepth x 0 lhs with
+        | some dc => Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars 0 (d - dc) val
+        | none => val
+    | none => .fvar x
+  | _, .bvar n => .bvar n
+  | d, .apply c args => .apply c (applyBindingsScopedList lhs bindings d args)
+  | d, .lambda nm body =>
+    .lambda nm (applyBindingsScoped lhs bindings (d + 1) body)
+  | d, .multiLambda n nms body =>
+    .multiLambda n nms (applyBindingsScoped lhs bindings (d + n) body)
+  | d, .subst body repl =>
+    instantiateBVar (applyBindingsScoped lhs bindings d repl)
+      (applyBindingsScoped lhs bindings (d + 1) body)
+  | d, .collection ct elems rest =>
+    .collection ct
+      (applyBindingsScopedList lhs bindings d elems ++ (restSplice lhs bindings d ct rest).1)
+      (restSplice lhs bindings d ct rest).2
+
+def applyBindingsScopedList (lhs : Pattern) (bindings : Bindings) :
+    Nat → List Pattern → List Pattern
+  | _, [] => []
+  | d, p :: ps =>
+      applyBindingsScoped lhs bindings d p :: applyBindingsScopedList lhs bindings d ps
+end
+
+/-- The explicit traversal is the map, so proofs written against `List.map`
+shapes are unaffected. -/
+@[simp] theorem applyBindingsScopedList_eq_map (lhs : Pattern) (bindings : Bindings)
+    (d : Nat) : ∀ (ps : List Pattern),
+    applyBindingsScopedList lhs bindings d ps
+      = ps.map (applyBindingsScoped lhs bindings d)
+  | [] => rfl
+  | p :: ps => by
+      simp only [applyBindingsScopedList, List.map_cons,
+        applyBindingsScopedList_eq_map lhs bindings d ps]
+
+/-- The scoped applier passes through an application unchanged in depth. -/
+@[simp] theorem applyBindingsScoped_apply (lhs : Pattern) (bindings : Bindings)
+    (d : Nat) (c : String) (args : List Pattern) :
+    applyBindingsScoped lhs bindings d (.apply c args)
+      = .apply c (args.map (applyBindingsScoped lhs bindings d)) := by
+  simp only [applyBindingsScoped, applyBindingsScopedList_eq_map]
+
+/-- And leaves a bound variable alone. -/
+@[simp] theorem applyBindingsScoped_bvar (lhs : Pattern) (bindings : Bindings)
+    (d n : Nat) :
+    applyBindingsScoped lhs bindings d (.bvar n) = .bvar n := by
+  simp only [applyBindingsScoped]
+
+/-- **At the outermost depth the shift is zero**, so the scoped applier agrees
+with the plain one on a metavariable.  A rule whose right-hand side binds
+nothing above an occurrence therefore behaves exactly as before, and this is the
+form that lets `simp` see it. -/
+@[simp] theorem applyBindingsScoped_fvar_zero (lhs : Pattern) (bindings : Bindings)
+    (x : String) :
+    applyBindingsScoped lhs bindings 0 (.fvar x) = applyBindings bindings (.fvar x) := by
+  simp only [applyBindingsScoped, applyBindings]
+  cases bindings.find? (fun entry => entry.1 == x) with
+  | none => rfl
+  | some entry =>
+      cases captureDepth x 0 lhs with
+      | none => rfl
+      | some dc =>
+          simp only [Nat.zero_sub,
+            Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero]
+
+/-- Apply a rule's right-hand side to a matcher result, scope-correctly. -/
+def applyRuleBindings (rule : RewriteRule) (bindings : Bindings) : Pattern :=
+  applyBindingsScoped rule.left bindings 0 rule.right
+
+/-! ### Which rules the correction changes, and which it leaves alone
+
+The shift a matched value receives is the difference between the depth at which
+the rule's left-hand side captured it and the depth at which the right-hand side
+uses it.  When those agree the shift is zero, so the corrected applier and the
+plain one compute the same reduct, character for character.
+
+That is the audit a change of executable semantics owes, and it is stated as a
+theorem rather than performed as a survey: a rule is unaffected exactly when it
+never moves a metavariable across a binder, which is exactly the class on which
+the plain applier was already right.  The condition is decidable, so checking a
+language definition against it is a computation. -/
+
+mutual
+/-- Every metavariable of the right-hand side sits at the depth its left-hand
+side occurrence sits at. -/
+def depthAligned (lhs : Pattern) : Nat → Pattern → Bool
+  | d, .fvar x =>
+      match captureDepth x 0 lhs with
+      | some dx => dx == d
+      | none => true
+  | _, .bvar _ => true
+  | d, .apply _ args => depthAlignedList lhs d args
+  | d, .lambda _ body => depthAligned lhs (d + 1) body
+  | d, .multiLambda n _ body => depthAligned lhs (d + n) body
+  | d, .subst body repl => depthAligned lhs (d + 1) body && depthAligned lhs d repl
+  | d, .collection _ elems rest =>
+      depthAlignedList lhs d elems &&
+        (match rest with
+          | some rv =>
+              match captureDepth rv 0 lhs with
+              | some dx => dx == d
+              | none => true
+          | none => true)
+
+def depthAlignedList (lhs : Pattern) : Nat → List Pattern → Bool
+  | _, [] => true
+  | d, p :: ps => depthAligned lhs d p && depthAlignedList lhs d ps
+end
+
+mutual
+/-- **The correction is conservative where the rule does not cross a binder.** -/
+theorem applyBindingsScoped_eq_applyBindings (lhs : Pattern) (bindings : Bindings) :
+    ∀ (d : Nat) (rhs : Pattern), depthAligned lhs d rhs = true →
+      applyBindingsScoped lhs bindings d rhs = applyBindings bindings rhs
+  | d, .fvar x, h => by
+      simp only [applyBindingsScoped, applyBindings]
+      cases found : bindings.find? (fun entry => entry.1 == x) with
+      | none => rfl
+      | some entry =>
+          cases captured : captureDepth x 0 lhs with
+          | none => rfl
+          | some dx =>
+              simp only [depthAligned, captured, beq_iff_eq] at h
+              subst h
+              simp only [Nat.sub_self,
+                Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero]
+  | _, .bvar _, _ => by simp only [applyBindingsScoped, applyBindings]
+  | d, .apply c args, h => by
+      simp only [depthAligned] at h
+      simp only [applyBindingsScoped, applyBindings,
+        applyBindingsScopedList_eq_applyBindingsMap lhs bindings d args h]
+  | d, .lambda _ body, h => by
+      simp only [depthAligned] at h
+      simp only [applyBindingsScoped, applyBindings,
+        applyBindingsScoped_eq_applyBindings lhs bindings (d + 1) body h]
+  | d, .multiLambda n _ body, h => by
+      simp only [depthAligned] at h
+      simp only [applyBindingsScoped, applyBindings,
+        applyBindingsScoped_eq_applyBindings lhs bindings (d + n) body h]
+  | d, .subst body repl, h => by
+      simp only [depthAligned, Bool.and_eq_true] at h
+      simp only [applyBindingsScoped, applyBindings,
+        applyBindingsScoped_eq_applyBindings lhs bindings (d + 1) body h.1,
+        applyBindingsScoped_eq_applyBindings lhs bindings d repl h.2]
+  | d, .collection ct elems rest, h => by
+      simp only [depthAligned, Bool.and_eq_true] at h
+      rw [applyBindings.eq_def]
+      simp only [applyBindingsScoped,
+        applyBindingsScopedList_eq_applyBindingsMap lhs bindings d elems h.1]
+      cases rest with
+      | none => simp [restSplice]
+      | some rv =>
+          simp only [restSplice]
+          cases found : bindings.find? (fun entry => entry.1 == rv) with
+          | none => simp [found]
+          | some entry =>
+              obtain ⟨entryName, entryValue⟩ := entry
+              cases entryValue with
+              | collection boundCt relems boundRest =>
+                  cases boundRest with
+                  | some _ => simp [found]
+                  | none =>
+                      by_cases sameKind : boundCt = ct
+                      · subst sameKind
+                        cases hdc : captureDepth rv 0 lhs with
+                        | none => simp [found, hdc]
+                        | some dc =>
+                            have hdd : dc = d := by
+                              simp only [hdc, beq_iff_eq] at h
+                              exact h.2
+                            subst hdd
+                            simp [found, hdc, map_liftBVars_zero]
+                      · simp [found, sameKind]
+              | _ => simp [found]
+
+theorem applyBindingsScopedList_eq_applyBindingsMap (lhs : Pattern)
+    (bindings : Bindings) :
+    ∀ (d : Nat) (ps : List Pattern), depthAlignedList lhs d ps = true →
+      applyBindingsScopedList lhs bindings d ps = ps.map (applyBindings bindings)
+  | _, [], _ => rfl
+  | d, p :: ps, h => by
+      simp only [depthAlignedList, Bool.and_eq_true] at h
+      simp only [applyBindingsScopedList, List.map_cons,
+        applyBindingsScoped_eq_applyBindings lhs bindings d p h.1,
+        applyBindingsScopedList_eq_applyBindingsMap lhs bindings d ps h.2]
+end
+
+mutual
+/-- A pattern with no binding former anywhere in it. -/
+def binderFree : Pattern → Bool
+  | .bvar _ => true
+  | .fvar _ => true
+  | .apply _ args => binderFreeList args
+  | .lambda _ _ => false
+  | .multiLambda _ _ _ => false
+  | .subst _ _ => false
+  | .collection _ elems _ => binderFreeList elems
+
+def binderFreeList : List Pattern → Bool
+  | [] => true
+  | p :: ps => binderFree p && binderFreeList ps
+end
+
+mutual
+/-- In a binder-free pattern every metavariable sits at the ambient depth. -/
+theorem captureDepth_of_binderFree : ∀ (name : String) (d : Nat) (p : Pattern),
+    binderFree p = true → ∀ k, captureDepth name d p = some k → k = d
+  | _, _, .bvar _, _, _, h => by simp [captureDepth] at h
+  | name, d, .fvar x, _, k, h => by
+      simp only [captureDepth] at h
+      split at h
+      · injection h with h'; exact h'.symm
+      · simp at h
+  | name, d, .apply _ args, hp, k, h => by
+      simp only [binderFree] at hp
+      simp only [captureDepth] at h
+      exact captureDepthList_of_binderFree name d args hp k h
+  | _, _, .lambda _ _, hp, _, _ => by simp [binderFree] at hp
+  | _, _, .multiLambda _ _ _, hp, _, _ => by simp [binderFree] at hp
+  | _, _, .subst _ _, hp, _, _ => by simp [binderFree] at hp
+  | name, d, .collection _ elems rest, hp, k, h => by
+      simp only [binderFree] at hp
+      simp only [captureDepth] at h
+      cases hlist : captureDepthList name d elems with
+      | some k' =>
+          rw [hlist] at h
+          injection h with h'
+          exact h' ▸ captureDepthList_of_binderFree name d elems hp k' hlist
+      | none =>
+          rw [hlist] at h
+          cases rest with
+          | none => simp at h
+          | some restVar =>
+              by_cases same : restVar = name
+              · simp only [same, beq_self_eq_true, if_pos rfl] at h
+                injection h with h'
+                exact h'.symm
+              · simp only [beq_iff_eq, if_neg same] at h
+                exact absurd h (by simp)
+
+theorem captureDepthList_of_binderFree : ∀ (name : String) (d : Nat) (ps : List Pattern),
+    binderFreeList ps = true → ∀ k, captureDepthList name d ps = some k → k = d
+  | _, _, [], _, _, h => by simp [captureDepthList] at h
+  | name, d, p :: ps, hp, k, h => by
+      simp only [binderFreeList, Bool.and_eq_true] at hp
+      simp only [captureDepthList] at h
+      split at h
+      · rename_i heq
+        injection h with h'
+        exact captureDepth_of_binderFree name d p hp.1 _ (h' ▸ heq)
+      · exact captureDepthList_of_binderFree name d ps hp.2 k h
+end
+
+mutual
+/-- **A rule between binder-free patterns is depth-aligned**, so the whole class
+of languages that never bind is untouched by the correction without any of them
+being checked one at a time. -/
+theorem depthAligned_of_binderFree_aux : ∀ (lhs : Pattern) (d : Nat) (rhs : Pattern),
+    (∀ x k, captureDepth x 0 lhs = some k → k = d) → binderFree rhs = true →
+    depthAligned lhs d rhs = true
+  | _, _, .bvar _, _, _ => rfl
+  | lhs, d, .fvar x, hl, _ => by
+      simp only [depthAligned]
+      split
+      · rename_i k heq
+        simp only [beq_iff_eq]
+        exact hl x k heq
+      · rfl
+  | lhs, d, .apply _ args, hl, hr => by
+      simp only [binderFree] at hr
+      simp only [depthAligned]
+      exact depthAlignedList_of_binderFree_aux lhs d args hl hr
+  | _, _, .lambda _ _, _, hr => by simp [binderFree] at hr
+  | _, _, .multiLambda _ _ _, _, hr => by simp [binderFree] at hr
+  | _, _, .subst _ _, _, hr => by simp [binderFree] at hr
+  | lhs, d, .collection _ elems rest, hl, hr => by
+      simp only [binderFree] at hr
+      simp only [depthAligned, Bool.and_eq_true]
+      refine ⟨depthAlignedList_of_binderFree_aux lhs d elems hl hr, ?_⟩
+      cases rest with
+      | none => rfl
+      | some rv =>
+          cases hdc : captureDepth rv 0 lhs with
+          | none => simp [hdc]
+          | some dc => simp [hdc, hl rv dc hdc]
+
+theorem depthAlignedList_of_binderFree_aux : ∀ (lhs : Pattern) (d : Nat)
+    (ps : List Pattern), (∀ x k, captureDepth x 0 lhs = some k → k = d) →
+    binderFreeList ps = true → depthAlignedList lhs d ps = true
+  | _, _, [], _, _ => rfl
+  | lhs, d, p :: ps, hl, hr => by
+      simp only [binderFreeList, Bool.and_eq_true] at hr
+      simp only [depthAlignedList, Bool.and_eq_true]
+      exact ⟨depthAligned_of_binderFree_aux lhs d p hl hr.1,
+        depthAlignedList_of_binderFree_aux lhs d ps hl hr.2⟩
+end
+
+mutual
+/-- **A right-hand side that binds nothing is applied exactly as before.**  The
+traversal never leaves depth zero, and at depth zero the shift is zero whatever
+the left-hand side did, so the two appliers agree outright.  This is the form
+that keeps existing proofs about binder-free languages working unchanged. -/
+theorem applyBindingsScoped_zero_of_binderFree (lhs : Pattern)
+    (bindings : Bindings) : ∀ (rhs : Pattern), binderFree rhs = true →
+      applyBindingsScoped lhs bindings 0 rhs = applyBindings bindings rhs
+  | .fvar x, _ => applyBindingsScoped_fvar_zero lhs bindings x
+  | .bvar _, _ => by simp only [applyBindingsScoped, applyBindings]
+  | .apply c args, h => by
+      simp only [binderFree] at h
+      rw [applyBindings]
+      simp only [applyBindingsScoped, applyBindingsScopedList_eq_map,
+        applyBindingsScopedList_zero_of_binderFreeList lhs bindings args h]
+  | .lambda _ _, h => by simp [binderFree] at h
+  | .multiLambda _ _ _, h => by simp [binderFree] at h
+  | .subst _ _, h => by simp [binderFree] at h
+  | .collection ct elems rest, h => by
+      simp only [binderFree] at h
+      rw [applyBindings.eq_def]
+      simp only [applyBindingsScoped, applyBindingsScopedList_eq_map,
+        applyBindingsScopedList_zero_of_binderFreeList lhs bindings elems h]
+      cases rest with
+      | none => simp [restSplice]
+      | some rv =>
+          simp only [restSplice]
+          cases found : bindings.find? (fun entry => entry.1 == rv) with
+          | none => simp [found]
+          | some entry =>
+              obtain ⟨entryName, entryValue⟩ := entry
+              cases entryValue with
+              | collection boundCt relems boundRest =>
+                  cases boundRest with
+                  | some _ => simp [found]
+                  | none =>
+                      cases hdc : captureDepth rv 0 lhs with
+                      | none => simp [found, hdc]
+                      | some dc => simp [found, hdc, Nat.zero_sub, map_liftBVars_zero]
+              | _ => simp [found]
+
+theorem applyBindingsScopedList_zero_of_binderFreeList (lhs : Pattern)
+    (bindings : Bindings) : ∀ (ps : List Pattern), binderFreeList ps = true →
+      ps.map (applyBindingsScoped lhs bindings 0) = ps.map (applyBindings bindings)
+  | [], _ => rfl
+  | p :: ps, h => by
+      simp only [binderFreeList, Bool.and_eq_true] at h
+      simp only [List.map_cons,
+        applyBindingsScoped_zero_of_binderFree lhs bindings p h.1,
+        applyBindingsScopedList_zero_of_binderFreeList lhs bindings ps h.2]
+end
+
+attribute [simp] applyBindingsScoped_zero_of_binderFree
+
+mutual
+/-- Match-correctness is stronger than binder-freeness: it rejects the two
+binder formers, explicit substitution and collections, while binder-freeness
+rejects only the first three.  So every match-correct pattern is binder-free,
+and a rule between match-correct patterns fires exactly as it did before the
+scope correction. -/
+theorem binderFree_of_isMatchCorrectAux : ∀ p : Pattern,
+    isMatchCorrectAux p = true → binderFree p = true
+  | .bvar _, _ => rfl
+  | .fvar _, _ => rfl
+  | .apply _ args, h => by
+      simp only [isMatchCorrectAux] at h
+      simpa only [binderFree] using binderFreeList_of_isMatchCorrectListAux args h
+  | .lambda _ _, h => by simp [isMatchCorrectAux] at h
+  | .multiLambda _ _ _, h => by simp [isMatchCorrectAux] at h
+  | .subst _ _, h => by simp [isMatchCorrectAux] at h
+  | .collection _ _ _, h => by simp [isMatchCorrectAux] at h
+
+/-- Ordered-list companion to `binderFree_of_isMatchCorrectAux`. -/
+theorem binderFreeList_of_isMatchCorrectListAux : ∀ ps : List Pattern,
+    isMatchCorrectListAux ps = true → binderFreeList ps = true
+  | [], _ => rfl
+  | p :: ps, h => by
+      simp only [isMatchCorrectListAux, Bool.and_eq_true] at h
+      simp only [binderFreeList, Bool.and_eq_true]
+      exact ⟨binderFree_of_isMatchCorrectAux p h.1,
+        binderFreeList_of_isMatchCorrectListAux ps h.2⟩
+end
+
+/-- A rule none of whose metavariables crosses a binder. -/
+def ruleDepthAligned (rule : RewriteRule) : Bool :=
+  depthAligned rule.left 0 rule.right
+
+/-- **A rule between binder-free patterns is depth-aligned.**  Every language
+whose rules never bind is therefore untouched by the correction, with no
+per-language check. -/
+theorem ruleDepthAligned_of_binderFree (rule : RewriteRule)
+    (hl : binderFree rule.left = true) (hr : binderFree rule.right = true) :
+    ruleDepthAligned rule = true :=
+  depthAligned_of_binderFree_aux rule.left 0 rule.right
+    (fun x k heq => captureDepth_of_binderFree x 0 rule.left hl k heq) hr
+
+/-- **Such a rule fires exactly as it did before the correction.** -/
+theorem applyRuleBindings_eq_applyBindings (rule : RewriteRule) (bindings : Bindings)
+    (aligned : ruleDepthAligned rule = true) :
+    applyRuleBindings rule bindings = applyBindings bindings rule.right :=
+  applyBindingsScoped_eq_applyBindings rule.left bindings 0 rule.right aligned
 
 /-- Apply a single rewrite rule to a term (top-level match only).
     Returns all possible reducts. Skips rules with premises (congruence
     premises require recursive reduction, handled by the full engine). -/
 def applyRule (rule : RewriteRule) (term : Pattern) : List Pattern :=
   if rule.premises.isEmpty then
-    (matchPattern rule.left term).map fun b => applyBindings b rule.right
+    (matchPattern rule.left term).map fun b => applyRuleBindings rule b
   else []
+
+/-- **So its whole step relation is unchanged.**  A language definition all of
+whose rules are depth-aligned computes the same reducts it computed before, and
+the condition is decidable, so that is checkable per language rather than
+argued. -/
+theorem applyRule_eq_old (rule : RewriteRule) (term : Pattern)
+    (aligned : ruleDepthAligned rule = true) :
+    applyRule rule term
+      = (if rule.premises.isEmpty then
+          (matchPattern rule.left term).map (fun b => applyBindings b rule.right)
+        else []) := by
+  simp only [applyRule]
+  by_cases premiseFree : rule.premises.isEmpty
+  · simp only [premiseFree, if_true]
+    exact List.map_congr_left fun b _ =>
+      applyRuleBindings_eq_applyBindings rule b aligned
+  · simp [premiseFree]
+
 
 /-- No-premise operational helper with fail-closed output substitution.
 This is a strict execution primitive, not the proof-calculus checker. -/

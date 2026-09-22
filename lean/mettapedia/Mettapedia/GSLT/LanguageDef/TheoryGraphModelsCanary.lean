@@ -24,10 +24,10 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.TheoryGraphModelsCanary
 
+open Mettapedia.Logic
 open _root_.CategoryTheory
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.LanguageDef.TheoryGraphModels
-open Mettapedia.Logic
 open Mettapedia.GSLT.Core.ContextualLadder
 open Mettapedia.TypeTheory.CwfInhabitationInstitution
 open Mettapedia.TypeTheory.CwfSimpleDependentInstitution

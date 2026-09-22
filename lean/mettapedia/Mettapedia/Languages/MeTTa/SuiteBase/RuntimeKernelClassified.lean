@@ -9,6 +9,7 @@ Internal classified-fragment layer for the MeTTa runtime-boundary package.
 
 namespace Mettapedia.Languages.MeTTa.ElaboratedCore
 
+
 open MeTTailCore.MeTTaIL.EffectSafety
 
 /-! ## 1. Effect-class bridge

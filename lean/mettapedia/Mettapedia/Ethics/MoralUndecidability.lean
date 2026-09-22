@@ -159,13 +159,13 @@ def responsivenessCode : MoralCode := {c : ActionCode | (c.eval 0).Dom}
 theorem responsivenessCode_consequentialist :
     Consequentialist responsivenessCode := by
   intro c₁ c₂ h
-  simp only [responsivenessCode, Set.mem_setOf_eq]
+  simp only [responsivenessCode, Set.mem_ofPred_eq]
   rw [show c₁.eval = c₂.eval from h]
 
 theorem responsivenessCode_nontrivial : MorallyNontrivial responsivenessCode := by
   constructor
   · refine ⟨Code.zero, ?_⟩
-    simp only [responsivenessCode, Set.mem_setOf_eq, Code.eval]
+    simp only [responsivenessCode, Set.mem_ofPred_eq, Code.eval]
     exact trivial
   · obtain ⟨c, hc⟩ := Nat.Partrec.Code.exists_code.mp Nat.Partrec.none
     refine ⟨c, ?_⟩

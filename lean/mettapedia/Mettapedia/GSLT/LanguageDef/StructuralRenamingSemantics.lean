@@ -187,7 +187,7 @@ theorem mapPattern_liftBVars
   | hfvar name =>
       simp [Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars, mapPattern]
   | happly constructor arguments inductionHypothesis =>
-      simp only [Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars,
+      simp only [Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map,
         mapPattern, mapPatternList_eq_map, List.map_map]
       congr 1
       apply List.map_congr_left
@@ -203,7 +203,7 @@ theorem mapPattern_liftBVars
       simp [Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars,
         mapPattern, bodyHypothesis, replacementHypothesis]
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars,
+      simp only [Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map,
         mapPattern, mapPatternList_eq_map, List.map_map]
       congr 1
       apply List.map_congr_left
@@ -265,6 +265,48 @@ theorem mapPattern_instantiateBVar
       Mettapedia.OSLF.MeTTaIL.Substitution.instantiateBVar
         (mapPattern symbols replacement) (mapPattern symbols body) :=
   mapPattern_instantiateBVarAt symbols 0 replacement body
+
+/-- Renaming the symbols of a pattern does not move its binders, so the depth at
+which a metavariable is captured is unchanged. -/
+theorem captureDepth_mapPattern (symbols : LanguageDefSymbolMap) (name : String) :
+    ∀ (depth : Nat) (pattern : Pattern),
+      captureDepth name depth (mapPattern symbols pattern)
+        = captureDepth name depth pattern := by
+  intro depth pattern
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar _ => simp [mapPattern, captureDepth]
+  | hfvar _ => simp [mapPattern, captureDepth]
+  | happly _ arguments inductionHypothesis =>
+      simp only [mapPattern, mapPatternList_eq_map, captureDepth]
+      induction arguments with
+      | nil => simp [captureDepthList]
+      | cons head tail tailHypothesis =>
+          simp only [List.map_cons, captureDepthList,
+            inductionHypothesis head (by simp) depth]
+          cases captureDepth name depth head with
+          | some _ => rfl
+          | none =>
+              simpa using tailHypothesis
+                (fun q hq => inductionHypothesis q (by simp [hq]))
+  | hlambda _ _ inductionHypothesis =>
+      simp only [mapPattern, captureDepth, inductionHypothesis (depth + 1)]
+  | hmultiLambda arity _ _ inductionHypothesis =>
+      simp only [mapPattern, captureDepth, inductionHypothesis (depth + arity)]
+  | hsubst _ _ bodyHypothesis replacementHypothesis =>
+      simp only [mapPattern, captureDepth, bodyHypothesis (depth + 1),
+        replacementHypothesis depth]
+  | hcollection _ elements _ inductionHypothesis =>
+      simp only [mapPattern, mapPatternList_eq_map, captureDepth]
+      induction elements with
+      | nil => simp [captureDepthList]
+      | cons head tail tailHypothesis =>
+          simp only [List.map_cons, captureDepthList,
+            inductionHypothesis head (by simp) depth]
+          cases captureDepth name depth head with
+          | some _ => rfl
+          | none =>
+              simpa using tailHypothesis
+                (fun q hq => inductionHypothesis q (by simp [hq]))
 
 /-- Gradual binding application commutes with constructor renaming.  Unlike
 schema-key renamings, this requires no coverage side condition because matcher
@@ -389,6 +431,21 @@ theorem filterMap_merge_mapBindings
       rw [← mergeBindings_mapBindings symbols constructorInjective left right]
       cases mergeBindings left right <;> simp [inductionHypothesis]
 
+/-- Mapping constructor symbols commutes with merging a fixed right binding
+frame into each answer occurrence. -/
+theorem filterMap_fixedRight_merge_mapBindings
+    (symbols : LanguageDefSymbolMap)
+    (constructorInjective : Function.Injective symbols.constructor)
+    (lefts : List Bindings) (right : Bindings) :
+    ((lefts.map (mapBindings symbols)).filterMap fun left =>
+        mergeBindings left (mapBindings symbols right)) =
+      (lefts.filterMap fun left => mergeBindings left right).map
+        (mapBindings symbols) := by
+  rw [List.filterMap_map, List.map_filterMap]
+  congr 1
+  funext left
+  exact (mergeBindings_mapBindings symbols constructorInjective left right).symm
+
 theorem flatMap_merge_mapBindings
     (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor)
@@ -455,9 +512,100 @@ theorem flatMap_map_transport {alpha beta gamma delta : Type*}
       intro nested membership
       exact commutes nested (by simp [membership])
 
-/-- The three mutually recursive matcher passes commute with an injective
-constructor renaming.  The equalities are list equalities: search order and
-multiplicity are preserved, not merely existence of a matching result. -/
+/-- The rest splice commutes with constructor renaming: a rest variable's name
+is not a constructor, its collection kind is not renamed, and the shift it
+applies is read off a capture depth that renaming leaves alone. -/
+theorem restSplice_mapPattern (symbols : LanguageDefSymbolMap)
+    (lhs : Pattern) (bindings : Bindings) (depth : Nat) (ct : CollType) :
+    ∀ rest : Option String,
+      Mettapedia.OSLF.MeTTaIL.Match.restSplice (mapPattern symbols lhs)
+          (mapBindings symbols bindings) depth ct rest
+        = ((Mettapedia.OSLF.MeTTaIL.Match.restSplice lhs bindings depth ct rest).1.map
+              (mapPattern symbols),
+           (Mettapedia.OSLF.MeTTaIL.Match.restSplice lhs bindings depth ct rest).2)
+  | none => rfl
+  | some rv => by
+      have lookup := find?_mapBindings symbols bindings rv
+      cases found : bindings.find? (fun entry => entry.1 == rv) with
+      | none =>
+          rw [found] at lookup
+          simp [Mettapedia.OSLF.MeTTaIL.Match.restSplice, found, lookup]
+      | some entry =>
+          rcases entry with ⟨entryName, entryValue⟩
+          rw [found] at lookup
+          simp only [Option.map_some] at lookup
+          cases entryValue with
+          | collection boundCt relems boundRest =>
+              cases boundRest with
+              | some _ =>
+                  simp [Mettapedia.OSLF.MeTTaIL.Match.restSplice, found, lookup, mapPattern]
+              | none =>
+                  by_cases same : boundCt = ct
+                  · subst same
+                    simp only [Mettapedia.OSLF.MeTTaIL.Match.restSplice, found, lookup,
+                      mapPattern, mapPatternList_eq_map, captureDepth_mapPattern,
+                      beq_self_eq_true, if_pos, Prod.mk.injEq, and_true]
+                    cases captureDepth rv 0 lhs with
+                    | none => simp
+                    | some dc =>
+                        simp only [List.map_map]
+                        apply List.map_congr_left
+                        intro element _
+                        simp only [Function.comp_apply, mapPattern_liftBVars]
+                  · simp [Mettapedia.OSLF.MeTTaIL.Match.restSplice, found, lookup,
+                      mapPattern, same]
+          | _ => simp [Mettapedia.OSLF.MeTTaIL.Match.restSplice, found, lookup, mapPattern]
+
+/-- **Scope-correct binding application commutes with constructor renaming
+too.**  The shift a value receives depends on binder depths, and renaming
+constructors moves no binder. -/
+theorem applyBindingsScoped_mapPattern (symbols : LanguageDefSymbolMap)
+    (lhs : Pattern) (bindings : Bindings) :
+    ∀ (depth : Nat) (pattern : Pattern),
+      applyBindingsScoped (mapPattern symbols lhs) (mapBindings symbols bindings)
+          depth (mapPattern symbols pattern)
+        = mapPattern symbols (applyBindingsScoped lhs bindings depth pattern) := by
+  intro depth pattern
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar _ => simp [applyBindingsScoped, mapPattern]
+  | hfvar name =>
+      have lookup := find?_mapBindings symbols bindings name
+      cases found : bindings.find? (fun entry => entry.1 == name) with
+      | none =>
+          rw [found] at lookup
+          simp [applyBindingsScoped, mapPattern, lookup, found]
+      | some entry =>
+          rcases entry with ⟨entryName, entryValue⟩
+          rw [found] at lookup
+          cases captured : captureDepth name 0 lhs <;>
+            simp [applyBindingsScoped, mapPattern, lookup, found, captured,
+              captureDepth_mapPattern symbols name 0 lhs, mapPattern_liftBVars]
+  | happly _ arguments inductionHypothesis =>
+      simp only [mapPattern, mapPatternList_eq_map, applyBindingsScoped,
+        applyBindingsScopedList_eq_map, List.map_map]
+      congr 1
+      exact List.map_congr_left fun argument membership =>
+        inductionHypothesis argument membership depth
+  | hlambda _ _ inductionHypothesis =>
+      simp [mapPattern, applyBindingsScoped, inductionHypothesis (depth + 1)]
+  | hmultiLambda arity _ _ inductionHypothesis =>
+      simp [mapPattern, applyBindingsScoped, inductionHypothesis (depth + arity)]
+  | hsubst _ _ bodyHypothesis replacementHypothesis =>
+      simp [mapPattern, applyBindingsScoped, bodyHypothesis (depth + 1),
+        replacementHypothesis depth, mapPattern_instantiateBVar]
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [mapPattern, mapPatternList_eq_map, applyBindingsScoped,
+        applyBindingsScopedList_eq_map, restSplice_mapPattern, List.map_append,
+        List.map_map]
+      have elementsEq :
+          List.map (applyBindingsScoped (mapPattern symbols lhs)
+              (mapBindings symbols bindings) depth ∘ mapPattern symbols) elements
+            = List.map (mapPattern symbols ∘ applyBindingsScoped lhs bindings depth) elements := by
+        apply List.map_congr_left
+        intro element membership
+        simpa only [Function.comp_apply] using inductionHypothesis element membership depth
+      rw [elementsEq]
+
 theorem matcher_equivariance
     (symbols : LanguageDefSymbolMap)
     (constructorInjective : Function.Injective symbols.constructor) :
@@ -505,7 +653,27 @@ theorem matcher_equivariance
             symbols.constructor rightConstructor :=
         fun mappedEqual => equal (constructorInjective mappedEqual)
       simp [matchPattern, mapPattern, equal, mappedNotEqual]
+  case case13 =>
+    intro leftType patterns rightType terms termRest typesEqual vector
+      restName argumentsHypothesis
+    simp_all only [mapPattern, mapPatternList_eq_map, matchPattern,
+      beq_iff_eq, beq_self_eq_true, ↓reduceIte, List.length_map, List.map_take]
+    simpa only [mapBindings, List.map_cons, List.map_nil, mapPattern,
+      mapPatternList_eq_map, List.map_drop] using
+      filterMap_fixedRight_merge_mapBindings symbols constructorInjective
+        (matchArgs patterns (terms.take patterns.length))
+        [(restName, .collection .vec (terms.drop patterns.length) none)]
   case case14 =>
+    intros
+    simp_all only [mapPattern, mapPatternList_eq_map]
+    rw [matchPattern.eq_def, matchPattern.eq_def]
+    simp_all [beq_iff_eq]
+  case case15 =>
+    intros
+    simp_all only [mapPattern, mapPatternList_eq_map]
+    rw [matchPattern.eq_def, matchPattern.eq_def]
+    simp_all [beq_iff_eq]
+  case case16 =>
     intro patternBody patternReplacement termBody termReplacement
       replacementHypothesis bodyHypothesis
     simp only [mapPattern, matchPattern, replacementHypothesis,
@@ -513,7 +681,7 @@ theorem matcher_equivariance
     exact flatMap_merge_mapBindings symbols constructorInjective
       (matchPattern patternBody termBody)
       (matchPattern patternReplacement termReplacement)
-  case case15 =>
+  case case17 =>
     intro pattern term notFvar notBvar notApply notLambda notMultiLambda
       notCollection notSubst
     cases pattern <;> cases term
@@ -526,7 +694,7 @@ theorem matcher_equivariance
       | exact False.elim (notCollection _ _ _ _ _ _ rfl rfl)
       | exact False.elim (notSubst _ _ _ _ rfl rfl)
       | simp [matchPattern, mapPattern]
-  case case19 =>
+  case case21 =>
     intro pattern patterns rest collectionType terms bagHypothesis patternHypothesis
     let sourceStep : Pattern × Nat → List Bindings := fun entry =>
       (matchPattern pattern entry.1).flatMap fun headBindings =>
@@ -580,7 +748,7 @@ theorem applyRule_equivariance
     simp only [List.map_map]
     apply List.map_congr_left
     intro bindings membership
-    exact applyBindings_mapPattern symbols bindings rule.right
+    exact applyBindingsScoped_mapPattern symbols rule.left bindings 0 rule.right
   · simp [premiseFree]
 
 #print axioms matcher_equivariance

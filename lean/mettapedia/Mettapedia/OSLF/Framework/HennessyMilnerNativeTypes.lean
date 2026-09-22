@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.Logic.HennessyMilnerAdequacy
+import Mettapedia.GSLT.Logic.HigherOrderHML
 import Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
 /-!
@@ -27,7 +28,7 @@ open Mettapedia.GSLT.HennessyMilner
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
-universe uAtom uLabel
+universe uAtom uLabel uInterface uState
 
 variable {S : GSLT} (M : System.{uAtom, uLabel} S)
 
@@ -65,6 +66,70 @@ theorem formulaNativeTypes_equivalent_iff_bisimilar
   change M.LogicallyEquivalent left right ↔ M.Bisimilar left right
   exact M.logicallyEquivalent_iff_bisimilar finite left right
 
+/-- Finite covers by the actual bisimulation suffice for formula-generated
+native-type adequacy. Authored equations and the native predicate frame stay
+unchanged. -/
+theorem formulaNativeTypes_equivalent_iff_bisimilar_of_behavioral_cover
+    (finite : M.ImageFiniteBisimilar) (left right : S.Term) :
+    (∀ formula : Formula M.Atom M.Label,
+      ((gsltOSLF S).satisfies (S := ()) left (formulaNativeType M formula).pred ↔
+        (gsltOSLF S).satisfies (S := ()) right (formulaNativeType M formula).pred)) ↔
+      M.Bisimilar left right := by
+  exact M.logicallyEquivalent_iff_bisimilar_of_imageFiniteBisimilar finite left right
+
+/-! ## Process-bearing labels through the same native-type construction -/
+
+variable {Interface : Type uInterface} {State : Interface → Type uState}
+  {vocabulary : HigherOrderBisimulation.Vocabulary.{uInterface, uLabel} Interface}
+
+/-- Behavioral label classes preserve higher-order bisimilarity through the
+existing generated formula native types. No arbitrary predicate is added to
+the formula fragment. -/
+theorem higherOrder_formulaNativeTypes_equivalent_of_bisimilar
+    (system : HigherOrderBisimulation.System vocabulary State)
+    {interface : Interface} {left right : State interface}
+    (related : system.Bisimilar interface left right)
+    (formula : Formula (HigherOrderHML.classSystem system).Atom
+      (HigherOrderHML.classSystem system).Label) :
+    ((gsltOSLF (HigherOrderHML.packedGSLT system.classLabelSystem)).satisfies (S := ())
+        ⟨interface, left⟩ (formulaNativeType (HigherOrderHML.classSystem system) formula).pred ↔
+      (gsltOSLF (HigherOrderHML.packedGSLT system.classLabelSystem)).satisfies (S := ())
+        ⟨interface, right⟩ (formulaNativeType (HigherOrderHML.classSystem system) formula).pred) := by
+  exact HigherOrderHML.class_logicallyEquivalent_of_bisimilar system related formula
+
+/-- Exact higher-order adequacy of the existing generated HML native types,
+under image-finiteness of the actual packed class-label transition system.
+That system has literal equations, so the premise concerns literal successor
+representatives, not merely finitely many behavioral successor classes. -/
+theorem higherOrder_formulaNativeTypes_equivalent_iff_bisimilar
+    (system : HigherOrderBisimulation.System vocabulary State)
+    (finite : (HigherOrderHML.classSystem system).ImageFiniteModulo)
+    {interface : Interface} (left right : State interface) :
+    (∀ formula : Formula (HigherOrderHML.classSystem system).Atom
+      (HigherOrderHML.classSystem system).Label,
+      ((gsltOSLF (HigherOrderHML.packedGSLT system.classLabelSystem)).satisfies (S := ())
+          ⟨interface, left⟩ (formulaNativeType (HigherOrderHML.classSystem system) formula).pred ↔
+        (gsltOSLF (HigherOrderHML.packedGSLT system.classLabelSystem)).satisfies (S := ())
+          ⟨interface, right⟩ (formulaNativeType (HigherOrderHML.classSystem system) formula).pred)) ↔
+      system.Bisimilar interface left right := by
+  exact HigherOrderHML.class_logicallyEquivalent_iff system finite left right
+
+/-- Higher-order adequacy through the same generated HML native types when
+successors have finite behavioral covers, including systems with infinitely
+many literally distinct successor representatives. -/
+theorem higherOrder_formulaNativeTypes_equivalent_iff_bisimilar_of_behavioral_cover
+    (system : HigherOrderBisimulation.System vocabulary State)
+    (finite : (HigherOrderHML.classSystem system).ImageFiniteBisimilar)
+    {interface : Interface} (left right : State interface) :
+    (∀ formula : Formula (HigherOrderHML.classSystem system).Atom
+      (HigherOrderHML.classSystem system).Label,
+      ((gsltOSLF (HigherOrderHML.packedGSLT system.classLabelSystem)).satisfies (S := ())
+          ⟨interface, left⟩ (formulaNativeType (HigherOrderHML.classSystem system) formula).pred ↔
+        (gsltOSLF (HigherOrderHML.packedGSLT system.classLabelSystem)).satisfies (S := ())
+          ⟨interface, right⟩ (formulaNativeType (HigherOrderHML.classSystem system) formula).pred)) ↔
+      system.Bisimilar interface left right := by
+  exact HigherOrderHML.class_logicallyEquivalent_iff_of_behavioral_cover system finite left right
+
 /-! ## The positive fragment -/
 
 /-- The invariant generated predicate denoted by a positive formula. -/
@@ -89,6 +154,18 @@ theorem satisfies_positiveFormulaNativeType_iff
         (positiveFormulaNativeType M formula).pred ↔
       M.psat formula term :=
   Iff.rfl
+
+/-- Positive generated native predicates recover the simulation preorder
+under finite behavioral covers, without changing the authored equations. -/
+theorem positiveFormulaNativeTypes_preorder_iff_similar_of_behavioral_cover
+    (finite : M.ImageFiniteBisimilar) (left right : S.Term) :
+    (∀ formula : PosFormula M.Atom M.Label,
+      (gsltOSLF S).satisfies (S := ()) left
+          (positiveFormulaNativeType M formula).pred →
+        (gsltOSLF S).satisfies (S := ()) right
+          (positiveFormulaNativeType M formula).pred) ↔
+      M.Similar left right :=
+  M.logicalPreorder_iff_similar_of_imageFiniteBisimilar finite left right
 
 /-- The preorder induced by the positive generated native types is exactly
 the simulation preorder under image-finiteness modulo equations. -/

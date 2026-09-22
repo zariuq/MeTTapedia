@@ -618,18 +618,18 @@ def buildFiniteExistsMatchCondition (translatedOnce : HEAtom) : HEAtom :=
 `once` syntax itself is pure. -/
 theorem buildFiniteExistsMatchCondition_pureTranslatable
     {translatedOnce : HEAtom}
-    (honce : PureTranslatable translatedOnce) :
-    PureTranslatable (buildFiniteExistsMatchCondition translatedOnce) := by
+    (honce : TwoSortTranslatable translatedOnce) :
+    TwoSortTranslatable (buildFiniteExistsMatchCondition translatedOnce) := by
   simp [buildFiniteExistsMatchCondition]
   have hcollapse :
-      PureTranslatable (.expression [.symbol "collapse", translatedOnce]) := by
+      TwoSortTranslatable (.expression [.symbol "collapse", translatedOnce]) := by
     exact pureTranslatable_expr "collapse" [translatedOnce]
       (by decide) (by decide) (by
         intro a ha
         simp at ha
         rcases ha with rfl
         exact honce)
-  have hempty : PureTranslatable (.symbol "()") := pureTranslatable_symbol "()"
+  have hempty : TwoSortTranslatable (.symbol "()") := pureTranslatable_symbol "()"
   exact pureTranslatable_expr "=="
     [.symbol "()", .expression [.symbol "collapse", translatedOnce]]
     (by decide) (by decide) (by
@@ -644,13 +644,13 @@ observable result is just emptiness/non-emptiness, not the identity of a chosen
 witness. -/
 structure PureFiniteExistsMatchContract (translatedOnce : HEAtom) : Prop where
   translatedPure :
-    PureTranslatable (buildFiniteExistsMatchCondition translatedOnce)
+    TwoSortTranslatable (buildFiniteExistsMatchCondition translatedOnce)
 
 /-- Package an existing pure translated `once` syntax as a finite-exists
 compatibility witness. -/
 theorem pureFiniteExistsMatchContract_of_pureOnce
     {translatedOnce : HEAtom}
-    (honce : PureTranslatable translatedOnce) :
+    (honce : TwoSortTranslatable translatedOnce) :
     PureFiniteExistsMatchContract translatedOnce := by
   exact ⟨buildFiniteExistsMatchCondition_pureTranslatable honce⟩
 
@@ -680,8 +680,8 @@ def buildSingletonVisibleWitnessSyntax (translatedWitness : HEAtom) : HEAtom :=
 translated witness expression is pure. -/
 theorem buildSingletonVisibleWitnessSyntax_pureTranslatable
     {translatedWitness : HEAtom}
-    (hwitness : PureTranslatable translatedWitness) :
-    PureTranslatable (buildSingletonVisibleWitnessSyntax translatedWitness) := by
+    (hwitness : TwoSortTranslatable translatedWitness) :
+    TwoSortTranslatable (buildSingletonVisibleWitnessSyntax translatedWitness) := by
   simp [buildSingletonVisibleWitnessSyntax]
   exact pureTranslatable_expr "singleton-visible-witness"
     [translatedWitness]
@@ -697,14 +697,14 @@ and does not widen the fragment into ordered first-witness selection. -/
 structure PureSingletonVisibleWitnessContract
     (translatedWitness : HEAtom) : Prop where
   translatedPure :
-    PureTranslatable
+    TwoSortTranslatable
       (buildSingletonVisibleWitnessSyntax translatedWitness)
 
 /-- Package an existing pure translated witness syntax as a singleton
 visible-witness compatibility witness. -/
 theorem pureSingletonVisibleWitnessContract_of_pureWitness
     {translatedWitness : HEAtom}
-    (hwitness : PureTranslatable translatedWitness) :
+    (hwitness : TwoSortTranslatable translatedWitness) :
     PureSingletonVisibleWitnessContract translatedWitness := by
   exact ⟨buildSingletonVisibleWitnessSyntax_pureTranslatable hwitness⟩
 
@@ -724,8 +724,8 @@ theorem buildOpaqueHeadSyntax_pureTranslatable
     {head : String} {args : List HEAtom}
     (hnotLam : head ≠ "λ")
     (hnotSubst : head ≠ "subst")
-    (hargs : ∀ a ∈ args, PureTranslatable a) :
-    PureTranslatable (buildOpaqueHeadSyntax head args) := by
+    (hargs : ∀ a ∈ args, TwoSortTranslatable a) :
+    TwoSortTranslatable (buildOpaqueHeadSyntax head args) := by
   simp [buildOpaqueHeadSyntax]
   exact pureTranslatable_expr head args hnotLam hnotSubst hargs
 
@@ -735,14 +735,14 @@ structure PureUnknownHeadDataContract
   headNotLambda : head ≠ "λ"
   headNotSubst : head ≠ "subst"
   translatedPure :
-    PureTranslatable (buildOpaqueHeadSyntax head args)
+    TwoSortTranslatable (buildOpaqueHeadSyntax head args)
 
 /-- Package a pure opaque-head expression as an unknown-head data witness. -/
 theorem pureUnknownHeadDataContract_of_pureArgs
     {head : String} {args : List HEAtom}
     (hnotLam : head ≠ "λ")
     (hnotSubst : head ≠ "subst")
-    (hargs : ∀ a ∈ args, PureTranslatable a) :
+    (hargs : ∀ a ∈ args, TwoSortTranslatable a) :
     PureUnknownHeadDataContract head args := by
   exact ⟨hnotLam, hnotSubst,
     buildOpaqueHeadSyntax_pureTranslatable hnotLam hnotSubst hargs⟩
@@ -757,8 +757,8 @@ def buildExplicitEvalSyntax (body : HEAtom) : HEAtom :=
 
 theorem buildExplicitCallSyntax_pureTranslatable
     {body : HEAtom}
-    (hbody : PureTranslatable body) :
-    PureTranslatable (buildExplicitCallSyntax body) := by
+    (hbody : TwoSortTranslatable body) :
+    TwoSortTranslatable (buildExplicitCallSyntax body) := by
   simp [buildExplicitCallSyntax]
   exact pureTranslatable_expr "call" [body]
     (by decide) (by decide) (by
@@ -769,8 +769,8 @@ theorem buildExplicitCallSyntax_pureTranslatable
 
 theorem buildExplicitEvalSyntax_pureTranslatable
     {body : HEAtom}
-    (hbody : PureTranslatable body) :
-    PureTranslatable (buildExplicitEvalSyntax body) := by
+    (hbody : TwoSortTranslatable body) :
+    TwoSortTranslatable (buildExplicitEvalSyntax body) := by
   simp [buildExplicitEvalSyntax]
   exact pureTranslatable_expr "eval" [body]
     (by decide) (by decide) (by
@@ -783,14 +783,14 @@ theorem buildExplicitEvalSyntax_pureTranslatable
 structure PureKnownCallableHeadsReduceContract
     (body : HEAtom) : Prop where
   callPure :
-    PureTranslatable (buildExplicitCallSyntax body)
+    TwoSortTranslatable (buildExplicitCallSyntax body)
   evalPure :
-    PureTranslatable (buildExplicitEvalSyntax body)
+    TwoSortTranslatable (buildExplicitEvalSyntax body)
 
 /-- Package a pure body as an explicit known-callable syntax witness. -/
 theorem pureKnownCallableHeadsReduceContract_of_pureBody
     {body : HEAtom}
-    (hbody : PureTranslatable body) :
+    (hbody : TwoSortTranslatable body) :
     PureKnownCallableHeadsReduceContract body := by
   exact ⟨buildExplicitCallSyntax_pureTranslatable hbody,
     buildExplicitEvalSyntax_pureTranslatable hbody⟩
@@ -801,8 +801,8 @@ def buildQuotedDataSyntax (body : HEAtom) : HEAtom :=
 
 theorem buildQuotedDataSyntax_pureTranslatable
     {body : HEAtom}
-    (hbody : PureTranslatable body) :
-    PureTranslatable (buildQuotedDataSyntax body) := by
+    (hbody : TwoSortTranslatable body) :
+    TwoSortTranslatable (buildQuotedDataSyntax body) := by
   simp [buildQuotedDataSyntax]
   exact pureTranslatable_expr "quote" [body]
     (by decide) (by decide) (by
@@ -816,15 +816,15 @@ the portable syntax. -/
 structure PureQuotedAndDataPositionsContract
     (quotedBody evalBody : HEAtom) : Prop where
   quotedPure :
-    PureTranslatable (buildQuotedDataSyntax quotedBody)
+    TwoSortTranslatable (buildQuotedDataSyntax quotedBody)
   evalPure :
-    PureTranslatable (buildExplicitEvalSyntax evalBody)
+    TwoSortTranslatable (buildExplicitEvalSyntax evalBody)
 
 /-- Package pure quoted/eval bodies as a portable quoted/data witness. -/
 theorem pureQuotedAndDataPositionsContract_of_pureBodies
     {quotedBody evalBody : HEAtom}
-    (hquoted : PureTranslatable quotedBody)
-    (heval : PureTranslatable evalBody) :
+    (hquoted : TwoSortTranslatable quotedBody)
+    (heval : TwoSortTranslatable evalBody) :
     PureQuotedAndDataPositionsContract quotedBody evalBody := by
   exact ⟨buildQuotedDataSyntax_pureTranslatable hquoted,
     buildExplicitEvalSyntax_pureTranslatable heval⟩
@@ -835,14 +835,14 @@ through ordinary `call` / `eval` syntax forms instead of any PeTTa-internal part
 representation. -/
 structure PurePartialCallableLoweringContract
     (callableBody : HEAtom) : Prop where
-  bodyPure : PureTranslatable callableBody
-  callPure : PureTranslatable (buildExplicitCallSyntax callableBody)
-  evalPure : PureTranslatable (buildExplicitEvalSyntax callableBody)
+  bodyTwoSort : TwoSortTranslatable callableBody
+  callPure : TwoSortTranslatable (buildExplicitCallSyntax callableBody)
+  evalPure : TwoSortTranslatable (buildExplicitEvalSyntax callableBody)
 
 /-- Package a pure lowered callable body as a partial-callable witness. -/
 theorem purePartialCallableLoweringContract_of_pureBody
     {callableBody : HEAtom}
-    (hbody : PureTranslatable callableBody) :
+    (hbody : TwoSortTranslatable callableBody) :
     PurePartialCallableLoweringContract callableBody := by
   exact ⟨hbody,
     buildExplicitCallSyntax_pureTranslatable hbody,
@@ -856,17 +856,17 @@ the resolved callable body is lowered through ordinary `call` / `eval`
 syntax forms rather than through ambient variable-headed search. -/
 structure PureVariableHeadDataAndCallableBindingContract
     (headVar : String) (dataArgs : List HEAtom) (callableBody : HEAtom) : Prop where
-  variablePure : PureTranslatable (.var headVar)
-  dataArgsPure : ∀ a ∈ dataArgs, PureTranslatable a
-  callableCallPure : PureTranslatable (buildExplicitCallSyntax callableBody)
-  callableEvalPure : PureTranslatable (buildExplicitEvalSyntax callableBody)
+  variablePure : TwoSortTranslatable (.var headVar)
+  dataArgsPure : ∀ a ∈ dataArgs, TwoSortTranslatable a
+  callableCallPure : TwoSortTranslatable (buildExplicitCallSyntax callableBody)
+  callableEvalPure : TwoSortTranslatable (buildExplicitEvalSyntax callableBody)
 
 /-- Package pure variable-head data arguments together with a pure lowered
 callable body as the portable variable-head witness. -/
 theorem pureVariableHeadDataAndCallableBindingContract_of_pureArgsAndBody
     {headVar : String} {dataArgs : List HEAtom} {callableBody : HEAtom}
-    (hargs : ∀ a ∈ dataArgs, PureTranslatable a)
-    (hbody : PureTranslatable callableBody) :
+    (hargs : ∀ a ∈ dataArgs, TwoSortTranslatable a)
+    (hbody : TwoSortTranslatable callableBody) :
     PureVariableHeadDataAndCallableBindingContract
       headVar dataArgs callableBody := by
   exact ⟨pureTranslatable_var headVar, hargs,
@@ -880,7 +880,7 @@ structure PureRuntimeAddedEquationPublicHeadContract
   headNotLambda : head ≠ "λ"
   headNotSubst : head ≠ "subst"
   translatedPure :
-    PureTranslatable (buildOpaqueHeadSyntax head args)
+    TwoSortTranslatable (buildOpaqueHeadSyntax head args)
 
 /-- Package a pure opaque-head expression as a runtime-added public-head
 callability witness. -/
@@ -888,7 +888,7 @@ theorem pureRuntimeAddedEquationPublicHeadContract_of_pureArgs
     {head : String} {args : List HEAtom}
     (hnotLam : head ≠ "λ")
     (hnotSubst : head ≠ "subst")
-    (hargs : ∀ a ∈ args, PureTranslatable a) :
+    (hargs : ∀ a ∈ args, TwoSortTranslatable a) :
     PureRuntimeAddedEquationPublicHeadContract head args := by
   exact ⟨hnotLam, hnotSubst,
     buildOpaqueHeadSyntax_pureTranslatable hnotLam hnotSubst hargs⟩
@@ -900,10 +900,10 @@ def buildSpacePatternMatchSyntax
 
 theorem buildSpacePatternMatchSyntax_pureTranslatable
     {space pat body : HEAtom}
-    (hspace : PureTranslatable space)
-    (hpat : PureTranslatable pat)
-    (hbody : PureTranslatable body) :
-    PureTranslatable (buildSpacePatternMatchSyntax space pat body) := by
+    (hspace : TwoSortTranslatable space)
+    (hpat : TwoSortTranslatable pat)
+    (hbody : TwoSortTranslatable body) :
+    TwoSortTranslatable (buildSpacePatternMatchSyntax space pat body) := by
   simp [buildSpacePatternMatchSyntax]
   exact pureTranslatable_expr "match" [space, pat, body]
     (by decide) (by decide) (by
@@ -918,14 +918,14 @@ theorem buildSpacePatternMatchSyntax_pureTranslatable
 structure PureSpaceSingletonExpressionPatternContract
     (space pat body : HEAtom) : Prop where
   translatedPure :
-    PureTranslatable (buildSpacePatternMatchSyntax space pat body)
+    TwoSortTranslatable (buildSpacePatternMatchSyntax space pat body)
 
 /-- Package a pure singleton-space pattern syntax as a conformance witness. -/
-theorem pureSpaceSingletonExpressionPatternContract_of_pureSyntax
+theorem pureSpaceSingletonExpressionPatternContract_of_twoSortSyntax
     {space pat body : HEAtom}
-    (hspace : PureTranslatable space)
-    (hpat : PureTranslatable pat)
-    (hbody : PureTranslatable body) :
+    (hspace : TwoSortTranslatable space)
+    (hpat : TwoSortTranslatable pat)
+    (hbody : TwoSortTranslatable body) :
     PureSpaceSingletonExpressionPatternContract space pat body := by
   exact ⟨buildSpacePatternMatchSyntax_pureTranslatable hspace hpat hbody⟩
 
@@ -935,9 +935,9 @@ def buildErrorSyntax (term payload : HEAtom) : HEAtom :=
 
 theorem buildErrorSyntax_pureTranslatable
     {term payload : HEAtom}
-    (hterm : PureTranslatable term)
-    (hpayload : PureTranslatable payload) :
-    PureTranslatable (buildErrorSyntax term payload) := by
+    (hterm : TwoSortTranslatable term)
+    (hpayload : TwoSortTranslatable payload) :
+    TwoSortTranslatable (buildErrorSyntax term payload) := by
   simp [buildErrorSyntax]
   exact pureTranslatable_expr "Error" [term, payload]
     (by decide) (by decide) (by
@@ -951,13 +951,13 @@ theorem buildErrorSyntax_pureTranslatable
 structure PureTypeAndErrorContract
     (term payload : HEAtom) : Prop where
   translatedPure :
-    PureTranslatable (buildErrorSyntax term payload)
+    TwoSortTranslatable (buildErrorSyntax term payload)
 
 /-- Package a pure explicit error payload as a type/error witness. -/
 theorem pureTypeAndErrorContract_of_purePayload
     {term payload : HEAtom}
-    (hterm : PureTranslatable term)
-    (hpayload : PureTranslatable payload) :
+    (hterm : TwoSortTranslatable term)
+    (hpayload : TwoSortTranslatable payload) :
     PureTypeAndErrorContract term payload := by
   exact ⟨buildErrorSyntax_pureTranslatable hterm hpayload⟩
 
@@ -968,9 +968,9 @@ def buildAssertEqualToEvalSyntax (lhs rhs : HEAtom) : HEAtom :=
 
 theorem buildAssertEqualToEvalSyntax_pureTranslatable
     {lhs rhs : HEAtom}
-    (hlhs : PureTranslatable lhs)
-    (hrhs : PureTranslatable rhs) :
-    PureTranslatable (buildAssertEqualToEvalSyntax lhs rhs) := by
+    (hlhs : TwoSortTranslatable lhs)
+    (hrhs : TwoSortTranslatable rhs) :
+    TwoSortTranslatable (buildAssertEqualToEvalSyntax lhs rhs) := by
   simp [buildAssertEqualToEvalSyntax]
   exact pureTranslatable_expr "assertEqualToEval" [lhs, rhs]
     (by decide) (by decide) (by
@@ -984,13 +984,13 @@ theorem buildAssertEqualToEvalSyntax_pureTranslatable
 structure PureSourceTestHelperPolicyContract
     (lhs rhs : HEAtom) : Prop where
   translatedPure :
-    PureTranslatable (buildAssertEqualToEvalSyntax lhs rhs)
+    TwoSortTranslatable (buildAssertEqualToEvalSyntax lhs rhs)
 
 /-- Package a pure `assertEqualToEval` syntax as a helper-policy witness. -/
-theorem pureSourceTestHelperPolicyContract_of_pureSyntax
+theorem pureSourceTestHelperPolicyContract_of_twoSortSyntax
     {lhs rhs : HEAtom}
-    (hlhs : PureTranslatable lhs)
-    (hrhs : PureTranslatable rhs) :
+    (hlhs : TwoSortTranslatable lhs)
+    (hrhs : TwoSortTranslatable rhs) :
     PureSourceTestHelperPolicyContract lhs rhs := by
   exact ⟨buildAssertEqualToEvalSyntax_pureTranslatable hlhs hrhs⟩
 
@@ -1024,8 +1024,8 @@ def buildCollapseSyntax (body : HEAtom) : HEAtom :=
 
 theorem buildCollapseSyntax_pureTranslatable
     {body : HEAtom}
-    (hbody : PureTranslatable body) :
-    PureTranslatable (buildCollapseSyntax body) := by
+    (hbody : TwoSortTranslatable body) :
+    TwoSortTranslatable (buildCollapseSyntax body) := by
   simp [buildCollapseSyntax]
   exact pureTranslatable_expr "collapse" [body]
     (by decide) (by decide) (by
@@ -1040,8 +1040,8 @@ def buildOnceSyntax (body : HEAtom) : HEAtom :=
 
 theorem buildOnceSyntax_pureTranslatable
     {body : HEAtom}
-    (hbody : PureTranslatable body) :
-    PureTranslatable (buildOnceSyntax body) := by
+    (hbody : TwoSortTranslatable body) :
+    TwoSortTranslatable (buildOnceSyntax body) := by
   simp [buildOnceSyntax]
   exact pureTranslatable_expr "once" [body]
     (by decide) (by decide) (by
@@ -1056,8 +1056,8 @@ def buildSelectSyntax (body : HEAtom) : HEAtom :=
 
 theorem buildSelectSyntax_pureTranslatable
     {body : HEAtom}
-    (hbody : PureTranslatable body) :
-    PureTranslatable (buildSelectSyntax body) := by
+    (hbody : TwoSortTranslatable body) :
+    TwoSortTranslatable (buildSelectSyntax body) := by
   simp [buildSelectSyntax]
   exact pureTranslatable_expr "select" [body]
     (by decide) (by decide) (by
@@ -1072,9 +1072,9 @@ def buildEqualitySyntax (lhs rhs : HEAtom) : HEAtom :=
 
 theorem buildEqualitySyntax_pureTranslatable
     {lhs rhs : HEAtom}
-    (hlhs : PureTranslatable lhs)
-    (hrhs : PureTranslatable rhs) :
-    PureTranslatable (buildEqualitySyntax lhs rhs) := by
+    (hlhs : TwoSortTranslatable lhs)
+    (hrhs : TwoSortTranslatable rhs) :
+    TwoSortTranslatable (buildEqualitySyntax lhs rhs) := by
   simp [buildEqualitySyntax]
   exact pureTranslatable_expr "==" [lhs, rhs]
     (by decide) (by decide) (by
@@ -1092,9 +1092,9 @@ def buildUnusedBindingSyntax
 
 theorem buildUnusedBindingSyntax_pureTranslatable
     {binder : String} {value body : HEAtom}
-    (hvalue : PureTranslatable value)
-    (hbody : PureTranslatable body) :
-    PureTranslatable (buildUnusedBindingSyntax binder value body) := by
+    (hvalue : TwoSortTranslatable value)
+    (hbody : TwoSortTranslatable body) :
+    TwoSortTranslatable (buildUnusedBindingSyntax binder value body) := by
   simp [buildUnusedBindingSyntax]
   exact pureTranslatable_expr "let" [.var binder, value, body]
     (by decide) (by decide) (by
@@ -1109,15 +1109,15 @@ theorem buildUnusedBindingSyntax_pureTranslatable
 `collapse`, `once`, and `select` observe the same pure underlying body. -/
 structure ProfileDeterministicCompiledCallContract
     (body : HEAtom) : Prop where
-  collapsePure : PureTranslatable (buildCollapseSyntax body)
-  oncePure : PureTranslatable (buildOnceSyntax body)
-  selectPure : PureTranslatable (buildSelectSyntax body)
+  collapsePure : TwoSortTranslatable (buildCollapseSyntax body)
+  oncePure : TwoSortTranslatable (buildOnceSyntax body)
+  selectPure : TwoSortTranslatable (buildSelectSyntax body)
 
 /-- Package a pure compiled-call body as the deterministic first-visible
 syntax witness. -/
 theorem profileDeterministicCompiledCallContract_of_pureBody
     {body : HEAtom}
-    (hbody : PureTranslatable body) :
+    (hbody : TwoSortTranslatable body) :
     ProfileDeterministicCompiledCallContract body := by
   exact ⟨buildCollapseSyntax_pureTranslatable hbody,
     buildOnceSyntax_pureTranslatable hbody,
@@ -1134,15 +1134,15 @@ def buildCountedVisibleMatchSyntax
 theorem buildCountedVisibleMatchSyntax_pureTranslatable
     {counter : String} {space pat body : HEAtom}
     (hcounter : IsCountConsumerName counter)
-    (hspace : PureTranslatable space)
-    (hpat : PureTranslatable pat)
-    (hbody : PureTranslatable body) :
-    PureTranslatable (buildCountedVisibleMatchSyntax counter space pat body) := by
+    (hspace : TwoSortTranslatable space)
+    (hpat : TwoSortTranslatable pat)
+    (hbody : TwoSortTranslatable body) :
+    TwoSortTranslatable (buildCountedVisibleMatchSyntax counter space pat body) := by
   have hmatch :
-      PureTranslatable (buildSpacePatternMatchSyntax space pat body) := by
+      TwoSortTranslatable (buildSpacePatternMatchSyntax space pat body) := by
     exact buildSpacePatternMatchSyntax_pureTranslatable hspace hpat hbody
   have hcollapse :
-      PureTranslatable
+      TwoSortTranslatable
         (buildCollapseSyntax (buildSpacePatternMatchSyntax space pat body)) := by
     exact buildCollapseSyntax_pureTranslatable hmatch
   simp [buildCountedVisibleMatchSyntax]
@@ -1167,15 +1167,15 @@ structure ProfileCountedVisibleMatchContract
     (counter : String) (space pat body : HEAtom) : Prop where
   counterAllowed : IsCountConsumerName counter
   translatedPure :
-    PureTranslatable (buildCountedVisibleMatchSyntax counter space pat body)
+    TwoSortTranslatable (buildCountedVisibleMatchSyntax counter space pat body)
 
 /-- Package a pure counted visible-match syntax as a profile witness. -/
-theorem profileCountedVisibleMatchContract_of_pureSyntax
+theorem profileCountedVisibleMatchContract_of_twoSortSyntax
     {counter : String} {space pat body : HEAtom}
     (hcounter : IsCountConsumerName counter)
-    (hspace : PureTranslatable space)
-    (hpat : PureTranslatable pat)
-    (hbody : PureTranslatable body) :
+    (hspace : TwoSortTranslatable space)
+    (hpat : TwoSortTranslatable pat)
+    (hbody : TwoSortTranslatable body) :
     ProfileCountedVisibleMatchContract counter space pat body := by
   exact ⟨hcounter,
     buildCountedVisibleMatchSyntax_pureTranslatable hcounter hspace hpat hbody⟩
@@ -1187,9 +1187,9 @@ def buildCountEvalSyntax (counter : String) (body : HEAtom) : HEAtom :=
 theorem buildCountEvalSyntax_pureTranslatable
     {counter : String} {body : HEAtom}
     (hcounter : IsCountConsumerName counter)
-    (hbody : PureTranslatable body) :
-    PureTranslatable (buildCountEvalSyntax counter body) := by
-  have heval : PureTranslatable (buildExplicitEvalSyntax body) := by
+    (hbody : TwoSortTranslatable body) :
+    TwoSortTranslatable (buildCountEvalSyntax counter body) := by
+  have heval : TwoSortTranslatable (buildExplicitEvalSyntax body) := by
     exact buildExplicitEvalSyntax_pureTranslatable hbody
   simp [buildCountEvalSyntax]
   exact pureTranslatable_expr counter [buildExplicitEvalSyntax body]
@@ -1206,13 +1206,13 @@ structure ProfileCountEvalContract
     (counter : String) (body : HEAtom) : Prop where
   counterAllowed : IsCountConsumerName counter
   translatedPure :
-    PureTranslatable (buildCountEvalSyntax counter body)
+    TwoSortTranslatable (buildCountEvalSyntax counter body)
 
 /-- Package a pure count-eval syntax as a profile witness. -/
 theorem profileCountEvalContract_of_pureBody
     {counter : String} {body : HEAtom}
     (hcounter : IsCountConsumerName counter)
-    (hbody : PureTranslatable body) :
+    (hbody : TwoSortTranslatable body) :
     ProfileCountEvalContract counter body := by
   exact ⟨hcounter, buildCountEvalSyntax_pureTranslatable hcounter hbody⟩
 
@@ -1220,13 +1220,13 @@ theorem profileCountEvalContract_of_pureBody
 structure ProfileEffectOnlyBranchingContract
     (binder : String) (value body : HEAtom) : Prop where
   translatedPure :
-    PureTranslatable (buildUnusedBindingSyntax binder value body)
+    TwoSortTranslatable (buildUnusedBindingSyntax binder value body)
 
 /-- Package a pure unused-binding branch syntax as the effect-only witness. -/
-theorem profileEffectOnlyBranchingContract_of_pureSyntax
+theorem profileEffectOnlyBranchingContract_of_twoSortSyntax
     {binder : String} {value body : HEAtom}
-    (hvalue : PureTranslatable value)
-    (hbody : PureTranslatable body) :
+    (hvalue : TwoSortTranslatable value)
+    (hbody : TwoSortTranslatable body) :
     ProfileEffectOnlyBranchingContract binder value body := by
   exact ⟨buildUnusedBindingSyntax_pureTranslatable hvalue hbody⟩
 
@@ -1236,18 +1236,18 @@ heads still obey the public runtime-added-equation head contract. -/
 structure ProfileGroundRecursiveMemoContract
     (recursiveBody : HEAtom) (mutableHead : String) (mutableArgs : List HEAtom) : Prop where
   recursiveEvalPure :
-    PureTranslatable (buildExplicitEvalSyntax recursiveBody)
+    TwoSortTranslatable (buildExplicitEvalSyntax recursiveBody)
   mutablePublicHead :
     PureRuntimeAddedEquationPublicHeadContract mutableHead mutableArgs
 
 /-- Package a pure recursive body plus a pure mutable public head as the ground
 recursive memo witness. -/
-theorem profileGroundRecursiveMemoContract_of_pureSyntax
+theorem profileGroundRecursiveMemoContract_of_twoSortSyntax
     {recursiveBody : HEAtom} {mutableHead : String} {mutableArgs : List HEAtom}
-    (hbody : PureTranslatable recursiveBody)
+    (hbody : TwoSortTranslatable recursiveBody)
     (hnotLam : mutableHead ≠ "λ")
     (hnotSubst : mutableHead ≠ "subst")
-    (hargs : ∀ a ∈ mutableArgs, PureTranslatable a) :
+    (hargs : ∀ a ∈ mutableArgs, TwoSortTranslatable a) :
     ProfileGroundRecursiveMemoContract recursiveBody mutableHead mutableArgs := by
   exact ⟨buildExplicitEvalSyntax_pureTranslatable hbody,
     pureRuntimeAddedEquationPublicHeadContract_of_pureArgs
@@ -1257,13 +1257,13 @@ theorem profileGroundRecursiveMemoContract_of_pureSyntax
 structure ProfileNumericRecursionContract
     (lhs rhs : HEAtom) : Prop where
   translatedPure :
-    PureTranslatable (buildEqualitySyntax lhs rhs)
+    TwoSortTranslatable (buildEqualitySyntax lhs rhs)
 
 /-- Package pure equality sides as the recursive numeric-call witness. -/
 theorem profileNumericRecursionContract_of_pureSides
     {lhs rhs : HEAtom}
-    (hlhs : PureTranslatable lhs)
-    (hrhs : PureTranslatable rhs) :
+    (hlhs : TwoSortTranslatable lhs)
+    (hrhs : TwoSortTranslatable rhs) :
     ProfileNumericRecursionContract lhs rhs := by
   exact ⟨buildEqualitySyntax_pureTranslatable hlhs hrhs⟩
 
@@ -1276,11 +1276,11 @@ def buildQueueSearchContractSyntax
 
 theorem buildQueueSearchContractSyntax_pureTranslatable
     {space seedMode statePlan neighborPlan : HEAtom}
-    (hspace : PureTranslatable space)
-    (hseedMode : PureTranslatable seedMode)
-    (hstatePlan : PureTranslatable statePlan)
-    (hneighborPlan : PureTranslatable neighborPlan) :
-    PureTranslatable
+    (hspace : TwoSortTranslatable space)
+    (hseedMode : TwoSortTranslatable seedMode)
+    (hstatePlan : TwoSortTranslatable statePlan)
+    (hneighborPlan : TwoSortTranslatable neighborPlan) :
+    TwoSortTranslatable
       (buildQueueSearchContractSyntax space seedMode statePlan neighborPlan) := by
   simp [buildQueueSearchContractSyntax]
   exact pureTranslatable_expr "queue_search_contract"
@@ -1298,16 +1298,16 @@ theorem buildQueueSearchContractSyntax_pureTranslatable
 structure ProfileQueueSearchContract
     (space seedMode statePlan neighborPlan : HEAtom) : Prop where
   translatedPure :
-    PureTranslatable
+    TwoSortTranslatable
       (buildQueueSearchContractSyntax space seedMode statePlan neighborPlan)
 
 /-- Package a pure explicit queue-search wrapper as a profile witness. -/
-theorem profileQueueSearchContract_of_pureSyntax
+theorem profileQueueSearchContract_of_twoSortSyntax
     {space seedMode statePlan neighborPlan : HEAtom}
-    (hspace : PureTranslatable space)
-    (hseedMode : PureTranslatable seedMode)
-    (hstatePlan : PureTranslatable statePlan)
-    (hneighborPlan : PureTranslatable neighborPlan) :
+    (hspace : TwoSortTranslatable space)
+    (hseedMode : TwoSortTranslatable seedMode)
+    (hstatePlan : TwoSortTranslatable statePlan)
+    (hneighborPlan : TwoSortTranslatable neighborPlan) :
     ProfileQueueSearchContract space seedMode statePlan neighborPlan := by
   exact ⟨buildQueueSearchContractSyntax_pureTranslatable
     hspace hseedMode hstatePlan hneighborPlan⟩
@@ -1318,9 +1318,9 @@ def buildExactUniqueAddSyntax (space atom : HEAtom) : HEAtom :=
 
 theorem buildExactUniqueAddSyntax_pureTranslatable
     {space atom : HEAtom}
-    (hspace : PureTranslatable space)
-    (hatom : PureTranslatable atom) :
-    PureTranslatable (buildExactUniqueAddSyntax space atom) := by
+    (hspace : TwoSortTranslatable space)
+    (hatom : TwoSortTranslatable atom) :
+    TwoSortTranslatable (buildExactUniqueAddSyntax space atom) := by
   simp [buildExactUniqueAddSyntax]
   exact pureTranslatable_expr "add-unique-or-fail" [space, atom]
     (by decide) (by decide) (by
@@ -1334,13 +1334,13 @@ theorem buildExactUniqueAddSyntax_pureTranslatable
 structure ProfileExactUniqueAddContract
     (space atom : HEAtom) : Prop where
   translatedPure :
-    PureTranslatable (buildExactUniqueAddSyntax space atom)
+    TwoSortTranslatable (buildExactUniqueAddSyntax space atom)
 
 /-- Package a pure unique-add syntax as a profile witness. -/
-theorem profileExactUniqueAddContract_of_pureSyntax
+theorem profileExactUniqueAddContract_of_twoSortSyntax
     {space atom : HEAtom}
-    (hspace : PureTranslatable space)
-    (hatom : PureTranslatable atom) :
+    (hspace : TwoSortTranslatable space)
+    (hatom : TwoSortTranslatable atom) :
     ProfileExactUniqueAddContract space atom := by
   exact ⟨buildExactUniqueAddSyntax_pureTranslatable hspace hatom⟩
 
@@ -1350,7 +1350,7 @@ observations, one for each reported count channel. -/
 structure ProfileIndexedCountContract
     (producer allQuery firstQuery secondQuery relQuery bothQuery : HEAtom) :
     Prop where
-  producerPure : PureTranslatable producer
+  producerPure : TwoSortTranslatable producer
   allObserved : CountedVisibleMatchSyntax allQuery
   firstObserved : CountedVisibleMatchSyntax firstQuery
   secondObserved : CountedVisibleMatchSyntax secondQuery
@@ -1361,7 +1361,7 @@ structure ProfileIndexedCountContract
 count-query syntax forms. -/
 theorem profileIndexedCountContract_of_syntax_forms
     {producer allQuery firstQuery secondQuery relQuery bothQuery : HEAtom}
-    (hproducer : PureTranslatable producer)
+    (hproducer : TwoSortTranslatable producer)
     (hall : CountedVisibleMatchSyntax allQuery)
     (hfirst : CountedVisibleMatchSyntax firstQuery)
     (hsecond : CountedVisibleMatchSyntax secondQuery)
@@ -1378,7 +1378,7 @@ layer the profile-native story is recorded as the combination of:
 - a counted visible-match observation over the public `num(...)` facts -/
 structure ProfileSeededUnarySuccessorClosureContract
     (seedSyntax translatedOnce countQuery : HEAtom) : Prop where
-  seedPure : PureTranslatable seedSyntax
+  seedPure : TwoSortTranslatable seedSyntax
   existsObserved : PureFiniteExistsMatchContract translatedOnce
   countObserved : CountedVisibleMatchSyntax countQuery
 
@@ -1386,7 +1386,7 @@ structure ProfileSeededUnarySuccessorClosureContract
 existence-only expansion, and counted observation syntax forms. -/
 theorem profileSeededUnarySuccessorClosureContract_of_syntax_forms
     {seedSyntax translatedOnce countQuery : HEAtom}
-    (hseed : PureTranslatable seedSyntax)
+    (hseed : TwoSortTranslatable seedSyntax)
     (hexists : PureFiniteExistsMatchContract translatedOnce)
     (hcount : CountedVisibleMatchSyntax countQuery) :
     ProfileSeededUnarySuccessorClosureContract
@@ -1404,13 +1404,13 @@ inductive FunctionCallInversionLane where
 deriving DecidableEq, Repr
 
 /-- Pure function-call inversion contract: the append-suffix lowering itself lives in
-the existing `PureTranslatable` HE fragment. This is the lane for structural
+the existing `TwoSortTranslatable` HE fragment. This is the lane for structural
 families such as the recovered-tail `functionhead` form. -/
 structure PureFunctionCallInversionContract
     (prefixElems : List HEAtom) (actual : HEAtom)
     (binders : List (HEAtom × HEAtom)) (tailVar applyArg : HEAtom) : Prop where
   translatedPure :
-    PureTranslatable
+    TwoSortTranslatable
       (buildAppendSuffixHeadExtension prefixElems actual binders tailVar applyArg)
 
 /-- Package an existing pure append-suffix proof as a function-call-inversion
@@ -1418,11 +1418,11 @@ contract witness. -/
 theorem pureFunctionCallInversionContract_of_pureTranslatable
     {prefixElems : List HEAtom} {actual : HEAtom}
     {binders : List (HEAtom × HEAtom)} {tailVar applyArg : HEAtom}
-    (hpure :
-      PureTranslatable
+    (htwoSort :
+      TwoSortTranslatable
         (buildAppendSuffixHeadExtension prefixElems actual binders tailVar applyArg)) :
     PureFunctionCallInversionContract prefixElems actual binders tailVar applyArg := by
-  exact ⟨hpure⟩
+  exact ⟨htwoSort⟩
 
 /-!
 ## Function-Call Inversion Oracle Contract (functionhead.metta)

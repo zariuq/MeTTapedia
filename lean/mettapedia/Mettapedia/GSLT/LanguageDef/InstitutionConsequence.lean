@@ -21,11 +21,11 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.InstitutionConsequence
 
+open Mettapedia.Logic
 open _root_.CategoryTheory
 open scoped _root_.CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.GSLT.IndexedOperational
-open Mettapedia.Logic
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
@@ -111,9 +111,10 @@ def consequenceObject
   Signature := source.Signature
   logic := consequenceProjection source.logic
 
-/-- Model erasure is an actual functor between the heterogeneous institution
-atlas and the heterogeneous consequence atlas.  In particular, erasing models
-after composing native routes agrees with composing their erasures. -/
+/-- Model erasure is an actual functor from the category of institutions and
+comorphisms to the category of π-institutions and comorphisms.  In particular,
+erasing models after composing native routes agrees with composing their
+erasures. -/
 def consequenceFunctor :
     CategoryTheory.Functor
       Mettapedia.Logic.InstitutionCategory.Object.{uSignature,
@@ -210,9 +211,9 @@ def toOperationalModel
     simpa only [interpret] using face.models_theory theoremhood
       (Quotient.mk face.system.equations state)
 
-/-- A model-qualified face supplies an modelled node in the existing atlas;
-the theory graph is therefore the consequence-level projection of the stronger
-model semantics. -/
+/-- A model-qualified face supplies a modelled theory over the consequence
+projection; the theory graph is therefore the consequence-level projection of
+the stronger model semantics. -/
 def toModelledTheory
     (face : StateIndexedModel.{uSignature, uSignatureHom, uSentence,
       uModel, uModelHom, uTerm} institution logical) :

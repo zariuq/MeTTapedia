@@ -1,5 +1,5 @@
 import Mettapedia.Cybernetics.Individuation
-import Mettapedia.Enactive.PrimeGeneration
+import Mettapedia.Enactive.ScopedGeneration
 
 /-!
 # When an individuation process warrants a task generation
@@ -72,18 +72,18 @@ def theory : Individuation.Theory Bool Unit where
 def interpretation : TaskInterpretation theory
     (AbstractionLayer.full Bool) where
   task
-    | false => PrimeGeneration.Canary.childTask
-    | true => PrimeGeneration.Canary.parentTask
+    | false => ScopedGeneration.Canary.childTask
+    | true => ScopedGeneration.Canary.parentTask
   step_isChild := by
     intro first last step
     cases step
-    exact PrimeGeneration.Canary.child_isChild_parent
+    exact ScopedGeneration.Canary.child_isChild_parent
 
 @[simp] theorem interpretation_task_false :
-    interpretation.task false = PrimeGeneration.Canary.childTask := rfl
+    interpretation.task false = ScopedGeneration.Canary.childTask := rfl
 
 @[simp] theorem interpretation_task_true :
-    interpretation.task true = PrimeGeneration.Canary.parentTask := rfl
+    interpretation.task true = ScopedGeneration.Canary.parentTask := rfl
 
 def process : Individuation.Process theory 1 false true :=
   .snoc (.refl false) .grow
@@ -91,8 +91,8 @@ def process : Individuation.Process theory 1 false true :=
 /-- A real interpreted individuation step yields the existing nontrivial
 Bennett generation witness. -/
 def interpretedGeneration :
-    Task.Generation 1 PrimeGeneration.Canary.childTask
-      PrimeGeneration.Canary.parentTask := by
+    Task.Generation 1 ScopedGeneration.Canary.childTask
+      ScopedGeneration.Canary.parentTask := by
   simpa [process,
     interpretation_task_false, interpretation_task_true] using
     interpretation.processGeneration process

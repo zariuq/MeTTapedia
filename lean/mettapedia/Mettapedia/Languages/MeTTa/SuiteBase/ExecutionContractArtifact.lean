@@ -9,6 +9,7 @@ Rendering, linting, and checksum logic for execution-contract artifacts.
 namespace Mettapedia.Languages.MeTTa.ExecutionContract
 
 open Mettapedia.Languages.MeTTa.ElaboratedCore
+
 open Mettapedia.Languages.MeTTa.RuntimeKernel
 open MeTTailCore.MeTTaIL.EffectSafety
 open MeTTailCore.MeTTaIL.LookupPlan

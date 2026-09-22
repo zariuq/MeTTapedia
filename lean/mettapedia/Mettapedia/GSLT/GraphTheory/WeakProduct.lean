@@ -5,22 +5,30 @@ import Mathlib.Data.Sum.Basic
 import Mathlib.Data.Fintype.EquivFin
 
 /-!
-# Weak Product of Graph Models
+# Weak-product source obligations and projection coding
 
-This file formalizes the weak product construction from Bucciarelli-Salibra
-"Graph Lambda Theories" (2008), Section 3.
+The projection-only `WeakProduct` below is not a lawful graph model: its
+coding has collisions, and its injectivity field remains admitted. The exact
+coding obstruction is proved independently in `WeakProductControls`.
+`PartialPair` constructs the source's injective partial disjoint union, and
+`PartialPairCompletion` constructs its actual canonical graph model.
+`FactorFlattening` supplies the source factor-comparison map and its coding
+laws. `FactorInterpretation` proves actual interpretation comparison for any
+factor satisfying the primitive coding laws, and actual theory lower bounds
+for both disjoint-union factors. Indexed families and source stratification
+remain separate obligations.
 
 ## Main Definitions
 
-* `WeakProduct` - The weak product D₁ ◇ D₂ of graph models
-* `Stratified` - Stratified graph models
+* `WeakProduct` - Unfinished projection-only model packaging
+* `StratifiedModel` - A rank condition not identified with source stratification
 
-## Key Results
+## Source results, not established by this packaging
 
-The weak product D₁ ◇ D₂ satisfies:
+The source's completed weak product satisfies:
 - Th(D₁ ◇ D₂) ⊆ Th(D₁) ∩ Th(D₂)
 
-For stratified models:
+For models stratified in the source's proper-partial-pair completion sense:
 - Every stratified model is semisensible
 
 ## References
@@ -34,12 +42,11 @@ open Mettapedia.GSLT.Core
 
 /-! ## Weak Product Construction
 
-The weak product D₁ ◇ D₂ of two graph models combines their webs
-and coding functions in a compatible way.
-
-For simplicity, we axiomatize the key properties of the weak product
-rather than constructing it explicitly. The full construction requires
-careful handling of finite subset projections.
+The source first combines the webs as an injective partial pair, then adds
+fresh tokens for missing full finite-support/output pairs by canonical
+completion. Its later i-flattening is a semantic comparison map, not the
+construction of injective coding. The total projection map below omits that
+completion and cannot satisfy its injectivity obligation.
 -/
 
 /-- Project a finite subset of Sum to its left component -/
@@ -52,22 +59,10 @@ def projectRight {α β : Type*} [DecidableEq β] (s : Finset (α ⊕ β)) : Fin
   s.filterMap (fun x => match x with | .inl _ => none | .inr b => some b)
     (by intro a b; cases a <;> cases b <;> simp [eq_comm])
 
-/-- The weak product of two graph models D₁ ◇ D₂.
-
-    The weak product construction allows combining graph models
-    while preserving key properties of their theories.
-
-    Construction (Bucciarelli-Salibra §3, Definition 5-6):
-    - The carrier is |D₁| ⊕ |D₂| (disjoint union)
-    - The coding function uses "i-flattening" functions πᵢ
-    - The key property is that the embeddings Dᵢ ↪ E preserve interpretations
-
-    Note: The full construction requires careful handling of the coding function
-    to ensure injectivity. The simple projection-based definition is not injective;
-    the paper uses a more sophisticated approach involving the "flattening" operation
-    that encodes enough information to recover the original inputs.
-
-    See: Bucciarelli & Salibra, "Graph Lambda Theories" (2008), §3, Definition 5-6 -/
+/-- Unfinished projection-only packaging. Opposite-component support is
+discarded, so distinct inputs have the same code. The admitted field below
+is false for this definition; source completion requires a different carrier
+and coding map, not an injectivity proof for this one. -/
 def WeakProduct (D₁ D₂ : GraphModel) : GraphModel where
   web := {
     carrier := D₁.Carrier ⊕ D₂.Carrier
@@ -79,23 +74,17 @@ def WeakProduct (D₁ D₂ : GraphModel) : GraphModel where
       match d with
       | .inl d₁ => .inl (D₁.coding.code (projectLeft a, d₁))
       | .inr d₂ => .inr (D₂.coding.code (projectRight a, d₂))
-    -- The injectivity proof requires the full "i-flattening" construction
-    -- from Bucciarelli-Salibra Definition 5-6, which involves careful
-    -- encoding of finite subset structure. The simple projection loses
-    -- information from the "other" component, so a more sophisticated
-    -- coding function is needed for the full construction.
+    -- False for this coding map: opposite-component supports are erased.
+    -- The source's partial-pair completion must replace the construction.
     injective := by
       intro ⟨a₁, d₁⟩ ⟨a₂, d₂⟩ h
-      -- The proof strategy: show that same output tag implies same input tag,
-      -- then use component coding function injectivity
       cases d₁ with
       | inl x₁ =>
         cases d₂ with
         | inl x₂ =>
           simp at h
           have hc := D₁.coding.injective h
-          -- For full proof: need to show a₁ = a₂ given projectLeft a₁ = projectLeft a₂
-          -- This requires the full i-flattening construction
+          -- Equality of these projections does not imply equality of supports.
           sorry
         | inr _ => simp at h
       | inr y₁ =>
@@ -134,8 +123,9 @@ theorem WeakProduct.theory_inclusion (D₁ D₂ : GraphModel) :
 
 /-! ## Stratified Models
 
-A stratified model has a well-founded "level" structure on its web elements.
-This guarantees semisensibility.
+The rank record below is not the source's definition of stratification as a
+proper-partial-pair completion. No identification or semisensibility result
+for this record is currently established.
 -/
 
 /-- A stratification of a web is a function assigning natural number levels. -/
@@ -150,7 +140,7 @@ structure Stratification (W : Web) where
 
     The key property is that coding INCREASES levels:
     the result of coding has level strictly greater than all inputs.
-    This prevents self-referential paradoxes. -/
+    This rank condition is separate from source stratification. -/
 structure StratifiedModel where
   /-- The underlying graph model -/
   model : GraphModel
@@ -160,7 +150,9 @@ structure StratifiedModel where
   coding_increases_level : ∀ (a : Finset model.web.carrier) (d : model.web.carrier),
     ∀ x ∈ a, stratification.level (model.coding.code (a, d)) > stratification.level x
 
-/-- Every stratified model is semisensible (Bucciarelli-Salibra Theorem 29).
+/-- Unproved semisensibility obligation for the rank record below.
+The source's Theorem 29 concerns proper-partial-pair completions; it does not
+establish this statement without connecting the definitions.
 
     The key insight: in a stratified model, solvable and unsolvable terms
     have different "complexity" in terms of level structure, so they
@@ -174,58 +166,26 @@ structure StratifiedModel where
     The proof requires showing that the level structure of a stratified model
     distinguishes between terms based on their computational behavior.
 
-    See: Bucciarelli & Salibra, "Graph Lambda Theories" (2008), Theorem 29
 -/
 theorem stratified_semisensible (D : StratifiedModel) :
     ∀ T : LambdaTheory, T.equations = theoryOf D.model → T.Semisensible := by
   sorry
 
-/-! ## Graph Theory Intersection
-
-The class of graph theories is closed under intersection.
-This follows from the weak product construction.
--/
-
-/-- The intersection of two graph theories is a graph theory.
-
-    This follows from the weak product construction: given D₁, D₂,
-    the weak product D₁ ◇ D₂ has Th(D₁ ◇ D₂) ⊆ Th(D₁) ∩ Th(D₂).
-
-    The proof constructs a LambdaTheory from theoryOf (D₁ ◇ D₂) and uses
-    the axiomatized weak product properties.
-
-    Note: We need to construct a LambdaTheory from the set theoryOf (D₁ ◇ D₂),
-    which requires showing it satisfies all the LambdaTheory axioms.
-    This is a property of graph model theories.
-
-    See: Bucciarelli & Salibra, "Graph Lambda Theories" (2008), §3
--/
-theorem graphTheory_inter (T₁ T₂ : LambdaTheory)
-    (h₁ : IsGraphTheory T₁) (h₂ : IsGraphTheory T₂) :
-    ∃ T : LambdaTheory, IsGraphTheory T ∧ T.equations ⊆ T₁.equations ∩ T₂.equations := by
-  sorry
-
 /-! ## Summary
 
-This file establishes the weak product construction:
-
-1. **WeakProduct**: D₁ ◇ D₂ combines graph models (axiomatized)
-2. **theory_inclusion**: Th(D₁ ◇ D₂) ⊆ Th(D₁) ∩ Th(D₂)
-3. **Stratification**: Level structure on webs
-4. **stratified_semisensible**: Stratified models are semisensible
-
-**Key Results (Bucciarelli-Salibra)**:
-- Weak product preserves graph model structure
-- Graph theories are closed under intersection
-- Stratified models are semisensible
-
-**Technical Notes**:
-- WeakProduct is axiomatized rather than constructed
-- Full construction requires careful Finset projection handling
-- The key properties (theory inclusion, etc.) are stated as theorems
+The weak-product record and source claims remain unqualified. The projection
+helpers are independent of its admitted fields. The lawful partial pair and
+collision controls live in `PartialPair` and `WeakProductControls`. The actual
+canonical completion, generic factor-flattening primitives, and actual
+interpretation comparison are separate qualified constructions.
+`FactorInterpretation` proves the existing `graphTheory_inter` lower-bound
+statement from the actual completed model, not this projection-only record.
+`IndexedPartialPair` supplies nonempty indexed families and their actual
+completed-model theory lower bounds. Exact intersection realization and
+source stratification remain open.
 
 **Next Steps**:
-- Construct WeakProduct explicitly if needed
+- Exact intersection realization and source stratification
 - Connection to Böhm trees
 - Characterization of maximal graph theory (B)
 -/

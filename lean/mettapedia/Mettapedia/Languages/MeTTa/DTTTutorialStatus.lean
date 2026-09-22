@@ -18,7 +18,7 @@ deriving DecidableEq, Repr
 
 structure LadderCaseStatus where
   caseName : String
-  pureKernel : AxisStatus
+  twoSortKernel : AxisStatus
   mettail : AxisStatus
   mm2 : AxisStatus
   hePrime : AxisStatus
@@ -40,7 +40,7 @@ deriving Repr
 
 def boolNatStatus : LadderCaseStatus :=
   { caseName := "Bool/Nat foundations"
-    pureKernel := .proved
+    twoSortKernel := .proved
     mettail := .represented
     mm2 := .represented
     hePrime := .syntaxSupport
@@ -48,7 +48,7 @@ def boolNatStatus : LadderCaseStatus :=
 
 def finVecStatus : LadderCaseStatus :=
   { caseName := "Fin-indexed Vec safe indexing"
-    pureKernel := .openIssue
+    twoSortKernel := .openIssue
     mettail := .represented
     mm2 := .openIssue
     hePrime := .syntaxSupport
@@ -56,15 +56,15 @@ def finVecStatus : LadderCaseStatus :=
 
 def equalityCongStatus : LadderCaseStatus :=
   { caseName := "Equality refl/congruence"
-    pureKernel := .proved
+    twoSortKernel := .proved
     mettail := .represented
     mm2 := .openIssue
     hePrime := .syntaxSupport
-    nextObligation := "connect source equality proofs to IntrinsicPure Id terms" }
+    nextObligation := "connect source equality proofs to TwoSortPiSigmaId Id terms" }
 
 def dependentPairStatus : LadderCaseStatus :=
   { caseName := "Dependent pair/proof packaging"
-    pureKernel := .proved
+    twoSortKernel := .proved
     mettail := .represented
     mm2 := .openIssue
     hePrime := .syntaxSupport
@@ -72,7 +72,7 @@ def dependentPairStatus : LadderCaseStatus :=
 
 def capabilityStatus : LadderCaseStatus :=
   { caseName := "Capability-indexed proof objects"
-    pureKernel := .proved
+    twoSortKernel := .proved
     mettail := .represented
     mm2 := .openIssue
     hePrime := .syntaxSupport
@@ -80,7 +80,7 @@ def capabilityStatus : LadderCaseStatus :=
 
 def unitRecOracleStatus : LadderCaseStatus :=
   { caseName := "UnitRec runtime/oracle bridge"
-    pureKernel := .proved
+    twoSortKernel := .proved
     mettail := .represented
     mm2 := .openIssue
     hePrime := .syntaxSupport
@@ -88,7 +88,7 @@ def unitRecOracleStatus : LadderCaseStatus :=
 
 def natRecStatus : LadderCaseStatus :=
   { caseName := "NatRec / eliminators"
-    pureKernel := .partialSupport
+    twoSortKernel := .partialSupport
     mettail := .represented
     mm2 := .openIssue
     hePrime := .syntaxSupport
@@ -108,28 +108,28 @@ theorem tutorialLadderStatus_count :
     tutorialLadderStatus.length = 7 := rfl
 
 theorem natRec_is_the_partial_case :
-    natRecStatus.pureKernel = .partialSupport ∧ natRecStatus.mm2 = .openIssue :=
+    natRecStatus.twoSortKernel = .partialSupport ∧ natRecStatus.mm2 = .openIssue :=
   ⟨rfl, rfl⟩
 
 theorem unitRec_has_runtime_oracle_bridge :
-    unitRecOracleStatus.pureKernel = .proved ∧ unitRecOracleStatus.hePrime = .syntaxSupport :=
+    unitRecOracleStatus.twoSortKernel = .proved ∧ unitRecOracleStatus.hePrime = .syntaxSupport :=
   ⟨rfl, rfl⟩
 
 theorem capability_has_pureKernel_seed :
-    capabilityStatus.pureKernel = .proved :=
+    capabilityStatus.twoSortKernel = .proved :=
   rfl
 
 theorem finVec_needs_indexed_family_oracle :
-    finVecStatus.pureKernel = .openIssue :=
+    finVecStatus.twoSortKernel = .openIssue :=
   rfl
 
 def capacitySpecLedger : List CapacitySpecLedgerCase :=
   [ { caseName := "UnitRec syntax/oracle seed"
       relation := .capacityGap
-      note := "he-prime emits the UnitRec certificate atom; IntrinsicPure checks the exact shape; general trace bridge is still narrow" }
+      note := "he-prime emits the UnitRec certificate atom; TwoSortPiSigmaId checks the exact shape; general trace bridge is still narrow" }
   , { caseName := "Capability forged read"
       relation := .conservative
-      note := "he-prime rejects the attack; IntrinsicPure seed now has a closed certificate rejection" }
+      note := "he-prime rejects the attack; TwoSortPiSigmaId seed now has a closed certificate rejection" }
   , { caseName := "NatRec eliminator"
       relation := .capacityGap
       note := "NatRec type, generated obligations, and generated zero iota rule exist; succ rule and reduction semantics are still absent" }

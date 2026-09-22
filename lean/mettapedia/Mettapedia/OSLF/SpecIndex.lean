@@ -1,4 +1,5 @@
 import Mettapedia.OSLF.Main
+import Mettapedia.OSLF.DeliverableAudit
 import Mettapedia.OSLF.CoreMain
 import Mettapedia.Languages.MeTTa.PeTTa
 import Mettapedia.Logic.LP
@@ -269,11 +270,11 @@ runtime/behavioral layer:
 | 6 | `runtime_mode_diamond_transport_comp` | MATTProvableNow.lean | composed runtime morphism diamond witness transport |
 | 7 | `matt_canonical_runtime_behavioral_package` | MATTClaimMap.lean | canonical composed package: doctrine + mapPred functoriality + commuting squares + transport |
 | 8 | `pure_mode_isolation` | MATTProvableNow.lean | current pure boundary: any morphism touching pure is pure identity |
-| 9 | `mettaPure_runtime_behavioral_transport` | MATTProvableNow.lean | specialized runtime→behavioral witness transport for `mettaPure` |
+| 9 | `twoSortDependent_runtime_behavioral_transport` | MATTProvableNow.lean | specialized runtime→behavioral witness transport for `twoSortDependent` |
 
 Intentionally out of current theorem scope:
 - full mode-2-category formalization
-- pure-mode morphism theory (deferred until MeTTa-Pure bridge is established)
+- pure-mode morphism theory (deferred until two-sort experiment bridge is established)
 
 ## X. Sorry / Axiom Census
 
@@ -592,13 +593,14 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.Framework.PaperParityCanaries.lambdaCalc_paper_parity_canary
 #check @Mettapedia.OSLF.Framework.PaperParityCanaries.negative_canary_nonclosed_fragment
 -- Paper-claim tracker
-#check @Mettapedia.OSLF.Framework.PaperClaimTracker.paperClaimList_all_resolved
+#check @Mettapedia.OSLF.Framework.PaperClaimTracker.paperClaimList_remaining_locations
 #check @Mettapedia.OSLF.Framework.PaperClaimTracker.provenCount_eq
+#check @Mettapedia.OSLF.Framework.PaperClaimTracker.partialCount_eq
 #check @Mettapedia.OSLF.Framework.PaperClaimTracker.assumptionScopedCount_eq
--- Strict NTT theorem-number parity tracker (fully closed)
-#check @Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemaining_empty
-#check @Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_zero
-#check @Mettapedia.OSLF.Framework.NTTClaimTracker.fullNTTParity_closed
+-- Strict NTT source-obligation tracker (five partial source claims)
+#check @Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemaining_locations
+#check @Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_eq
+#check @Mettapedia.OSLF.Framework.NTTClaimTracker.fullNTTParity_open
 -- Canonical OSLF -> NTT -> WM closure wrappers
 #check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.oslf_formula_ntt_wm_star_sound_of_pathOrder
 #check @Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure.oslf_formula_ntt_wm_step_sound_of_pathOrder
@@ -613,7 +615,7 @@ open Mettapedia.OSLF
 #check @Mettapedia.OSLF.Framework.MATTProvableNow.runtime_behavioral_square_coherence
 #check @Mettapedia.OSLF.Framework.MATTProvableNow.runtime_mode_diamond_transport_comp
 #check @Mettapedia.OSLF.Framework.MATTProvableNow.pure_mode_isolation
-#check @Mettapedia.OSLF.Framework.MATTProvableNow.mettaPure_runtime_behavioral_transport
+#check @Mettapedia.OSLF.Framework.MATTProvableNow.twoSortDependent_runtime_behavioral_transport
 #check @Mettapedia.OSLF.Framework.MATTClaimMap.matt_pure_boundary_package
 #check @Mettapedia.OSLF.Framework.MATTClaimMap.matt_canonical_runtime_behavioral_package
 -- NTT endpoints

@@ -23,6 +23,10 @@ open Mettapedia.GSLT.LanguageDef.DerivationWordMachineSimulation
 open Mettapedia.GSLT.LanguageDef.DerivationWordMachineInputSimulation
 open Mettapedia.GSLT.LanguageDef.DerivationWordMachineInferSimulation
 
+attribute [local simp]
+  applyRuleBindings_eq_applyBindings
+  ruleDepthAligned depthAligned depthAlignedList captureDepth captureDepthList
+
 variable {Formula Rule Evidence Provenance Obligation ServiceState : Type}
 variable [DecidableEq Formula] [DecidableEq Rule] [DecidableEq Evidence]
   [DecidableEq Provenance] [DecidableEq Obligation]

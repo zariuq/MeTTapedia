@@ -203,10 +203,7 @@ private theorem mismatched_projection_rule_has_no_match
         skolem cnf) = [] := by
   rw [matchPatternForRule_eq_syntactic]
   cases withRefinement <;> cases sourceWithRefinement <;>
-  simp [TptpOfficialFofBatchProjectionLanguageDef.projection_typeContext,
-      TptpOfficialFofBatchProjectionLanguageDef.projection_premises,
-      TptpOfficialFofBatchProjectionLanguageDef.projection_left,
-      TptpOfficialFofBatchProjectionLanguageDef.projection_right,
+  simp [TptpOfficialFofBatchProjectionLanguageDef.projection_left,
     concreteSourceFofInput, projectionRequest, sourceFofInput,
     sourceOccurrence, plainRole, refinedRole, tokenLowerWord,
     TptpOfficialFofBatchProjectionLanguageDef.a,
@@ -311,7 +308,6 @@ private theorem matching_projection_pair_plain_exact
   rcases entry with ⟨code, polarity⟩
   cases polarity <;>
   simp [projectionPair,
-    TptpOfficialFofBatchProjectionLanguageDef.projection_typeContext,
       TptpOfficialFofBatchProjectionLanguageDef.projection_premises,
       TptpOfficialFofBatchProjectionLanguageDef.projection_left,
       TptpOfficialFofBatchProjectionLanguageDef.projection_right,
@@ -324,7 +320,9 @@ private theorem matching_projection_pair_plain_exact
     TptpFofClausificationBatchGenerationLanguageDef.a,
     applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, matchPattern, matchArgs, mergeBindings,
-    applyBindingsForRule, applyBindings]
+    applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+    ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+    captureDepthList, applyBindings]
 
 private theorem matching_projection_pair_refined_exact
     (base : BasePremiseEvaluator) (recursiveStep : Pattern → List Pattern)
@@ -343,7 +341,6 @@ private theorem matching_projection_pair_refined_exact
   rcases entry with ⟨code, polarity⟩
   cases polarity <;>
   simp [projectionPair,
-    TptpOfficialFofBatchProjectionLanguageDef.projection_typeContext,
       TptpOfficialFofBatchProjectionLanguageDef.projection_premises,
       TptpOfficialFofBatchProjectionLanguageDef.projection_left,
       TptpOfficialFofBatchProjectionLanguageDef.projection_right,
@@ -356,7 +353,9 @@ private theorem matching_projection_pair_refined_exact
     TptpFofClausificationBatchGenerationLanguageDef.a,
     applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, matchPattern, matchArgs, mergeBindings,
-    applyBindingsForRule, applyBindings]
+    applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+    ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+    captureDepthList, applyBindings]
 
 private theorem projection_pair_plain_dispatch
     (base : BasePremiseEvaluator) (recursiveStep : Pattern → List Pattern)
@@ -509,7 +508,11 @@ local macro_rules
       encodeBatchOccurrence_mk, encodeBatchPolarity_eq,
       Input.encodedRequest, Input.encodedTarget, atom,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 private theorem axiom_rewriteAt_exact (fuel : Nat) (input : Input)
     (roleExact : input.role = .axiom) :

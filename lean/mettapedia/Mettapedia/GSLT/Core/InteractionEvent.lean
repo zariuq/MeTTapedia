@@ -1,4 +1,6 @@
 import Mettapedia.GSLT.Core.GSLT
+import Mathlib.CategoryTheory.Category.Basic
+import Mathlib.CategoryTheory.Functor.Basic
 
 /-!
 # Proof-relevant interaction events
@@ -203,6 +205,233 @@ end EventCost
 
 end InteractionPresentation
 
+/-! ## Interactive theories and cuts as sites
+
+Kernel iGSLT is a GSLT together with a named meeting site. A cut is extra
+combinators plus a contraction *step*; combinators alone are not a site.
+Meredith's `InteractionCutPresentation` is those four combinators. LanguageDef
+`IGSLT` is a spelling of this object, not a second theory.
+-/
+
+/-- A rewrite theory with a named family of meeting sites. Completeness of
+the site is optional. -/
+structure Interactive where
+  theory : GSLT
+  site : InteractionPresentation theory
+
+namespace Interactive
+
+/-- Forget the site; the underlying rewrite theory remains. -/
+def erase (I : Interactive) : GSLT := I.theory
+
+@[simp] theorem erase_theory (I : Interactive) : I.erase = I.theory := rfl
+
+/-- A map of interactive theories: a bisimilarity-preserving term map
+together with a site map and an event map lying over it. Parallel sites
+with equal endpoints remain distinct if the event map says so. -/
+structure Morphism (source target : Interactive) where
+  base : GSLT.Morphism source.theory target.theory
+  mapSite : source.site.Site → target.site.Site
+  mapEvent :
+    ∀ {site : source.site.Site} {s t : source.theory.Term},
+      source.site.Event site s t →
+        target.site.Event (mapSite site) (base.toFun s) (base.toFun t)
+
+namespace Morphism
+
+def id (I : Interactive) : Morphism I I where
+  base := GSLT.Morphism.id I.theory
+  mapSite := _root_.id
+  mapEvent := fun event => event
+
+def comp {first second third : Interactive}
+    (left : Morphism first second) (right : Morphism second third) :
+    Morphism first third where
+  base := GSLT.Morphism.comp right.base left.base
+  mapSite := right.mapSite ∘ left.mapSite
+  mapEvent := fun event => right.mapEvent (left.mapEvent event)
+
+theorem id_comp {source target : Interactive} (f : Morphism source target) :
+    comp (id source) f = f := by
+  cases f
+  rfl
+
+theorem comp_id {source target : Interactive} (f : Morphism source target) :
+    comp f (id target) = f := by
+  cases f
+  rfl
+
+theorem assoc {I J K L : Interactive}
+    (f : Morphism I J) (g : Morphism J K) (h : Morphism K L) :
+    comp (comp f g) h = comp f (comp g h) :=
+  rfl
+
+end Morphism
+
+instance : CategoryTheory.Category Interactive where
+  Hom := Morphism
+  id := Morphism.id
+  comp := fun f g => Morphism.comp f g
+  id_comp := fun f => Morphism.id_comp f
+  comp_id := fun f => Morphism.comp_id f
+  assoc := fun f g h => Morphism.assoc f g h
+
+/-- Forgetting the site is functorial. The term map is the underlying
+behavioral GSLT morphism. -/
+def eraseFunctor : CategoryTheory.Functor Interactive GSLT where
+  obj := erase
+  map := fun f => f.base
+  map_id := fun _ => rfl
+  map_comp := fun _ _ => rfl
+
+end Interactive
+
+/-- Cut combinators: contact, two co-introductions, and a residual pair.
+This is Meredith's interaction-cut presentation. It is not yet a site. -/
+structure CutCombinators (theory : GSLT) where
+  contact : theory.Term → theory.Term → theory.Term
+  leftIntro : theory.Term → theory.Term → theory.Term
+  rightIntro : theory.Term → theory.Term → theory.Term
+  contract : theory.Term → theory.Term → theory.Term → theory.Term →
+    theory.Term × theory.Term
+
+/-- A cut is combinators together with a contraction step. The residual is
+determined by the two continuations; no extra binder name is quantified
+outside the introductions. Meredith's four-field presentation is the
+combinator shadow (`toCombinators`). -/
+structure SoundCut (theory : GSLT) extends CutCombinators theory where
+  residual : theory.Term → theory.Term → theory.Term
+  contract_determines_residual :
+    ∀ subject name body payload,
+      (contract subject name body payload).1 = residual body payload
+  contract_step :
+    ∀ subject body payload,
+      theory.Step
+        (contact (rightIntro subject payload) (leftIntro subject body))
+        (residual body payload)
+
+namespace SoundCut
+
+variable {theory : GSLT}
+
+/-- Witness that a source/target pair is a contraction of a particular cut. -/
+structure Witness (c : SoundCut theory) (source target : theory.Term) where
+  subject : theory.Term
+  body : theory.Term
+  payload : theory.Term
+  source_eq :
+    source = c.contact (c.rightIntro subject payload) (c.leftIntro subject body)
+  target_eq : target = c.residual body payload
+
+/-- A sound cut *is* an interaction site: one named meeting, evidence the
+particular introductions that contracted. -/
+def asPresentation (c : SoundCut theory) : InteractionPresentation theory where
+  Site := Unit
+  Event := fun _ source target => Witness c source target
+  sound := by
+    intro _ source target w
+    have step := c.contract_step w.subject w.body w.payload
+    rw [← w.source_eq, ← w.target_eq] at step
+    exact step
+
+/-- The kernel iGSLT of a sound cut. -/
+def toInteractive (c : SoundCut theory) : Interactive where
+  theory := theory
+  site := c.asPresentation
+
+@[simp] theorem toInteractive_erase (c : SoundCut theory) :
+    c.toInteractive.erase = theory :=
+  rfl
+
+/-- Meredith's four combinators, with the extra name argument unused. -/
+def toCombinators (c : SoundCut theory) : CutCombinators theory :=
+  c.toCutCombinators
+
+/-- The enabled contraction at a concrete cut redex. -/
+def enable (c : SoundCut theory)
+    (subject body payload : theory.Term) :
+    (c.asPresentation).Enabled
+      (c.contact (c.rightIntro subject payload) (c.leftIntro subject body)) where
+  site := ()
+  target := c.residual body payload
+  evidence := {
+    subject := subject
+    body := body
+    payload := payload
+    source_eq := rfl
+    target_eq := rfl
+  }
+
+theorem enable_steps (c : SoundCut theory)
+    (subject body payload : theory.Term) :
+    theory.Step
+      (c.contact (c.rightIntro subject payload) (c.leftIntro subject body))
+      (c.residual body payload) :=
+  (c.enable subject body payload).step
+
+theorem enable_erases (c : SoundCut theory)
+    (subject body payload : theory.Term) :
+    (c.enable subject body payload).erase.target =
+      c.residual body payload :=
+  rfl
+
+end SoundCut
+
+/-! ## Kernel cut theories
+
+A distinguished cut site on an interactive theory. Morphisms must preserve
+that site. This is the semantic image of a LanguageDef `CIGSLT` cut.
+-/
+
+structure KernelCut where
+  host : Interactive
+  cutSite : host.site.Site
+
+namespace KernelCut
+
+def forget (C : KernelCut) : Interactive := C.host
+
+structure Morphism (source target : KernelCut) where
+  host : Interactive.Morphism source.host target.host
+  preservesCut : host.mapSite source.cutSite = target.cutSite
+
+namespace Morphism
+
+def id (C : KernelCut) : Morphism C C where
+  host := Interactive.Morphism.id C.host
+  preservesCut := rfl
+
+def comp {I J K : KernelCut} (left : Morphism I J) (right : Morphism J K) :
+    Morphism I K where
+  host := Interactive.Morphism.comp left.host right.host
+  preservesCut := by
+    change right.host.mapSite (left.host.mapSite I.cutSite) = K.cutSite
+    rw [left.preservesCut, right.preservesCut]
+
+end Morphism
+
+instance : CategoryTheory.Category KernelCut where
+  Hom := Morphism
+  id := Morphism.id
+  comp := fun f g => Morphism.comp f g
+  id_comp := fun f => by
+    cases f
+    rfl
+  comp_id := fun f => by
+    cases f
+    rfl
+  assoc := fun f g h => by
+    cases f; cases g; cases h
+    rfl
+
+def forgetFunctor : CategoryTheory.Functor KernelCut Interactive where
+  obj := forget
+  map := fun f => f.host
+  map_id := fun _ => rfl
+  map_comp := fun _ _ => rfl
+
+end KernelCut
+
 /-! ## Separating canaries -/
 
 namespace Canary
@@ -272,6 +501,72 @@ theorem selected_continuation_is_authorized :
         ⟨(), 0⟩ = some ⟨(), 1⟩ ∧
       loopTheory.Step () () := by
   exact ⟨rfl, trivial⟩
+
+/-! A contraction is a site only once it is a step. -/
+
+inductive MeetTerm where
+  | send
+  | recv
+  | meet
+  | done
+
+def meetTheory : GSLT where
+  Term := MeetTerm
+  equations := ⟨Eq, ⟨Eq.refl, Eq.symm, Eq.trans⟩⟩
+  rewrites := fun source target => source = .meet ∧ target = .done
+  rewrites_resp_left := by
+    intro source source' target related step
+    exact ⟨target, related ▸ step, rfl⟩
+  rewrites_resp_right := by
+    intro source target target' step related
+    exact related ▸ step
+
+def meetCut : SoundCut meetTheory where
+  contact := fun _ _ => .meet
+  leftIntro := fun _ _ => .recv
+  rightIntro := fun _ _ => .send
+  contract := fun _ _ _ _ => (.done, .done)
+  residual := fun _ _ => .done
+  contract_determines_residual := fun _ _ _ _ => rfl
+  contract_step := fun _ _ _ => ⟨rfl, rfl⟩
+
+theorem meet_cut_erases_to_theory :
+    meetCut.toInteractive.erase = meetTheory :=
+  rfl
+
+theorem meet_cut_enables_contraction :
+    (meetCut.enable .send .recv .send).erase.target = .done ∧
+      meetTheory.Step .meet .done :=
+  ⟨rfl, meetCut.contract_step .send .recv .send⟩
+
+def loopInteractive : Interactive where
+  theory := loopTheory
+  site := loopPresentation
+
+def swapParallelSites : Interactive.Morphism loopInteractive loopInteractive where
+  base := GSLT.Morphism.id loopTheory
+  mapSite := fun
+    | .cheap => .dear
+    | .dear => .cheap
+  mapEvent := fun _ => ()
+
+theorem swap_parallel_sites_changes_cost :
+    loopCost.cost (site := .cheap) (source := ()) (target := ()) () ≠
+      loopCost.cost (site := swapParallelSites.mapSite .cheap)
+        (source := ()) (target := ()) () := by
+  decide
+
+/-- Combinators without `contract_step` are not a `SoundCut`; the type
+boundary is the negative. -/
+def meetCombinators : CutCombinators meetTheory :=
+  meetCut.toCombinators
+
+#print axioms meet_cut_erases_to_theory
+#print axioms meet_cut_enables_contraction
+#print axioms SoundCut.enable_steps
+#print axioms Interactive.eraseFunctor
+#print axioms KernelCut.forgetFunctor
+#print axioms swap_parallel_sites_changes_cost
 
 end Canary
 

@@ -88,13 +88,14 @@ theorem missing_finish_rewriteAt_exact
     DerivationCheckMachineLanguageDef.instructionsCons,
     DerivationCheckMachineLanguageDef.rootNone,
     DerivationCheckMachineLanguageDef.rootSome,
+    DerivationCheckMachineLanguageDef.halted,
+    DerivationCheckMachineLanguageDef.outcomeFault,
     DerivationCheckMachineLanguageDef.a,
     DerivationCheckMachineLanguageDef.v, run, halted, recordsNil, recordsCons,
     DerivationWordMachineLanguageDef.a, v, matchPattern, matchArgs,
-    mergeBindings, premisesUsing, applyBindings]
-  simp [DerivationCheckMachineLanguageDef.halted,
-    DerivationCheckMachineLanguageDef.outcomeFault,
-    DerivationCheckMachineLanguageDef.a, liftPattern, applyBindings]
+    mergeBindings, premisesUsing, applyRuleBindings_eq_applyBindings,
+    ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+    captureDepthList, applyBindings]
 
 #print axioms missing_finish_rewriteAt_exact
 

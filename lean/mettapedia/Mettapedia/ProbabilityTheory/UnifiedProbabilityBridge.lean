@@ -1,5 +1,4 @@
 import Mettapedia.PLN.Evidence.EvidenceQuantale
-import Mettapedia.PLN.Evidence.EvidenceQuantale
 import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
 import Mettapedia.PLN.Evidence.HeytingValuationOnEvidence
 import Mettapedia.PLN.Evidence.ConfidenceCompoundingTheorem
@@ -44,7 +43,6 @@ and inference:
 
 namespace Mettapedia.ProbabilityTheory.UnifiedProbabilityBridge
 
-open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
 open Mettapedia.PLN.Evidence.HeytingValuationOnEvidence

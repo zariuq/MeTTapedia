@@ -25,6 +25,7 @@ A separate coverage theorem is still required before a revised closed search
 can establish negative logical information.
 -/
 
+open Mettapedia.Logic
 set_option autoImplicit false
 
 namespace Mettapedia.TypeTheory.CertificateGSLTSearchProfileRevision

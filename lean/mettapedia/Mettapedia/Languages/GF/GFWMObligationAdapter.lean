@@ -1,19 +1,19 @@
 import Mathlib.CategoryTheory.Functor.FullyFaithful
 import Mettapedia.Languages.GF.GFWMConnections
-import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelIntrinsicPureBridge
+import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelTwoSortBridge
 import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge
 
 /-!
 # GF → WM Obligation Adapter (Pure-Interface Aligned)
 
 This module aligns GF transport endpoints with the same obligation interface used by
-`PureJudgmentWMInterface`, without modifying Pure kernel semantics.
+`TwoSortJudgmentWMInterface`, without modifying Pure kernel semantics.
 
 It provides:
 
 1. adapters from GF syntactic transport (`GFSyntaxHom`) into
    `WMStrengthObligation` / `WMConsequenceRuleOn` under a supplied
-   `PureJudgmentWMInterface`,
+   `TwoSortJudgmentWMInterface`,
 2. category-theoretic characterization endpoints for the GF→WM functor:
    a faithful direction (always) and non-fullness witness under
    evidence-collapse assumptions.
@@ -26,10 +26,10 @@ open Mettapedia.Languages.GF.HandCrafted.Abstract
 open Mettapedia.Languages.GF.OSLFBridge
 open Mettapedia.Languages.GF.GFWMConnections
 open Mettapedia.PLN.WorldModel.PLNWorldModel
-open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelIntrinsicPureBridge
+open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelTwoSortBridge
 open Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine
 open Mettapedia.PLN.Evidence.EvidenceClass
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.ProfileTheory
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.ProfileTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 universe u v
@@ -40,22 +40,22 @@ variable {State : Type u} {Query : Type v}
 variable [EvidenceType State] [BinaryWorldModel State Query]
 
 /-- A GF syntactic transport can be consumed directly as a
-`PureJudgmentWMInterface`-style WM obligation witness. -/
+`TwoSortJudgmentWMInterface`-style WM obligation witness. -/
 theorem gfSyntaxHom_to_wmStrengthObligation
-    (I : PureJudgmentWMInterface State Query)
+    (I : TwoSortJudgmentWMInterface State Query)
     {A B : GFSyntaxObj} (f : A ⟶ B)
     {W : State} (hW : I.side W) :
     WMStrengthObligation State Query W
       (I.encode (syntaxQuery A))
       (I.encode (syntaxQuery B)) := by
-  have hstar : PureProfileTheoryStepStar (syntaxQuery A) (syntaxQuery B) := by
+  have hstar : TwoSortProfileTheoryStepStar (syntaxQuery A) (syntaxQuery B) := by
     rcases f with ⟨hEq⟩
     exact hEq ▸ Relation.ReflTransGen.refl
   exact I.profileStepStar_sound hW hstar
 
 /-- Tree-pattern equality endpoint on the same pure-interface obligation interface. -/
 theorem gfTreePatternEq_to_wmStrengthObligation
-    (I : PureJudgmentWMInterface State Query)
+    (I : TwoSortJudgmentWMInterface State Query)
     {t₁ t₂ : AbstractNode}
     (hPat : Mettapedia.Languages.GF.OSLFBridge.gfAbstractToPattern t₁ =
       Mettapedia.Languages.GF.OSLFBridge.gfAbstractToPattern t₂)
@@ -69,8 +69,8 @@ theorem gfTreePatternEq_to_wmStrengthObligation
 
 /-- Package a GF syntactic transport as a state-indexed WM consequence rule using
 the same interface as Pure-bridge wrappers. -/
-def wmConsequenceRuleOn_of_gfSyntaxHom_viaPureInterface
-    (I : PureJudgmentWMInterface State Query)
+def wmConsequenceRuleOn_of_gfSyntaxHom_viaTwoSortInterface
+    (I : TwoSortJudgmentWMInterface State Query)
     {A B : GFSyntaxObj} (f : A ⟶ B) :
     WMConsequenceRuleOn State Query where
   side := I.side
@@ -81,24 +81,24 @@ def wmConsequenceRuleOn_of_gfSyntaxHom_viaPureInterface
     exact gfSyntaxHom_to_wmStrengthObligation (I := I) (f := f) (W := W) hW
 
 /-- Tree-pattern equality packaged as a pure-interface-aligned WM consequence rule. -/
-def wmConsequenceRuleOn_of_gfTreePatternEq_viaPureInterface
-    (I : PureJudgmentWMInterface State Query)
+def wmConsequenceRuleOn_of_gfTreePatternEq_viaTwoSortInterface
+    (I : TwoSortJudgmentWMInterface State Query)
     {t₁ t₂ : AbstractNode}
     (hPat : Mettapedia.Languages.GF.OSLFBridge.gfAbstractToPattern t₁ =
       Mettapedia.Languages.GF.OSLFBridge.gfAbstractToPattern t₂) :
     WMConsequenceRuleOn State Query :=
-  wmConsequenceRuleOn_of_gfSyntaxHom_viaPureInterface (I := I)
+  wmConsequenceRuleOn_of_gfSyntaxHom_viaTwoSortInterface (I := I)
     (f := syntaxHom_of_treePatternEq (hPat := hPat))
 
 /-- Frege-strong compositional transport packaged as a pure-interface-aligned
 WM consequence rule. -/
-def wmConsequenceRuleOn_of_fregeStrong_viaPureInterface
-    (I : PureJudgmentWMInterface State Query)
+def wmConsequenceRuleOn_of_fregeStrong_viaTwoSortInterface
+    (I : TwoSortJudgmentWMInterface State Query)
     (f : FunctionSig) (args₁ args₂ : List AbstractNode)
     (hargs : args₁.map Mettapedia.Languages.GF.OSLFBridge.gfAbstractToPattern =
       args₂.map Mettapedia.Languages.GF.OSLFBridge.gfAbstractToPattern) :
     WMConsequenceRuleOn State Query :=
-  wmConsequenceRuleOn_of_gfTreePatternEq_viaPureInterface (I := I)
+  wmConsequenceRuleOn_of_gfTreePatternEq_viaTwoSortInterface (I := I)
     (hPat := Mettapedia.Languages.GF.Typing.frege_strong f args₁ args₂ hargs)
 
 end PureAlignedAdapters
@@ -120,7 +120,7 @@ theorem gfSyntaxHom_and_institution_beckChevalley_endpoint
     (pi1 : P ⟶ Aobj) (pi2 : P ⟶ Bobj) (fcat : Aobj ⟶ D) (gcat : Bobj ⟶ D)
     (hpb : CategoryTheory.IsPullback pi1 pi2 fcat gcat)
     (hmfcat : CategoryTheory.Mono fcat) (hmpi2 : CategoryTheory.Mono pi2)
-    (I : PureJudgmentWMInterface State Query)
+    (I : TwoSortJudgmentWMInterface State Query)
     {Asyn Bsyn : GFSyntaxObj} (f : Asyn ⟶ Bsyn)
     (W : State) (φ : H.query Bobj) (hW : I.side W) :
     WMStrengthObligation State Query W

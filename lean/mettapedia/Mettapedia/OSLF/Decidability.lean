@@ -57,12 +57,42 @@ def semFuel (step : Pattern → List Pattern) (I : AtomSem)
     | .imp _ φ₂ => semFuel step I fuel φ₂ p
     | .dia φ' => ∃ q ∈ step p, semFuel step I fuel φ' q
     | .box _ => False
+    | .var _ => False
+    | .mu φ' =>
+      if OSLFFormula.closedAt 1 φ' && OSLFFormula.positiveIn 0 φ' then
+        semFuel step I fuel (OSLFFormula.unfold φ') p
+      else
+        False
+    | .emptyColl kind => p = Pattern.collection kind [] none
+    | .headed label body =>
+      ∃ inner : Pattern, p = Pattern.apply label [inner] ∧ semFuel step I fuel body inner
+    | .cut kind φ₁ φ₂ =>
+      ∃ leftParts rightParts : List Pattern,
+        p = Pattern.collection kind (leftParts ++ rightParts) none ∧
+          semFuel step I fuel φ₁ (Pattern.collection kind leftParts none) ∧
+          semFuel step I fuel φ₂ (Pattern.collection kind rightParts none)
 
 /-! ## Reflection: check .sat ↔ semFuel
 
 The key theorem: the checker returning `.sat` is logically equivalent to
 `semFuel` holding. This is a true biconditional because `semFuel` was
 designed to exactly mirror the checker's behavior. -/
+
+/-- `aggregateDia` answers `.sat` exactly when some entry does. -/
+private theorem aggregateDia_eq_sat_iff (results : List CheckResult) :
+    aggregateDia results = .sat ↔ ∃ r ∈ results, r = CheckResult.sat := by
+  constructor
+  · exact aggregateDia_sat
+  · rintro ⟨r, member, rfl⟩
+    induction results with
+    | nil => exact absurd member (List.not_mem_nil)
+    | cons head tail ih =>
+        rcases List.mem_cons.mp member with rfl | inTail
+        · simp [aggregateDia]
+        · cases head with
+          | sat => simp [aggregateDia]
+          | unsat => simpa [aggregateDia] using ih inTail
+          | unknown => simp only [aggregateDia, ih inTail]
 
 /-- Helper: `aggregateDia` returning `.sat` iff some successor satisfies the formula. -/
 private theorem aggregateDia_sat_iff {step : Pattern → List Pattern}
@@ -128,6 +158,66 @@ theorem check_sat_iff_semFuel
   | zero => simp [check, semFuel]
   | succ n ih =>
     cases φ with
+    | emptyColl kind =>
+      simp only [check, semFuel]
+      constructor
+      · intro h
+        split at h
+        · rename_i shape; simpa using shape
+        · exact absurd h (by simp)
+      · intro h; simp [h]
+    | headed label body =>
+      simp only [check, semFuel]
+      constructor
+      · intro h
+        split at h
+        · rename_i labelVar inner
+          split at h
+          · rename_i sameLabel
+            simp only [beq_iff_eq] at sameLabel
+            subst sameLabel
+            exact ⟨inner, rfl, ih.mp h⟩
+          · exact absurd h (by simp)
+        · exact absurd h (by simp)
+      · rintro ⟨inner, rfl, holds⟩
+        simp only [beq_self_eq_true, if_true]
+        exact ih.mpr holds
+    | cut kind φ₁ φ₂ =>
+      simp only [check, semFuel]
+      constructor
+      · intro h
+        split at h
+        · rename_i kindVar elements
+          split at h
+          · rename_i sameKind
+            simp only [beq_iff_eq] at sameKind
+            subst sameKind
+            obtain ⟨result, resultMember, resultSat⟩ := aggregateDia_sat h
+            obtain ⟨split, splitMember, resultEq⟩ := List.mem_map.mp resultMember
+            obtain ⟨index, -, splitEq⟩ := List.mem_map.mp splitMember
+            subst splitEq
+            subst resultEq
+            simp only at resultSat
+            split at resultSat
+            · rename_i leftSat rightSat
+              exact ⟨elements.take index, elements.drop index,
+                by rw [List.take_append_drop], ih.mp leftSat, ih.mp rightSat⟩
+            · exact absurd resultSat (by simp)
+          · exact absurd h (by simp)
+        · exact absurd h (by simp)
+      · rintro ⟨leftParts, rightParts, rfl, holdsLeft, holdsRight⟩
+        simp only [beq_self_eq_true, if_true]
+        refine (aggregateDia_eq_sat_iff _).mpr ⟨CheckResult.sat, ?_, rfl⟩
+        refine List.mem_map.mpr ⟨(Pattern.collection kind leftParts none,
+          Pattern.collection kind rightParts none), ?_, ?_⟩
+        · refine List.mem_map.mpr ⟨leftParts.length, ?_, ?_⟩
+          · simp
+          · simp [cutSplits]
+        · show (match check step I_check n (Pattern.collection kind leftParts none) φ₁,
+                  check step I_check n (Pattern.collection kind rightParts none) φ₂ with
+                | CheckResult.sat, CheckResult.sat => CheckResult.sat
+                | _, _ => CheckResult.unknown) = CheckResult.sat
+          rw [ih.mpr holdsLeft, ih.mpr holdsRight]
     | top => simp [check, semFuel]
     | bot => simp [check, semFuel]
     | atom a =>
@@ -181,6 +271,15 @@ theorem check_sat_iff_semFuel
       exact aggregateDia_sat_iff (fun q _ => ih)
     | box _ =>
       simp [check, semFuel]
+    | var _ =>
+      simp [check, semFuel]
+    | mu φ' =>
+      by_cases guard :
+          (OSLFFormula.closedAt 1 φ' && OSLFFormula.positiveIn 0 φ') = true
+      · simp only [check, semFuel, guard, if_true]
+        exact ih
+      · simp only [check, semFuel, guard, if_false]
+        simp
 
 /-! ## Sound Lift: semFuel → sem
 
@@ -205,6 +304,20 @@ theorem semFuel_implies_sem
   | succ n ih =>
     cases φ with
     | top => exact trivial
+    | emptyColl kind =>
+      simp only [semFuel] at h
+      simp only [sem, semEnv]
+      exact fullFrame.le_close _ p h
+    | headed label body =>
+      simp only [semFuel] at h
+      obtain ⟨inner, shape, holds⟩ := h
+      simp only [sem, semEnv]
+      exact fullFrame.le_close _ p ⟨inner, shape, ih holds⟩
+    | cut kind φ₁ φ₂ =>
+      simp only [semFuel] at h
+      obtain ⟨leftParts, rightParts, shape, holdsLeft, holdsRight⟩ := h
+      simp only [sem, semEnv]
+      exact fullFrame.le_close _ p ⟨leftParts, rightParts, shape, ih holdsLeft, ih holdsRight⟩
     | bot => exact absurd h (by simp [semFuel])
     | atom a => exact h
     | and φ₁ φ₂ =>
@@ -224,6 +337,16 @@ theorem semFuel_implies_sem
       exact ⟨q, h_step p q hq_mem, ih hq_sem⟩
     | box _ =>
       exact absurd h (by simp [semFuel])
+    | var _ =>
+      exact absurd h (by simp [semFuel])
+    | mu φ' =>
+      simp only [semFuel] at h
+      split at h
+      · rename_i guard
+        simp only [Bool.and_eq_true] at guard
+        rw [sem_mu_eq_unfold R I φ' guard.1 guard.2]
+        exact ih h
+      · exact absurd h (by simp)
 
 /-- Combined reflection + lift: if the checker returns `.sat`, then `sem` holds.
 
@@ -251,6 +374,17 @@ theorem semFuel_mono {step : Pattern → List Pattern} {I : AtomSem}
   | succ k ih =>
     cases φ with
     | top => trivial
+    | emptyColl kind =>
+      simp only [semFuel] at h ⊢
+      exact h
+    | headed label body =>
+      simp only [semFuel] at h ⊢
+      obtain ⟨inner, shape, holds⟩ := h
+      exact ⟨inner, shape, ih holds⟩
+    | cut kind φ₁ φ₂ =>
+      simp only [semFuel] at h ⊢
+      obtain ⟨leftParts, rightParts, shape, holdsLeft, holdsRight⟩ := h
+      exact ⟨leftParts, rightParts, shape, ih holdsLeft, ih holdsRight⟩
     | bot => exact absurd h (by simp [semFuel])
     | atom a => exact h
     | and φ₁ φ₂ =>
@@ -268,6 +402,15 @@ theorem semFuel_mono {step : Pattern → List Pattern} {I : AtomSem}
       exact ⟨q, hq_mem, ih hq_sem⟩
     | box _ =>
       exact absurd h (by simp [semFuel])
+    | var _ =>
+      exact absurd h (by simp [semFuel])
+    | mu φ' =>
+      simp only [semFuel] at h ⊢
+      split at h
+      · rename_i guard
+        simp only [guard, if_true]
+        exact ih h
+      · exact absurd h (by simp)
 
 /-- `semFuel` is monotone in fuel: `n ≤ m → semFuel ... n ... → semFuel ... m ...` -/
 theorem semFuel_mono_fuel {step : Pattern → List Pattern} {I : AtomSem}

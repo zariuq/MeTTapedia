@@ -164,6 +164,14 @@ mutual
         derivedDiamond span (satisfiesModuloOver equiv span inner) pattern
     | .box inner, pattern =>
         derivedBox span (satisfiesModuloOver equiv span inner) pattern
+    | .emptyColl kind, pattern => equiv pattern (.collection kind [] none)
+    | .cut kind left right, pattern =>
+        ∃ leftElements rightElements : List Pattern,
+          equiv pattern (.collection kind (leftElements ++ rightElements) none) ∧
+            satisfiesModuloOver equiv span left
+              (.collection kind leftElements none) ∧
+            satisfiesModuloOver equiv span right
+              (.collection kind rightElements none)
 
   /-- Pointwise form for argument vectors. -/
   def satisfiesAllModuloOver (equiv : Pattern → Pattern → Prop)
@@ -217,6 +225,26 @@ theorem satisfiesModuloUsing_equationInvariant
         (satisfiesModuloUsing_equationInvariant relEnv lang inner)
   | .box inner =>
       derivedBox_langSpanUsing_equationInvariant relEnv lang _
+  | .emptyColl _ => by
+      intro left right equivalent
+      constructor
+      · intro representative
+        exact (langGSLTUsing relEnv lang).equations.iseqv.trans
+          ((langGSLTUsing relEnv lang).equations.iseqv.symm equivalent) representative
+      · intro representative
+        exact (langGSLTUsing relEnv lang).equations.iseqv.trans equivalent representative
+  | .cut _ _ _ => by
+      intro left right equivalent
+      constructor
+      · rintro ⟨leftElements, rightElements, representative, leftHolds, rightHolds⟩
+        exact ⟨leftElements, rightElements,
+          (langGSLTUsing relEnv lang).equations.iseqv.trans
+            ((langGSLTUsing relEnv lang).equations.iseqv.symm equivalent) representative,
+          leftHolds, rightHolds⟩
+      · rintro ⟨leftElements, rightElements, representative, leftHolds, rightHolds⟩
+        exact ⟨leftElements, rightElements,
+          (langGSLTUsing relEnv lang).equations.iseqv.trans equivalent representative,
+          leftHolds, rightHolds⟩
 
 /-- Default-environment form. -/
 theorem satisfiesModulo_equationInvariant (lang : LanguageDef) (formula : Formula) :
@@ -275,6 +303,11 @@ mutual
           satisfiesModuloOver_of_satisfiesOver reflexive span inner _ holds⟩
     | .box inner, _, holds => fun edge targetEq =>
         satisfiesModuloOver_of_satisfiesOver reflexive span inner _ (holds edge targetEq)
+    | .emptyColl _, _, shape => shape ▸ reflexive _
+    | .cut kind left right, _, ⟨leftElements, rightElements, shape, leftHolds, rightHolds⟩ =>
+        ⟨leftElements, rightElements, shape ▸ reflexive _,
+          satisfiesModuloOver_of_satisfiesOver reflexive span left _ leftHolds,
+          satisfiesModuloOver_of_satisfiesOver reflexive span right _ rightHolds⟩
 
   /-- Pointwise form. -/
   theorem satisfiesAllModuloOver_of_satisfiesAllOver

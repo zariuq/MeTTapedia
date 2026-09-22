@@ -9,9 +9,8 @@ extension of the seed, and one path certificate for each proposed distance.
 The last condition proves minimality, not merely feasibility: an accepted
 candidate is the least metric similarity extending the seed.
 
-The producer is deliberately unspecified. This module verifies proposed
-completions; it does not yet prove termination or completeness of a shortest
-path generator. A different producer can use the same checking interface.
+This module verifies proposed completions. It does not produce a shortest
+path, and it does not prove completeness of the derivation system.
 -/
 
 set_option autoImplicit false

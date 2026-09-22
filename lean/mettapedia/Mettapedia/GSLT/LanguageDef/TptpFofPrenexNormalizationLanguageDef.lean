@@ -1192,7 +1192,10 @@ local macro "embedded_shift_rules" : tactic =>
       TptpFofNnfShiftLanguageDef.a,
       TptpFofNnfShiftLanguageDef.v,
       matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
-      applyBindings])
+      applyRuleBindings_eq_applyBindings, ruleDepthAligned, depthAligned,
+      depthAlignedList, captureDepth, captureDepthList, applyBindings] <;>
+      rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+      simp only [applyBindings, List.map_nil])
 
 local syntax "embedded_shift_rules_using " term,* : tactic
 local macro_rules
@@ -1246,7 +1249,10 @@ local macro_rules
           TptpFofNnfShiftLanguageDef.a,
           TptpFofNnfShiftLanguageDef.v,
           matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
-          applyBindings])
+          applyRuleBindings_eq_applyBindings, ruleDepthAligned, depthAligned,
+          depthAlignedList, captureDepth, captureDepthList, applyBindings] <;>
+          rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+          simp only [applyBindings, List.map_nil])
 
 local macro "prenex_root" : tactic =>
   `(tactic|
@@ -1295,7 +1301,11 @@ local macro "prenex_root" : tactic =>
       TptpFofNnfShiftLanguageDef.v,
       TptpFofNnfShiftLanguageDef.a,
       a, v, matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+      simp only [applyBindings, List.map_nil])
 
 local syntax "prenex_root_using " term,* : tactic
 local macro_rules
@@ -1384,7 +1394,10 @@ local macro_rules
           sourcePositive, sourceNegative, sourceEqual, sourceNotEqual,
           sourceAnd, sourceOr, sourceAll, sourceEx, a, v,
           matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
-          applyBindings])
+          applyRuleBindings_eq_applyBindings, ruleDepthAligned, depthAligned,
+          depthAlignedList, captureDepth, captureDepthList, applyBindings] <;>
+          rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+          simp only [applyBindings, List.map_nil])
 
 theorem embedded_index_zero_at_zero_exact (fuel : Nat) :
     rewriteAt (engineBasePremises RelationEnv.empty) language (fuel + 1)
@@ -1681,7 +1694,11 @@ local macro "authored_prenex_rules" : tactic =>
       TptpFofNnfShiftLanguageDef.ex,
       TptpFofNnfShiftLanguageDef.a,
       a, v, matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+      simp only [applyBindings, List.map_nil])
 
 local syntax "authored_prenex_rules_using " term,* : tactic
 local macro_rules
@@ -1743,7 +1760,11 @@ local macro_rules
           TptpFofNnfShiftLanguageDef.ex,
           TptpFofNnfShiftLanguageDef.a,
           a, v, matchPattern, matchArgs, mergeBindings,
-          applyBindingsForRule, applyBindings])
+          applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+          ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+          captureDepthList, applyBindings] <;>
+          rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+          simp only [applyBindings, List.map_nil])
 
 theorem matrix_shift_verum_exact (fuel : Nat) (cutoff : Pattern) :
     rewriteAt (engineBasePremises RelationEnv.empty) language (fuel + 1)
@@ -1831,38 +1852,7 @@ theorem matrix_shift_and_exact (fuel : Nat)
         (matrixAnd targetLeft targetRight)] := by
   simp only [rewriteAt, language_rewrites, List.flatMap_append]
   rw [shift_silent_on_matrix_shift_request, List.nil_append]
-  simp only [matrixShiftRequest, matrixShiftResult, matrixAnd, a] at leftExact rightExact ⊢
-  simp [leftExact, rightExact, authoredRewrites, matrixShiftRewrites,
-    formShiftRewrites, combineRewrites, prenexRewrites, applyRuleUsing,
-    matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
-    mkRule, congruence, indexZero, indexSucc, termRequest, termResult,
-    termsRequest, termsResult, matrixShiftRequest, matrixShiftResult,
-    formShiftRequest, formShiftResult, combineRequest, combineResult,
-    prenexRequest, prenexResult, connectiveAnd, connectiveOr,
-    matrixVerum, matrixFalsum, matrixPositive, matrixNegative,
-    matrixEqual, matrixNotEqual, matrixAnd, matrixOr,
-    formMatrix, formAll, formEx, sourceVerum, sourceFalsum,
-    sourcePositive, sourceNegative, sourceEqual, sourceNotEqual,
-    sourceAnd, sourceOr, sourceAll, sourceEx,
-    TptpFofNnfShiftLanguageDef.termRequest,
-    TptpFofNnfShiftLanguageDef.termResult,
-    TptpFofNnfShiftLanguageDef.termsRequest,
-    TptpFofNnfShiftLanguageDef.termsResult,
-    TptpFofNnfShiftLanguageDef.indexZero,
-    TptpFofNnfShiftLanguageDef.indexSucc,
-    TptpFofNnfShiftLanguageDef.verum,
-    TptpFofNnfShiftLanguageDef.falsum,
-    TptpFofNnfShiftLanguageDef.positive,
-    TptpFofNnfShiftLanguageDef.negative,
-    TptpFofNnfShiftLanguageDef.equal,
-    TptpFofNnfShiftLanguageDef.notEqual,
-    TptpFofNnfShiftLanguageDef.and,
-    TptpFofNnfShiftLanguageDef.or,
-    TptpFofNnfShiftLanguageDef.all,
-    TptpFofNnfShiftLanguageDef.ex,
-    TptpFofNnfShiftLanguageDef.a,
-    a, v, matchPattern, matchArgs, mergeBindings,
-    applyBindingsForRule, applyBindings]
+  authored_prenex_rules_using leftExact, rightExact
 
 theorem matrix_shift_or_exact (fuel : Nat)
     (cutoff left right targetLeft targetRight : Pattern)
@@ -1878,38 +1868,7 @@ theorem matrix_shift_or_exact (fuel : Nat)
         (matrixOr targetLeft targetRight)] := by
   simp only [rewriteAt, language_rewrites, List.flatMap_append]
   rw [shift_silent_on_matrix_shift_request, List.nil_append]
-  simp only [matrixShiftRequest, matrixShiftResult, matrixOr, a] at leftExact rightExact ⊢
-  simp [leftExact, rightExact, authoredRewrites, matrixShiftRewrites,
-    formShiftRewrites, combineRewrites, prenexRewrites, applyRuleUsing,
-    matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
-    mkRule, congruence, indexZero, indexSucc, termRequest, termResult,
-    termsRequest, termsResult, matrixShiftRequest, matrixShiftResult,
-    formShiftRequest, formShiftResult, combineRequest, combineResult,
-    prenexRequest, prenexResult, connectiveAnd, connectiveOr,
-    matrixVerum, matrixFalsum, matrixPositive, matrixNegative,
-    matrixEqual, matrixNotEqual, matrixAnd, matrixOr,
-    formMatrix, formAll, formEx, sourceVerum, sourceFalsum,
-    sourcePositive, sourceNegative, sourceEqual, sourceNotEqual,
-    sourceAnd, sourceOr, sourceAll, sourceEx,
-    TptpFofNnfShiftLanguageDef.termRequest,
-    TptpFofNnfShiftLanguageDef.termResult,
-    TptpFofNnfShiftLanguageDef.termsRequest,
-    TptpFofNnfShiftLanguageDef.termsResult,
-    TptpFofNnfShiftLanguageDef.indexZero,
-    TptpFofNnfShiftLanguageDef.indexSucc,
-    TptpFofNnfShiftLanguageDef.verum,
-    TptpFofNnfShiftLanguageDef.falsum,
-    TptpFofNnfShiftLanguageDef.positive,
-    TptpFofNnfShiftLanguageDef.negative,
-    TptpFofNnfShiftLanguageDef.equal,
-    TptpFofNnfShiftLanguageDef.notEqual,
-    TptpFofNnfShiftLanguageDef.and,
-    TptpFofNnfShiftLanguageDef.or,
-    TptpFofNnfShiftLanguageDef.all,
-    TptpFofNnfShiftLanguageDef.ex,
-    TptpFofNnfShiftLanguageDef.a,
-    a, v, matchPattern, matchArgs, mergeBindings,
-    applyBindingsForRule, applyBindings]
+  authored_prenex_rules_using leftExact, rightExact
 
 theorem form_shift_matrix_exact (fuel : Nat)
     (cutoff body targetBody : Pattern)
@@ -1921,39 +1880,7 @@ theorem form_shift_matrix_exact (fuel : Nat)
       [formShiftResult cutoff (formMatrix body) (formMatrix targetBody)] := by
   simp only [rewriteAt, language_rewrites, List.flatMap_append]
   rw [shift_silent_on_form_shift_request, List.nil_append]
-  simp only [matrixShiftRequest, matrixShiftResult, formShiftRequest,
-    formShiftResult, formMatrix, a] at bodyExact ⊢
-  simp [bodyExact, authoredRewrites, matrixShiftRewrites,
-    formShiftRewrites, combineRewrites, prenexRewrites, applyRuleUsing,
-    matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
-    mkRule, congruence, indexZero, indexSucc, termRequest, termResult,
-    termsRequest, termsResult, matrixShiftRequest, matrixShiftResult,
-    formShiftRequest, formShiftResult, combineRequest, combineResult,
-    prenexRequest, prenexResult, connectiveAnd, connectiveOr,
-    matrixVerum, matrixFalsum, matrixPositive, matrixNegative,
-    matrixEqual, matrixNotEqual, matrixAnd, matrixOr,
-    formMatrix, formAll, formEx, sourceVerum, sourceFalsum,
-    sourcePositive, sourceNegative, sourceEqual, sourceNotEqual,
-    sourceAnd, sourceOr, sourceAll, sourceEx,
-    TptpFofNnfShiftLanguageDef.termRequest,
-    TptpFofNnfShiftLanguageDef.termResult,
-    TptpFofNnfShiftLanguageDef.termsRequest,
-    TptpFofNnfShiftLanguageDef.termsResult,
-    TptpFofNnfShiftLanguageDef.indexZero,
-    TptpFofNnfShiftLanguageDef.indexSucc,
-    TptpFofNnfShiftLanguageDef.verum,
-    TptpFofNnfShiftLanguageDef.falsum,
-    TptpFofNnfShiftLanguageDef.positive,
-    TptpFofNnfShiftLanguageDef.negative,
-    TptpFofNnfShiftLanguageDef.equal,
-    TptpFofNnfShiftLanguageDef.notEqual,
-    TptpFofNnfShiftLanguageDef.and,
-    TptpFofNnfShiftLanguageDef.or,
-    TptpFofNnfShiftLanguageDef.all,
-    TptpFofNnfShiftLanguageDef.ex,
-    TptpFofNnfShiftLanguageDef.a,
-    a, v, matchPattern, matchArgs, mergeBindings,
-    applyBindingsForRule, applyBindings]
+  authored_prenex_rules_using bodyExact
 
 theorem form_shift_all_exact (fuel : Nat)
     (cutoff body targetBody : Pattern)

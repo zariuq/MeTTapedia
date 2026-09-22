@@ -513,7 +513,11 @@ local macro "label_root" : tactic =>
       sourceAll, sourceEx, targetVerum, targetFalsum, targetPositive,
       targetNegative, targetEqual, targetNotEqual, targetAnd, targetOr,
       targetAll, targetEx, a, v, matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+      simp only [applyBindings, List.map_nil])
 
 local syntax "label_root_using " term,* : tactic
 local macro_rules
@@ -528,7 +532,11 @@ local macro_rules
           sourceAll, sourceEx, targetVerum, targetFalsum, targetPositive,
           targetNegative, targetEqual, targetNotEqual, targetAnd, targetOr,
           targetAll, targetEx, a, v, matchPattern, matchArgs, mergeBindings,
-          applyBindingsForRule, applyBindings])
+          applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+          ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+          captureDepthList, applyBindings] <;>
+          rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+          simp only [applyBindings, List.map_nil])
 
 theorem verum_rewriteAt_exact (fuel : Nat) (next : Pattern) :
     rewriteAt (engineBasePremises RelationEnv.empty) language (fuel + 1)

@@ -1,6 +1,6 @@
 import Mettapedia.GSLT.Core.InferenceControl
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTFiniteTraceAuthority
-import Mettapedia.Languages.MeTTa.PrimeNeedInferenceControl
+import Mettapedia.Machines.BranchLocalNeed.InferenceControl
 import Mettapedia.PLN.InferenceControl.PremiseSelection.Fusion
 import Mettapedia.PLN.WorldModel.BinaryWorldModel
 
@@ -19,12 +19,14 @@ the cost actually incurred.  This module makes that separation executable:
   policy;
 * a locally complete step authority can serialize the resulting controlled
   run as a finite NIK trace;
-* on Prime's Need machine, the semantic work counter remains an exact clock,
+* on Need's Need machine, the semantic work counter remains an exact clock,
   independently of the predicted cost used by the controller.
 
 The controller is deliberately allowed to use an inaccurate estimate.  A bad
 estimate may make search slow; it cannot mint a proof or alter a receipt.
 -/
+
+open Mettapedia.Machines.BranchLocalNeed
 
 namespace Mettapedia.PLN.Bridges.GSLT.InferenceControl
 
@@ -286,18 +288,18 @@ def guidance [EvidenceType State] [BinaryWorldModel State Query]
 
 end WorldModel
 
-/-! ## Prime specialization: estimate versus receipt -/
+/-! ## Need specialization: estimate versus receipt -/
 
-namespace Prime
+namespace Need
 
-open Mettapedia.Languages.MeTTa.PrimeNeedInferenceControl
-open Mettapedia.Languages.MeTTa.PrimeNeedReference
+open Mettapedia.Machines.BranchLocalNeed.NeedInferenceControl
+open Mettapedia.Machines.BranchLocalNeed.NeedReference
 
 variable {Goal : Type uGoal} {Estimate : Type uEstimate}
 variable {Priority : Type uPriority}
 variable {Origin Local Resume Rule Value StableFault RetryableFault Effect : Type*}
 
-/-- A PLN/cost-guided Prime emission retains both its exact semantic execution
+/-- A PLN/cost-guided Need emission retains both its exact semantic execution
 path and the transition-clock receipt.  The theorem quantifies over arbitrary
 predicted-cost carriers and ranking policies, so even a wrong estimate cannot
 alter the actual account. -/
@@ -342,7 +344,7 @@ theorem controlled_emission_has_proof_and_exact_cost
   exact ⟨semantic.1, Steps.transitions_eq spec semantic.1,
     semantic.2.1, semantic.2.2⟩
 
-end Prime
+end Need
 
 /-! ## Separating witnesses -/
 
@@ -428,7 +430,7 @@ end Examples
 #print axioms Guidance.exists_accepted_finite_trace
 #print axioms WorldModel.scorer_revision
 #print axioms WorldModel.guidance_evidenceAt_revision
-#print axioms Prime.controlled_emission_has_proof_and_exact_cost
+#print axioms Need.controlled_emission_has_proof_and_exact_cost
 #print axioms Examples.duplicate_occurrences_preserved
 #print axioms Examples.higher_evidence_selected_first
 #print axioms Examples.lower_estimated_cost_selected_first

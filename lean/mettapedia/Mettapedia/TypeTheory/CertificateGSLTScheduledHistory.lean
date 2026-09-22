@@ -33,6 +33,7 @@ not assume Horn clauses, first-order terms, a fixed search algorithm, or a
 specific object logic.
 -/
 
+open Mettapedia.Logic
 set_option autoImplicit false
 
 namespace Mettapedia.TypeTheory.CertificateGSLTScheduledHistory

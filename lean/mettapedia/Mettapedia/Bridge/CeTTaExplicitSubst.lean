@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.Languages.MeTTa.HE.CeTTaRuntimeContracts
 import Provenance.Util.ValueTypeString
+import Mettapedia.OSLF.MeTTaIL.DecimalNames
 import Init.Data.List.Lemmas
 
 /-!
@@ -182,12 +183,12 @@ The key insight: `Nat.repr` is injective because `natStringValue ∘ Nat.repr = 
 This uses infrastructure from `Provenance.Util.ValueTypeString`. -/
 
 /-- `Nat.repr` is injective: distinct naturals produce distinct decimal strings.
-    Proof: `natStringValue` is a left inverse of `Nat.repr`. -/
-theorem Nat.repr_injective : Function.Injective Nat.repr := fun i j h => by
-  have hi := natStringValue_repr i
-  have hj := natStringValue_repr j
-  rw [h] at hi
-  exact hi.symm.trans hj
+
+The proof lives once, in `MeTTaIL.DecimalNames`, which is where a generator's
+naming discipline is kept; this is the root-namespace spelling its CeTTa-side
+users refer to. -/
+theorem Nat.repr_injective : Function.Injective Nat.repr :=
+  Mettapedia.OSLF.MeTTaIL.DecimalNames.repr_injective
 
 /-- Slot names are injective: `slotName i = slotName j → i = j`.
 

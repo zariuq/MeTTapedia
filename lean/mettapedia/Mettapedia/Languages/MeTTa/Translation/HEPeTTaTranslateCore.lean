@@ -1048,7 +1048,7 @@ private theorem pure_args_of_expr_translation
     (c : String) (args : List Atom) (p : Pattern)
     (hpat : atomToPattern (.expression (.symbol c :: args)) = some p)
     (hmc : isMatchCorrectAux p = true) :
-    ∀ a ∈ args, PureTranslatable a := by
+    ∀ a ∈ args, TwoSortTranslatable a := by
   obtain ⟨patArgs, hpEq, hfm, _⟩ := pure_expr_translation_shape c args p hpat hmc
   subst hpEq
   have hlistmc : isMatchCorrectListAux patArgs = true := by
@@ -1062,7 +1062,7 @@ private theorem pure_args_of_expr_translation
 /-- A pure symbol-headed expression cannot use the special `atomToPattern` heads. -/
 private theorem pureTranslatable_head_standard
     (c : String) (args : List Atom)
-    (h : PureTranslatable (.expression (.symbol c :: args))) :
+    (h : TwoSortTranslatable (.expression (.symbol c :: args))) :
     c ≠ "λ" ∧ c ≠ "subst" := by
   obtain ⟨p, hp, hmc⟩ := h
   constructor
@@ -1098,22 +1098,22 @@ private theorem pureTranslatable_head_standard
           simp [isMatchCorrectAux] at hmc
         | cons _ _ => simp at hp
 
-/-- Wrapper around `pure_args_of_expr_translation` from a `PureTranslatable` premise. -/
+/-- Wrapper around `pure_args_of_expr_translation` from a `TwoSortTranslatable` premise. -/
 private theorem pureTranslatable_args_of_expr
     (c : String) (args : List Atom)
-    (h : PureTranslatable (.expression (.symbol c :: args))) :
-    ∀ a ∈ args, PureTranslatable a := by
+    (h : TwoSortTranslatable (.expression (.symbol c :: args))) :
+    ∀ a ∈ args, TwoSortTranslatable a := by
   obtain ⟨p, hp, hmc⟩ := h
   exact pure_args_of_expr_translation c args p hp hmc
 
-/-- `translateHEList` preserves `PureTranslatable` on each element. -/
+/-- `translateHEList` preserves `TwoSortTranslatable` on each element. -/
 private theorem translateHEList_mem_pure
     (ih : ∀ a' : Atom, sizeOf a' < bound →
-      ∀ s, PureTranslatable a' → PureTranslatable (translateHE a' s).1)
+      ∀ s, TwoSortTranslatable a' → TwoSortTranslatable (translateHE a' s).1)
     (xs : List Atom) (s : Nat)
     (hsize : ∀ x ∈ xs, sizeOf x < bound)
-    (hall : ∀ x ∈ xs, PureTranslatable x) :
-    ∀ x ∈ (translateHE.translateHEList xs s).1, PureTranslatable x := by
+    (hall : ∀ x ∈ xs, TwoSortTranslatable x) :
+    ∀ x ∈ (translateHE.translateHEList xs s).1, TwoSortTranslatable x := by
   induction xs generalizing s with
   | nil => simp [translateHE.translateHEList]
   | cons a as ih_list =>
@@ -1425,19 +1425,19 @@ theorem translateHE_translatable (a : Atom) (s : Nat)
                                       have hinner : Translatable (translateHE inner s).1 :=
                                         harg_ih inner (by simp) s (hargs inner (by simp))
                                       have hlistVarPure :
-                                          PureTranslatable (freshVar "collapsed" (translateHE inner s).2).1 := by
+                                          TwoSortTranslatable (freshVar "collapsed" (translateHE inner s).2).1 := by
                                         simp [freshVar, pureTranslatable_var]
                                       have huniqVarPure :
-                                          PureTranslatable
+                                          TwoSortTranslatable
                                             (freshVar "unique" (freshVar "collapsed" (translateHE inner s).2).2).1 := by
                                         simp [freshVar, pureTranslatable_var]
                                       have hlistVar :
                                           Translatable (freshVar "collapsed" (translateHE inner s).2).1 :=
-                                        PureTranslatable.toTranslatable hlistVarPure
+                                        TwoSortTranslatable.toTranslatable hlistVarPure
                                       have huniqVar :
                                           Translatable
                                             (freshVar "unique" (freshVar "collapsed" (translateHE inner s).2).2).1 :=
-                                        PureTranslatable.toTranslatable huniqVarPure
+                                        TwoSortTranslatable.toTranslatable huniqVarPure
                                       have hcollapseExpr :
                                           Translatable
                                             (.expression
@@ -1557,9 +1557,9 @@ theorem translateHE_translatable (a : Atom) (s : Nat)
 
 /-- `translateHE` preserves the stronger pure fragment used by the soundness bridge. -/
 theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
-    (h : PureTranslatable a) : PureTranslatable (translateHE a s).1 := by
+    (h : TwoSortTranslatable a) : TwoSortTranslatable (translateHE a s).1 := by
   have : ∀ (bound : Nat) (a : Atom), sizeOf a ≤ bound →
-      ∀ s, PureTranslatable a → PureTranslatable (translateHE a s).1 := by
+      ∀ s, TwoSortTranslatable a → TwoSortTranslatable (translateHE a s).1 := by
     intro bound
     induction bound with
     | zero =>
@@ -1584,7 +1584,7 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
         | cons hd args =>
           cases hd with
           | symbol c =>
-            have hargs : ∀ a ∈ args, PureTranslatable a :=
+            have hargs : ∀ a ∈ args, TwoSortTranslatable a :=
               pureTranslatable_args_of_expr c args ht
             have hcstd : c ≠ "λ" ∧ c ≠ "subst" :=
               pureTranslatable_head_standard c args ht
@@ -1595,20 +1595,20 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                   (by exact List.mem_cons_of_mem _ ha')
               simp at hlt ha
               omega
-            have harg_ih : ∀ a' ∈ args, ∀ s', PureTranslatable a' →
-                PureTranslatable (translateHE a' s').1 := by
+            have harg_ih : ∀ a' ∈ args, ∀ s', TwoSortTranslatable a' →
+                TwoSortTranslatable (translateHE a' s').1 := by
               intro a' ha' s' ht'
               exact ih_bound a' (harg_le a' ha') s' ht'
             have hall_translated :
                 ∀ x ∈ (translateHE.translateHEList args s).1,
-                  PureTranslatable x := by
+                  TwoSortTranslatable x := by
               exact translateHEList_mem_pure (bound := Nat.succ n)
                 (fun a' hlt s' ht' => ih_bound a' (Nat.le_of_lt_succ hlt) s' ht')
                 args s
                 (fun x hx => Nat.lt_succ_of_le (harg_le x hx))
                 hargs
             have hgeneric :
-                PureTranslatable (.expression (.symbol c :: (translateHE.translateHEList args s).1)) := by
+                TwoSortTranslatable (.expression (.symbol c :: (translateHE.translateHEList args s).1)) := by
               exact pureTranslatable_expr c (translateHE.translateHEList args s).1
                 hcstd.1 hcstd.2 hall_translated
             by_cases hswitch : c = "switch"
@@ -1617,11 +1617,11 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
               | nil =>
                 simpa [translateHE, translateHE.translateHEList] using hgeneric
               | cons scrut branches =>
-                have hscrut : PureTranslatable (translateHE scrut s).1 :=
+                have hscrut : TwoSortTranslatable (translateHE scrut s).1 :=
                   harg_ih scrut (by simp) s (hargs scrut (by simp))
                 have hbranches :
                     ∀ x ∈ (translateHE.translateHEList branches (translateHE scrut s).2).1,
-                      PureTranslatable x := by
+                      TwoSortTranslatable x := by
                   exact translateHEList_mem_pure (bound := Nat.succ n)
                     (fun a' hlt s' ht' => ih_bound a' (Nat.le_of_lt_succ hlt) s' ht')
                     branches (translateHE scrut s).2
@@ -1642,11 +1642,11 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                 | nil =>
                   simpa [translateHE, translateHE.translateHEList] using hgeneric
                 | cons scrut branches =>
-                  have hscrut : PureTranslatable (translateHE scrut s).1 :=
+                  have hscrut : TwoSortTranslatable (translateHE scrut s).1 :=
                     harg_ih scrut (by simp) s (hargs scrut (by simp))
                   have hbranches :
                       ∀ x ∈ (translateHE.translateHEList branches (translateHE scrut s).2).1,
-                        PureTranslatable x := by
+                        TwoSortTranslatable x := by
                     exact translateHEList_mem_pure (bound := Nat.succ n)
                       (fun a' hlt s' ht' => ih_bound a' (Nat.le_of_lt_succ hlt) s' ht')
                       branches (translateHE scrut s).2
@@ -1677,10 +1677,10 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                       | cons body rest =>
                         cases rest with
                         | nil =>
-                          have hv : PureTranslatable v := hargs v (by simp)
-                          have he : PureTranslatable (translateHE e s).1 :=
+                          have hv : TwoSortTranslatable v := hargs v (by simp)
+                          have he : TwoSortTranslatable (translateHE e s).1 :=
                             harg_ih e (by simp) s (hargs e (by simp))
-                          have hbody : PureTranslatable (translateHE body (translateHE e s).2).1 :=
+                          have hbody : TwoSortTranslatable (translateHE body (translateHE e s).2).1 :=
                             harg_ih body (by simp) (translateHE e s).2 (hargs body (by simp))
                           exact pureTranslatable_expr "let"
                             [v, (translateHE e s).1, (translateHE body (translateHE e s).2).1]
@@ -1701,7 +1701,7 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                     | cons inner rest =>
                       cases rest with
                       | nil =>
-                        have hinner : PureTranslatable (translateHE inner s).1 :=
+                        have hinner : TwoSortTranslatable (translateHE inner s).1 :=
                           harg_ih inner (by simp) s (hargs inner (by simp))
                         exact pureTranslatable_expr "collapse" [(translateHE inner s).1]
                           (by decide) (by decide) (by
@@ -1719,7 +1719,7 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                       | cons inner rest =>
                         cases rest with
                         | nil =>
-                          have hinner : PureTranslatable (translateHE inner s).1 :=
+                          have hinner : TwoSortTranslatable (translateHE inner s).1 :=
                             harg_ih inner (by simp) s (hargs inner (by simp))
                           exact pureTranslatable_expr "superpose" [(translateHE inner s).1]
                             (by decide) (by decide) (by
@@ -1745,11 +1745,11 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                             | cons tmpl rest =>
                               cases rest with
                               | nil =>
-                                have hv : PureTranslatable v := hargs v (by simp)
-                                have hatom : PureTranslatable (translateHE atom s).1 :=
+                                have hv : TwoSortTranslatable v := hargs v (by simp)
+                                have hatom : TwoSortTranslatable (translateHE atom s).1 :=
                                   harg_ih atom (by simp) s (hargs atom (by simp))
                                 have htmpl :
-                                    PureTranslatable (translateHE tmpl (translateHE atom s).2).1 :=
+                                    TwoSortTranslatable (translateHE tmpl (translateHE atom s).2).1 :=
                                   harg_ih tmpl (by simp) (translateHE atom s).2 (hargs tmpl (by simp))
                                 exact pureTranslatable_expr "let"
                                   [v, (translateHE atom s).1,
@@ -1772,14 +1772,14 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                             cases rest with
                             | nil =>
                               have htx :
-                                  PureTranslatable (translateHE x (freshVar "discard" s).2).1 :=
+                                  TwoSortTranslatable (translateHE x (freshVar "discard" s).2).1 :=
                                 harg_ih x (by simp) (freshVar "discard" s).2 (hargs x (by simp))
-                              have hfresh : PureTranslatable (freshVar "discard" s).1 := by
+                              have hfresh : TwoSortTranslatable (freshVar "discard" s).1 := by
                                 simp [freshVar, pureTranslatable_var]
-                              have hunit : PureTranslatable (.symbol "()") :=
+                              have hunit : TwoSortTranslatable (.symbol "()") :=
                                 pureTranslatable_symbol "()"
                               have hlet :
-                                  PureTranslatable
+                                  TwoSortTranslatable
                                     (.expression
                                       [.symbol "let", (freshVar "discard" s).1,
                                         (translateHE x (freshVar "discard" s).2).1, .symbol "()"]) := by
@@ -1827,10 +1827,10 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                                           cases rest' with
                                           | nil =>
                                             have hret :
-                                                PureTranslatable
+                                                TwoSortTranslatable
                                                   (Atom.expression [Atom.symbol "return", inner]) :=
                                               hargs (Atom.expression [Atom.symbol "return", inner]) (by simp)
-                                            have hinner : PureTranslatable inner :=
+                                            have hinner : TwoSortTranslatable inner :=
                                               pureTranslatable_args_of_expr "return" [inner] hret inner (by simp)
                                             have hret_le :
                                                 sizeOf (Atom.expression [Atom.symbol "return", inner]) ≤ n :=
@@ -1857,17 +1857,17 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                               | cons inner rest =>
                                   cases rest with
                                   | nil =>
-                                      have hinner : PureTranslatable (translateHE inner s).1 :=
+                                      have hinner : TwoSortTranslatable (translateHE inner s).1 :=
                                         harg_ih inner (by simp) s (hargs inner (by simp))
                                       have hlistVar :
-                                          PureTranslatable (freshVar "collapsed" (translateHE inner s).2).1 := by
+                                          TwoSortTranslatable (freshVar "collapsed" (translateHE inner s).2).1 := by
                                         simp [freshVar, pureTranslatable_var]
                                       have huniqVar :
-                                          PureTranslatable
+                                          TwoSortTranslatable
                                             (freshVar "unique" (freshVar "collapsed" (translateHE inner s).2).2).1 := by
                                         simp [freshVar, pureTranslatable_var]
                                       have hcollapseExpr :
-                                          PureTranslatable
+                                          TwoSortTranslatable
                                             (.expression
                                               [.symbol "collapse", (translateHE inner s).1]) :=
                                         pureTranslatable_expr "collapse" [(translateHE inner s).1]
@@ -1875,7 +1875,7 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                                           (by decide)
                                           (by intro x hx; simp at hx; rcases hx with rfl; exact hinner)
                                       have huniqueAtomExpr :
-                                          PureTranslatable
+                                          TwoSortTranslatable
                                             (.expression
                                               [.symbol "unique-atom",
                                                 (freshVar "collapsed" (translateHE inner s).2).1]) :=
@@ -1885,7 +1885,7 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                                           (by decide)
                                           (by intro x hx; simp at hx; rcases hx with rfl; exact hlistVar)
                                       have hsuperposeExpr :
-                                          PureTranslatable
+                                          TwoSortTranslatable
                                             (.expression
                                               [.symbol "superpose",
                                                 (freshVar "unique"
@@ -1896,7 +1896,7 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                                           (by decide)
                                           (by intro x hx; simp at hx; rcases hx with rfl; exact huniqVar)
                                       have hinnerLet :
-                                          PureTranslatable
+                                          TwoSortTranslatable
                                             (.expression
                                               [.symbol "let",
                                                 (freshVar "unique" (freshVar "collapsed" (translateHE inner s).2).2).1,
@@ -1926,7 +1926,7 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
                                             · exact huniqueAtomExpr
                                             · exact hsuperposeExpr)
                                       have houterLet :
-                                          PureTranslatable
+                                          TwoSortTranslatable
                                             (.expression
                                               [.symbol "let",
                                                 (freshVar "collapsed" (translateHE inner s).2).1,
@@ -1978,17 +1978,17 @@ theorem translateHE_preserves_pureTranslatable (a : Atom) (s : Nat)
   exact this (sizeOf a) a (Nat.le_refl _) s h
 
 /-- Executable translation stays inside the proved HE↔PeTTa bridge domain:
-    if the input is in the `PureTranslatable` fragment used by
+    if the input is in the `TwoSortTranslatable` fragment used by
     `HEPeTTaSound.lean`, the output still admits an `atomToPattern` witness. -/
 theorem translateHE_preserves_soundness_domain (a : Atom) (s : Nat)
-    (h : PureTranslatable a) :
+    (h : TwoSortTranslatable a) :
     Translatable (translateHE a s).1 :=
-  PureTranslatable.toTranslatable (translateHE_preserves_pureTranslatable a s h)
+  TwoSortTranslatable.toTranslatable (translateHE_preserves_pureTranslatable a s h)
 
 /-- Concrete pattern witness for the translated output, useful as a theorem-level
     guard that the executable translator stays aligned with the proved fragment. -/
 theorem translateHE_pattern_witness (a : Atom) (s : Nat)
-    (h : PureTranslatable a) :
+    (h : TwoSortTranslatable a) :
     ∃ p, atomToPattern (translateHE a s).1 = some p := by
   exact translatable_witness _ (translateHE_preserves_soundness_domain a s h)
 

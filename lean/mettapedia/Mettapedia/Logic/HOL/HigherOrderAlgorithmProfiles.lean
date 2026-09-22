@@ -22,6 +22,7 @@ order ILP, model finding, and infinitary proof search are not arranged in one
 misleading linear hierarchy: their profiles are provably incomparable.
 -/
 
+open Mettapedia.Logic
 set_option autoImplicit false
 
 namespace Mettapedia.Logic.HOL.HigherOrderAlgorithmProfiles

@@ -11,6 +11,7 @@ This internal module is backend-neutral and does not import `Algorithms`.
 namespace Mettapedia.Languages.MeTTa.ExecutionContract
 
 open Mettapedia.Languages.MeTTa.ElaboratedCore
+
 open Mettapedia.Languages.MeTTa.RuntimeKernel
 open MeTTailCore.MeTTaIL.EffectSafety
 open MeTTailCore.MeTTaIL.LookupPlan

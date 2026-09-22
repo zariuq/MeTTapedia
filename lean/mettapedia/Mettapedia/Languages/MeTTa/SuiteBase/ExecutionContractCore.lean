@@ -9,6 +9,7 @@ Shared core contract constructors and entry vocabulary for MeTTa-family runtimes
 namespace Mettapedia.Languages.MeTTa.ExecutionContract
 
 open Mettapedia.Languages.MeTTa.ElaboratedCore
+
 open Mettapedia.Languages.MeTTa.RuntimeKernel
 open MeTTailCore.MeTTaIL.EffectSafety
 open MeTTailCore.MeTTaIL.LookupPlan

@@ -2,6 +2,7 @@ import Mettapedia.GSLT.Core.Web
 import Mettapedia.GSLT.Core.LambdaTheoryCategory
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Lattice
+import Mathlib.Logic.Relation
 
 /-!
 # Graph Lambda Theories
@@ -29,7 +30,8 @@ where Ω = (λx.xx)(λx.xx).
 A theory T is **semisensible** if unsolvable terms only equal unsolvable terms:
   T ⊢ M = N with M unsolvable implies N is unsolvable.
 
-Every graph theory is semisensible (Bucciarelli-Salibra §4).
+Semisensibility requires the source's stratification hypotheses; it does not
+hold for every graph model.
 
 ## References
 
@@ -703,10 +705,32 @@ def LambdaTerm.isHNF : LambdaTerm → Bool
   | .lam t => t.isHNF
   | .app t _ => t.isAppHead
 
-/-- A term is solvable if it has a head normal form.
-    Equivalently: ∃ M₁...Mₙ. t M₁ ... Mₙ →*_β I -/
+/-- Parallel beta reduction, shared with complete-development and confluence
+proofs. Declaring it before solvability lets the latter use actual reduction. -/
+inductive ParRed : LambdaTerm → LambdaTerm → Prop where
+  | var (n : Nat) : ParRed (.var n) (.var n)
+  | lam {t t' : LambdaTerm} : ParRed t t' → ParRed (.lam t) (.lam t')
+  | app {t t' s s' : LambdaTerm} : ParRed t t' → ParRed s s' →
+      ParRed (.app t s) (.app t' s')
+  | beta {t t' s s' : LambdaTerm} : ParRed t t' → ParRed s s' →
+      ParRed (.app (.lam t) s) (LambdaTerm.subst 0 s' t')
+
+notation:50 t " ⇛ " t' => ParRed t t'
+
+/-- Every term admits a reflexive parallel reduction. -/
+theorem ParRed.refl : ∀ t : LambdaTerm, t ⇛ t
+  | .var n => .var n
+  | .lam t => .lam (ParRed.refl t)
+  | .app t s => .app (ParRed.refl t) (ParRed.refl s)
+
+/-- The reflexive-transitive closure of the shared parallel reduction. -/
+def ParRedStar := Relation.ReflTransGen ParRed
+
+notation:50 t " ⇛* " t' => ParRedStar t t'
+
+/-- A term is solvable when a head normal form is reachable by beta reduction. -/
 def LambdaTerm.Solvable (t : LambdaTerm) : Prop :=
-  ∃ (args : List LambdaTerm), (args.foldl .app t).isHNF = true
+  ∃ hnf : LambdaTerm, ParRedStar t hnf ∧ hnf.isHNF = true
 
 /-- A term is unsolvable if it is not solvable -/
 def LambdaTerm.Unsolvable (t : LambdaTerm) : Prop := ¬t.Solvable
@@ -759,13 +783,48 @@ private theorem foldl_app_Omega_not_isHNF (args : List LambdaTerm) :
     (args.foldl .app LambdaTerm.Omega).isHNF = false :=
   foldl_app_preserves_not_isHNF LambdaTerm.Omega args Omega_not_isAppHead Omega_not_isHNF
 
-/-- Omega is the canonical unsolvable term -/
+/-- A term already in head normal form is solvable. -/
+theorem LambdaTerm.solvable_of_isHNF {t : LambdaTerm} (h : t.isHNF = true) :
+    t.Solvable := ⟨t, Relation.ReflTransGen.refl, h⟩
+
+/-- Solvability propagates backwards along the actual reduction path. -/
+theorem LambdaTerm.solvable_of_reduces {t s : LambdaTerm}
+    (h : t ⇛* s) (hs : s.Solvable) : t.Solvable := by
+  obtain ⟨hnf, hpath, hhead⟩ := hs
+  exact ⟨hnf, h.trans hpath, hhead⟩
+
+private theorem omega_parRed_only {t : LambdaTerm}
+    (h : LambdaTerm.omega ⇛ t) : t = LambdaTerm.omega := by
+  cases h with
+  | lam h =>
+      cases h with
+      | app h₁ h₂ => cases h₁; cases h₂; rfl
+
+private theorem Omega_parRed_only {t : LambdaTerm}
+    (h : LambdaTerm.Omega ⇛ t) : t = LambdaTerm.Omega := by
+  cases h with
+  | app h₁ h₂ => rw [omega_parRed_only h₁, omega_parRed_only h₂]; rfl
+  | beta hBody hArg =>
+      cases hBody with
+      | app hLeft hRight =>
+          cases hLeft; cases hRight
+          rw [omega_parRed_only hArg]
+          rfl
+
+private theorem Omega_reduces_only {t : LambdaTerm}
+    (h : LambdaTerm.Omega ⇛* t) : t = LambdaTerm.Omega := by
+  induction h with
+  | refl => rfl
+  | tail _ hstep ih =>
+      subst ih
+      exact Omega_parRed_only hstep
+
+/-- Omega is the canonical unsolvable term. Its reductions remain Omega. -/
 theorem Omega_unsolvable : LambdaTerm.Omega.Unsolvable := by
   unfold LambdaTerm.Unsolvable LambdaTerm.Solvable
-  intro ⟨args, h⟩
-  -- Omega applied to any arguments never reaches HNF
-  rw [foldl_app_Omega_not_isHNF args] at h
-  exact Bool.false_ne_true h
+  intro ⟨hnf, hpath, hhead⟩
+  rw [Omega_reduces_only hpath] at hhead
+  exact Bool.false_ne_true hhead
 
 /-! ## Lambda Theories
 
@@ -839,7 +898,7 @@ A theory is sensible if it equates all unsolvable terms.
     1. I and K are solvable (they have HNF)
     2. If T equates solvable s with all unsolvables, then T equates I = K
 
-    We axiomatize this as it requires extensive lambda calculus machinery.
+    The required solvability-separation argument is not yet proved here.
 -/
 theorem sensible_consistent_imp_semisensible {T : LambdaTheory}
     (hSens : T.Sensible) (hCons : T.Consistent) : T.Semisensible := by
@@ -856,27 +915,26 @@ The lambda-theory induced by a graph model D is the set of equations
 valid in all interpretations in D.
 -/
 
-/-- An environment maps free variables to graph model elements -/
-def Env (D : GraphModel) := Nat → D.Carrier
+/-- Free variables denote subsets of the web, the actual graph-model domain. -/
+abbrev Env (D : GraphModel) := Nat → Set D.Carrier
+
+/-- Extend an environment by the denotation of the innermost variable. -/
+def Env.extend {D : GraphModel} (ρ : Env D) (argument : Set D.Carrier) : Env D
+  | 0 => argument
+  | n + 1 => ρ n
 
 /-- Interpretation of lambda terms in a graph model.
 
-    For graph models, the key insight is that a lambda abstraction λx.t
-    is interpreted as the set of pairs (a, d) such that if the argument
-    satisfies a, then the result is d.
-
-    This is a simplified placeholder for the full graph-theoretic interpretation.
-    The full version requires careful handling of the coding function.
+    Abstraction codes observations of its body at finite argument sets;
+    application reads a code from its function denotation and requires every
+    token in that finite input to belong to the argument denotation.
 -/
 noncomputable def interpret (D : GraphModel) (ρ : Env D) : LambdaTerm → Set D.Carrier
-  | .var n => {ρ n}
+  | .var n => ρ n
   | .lam t =>
-      -- For now, we use a simplified interpretation
-      -- Full version: { c(a, d) | ∀ x ∈ a, d ∈ ⟦t⟧(ρ[0 ↦ x]) }
-      { d | ∃ x, d ∈ interpret D (fun n => if n = 0 then x else ρ (n - 1)) t }
+      D.abstraction (fun argument => interpret D (ρ.extend argument) t)
   | .app t s =>
-      -- d · e = { x | ∃ d' ∈ ⟦t⟧ρ, ∃ e ∈ ⟦s⟧ρ, x ∈ d' · e }
-      { x | ∃ d' ∈ interpret D ρ t, ∃ e ∈ interpret D ρ s, x ∈ D.apply d' e }
+      D.apply (interpret D ρ t) (interpret D ρ s)
 
 /-- Two terms are equal in a graph model if they have equal interpretations -/
 def validates (D : GraphModel) (eq : LambdaEq) : Prop :=
@@ -891,45 +949,24 @@ def theoryOf (D : GraphModel) : Set LambdaEq :=
 def IsGraphTheory (T : LambdaTheory) : Prop :=
   ∃ D : GraphModel, T.equations = theoryOf D
 
-/-! ## Key Theorems (Statements)
+/-! ## Source scope
 
-From Bucciarelli-Salibra:
+The source's semisensibility theorem concerns canonical completions of proper
+partial pairs. Neither an arbitrary graph model nor an arbitrary natural-number
+level assignment supplies those hypotheses. Its weak-product theorem states
+containment in the intersection of factor theories, generally not equality.
 
-1. Every graph theory is semisensible
-2. Every graph theory contains the Böhm theory B
-3. B is the maximal sensible graph theory
+The empty-family intersection is the universal equational relation. The actual
+interpreter's induced theories distinguish I from K, so this intersection is not
+a graph theory. The proof and nonconstant model controls are in
+`Interpretation` and `InterpretationControls`.
+
+`PartialPairCompletion` constructs the source-correct canonical completion;
+`FactorInterpretation` proves actual interpretation comparison and the
+two-factor graph-theory lower bound. Source stratification, approximation,
+and exact family-intersection realization remain separate obligations. No
+unrestricted substitute is declared here.
 -/
-
-/-- Every graph theory is semisensible (Bucciarelli-Salibra Theorem 29).
-
-    The proof relies on the fact that in graph models:
-    1. Unsolvable terms have "empty" approximations at all finite levels
-    2. Solvable terms have non-empty finite approximations
-    3. The interpretation function preserves this distinction
-    4. If t = s in D with t unsolvable, the empty approximation of t
-       must match some approximation of s, forcing s to be unsolvable
-
-    See: Bucciarelli & Salibra, "Graph Lambda Theories" (2008), Theorem 29
--/
-theorem graphTheory_semisensible (T : LambdaTheory) (h : IsGraphTheory T) : T.Semisensible := by
-  sorry
-
-/-- The intersection of graph theories is a graph theory.
-
-    The proof uses the weak product construction: given graph models D_i,
-    the weak product ◇_i D_i is a graph model whose theory is contained
-    in the intersection of the individual theories.
-
-    More precisely: Th(◇_i D_i) ⊆ ⋂_i Th(D_i)
-
-    For an arbitrary intersection, we take the weak product of all models
-    representing the theories in S.
-
-    See: Bucciarelli & Salibra, "Graph Lambda Theories" (2008), §3
--/
-theorem graphTheories_inter_closed (S : Set LambdaTheory) (hS : ∀ T ∈ S, IsGraphTheory T) :
-    ∃ T : LambdaTheory, IsGraphTheory T ∧ T.equations = ⋂ T ∈ S, LambdaTheory.equations T := by
-  sorry
 
 /-! ## Summary
 
@@ -940,15 +977,13 @@ This file establishes the basic definitions for graph lambda theories:
 3. **Sensible/Semisensible**: Properties of theories regarding unsolvability
 4. **GraphModel.theory**: Lambda-theory induced by a graph model
 
-**Key Results (Bucciarelli-Salibra)**:
-- Every graph theory is semisensible
-- The intersection of graph theories is a graph theory
-- The Böhm theory B is the maximal sensible graph theory
+`Interpretation` proves substitution, continuity, beta soundness, and genuine
+lambda-theory closure for these definitions. The source's stratified-model and
+greatest-sensible-graph-theory results require further constructions.
 
 **Next Steps**:
 - `BohmTree.lean`: Böhm trees and the Böhm theory B
 - `WeakProduct.lean`: Weak product of graph models
-- `Stratified.lean`: Stratified models and their properties
 -/
 
 end Mettapedia.GSLT.GraphTheory

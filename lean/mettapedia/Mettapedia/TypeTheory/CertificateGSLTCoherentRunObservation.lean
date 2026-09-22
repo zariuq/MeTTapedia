@@ -29,6 +29,7 @@ No completeness, Horn, first-order, higher-order, or termination assumption
 is made.
 -/
 
+open Mettapedia.Logic
 set_option autoImplicit false
 
 namespace Mettapedia.TypeTheory.CertificateGSLTCoherentRunObservation

@@ -49,35 +49,45 @@ def concreteSystem (S : GSLT) (I : String → EquationPredicate S) : ConcreteSys
   act_resp_left := fun equivalent step => S.rewrites_resp_left equivalent step
   act_resp_right := fun step equivalent => S.rewrites_resp_right step equivalent
 
-/-- On a language definition the generic reading is the public one. -/
+/-- On a language definition the generic reading is the public one.
+
+Off the generator the two readings are the same function: the bridge takes its
+generator in the frame of the generated logic and `sem` takes it in the ambient
+powerset, and only there do they part. -/
 theorem satisfies_langGSLTUsing (relEnv : RelationEnv) (lang : LanguageDef)
-    (I : EquationAtomSemUsing relEnv lang) :
-    ∀ (formula : OSLFFormula) (term : Pattern),
-      satisfies (concreteSystem (langGSLTUsing relEnv lang) I) formula term ↔
-        sem (langSemanticReducesUsing relEnv lang) (fun atom => (I atom).1) formula term
-  | .top, _ => Iff.rfl
-  | .bot, _ => Iff.rfl
-  | .atom _, _ => Iff.rfl
-  | .and left right, term =>
-      and_congr (satisfies_langGSLTUsing relEnv lang I left term)
-        (satisfies_langGSLTUsing relEnv lang I right term)
-  | .or left right, term =>
-      or_congr (satisfies_langGSLTUsing relEnv lang I left term)
-        (satisfies_langGSLTUsing relEnv lang I right term)
-  | .imp left right, term =>
-      imp_congr (satisfies_langGSLTUsing relEnv lang I left term)
-        (satisfies_langGSLTUsing relEnv lang I right term)
-  | .dia inner, term =>
-      exists_congr fun target =>
-        and_congr Iff.rfl (satisfies_langGSLTUsing relEnv lang I inner target)
-  | .box inner, term =>
-      forall_congr' fun source =>
-        imp_congr Iff.rfl (satisfies_langGSLTUsing relEnv lang I inner source)
+    (I : EquationAtomSemUsing relEnv lang) (formula : OSLFFormula)
+    (free : OSLFFormula.modalOnly formula = true) (term : Pattern) :
+    satisfies (concreteSystem (langGSLTUsing relEnv lang) I) formula term ↔
+      sem (langSemanticReducesUsing relEnv lang) (fun atom => (I atom).1) formula term := by
+  induction formula generalizing term with
+  | top => exact Iff.rfl
+  | bot => exact Iff.rfl
+  | atom _ => exact Iff.rfl
+  | and left right leftIH rightIH =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      exact and_congr (leftIH free.1 term) (rightIH free.2 term)
+  | or left right leftIH rightIH =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      exact or_congr (leftIH free.1 term) (rightIH free.2 term)
+  | imp left right leftIH rightIH =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      exact imp_congr (leftIH free.1 term) (rightIH free.2 term)
+  | dia inner innerIH =>
+      simp only [OSLFFormula.modalOnly] at free
+      exact exists_congr fun target => and_congr Iff.rfl (innerIH free target)
+  | box inner innerIH =>
+      simp only [OSLFFormula.modalOnly] at free
+      exact forall_congr' fun source => imp_congr Iff.rfl (innerIH free source)
+  | var _ => simp [OSLFFormula.modalOnly] at free
+  | mu _ _ => simp [OSLFFormula.modalOnly] at free
+  | emptyColl _ => simp [OSLFFormula.modalOnly] at free
+  | cut _ _ _ _ _ => simp [OSLFFormula.modalOnly] at free
+  | headed _ _ _ => simp [OSLFFormula.modalOnly] at free
 
 /-- OSLF-logical equivalence: the same formulas hold. -/
 def OSLFEquivalent (S : GSLT) (I : String → EquationPredicate S) (left right : S.Term) : Prop :=
-  ∀ formula : OSLFFormula,
-    satisfies (concreteSystem S I) formula left ↔ satisfies (concreteSystem S I) formula right
+  ∀ formula : OSLFFormula, OSLFFormula.modalOnly formula = true →
+    (satisfies (concreteSystem S I) formula left ↔ satisfies (concreteSystem S I) formula right)
 
 /-! ## The directional system of the atom family -/
 
@@ -101,7 +111,15 @@ abbrev forwardSystem (S : GSLT) (I : String → EquationPredicate S) : System.{0
 
 /-! ## Translation into the directional language -/
 
-/-- OSLF formulas as directional Hennessy–Milner formulas. -/
+/-- OSLF formulas as directional Hennessy–Milner formulas.
+
+The target language is Hennessy--Milner logic, which has neither a fixpoint
+operator nor structural connectives, so a generator, its scope variable and the
+three spatial constructors have no image: a generated scope is in general not
+equivalent to any finite modal formula, and a cut reads shape rather than
+behaviour.  The value taken on those constructors carries no meaning; every
+theorem below is gated on membership in the modal fragment, so nothing depends
+on it. -/
 def toDirectional : OSLFFormula → Formula String Direction
   | .top => .top
   | .bot => .neg .top
@@ -111,38 +129,54 @@ def toDirectional : OSLFFormula → Formula String Direction
   | .imp left right => .neg (.conj (toDirectional left) (.neg (toDirectional right)))
   | .dia inner => .dia .forward (toDirectional inner)
   | .box inner => .neg (.dia .backward (.neg (toDirectional inner)))
+  | .var _ => .neg .top
+  | .mu _ => .neg .top
+  | .emptyColl _ => .neg .top
+  | .cut _ _ _ => .neg .top
+  | .headed _ _ => .neg .top
 
-theorem sat_toDirectional (S : GSLT) (I : String → EquationPredicate S) :
-    ∀ (formula : OSLFFormula) (term : S.Term),
-      (directionalSystem S I).sat (toDirectional formula) term ↔
-        satisfies (concreteSystem S I) formula term
-  | .top, _ => Iff.rfl
-  | .bot, _ => by simp [toDirectional, System.sat, satisfies]
-  | .atom _, _ => Iff.rfl
-  | .and left right, term =>
-      and_congr (sat_toDirectional S I left term) (sat_toDirectional S I right term)
-  | .or left right, term => by
-      have leftIH := sat_toDirectional S I left term
-      have rightIH := sat_toDirectional S I right term
-      simp only [toDirectional, System.sat, satisfies]
-      rw [leftIH, rightIH]
+theorem sat_toDirectional (S : GSLT) (I : String → EquationPredicate S)
+    (formula : OSLFFormula) (free : OSLFFormula.modalOnly formula = true) (term : S.Term) :
+    (directionalSystem S I).sat (toDirectional formula) term ↔
+      satisfies (concreteSystem S I) formula term := by
+  induction formula generalizing term with
+  | top => exact Iff.rfl
+  | bot => simp [toDirectional, System.sat, satisfies, satisfiesEnv]
+  | atom _ => exact Iff.rfl
+  | and left right leftIH rightIH =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      exact and_congr (leftIH free.1 term) (rightIH free.2 term)
+  | or left right leftIH rightIH =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      have leftEq := leftIH free.1 term
+      have rightEq := rightIH free.2 term
+      simp only [toDirectional, System.sat, satisfies, satisfiesEnv]
+      rw [leftEq, rightEq]
       tauto
-  | .imp left right, term => by
-      have leftIH := sat_toDirectional S I left term
-      have rightIH := sat_toDirectional S I right term
-      simp only [toDirectional, System.sat, satisfies]
-      rw [leftIH, rightIH]
+  | imp left right leftIH rightIH =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      have leftEq := leftIH free.1 term
+      have rightEq := rightIH free.2 term
+      simp only [toDirectional, System.sat, satisfies, satisfiesEnv]
+      rw [leftEq, rightEq]
       tauto
-  | .dia inner, term =>
-      exists_congr fun target => and_congr Iff.rfl (sat_toDirectional S I inner target)
-  | .box inner, term => by
-      simp only [toDirectional, System.sat, satisfies]
+  | dia inner innerIH =>
+      simp only [OSLFFormula.modalOnly] at free
+      exact exists_congr fun target => and_congr Iff.rfl (innerIH free target)
+  | box inner innerIH =>
+      simp only [OSLFFormula.modalOnly] at free
+      simp only [toDirectional, System.sat, satisfies, satisfiesEnv]
       constructor
       · intro none source step
         by_contra fails
-        exact none ⟨source, step, fun sat => fails ((sat_toDirectional S I inner source).mp sat)⟩
+        exact none ⟨source, step, fun sat => fails ((innerIH free source).mp sat)⟩
       · rintro holds ⟨source, step, fails⟩
-        exact fails ((sat_toDirectional S I inner source).mpr (holds source step))
+        exact fails ((innerIH free source).mpr (holds source step))
+  | var _ => simp [OSLFFormula.modalOnly] at free
+  | mu _ _ => simp [OSLFFormula.modalOnly] at free
+  | emptyColl _ => simp [OSLFFormula.modalOnly] at free
+  | cut _ _ _ _ _ => simp [OSLFFormula.modalOnly] at free
+  | headed _ _ _ => simp [OSLFFormula.modalOnly] at free
 
 /-- Directional Hennessy–Milner formulas as OSLF formulas. -/
 def ofDirectional : Formula String Direction → OSLFFormula
@@ -153,6 +187,22 @@ def ofDirectional : Formula String Direction → OSLFFormula
   | .dia .forward inner => .dia (ofDirectional inner)
   | .dia .backward inner => .imp (.box (.imp (ofDirectional inner) .bot)) .bot
 
+/-- Every image of the directional language lies in the modal fragment. -/
+theorem modalOnly_ofDirectional :
+    ∀ formula : Formula String Direction,
+      OSLFFormula.modalOnly (ofDirectional formula) = true
+  | .top => rfl
+  | .atom _ => rfl
+  | .conj left right => by
+      simp [ofDirectional, OSLFFormula.modalOnly, modalOnly_ofDirectional left,
+        modalOnly_ofDirectional right]
+  | .neg inner => by
+      simp [ofDirectional, OSLFFormula.modalOnly, modalOnly_ofDirectional inner]
+  | .dia .forward inner => by
+      simp [ofDirectional, OSLFFormula.modalOnly, modalOnly_ofDirectional inner]
+  | .dia .backward inner => by
+      simp [ofDirectional, OSLFFormula.modalOnly, modalOnly_ofDirectional inner]
+
 theorem satisfies_ofDirectional (S : GSLT) (I : String → EquationPredicate S) :
     ∀ (formula : Formula String Direction) (term : S.Term),
       satisfies (concreteSystem S I) (ofDirectional formula) term ↔
@@ -162,12 +212,13 @@ theorem satisfies_ofDirectional (S : GSLT) (I : String → EquationPredicate S) 
   | .conj left right, term =>
       and_congr (satisfies_ofDirectional S I left term) (satisfies_ofDirectional S I right term)
   | .neg inner, term => by
-      simp only [ofDirectional, satisfies, System.sat]
-      rw [satisfies_ofDirectional S I inner term]
+      have innerEq := satisfies_ofDirectional S I inner term
+      simp only [ofDirectional, System.sat]
+      exact not_congr innerEq
   | .dia .forward inner, term =>
       exists_congr fun target => and_congr Iff.rfl (satisfies_ofDirectional S I inner target)
   | .dia .backward inner, term => by
-      simp only [ofDirectional, satisfies, System.sat]
+      simp only [ofDirectional, satisfies, satisfiesEnv, System.sat]
       constructor
       · intro holds
         by_contra none
@@ -184,9 +235,9 @@ theorem oslfEquivalent_iff_logicallyEquivalent (S : GSLT) (I : String → Equati
   constructor
   · intro equivalent formula
     rw [← satisfies_ofDirectional S I formula left, ← satisfies_ofDirectional S I formula right]
-    exact equivalent _
-  · intro equivalent formula
-    rw [← sat_toDirectional S I formula left, ← sat_toDirectional S I formula right]
+    exact equivalent _ (modalOnly_ofDirectional formula)
+  · intro equivalent formula free
+    rw [← sat_toDirectional S I formula free left, ← sat_toDirectional S I formula free right]
     exact equivalent _
 
 /-! ## Adequacy of the OSLF language -/
@@ -233,6 +284,11 @@ def toForward : OSLFFormula → Formula String Unit
   | .imp left right => .neg (.conj (toForward left) (.neg (toForward right)))
   | .dia inner => .dia () (toForward inner)
   | .box _ => .top
+  | .var _ => .top
+  | .mu _ => .top
+  | .emptyColl _ => .top
+  | .cut _ _ _ => .top
+  | .headed _ _ => .top
 
 theorem sat_toForward (S : GSLT) (I : String → EquationPredicate S) {formula : OSLFFormula}
     (forward : Forward formula) (term : S.Term) :
@@ -240,15 +296,15 @@ theorem sat_toForward (S : GSLT) (I : String → EquationPredicate S) {formula :
       satisfies (concreteSystem S I) formula term := by
   induction forward generalizing term with
   | top => exact Iff.rfl
-  | bot => simp [toForward, System.sat, satisfies]
+  | bot => simp [toForward, System.sat, satisfies, satisfiesEnv]
   | atom _ => exact Iff.rfl
   | and _ _ leftIH rightIH => exact and_congr (leftIH term) (rightIH term)
   | or _ _ leftIH rightIH =>
-      simp only [toForward, System.sat, satisfies]
+      simp only [toForward, System.sat, satisfies, satisfiesEnv]
       rw [leftIH term, rightIH term]
       tauto
   | imp _ _ leftIH rightIH =>
-      simp only [toForward, System.sat, satisfies]
+      simp only [toForward, System.sat, satisfies, satisfiesEnv]
       rw [leftIH term, rightIH term]
       tauto
   | dia _ innerIH =>

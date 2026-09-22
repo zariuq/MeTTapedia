@@ -4,6 +4,8 @@ import Mettapedia.Languages.MeTTa.HE.Matching
 # HE′ (he_prime) — Dependent Telescope Extension for MeTTa
 
 A principled, constructive extension of HE MeTTa's function type system.
+The name HE-prime (HE′) denotes this telescope extension, not a selected
+MeTTa Prime foundation.
 
 ## Motivation
 
@@ -17,7 +19,7 @@ elaborated as dependent binders. The variable `$x` is bound to the concrete argu
 upon successful type matching, and subsequent domains and the codomain may depend on
 values bound by earlier domains.
 
-## Design Principles (Council quorum 91%)
+## Design Principles
 
 1. **Extension, not replacement.** HE′ is an opt-in layer. Standard HE behavior
    (`he_compat`, `he_extended`) is preserved exactly.

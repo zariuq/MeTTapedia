@@ -6,12 +6,15 @@ import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.BicartesianSq
 /-!
 # Predicate Fibration over Presheaf Categories
 
-This file establishes the predicate fibration πΩ over presheaf categories,
-connecting the subobject classifier to the fibration structure.
+This file supplies predicate fibers and concrete reindexing over presheaf
+categories, together with their order structure and quantification laws.
+`PresheafPredicateProjection` constructs the associated total category,
+projection, and cartesian-lift universal property. The fiber-data record
+below does not establish that categorical structure on its own.
 
 ## Main Definitions
 
-* `PredicateFib` - The fibration πΩ over Psh(C)
+* `PredicateFib` - A package of predicate fibers and reindexing operations
 * `beckChevalleyPresheaf` - Beck-Chevalley condition for presheaves
 
 ## Key Insights
@@ -64,12 +67,13 @@ Primary theorem provenance for the presheaf predicate-fibration path:
 
 /-! ## Abstract Predicate Fibration
 
-We define the predicate fibration abstractly, axiomatizing the key properties
-that hold in presheaf toposes. The concrete construction would use sieves
-and the subobject classifier Ω.
+We package predicate fibers and their order-preserving reindexing. This record
+does not include identity/composition coherence or a total category. The
+concrete presheaf operations below use subfunctors; their categorical
+assembly is constructed in `PresheafPredicateProjection`.
 -/
 
-/-- A predicate fibration over a category C assigns:
+/-- Predicate fiber data over a category C assigns:
     - To each object X, a Frame Sub(X) of "predicates"
     - Change-of-base functors between fibers
 

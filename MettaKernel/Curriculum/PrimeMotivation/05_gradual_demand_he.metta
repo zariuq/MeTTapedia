@@ -7,11 +7,11 @@
 ; check and theorem-backed demand cost.
 ;
 ; Lean anchors:
-;   Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan.CheckedPlan.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.GradualExecutionPlan.CheckedPlan.
 ;     demandCheck_evaluationCount
-;   Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan.CheckedPlan.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.GradualExecutionPlan.CheckedPlan.
 ;     demandWorkSpan_eq_unit
-;   Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan.CheckedPlan.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.GradualExecutionPlan.CheckedPlan.
 ;     cachedValue_zero_work_one_observation
 
 (= (bit-list-eq Nil Nil) True)

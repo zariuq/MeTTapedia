@@ -1016,7 +1016,7 @@ definitions/theorems:
   \code{ruleApp} evaluation.  The key result:
   \begin{quote}
   \code{simpleMatch\_applyBindings\_comm}: if \HE{}'s
-  \code{simpleMatch} succeeds on two \code{PureTranslatable} atoms,
+  \code{simpleMatch} succeeds on two \code{TwoSortTranslatable} atoms,
   then applying the translated bindings via \code{heBindingsToOSLF} to
   the translated pattern recovers the translated target.
   \end{quote}
@@ -1031,7 +1031,7 @@ definitions/theorems:
   \item \code{translateHE\_translatable}: translation preserves
     \code{Translatable} (output admits \code{atomToPattern}).
   \item \code{translateHE\_preserves\_pureTranslatable}: translation
-    preserves the stronger \code{PureTranslatable} fragment.
+    preserves the stronger \code{TwoSortTranslatable} fragment.
   \item \code{translatePeTTa\_translatable}: same for the reverse
     direction.
   \item 9 \code{\#eval} tests matching Prolog output on concrete atoms.
@@ -2797,7 +2797,7 @@ stays within the standard-form fragment where the constraint-store
 and independent-scope semantics coincide.
 
 \paragraph{Lean formalization.}
-The \code{Translatable} and \code{PureTranslatable} predicates in
+The \code{Translatable} and \code{TwoSortTranslatable} predicates in
 \code{HEPeTTaSound.lean} characterize precisely this fragment: atoms
 where \code{atomToPattern} succeeds and produces
 \code{isMatchCorrect} patterns (no lambda, subst, or collection

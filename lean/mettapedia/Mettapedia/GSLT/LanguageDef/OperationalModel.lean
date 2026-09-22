@@ -186,7 +186,7 @@ instance
     · apply SemanticCoveredTranslation.ext
       rfl
 
-/-- The logical projection of the modelled atlas. -/
+/-- The logical projection of the category of modelled theories. -/
 def logicalProjection
     (institution : PiInstitution.{uSignature, uHom, uSentence} Signature) :
     CategoryTheory.Functor
@@ -197,7 +197,7 @@ def logicalProjection
   map_id _ := rfl
   map_comp _ _ := rfl
 
-/-- The operational projection of the same atlas. -/
+/-- The operational projection of the same category. -/
 def operationalProjection
     (institution : PiInstitution.{uSignature, uHom, uSentence} Signature) :
     CategoryTheory.Functor

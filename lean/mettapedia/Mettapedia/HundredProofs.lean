@@ -486,7 +486,7 @@ theorem proof98 (x : ℕ) (h : 2 + x = 4) : x = 2 := by
   exact Nat.succ_injective h1
 
 /-- 99. Via boolean reflection and native_decide -/
-theorem proof99 : ∀ x : Fin 5, 2 + x.val = 4 → x.val = 2 := by native_decide
+theorem proof99 : ∀ x : Fin 5, 2 + x.val = 4 → x.val = 2 := by decide
 
 /-- 100. The grand finale: a verbose, maximally explicit proof -/
 theorem proof100 (x : ℕ) (h : 2 + x = 4) : x = 2 := by

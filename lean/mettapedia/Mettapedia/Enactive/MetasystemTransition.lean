@@ -1,6 +1,6 @@
 import Mettapedia.Cybernetics.ConstrainedVariety
 import Mettapedia.Enactive.CompletionFibre
-import Mettapedia.Enactive.PrimeGeneration
+import Mettapedia.Enactive.ScopedGeneration
 
 /-!
 # Metasystem transitions as constrained variation of constraints
@@ -242,9 +242,9 @@ theorem aggregation_and_selector_are_insufficient :
 noncomputable def taskOf (constraint : Constraint Bool) :
     Task (AbstractionLayer.full Bool) :=
   if constraint = unrestricted then
-    PrimeGeneration.Canary.childTask
+    ScopedGeneration.Canary.childTask
   else
-    PrimeGeneration.Canary.parentTask
+    ScopedGeneration.Canary.parentTask
 
 noncomputable def interpretation :
     TaskInterpretation metasystem (AbstractionLayer.full Bool) where
@@ -253,21 +253,21 @@ noncomputable def interpretation :
     intro source target change
     cases change
     simp only [taskOf, if_neg requireTrue_ne_unrestricted]
-    exact PrimeGeneration.Canary.child_isChild_parent
+    exact ScopedGeneration.Canary.child_isChild_parent
 
 @[simp] theorem taskOf_unrestricted :
-    taskOf unrestricted = PrimeGeneration.Canary.childTask := by
+    taskOf unrestricted = ScopedGeneration.Canary.childTask := by
   simp [taskOf]
 
 @[simp] theorem taskOf_requireTrue :
-    taskOf requireTrue = PrimeGeneration.Canary.parentTask := by
+    taskOf requireTrue = ScopedGeneration.Canary.parentTask := by
   simp [taskOf, requireTrue_ne_unrestricted]
 
 /-- The positive metasystem transition earns the existing nontrivial Bennett
 generation after, and only after, the task interpretation is supplied. -/
 def interpretedGeneration :
-    Task.Generation 1 PrimeGeneration.Canary.childTask
-      PrimeGeneration.Canary.parentTask := by
+    Task.Generation 1 ScopedGeneration.Canary.childTask
+      ScopedGeneration.Canary.parentTask := by
   simpa [interpretation, transition, taskOf,
     requireTrue_ne_unrestricted] using
       interpretation.generation transition

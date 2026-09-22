@@ -70,7 +70,7 @@ def reindexMeaning {Source Target : Type uIndex}
       reindexMeaning (second ∘ first) meaningAt :=
   rfl
 
-/-- Selecting meaning commutes with reindexing the coordinate atlas.  This is
+/-- Selecting meaning commutes with reindexing the coordinates.  This is
 the naturality law that prevents a change of coordinates from changing an
 ultrafilter-relative verdict. -/
 theorem ultraMeaning_map

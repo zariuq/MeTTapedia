@@ -65,7 +65,11 @@ local macro "name_allocation_root" : tactic =>
       TptpFofCnfAllocatedBatchLanguageDef.entriesNil,
       TptpFofCnfAllocatedBatchLanguageDef.entriesCons,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 local macro "name_allocation_root_using_all" : tactic =>
   `(tactic|
@@ -97,7 +101,11 @@ local macro "name_allocation_root_using_all" : tactic =>
       TptpFofCnfAllocatedBatchLanguageDef.entriesNil,
       TptpFofCnfAllocatedBatchLanguageDef.entriesCons,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 inductive Derivation : Pattern → Pattern → Type
   | entriesNil (firstName : Pattern) :

@@ -282,7 +282,7 @@ def capacity : Component → CaptureCapacity
   | .linearTransaction => .oneShot
   | .borrowedForeignState => .inlineOnly
 
-def pureProfile : List CaptureCapacity :=
+def twoSortProfile : List CaptureCapacity :=
   [capacity .pureGoal]
 
 def rollbackTrailProfile : List CaptureCapacity :=
@@ -299,7 +299,7 @@ def borrowedProfile : List CaptureCapacity :=
   [capacity .pureGoal, capacity .borrowedForeignState]
 
 theorem pure_profile_admits_owned_multiShot :
-    Admitted (profileCapacity pureProfile) .ownedMultiShot := by
+    Admitted (profileCapacity twoSortProfile) .ownedMultiShot := by
   decide
 
 theorem rollback_trail_profile_admits_only_exclusive_choice :

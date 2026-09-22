@@ -23,6 +23,8 @@ algebra) structure:
 - The threshold bridge is PARTIAL: it fails for disjunction/diamond because
   `τ ≤ x ⊔ y ⇏ τ ≤ x ∨ τ ≤ y` in BinaryEvidence's non-total order
   (this is a threshold-projection obstruction, not a failure of K&S scalar fidelity)
+- Nested implication can also fail: evidence-level modus ponens is not a
+  compositional translation of Heyting implication into Prop implication
 
 ## Interpretation Table
 
@@ -129,25 +131,144 @@ def thresholdEquationAtomSem
 
 /-! ## BinaryEvidence-Valued Formula Semantics -/
 
-/-- BinaryEvidence-valued denotational semantics of OSLF formulas.
+/-! ### Scope environments and the frame for an evidence-valued generator
+
+The evidence-valued reading of the formula language must read a generator too,
+and it reads it the same way: as the greatest lower bound of the pre-fixed
+points of its body *inside a frame* of evidence observations.  Taking the bound
+over the ambient function space instead would put the fixed point in a lattice
+the generated logic does not have, and would cost the unconditional invariance
+theorem below. -/
+
+/-- Evidence-valued scope environments. -/
+abbrev EvidenceScopeEnv := Nat → Pattern → BinaryEvidence
+
+/-- Extend an evidence scope environment with a new innermost binding. -/
+def EvidenceScopeEnv.push (value : Pattern → BinaryEvidence)
+    (env : EvidenceScopeEnv) : EvidenceScopeEnv
+  | 0 => value
+  | k + 1 => env k
+
+/-- The environment in which no scope variable carries evidence. -/
+def EvidenceScopeEnv.empty : EvidenceScopeEnv := fun _ _ => ⊥
+
+/-- A class of evidence observations closed under arbitrary infima. -/
+structure EvidencePredFrame where
+  /-- The evidence observations of the logic. -/
+  Mem : (Pattern → BinaryEvidence) → Prop
+  /-- Closed under the infima a greatest lower bound is built from. -/
+  mem_iInf : ∀ selector : (Pattern → BinaryEvidence) → Prop,
+    Mem fun term =>
+      ⨅ candidate : Pattern → BinaryEvidence,
+        ⨅ _ : Mem candidate ∧ selector candidate, candidate term
+
+/-- The frame in which every evidence observation counts. -/
+def fullEvidenceFrame : EvidencePredFrame where
+  Mem := fun _ => True
+  mem_iInf := fun _ => trivial
+
+/-- BinaryEvidence-valued denotational semantics of OSLF formulas under a scope
+environment.
 
 Uses BinaryEvidence's Frame structure:
 - `⊓` for conjunction (coordinatewise min)
 - `⊔` for disjunction (coordinatewise max)
 - `⇨` for Heyting implication (residuation)
-- `⨆`/`⨅` for modalities over step-related states -/
-noncomputable def semE (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem) :
+- `⨆`/`⨅` for modalities over step-related states
+- `⨅` over the pre-fixed points of the body, in the frame, for a generator -/
+noncomputable def semEEnv (R : Pattern → Pattern → Prop)
+    (F : EvidencePredFrame) (I : EvidenceAtomSem) (env : EvidenceScopeEnv) :
     OSLFFormula → Pattern → BinaryEvidence
   | .top, _ => ⊤
   | .bot, _ => ⊥
   | .atom a, p => I a p
-  | .and φ ψ, p => semE R I φ p ⊓ semE R I ψ p
-  | .or φ ψ, p => semE R I φ p ⊔ semE R I ψ p
-  | .imp φ ψ, p => semE R I φ p ⇨ semE R I ψ p
-  | .dia φ, p => ⨆ (q : {q // R p q}), semE R I φ q.val
-  | .box φ, p => ⨅ (q : {q // R q p}), semE R I φ q.val
+  | .and φ ψ, p => semEEnv R F I env φ p ⊓ semEEnv R F I env ψ p
+  | .or φ ψ, p => semEEnv R F I env φ p ⊔ semEEnv R F I env ψ p
+  | .imp φ ψ, p => semEEnv R F I env φ p ⇨ semEEnv R F I env ψ p
+  | .dia φ, p => ⨆ (q : {q // R p q}), semEEnv R F I env φ q.val
+  | .box φ, p => ⨅ (q : {q // R q p}), semEEnv R F I env φ q.val
+  | .var k, p => env k p
+  | .mu φ, p =>
+      ⨅ candidate : Pattern → BinaryEvidence,
+        ⨅ _ : F.Mem candidate ∧
+            ∀ t, semEEnv R F I (EvidenceScopeEnv.push candidate env) φ t
+              ≤ candidate t,
+          candidate p
+  | .headed label body, p =>
+      ⨅ candidate : Pattern → BinaryEvidence,
+        ⨅ _ : F.Mem candidate ∧
+            ∀ t, (⨆ inner : { inner : Pattern // t = Pattern.apply label [inner] },
+                  semEEnv R F I env body inner.val)
+              ≤ candidate t,
+          candidate p
+  | .emptyColl kind, p =>
+      ⨅ candidate : Pattern → BinaryEvidence,
+        ⨅ _ : F.Mem candidate ∧
+            ∀ t, (if t = Pattern.collection kind [] none then (⊤ : BinaryEvidence) else ⊥)
+              ≤ candidate t,
+          candidate p
+  | .cut kind left right, p =>
+      ⨅ candidate : Pattern → BinaryEvidence,
+        ⨅ _ : F.Mem candidate ∧
+            ∀ t, (⨆ split : { split : List Pattern × List Pattern //
+                    t = Pattern.collection kind (split.1 ++ split.2) none },
+                  semEEnv R F I env left
+                      (Pattern.collection kind split.val.1 none) ⊓
+                    semEEnv R F I env right
+                      (Pattern.collection kind split.val.2 none))
+              ≤ candidate t,
+          candidate p
+
+/-- BinaryEvidence-valued denotational semantics of a closed formula in the
+ambient observation space. -/
+noncomputable def semE (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem) :
+    OSLFFormula → Pattern → BinaryEvidence :=
+  semEEnv R fullEvidenceFrame I EvidenceScopeEnv.empty
 
 /-! ## Unfolding Lemmas -/
+
+@[simp] theorem semEEnv_top (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (p : Pattern) :
+    semEEnv R F I env .top p = ⊤ := rfl
+
+@[simp] theorem semEEnv_bot (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (p : Pattern) :
+    semEEnv R F I env .bot p = ⊥ := rfl
+
+@[simp] theorem semEEnv_atom (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (a : String) (p : Pattern) :
+    semEEnv R F I env (.atom a) p = I a p := rfl
+
+@[simp] theorem semEEnv_and (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ ψ : OSLFFormula) (p : Pattern) :
+    semEEnv R F I env (.and φ ψ) p = semEEnv R F I env φ p ⊓ semEEnv R F I env ψ p := rfl
+
+@[simp] theorem semEEnv_or (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ ψ : OSLFFormula) (p : Pattern) :
+    semEEnv R F I env (.or φ ψ) p = semEEnv R F I env φ p ⊔ semEEnv R F I env ψ p := rfl
+
+@[simp] theorem semEEnv_imp (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ ψ : OSLFFormula) (p : Pattern) :
+    semEEnv R F I env (.imp φ ψ) p = semEEnv R F I env φ p ⇨ semEEnv R F I env ψ p := rfl
+
+@[simp] theorem semEEnv_dia (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ : OSLFFormula) (p : Pattern) :
+    semEEnv R F I env (.dia φ) p = ⨆ (q : {q // R p q}), semEEnv R F I env φ q.val := rfl
+
+@[simp] theorem semEEnv_box (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ : OSLFFormula) (p : Pattern) :
+    semEEnv R F I env (.box φ) p = ⨅ (q : {q // R q p}), semEEnv R F I env φ q.val := rfl
+
+@[simp] theorem semEEnv_var (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (k : Nat) (p : Pattern) :
+    semEEnv R F I env (.var k) p = env k p := rfl
+
+/-- An evidence-valued generated scope is an observation of the frame it was
+taken in. -/
+theorem mem_semEEnv_mu (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ : OSLFFormula) :
+    F.Mem (semEEnv R F I env (.mu φ)) :=
+  F.mem_iInf _
 
 @[simp] theorem semE_top (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem) (p : Pattern) :
     semE R I .top p = ⊤ := rfl
@@ -173,7 +294,66 @@ noncomputable def semE (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem) 
 @[simp] theorem semE_box (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem) (φ : OSLFFormula) (p : Pattern) :
     semE R I (.box φ) p = ⨅ (q : {q // R q p}), semE R I φ q.val := rfl
 
+/-- A formula of the modal fragment never consults the frame or the scope
+environment, so on those formulas every reading is the same function. -/
+theorem semEEnv_frame_irrelevant (R : Pattern → Pattern → Prop)
+    (F F' : EvidencePredFrame) (I : EvidenceAtomSem) (φ : OSLFFormula)
+    (free : OSLFFormula.modalOnly φ = true) :
+    ∀ env env' : EvidenceScopeEnv, semEEnv R F I env φ = semEEnv R F' I env' φ := by
+  induction φ with
+  | top => intro _ _; rfl
+  | bot => intro _ _; rfl
+  | atom _ => intro _ _; rfl
+  | var _ => simp [OSLFFormula.modalOnly] at free
+  | mu _ _ => simp [OSLFFormula.modalOnly] at free
+  | emptyColl _ => simp [OSLFFormula.modalOnly] at free
+  | cut _ _ _ _ _ => simp [OSLFFormula.modalOnly] at free
+  | headed _ _ _ => simp [OSLFFormula.modalOnly] at free
+  | and φ ψ ihφ ihψ =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      intro env env'
+      funext t
+      simp only [semEEnv, ihφ free.1 env env', ihψ free.2 env env']
+  | or φ ψ ihφ ihψ =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      intro env env'
+      funext t
+      simp only [semEEnv, ihφ free.1 env env', ihψ free.2 env env']
+  | imp φ ψ ihφ ihψ =>
+      simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+      intro env env'
+      funext t
+      simp only [semEEnv, ihφ free.1 env env', ihψ free.2 env env']
+  | dia φ ih =>
+      simp only [OSLFFormula.modalOnly] at free
+      intro env env'
+      funext t
+      simp only [semEEnv, ih free env env']
+  | box φ ih =>
+      simp only [OSLFFormula.modalOnly] at free
+      intro env env'
+      funext t
+      simp only [semEEnv, ih free env env']
+
+/-- The ambient reading of a modal-fragment formula is its reading at any
+frame. -/
+theorem semE_eq_semEEnv_of_modalOnly (R : Pattern → Pattern → Prop)
+    (F : EvidencePredFrame) (I : EvidenceAtomSem) (env : EvidenceScopeEnv)
+    (φ : OSLFFormula) (free : OSLFFormula.modalOnly φ = true) :
+    semE R I φ = semEEnv R F I env φ :=
+  semEEnv_frame_irrelevant R fullEvidenceFrame F I φ free EvidenceScopeEnv.empty env
+
 /-! ## Canonical evidence-valued OSLF semantics -/
+
+/-- The frame of evidence observations of the generated logic: those assigning
+identical evidence to equation-equivalent presentations. -/
+def equationEvidenceFrameUsing (relEnv : RelationEnv) (lang : LanguageDef) :
+    EvidencePredFrame where
+  Mem := EvidenceEquationInvariant (langGSLTUsing relEnv lang)
+  mem_iInf := by
+    intro _ left right equivalent
+    exact iInf_congr fun candidate =>
+      iInf_congr fun member => member.1 equivalent
 
 /-- Evidence-valued interpretation over the modulo-equations operational
 relation.  Atomic evidence has already descended through the language's
@@ -182,8 +362,9 @@ noncomputable def langSemEUsing
     (relEnv : RelationEnv) (lang : LanguageDef)
     (interpretation : EquationEvidenceAtomSemUsing relEnv lang) :
     OSLFFormula → Pattern → BinaryEvidence :=
-  semE (langSemanticReducesUsing relEnv lang)
-    (fun atom term => (interpretation atom).1 term)
+  semEEnv (langSemanticReducesUsing relEnv lang)
+    (equationEvidenceFrameUsing relEnv lang)
+    (fun atom term => (interpretation atom).1 term) EvidenceScopeEnv.empty
 
 /-- Default-environment evidence-valued OSLF semantics. -/
 noncomputable def langSemE
@@ -193,34 +374,48 @@ noncomputable def langSemE
 
 /-- The evidence denotation of every formula is a function on equation
 classes whenever its atomic observations are. -/
-theorem langSemE_equationInvariantUsing
+theorem semEEnv_equationInvariantUsing
     (relEnv : RelationEnv) (lang : LanguageDef)
     (interpretation : EquationEvidenceAtomSemUsing relEnv lang)
     (formula : OSLFFormula) :
-    EvidenceEquationInvariant (langGSLTUsing relEnv lang)
-      (langSemEUsing relEnv lang interpretation formula) := by
-  change EvidenceEquationInvariant (langGSLTUsing relEnv lang)
-    (semE (langSemanticReducesUsing relEnv lang)
-      (fun atom term => (interpretation atom).1 term) formula)
+    ∀ env : EvidenceScopeEnv,
+      (∀ index, EvidenceEquationInvariant (langGSLTUsing relEnv lang) (env index)) →
+      EvidenceEquationInvariant (langGSLTUsing relEnv lang)
+        (semEEnv (langSemanticReducesUsing relEnv lang)
+          (equationEvidenceFrameUsing relEnv lang)
+          (fun atom term => (interpretation atom).1 term) env formula) := by
   induction formula with
-  | top => simp [EvidenceEquationInvariant, semE]
-  | bot => simp [EvidenceEquationInvariant, semE]
-  | atom atom => exact (interpretation atom).2
+  | top => intro _ _; simp [EvidenceEquationInvariant, semEEnv]
+  | bot => intro _ _; simp [EvidenceEquationInvariant, semEEnv]
+  | atom atom => intro _ _; exact (interpretation atom).2
+  | emptyColl kind =>
+      intro _ _
+      exact (equationEvidenceFrameUsing relEnv lang).mem_iInf _
+  | cut kind first second _ _ =>
+      intro _ _
+      exact (equationEvidenceFrameUsing relEnv lang).mem_iInf _
+  | headed label body _ =>
+      intro _ _
+      exact (equationEvidenceFrameUsing relEnv lang).mem_iInf _
   | and first second firstIH secondIH =>
+      intro env envInv
       refine fun {left right : Pattern} equivalent => ?_
-      simp only [semE_and]
-      rw [firstIH equivalent, secondIH equivalent]
+      simp only [semEEnv_and]
+      rw [firstIH env envInv equivalent, secondIH env envInv equivalent]
   | or first second firstIH secondIH =>
+      intro env envInv
       refine fun {left right : Pattern} equivalent => ?_
-      simp only [semE_or]
-      rw [firstIH equivalent, secondIH equivalent]
+      simp only [semEEnv_or]
+      rw [firstIH env envInv equivalent, secondIH env envInv equivalent]
   | imp first second firstIH secondIH =>
+      intro env envInv
       refine fun {left right : Pattern} equivalent => ?_
-      simp only [semE_imp]
-      rw [firstIH equivalent, secondIH equivalent]
+      simp only [semEEnv_imp]
+      rw [firstIH env envInv equivalent, secondIH env envInv equivalent]
   | dia body bodyIH =>
+      intro env envInv
       refine fun {left right : Pattern} equivalent => ?_
-      simp only [semE_dia]
+      simp only [semEEnv_dia]
       apply le_antisymm
       · apply iSup_le
         intro target
@@ -228,19 +423,23 @@ theorem langSemE_equationInvariantUsing
           (langGSLTUsing relEnv lang).rewrites_resp_left
             equivalent target.property
         calc
-          semE (langSemanticReducesUsing relEnv lang)
-                (fun atom term => (interpretation atom).1 term) body target.val =
-              semE (langSemanticReducesUsing relEnv lang)
-                (fun atom term => (interpretation atom).1 term) body target' :=
-            bodyIH targetEquivalent
+          semEEnv (langSemanticReducesUsing relEnv lang)
+                (equationEvidenceFrameUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) env body target.val =
+              semEEnv (langSemanticReducesUsing relEnv lang)
+                (equationEvidenceFrameUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) env body target' :=
+            bodyIH env envInv targetEquivalent
           _ ≤ ⨆ (candidate :
                 {candidate // langSemanticReducesUsing relEnv lang right candidate}),
-                semE (langSemanticReducesUsing relEnv lang)
-                  (fun atom term => (interpretation atom).1 term) body candidate.val :=
+                semEEnv (langSemanticReducesUsing relEnv lang)
+                  (equationEvidenceFrameUsing relEnv lang)
+                  (fun atom term => (interpretation atom).1 term) env body candidate.val :=
             le_iSup (fun candidate :
               {candidate // langSemanticReducesUsing relEnv lang right candidate} =>
-                semE (langSemanticReducesUsing relEnv lang)
-                  (fun atom term => (interpretation atom).1 term) body candidate.val)
+                semEEnv (langSemanticReducesUsing relEnv lang)
+                  (equationEvidenceFrameUsing relEnv lang)
+                  (fun atom term => (interpretation atom).1 term) env body candidate.val)
               ⟨target', step'⟩
       · apply iSup_le
         intro target
@@ -249,23 +448,28 @@ theorem langSemE_equationInvariantUsing
             ((langGSLTUsing relEnv lang).equations.iseqv.symm equivalent)
             target.property
         calc
-          semE (langSemanticReducesUsing relEnv lang)
-                (fun atom term => (interpretation atom).1 term) body target.val =
-              semE (langSemanticReducesUsing relEnv lang)
-                (fun atom term => (interpretation atom).1 term) body target' :=
-            bodyIH targetEquivalent
+          semEEnv (langSemanticReducesUsing relEnv lang)
+                (equationEvidenceFrameUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) env body target.val =
+              semEEnv (langSemanticReducesUsing relEnv lang)
+                (equationEvidenceFrameUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) env body target' :=
+            bodyIH env envInv targetEquivalent
           _ ≤ ⨆ (candidate :
                 {candidate // langSemanticReducesUsing relEnv lang left candidate}),
-                semE (langSemanticReducesUsing relEnv lang)
-                  (fun atom term => (interpretation atom).1 term) body candidate.val :=
+                semEEnv (langSemanticReducesUsing relEnv lang)
+                  (equationEvidenceFrameUsing relEnv lang)
+                  (fun atom term => (interpretation atom).1 term) env body candidate.val :=
             le_iSup (fun candidate :
               {candidate // langSemanticReducesUsing relEnv lang left candidate} =>
-                semE (langSemanticReducesUsing relEnv lang)
-                  (fun atom term => (interpretation atom).1 term) body candidate.val)
+                semEEnv (langSemanticReducesUsing relEnv lang)
+                  (equationEvidenceFrameUsing relEnv lang)
+                  (fun atom term => (interpretation atom).1 term) env body candidate.val)
               ⟨target', step'⟩
   | box body bodyIH =>
+      intro env envInv
       refine fun {left right : Pattern} equivalent => ?_
-      simp only [semE_box]
+      simp only [semEEnv_box]
       apply le_antisymm
       · apply le_iInf
         intro source
@@ -275,8 +479,9 @@ theorem langSemE_equationInvariantUsing
         exact iInf_le
           (fun candidate :
             {candidate // langSemanticReducesUsing relEnv lang candidate left} =>
-              semE (langSemanticReducesUsing relEnv lang)
-                (fun atom term => (interpretation atom).1 term) body candidate.val)
+              semEEnv (langSemanticReducesUsing relEnv lang)
+                (equationEvidenceFrameUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) env body candidate.val)
           ⟨source.val, sourceStep⟩
       · apply le_iInf
         intro source
@@ -285,9 +490,34 @@ theorem langSemE_equationInvariantUsing
         exact iInf_le
           (fun candidate :
             {candidate // langSemanticReducesUsing relEnv lang candidate right} =>
-              semE (langSemanticReducesUsing relEnv lang)
-                (fun atom term => (interpretation atom).1 term) body candidate.val)
+              semEEnv (langSemanticReducesUsing relEnv lang)
+                (equationEvidenceFrameUsing relEnv lang)
+                (fun atom term => (interpretation atom).1 term) env body candidate.val)
           ⟨source.val, sourceStep⟩
+  | var index => intro env envInv; exact envInv index
+  | mu body _ =>
+      intro env _
+      exact (equationEvidenceFrameUsing relEnv lang).mem_iInf _
+
+/-- The empty evidence scope environment consists of observations of the
+logic. -/
+theorem evidenceEquationInvariant_scopeEnv_empty
+    (relEnv : RelationEnv) (lang : LanguageDef) :
+    ∀ index, EvidenceEquationInvariant (langGSLTUsing relEnv lang)
+      (EvidenceScopeEnv.empty index) :=
+  fun _ _ _ _ => rfl
+
+/-- The evidence denotation of every formula is a function on equation classes
+whenever its atomic observations are. -/
+theorem langSemE_equationInvariantUsing
+    (relEnv : RelationEnv) (lang : LanguageDef)
+    (interpretation : EquationEvidenceAtomSemUsing relEnv lang)
+    (formula : OSLFFormula) :
+    EvidenceEquationInvariant (langGSLTUsing relEnv lang)
+      (langSemEUsing relEnv lang interpretation formula) :=
+  semEEnv_equationInvariantUsing relEnv lang interpretation formula
+    EvidenceScopeEnv.empty
+    (evidenceEquationInvariant_scopeEnv_empty relEnv lang)
 
 /-- Default-environment equation-invariance theorem. -/
 theorem langSemE_equationInvariant
@@ -335,6 +565,50 @@ theorem semE_box_le (R : Pattern → Pattern → Prop) (I : EvidenceAtomSem)
     (φ : OSLFFormula) (p q : Pattern) (h : R q p) :
     semE R I (.box φ) p ≤ semE R I φ q :=
   iInf_le (fun (s : {s // R s p}) => semE R I φ s.val) ⟨q, h⟩
+
+/-! ### The same order facts under a scope environment
+
+Stated for `semEEnv` because the language-level evidence reading takes its
+generator in the frame of the generated logic, so its connectives are
+`semEEnv`'s and not the ambient reading's. -/
+
+theorem semEEnv_and_le_left (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ ψ : OSLFFormula) (p : Pattern) :
+    semEEnv R F I env (.and φ ψ) p ≤ semEEnv R F I env φ p :=
+  inf_le_left
+
+theorem semEEnv_and_le_right (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ ψ : OSLFFormula) (p : Pattern) :
+    semEEnv R F I env (.and φ ψ) p ≤ semEEnv R F I env ψ p :=
+  inf_le_right
+
+theorem semEEnv_le_or_left (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ ψ : OSLFFormula) (p : Pattern) :
+    semEEnv R F I env φ p ≤ semEEnv R F I env (.or φ ψ) p :=
+  le_sup_left
+
+theorem semEEnv_le_or_right (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ ψ : OSLFFormula) (p : Pattern) :
+    semEEnv R F I env ψ p ≤ semEEnv R F I env (.or φ ψ) p :=
+  le_sup_right
+
+theorem semEEnv_dia_le (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ : OSLFFormula) (p q : Pattern)
+    (h : R p q) :
+    semEEnv R F I env φ q ≤ semEEnv R F I env (.dia φ) p :=
+  le_iSup (fun (s : {s // R p s}) => semEEnv R F I env φ s.val) ⟨q, h⟩
+
+theorem semEEnv_box_le (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ : OSLFFormula) (p q : Pattern)
+    (h : R q p) :
+    semEEnv R F I env (.box φ) p ≤ semEEnv R F I env φ q :=
+  iInf_le (fun (s : {s // R s p}) => semEEnv R F I env φ s.val) ⟨q, h⟩
+
+theorem semEEnv_imp_mp (R : Pattern → Pattern → Prop) (F : EvidencePredFrame)
+    (I : EvidenceAtomSem) (env : EvidenceScopeEnv) (φ ψ : OSLFFormula) (p : Pattern) :
+    semEEnv R F I env (.imp φ ψ) p ⊓ semEEnv R F I env φ p ≤ semEEnv R F I env ψ p := by
+  simp only [semEEnv_imp]
+  exact himp_inf_le
 
 /-! ## Modus Ponens (Heyting) -/
 
@@ -424,17 +698,19 @@ theorem threshold_or_counterexample :
     show (⟨1, 1⟩ : BinaryEvidence) ≤ (⟨1, 0⟩ : BinaryEvidence) ⊔ (⟨0, 1⟩ : BinaryEvidence)
     exact ⟨(@le_sup_left BinaryEvidence _ ⟨1, 0⟩ ⟨0, 1⟩).1, (@le_sup_right BinaryEvidence _ ⟨1, 0⟩ ⟨0, 1⟩).2⟩
   have habs := h I τ₀ R₀ (.atom "a") (.atom "b") p₀ hle
-  simp only [sem, threshAtomSem] at habs
+  simp only [sem] at habs
   have hnle : ¬ ((1 : ℝ≥0∞) ≤ (0 : ℝ≥0∞)) := by norm_num
   rcases habs with h1 | h2
   · exact hnle h1.2
   · exact hnle h2.1
 
-/-! ### Complete Fragment Classification
+/-! ### Connective-Specific Threshold Bridges
 
-The threshold bridge `τ ≤ semE ... → sem ...` works precisely for the
-**conjunctive/universal fragment** {⊤, atom, ∧, →, □} and FAILS for the
-**disjunctive/existential fragment** {∨, ◇}.
+The forward threshold bridge is closed under {⊤, atom, ∧, □}; bottom also
+admits the bridge when the threshold is strictly positive. Disjunction and
+diamond fail in general. The implication law below is evidence-level modus
+ponens, not a compositional implication bridge: nested implication can fail
+even when no disjunction or diamond occurs.
 
 The obstruction is order-theoretic: a threshold below a join need not lie below
 either summand.  It does not say that K&S scalar valuation requires a total
@@ -469,6 +745,40 @@ theorem threshold_imp (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern �
   calc τ = τ ⊓ τ := (inf_idem _).symm
     _ ≤ (semE R I φ p ⇨ semE R I ψ p) ⊓ semE R I φ p := inf_le_inf himp hφ
     _ ≤ semE R I ψ p := himp_inf_le
+
+/-- Nested implication refutes a compositional forward threshold bridge even
+in the fragment generated by atoms and implication.
+
+At threshold `(1,1)`, all three atoms are false. Evidence implication gives
+`a ⇨ b = (0,∞)` and `(a ⇨ b) ⇨ c = (∞,2)`, above the threshold, whereas
+the Prop reading is `(False → False) → False`. -/
+theorem threshold_nested_imp_counterexample :
+    ∃ (I : EvidenceAtomSem) (R : Pattern → Pattern → Prop) (p : Pattern),
+      (⟨1, 1⟩ : BinaryEvidence) ≤
+        semE R I (.imp (.imp (.atom "a") (.atom "b")) (.atom "c")) p ∧
+      ¬ sem R (threshAtomSem I ⟨1, 1⟩)
+        (.imp (.imp (.atom "a") (.atom "b")) (.atom "c")) p := by
+  let I : EvidenceAtomSem := fun name _ =>
+    if name == "a" then ⟨2, 0⟩ else if name == "b" then ⟨0, 0⟩ else ⟨0, 2⟩
+  refine ⟨I, fun _ _ => False, .apply "p" [], ?_, ?_⟩
+  · change (⟨1, 1⟩ : BinaryEvidence) ≤
+      BinaryEvidence.himp (BinaryEvidence.himp ⟨2, 0⟩ ⟨0, 0⟩) ⟨0, 2⟩
+    change (1 : ℝ≥0∞) ≤
+        (BinaryEvidence.himp (BinaryEvidence.himp ⟨2, 0⟩ ⟨0, 0⟩) ⟨0, 2⟩).pos ∧
+      (1 : ℝ≥0∞) ≤
+        (BinaryEvidence.himp (BinaryEvidence.himp ⟨2, 0⟩ ⟨0, 0⟩) ⟨0, 2⟩).neg
+    norm_num [BinaryEvidence.himp]
+  · change ¬ ((((⟨1, 1⟩ : BinaryEvidence) ≤ ⟨2, 0⟩) →
+        (⟨1, 1⟩ : BinaryEvidence) ≤ ⟨0, 0⟩) →
+      (⟨1, 1⟩ : BinaryEvidence) ≤ ⟨0, 2⟩)
+    have hna : ¬ (⟨1, 1⟩ : BinaryEvidence) ≤ ⟨2, 0⟩ := by
+      norm_num [BinaryEvidence.le_def]
+    have hnc : ¬ (⟨1, 1⟩ : BinaryEvidence) ≤ ⟨0, 2⟩ := by
+      norm_num [BinaryEvidence.le_def]
+    intro implication
+    exact hnc (implication (fun antecedent => (hna antecedent).elim))
+
+#print axioms threshold_nested_imp_counterexample
 
 /-- Threshold bridge for box (□): works because ⊓ distributes over threshold. -/
 theorem threshold_box (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
@@ -507,7 +817,7 @@ theorem threshold_dia_fails :
     exact ⟨le_sup_of_le_left (le_refl _), le_sup_of_le_right (le_refl _)⟩
   -- But no single successor has evidence ≥ (1,1)
   have habs := h I τ₀ R₀ (.atom "a") p₀ hle
-  simp only [sem, threshAtomSem] at habs
+  simp only [sem] at habs
   have hnle : ¬ ((1 : ℝ≥0∞) ≤ (0 : ℝ≥0∞)) := by norm_num
   rcases habs with ⟨q, ⟨_, hq⟩, hsat⟩
   rcases hq with rfl | rfl
@@ -519,8 +829,7 @@ theorem threshold_dia_fails :
 Under total order (`∀ a b, a ≤ b ∨ b ≤ a`), the forward threshold bridge also
 works for disjunction and, with finite nonempty branching, diamond.  This is a
 projection theorem for the listed connectives.  It does not make the carrier
-Boolean: the reverse implication bridge still requires Booleanness, as recorded
-below. -/
+Boolean, and it establishes no compositional threshold law for implication. -/
 
 /-- In a linearly ordered lattice, `τ ≤ a ⊔ b → τ ≤ a ∨ τ ≤ b`.
 This is the lattice-level totality gate. -/
@@ -590,11 +899,11 @@ theorem threshold_dia_total
     τ ≤ semE R I (.dia φ) p → sem R (threshAtomSem I τ) (.dia φ) p := by
   intro h
   simp only [semE_dia] at h
-  haveI : Nonempty {q // R p q} := by
+  have : Nonempty {q // R p q} := by
     obtain ⟨q, hq⟩ := hNonempty; exact ⟨⟨q, hq⟩⟩
-  haveI : Finite {q // R p q} := hSucc.to_subtype
+  have : Finite {q // R p q} := hSucc.to_subtype
   by_contra hc
-  simp only [sem] at hc
+  simp only [sem, semEnv] at hc
   push Not at hc
   have hno : ∀ q, R p q → ¬ (τ ≤ semE R I φ q) := by
     intro q hRq hle; exact hc q hRq (hφ q hRq hle)
@@ -603,13 +912,13 @@ theorem threshold_dia_total
     rcases hTotal τ (semE R I φ q) with h1 | h2
     · exact absurd h1 (hno q hRq)
     · exact lt_of_le_of_ne h2 (fun heq => hno q hRq (heq ▸ le_refl _))
-  haveI : Fintype {q // R p q} := hSucc.fintype
+  have : Fintype {q // R p q} := hSucc.fintype
   exact absurd (lt_of_le_of_lt h (iSup_lt_of_forall_lt_total hTotal hlt))
     (lt_irrefl _)
 
 /-- Reverse threshold bridge: `sem (threshAtomSem I τ) φ p → τ ≤ semE R I φ p`.
-Works for the imp-free fragment without totality. The reverse direction for
-implication genuinely requires Booleanness (not just totality). -/
+Works for implication-free modal formulas without totality. No reverse
+implication bridge is established here. -/
 theorem threshold_reverse_atom (I : EvidenceAtomSem) (τ : BinaryEvidence)
     (R : Pattern → Pattern → Prop) (a : String) (p : Pattern) :
     sem R (threshAtomSem I τ) (.atom a) p → τ ≤ semE R I (.atom a) p := id
@@ -644,9 +953,13 @@ theorem threshold_reverse_or (I : EvidenceAtomSem) (τ : BinaryEvidence)
    because the Prop-level diamond is existential while the BinaryEvidence-level
    diamond is a supremum (which can be ⊥ over the empty set).
 
-Together with `threshold_atom`, `threshold_and`, `threshold_or_total`, and
-`threshold_imp`, this covers the full OSLF formula language at states with
-finite nonempty successor sets under totality. -/
+Together with the top, atom, conjunction, and box bridges,
+`threshold_or_total` and `threshold_dia_total` supply connective-wise forward
+bridges for implication-free modal formulas, provided their side conditions
+hold at every state reached by the recursive interpretation. They do not
+establish a bridge for implication, spatial constructors, scope variables,
+or fixed-point generators. The stated totality premise is not satisfied by
+the full coordinatewise BinaryEvidence carrier. -/
 
 /-- The threshold bridge for ◇ genuinely fails at deadlock states:
 `⊥ ≤ semE(◇φ, p)` holds (empty sup = ⊥), but `sem(◇φ, p)` requires a
@@ -671,6 +984,11 @@ def impFree : OSLFFormula → Prop
   | .and φ ψ | .or φ ψ => impFree φ ∧ impFree ψ
   | .imp _ _ => False
   | .dia φ | .box φ => impFree φ
+  | .var _ => True
+  | .mu φ => impFree φ
+  | .emptyColl _ => True
+  | .cut _ φ ψ => impFree φ ∧ impFree ψ
+  | .headed _ φ => impFree φ
 
 /-- Reverse threshold bridge for ◇: no totality or finite branching needed.
 The existential witness in `sem(◇φ)` provides the evidence bound. -/
@@ -683,34 +1001,56 @@ theorem threshold_reverse_dia (I : EvidenceAtomSem) (τ : BinaryEvidence)
   exact le_trans (hφ q hRq hsat)
     (le_iSup (fun (q : {q // R p q}) => semE R I φ q.val) ⟨q, hRq⟩)
 
-/-- Reverse threshold bridge for the full implication-free fragment.
+/-- Reverse threshold bridge for implication-free modal formulas.
 
-For imp-free formulas, `sem R (threshAtomSem I τ) φ p → τ ≤ semE R I φ p`
-holds unconditionally.  This is the converse of the forward bridge restricted
-to the imp-free fragment; the forward direction for ∨/◇ needs totality, but
-the reverse does not. -/
-theorem threshold_reverse_impFree (I : EvidenceAtomSem) (τ : BinaryEvidence)
-    (R : Pattern → Pattern → Prop) (φ : OSLFFormula) (hImpFree : impFree φ)
+Under `impFree φ` and `modalOnly φ = true`,
+`sem R (threshAtomSem I τ) φ p → τ ≤ semE R I φ p` holds without totality
+or branching assumptions. Spatial constructors, scope variables, and
+fixed-point generators are outside this theorem's domain. The forward
+direction for ∨/◇ needs additional hypotheses, but the reverse does not. -/
+theorem threshold_reverse_impFree_env (I : EvidenceAtomSem) (τ : BinaryEvidence)
+    (R : Pattern → Pattern → Prop) (F : EvidencePredFrame) (env : EvidenceScopeEnv)
+    (φ : OSLFFormula) (hImpFree : impFree φ)
+    (hMuFree : OSLFFormula.modalOnly φ = true)
     (p : Pattern) :
-    sem R (threshAtomSem I τ) φ p → τ ≤ semE R I φ p := by
+    sem R (threshAtomSem I τ) φ p → τ ≤ semEEnv R F I env φ p := by
   induction φ generalizing p with
+  | emptyColl _ => simp [OSLFFormula.modalOnly] at hMuFree
+  | cut _ _ _ _ _ => simp [OSLFFormula.modalOnly] at hMuFree
+  | headed _ _ _ => simp [OSLFFormula.modalOnly] at hMuFree
   | top => intro _; exact le_top
   | bot => intro h; exact absurd h id
   | atom a => intro h; exact h
   | and φ ψ ih1 ih2 =>
-    intro ⟨h1, h2⟩; exact le_inf (ih1 hImpFree.1 p h1) (ih2 hImpFree.2 p h2)
+    simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at hMuFree
+    intro ⟨h1, h2⟩
+    exact le_inf (ih1 hImpFree.1 hMuFree.1 p h1) (ih2 hImpFree.2 hMuFree.2 p h2)
   | or φ ψ ih1 ih2 =>
+    simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at hMuFree
     intro h; rcases h with h | h
-    · exact le_trans (ih1 hImpFree.1 p h) le_sup_left
-    · exact le_trans (ih2 hImpFree.2 p h) le_sup_right
+    · exact le_trans (ih1 hImpFree.1 hMuFree.1 p h) le_sup_left
+    · exact le_trans (ih2 hImpFree.2 hMuFree.2 p h) le_sup_right
   | imp _ _ => exact absurd hImpFree id
   | dia φ ih =>
-    intro ⟨q, hRq, hsat⟩; simp only [semE_dia]
-    exact le_trans (ih hImpFree q hsat)
-      (le_iSup (fun (q : {q // R p q}) => semE R I φ q.val) ⟨q, hRq⟩)
+    simp only [OSLFFormula.modalOnly] at hMuFree
+    intro ⟨q, hRq, hsat⟩; simp only [semEEnv_dia]
+    exact le_trans (ih hImpFree hMuFree q hsat)
+      (le_iSup (fun (q : {q // R p q}) => semEEnv R F I env φ q.val) ⟨q, hRq⟩)
   | box φ ih =>
-    intro hbox; simp only [semE_box]
-    exact le_iInf fun ⟨q, hRq⟩ => ih hImpFree q (hbox q hRq)
+    simp only [OSLFFormula.modalOnly] at hMuFree
+    intro hbox; simp only [semEEnv_box]
+    exact le_iInf fun ⟨q, hRq⟩ => ih hImpFree hMuFree q (hbox q hRq)
+  | var _ => simp [OSLFFormula.modalOnly] at hMuFree
+  | mu _ _ => simp [OSLFFormula.modalOnly] at hMuFree
+
+/-- Reverse threshold bridge in the ambient observation space. -/
+theorem threshold_reverse_impFree (I : EvidenceAtomSem) (τ : BinaryEvidence)
+    (R : Pattern → Pattern → Prop) (φ : OSLFFormula) (hImpFree : impFree φ)
+    (hMuFree : OSLFFormula.modalOnly φ = true)
+    (p : Pattern) :
+    sem R (threshAtomSem I τ) φ p → τ ≤ semE R I φ p :=
+  threshold_reverse_impFree_env I τ R fullEvidenceFrame EvidenceScopeEnv.empty
+    φ hImpFree hMuFree p
 
 /-! ## Temporal BinaryEvidence Semantics
 

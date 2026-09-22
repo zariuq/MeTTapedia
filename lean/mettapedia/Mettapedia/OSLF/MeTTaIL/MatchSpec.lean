@@ -57,8 +57,17 @@ inductive MatchRel : Pattern → Pattern → Bindings → Prop where
       MatchRel (.multiLambda n _nms bodyPat) (.multiLambda n _nms' bodyConcrete) bs
 
   | collection :
+      ct ≠ .vec →
       MatchBagRel pelems rest ct telems bs →
       MatchRel (.collection ct pelems rest) (.collection ct telems rest₂) bs
+  | vector :
+      MatchArgsRel pelems telems bs →
+      MatchRel (.collection .vec pelems none) (.collection .vec telems rest₂) bs
+  | vectorRest :
+      MatchArgsRel pelems (telems.take pelems.length) prefixBindings →
+      mergeBindings prefixBindings
+        [(rv, .collection .vec (telems.drop pelems.length) none)] = some bs →
+      MatchRel (.collection .vec pelems (some rv)) (.collection .vec telems rest₂) bs
   | subst :
       MatchRel pbody tbody b1 →
       MatchRel prepl trepl b2 →
@@ -88,6 +97,64 @@ inductive MatchBagRel : List Pattern → Option String → CollType →
       mergeBindings hb restB = some bs →
       MatchBagRel (ppat :: prest) rest ct telems bs
 end
+
+/-! Ordered matching embeds into multiset matching by selecting the leading
+element at every step. The converse need not hold. -/
+
+theorem MatchArgsRel.toMatchBagRel {patterns terms : List Pattern} {bindings : Bindings}
+    (matched : MatchArgsRel patterns terms bindings) (kind : CollType) :
+    MatchBagRel patterns none kind terms bindings := by
+  induction patterns generalizing terms bindings with
+  | nil =>
+    cases matched
+    exact .nilNoRest
+  | cons pattern patterns inductionHypothesis =>
+    cases matched with
+    | cons headMatch tailMatch merged =>
+      exact .cons 0 (by simp) headMatch (inductionHypothesis tailMatch) merged
+
+theorem MatchArgsRel.length_eq {patterns terms : List Pattern} {bindings : Bindings}
+    (matched : MatchArgsRel patterns terms bindings) : patterns.length = terms.length := by
+  induction patterns generalizing terms bindings with
+  | nil => cases matched; rfl
+  | cons pattern patterns inductionHypothesis =>
+    cases matched with
+    | cons _ tailMatch _ =>
+      exact congrArg Nat.succ (inductionHypothesis tailMatch)
+
+/-- An ordered remainder is characterized by a prefix/suffix decomposition,
+not by a choice of elements from the term. -/
+theorem matchRel_vectorRest_iff_split {patterns terms : List Pattern}
+    {name : String} {termRest : Option String} {bindings : Bindings} :
+    MatchRel (.collection .vec patterns (some name))
+        (.collection .vec terms termRest) bindings ↔
+      ∃ leading trailing prefixBindings,
+        terms = leading ++ trailing ∧
+        MatchArgsRel patterns leading prefixBindings ∧
+        mergeBindings prefixBindings [(name, .collection .vec trailing none)]
+          = some bindings := by
+  constructor
+  · intro matched
+    cases matched with
+    | collection notVector _ => exact (notVector rfl).elim
+    | vectorRest prefixMatch merged =>
+      exact ⟨_, _, _, (List.take_append_drop _ _).symm, prefixMatch, merged⟩
+  · rintro ⟨leading, trailing, prefixBindings, rfl, prefixMatch, merged⟩
+    have lengthEquality := prefixMatch.length_eq
+    apply MatchRel.vectorRest
+    · simpa only [lengthEquality, List.take_left] using prefixMatch
+    · simpa only [lengthEquality, List.drop_left] using merged
+
+/-- Forget order only in the matching evidence: an exact ordered vector match
+is also a valid multiset match, while the executable vector matcher stays ordered. -/
+theorem matchRel_collection_noRest_to_bag {kind : CollType}
+    {patterns terms : List Pattern} {termRest : Option String} {bindings : Bindings}
+    (matched : MatchRel (.collection kind patterns none)
+      (.collection kind terms termRest) bindings) :
+    MatchBagRel patterns none kind terms bindings := by
+  cases matched with
+  | collection _ bagMatch => exact bagMatch
+  | vector argumentsMatch => exact argumentsMatch.toMatchBagRel .vec
 
 /-! ## Helper Lemmas -/
 
@@ -261,8 +328,26 @@ private theorem sound_all (n : Nat) :
         split at hmem
         next heq =>
           have hcteq := beq_iff_eq.mp heq; subst hcteq
-          exact .collection (ih_bag pelems rest1 ct1 telems bs
-            (by have := sizeOf_elems_lt_collection ct1 pelems rest1; omega) hmem)
+          cases ct1 with
+          | vec =>
+            simp only [beq_self_eq_true, ↓reduceIte] at hmem
+            cases rest1 with
+            | none =>
+              exact .vector (ih_args pelems telems bs
+                (by have := sizeOf_elems_lt_collection .vec pelems none; omega) hmem)
+            | some rv =>
+              obtain ⟨prefixBindings, prefixMember, mergeEquality⟩ :=
+                List.mem_filterMap.mp hmem
+              exact .vectorRest
+                (ih_args pelems (telems.take pelems.length) prefixBindings
+                  (by have := sizeOf_elems_lt_collection .vec pelems (some rv); omega)
+                  prefixMember) mergeEquality
+          | hashBag =>
+            exact .collection (by decide) (ih_bag pelems rest1 .hashBag telems bs
+              (by have := sizeOf_elems_lt_collection .hashBag pelems rest1; omega) hmem)
+          | hashSet =>
+            exact .collection (by decide) (ih_bag pelems rest1 .hashSet telems bs
+              (by have := sizeOf_elems_lt_collection .hashSet pelems rest1; omega) hmem)
         next => simp at hmem
       | .collection _ _ _, .bvar _ | .collection _ _ _, .fvar _
       | .collection _ _ _, .apply _ _ | .collection _ _ _, .lambda _ _
@@ -404,11 +489,23 @@ private theorem complete_all (n : Nat) :
         unfold matchPattern
         simp only [beq_self_eq_true, ↓reduceIte]
         exact ih_pat bodyPat bodyConcrete _ (by have := sizeOf_body_lt_multiLambda n' nms bodyPat; omega) hmatch
-      | collection hbag =>
-        rename_i pelems rest ct telems rest₂
+      | collection notVector hbag =>
+        rename_i ct pelems rest telems rest₂
         unfold matchPattern
-        simp only [beq_self_eq_true, ↓reduceIte]
+        simp only [beq_self_eq_true, beq_iff_eq, notVector, ↓reduceIte]
         exact ih_bag pelems rest ct telems _ (by have := sizeOf_elems_lt_collection ct pelems rest; omega) hbag
+      | vector hargs =>
+        rename_i pelems telems rest₂
+        simpa only [matchPattern, beq_self_eq_true, ↓reduceIte] using
+          ih_args pelems telems _
+            (by have := sizeOf_elems_lt_collection .vec pelems none; omega) hargs
+      | vectorRest hargs hmerge =>
+        rename_i pelems prefixBindings rv telems rest₂
+        simp only [matchPattern, beq_self_eq_true, ↓reduceIte]
+        exact List.mem_filterMap.mpr ⟨prefixBindings,
+          ih_args pelems (telems.take pelems.length) prefixBindings
+            (by have := sizeOf_elems_lt_collection .vec pelems (some rv); omega) hargs,
+          hmerge⟩
       | subst hm1 hm2 hmerge =>
         rename_i pbody tbody b1 prepl trepl b2
         unfold matchPattern
@@ -665,7 +762,9 @@ private theorem correct_all_strong (n : Nat) :
           ((isMatchCorrectListAux_iff_forall pargs).mp hmc) hargs bs' hext
       | lambda _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
       | multiLambda _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
-      | collection _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
+      | collection _ _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
+      | vector _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
+      | vectorRest _ _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
       | subst _ _ _ => simp [Pattern.isMatchCorrect, isMatchCorrectAux] at hmc
     -- MatchArgsRel case
     · intro pargs targs bs hle hmc h bs' hext
@@ -695,6 +794,15 @@ theorem matchRel_correct {pat t : Pattern} {bs : Bindings}
     applyBindings bs pat = t :=
   (correct_all_strong (sizeOf pat)).1 pat t bs (Nat.le_refl _) hmc h bs (fun _ _ hx => hx)
 
+/-- Consistent extension retains reconstruction, including an ambient caller
+frame whose bindings do not occur in the matched pattern. -/
+theorem matchRel_correct_of_extends {pat t : Pattern} {bs extended : Bindings}
+    (h : MatchRel pat t bs)
+    (hmc : Pattern.isMatchCorrect pat = true)
+    (extension : BindingsExtends bs extended) :
+    applyBindings extended pat = t :=
+  (correct_all_strong (sizeOf pat)).1 pat t bs (Nat.le_refl _) hmc h extended extension
+
 /-- For `isMatchCorrect` arg lists, correctness of `applyBindings` over the list. -/
 theorem matchArgsRel_correct {pargs targs : List Pattern} {bs : Bindings}
     (h : MatchArgsRel pargs targs bs)
@@ -715,14 +823,15 @@ theorem matchPattern_correct {pat t : Pattern} {bs : Bindings}
 Bag matching can pick elements out of order, producing bindings where
 `applyBindings bs pat` reorders elements vs. the target `t`. -/
 
-/-- Explicit counterexample: bag matching can produce incorrect bindings.
+/-- Bag matching reconstructs the term only modulo the bag equations, not
+necessarily in its original list order.
     Pattern `[fvar x, fvar y]` matched against `[b, a]` can yield `bs = [x→a, y→b]`
     via `matchBag` picking `i=1` first, so `applyBindings bs pat = [a, b] ≠ [b, a]`. -/
 theorem matchPattern_correct_false :
     ∃ (pat t : Pattern) (bs : Bindings),
         bs ∈ matchPattern pat t ∧ applyBindings bs pat ≠ t := by
-  refine ⟨.collection .vec [.fvar "x", .fvar "y"] none,
-           .collection .vec [.apply "b" [], .apply "a" []] none,
+  refine ⟨.collection .hashBag [.fvar "x", .fvar "y"] none,
+           .collection .hashBag [.apply "b" [], .apply "a" []] none,
            [("y", .apply "b" []), ("x", .apply "a" [])], ?_, ?_⟩
   · -- membership: matchBag picks i=1 first, giving x→a, y→b (swapped order)
     simp only [matchPattern, matchBag, List.flatMap, List.zipIdx,

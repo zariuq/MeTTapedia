@@ -1,5 +1,5 @@
 import Mettapedia.Logic.HOL.Syntax.Type
-import Mettapedia.TypeTheory.RegularDependentConversionDecision
+import Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Regular.ConversionDecision
 
 /-!
 # Church simple types versus a sealed one-ground dependent calculus
@@ -27,9 +27,9 @@ set_option autoImplicit false
 namespace Mettapedia.Logic.HOL.Embedding.SealedGroundTypeComparison
 
 open Mettapedia.Logic.HOL
-open Mettapedia.TypeTheory.RegularDependentConversionDecision
-open Mettapedia.TypeTheory.RegularDependentConversionDecision.SimpleFragment
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PresentationBoundary
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Regular.ConversionDecision
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Regular.ConversionDecision.SimpleFragment
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Regular
 
 universe u
 

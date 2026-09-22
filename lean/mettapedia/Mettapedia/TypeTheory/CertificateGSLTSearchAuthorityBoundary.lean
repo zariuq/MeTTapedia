@@ -30,6 +30,7 @@ No Horn, first-order, higher-order, termination, or global finiteness
 assumption is made.
 -/
 
+open Mettapedia.Logic
 set_option autoImplicit false
 
 namespace Mettapedia.TypeTheory.CertificateGSLTSearchAuthorityBoundary

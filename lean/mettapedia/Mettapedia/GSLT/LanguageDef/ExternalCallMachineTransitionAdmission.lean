@@ -687,6 +687,7 @@ theorem returnValueTransition_mem_rewriteAt
   · rw [match_run_transition returnValueTransition rfl]
     simp [start]
   · simp [returnValueTransition, applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
       final, returnReadBindings, returnFetchedBindings, consumedBindings,
       runMatchBindings, applyBindings, halted, stepReceipt, run, a, v]
 
@@ -772,6 +773,7 @@ theorem returnDeclinedTransition_mem_rewriteAt
   · rw [match_run_transition returnDeclinedTransition rfl]
     simp [start]
   · simp [returnDeclinedTransition, applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
       final, consumedBindings, runMatchBindings, applyBindings,
       halted, stepReceipt, run, a, v]
 
@@ -888,6 +890,7 @@ theorem callValueTransition_mem_rewriteAt
   · rw [match_run_transition callValueTransition rfl]
     simp [start]
   · simp [callValueTransition, callRule, applyBindingsForRule_eq_syntactic,
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
       final, callValueBindings, callFetchedBindings, consumedBindings,
       runMatchBindings, applyBindings, externalReceipt,
       stepReceipt, run, a, v]

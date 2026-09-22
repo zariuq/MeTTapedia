@@ -17,7 +17,6 @@ Full Czech and English morphology ported from GF Resource Grammar Library.
 ## Usage
 
 ```lean
-import Mettapedia.Languages.GF
 open Mettapedia.Languages.GF.HandCrafted.English.Syntax
 open Mettapedia.Languages.GF.HandCrafted.English.Nouns
 open Mettapedia.Languages.GF.HandCrafted.English.Verbs

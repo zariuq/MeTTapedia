@@ -54,9 +54,10 @@
 - [x] **Traces** (Def 3.1) — finite sequences of rule applications
   - Formalized in `Causality/Trace.lean`
 - [x] **Reversible Envelope S†** (Defs 3.2–3.4) — extended terms ⟨P, τ⟩, forward/backward rules
-  - Current status: reversible-step kernel on `⟨P, τ⟩` states formalized in `Causality/Trace.lean`
+  - Current status: reversible-step kernel on `⟨P, τ⟩` states formalized in `Causality/Trace.lean` (Type-valued path category, not evaluator state)
+  - GSLT object: forward writer `spendLift` in `Core/WriterGSLT.lean`; occurrence cover in `Causality/HistoryCover.lean`
 - [x] **Proposition 3.1** — η : S → S†, π : S† → S, π ∘ η = id
-  - Current status: embedding/projection kernel and roundtrip theorem formalized in `Causality/Trace.lean`
+  - Current status: carrier embedding/projection in `Causality/Trace.lean`; GSLT morphisms `embedMorphism` / `eraseMorphism` with `erase_comp_embed` in `Core/WriterGSLT.lean` (`π` is a `StepCover`; `η` is not a step homomorphism)
 
 #### Tier 2: Causal structure
 - [x] **Synchronization trees** — closed (Def 4.1) and open (Def 4.2)

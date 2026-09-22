@@ -16,12 +16,13 @@ runtime-facing elaborated fragments:
 
 namespace Mettapedia.Languages.MeTTa.ElaboratedCore
 
+
 open Mettapedia.Languages.MeTTa.RuntimeExec
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-- The first explicit region split for elaborated MeTTa-Core. -/
 inductive ElaboratedRegion where
-  | pureKernelRegion
+  | twoSortKernelRegion
   | runtimeExecRegion
   | oracleRegion
   | metaRegion

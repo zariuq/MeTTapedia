@@ -2,6 +2,7 @@ import Mettapedia.GSLT.Core.ContextualTypeReindexing
 import Mettapedia.TypeTheory.CategoryIndexedFamilyCwf
 import Mettapedia.TypeTheory.ContextualIdentityTypes
 import Mettapedia.TypeTheory.ContextualSumComparison
+import Mettapedia.TypeTheory.ContextualTypeOperations
 import Mathlib.CategoryTheory.Groupoid
 import Mathlib.CategoryTheory.Yoneda
 
@@ -30,6 +31,7 @@ open Mettapedia.TypeTheory.CategoryIndexedFamilyCwf
 open Mettapedia.TypeTheory.ContextualIdentityTypes
 open Mettapedia.TypeTheory.ContextualProductComparison
 open Mettapedia.TypeTheory.ContextualSumComparison
+open Mettapedia.TypeTheory.ContextualTypeOperations
 
 universe u
 
@@ -60,6 +62,75 @@ theorem liftIndexedSubstitution_eq_extensionSubstitution
     liftIndexedSubstitution substitution family =
       extensionSubstitution (C := categoryIndexedCwf) substitution family := by
   apply CategoryTheory.Functor.ext (fun _ => rfl)
+
+/-- Extending a natural section and then changing base agrees with first
+changing base and then applying the concrete category-of-elements lift. -/
+theorem selfExtend_reindex_square
+    {source target : Context.{u}}
+    (substitution : ContextHom source target)
+    {domain : IndexedFamily target}
+    (first : IndexedSection domain) :
+    substitution ⋙
+        (show ContextHom target (extend target domain) from
+          selfExtend categoryIndexedCwf first) =
+      (show ContextHom source
+          (extend source (reindexFamily domain substitution)) from
+        selfExtend categoryIndexedCwf (reindexSection first substitution)) ⋙
+        liftIndexedSubstitution substitution domain := by
+  apply CategoryTheory.Functor.ext (fun _ => rfl)
+
+/-- Reindex a witness whose type depends on a chosen section. The
+context-extension square supplies the transport; the witness itself is
+precomposed, not searched for again. -/
+def reindexDependentSecond
+    {source target : Context.{u}}
+    (substitution : ContextHom source target)
+    {domain : IndexedFamily target}
+    (codomain : IndexedFamily (extend target domain))
+    (first : IndexedSection domain)
+    (second : IndexedSection
+      (reindexFamily codomain (selfExtend categoryIndexedCwf first))) :
+    IndexedSection
+      (reindexFamily
+        (reindexFamily codomain
+          (liftIndexedSubstitution substitution domain))
+        (selfExtend categoryIndexedCwf
+          (reindexSection first substitution))) := by
+  have familyEq :
+      reindexFamily
+          (reindexFamily codomain (selfExtend categoryIndexedCwf first))
+          substitution =
+        reindexFamily
+          (reindexFamily codomain
+            (liftIndexedSubstitution substitution domain))
+          (selfExtend categoryIndexedCwf
+            (reindexSection first substitution)) := by
+    change
+      (substitution ⋙
+          (show ContextHom target (extend target domain) from
+            selfExtend categoryIndexedCwf first)) ⋙ codomain =
+        ((show ContextHom source
+            (extend source (reindexFamily domain substitution)) from
+          selfExtend categoryIndexedCwf
+            (reindexSection first substitution)) ⋙
+          liftIndexedSubstitution substitution domain) ⋙ codomain
+    exact congrArg (fun functor => functor ⋙ codomain)
+      (selfExtend_reindex_square substitution first)
+  exact familyEq ▸ reindexSection second substitution
+
+/-- Canonical dependent transport preserves the exact original witness. -/
+theorem reindexDependentSecond_heq
+    {source target : Context.{u}}
+    (substitution : ContextHom source target)
+    {domain : IndexedFamily target}
+    (codomain : IndexedFamily (extend target domain))
+    (first : IndexedSection domain)
+    (second : IndexedSection
+      (reindexFamily codomain (selfExtend categoryIndexedCwf first))) :
+    HEq (reindexSection second substitution)
+      (reindexDependentSecond substitution codomain first second) := by
+  simp only [reindexDependentSecond]
+  exact HEq.rfl
 
 /-! ## Dependent sums -/
 
@@ -372,6 +443,39 @@ def indexedDependentSums : DependentSumBeta categoryIndexedCwf where
     rfl
   snd_pair first second := HEq.rfl
 
+/-- Eta for proof-relevant dependent sums in any category-indexed family
+model: projecting a natural section and pairing its two sections again
+returns the original natural section. -/
+theorem sigmaEta {context : Context.{u}} {domain : IndexedFamily context}
+    {codomain : IndexedFamily (extend context domain)}
+    (value : IndexedSection (sigmaFamily domain codomain)) :
+    sigmaPair (sigmaFst value) (sigmaSnd value) = value := by
+  apply Subtype.ext
+  funext point
+  change (⟨(value.1 point).1, (value.1 point).2⟩ :
+    (sigmaFamily domain codomain).obj point) = value.1 point
+  cases (value.1 point)
+  rfl
+
+/-- Universal section-level presentation of a category-indexed dependent
+sum, retaining both natural witnesses and their dependency. -/
+def sigmaSectionsEquiv {context : Context.{u}}
+    (domain : IndexedFamily context)
+    (codomain : IndexedFamily (extend context domain)) :
+    (Σ first : IndexedSection domain,
+      IndexedSection (reindexFamily codomain
+        (selfExtend categoryIndexedCwf first))) ≃
+      IndexedSection (sigmaFamily domain codomain) where
+  toFun pair := sigmaPair pair.1 pair.2
+  invFun value := ⟨sigmaFst value, sigmaSnd value⟩
+  left_inv := by
+    rintro ⟨first, second⟩
+    apply Sigma.ext
+    · apply Subtype.ext
+      rfl
+    · exact HEq.rfl
+  right_inv := sigmaEta
+
 /-- Dependent-sum formation commutes with functor substitution. -/
 theorem sigmaFamily_reindex {source target : Context.{u}}
     (domain : IndexedFamily target)
@@ -383,10 +487,144 @@ theorem sigmaFamily_reindex {source target : Context.{u}}
           (liftIndexedSubstitution substitution domain)) := by
   exact CategoryTheory.Functor.ext (fun _ => rfl)
 
+/-- Changing only the presentation of the dependent codomain cannot change
+the first section read from a dependent sum. -/
+theorem sigmaFst_congrCodomain {context : Context.{u}}
+    (domain : IndexedFamily context)
+    {firstCodomain secondCodomain : IndexedFamily (extend context domain)}
+    (sameCodomain : firstCodomain = secondCodomain)
+    (value : IndexedSection (sigmaFamily domain firstCodomain)) :
+    sigmaFst ((congrArg (sigmaFamily domain) sameCodomain) ▸ value) =
+      sigmaFst value := by
+  cases sameCodomain
+  rfl
+
+/-- Re-presenting the dependent codomain retains its actual second
+section, though the type of that section changes with the presentation. -/
+theorem sigmaSnd_congrCodomain {context : Context.{u}}
+    (domain : IndexedFamily context)
+    {firstCodomain secondCodomain : IndexedFamily (extend context domain)}
+    (sameCodomain : firstCodomain = secondCodomain)
+    (value : IndexedSection (sigmaFamily domain firstCodomain)) :
+    HEq (sigmaSnd ((congrArg (sigmaFamily domain) sameCodomain) ▸ value))
+      (sigmaSnd value) := by
+  cases sameCodomain
+  rfl
+
+/-- First projection of a natural dependent-sum section commutes with
+reindexing by any context functor, after the formation equality transports
+the reindexed section. -/
+theorem sigmaFst_reindex {source target : Context.{u}}
+    (domain : IndexedFamily target)
+    (codomain : IndexedFamily (extend target domain))
+    (substitution : ContextHom source target)
+    (value : IndexedSection (sigmaFamily domain codomain)) :
+    sigmaFst ((sigmaFamily_reindex domain codomain substitution) ▸
+      reindexSection value substitution) =
+      reindexSection (sigmaFst value) substitution := by
+  apply Subtype.ext
+  funext point
+  rfl
+
+/-- The dependent second projection also commutes with reindexing; the
+heterogeneous equality records its changed first-section index. -/
+theorem sigmaSnd_reindex {source target : Context.{u}}
+    (domain : IndexedFamily target)
+    (codomain : IndexedFamily (extend target domain))
+    (substitution : ContextHom source target)
+    (value : IndexedSection (sigmaFamily domain codomain)) :
+    HEq (sigmaSnd ((sigmaFamily_reindex domain codomain substitution) ▸
+      reindexSection value substitution))
+      (reindexSection (sigmaSnd value) substitution) := by
+  rfl
+
+/-- Pair introduction respects substitution when the reindexed dependent
+second witness is supplied with its exact transport evidence. -/
+theorem sigmaPair_reindex {source target : Context.{u}}
+    (domain : IndexedFamily target)
+    (codomain : IndexedFamily (extend target domain))
+    (substitution : ContextHom source target)
+    (first : IndexedSection domain)
+    (second : IndexedSection (reindexFamily codomain
+      (selfExtend categoryIndexedCwf first)))
+    (reindexedSecond : IndexedSection
+      (reindexFamily
+        (reindexFamily codomain
+          (liftIndexedSubstitution substitution domain))
+        (selfExtend categoryIndexedCwf
+          (reindexSection first substitution))))
+    (sameSecond : HEq (reindexSection second substitution)
+      reindexedSecond) :
+    HEq (reindexSection (sigmaPair first second) substitution)
+      (sigmaPair (reindexSection first substitution) reindexedSecond) := by
+  cases sameSecond
+  rfl
+
+/-- Pair introduction commutes with any context functor using the canonical
+transport of its dependent second section, with no new evidence search. -/
+theorem sigmaPair_reindex_canonical {source target : Context.{u}}
+    (domain : IndexedFamily target)
+    (codomain : IndexedFamily (extend target domain))
+    (substitution : ContextHom source target)
+    (first : IndexedSection domain)
+    (second : IndexedSection (reindexFamily codomain
+      (selfExtend categoryIndexedCwf first))) :
+    HEq (reindexSection (sigmaPair first second) substitution)
+      (sigmaPair (reindexSection first substitution)
+        (reindexDependentSecond substitution codomain first second)) :=
+  sigmaPair_reindex domain codomain substitution first second
+    (reindexDependentSecond substitution codomain first second)
+    (reindexDependentSecond_heq substitution codomain first second)
+
+/-- Category-indexed dependent sums satisfy the shared strict formation,
+introduction, and both elimination substitution laws. Heterogeneous
+equalities account for the dependent second component and formation cast. -/
+theorem indexedDependentSums_strictSubstitution :
+    StrictSigmaSubstitution
+      (SigmaOperations.ofQualified indexedDependentSums) := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro source target substitution domain codomain
+    exact sigmaFamily_reindex domain codomain substitution
+  · intro source target substitution domain codomain first second
+      reindexedSecond sameSecond
+    exact sigmaPair_reindex domain codomain substitution first second
+      reindexedSecond sameSecond
+  · intro source target substitution domain codomain value reindexedValue sameValue
+    have familyEq :
+        reindexFamily (sigmaFamily domain codomain) substitution =
+          sigmaFamily (reindexFamily domain substitution)
+            (reindexFamily codomain
+              (extensionSubstitution (C := categoryIndexedCwf)
+                substitution domain)) := by
+      calc
+        _ = sigmaFamily (reindexFamily domain substitution)
+            (reindexFamily codomain
+              (liftIndexedSubstitution substitution domain)) :=
+          sigmaFamily_reindex domain codomain substitution
+        _ = _ := by
+          exact congrArg
+            (fun lifted => sigmaFamily (reindexFamily domain substitution)
+              (reindexFamily codomain lifted))
+            (liftIndexedSubstitution_eq_extensionSubstitution
+              substitution domain)
+    let casted : IndexedSection
+        (sigmaFamily (reindexFamily domain substitution)
+          (reindexFamily codomain
+            (extensionSubstitution (C := categoryIndexedCwf)
+              substitution domain))) :=
+      familyEq ▸ reindexSection value substitution
+    have castValue : casted = reindexedValue :=
+      eq_of_heq (rec_heq_of_heq familyEq sameValue)
+    rw [← castValue]
+    constructor
+    · exact heq_of_eq
+        (sigmaFst_reindex domain codomain substitution value).symm
+    · exact (sigmaSnd_reindex domain codomain substitution value).symm
+
 /-! ## Fibrewise extensional identity -/
 
 /-- Lifted equality witnesses are subsingletons. -/
-@[reducible] def liftedEqualitySubsingleton {Value : Type u}
+theorem liftedEqualitySubsingleton {Value : Type u}
     (left right : Value) :
     Subsingleton (ULift (PLift (left = right))) where
   allEq first second := by
@@ -940,9 +1178,19 @@ theorem dependent_product_variance_boundary :
 end Canary
 
 #print axioms sigmaFamily
+#print axioms selfExtend_reindex_square
+#print axioms reindexDependentSecond_heq
 #print axioms liftIndexedSubstitution_eq_extensionSubstitution
 #print axioms indexedDependentSums
+#print axioms sigmaEta
+#print axioms sigmaSectionsEquiv
 #print axioms sigmaFamily_reindex
+#print axioms sigmaFst_congrCodomain
+#print axioms sigmaSnd_congrCodomain
+#print axioms sigmaFst_reindex
+#print axioms sigmaSnd_reindex
+#print axioms sigmaPair_reindex_canonical
+#print axioms indexedDependentSums_strictSubstitution
 #print axioms identityFamily
 #print axioms indexedIdentityFormation
 #print axioms indexedIdentityReflexivity

@@ -219,7 +219,8 @@ theorem syntactic_step :
       exact List.Mem.head _)
     (.nil commBindings)
     (by
-      show applyBindings commBindings rhoCommRewrite.right = syntacticContractum
+      rw [applyBindingsForRule_eq_syntactic,
+        applyRuleBindings_eq_applyBindings rhoCommRewrite _ (by decide)]
       exact syntactic_comm_instantiate)⟩
 
 /-- The declared primitive step reaches the payload. -/
@@ -291,8 +292,9 @@ theorem syntactic_step_not_declaredContractum :
         subst matched
         change Mettapedia.OSLF.MeTTaIL.ContextualStep.PremisesAt _ _ _ _ [] _ at premises
         cases premises
-        change applyBindings commBindings rhoCommRewrite.right = declaredContractum at applied
-        rw [syntactic_comm_instantiate] at applied
+        rw [applyBindingsForRule_eq_syntactic,
+          applyRuleBindings_eq_applyBindings rhoCommRewrite _ (by decide),
+          syntactic_comm_instantiate] at applied
         exact absurd applied (by decide)
       · change _ ∈ matchPattern rhoParCongRewrite.left dropReceiverSource at matched
         rw [syntactic_parCong_match] at matched

@@ -39,7 +39,7 @@ theorem unrooted_rule_crosses_disjoint_images :
         (mapPattern (prefixedSymbols "left:") (.apply "input" [])) =
       [.apply "right:constructor:result" []] := by
   simp [applyRule, mapRewriteRule, mapPattern, prefixedSymbols, unrootedRule,
-    matchPattern, applyBindings]
+    matchPattern, Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings]
 
 private def rootedRule : RewriteRule where
   name := "rooted"
@@ -63,7 +63,7 @@ theorem rooted_rule_crosses_colliding_images :
       [.apply "shared:constructor:result" []] := by
   simp [applyRule, mapRewriteRule, mapPattern, collidingLeftSymbols,
     collidingRightSymbols, prefixedSymbols, rootedRule, matchPattern,
-    matchArgs, applyBindings]
+    matchArgs, Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings]
 
 /-- Both hypotheses together exclude the same cross-component rule. -/
 theorem rooted_rule_is_silent_on_disjoint_image :

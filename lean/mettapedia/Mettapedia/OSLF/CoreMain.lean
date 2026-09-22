@@ -339,10 +339,10 @@ Use this instead of OSLF-facing parity counters when making NTT-paper claims. -/
 abbrev coreMain_ntt_strict_parity_remaining_count :=
   Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount
 
-/-- Full NTT-paper parity is closed in the strict theorem-number keyed tracker. -/
-theorem coreMain_ntt_strict_parity_closed :
-    coreMain_ntt_strict_parity_remaining_count = 0 := by
-  exact Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_zero
+/-- Exact unresolved count in the strict source-obligation inventory. -/
+theorem coreMain_ntt_strict_parity_remaining_count_eq :
+    coreMain_ntt_strict_parity_remaining_count = 5 := by
+  exact Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_eq
 
 /-- CoreMain-facing canonical Native Type translation endpoint for Π/Ω
 preservation across theory morphisms. -/
@@ -1228,9 +1228,9 @@ theorem coreMain_paper_parity_full_package
 #check @coreMain_paper_parity_full_package
 
 #check Mettapedia.OSLF.Framework.FULLStatus.remaining_ne_nil
-#check Mettapedia.OSLF.Framework.FULLStatus.remainingCount_eq_three
+#check Mettapedia.OSLF.Framework.FULLStatus.remainingCount_eq
 #check Mettapedia.OSLF.Framework.FULLStatus.strictRemaining_ne_nil
-#check Mettapedia.OSLF.Framework.FULLStatus.strictRemainingCount_eq_three
+#check Mettapedia.OSLF.Framework.FULLStatus.strictRemainingCount_eq
 #check Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFull
 #check Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullOSLF
 #check Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReducesAtUsing

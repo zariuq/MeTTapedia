@@ -528,7 +528,7 @@ private theorem rewrites_validate :
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
   all_goals
     simp (config := { maxSteps := 4000000 })
-      [retainedSourceTypes_eq, LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff,
+      [LanguageDef.validateRewrite, LanguageDef.validateTypeExpr_eq_nil_iff,
       language, terms, retainedSourceTerm,
       retainedSourceType, malformedRecordTransition, liftRewrite,
       sourceInstruction?, liftContext, liftTypeExpr, liftPremise, liftPattern,
@@ -591,7 +591,7 @@ theorem language_validate : language.validate = [] := by
   all_goals first
   | exact rewrites_validate
   | (simp (config := { maxSteps := 4000000 })
-      [retainedSourceTypes_eq, language, terms, retainedSourceTerm, retainedSourceType,
+      [language, terms, retainedSourceTerm, retainedSourceType,
       DerivationCheckMachineLanguageDef.language,
       DerivationCheckMachineLanguageDef.terms,
       DerivationCheckMachineLanguageDef.ctor,
@@ -802,6 +802,12 @@ theorem missingFinishStep_exact :
     Mettapedia.OSLF.MeTTaIL.Match.matchPattern,
     Mettapedia.OSLF.MeTTaIL.Match.matchArgs,
     Mettapedia.OSLF.MeTTaIL.Match.mergeBindings,
+    Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings_eq_applyBindings,
+    Mettapedia.OSLF.MeTTaIL.Match.ruleDepthAligned,
+    Mettapedia.OSLF.MeTTaIL.Match.depthAligned,
+    Mettapedia.OSLF.MeTTaIL.Match.depthAlignedList,
+    Mettapedia.OSLF.MeTTaIL.Match.captureDepth,
+    Mettapedia.OSLF.MeTTaIL.Match.captureDepthList,
     Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
 
 /- A compact halted configuration has no outgoing target transition. -/

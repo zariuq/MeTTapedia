@@ -1,4 +1,5 @@
 import Mettapedia.Languages.Megalodon.EnvironmentDependency
+import Mettapedia.Logic.LP.FiniteDependencyClosure
 
 /-!
 # Executable checks for native environment dependency manifests
@@ -189,6 +190,57 @@ theorem exists_closed_support (environment : Environment) (requested : Support) 
   ⟨conservativeSupport environment requested, subset_conservativeSupport _ _,
     conservativeSupport_closureCheck _ _⟩
 
+/-- The least syntactically dependency-closed support of the requested lookups.
+The conservative support supplies a proved finite carrier, not the result. -/
+def dependencyClosure (environment : Environment) (requested : Support) : Support :=
+  Logic.LP.FiniteDependencyClosure.within (declaredSupport environment)
+    (conservativeSupport environment requested) requested
+
+theorem subset_dependencyClosure (environment : Environment) (requested : Support) :
+    requested ⊆ dependencyClosure environment requested :=
+  Logic.LP.FiniteDependencyClosure.roots_subset_within _ _ _
+    (subset_conservativeSupport _ _)
+
+theorem dependencyClosure_closed (environment : Environment) (requested : Support) :
+    Closed environment (dependencyClosure environment requested) := by
+  apply (closed_iff_declaredSupport _ _).mpr
+  exact fun _ => Logic.LP.FiniteDependencyClosure.within_closed _ _ _
+    ((closed_iff_declaredSupport _ _).mp (conservativeSupport_closed _ _))
+
+theorem dependencyClosure_least (environment : Environment) (requested support : Support)
+    (contains : requested ⊆ support) (closed : Closed environment support) :
+    dependencyClosure environment requested ⊆ support :=
+  Logic.LP.FiniteDependencyClosure.within_least _ _ _ _ contains
+    ((closed_iff_declaredSupport _ _).mp closed)
+
+theorem dependencyClosure_mono (environment : Environment) {left right : Support}
+    (included : left ⊆ right) :
+    dependencyClosure environment left ⊆ dependencyClosure environment right :=
+  dependencyClosure_least _ _ _ (included.trans (subset_dependencyClosure _ _))
+    (dependencyClosure_closed _ _)
+
+@[simp] theorem dependencyClosure_idempotent (environment : Environment) (requested : Support) :
+    dependencyClosure environment (dependencyClosure environment requested) =
+      dependencyClosure environment requested :=
+  Finset.Subset.antisymm
+    (dependencyClosure_least _ _ _ Finset.Subset.rfl (dependencyClosure_closed _ _))
+    (subset_dependencyClosure _ _)
+
+@[simp] theorem dependencyClosure_closureCheck (environment : Environment) (requested : Support) :
+    closureCheck environment (dependencyClosure environment requested) = true :=
+  (closureCheck_iff _ _).mpr (dependencyClosure_closed _ _)
+
+/-- Revising unrelated declarations leaves the computed manifest itself unchanged. -/
+theorem dependencyClosure_eq_of_agreement {source target : Environment} {requested : Support}
+    (agreement : Agreement source target (dependencyClosure source requested)) :
+    dependencyClosure target requested = dependencyClosure source requested := by
+  have targetClosed := (dependencyClosure_closed source requested).transport agreement
+  have included := dependencyClosure_least target requested _
+    (subset_dependencyClosure source requested) targetClosed
+  apply Finset.Subset.antisymm included
+  exact dependencyClosure_least source requested _ (subset_dependencyClosure target requested)
+    ((dependencyClosure_closed target requested).transport (agreement.mono included).symm)
+
 namespace Examples
 
 def source : Environment where
@@ -266,6 +318,23 @@ theorem conservativeSupport_not_least :
     closureCheck extended {.termName "y"} = true ∧
       Dependency.termName "outside" ∈ conservativeSupport extended {.termName "y"} ∧
       Dependency.termName "outside" ∉ ({.termName "y"} : Support) := by decide
+
+/-- The computed closure follows a known proposition through two definitions,
+without inheriting an unused declaration's dependencies. -/
+theorem dependencyClosure_exact_chain :
+    dependencyClosure extended {.knownName "k"} =
+      {.knownName "k", .termName "x", .termName "y"} := by decide
+
+theorem dependencyClosure_omits_unused :
+    dependencyClosure extended {.termName "y"} = {.termName "y"} := by decide
+
+/-- Cyclic raw declarations still have a finite exact syntactic support. This
+does not make their unfolding terminate or make the declarations admissible. -/
+theorem dependencyClosure_cycle :
+    dependencyClosure
+      { source with terms := [⟨"x", .prop, some (.named "y")⟩,
+                              ⟨"y", .prop, some (.named "x")⟩] }
+      {.knownName "k"} = {.knownName "k", .termName "x", .termName "y"} := by decide
 
 theorem accepted_manifest_frames_normalization (fuel : Nat) :
     normalize extended fuel (.named "x") = normalize source fuel (.named "x") :=

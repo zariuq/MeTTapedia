@@ -899,10 +899,26 @@ mutual
     | multiLambda body =>
         simp only [mapCostStaticSchemaPattern_multiLambda, mapPattern]
         exact .multiLambda (matchRel_mapCostStatic source color body)
-    | collection bag =>
+    | collection notVector bag =>
         simp only [mapCostStaticSchemaPattern_collection, mapPattern,
           mapPatternList_eq_map]
-        exact .collection (matchBagRel_mapCostStatic source color bag)
+        exact .collection notVector (matchBagRel_mapCostStatic source color bag)
+    | vector arguments =>
+        simp only [mapCostStaticSchemaPattern_collection, mapPattern,
+          mapPatternList_eq_map, Option.map_none]
+        exact .vector (matchArgsRel_mapCostStatic source color arguments)
+    | vectorRest prefixMatch mergeEquality =>
+        simp only [mapCostStaticSchemaPattern_collection, mapPattern,
+          mapPatternList_eq_map, Option.map_some]
+        apply Mettapedia.OSLF.MeTTaIL.MatchSpec.MatchRel.vectorRest
+        · simpa only [List.length_map, List.map_take] using
+            matchArgsRel_mapCostStatic source color prefixMatch
+        · have mappedMerge := congrArg
+            (Option.map (mapCostStaticBindings source color)) mergeEquality
+          rw [mergeBindings_mapCostStaticBindings] at mappedMerge
+          simpa only [Option.map_some, mapCostStaticBindings_cons,
+            mapCostStaticBindings_nil, mapPattern, mapPatternList_eq_map,
+            List.length_map, List.map_drop] using mappedMerge
     | subst body replacement mergeEquality =>
         simp only [mapCostStaticSchemaPattern_subst, mapPattern]
         have mappedMerge := congrArg
@@ -1026,9 +1042,24 @@ mutual
     | multiLambda body =>
         exact matchRel_coversPattern body name
           (by simpa [Pattern.freeFvarNames] using membership)
-    | collection bag =>
+    | collection _ bag =>
         exact matchBagRel_coversPatterns bag name
           (by simpa [Pattern.freeFvarNames] using membership)
+    | vector arguments =>
+        exact matchArgsRel_coversPatterns arguments name
+          (by simpa [Pattern.freeFvarNames] using membership)
+    | vectorRest prefixMatch mergeEquality =>
+        simp only [Pattern.freeFvarNames, List.mem_append,
+          Option.toList_some, List.mem_singleton] at membership
+        rcases membership with prefixMembership | rfl
+        · rcases matchArgsRel_coversPatterns prefixMatch name prefixMembership
+            with ⟨value, found⟩
+          exact ⟨value,
+            Mettapedia.OSLF.MeTTaIL.MatchSpec.mergeBindings_subsumed_left
+              mergeEquality found⟩
+        · exact ⟨_,
+            Mettapedia.OSLF.MeTTaIL.MatchSpec.mergeBindings_subsumed_right
+              mergeEquality (by simp; rfl)⟩
     | subst body replacement mergeEquality =>
         simp only [Pattern.freeFvarNames, List.mem_append] at membership
         rcases membership with bodyMembership | replacementMembership
@@ -1133,7 +1164,7 @@ theorem mapPattern_liftBVars (symbols : LanguageDefSymbolMap)
         simp [liftBVars, mapPattern, shifted]
   | hfvar name => simp [mapPattern, liftBVars]
   | happly constructor arguments inductionHypothesis =>
-      simp only [mapPattern, mapPatternList_eq_map, liftBVars, List.map_map]
+      simp only [mapPattern, mapPatternList_eq_map, liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, List.map_map]
       congr 1
       apply List.map_congr_left
       intro argument membership
@@ -1145,7 +1176,7 @@ theorem mapPattern_liftBVars (symbols : LanguageDefSymbolMap)
   | hsubst body replacement bodyInduction replacementInduction =>
       simp [mapPattern, liftBVars, bodyInduction, replacementInduction]
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [mapPattern, mapPatternList_eq_map, liftBVars, List.map_map]
+      simp only [mapPattern, mapPatternList_eq_map, liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, List.map_map]
       congr 1
       apply List.map_congr_left
       intro element membership

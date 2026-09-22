@@ -666,9 +666,11 @@ theorem non_transitivity_candidate_dyn_right_rejects :
 def wrongBaseProof : RawProof :=
   .node { ruleId := ruleId "has-type-num", arguments := [] } []
 
-/-- A boolean witness does not inhabit `Number`
-(`literal_type_mismatch` class). -/
-theorem value_true_not_number :
+/-- The `has-type-num` candidate for typing a boolean witness at `Number`
+is rejected: the rule concludes at a number literal, not at `VTrue`
+(`literal_type_mismatch` class).  This is a statement about that
+candidate, not about every derivation. -/
+theorem value_true_number_candidate_rejects :
     checkRaw checked (valueHasType vTrue tNum) wrongBaseProof = false := by
   simp [checkRaw, checked, wrongBaseProof,
     consistentRefl, consistentDynLeft, consistentDynRight,

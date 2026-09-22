@@ -2,7 +2,7 @@ import Mettapedia.Logic.InstitutionCategory
 import Mettapedia.TypeTheory.SimpleDependentInstitutionBridge
 
 /-!
-# Heterogeneous-atlas canary for the simple-to-dependent route
+# Simple-to-dependent route in the category of institutions
 
 The constant-family institution comorphism is an actual arrow between two
 objects whose native signature categories differ.  It cannot be inverted:
@@ -22,13 +22,14 @@ open Mettapedia.TypeTheory.SetFamilyChangeOfBaseAdjunction
 
 universe u
 
-/-- The contextual simple predicate institution as one heterogeneous atlas
-object. -/
+/-- The contextual simple predicate institution as an object of the category
+of institutions. -/
 def simpleObject (Index : Type u) : InstitutionCategory.Object where
   Signature := CategoryTheory.Cat.of (Type u)
   logic := simpleInstitution Index
 
-/-- The indexed-family predicate institution as a different atlas object. -/
+/-- The indexed-family predicate institution as a second object, with a
+different signature category. -/
 def dependentObject (Index : Type u) : InstitutionCategory.Object where
   Signature := CategoryTheory.Cat.of (FamilyOver Index)
   logic := dependentInstitution Index
@@ -81,9 +82,9 @@ theorem simpleDependentRoute_not_invertible :
   exact simpleDependentRoute_no_retraction ⟨backward, rightInverse⟩
 
 /-- The positive and negative controls together: the simple fragment embeds
-as a composable route, but the dependent bubble contains genuinely new
-signatures. -/
-theorem simpleDependent_is_proper_atlas_route :
+by a comorphism, and that comorphism has no two-sided inverse, because the
+dependent institution has signatures outside the constant-family image. -/
+theorem simpleDependentRoute_exists_and_not_invertible :
     Nonempty (simpleObject Bool ⟶ dependentObject Bool) ∧
       ¬ ∃ backward : dependentObject Bool ⟶ simpleObject Bool,
         CategoryTheory.CategoryStruct.comp (simpleDependentRoute Bool) backward =
@@ -96,6 +97,6 @@ theorem simpleDependent_is_proper_atlas_route :
 #print axioms simpleDependentRoute_mapSignature
 #print axioms simpleDependentRoute_no_retraction
 #print axioms simpleDependentRoute_not_invertible
-#print axioms simpleDependent_is_proper_atlas_route
+#print axioms simpleDependentRoute_exists_and_not_invertible
 
 end Mettapedia.TypeTheory.SimpleDependentInstitutionCategoryCanary

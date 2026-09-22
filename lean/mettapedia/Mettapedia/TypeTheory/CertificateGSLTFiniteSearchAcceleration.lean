@@ -27,6 +27,7 @@ Horn clauses, first-order syntax, a higher-order unification algorithm, nor a
 particular object logic.
 -/
 
+open Mettapedia.Logic
 set_option autoImplicit false
 
 namespace Mettapedia.TypeTheory.CertificateGSLTFiniteSearchAcceleration

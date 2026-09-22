@@ -17,10 +17,10 @@ be silently substituted for the other:
 
 * a filtered growth presentation has maps from compact stages *into* an
   ambient object (the Ind-like direction);
-* a perspective atlas has maps from an ambient object *out to* its shadows
+* a perspective cone has maps from an ambient object *out to* its shadows
   (the Pro/limit-like direction).
 
-An `AmbientChart` may carry both.  It does not assert that the shadows
+An `FilteredPresentationWithCone` may carry both.  It does not assert that the shadows
 reconstruct the ambient object, that one coordinate is canonical, or that the
 ambient object is nothing but its finite stages.
 
@@ -82,63 +82,63 @@ end FilteredGrowth
 /-- A coherent family of shadows of one primary ambient object.  The apex of
 the cone is the ambient object and each cone leg is a projection to one
 perspective.  No limit or reconstruction property is assumed. -/
-structure PerspectiveAtlas
+structure PerspectiveCone
     {C : Type uC} [Category.{vC} C]
     {I : Type uI} [Category.{vI} I]
     (shadows : I ⥤ C) where
   cone : Cone shadows
 
-namespace PerspectiveAtlas
+namespace PerspectiveCone
 
 /-- The primary object from which all coordinates are projected. -/
 abbrev ambient
     {C : Type uC} [Category.{vC} C]
     {I : Type uI} [Category.{vI} I]
-    {shadows : I ⥤ C} (atlas : PerspectiveAtlas shadows) : C :=
-  atlas.cone.pt
+    {shadows : I ⥤ C} (perspectives : PerspectiveCone shadows) : C :=
+  perspectives.cone.pt
 
 /-- Projection to one perspective. -/
 def project
     {C : Type uC} [Category.{vC} C]
     {I : Type uI} [Category.{vI} I]
-    {shadows : I ⥤ C} (atlas : PerspectiveAtlas shadows)
-    (perspective : I) : atlas.ambient ⟶ shadows.obj perspective :=
-  atlas.cone.π.app perspective
+    {shadows : I ⥤ C} (perspectives : PerspectiveCone shadows)
+    (perspective : I) : perspectives.ambient ⟶ shadows.obj perspective :=
+  perspectives.cone.π.app perspective
 
-/-- Reconstruction from the whole coherent atlas is an additional property,
+/-- Reconstruction from the whole coherent cone is an additional property,
 not part of having finite shadows. -/
 def Reconstructs
     {C : Type uC} [Category.{vC} C]
     {I : Type uI} [Category.{vI} I]
-    {shadows : I ⥤ C} (atlas : PerspectiveAtlas shadows) : Prop :=
-  Nonempty (IsLimit atlas.cone)
+    {shadows : I ⥤ C} (perspectives : PerspectiveCone shadows) : Prop :=
+  Nonempty (IsLimit perspectives.cone)
 
-end PerspectiveAtlas
+end PerspectiveCone
 
-/-- A small cofiltered atlas of finitely presentable shadows.  This is the
+/-- A small cofiltered cone over finitely presentable shadows.  This is the
 Pro-shaped perspective direction used by the present construction.  It is
 stronger than an arbitrary cone but still does not say that its cone is a
 limit: recoverability of the ambient object remains a separate property. -/
-structure CompactPerspectiveAtlas
+structure CompactPerspectiveCone
     {C : Type uC} [Category.{vC} C]
     {I : Type uI} [SmallCategory I] [IsCofiltered I]
-    (shadows : I ⥤ C) extends PerspectiveAtlas shadows where
+    (shadows : I ⥤ C) extends PerspectiveCone shadows where
   shadow_compact : ∀ perspective,
     IsFinitelyPresentable.{uI} (shadows.obj perspective)
 
 /-- One ambient object equipped both with an Ind-like growth presentation and
-with a perspective atlas.  The isomorphism identifies the two named apexes;
+with a perspective cone.  The isomorphism identifies the two named apexes;
 it does not reverse any shadow projection. -/
-structure AmbientChart
+structure FilteredPresentationWithCone
     {C : Type uC} [Category.{vC} C]
     {J : Type uJ} [SmallCategory J] [IsFiltered J]
     {I : Type uI} [SmallCategory I] [IsCofiltered I]
     (stages : J ⥤ C) (shadows : I ⥤ C) where
   growth : FilteredGrowth stages
-  atlas : CompactPerspectiveAtlas shadows
-  identifyApex : growth.cocone.pt ≅ atlas.toPerspectiveAtlas.ambient
+  perspectives : CompactPerspectiveCone shadows
+  identifyApex : growth.cocone.pt ≅ perspectives.toPerspectiveCone.ambient
 
-namespace AmbientChart
+namespace FilteredPresentationWithCone
 
 /-- Every compact stage has a view in every perspective, by entering the
 ambient object and then projecting out.  This composite is the basic bridge
@@ -148,13 +148,13 @@ def stageToShadow
     {J : Type uJ} [SmallCategory J] [IsFiltered J]
     {I : Type uI} [SmallCategory I] [IsCofiltered I]
     {stages : J ⥤ C} {shadows : I ⥤ C}
-    (chart : AmbientChart stages shadows)
+    (presentation : FilteredPresentationWithCone stages shadows)
     (stage : J) (perspective : I) :
     stages.obj stage ⟶ shadows.obj perspective :=
-  chart.growth.cocone.ι.app stage ≫ chart.identifyApex.hom ≫
-    chart.atlas.toPerspectiveAtlas.project perspective
+  presentation.growth.cocone.ι.app stage ≫ presentation.identifyApex.hom ≫
+    presentation.perspectives.toPerspectiveCone.project perspective
 
-end AmbientChart
+end FilteredPresentationWithCone
 
 /-! ### The specialization to the live behavioral GSLT category -/
 
@@ -167,21 +167,21 @@ abbrev FilteredGSLTGrowth
     (stages : J ⥤ GSLT) :=
   FilteredGrowth stages
 
-/-- A small cofiltered atlas of finitely presentable behavioral GSLT
+/-- A small cofiltered cone over finitely presentable behavioral GSLT
 shadows.  Limit reconstruction remains optional. -/
-abbrev GSLTPerspectiveAtlas
+abbrev GSLTPerspectiveCone
     {I : Type uI} [SmallCategory I] [IsCofiltered I]
     (shadows : I ⥤ GSLT) :=
-  CompactPerspectiveAtlas shadows
+  CompactPerspectiveCone shadows
 
-/-- The two-sided chart over the live GSLT category.  This is the first honest
+/-- The two-sided presentation over the live GSLT category.  This is the first honest
 formal object *beyond* an Ind-only view: growth and observation coexist with
 opposite variances around one ambient GSLT. -/
-abbrev UltrainfiniteGSLTChart
+abbrev UltrainfiniteGSLTPresentationWithCone
     {J : Type uJ} [SmallCategory J] [IsFiltered J]
     {I : Type uI} [SmallCategory I] [IsCofiltered I]
     (stages : J ⥤ GSLT) (shadows : I ⥤ GSLT) :=
-  AmbientChart stages shadows
+  FilteredPresentationWithCone stages shadows
 
 /-! ## Type-level observations and the ultrafilter dial -/
 

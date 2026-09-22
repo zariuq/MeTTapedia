@@ -111,8 +111,8 @@ lake build
 - `Logic/UniversalPrediction/`
   - Logic/UniversalPrediction hosts Solomonoff–Hutter universal prediction theory (Chapters 2–3): prefix measures, enumeration, convergence, loss/error bounds, optimality (37 files, ~12.9K lines)
 
-- `Languages/MeTTa/PureKernel/`
-  - Languages/MeTTa/PureKernel hosts the trusted proof kernel for dependently-typed MeTTa Pure: Pi/Sigma/Id/universes, general declaration mechanism, pilot families (Bool, Nat, Unit)
+- `Languages/MeTTa/TwoSortKernel/`
+  - Languages/MeTTa/TwoSortKernel hosts the trusted proof kernel for dependently-typed MeTTa Pure: Pi/Sigma/Id/universes, general declaration mechanism, pilot families (Bool, Nat, Unit)
 
 - `Ethics/`
   - Ethics hosts Gewirth PGC formalization (port of Fuenmayor & Benzmüller AFP Isabelle/HOL work into Lean 4; drops 5 of 8 axioms as unnecessary)

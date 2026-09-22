@@ -80,6 +80,49 @@ def pOverlapCorrect (e₁ e₂ ov : Pattern) : Pattern :=
 def pOverlapFactor (w₁ w₂ q : Pattern) : Pattern :=
   .apply "OverlapFactor" [w₁, w₂, q]
 
+/-! ## Core Constructor Declarations -/
+
+/-- Binary revision of world-model states. -/
+def reviseDecl : GrammarRule := {
+  label := "Revise"
+  category := "State"
+  params := [.simple "first" (.base "State"), .simple "second" (.base "State")]
+  syntaxPattern := [.terminal "(", .terminal "Revise", .nonTerminal "first",
+    .nonTerminal "second", .terminal ")"]
+}
+
+/-- Observation of a state at a query. -/
+def extractDecl : GrammarRule := {
+  label := "Extract"
+  category := "BinaryEvidence"
+  params := [.simple "world" (.base "State"), .simple "query" (.base "Query")]
+  syntaxPattern := [.terminal "(", .terminal "Extract", .nonTerminal "world",
+    .nonTerminal "query", .terminal ")"]
+}
+
+/-- Binary combination of evidence. -/
+def combineDecl : GrammarRule := {
+  label := "Combine"
+  category := "BinaryEvidence"
+  params := [.simple "first" (.base "BinaryEvidence"),
+    .simple "second" (.base "BinaryEvidence")]
+  syntaxPattern := [.terminal "(", .terminal "Combine", .nonTerminal "first",
+    .nonTerminal "second", .terminal ")"]
+}
+
+/-- The evidence identity; this does not declare a state identity. -/
+def evidenceZeroDecl : GrammarRule := {
+  label := "EvidenceZero"
+  category := "BinaryEvidence"
+  params := []
+  syntaxPattern := [.terminal "EvidenceZero"]
+}
+
+/-- Shared typed core signature. Axis-specific constructors require their
+own declarations before a nonminimal vertex can be validated. -/
+def coreTerms : List GrammarRule :=
+  [reviseDecl, extractDecl, combineDecl, evidenceZeroDecl]
+
 /-! ## Core Rewrite Rules (shared across all vertices) -/
 
 /-- `evidence_add`: Extract(Revise(W₁,W₂), q) ↦ Combine(Extract(W₁,q), Extract(W₂,q))
@@ -144,7 +187,7 @@ def coreRules : List RewriteRule :=
 def wmCoreLanguageDef : LanguageDef := {
   name := "WMCalculusCore"
   types := ["State", "Query", "BinaryEvidence"]
-  terms := []
+  terms := coreTerms
   equations := []
   rewrites := coreRules
 }
@@ -195,6 +238,39 @@ inductive WMOverlapMode where
   | overlapAware : WMOverlapMode  -- with OverlapLayer correction rules
   deriving DecidableEq, Repr
 
+/-! The overlap correction has its own sort. `OverlapLayer` is parameterized
+by an arbitrary correction carrier `Ov`, not necessarily the evidence carrier. -/
+
+def overlapMergeDecl : GrammarRule := {
+  label := "OverlapMerge"
+  category := "State"
+  params := [.simple "first" (.base "State"), .simple "second" (.base "State")]
+  syntaxPattern := [.terminal "(", .terminal "OverlapMerge", .nonTerminal "first",
+    .nonTerminal "second", .terminal ")"]
+}
+
+def overlapFactorDecl : GrammarRule := {
+  label := "OverlapFactor"
+  category := "Overlap"
+  params := [.simple "first" (.base "State"), .simple "second" (.base "State"),
+    .simple "query" (.base "Query")]
+  syntaxPattern := [.terminal "(", .terminal "OverlapFactor", .nonTerminal "first",
+    .nonTerminal "second", .nonTerminal "query", .terminal ")"]
+}
+
+def overlapCorrectDecl : GrammarRule := {
+  label := "OverlapCorrect"
+  category := "BinaryEvidence"
+  params := [.simple "first" (.base "BinaryEvidence"),
+    .simple "second" (.base "BinaryEvidence"), .simple "factor" (.base "Overlap")]
+  syntaxPattern := [.terminal "(", .terminal "OverlapCorrect", .nonTerminal "first",
+    .nonTerminal "second", .nonTerminal "factor", .terminal ")"]
+}
+
+def overlapTerms : WMOverlapMode → List GrammarRule
+  | .additive => []
+  | .overlapAware => [overlapMergeDecl, overlapFactorDecl, overlapCorrectDecl]
+
 instance : LE WMOverlapMode where
   le a b := match a, b with
     | .overlapAware, _ => True | _, .additive => True | .additive, .overlapAware => False
@@ -209,6 +285,21 @@ inductive WMForgettingMode where
   | scopeBased     : WMForgettingMode  -- ForgettingLayer rules
   | supportTracked : WMForgettingMode  -- SupportTrackedForgettingLayer rules
   deriving DecidableEq, Repr
+
+/-- A scope acts on a state; the outside-scope test remains a guarded
+relation rather than an unconditional equation. -/
+def forgetDecl : GrammarRule := {
+  label := "Forget"
+  category := "State"
+  params := [.simple "scope" (.base "Scope"), .simple "world" (.base "State")]
+  syntaxPattern := [.terminal "(", .terminal "Forget", .nonTerminal "scope",
+    .nonTerminal "world", .terminal ")"]
+}
+
+def forgettingTerms : WMForgettingMode → List GrammarRule
+  | .none => []
+  | .scopeBased => [forgetDecl]
+  | .supportTracked => [forgetDecl]
 
 instance : LE WMForgettingMode where
   le a b := match a, b with
@@ -1169,13 +1260,18 @@ def wmExtToFull (v : WMExtVertex) : WMFullVertex := {
 
 /-- All types used by the WM calculus at a given vertex. -/
 def wmTypes (v : WMExtVertex) : List String :=
-  match v.forgetting with
-  | .none => ["State", "Query", "BinaryEvidence"]
-  | _ => ["State", "Query", "BinaryEvidence", "Scope"]
+  let overlap := match v.overlap with
+    | .additive => []
+    | .overlapAware => ["Overlap"]
+  let scope := match v.forgetting with
+    | .none => []
+    | _ => ["Scope"]
+  ["State", "Query", "BinaryEvidence"] ++ overlap ++ scope
 
 /-- All types used by the full WM calculus. -/
 def wmFullTypes (v : WMFullVertex) : List String :=
   let base := ["State", "Query", "BinaryEvidence"]
+  let overlap := match v.overlap with | .additive => [] | .overlapAware => ["Overlap"]
   let scope := match v.forgetting with | .none => [] | _ => ["Scope"]
   let source := match v.provenance with | .none => [] | _ => ["Source", "Policy"]
   let ruleset := match v.fixpoint with | .none => [] | _ => ["RuleSet", "QuerySet", "Nat"]
@@ -1185,14 +1281,14 @@ def wmFullTypes (v : WMFullVertex) : List String :=
     | .deterministic => ["Channel"]
     | .stochastic => ["Channel", "Prior", "Policy", "Utility"]
   let modal := match v.kripke with | .none => [] | _ => ["ModalQuery", "PointedKripke"]
-  base ++ scope ++ source ++ ruleset ++ schedule ++ channel ++ modal
+  base ++ overlap ++ scope ++ source ++ ruleset ++ schedule ++ channel ++ modal
 
 /-- Assemble the WM calculus LanguageDef for a given extended vertex.
     Each vertex gets the core rules plus axis-dependent rules. -/
 def wmExtVertexLanguageDef (v : WMExtVertex) : LanguageDef := {
   name := s!"WMCalculus"
   types := wmTypes v
-  terms := []
+  terms := coreTerms ++ overlapTerms v.overlap ++ forgettingTerms v.forgetting
   equations := []
   rewrites := coreRules
     ++ logicRules (v.base .logic)
@@ -1208,7 +1304,7 @@ def wmExtVertexLanguageDef (v : WMExtVertex) : LanguageDef := {
 def wmFullVertexLanguageDef (v : WMFullVertex) : LanguageDef := {
   name := "WMCalculusFull"
   types := wmFullTypes v
-  terms := []
+  terms := coreTerms ++ overlapTerms v.overlap ++ forgettingTerms v.forgetting
   equations := []
   rewrites := coreRules
     ++ logicRules (v.base .logic)
@@ -1238,7 +1334,7 @@ def wmVertexLanguageDef (v : WMVertex) : LanguageDef :=
 def wmExtVertexLanguageDefGuarded (v : WMExtVertex) : LanguageDef := {
   name := s!"WMCalculusGuarded"
   types := wmTypes v
-  terms := []
+  terms := coreTerms ++ overlapTerms v.overlap ++ forgettingTerms v.forgetting
   equations := []
   rewrites := coreRules
     ++ logicRules (v.base .logic)
@@ -1254,7 +1350,7 @@ def wmExtVertexLanguageDefGuarded (v : WMExtVertex) : LanguageDef := {
 def wmFullVertexLanguageDefGuarded (v : WMFullVertex) : LanguageDef := {
   name := "WMCalculusFullGuarded"
   types := wmFullTypes v
-  terms := []
+  terms := coreTerms ++ overlapTerms v.overlap ++ forgettingTerms v.forgetting
   equations := []
   rewrites := coreRules
     ++ logicRules (v.base .logic)
@@ -1396,7 +1492,7 @@ theorem wmLangReduces_evidenceAdd (v : WMExtVertex) (pw₁ pw₂ pq : Pattern) :
   · simp [wmExtVertexLanguageDef, coreRules]
   · simp [bs, ruleEvidenceAdd, pExtract, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleEvidenceAdd, applyPremisesWithEnv]
-  · simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
 
 /-- The revision-commutativity rule fires at any vertex. -/
 theorem wmLangReduces_revisionComm (v : WMExtVertex) (pw₁ pw₂ : Pattern) :
@@ -1412,7 +1508,7 @@ theorem wmLangReduces_revisionComm (v : WMExtVertex) (pw₁ pw₂ : Pattern) :
   · simp [wmExtVertexLanguageDef, coreRules]
   · simp [bs, ruleRevisionComm, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleRevisionComm, applyPremisesWithEnv]
-  · simp [bs, ruleRevisionComm, pRevise, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleRevisionComm, pRevise, applyBindings]
 
 /-- The revision-associativity rule fires at any vertex. -/
 theorem wmLangReduces_revisionAssoc (v : WMExtVertex) (pw₁ pw₂ pw₃ : Pattern) :
@@ -1428,7 +1524,7 @@ theorem wmLangReduces_revisionAssoc (v : WMExtVertex) (pw₁ pw₂ pw₃ : Patte
   · simp [wmExtVertexLanguageDef, coreRules]
   · simp [bs, ruleRevisionAssoc, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleRevisionAssoc, applyPremisesWithEnv]
-  · simp [bs, ruleRevisionAssoc, pRevise, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleRevisionAssoc, pRevise, applyBindings]
 
 /-! ## Full-Vertex Step Lemmas
 
@@ -1449,7 +1545,7 @@ theorem wmFullLangReduces_evidenceAdd (v : WMFullVertex) (pw₁ pw₂ pq : Patte
   · exact coreRules_subset_wmFullVertex v _ (by simp [coreRules])
   · simp [bs, ruleEvidenceAdd, pExtract, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleEvidenceAdd, applyPremisesWithEnv]
-  · simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
 
 /-- Core revision-commutativity at any full vertex. -/
 theorem wmFullLangReduces_revisionComm (v : WMFullVertex) (pw₁ pw₂ : Pattern) :
@@ -1465,7 +1561,7 @@ theorem wmFullLangReduces_revisionComm (v : WMFullVertex) (pw₁ pw₂ : Pattern
   · exact coreRules_subset_wmFullVertex v _ (by simp [coreRules])
   · simp [bs, ruleRevisionComm, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleRevisionComm, applyPremisesWithEnv]
-  · simp [bs, ruleRevisionComm, pRevise, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleRevisionComm, pRevise, applyBindings]
 
 /-- Core revision-associativity at any full vertex. -/
 theorem wmFullLangReduces_revisionAssoc (v : WMFullVertex) (pw₁ pw₂ pw₃ : Pattern) :
@@ -1481,7 +1577,7 @@ theorem wmFullLangReduces_revisionAssoc (v : WMFullVertex) (pw₁ pw₂ pw₃ : 
   · exact coreRules_subset_wmFullVertex v _ (by simp [coreRules])
   · simp [bs, ruleRevisionAssoc, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleRevisionAssoc, applyPremisesWithEnv]
-  · simp [bs, ruleRevisionAssoc, pRevise, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleRevisionAssoc, pRevise, applyBindings]
 
 /-! ### Extension Axis Step Lemmas -/
 
@@ -1512,7 +1608,7 @@ theorem wmFullLangReduces_overlapExtract (v : WMFullVertex)
     tauto
   · simp [bs, ruleOverlapExtract, pExtract, pOverlapMerge, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleOverlapExtract, applyPremisesWithEnv]
-  · simp [bs, ruleOverlapExtract, pExtract, pOverlapCorrect, pOverlapFactor, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleOverlapExtract, pExtract, pOverlapCorrect, pOverlapFactor, applyBindings]
 
 /-- Forget-outside at a forgetting-enabled full vertex. -/
 theorem wmFullLangReduces_forgetOutside (v : WMFullVertex)
@@ -1531,7 +1627,7 @@ theorem wmFullLangReduces_forgetOutside (v : WMFullVertex)
     rcases hfg with hfg | hfg <;> simp [hfg, forgettingRules]
   · simp [bs, ruleForgetOutside, pExtract, pForget, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleForgetOutside, applyPremisesWithEnv]
-  · simp [bs, ruleForgetOutside, pExtract, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleForgetOutside, pExtract, applyBindings]
 
 /-- Exact-inverse at a support-tracked full vertex. -/
 theorem wmFullLangReduces_exactInverse (v : WMFullVertex)
@@ -1551,7 +1647,7 @@ theorem wmFullLangReduces_exactInverse (v : WMFullVertex)
     tauto
   · simp [bs, ruleExactInverse, pForget, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleExactInverse, applyPremisesWithEnv]
-  · simp [bs, ruleExactInverse, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleExactInverse, applyBindings]
 
 /-- Compatible-symmetry at a provenance-enabled full vertex. -/
 theorem wmFullLangReduces_compatibleSymm (v : WMFullVertex)
@@ -1570,7 +1666,7 @@ theorem wmFullLangReduces_compatibleSymm (v : WMFullVertex)
     tauto
   · simp [bs, ruleCompatibleSymm, pSourceCompatible, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleCompatibleSymm, applyPremisesWithEnv]
-  · simp [bs, ruleCompatibleSymm, pSourceCompatible, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleCompatibleSymm, pSourceCompatible, applyBindings]
 
 /-- Closure fixpoint at a fixpoint-enabled full vertex. -/
 theorem wmFullLangReduces_closureFixpoint (v : WMFullVertex)
@@ -1590,7 +1686,7 @@ theorem wmFullLangReduces_closureFixpoint (v : WMFullVertex)
   · simp [bs, ruleClosureFixpoint, pImmediateStep, pLeastClosure,
           matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleClosureFixpoint, applyPremisesWithEnv]
-  · simp [bs, ruleClosureFixpoint, pLeastClosure, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleClosureFixpoint, pLeastClosure, applyBindings]
 
 /-- Swap-anomaly symmetry at a cost-tracked full vertex. -/
 theorem wmFullLangReduces_swapAnomalySymm (v : WMFullVertex)
@@ -1609,7 +1705,7 @@ theorem wmFullLangReduces_swapAnomalySymm (v : WMFullVertex)
     tauto
   · simp [bs, ruleSwapAnomalySymm, pSwapAnomaly, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleSwapAnomalySymm, applyPremisesWithEnv]
-  · simp [bs, ruleSwapAnomalySymm, pSwapAnomaly, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleSwapAnomalySymm, pSwapAnomaly, applyBindings]
 
 /-- Anti-hallucination at a conserving full vertex. -/
 theorem wmFullLangReduces_antiHallucination (v : WMFullVertex)
@@ -1628,7 +1724,7 @@ theorem wmFullLangReduces_antiHallucination (v : WMFullVertex)
     tauto
   · simp [bs, ruleAntiHallucination, pExtract, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleAntiHallucination, applyPremisesWithEnv]
-  · simp [bs, ruleAntiHallucination, pEvidenceZero, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleAntiHallucination, pEvidenceZero]
 
 /-- Experiment evidence additivity at an experiment-enabled full vertex. -/
 theorem wmFullLangReduces_experimentEvidenceAdd (v : WMFullVertex)
@@ -1648,7 +1744,7 @@ theorem wmFullLangReduces_experimentEvidenceAdd (v : WMFullVertex)
   · simp [bs, ruleExperimentEvidenceAdd, pExperimentEvidence, pRevise,
           matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleExperimentEvidenceAdd, applyPremisesWithEnv]
-  · simp [bs, ruleExperimentEvidenceAdd, pExperimentEvidence, pCombine, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleExperimentEvidenceAdd, pExperimentEvidence, pCombine, applyBindings]
 
 /-- Kripke evidence additivity at a Kripke-enabled full vertex. -/
 theorem wmFullLangReduces_kripkeEvidenceAdd (v : WMFullVertex)
@@ -1668,7 +1764,7 @@ theorem wmFullLangReduces_kripkeEvidenceAdd (v : WMFullVertex)
   · simp [bs, ruleKripkeEvidenceAdd, pKripkeEvidence, pRevise,
           matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleKripkeEvidenceAdd, applyPremisesWithEnv]
-  · simp [bs, ruleKripkeEvidenceAdd, pKripkeEvidence, pCombine, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleKripkeEvidenceAdd, pKripkeEvidence, pCombine, applyBindings]
 
 /-- Generic evidence additivity at a generic-carrier full vertex. -/
 theorem wmFullLangReduces_genericEvidenceAdd (v : WMFullVertex)
@@ -1688,7 +1784,7 @@ theorem wmFullLangReduces_genericEvidenceAdd (v : WMFullVertex)
   · simp [bs, ruleGenericEvidenceAdd, pGenericEvidence, pRevise,
           matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleGenericEvidenceAdd, applyPremisesWithEnv]
-  · simp [bs, ruleGenericEvidenceAdd, pGenericEvidence, pCombine, applyBindings]
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bs, ruleGenericEvidenceAdd, pGenericEvidence, pCombine, applyBindings]
 
 /-! ## OSLF Per Vertex (Automatic) -/
 

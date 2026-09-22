@@ -310,7 +310,7 @@ theorem taskOne_isChild_taskTwo : taskOne.IsChild taskTwo := by
         rw [equal]
         simp [taskTwo]
       have true_ne_redundant : trueAspect ≠ redundantTrueAspect :=
-        PrimeGeneration.Canary.trueAspect_ne_redundantTrueAspect
+        ScopedGeneration.Canary.trueAspect_ne_redundantTrueAspect
       have aspectCases :
           redundantTrueAspect = emptyAspect ∨
             redundantTrueAspect = trueAspect := by

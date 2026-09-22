@@ -1,6 +1,6 @@
 import Mettapedia.GSLT.Core.Composition
 import Mettapedia.GSLT.LanguageDef.FiniteEnvironmentCompilation
-import Mettapedia.Languages.MeTTa.LeafPatchViewKernel
+import Mettapedia.Logic.Unification.BinaryPatternViews
 
 /-!
 # Ground dense-head compilation
@@ -21,7 +21,7 @@ and inconsistent repeated occurrences remain rejecting observations.
 
 namespace Mettapedia.GSLT.LanguageDef.GroundDenseHeadCompilation
 
-open Mettapedia.Languages.MeTTa.LeafPatchViewKernel
+open Mettapedia.Logic.Unification.BinaryPatternViews
 open FiniteEnvironmentCompilation
 
 variable {Symbol : Type} [DecidableEq Symbol]

@@ -492,6 +492,20 @@ def parseSExprWithDetailed (spec : SyntaxSpec) (input : String) :
   | [(_, source)] => parseSingleSExprWith cfg source
   | _ => .error (mkParseError "expected exactly one source S-expression")
 
+/-- Read all source forms before statement/pattern lowering, retaining their
+physical starting lines. This uses the same comment/string/balancing scanner
+as `parseProgramWithDetailed`; it does not erase nullary list structure or
+duplicate forms. Each form must be an S-expression, not an evaluation-prefix
+command. -/
+def parseSExprProgramWithDetailed (spec : SyntaxSpec) (text : String) :
+    Except ParseError (List (Nat × SExpr)) := do
+  let cfg := parserDialectOf spec
+  let forms ← splitProgramForms cfg text
+  forms.mapM fun (line, form) => do
+    let expression ← (parseSingleSExprWith cfg form).mapError fun error =>
+      if error.line.isNone then { error with line := some line } else error
+    pure (line, expression)
+
 private def coalesceEvalPrefixForms (cfg : ParserDialect) (forms : List (Nat × String)) :
     List (Nat × String) :=
   let tok := cfg.grammarSpec.evalPrefixToken
@@ -522,6 +536,47 @@ def parseProgramWithDetailed (spec : SyntaxSpec) (text : String) : Except ParseE
           else
             .error e
     pure (lineNo, stmt)
+
+/-- Source-level commands before Pattern lowering. The Boolean records an
+evaluation prefix separately from the intact S-expression; it never turns a
+query into an asserted fact. Physical lines and duplicate forms are retained. -/
+def parseSExprCommandsWithDetailed (spec : SyntaxSpec) (text : String) :
+    Except ParseError (List (Nat × Bool × SExpr)) := do
+  let cfg := parserDialectOf spec
+  let forms ← splitProgramForms cfg text
+  let forms := coalesceEvalPrefixForms cfg forms
+  forms.mapM fun (line, form) => do
+    let prefixed := form.startsWith cfg.grammarSpec.evalPrefixToken &&
+      !shouldTreatBangPrefixedWordAsSymbol cfg form
+    let payload := if prefixed then
+      ((form.drop cfg.grammarSpec.evalPrefixToken.length).trimAscii).toString else form
+    let expression ← (parseSingleSExprWith cfg payload).mapError fun error =>
+      if error.line.isNone then { error with line := some line } else error
+    pure (line, prefixed, expression)
+
+#guard match parseSExprCommandsWithDetailed MeTTailCore.MeTTaSyntax.petta
+    "a\n!(f (x))\n(! (f (x)))\na\n" with
+  | .ok rows => decide (rows = [(1, false, .atom "a"), (2, true, .list [.atom "f", .list [.atom "x"]]),
+    (3, false, .list [.atom "!", .list [.atom "f", .list [.atom "x"]]]),
+    (4, false, .atom "a")])
+  | .error _ => false
+
+#guard (parseSExprCommandsWithDetailed MeTTailCore.MeTTaSyntax.petta "!\n").isOk = false
+
+#guard match parseSExprCommandsWithDetailed MeTTailCore.MeTTaSyntax.petta
+    "!word\n(quote \"! (; data)\")\n" with
+  | .ok rows => decide (rows = [(1, true, .atom "word"),
+    (2, false, .list [.atom "quote", .atom "\"! (; data)\""])])
+  | .error _ => false
+
+#guard match parseSExprCommandsWithDetailed MeTTailCore.MeTTaSyntax.he "!word\n" with
+  | .ok rows => decide (rows = [(1, false, .atom "!word")])
+  | .error _ => false
+
+#guard match parseSExprCommandsWithDetailed MeTTailCore.MeTTaSyntax.petta
+    "!\n; between prefix and payload\n(f\n (x))\n" with
+  | .ok rows => decide (rows = [(1, true, .list [.atom "f", .list [.atom "x"]])])
+  | .error _ => false
 
 def parseProgramWith (spec : SyntaxSpec) (text : String) : Except String (List (Nat × Stmt)) :=
   (parseProgramWithDetailed spec text).mapError ParseError.render

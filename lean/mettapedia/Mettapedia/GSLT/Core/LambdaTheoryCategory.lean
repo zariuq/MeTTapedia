@@ -14,15 +14,22 @@ import Mathlib.Order.CompleteBooleanAlgebra
 universe u v w
 
 /-!
-# Lambda-Theories with Categorical Structure
+# Bundled categorical theory interfaces
 
-This file establishes lambda-theories as proper categorical objects using Mathlib.
+This file packages supplied categorical structures using Mathlib. It does not
+construct them from an equational lambda theory or an authored `LanguageDef`.
 
 ## Main Definitions
 
 * `LambdaTheoryWithEquality` - A lambda-theory with morphisms, CCC structure, and finite limits
-* `LambdaTheoryMorphism` - Structure-preserving functors between lambda-theories
-* `SubobjectFibration` - Subobject fibration with Frame-structured fibers
+* `LambdaTheoryMorphism` - Functors equipped with finite-limit preservation
+* `SubobjectFibration` - Object-indexed Frame data, without reindexing or a
+  proved identification with categorical subobjects
+
+The current morphism record does not include exponential preservation or an
+action on its Frame data. The Frame record alone is not a categorical fibration.
+Full native-type-theory generation therefore requires further constructions;
+it does not follow from these bundles.
 
 ## Key Insights
 
@@ -56,10 +63,9 @@ Each fiber Sub(X) is a Frame (complete Heyting algebra), giving us:
 - The quantale law: ⊓ distributes over ⨆
 -/
 
-/-- A subobject fibration assigns to each object X a Frame Sub(X).
-
-    In topos theory, Sub(X) is the lattice of subobjects of X.
-    We work axiomatically: each fiber is a Frame.
+/-- Object-indexed Frame data. Categorical subobjects motivate this interface,
+but it currently supplies no reindexing, cartesian lifts, or identification
+with actual subobjects. It is not by itself a categorical fibration.
 -/
 structure SubobjectFibration (C : Type u) [Category.{v} C] where
   /-- The fiber over each object -/
@@ -113,15 +119,10 @@ We package this as a bundled structure containing a category with
 all the required instances, plus a subobject fibration.
 -/
 
-/-- A lambda-theory with equality.
-
-    This is the categorical semantics of simply-typed lambda calculus
-    with comprehension types (dependent types).
-
-    Objects are "sorts" or "types"
-    Morphisms are "terms" (modulo equations)
-    CCC structure gives us function types
-    Finite limits give us dependent types via pullbacks
+/-- A category equipped with cartesian closed structure, finite limits, and
+object-indexed Frame data. All structures are supplied, not derived here.
+Dependent comprehension and dependent products are not consequences of this
+record alone; they require their own construction and coherence laws.
 -/
 structure LambdaTheoryWithEquality.{u', v', w'} where
   /-- The underlying type of objects -/
@@ -172,16 +173,13 @@ end LambdaTheoryWithEquality
 
 /-! ## Lambda-Theory Morphisms
 
-A morphism of lambda-theories is a functor that preserves the structure:
-- Preserves finite limits
-- Preserves cartesian closed structure
+The current morphism interface records finite-limit preservation.
+Preservation of exponentials and action on the Frame data are not included.
 -/
 
-/-- A morphism between lambda-theories.
-
-    This is a functor that preserves:
-    - Finite limits (terminal, products, pullbacks)
-    - Cartesian closed structure (exponentials)
+/-- A finite-limit-preserving functor between the bundled categories.
+The additional binary-product and terminal fields specialize that property.
+This record does not certify exponential preservation or a map of Frame data.
 -/
 structure LambdaTheoryMorphism (T S : LambdaTheoryWithEquality) where
   /-- The underlying functor -/
@@ -216,36 +214,38 @@ def comp {T S U : LambdaTheoryWithEquality}
     letI := G.preservesBinaryProducts
     Limits.comp_preservesLimitsOfShape F.functor G.functor
   preservesTerminal := by
-    letI := F.preservesFiniteLimits
-    letI := G.preservesFiniteLimits
-    letI := Limits.comp_preservesFiniteLimits F.functor G.functor
+    let := F.preservesFiniteLimits
+    let := G.preservesFiniteLimits
+    let := Limits.comp_preservesFiniteLimits F.functor G.functor
     infer_instance
 
 end LambdaTheoryMorphism
 
 /-! ## The 2-Category of Lambda-Theories
 
-Lambda-theories form a 2-category λThyₑq:
+The source's intended 2-category λThyₑq has:
 - Objects: Lambda-theories with equality
 - 1-morphisms: Lambda-theory morphisms (structure-preserving functors)
 - 2-morphisms: Natural transformations
 
-For now, we define the 1-categorical structure.
-The full 2-category structure would require Bicategory from Mathlib.
+This file supplies identity and composition operations on the current
+finite-limit-preserving records. It does not supply a category instance or
+the full bicategory, nor identify these records with all source morphisms.
 -/
 
 /-! ## Summary
 
-This file establishes the categorical foundation for GSLTs:
+This file supplies bundled inputs for categorical constructions:
 
-1. **SubobjectFibration**: Assigns Frame-valued fibers to each object
-2. **LambdaTheoryWithEquality**: Category + CCC + finite limits + fibration
-3. **LambdaTheoryMorphism**: Structure-preserving functors
+1. **SubobjectFibration**: Assigns a Frame to each object, without reindexing
+2. **LambdaTheoryWithEquality**: Category + CCC + finite limits + Frame data
+3. **LambdaTheoryMorphism**: Finite-limit-preserving functor records
 
 **Key Connections to Literature**:
-- Matches Williams-Stay's λ-theories with equality (CCCs with pullbacks)
-- Fibers are Frames (complete Heyting algebras) as in OSLF
-- Morphisms preserve the structure needed for functoriality of NT
+- The supplied CCC and finite-limit structures are motivated by Williams–Stay
+- The Frame fields supply complete Heyting-algebra operations
+- Functoriality of native-type-theory generation still requires its own
+  structure-preservation and coherence theorems
 
 **Next Steps**:
 - `Web.lean`: Webs and coding functions from Bucciarelli-Salibra

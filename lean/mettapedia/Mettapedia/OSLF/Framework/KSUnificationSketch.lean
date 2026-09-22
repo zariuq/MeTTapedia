@@ -46,9 +46,16 @@ abbrev RelEnv := Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv
 
 /-! ## Behavioral Equivalence Layer -/
 
-/-- Formula-indistinguishability for OSLF semantics on patterns. -/
+/-- Formula-indistinguishability for OSLF semantics on patterns.
+
+The quantifier ranges over the generator-free formulas.  A generator taken in
+the ambient powerset is not in general invariant under a bisimulation — that
+is a property of monotone bodies, not of every body — so admitting one here
+would make the relation claim more than bisimilarity delivers.  The
+Hennessy--Milner results below only ever exhibit generator-free witnesses, so
+this is the relation they were always about. -/
 def OSLFObsEq (R : Pat → Pat → Prop) (I : AtomSem) (p q : Pat) : Prop :=
-  ∀ φ : OSLFFormula, sem R I φ p ↔ sem R I φ q
+  ∀ φ : OSLFFormula, OSLFFormula.modalOnly φ = true → (sem R I φ p ↔ sem R I φ q)
 
 /-- One-step bisimulation schema over a step relation. -/
 def StepBisimulation (R : Pat → Pat → Prop)
@@ -64,31 +71,50 @@ theorem bisimulation_invariant_sem
     (hBisim : StepBisimulation R equiv)
     (hBisimRev : StepBisimulation (fun a b => R b a) equiv)
     (hAtom : ∀ a p q, equiv p q → (I a p ↔ I a q)) :
-    ∀ {p q}, equiv p q → ∀ φ : OSLFFormula, sem R I φ p ↔ sem R I φ q := by
+    ∀ {p q}, equiv p q → ∀ φ : OSLFFormula, OSLFFormula.modalOnly φ = true →
+      (sem R I φ p ↔ sem R I φ q) := by
   intro p q hpq φ
   induction φ generalizing p q with
-  | top => simp [sem]
-  | bot => simp [sem]
-  | atom a => exact hAtom a p q hpq
-  | and φ ψ ihφ ihψ => exact and_congr (ihφ hpq) (ihψ hpq)
-  | or φ ψ ihφ ihψ => exact or_congr (ihφ hpq) (ihψ hpq)
-  | imp φ ψ ihφ ihψ => exact imp_congr (ihφ hpq) (ihψ hpq)
+  | emptyColl _ => intro free; simp [OSLFFormula.modalOnly] at free
+  | cut _ _ _ _ _ => intro free; simp [OSLFFormula.modalOnly] at free
+  | headed _ _ _ => intro free; simp [OSLFFormula.modalOnly] at free
+  | top => intro _; simp [sem, semEnv]
+  | bot => intro _; simp [sem, semEnv]
+  | atom a => intro _; exact hAtom a p q hpq
+  | and φ ψ ihφ ihψ =>
+    intro free
+    simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+    exact and_congr (ihφ hpq free.1) (ihψ hpq free.2)
+  | or φ ψ ihφ ihψ =>
+    intro free
+    simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+    exact or_congr (ihφ hpq free.1) (ihψ hpq free.2)
+  | imp φ ψ ihφ ihψ =>
+    intro free
+    simp only [OSLFFormula.modalOnly, Bool.and_eq_true] at free
+    exact imp_congr (ihφ hpq free.1) (ihψ hpq free.2)
   | dia φ ih =>
+    intro free
+    simp only [OSLFFormula.modalOnly] at free
     constructor
     · rintro ⟨p', hp', hsem⟩
       obtain ⟨q', hq', heq⟩ := hBisim.1 p q hpq p' hp'
-      exact ⟨q', hq', (ih heq).mp hsem⟩
+      exact ⟨q', hq', (ih heq free).mp hsem⟩
     · rintro ⟨q', hq', hsem⟩
       obtain ⟨p', hp', heq⟩ := hBisim.2 p q hpq q' hq'
-      exact ⟨p', hp', (ih heq).mpr hsem⟩
+      exact ⟨p', hp', (ih heq free).mpr hsem⟩
   | box φ ih =>
+    intro free
+    simp only [OSLFFormula.modalOnly] at free
     constructor
     · intro h s hsq
       obtain ⟨t, htp, het⟩ := hBisimRev.2 p q hpq s hsq
-      exact (ih het).mp (h t htp)
+      exact (ih het free).mp (h t htp)
     · intro h s hsp
       obtain ⟨t, htq, het⟩ := hBisimRev.1 p q hpq s hsp
-      exact (ih het).mpr (h t htq)
+      exact (ih het free).mpr (h t htq)
+  | var _ => intro free; simp [OSLFFormula.modalOnly] at free
+  | mu _ _ => intro free; simp [OSLFFormula.modalOnly] at free
 
 /-- Canonical bisimilarity: two patterns are bisimilar iff some bisimulation relates them. -/
 def Bisimilar (R : Pat → Pat → Prop) (p q : Pat) : Prop :=
@@ -99,7 +125,7 @@ def Bisimilar (R : Pat → Pat → Prop) (p q : Pat) : Prop :=
 /-- OSLFObsEq is symmetric: if p and q satisfy the same formulas, so do q and p. -/
 lemma obsEq_symm {R : Pat → Pat → Prop} {I : AtomSem} {p q : Pat}
     (h : OSLFObsEq R I p q) : OSLFObsEq R I q p :=
-  fun φ => (h φ).symm
+  fun φ free => (h φ free).symm
 
 /-- If two patterns are NOT observationally equivalent, there exists a formula
 that holds at the first but not the second.
@@ -107,17 +133,18 @@ that holds at the first but not the second.
 If the raw witness separates the wrong way (holds at q, fails at p),
 we flip it via negation: `.imp φ .bot`. -/
 lemma separator_of_not_obsEq {R : Pat → Pat → Prop} {I : AtomSem} {p q : Pat}
-    (h : ¬ OSLFObsEq R I p q) : ∃ φ, sem R I φ p ∧ ¬ sem R I φ q := by
+    (h : ¬ OSLFObsEq R I p q) :
+    ∃ φ, OSLFFormula.modalOnly φ = true ∧ sem R I φ p ∧ ¬ sem R I φ q := by
   simp only [OSLFObsEq, not_forall] at h
-  obtain ⟨φ, hne⟩ := h
+  obtain ⟨φ, hfree, hne⟩ := h
   by_cases hp : sem R I φ p
   · -- φ holds at p; it must fail at q (else ↔ would hold)
-    exact ⟨φ, hp, fun hq => hne ⟨fun _ => hq, fun _ => hp⟩⟩
+    exact ⟨φ, hfree, hp, fun hq => hne ⟨fun _ => hq, fun _ => hp⟩⟩
   · -- ¬ sem φ p; then sem φ q must hold (else ↔ would hold trivially)
     have hq : sem R I φ q := by
       by_contra hq; exact hne ⟨fun h => absurd h hp, fun h => absurd h hq⟩
     -- Flip via negation: (.imp φ .bot) holds at p (vacuously) and fails at q
-    exact ⟨.imp φ .bot, hp, fun h => h hq⟩
+    exact ⟨.imp φ .bot, by simp [OSLFFormula.modalOnly, hfree], hp, fun h => h hq⟩
 
 /-- Fold a list of formulas into a conjunction. -/
 def conjList : List OSLFFormula → OSLFFormula
@@ -125,17 +152,27 @@ def conjList : List OSLFFormula → OSLFFormula
   | [φ] => φ
   | φ :: rest => .and φ (conjList rest)
 
+/-- A conjunction of generator-free formulas is generator-free. -/
+lemma modalOnly_conjList : ∀ (L : List OSLFFormula),
+    (∀ φ ∈ L, OSLFFormula.modalOnly φ = true) → OSLFFormula.modalOnly (conjList L) = true
+  | [], _ => by simp [conjList, OSLFFormula.modalOnly]
+  | [φ], h => h φ (by simp)
+  | φ :: ψ :: tl, h => by
+      simp only [conjList, OSLFFormula.modalOnly, Bool.and_eq_true]
+      exact ⟨h φ (by simp),
+        modalOnly_conjList (ψ :: tl) (fun χ hχ => h χ (List.mem_cons_of_mem _ hχ))⟩
+
 /-- Semantics of conjList: holds iff every formula in the list holds. -/
 lemma sem_conjList_iff {R : Pat → Pat → Prop} {I : AtomSem} {p : Pat}
     (L : List OSLFFormula) : sem R I (conjList L) p ↔ ∀ φ ∈ L, sem R I φ p := by
   induction L with
-  | nil => simp [conjList, sem]
+  | nil => simp [conjList, sem, semEnv]
   | cons φ rest ih =>
     cases rest with
     | nil =>
       simp [conjList]
     | cons ψ tl =>
-      simp only [conjList, sem]
+      simp only [conjList, sem, semEnv]
       constructor
       · rintro ⟨hφ, hrest⟩
         intro χ hχ
@@ -166,7 +203,7 @@ theorem obsEq_is_stepBisimulation
     have hfin := hImageFinite q
     -- For each q-successor, get a separator formula
     have hsep : ∀ q' : Pat, R q q' →
-        ∃ φ, sem R I φ p' ∧ ¬ sem R I φ q' := by
+        ∃ φ, OSLFFormula.modalOnly φ = true ∧ sem R I φ p' ∧ ¬ sem R I φ q' := by
       intro q' hqq'
       exact separator_of_not_obsEq (h_no_match q' hqq')
     -- Use classical choice to pick separators
@@ -184,15 +221,16 @@ theorem obsEq_is_stepBisimulation
       simp only [formulas, List.mem_map] at hψ
       obtain ⟨q', _, rfl⟩ := hψ
       split_ifs with hmem
-      · exact (hf q' hmem).1
+      · exact (hf q' hmem).2.1
       · exact trivial
     -- q has no successor satisfying Φ
     have hqΦ : ¬ sem R I (.dia Φ) q := by
       intro ⟨q', hqq', hq'Φ⟩
       have hmem : q' ∈ hfin.toFinset := hfin.mem_toFinset.mpr hqq'
       -- The formula f q' hmem doesn't hold at q'
-      have hfail := (hf q' hmem).2
+      have hfail := (hf q' hmem).2.2
       -- But q' satisfies Φ, so q' satisfies f q' hmem
+      replace hq'Φ : sem R I Φ q' := hq'Φ
       rw [sem_conjList_iff] at hq'Φ
       have : sem R I (f q' hmem) q' := by
         apply hq'Φ
@@ -203,7 +241,15 @@ theorem obsEq_is_stepBisimulation
     -- But p satisfies ◇Φ (witnessed by p')
     have hpΦ : sem R I (.dia Φ) p := ⟨p', hpp', hp'Φ⟩
     -- This contradicts OSLFObsEq p q
-    exact hqΦ ((hpq (.dia Φ)).mp hpΦ)
+    have hΦfree : OSLFFormula.modalOnly Φ = true := by
+      refine modalOnly_conjList formulas ?_
+      intro ψ hψ
+      simp only [formulas, List.mem_map] at hψ
+      obtain ⟨q', _, rfl⟩ := hψ
+      split_ifs with hmem
+      · exact (hf q' hmem).1
+      · simp [OSLFFormula.modalOnly]
+    exact hqΦ ((hpq (.dia Φ) (by simpa [OSLFFormula.modalOnly] using hΦfree)).mp hpΦ)
   · -- Back: OSLFObsEq p q → R q q' → ∃ p', R p p' ∧ OSLFObsEq p' q'
     -- By symmetry of OSLFObsEq, reduce to the forth direction
     intro p q hpq q' hqq'
@@ -213,7 +259,7 @@ theorem obsEq_is_stepBisimulation
     push Not at h_no_match
     have hfin := hImageFinite p
     have hsep : ∀ p' : Pat, R p p' →
-        ∃ φ, sem R I φ q' ∧ ¬ sem R I φ p' := by
+        ∃ φ, OSLFFormula.modalOnly φ = true ∧ sem R I φ q' ∧ ¬ sem R I φ p' := by
       intro p' hpp'
       have h := h_no_match p' hpp'
       exact separator_of_not_obsEq (fun hobs => h (obsEq_symm hobs))
@@ -228,12 +274,13 @@ theorem obsEq_is_stepBisimulation
       simp only [formulas, List.mem_map] at hψ
       obtain ⟨p', _, rfl⟩ := hψ
       split_ifs with hmem
-      · exact (hf p' hmem).1
+      · exact (hf p' hmem).2.1
       · exact trivial
     have hpΦ : ¬ sem R I (.dia Φ) p := by
       intro ⟨p', hpp', hp'Φ⟩
       have hmem : p' ∈ hfin.toFinset := hfin.mem_toFinset.mpr hpp'
-      have hfail := (hf p' hmem).2
+      have hfail := (hf p' hmem).2.2
+      replace hp'Φ : sem R I Φ p' := hp'Φ
       rw [sem_conjList_iff] at hp'Φ
       have : sem R I (f p' hmem) p' := by
         apply hp'Φ
@@ -242,7 +289,15 @@ theorem obsEq_is_stepBisimulation
           dif_pos hmem⟩
       exact hfail this
     have hqΦ : sem R I (.dia Φ) q := ⟨q', hqq', hq'Φ⟩
-    exact hpΦ ((hpq (.dia Φ)).mpr hqΦ)
+    have hΦfree : OSLFFormula.modalOnly Φ = true := by
+      refine modalOnly_conjList formulas ?_
+      intro ψ hψ
+      simp only [formulas, List.mem_map] at hψ
+      obtain ⟨p', _, rfl⟩ := hψ
+      split_ifs with hmem
+      · exact (hf p' hmem).1
+      · simp [OSLFFormula.modalOnly]
+    exact hpΦ ((hpq (.dia Φ) (by simpa [OSLFFormula.modalOnly] using hΦfree)).mpr hqΦ)
 
 /-- Hennessy-Milner converse: under image-finiteness, observational equivalence
 implies bisimilarity. The proof shows that OSLFObsEq is itself a bisimulation. -/

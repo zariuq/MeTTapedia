@@ -52,6 +52,16 @@ namespace Term
 
 variable {Const : Ty Base → Type v}
 
+/-- Number of term-constructor nodes. Type annotations and the representation
+sizes of constants and variable indices are not charged by this measure. -/
+def nodeCount : {Γ : Ctx Base} → {τ : Ty Base} → Term Const Γ τ → Nat
+  | _, _, .var _ | _, _, .const _ | _, _, .top | _, _, .bot => 1
+  | _, _, .app f a => 1 + nodeCount f + nodeCount a
+  | _, _, .lam b | _, _, .all b | _, _, .ex b => 1 + nodeCount b
+  | _, _, .and p q | _, _, .or p q | _, _, .imp p q | _, _, .eq p q =>
+      1 + nodeCount p + nodeCount q
+  | _, _, .not p => 1 + nodeCount p
+
 /-- Convenience constructor for implication. -/
 abbrev implies (φ ψ : Formula Const Γ) : Formula Const Γ := Term.imp φ ψ
 

@@ -22,6 +22,10 @@ import Mettapedia.Logic.HOL.TypeDerivedSignatureExamples
 import Mettapedia.Logic.HOL.Derivation
 import Mettapedia.Logic.HOL.TransitionInvariant
 import Mettapedia.Logic.HOL.DerivationExtensionality
+import Mettapedia.Logic.HOL.ProofSyntax
+import Mettapedia.Logic.HOL.ProofSyntaxStructural
+import Mettapedia.Logic.HOL.UniformListMapFusion
+import Mettapedia.Logic.HOL.Embedding.GroundUnaryEquationalProofSyntax
 import Mettapedia.Logic.HOL.Lindenbaum
 import Mettapedia.Logic.HOL.CanonicalTheory
 import Mettapedia.Logic.HOL.LindenbaumSet
@@ -48,7 +52,6 @@ import Mettapedia.Logic.HOL.Semantics.KripkeHenkinGeneral
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCanonical
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCountermodel
 import Mettapedia.Logic.HOL.Semantics.ForkedFrameCountermodel
-import Mettapedia.Logic.HOL.Semantics.KripkeHenkinGeneral
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCanonicalGeneral
 import Mettapedia.Logic.HOL.Semantics.HeytingGeneral
 import Mettapedia.Logic.HOL.Semantics.HeytingCompleteness

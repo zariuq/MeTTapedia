@@ -4,8 +4,8 @@ import Mettapedia.Logic.HOL.HenkinInstitutionDerivation
 /-!
 # The property-explicit Henkin simple-type-theory node of the theory graph
 
-This module places one precisely qualified simple type theory in the common
-logical atlas.  Its native institution has a fixed alphabet of base types,
+This module places one precisely qualified simple type theory as a node of
+the theory graph.  Its native institution has a fixed alphabet of base types,
 varying typed constants, extensional Henkin models, and the extensional
 derivation calculus.  The selected theory adds excluded middle, schematic
 Hilbert choice, and Dedekind infinity at one named base type.
@@ -20,9 +20,9 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.HOLHenkinTheoryNode
 
+open Mettapedia.Logic
 open CategoryTheory
 open scoped CategoryTheory
-open Mettapedia.Logic
 open Mettapedia.Logic.HOL
 open Mettapedia.Logic.HOL.HenkinInstitution
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic

@@ -1,6 +1,6 @@
-import Mettapedia.Languages.MeTTa.PureKernel.AlgorithmicTyping
-#print checkPureType
-#print checkPureType.match_1
-#print checkPureType.eq_1
-#print checkPureType.eq_2
-#print checkPureType.eq_3
+import Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Permissive.AlgorithmicTyping
+#print checkTwoSortType
+#print checkTwoSortType.match_1
+#print checkTwoSortType.eq_1
+#print checkTwoSortType.eq_2
+#print checkTwoSortType.eq_3

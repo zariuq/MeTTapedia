@@ -1,5 +1,5 @@
 import Mettapedia.Languages.Metamath.InferenceOneShotByteLog
-import Mettapedia.Languages.Metamath.SourceGSLTParserExport
+import Mettapedia.Languages.Metamath.SourceGSLTParserDefinition
 import Mettapedia.GSLT.Parsing.SeparatorPlan
 import Mettapedia.GSLT.Parsing.PresentationExprSemantics
 import Mettapedia.GSLT.Parsing.SeparatorPlanCorrespondence
@@ -26,7 +26,7 @@ namespace Mettapedia.Languages.Metamath.SourceGSLTRawByteLexical
 
 open Metamath.Verify
 open Mettapedia.Languages.Metamath.SourceGSLT
-open Mettapedia.Languages.Metamath.SourceGSLTParserExport
+open Mettapedia.Languages.Metamath.SourceGSLTParserDefinition
 open Mettapedia.Languages.Metamath.InferenceOneShotByteLog
 open Mettapedia.GSLT.Parsing.LanguageDefSyntaxCompiler
 open Mettapedia.GSLT.Parsing.SeparatorPlan

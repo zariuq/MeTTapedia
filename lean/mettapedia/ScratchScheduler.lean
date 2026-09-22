@@ -1,9 +1,9 @@
 import Mettapedia.GSLT.Core.InferenceControl
 import Mettapedia.Algebra.QuantaleWeakness
-import Mettapedia.Languages.MeTTa.SpaceRefinement
+import Mettapedia.Logic.Query.MultisetAscription
 import Mettapedia.GSLT.Core.WeightedMuScheduler
 import Mettapedia.PLN.Bridges.GSLT.EvidenceWeightedScheduler
-import Mettapedia.Languages.MeTTa.Prime.TypedScheduler
+import Mettapedia.Languages.MeTTa.PrimeCandidates.TypedScheduler
 import Mettapedia.Logic.ModalQuantaleSemantics
 import Mettapedia.Order.FiniteSetFixedPoints
 #eval List.insertionSort (fun _ _ : Nat => False) [1, 2, 3]
@@ -12,9 +12,9 @@ import Mettapedia.Order.FiniteSetFixedPoints
 #print List.insertionSort
 #check List.orderedInsert_of_le
 
-#print axioms Mettapedia.Languages.MeTTa.SpaceRefinement.check_holds_iff
-#print axioms Mettapedia.Languages.MeTTa.SpaceRefinement.check_holds_iff_nonempty_evidence
-#print axioms Mettapedia.Languages.MeTTa.SpaceRefinement.duplicate_occurrences_are_distinct
+#print axioms Mettapedia.Logic.Query.MultisetAscription.check_holds_iff
+#print axioms Mettapedia.Logic.Query.MultisetAscription.check_holds_iff_nonempty_evidence
+#print axioms Mettapedia.Logic.Query.MultisetAscription.duplicate_occurrences_are_distinct
 #print axioms Mettapedia.GSLT.Core.WeightedMuScheduler.QuantalePolicy.run_sound
 #print axioms Mettapedia.GSLT.Core.WeightedMuScheduler.QuantalePolicy.completed_policies_bag_agree
 #print axioms Mettapedia.GSLT.Core.WeightedMuScheduler.TemporalObjective.no_negativeObjective
@@ -25,9 +25,9 @@ import Mettapedia.Order.FiniteSetFixedPoints
 #print axioms Mettapedia.PLN.Bridges.GSLT.EvidenceWeightedScheduler.internalNeedEvidencePolicy_apply
 #print axioms Mettapedia.Logic.ModalMuCalculus.satisfies_congr
 #print axioms Mettapedia.Logic.ModalMuCalculus.EvaluationGame.Program.graphValid_eq_true
-#print axioms Mettapedia.Languages.MeTTa.Prime.TypedScheduler.TemporalObjective.evaluationProgram_denotes_iff
-#print axioms Mettapedia.Languages.MeTTa.Prime.TypedScheduler.TemporalObjective.recurringSingleton_denotes
-#print axioms Mettapedia.Languages.MeTTa.Prime.TypedScheduler.TemporalObjective.recurringStrategy_winning
+#print axioms Mettapedia.Languages.MeTTa.PrimeCandidates.TypedScheduler.TemporalObjective.evaluationProgram_denotes_iff
+#print axioms Mettapedia.Languages.MeTTa.PrimeCandidates.TypedScheduler.TemporalObjective.recurringSingleton_denotes
+#print axioms Mettapedia.Languages.MeTTa.PrimeCandidates.TypedScheduler.TemporalObjective.recurringStrategy_winning
 #print axioms Mettapedia.Order.FiniteSetFixedPoints.monotone_chain_stabilizes_at_card
 #print axioms Mettapedia.Order.FiniteSetFixedPoints.antitone_chain_stabilizes_at_card
 #print axioms Mettapedia.Order.FiniteSetFixedPoints.lfp_eq_iterate_empty

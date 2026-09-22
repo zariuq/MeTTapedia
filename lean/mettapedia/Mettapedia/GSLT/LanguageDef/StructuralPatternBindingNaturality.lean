@@ -103,7 +103,8 @@ theorem mapPattern_liftBVars (symbols : LanguageDefSymbolMap)
         simp [liftBVars, mapPattern, shifted]
   | hfvar name => simp [liftBVars, mapPattern]
   | happly constructor arguments inductionHypothesis =>
-      simp only [liftBVars, mapPattern, mapPatternList_eq_map, List.map_map]
+      simp only [liftBVars, mapPattern, mapPatternList_eq_map,
+        Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, List.map_map]
       apply congrArg (Pattern.apply (symbols.constructor constructor))
       apply List.map_congr_left
       intro argument membership
@@ -116,7 +117,8 @@ theorem mapPattern_liftBVars (symbols : LanguageDefSymbolMap)
   | hsubst body replacement bodyIH replacementIH =>
       simp [liftBVars, mapPattern, bodyIH, replacementIH]
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [liftBVars, mapPattern, mapPatternList_eq_map, List.map_map]
+      simp only [liftBVars, mapPattern, mapPatternList_eq_map,
+        Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, List.map_map]
       apply congrArg (fun mappedElements =>
         Pattern.collection collectionType mappedElements rest)
       apply List.map_congr_left

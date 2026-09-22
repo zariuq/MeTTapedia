@@ -127,7 +127,7 @@ def smallTypes : TarskiUniverse semanticCwf where
   univ _context := fun _ => CodeCarrier
   el code := fun point => SmallLift (code point).down
 
-def smallTypes_substitutionStable : smallTypes.SubstitutionStable where
+theorem smallTypes_substitutionStable : smallTypes.{small}.SubstitutionStable where
   univ_sub _ := rfl
   el_sub _ _ := rfl
 
@@ -175,9 +175,9 @@ structure FibrewiseSigmaClosed where
 /-- Canonical equivalence between a lifted small dependent function and the
 ambient dependent function between lifted fibres. -/
 def piLiftEquiv (domain : Type small)
-    (codomain : SmallLift domain -> Type small) :
-    SmallLift ((argument : domain) -> codomain ⟨argument⟩) ≃
-      ((argument : SmallLift domain) -> SmallLift (codomain argument)) where
+    (codomain : SmallLift.{small} domain -> Type small) :
+    SmallLift.{small} ((argument : domain) -> codomain ⟨argument⟩) ≃
+      ((argument : SmallLift.{small} domain) -> SmallLift.{small} (codomain argument)) where
   toFun function argument := ⟨function.down argument.down⟩
   invFun function := ⟨fun argument => (function ⟨argument⟩).down⟩
   left_inv function := by
@@ -191,9 +191,9 @@ def piLiftEquiv (domain : Type small)
 /-- Canonical equivalence between a lifted small dependent pair and the
 ambient sigma of lifted fibres. -/
 def sigmaLiftEquiv (domain : Type small)
-    (codomain : SmallLift domain -> Type small) :
-    SmallLift (Sigma fun argument : domain => codomain ⟨argument⟩) ≃
-      (Sigma fun argument : SmallLift domain => SmallLift (codomain argument)) where
+    (codomain : SmallLift.{small} domain -> Type small) :
+    SmallLift.{small} (Sigma fun argument : domain => codomain ⟨argument⟩) ≃
+      (Sigma fun argument : SmallLift.{small} domain => SmallLift.{small} (codomain argument)) where
   toFun pair := ⟨⟨pair.down.1⟩, ⟨pair.down.2⟩⟩
   invFun pair := by
     rcases pair with ⟨⟨argument⟩, ⟨value⟩⟩
@@ -207,7 +207,7 @@ def sigmaLiftEquiv (domain : Type small)
 
 /-- Dependent products of lifted small types are represented by small codes,
 with a canonical fibrewise equivalence to the ambient Π. -/
-def smallTypes_piClosed : FibrewisePiClosed where
+def smallTypes_piClosed : FibrewisePiClosed.{small} where
   piCode domainCode codomainCode point :=
     ⟨(argument : (domainCode point).down) ->
       (codomainCode ⟨point, ⟨argument⟩⟩).down⟩
@@ -216,7 +216,7 @@ def smallTypes_piClosed : FibrewisePiClosed where
       (fun argument => (codomainCode ⟨point, argument⟩).down)
 
 /-- Dependent sums of lifted small types are represented likewise. -/
-def smallTypes_sigmaClosed : FibrewiseSigmaClosed where
+def smallTypes_sigmaClosed : FibrewiseSigmaClosed.{small} where
   sigmaCode domainCode codomainCode point :=
     ⟨Sigma fun argument : (domainCode point).down =>
       (codomainCode ⟨point, ⟨argument⟩⟩).down⟩
@@ -305,14 +305,14 @@ theorem constant_code_carrier_with_genuine_dependent_decoding :
 /-- The standard dependent capability family is jointly inhabited in one
 semantic CwF.  This is a compatibility witness, not a bundled syntax. -/
 theorem dependent_capabilities_have_common_set_model :
-    Nonempty (DependentProductBeta semanticCwf) /\
-    Nonempty (DependentSumBeta semanticCwf) /\
+    Nonempty (DependentProductBeta semanticCwf.{small}) /\
+    Nonempty (DependentSumBeta semanticCwf.{small}) /\
     Nonempty
-      (IdentityEliminationBeta semanticCwf
+      (IdentityEliminationBeta semanticCwf.{small}
         ContextualIdentityTypes.Families.identityFormation
         ContextualIdentityTypes.Families.identityReflexivity) /\
-    Nonempty (TarskiUniverse semanticCwf) /\
-    Nonempty smallTypes.SubstitutionStable /\
+    Nonempty (TarskiUniverse semanticCwf.{small}) /\
+    Nonempty smallTypes.{small}.SubstitutionStable /\
     Nonempty FibrewisePiClosed.{small} /\
     Nonempty FibrewiseSigmaClosed.{small} :=
   ⟨⟨familiesProducts⟩, ⟨familiesSums⟩,

@@ -1,10 +1,11 @@
 # OSLF — Operational Semantics in Logical Form (Lean 4)
 
-OSLF turns operational rewrite systems into a logical/type-theoretic interface.
-Lean justifies the interface mechanically.
-The core idea starts from `LanguageDef`.
-The core idea connects the step relation to the executable engine.
-The core idea derives modal operators with a Galois connection.
+OSLF turns operational systems into a logical/type-theoretic interface.
+This development proves relational modal constructions and executable results
+for specified fragments, starting from `LanguageDef`. The full source
+construction remains open: context-labelled transitions, higher-order label
+comparison, freely generated type-system structure, and several NTT categorical
+obligations are not established by the elementary modal adjunction.
 
 Reference orientation: OSLF is the Lean-formalized bridge from operational rules to modal/type-theoretic structure; [Native Type Theory](https://arxiv.org/abs/2102.04672) supplies the broader categorical foundation, [Generating Hypercubes of Type Systems](https://github.com/F1R3FLY-io/publications/blob/main/drafts/Hypercube/main.pdf) refines the generated type-system family, and [MeTTaIL](https://github.com/F1R3FLY-io/mettail-rust) is the executable-language-generation side.
 
@@ -14,14 +15,14 @@ OSLF is a construction.
 
 - It takes a rewrite system with premises.
 - It defines a one-step reduction relation.
-- The one-step reduction relation matches the executable engine.
+- Executable correspondence has its own fuel, premise, and matching hypotheses.
 - It derives modal operators for `◇` and `□`.
 - It proves `◇ ⊣ □`.
 - It provides a formula semantics and a sound checker for modal properties.
 
-The outcome is a reusable logical interface on top of operational semantics.
-Definitional equality and theorem-level contracts ground the interface.
-Ad hoc proofs don't ground the interface.
+The proved outcome is a reusable relational logical interface on top of the
+specified operational semantics. Its theorem-level contracts do not imply
+correspondence with every runtime implementation or with the full source OSLF.
 
 ### End-to-end survey
 
@@ -42,41 +43,41 @@ import Mettapedia.OSLF.CoreMain
 
 open Mettapedia.OSLF
 
--- 1) Define a LanguageDef with types, terms, rewrites, and premises.
+-- 1) Define a LanguageDef with types, terms, equations, and conditional rewrites.
 -- 2) Supply a RelationEnv for external premises if needed.
 -- 3) Use langOSLF to derive the type system and modal operators.
 -- 4) Use Formula.sem and checkLangUsing for properties.
 ```
 
-### Run it: GSLT → NTT (executable)
+### Inspect a LanguageDef and its native predicate interface
 
-A **GSLT** (Graph-Structured Lambda Theory) is given in Lean as a `LanguageDef`
-(grammar + equations + rewrite rules). OSLF turns it into an `OSLFTypeSystem`
-(predicates-as-frames with `◇`/`□` and a proven Galois connection); the **NTT**
-(Native Type Theory) view exposes its native types `(sort, predicate)` and the
-sort-crossing constructor diagram.
+A `LanguageDef` records declared syntax, equations, and conditional rewrite
+rules. The relational construction exposes an `OSLFTypeSystem`
+(predicates-as-frames with `◇`/`□` and a proven Galois connection), native
+predicate objects `(sort, predicate)`, and a sort-crossing constructor diagram.
+These components are not the full freely generated type system or the complete
+categorical Native Type Theory construction.
 
-Run the worked ρ-calculus GSLT end to end (only needs a built tree) from
+Inspect the worked ρ-calculus declaration (requires a built tree) from
 `lean/mettapedia/`:
 
 ```bash
 lake env lean Mettapedia/OSLF/Tools/OSLFRunDemo.lean
 ```
 
-which prints the ρ-calculus NTT crossings:
+which prints the declared unary sort crossings:
 
 ```
 "rho NTT crossing count = 2"
 [("PDrop", "Name", "Proc"), ("NQuote", "Proc", "Name")]
 ```
 
-Those crossings **are** the ρ-calculus GSLT's native-type constructors — the
-sort-crossing operations (`NQuote : Proc → Name`, `PDrop : Name → Proc`) that
-generate its native types. So that one command *is* "run OSLF over a GSLT and read
-off its native types." `langNativeType` then packages any chosen `(sort, predicate)`
-as a native type object.
+Those rows inspect the declared operations `NQuote : Proc → Name` and
+`PDrop : Name → Proc`; they do not construct generated logical formers or prove
+a function-object adjunction. `langNativeType` separately packages a chosen
+`(sort, predicate)` as a native predicate object.
 
-To run OSLF on your own GSLT and read off its NTT (fill in `myGSLT`; `procSort`
+To inspect the same interface for another definition (fill in `myGSLT`; `procSort`
 defaults to `"Proc"`):
 
 ```lean
@@ -85,7 +86,7 @@ import Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF
 open Mettapedia.OSLF.Framework.ConstructorCategory
 
-def myGSLT : LanguageDef := { /- types, terms, equations, rewrites, premises -/ }
+def myGSLT : LanguageDef := { /- name, types, terms, equations, rewrites -/ }
 
 -- OSLF type system + modal operators (◇ ⊣ □):
 #check langOSLF myGSLT                    -- : OSLFTypeSystem …
@@ -93,9 +94,9 @@ def myGSLT : LanguageDef := { /- types, terms, equations, rewrites, premises -/ 
 #check langBox myGSLT                     -- □
 #check langGaloisUsing RelationEnv.empty myGSLT  -- proof ◇ ⊣ □ (use a non-empty RelationEnv if the GSLT has premise relations)
 
--- The NTT: native (sort, predicate) types + the sort-crossing diagram:
+-- Native predicate objects and declared sort crossings:
 #check langNativeType myGSLT              -- native (sort, predicate) type
-#eval  unaryCrossings myGSLT              -- NTT crossing constructors, as the demo above
+#eval  unaryCrossings myGSLT              -- declaration inspection, as above
 
 -- Check a modal property of a term (see Formula.lean: `sem`, `checkLang`/`checkLangUsing`):
 #check checkLang myGSLT
@@ -121,6 +122,8 @@ Fuller worked GSLTs to copy from: `Framework/TinyMLInstance.lean`,
 
 - `Mettapedia/OSLF/MeTTaIL/ContextualStep.lean` derives the least contextual
   reduction from authored congruence premises and proves its bounded executor exact.
+  This least authored closure is distinct from constructing least enabling
+  context labels by relative pushouts.
 
 ### Starting points
 
@@ -258,10 +261,10 @@ This is the core "derive a type system from operational semantics" path.
 
 ### Native-type endpoints
 
-`Mettapedia/OSLF/NativeType/` formalizes the strict NTT claim scope.
-`Mettapedia/OSLF/Framework/NTTClaimTracker.lean` is the authoritative tracker.
-The scope is tracked-claim parity.
-The scope isn't blanket future-work parity.
+`Mettapedia/OSLF/NativeType/` implements the components identified by
+`Mettapedia/OSLF/Framework/NTTClaimTracker.lean`. The tracker distinguishes proved
+endpoints from remaining source obligations; its metadata checks do not prove
+that an endpoint has the mathematical strength of the cited paper statement.
 
 - `Construction.lean`
   - `NatType`
@@ -292,12 +295,12 @@ The scope isn't blanket future-work parity.
 
 ## Practical workflow
 
-- LanguageDef: `types, terms, rewrites, Premise`
+- LanguageDef: `name, types, terms, equations, rewrites`; premises belong to rules.
 - RelationEnv: `if needed`
 - langOSLF: `instantiation`
 - checkLangUsing: `plus soundness bridges`
 
-- The workflow ends with an instance file and end-to-end theorems.
+- Each instance needs correspondence theorems for its advertised executable domain.
 
 ## Build
 
@@ -312,8 +315,11 @@ lake build Mettapedia.OSLF.Main
 - `CoreMain` is the recommended target for core OSLF/GSLT validation.
 - `Main` aligns the same focused OSLF boundary.
 - Process-calculus modules are available.
-- Maintainers rely `FULLStatus.lean` and concrete theorem names for exact completion claims.
-- 0 `sorry`, 0 `axiom` across `Mettapedia/OSLF/` (reproduce: `rg '^\s*sorry\b' --glob '*.lean' OSLF`); paper-claim parity is machine-checked in `Framework/NTTClaimTracker.lean` and `Framework/PaperClaimTracker.lean`.
+- Use `FULLStatus.lean`, source-ledger obligations, and actual theorem statements
+  together when assessing completion.
+- Source placeholder searches, compiled axiom-closure audits, and completed
+  dependency builds check different boundaries. None establishes source fidelity
+  by itself; claim-tracker checks validate the inventory, not full paper parity.
 
 - `Mettapedia/Languages/ProcessCalculi/PiCalculus.lean`
 - `Mettapedia/Languages/ProcessCalculi/RhoCalculus.lean`

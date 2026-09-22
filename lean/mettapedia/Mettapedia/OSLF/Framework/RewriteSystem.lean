@@ -20,7 +20,7 @@ as input and produces a spatial-behavioral type system as output.
 - `RewriteSystem`: The input -- sorts, terms, reduction
 - `OSLFTypeSystem`: The output -- predicates, modal operators, Galois connection
 - `NativeTypeOf`: A native type (sort, predicate) pair
-- `Substitutability`: The key theorem: bisimilar processes have the same types
+- `Substitutability`: A predicate-equivalence contract, not a proved adequacy theorem
 
 ## References
 
@@ -76,8 +76,9 @@ structure RewriteSystem where
     - top (full), bot (empty)
     - The quantale law: a inf (Sup S) = Sup (a inf . '' S)
 
-    This structure captures the FULL output of the OSLF algorithm in a form
-    that can be instantiated for any concrete calculus.
+    This interface records predicate fibers and the process-sort modal
+    adjunction. Context substitution, generated syntax, and their universal
+    properties are not supplied by these fields alone.
 -/
 structure OSLFTypeSystem (R : RewriteSystem) where
   /-- Predicates at each sort -/
@@ -131,19 +132,16 @@ structure NativeTypeOf {R : RewriteSystem} (ts : OSLFTypeSystem R) where
 
 /-! ## Substitutability -/
 
-/-- The Substitutability property (OSLF Theorem 1, section 11):
+/-- A predicate-equivalence contract for a specified relation:
 
     P bisim Q  <->  forall phi : Pred procSort, P in phi <-> Q in phi
 
-    Two bisimilar processes satisfy exactly the same native types
-    (predicates at the process sort).
-
-    This is THE key soundness property of OSLF: behavioral equivalence
-    coincides with logical equivalence (having the same types).
-
-    The full OSLF statement quantifies over all native types (U, X).
-    Since p, q are process terms, only procSort-sorted predicates apply directly.
-    The general case (all sorts) follows when contexts are available.
+    No inhabitant of this contract is constructed here. Quantifying over all
+    equation-invariant predicates characterizes equation equality in the
+    canonical generated system, not arbitrary forward bisimilarity. Behavioral
+    adequacy instead uses a specified observation language and its adequacy
+    hypotheses; predecessor modalities need converse coverage as well. Merely
+    adding contexts does not establish this contract or an all-sort theorem.
 -/
 def Substitutability {R : RewriteSystem} (ts : OSLFTypeSystem R)
     (bisim : R.Term R.procSort → R.Term R.procSort → Prop) : Prop :=

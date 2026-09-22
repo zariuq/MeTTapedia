@@ -27,6 +27,7 @@ Negative example:
 namespace Mettapedia.Languages.MeTTa.RuntimeResource
 
 open Mettapedia.Languages.MeTTa.ElaboratedCore
+
 open Mettapedia.Languages.MeTTa.RuntimeExec
 open Mettapedia.Languages.MeTTa.RuntimeKernel
 open MeTTailCore.MeTTaIL.EffectSafety

@@ -768,7 +768,7 @@ The main Lean artifacts (all in \code{Mettapedia/}):
   and categorical transport \\
 \code{Languages/GF/GFWMObligationAdapter.lean} &
   GF syntax$\rightarrow$WM obligation adapters aligned to
-  \code{PureJudgmentWMInterface}, plus
+  \code{TwoSortJudgmentWMInterface}, plus
   faithful/non-full functor characterization \\
 \code{Languages/GF/GFWMObligationAdapterRegression.lean} &
   GF$\rightarrow$WM regression fixtures: direct transport, end-to-end
@@ -1066,9 +1066,9 @@ transport contract:
   (\code{PLNWorldModelCategoricalRegression.lean}),
   instantiating the unified endpoint on an identity pullback square.
 \item \textbf{Aligned consequence-transfer wrappers}:
-  categorical-contract variants are exposed for the PureKernel$\rightarrow$WM
+  categorical-contract variants are exposed for the two-sort-calculus$\rightarrow$WM
   bridge and for HOL/FOL WM consequence transfer
-  (\code{PLNWorldModelPureKernelBridge.lean},
+  (\code{PLNWorldModelTwoSortBridge.lean},
    \code{PLNWorldModelHOLCompleteness.lean},
    \code{PLNWorldModelFOLCompleteness.lean}).
   The FOL layer now includes a full implication bridge
@@ -1102,7 +1102,7 @@ transport contract:
    \code{OSLF/Framework/OSLFNTTWMBridgeRegression.lean}).
 \item \textbf{GF$\rightarrow$WM obligation adapters}:
   GF syntactic transports are consumable on the same
-  \code{PureJudgmentWMInterface} used by Pure-kernel bridge wrappers,
+  \code{TwoSortJudgmentWMInterface} used by Pure-kernel bridge wrappers,
   via
   \code{gfSyntaxHom\_to\_wmStrengthObligation},
   \code{wmConsequenceRuleOn\_of\_gfSyntaxHom\_viaPureInterface},

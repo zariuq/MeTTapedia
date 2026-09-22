@@ -224,15 +224,15 @@ inductive Branch (schema : Schema) where
 private def emptyFormula : Formula := .headed "da:empty" []
 
 def describe (schema : Schema) : Branch schema → BranchDescription State
-  | .canonicalEmpty => ⟨.canonical, "da:empty", []⟩
+  | .canonicalEmpty => ⟨.canonical, .headed "da:empty", []⟩
   | .canonicalBase digit _ =>
-      ⟨.canonical, digitLabel digit.val, [.formula emptyFormula]⟩
+      ⟨.canonical, .headed (digitLabel digit.val), [.formula emptyFormula]⟩
   | .canonicalCons digit =>
-      ⟨.canonical, digitLabel digit.val, [.recur .positive]⟩
+      ⟨.canonical, .headed (digitLabel digit.val), [.recur .positive]⟩
   | .positiveBase digit _ =>
-      ⟨.positive, digitLabel digit.val, [.formula emptyFormula]⟩
+      ⟨.positive, .headed (digitLabel digit.val), [.formula emptyFormula]⟩
   | .positiveCons digit =>
-      ⟨.positive, digitLabel digit.val, [.recur .positive]⟩
+      ⟨.positive, .headed (digitLabel digit.val), [.recur .positive]⟩
 
 /-- The recursive type is indexed over constructors witnessed in the actual
 generated DA presentation. -/
@@ -303,8 +303,8 @@ private theorem positive_of_canonical (schema : Schema) {digits : List Nat}
       have digitRange : digit < schema.radix :=
         canonical.1 digit (List.mem_cons_self)
       by_cases tailNonempty : digits ≠ []
-      · exact Satisfies.intro (signature := signature schema)
-          (Branch.positiveCons ⟨digit, digitRange⟩)
+      · exact Satisfies.headed (signature := signature schema)
+          (Branch.positiveCons ⟨digit, digitRange⟩) _
           [patternOfDigits digits] rfl
           (.recur
             (inductionHypothesis tailNonempty
@@ -314,8 +314,8 @@ private theorem positive_of_canonical (schema : Schema) {digits : List Nat}
         subst digits
         have digitNonzero : digit ≠ 0 := by
           simpa using canonical.2 (List.cons_ne_nil digit [])
-        exact Satisfies.intro (signature := signature schema)
-          (Branch.positiveBase ⟨digit, digitRange⟩ digitNonzero)
+        exact Satisfies.headed (signature := signature schema)
+          (Branch.positiveBase ⟨digit, digitRange⟩ digitNonzero) _
           [empty] rfl (.formula ((empty_formula_iff schema empty).2 rfl) .nil)
 
 private theorem canonical_inhabited (schema : Schema) {digits : List Nat}
@@ -323,14 +323,14 @@ private theorem canonical_inhabited (schema : Schema) {digits : List Nat}
     Inhabits schema .canonical (patternOfDigits digits) := by
   cases digits with
   | nil =>
-      exact Satisfies.intro (signature := signature schema)
-        Branch.canonicalEmpty [] rfl .nil
+      exact Satisfies.headed (signature := signature schema)
+        Branch.canonicalEmpty _ [] rfl .nil
   | cons digit digits =>
       have digitRange : digit < schema.radix :=
         canonical.1 digit (List.mem_cons_self)
       by_cases tailNonempty : digits ≠ []
-      · exact Satisfies.intro (signature := signature schema)
-          (Branch.canonicalCons ⟨digit, digitRange⟩)
+      · exact Satisfies.headed (signature := signature schema)
+          (Branch.canonicalCons ⟨digit, digitRange⟩) _
           [patternOfDigits digits] rfl
           (.recur
             (positive_of_canonical schema tailNonempty
@@ -340,8 +340,8 @@ private theorem canonical_inhabited (schema : Schema) {digits : List Nat}
         subst digits
         have digitNonzero : digit ≠ 0 := by
           simpa using canonical.2 (List.cons_ne_nil digit [])
-        exact Satisfies.intro (signature := signature schema)
-          (Branch.canonicalBase ⟨digit, digitRange⟩ digitNonzero)
+        exact Satisfies.headed (signature := signature schema)
+          (Branch.canonicalBase ⟨digit, digitRange⟩ digitNonzero) _
           [empty] rfl (.formula ((empty_formula_iff schema empty).2 rfl) .nil)
 
 private theorem meaning_closed (schema : Schema) :
@@ -357,6 +357,7 @@ private theorem meaning_closed (schema : Schema) :
           refine ⟨[], ?_, ?_⟩
           · exact ⟨by simp, by simp⟩
           · simpa [signature, describe, patternOfDigits,
+              Mettapedia.OSLF.StructuralModal.Recursive.BranchShape.Matches,
               WaltersZantemaDA.empty, WaltersZantemaDA.a] using shape
       | cons child children =>
           simp [signature, describe, layerAll] at childrenEvidence
@@ -375,6 +376,7 @@ private theorem meaning_closed (schema : Schema) :
               · simp [CanonicalDigits, digit.isLt, nonzero]
               · subst child
                 simpa [signature, describe, patternOfDigits,
+                  Mettapedia.OSLF.StructuralModal.Recursive.BranchShape.Matches,
                   WaltersZantemaDA.digit, WaltersZantemaDA.empty,
                   WaltersZantemaDA.a] using shape
           | cons next rest =>
@@ -394,6 +396,7 @@ private theorem meaning_closed (schema : Schema) :
               · exact cons_canonical schema digit.isLt digitsCanonical digitsNonempty
               · rw [childShape] at shape
                 simpa [signature, describe, patternOfDigits,
+                  Mettapedia.OSLF.StructuralModal.Recursive.BranchShape.Matches,
                   WaltersZantemaDA.digit, WaltersZantemaDA.empty,
                   WaltersZantemaDA.a] using shape
           | cons next rest =>
@@ -413,6 +416,7 @@ private theorem meaning_closed (schema : Schema) :
               · simp [CanonicalDigits, digit.isLt, nonzero]
               · subst child
                 simpa [signature, describe, patternOfDigits,
+                  Mettapedia.OSLF.StructuralModal.Recursive.BranchShape.Matches,
                   WaltersZantemaDA.digit, WaltersZantemaDA.empty,
                   WaltersZantemaDA.a] using shape
           | cons next rest =>
@@ -432,6 +436,7 @@ private theorem meaning_closed (schema : Schema) :
               · exact cons_canonical schema digit.isLt digitsCanonical digitsNonempty
               · rw [childShape] at shape
                 simpa [signature, describe, patternOfDigits,
+                  Mettapedia.OSLF.StructuralModal.Recursive.BranchShape.Matches,
                   WaltersZantemaDA.digit, WaltersZantemaDA.empty,
                   WaltersZantemaDA.a] using shape
           | cons next rest =>

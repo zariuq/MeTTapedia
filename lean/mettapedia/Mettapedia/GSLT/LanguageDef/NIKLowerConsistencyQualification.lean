@@ -20,11 +20,11 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.NIKLowerConsistencyQualification
 
+open Mettapedia.Logic
 open Mettapedia.GSLT.LanguageDef.KernelAuthority
 open Mettapedia.GSLT.LanguageDef.NIKMetalogic
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.Framework.InitialModalSchema
-open Mettapedia.Logic
 open Mettapedia.OSLF.Framework.InitialityConsistencySeparation
 
 abbrev RuleSystem : Type :=

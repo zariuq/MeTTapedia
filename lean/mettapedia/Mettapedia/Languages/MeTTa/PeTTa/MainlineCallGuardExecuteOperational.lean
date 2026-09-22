@@ -1552,7 +1552,7 @@ def mergeInto (head : Bindings) (tails : List Bindings) : List Bindings :=
     applyRuleWithPremisesUsing relEnv lang rule term =
       (matchPattern rule.left term).flatMap fun bindings =>
         (applyPremisesWithEnv relEnv lang rule.premises bindings).map fun final =>
-          applyBindings final rule.right := by
+          applyRuleBindings rule final := by
   simp [applyRuleWithPremisesUsing,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
@@ -1560,7 +1560,7 @@ def mergeInto (head : Bindings) (tails : List Bindings) : List Bindings :=
 
 @[simp] theorem applyBindingsForRule_eq (lang : LanguageDef) (rule : RewriteRule) (bindings : Bindings) :
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule lang rule bindings =
-      applyBindings bindings rule.right := by
+      applyRuleBindings rule bindings := by
   simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
     Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty]
@@ -1572,6 +1572,7 @@ def mergeInto (head : Bindings) (tails : List Bindings) : List Bindings :=
 
 local macro "executor_simp" : tactic =>
   `(tactic| simp (config := {maxSteps := 4000000}) [*, executorImage, executeStep?, language,
+      applyRuleBindings,
       transitions, runArgMode, runResultMode, getTypeDecision, getMetatypeDecision,
       requestOutsideFragmentRule, requestForeignOwnerRule, requestStaleRevisionRule,
       requestWrongHeadRule, requestWrongArityRule, requestCurrentRule, plansFinishedRule,

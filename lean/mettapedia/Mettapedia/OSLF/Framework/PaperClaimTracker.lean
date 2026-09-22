@@ -26,6 +26,7 @@ inductive ClaimStatus where
   | proven          -- fully formalized as a theorem
   | assumptionScoped -- proven under explicit, necessity-audited assumptions
   | counterexample  -- paper claim is too strong; counterexample shows failure
+  | partiallyFormalized -- related endpoint exists, but full source action or laws do not
   deriving DecidableEq, Repr
 
 /-- A single paper claim with its formalization status. -/
@@ -79,12 +80,12 @@ def paperClaimList : List PaperClaim :=
     "topos_full_internal_logic_bridge_package", .proven⟩
   , ⟨"NTT.pdf", "§4 (fiber-logic subset)", "Frame-derived →/¬ in fibers",
     "topos_full_internal_logic_bridge_package (Heyting clause)", .proven⟩
-  , ⟨"NTT.pdf", "§4 (endpoint subset)", "Representable Π/Σ transport package (rule-pack-first; Prop-12 compatibility wrappers)",
+  , ⟨"NTT.pdf", "§4 (endpoint subset)", "Representable Π/Σ transport package; closure/fixpoint wrappers require their own strength and transport hypotheses, not general evidence-to-strength",
     "topos_representable_patternPred_piSigma_transport_pack_via_rulePack / topos_representable_patternPred_piSigma_transport_via_rulePack / topos_representable_patternPred_piSigma_transport_pack_via_prop12 / topos_representable_patternPred_piSigma_transport_via_prop12_pack / canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_goal / canonical_prop12_transport_pack_and_fixpoint_endpoint_of_goal / canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal / canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal", .proven⟩
-  , ⟨"NTT.pdf", "§5", "Theory morphism preservation (Π/Σ/Ω/Prop endpoint)",
-    "TheoryMorphism.piSigmaOmegaProp_translation_endpoint", .proven⟩
-  , ⟨"NTT.pdf", "§5", "Colax Π/Σ/Prop rules",
-    "TheoryMorphism.piSigmaProp_colax_rules", .proven⟩
+  , ⟨"NTT.pdf", "§5", "Theory translation by presheaf precomposition; Π/Ω preservation needs additional hypotheses",
+    "TheoryMorphism.piSigmaOmegaProp_translation_endpoint assumes stronger fiber-algebra laws and has no source base-functor/precomposition/substitution action", .partiallyFormalized⟩
+  , ⟨"NTT.pdf", "§5", "Colax Π/Σ/Prop rules for the source theory-translation action",
+    "TheoryMorphism.piSigmaProp_colax_rules derives rules from exact fiber-operation preservation; source precomposition/substitution compatibility remains unproved", .partiallyFormalized⟩
   -- TOGL paper (togl.pdf)
   , ⟨"togl.pdf", "§2", "Graph reduction structure",
     "reductionGraphObjUsing", .proven⟩
@@ -102,23 +103,25 @@ def paperClaimList : List PaperClaim :=
 def claimCountByStatus (s : ClaimStatus) : Nat :=
   (paperClaimList.filter (fun c => c.status == s)).length
 
-/-- All claims are resolved (proven or assumption-scoped). -/
-theorem paperClaimList_all_resolved :
-    paperClaimList.all (fun c => c.status == .proven
-      || c.status == .assumptionScoped
-      || c.status == .counterexample) = true := by
+/-- The unresolved source actions in this endpoint-subset inventory. -/
+theorem paperClaimList_remaining_locations :
+    (paperClaimList.filter (fun c => c.status == .partiallyFormalized)).map
+      (fun c => (c.paper, c.loc)) = [("NTT.pdf", "§5"), ("NTT.pdf", "§5")] := by
   decide
 
 /-- Count of fully proven claims. -/
-theorem provenCount_eq : claimCountByStatus .proven = 26 := by decide
+theorem provenCount_eq : claimCountByStatus .proven = 24 := by decide
+
+/-- Count of endpoint rows whose full source action remains unproved. -/
+theorem partialCount_eq : claimCountByStatus .partiallyFormalized = 2 := by decide
 
 /-- Count of assumption-scoped claims. -/
 theorem assumptionScopedCount_eq : claimCountByStatus .assumptionScoped = 1 := by decide
 
-/-- Full NTT parity is closed: all strict NTT claims are resolved. -/
-theorem fullNTTParity_closed :
-    Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount = 0 :=
-  Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_zero
+/-- The OSLF-facing subset does not close the strict NTT source obligations. -/
+theorem strictNTTParity_open :
+    Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount ≠ 0 :=
+  Mettapedia.OSLF.Framework.NTTClaimTracker.fullNTTParity_open
 
 /-! ## Code-Reference Anchors -/
 
@@ -166,7 +169,7 @@ theorem fullNTTParity_closed :
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.hClosed_necessary_for_fragment
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.not_global_hImageFinite_rhoCoreStarRel
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.not_global_hPredFinite_rhoStep
-#check @fullNTTParity_closed
+#check @strictNTTParity_open
 
 -- Unified endpoint
 #check @Mettapedia.OSLF.coreMain_paper_parity_full_package

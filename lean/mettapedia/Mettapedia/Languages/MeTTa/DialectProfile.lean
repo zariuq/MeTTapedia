@@ -10,7 +10,7 @@ semantic carrier.
 
 This file adds a small, auditable layer above `MeTTaCoreProfile`:
 
-- fixed dialect identity (`Pure`, `HE`, `PeTTa`, `FullLegacy`)
+- fixed dialect identity (`TwoSortPiSigmaId`, `HE`, `PeTTa`, `FullLegacy`)
 - runtime-shape classification
 - artifact-boundary classification
 - principal semantic carrier name used by the dialect
@@ -60,13 +60,13 @@ structure MeTTaDialectProfile where
   /-- Optional named source of lowered `LanguageDef` artifacts for the dialect. -/
   artifactLanguageSource? : Option String := none
 
-/-- Dialect profile for the trusted intensional kernel. -/
-def pureDialectProfile : MeTTaDialectProfile where
-  name := "Pure"
-  referenceCoreProfile? := some pureProfile
+/-- Profile for the concrete two-sort experiment; not an adopted MeTTa dialect. -/
+def twoSortDialectProfile : MeTTaDialectProfile where
+  name := "TwoSortPiSigmaId"
+  referenceCoreProfile? := some twoSortProfile
   runtimeShape := .kernelClosed
   artifactBoundary := .dialectStatic
-  principalCarrier := "PureTm 0"
+  principalCarrier := "ScopedTerm 0"
   artifactLanguageSource? := none
 
 /-- Dialect profile for Hyperon Experimental MeTTa. -/
@@ -103,17 +103,17 @@ def fullLegacyDialectProfile : MeTTaDialectProfile where
 
 /-- Fixed dialect inventory for the current library. -/
 def dialectProfiles : List MeTTaDialectProfile :=
-  [pureDialectProfile, heDialectProfile, pettaDialectProfile, fullLegacyDialectProfile]
+  [twoSortDialectProfile, heDialectProfile, pettaDialectProfile, fullLegacyDialectProfile]
 
 /-- Lookup by fixed dialect name. -/
 def findDialectProfile (name : ProfileName) : Option MeTTaDialectProfile :=
   dialectProfiles.find? (fun p => p.name == name)
 
-@[simp] theorem pureDialectProfile_name :
-    pureDialectProfile.name = "Pure" := rfl
+@[simp] theorem twoSortDialectProfile_name :
+    twoSortDialectProfile.name = "TwoSortPiSigmaId" := rfl
 
-@[simp] theorem pureDialectProfile_reference :
-    pureDialectProfile.referenceCoreProfile? = some pureProfile := rfl
+@[simp] theorem twoSortDialectProfile_reference :
+    twoSortDialectProfile.referenceCoreProfile? = some twoSortProfile := rfl
 
 @[simp] theorem heDialectProfile_reference :
     heDialectProfile.referenceCoreProfile? = some heProfile := rfl

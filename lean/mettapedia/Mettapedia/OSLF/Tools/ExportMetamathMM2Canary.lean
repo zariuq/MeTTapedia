@@ -16,7 +16,7 @@ private def emit (rendered : Option String)
           IO.FS.writeFile outputPath output
           pure 0
   | none =>
-      IO.eprintln "the Metamath-to-MM2 canary is outside the ordinary MM2 surface"
+      IO.eprintln "the Metamath-to-MM2 canary is outside the ordinary MM2 syntax"
       pure 1
 
 def run (args : List String) : IO UInt32 := do

@@ -1389,7 +1389,7 @@ def Cursor.answer
 /-- A pure term-view kernel is a strategy-independent branching kernel plus
 the two certificates needed for scheduler freedom: a complete additive answer
 denotation and preservation of the shared-world handle by every successor. -/
-structure PureKernel
+structure TwoSortKernel
     (Owner : Type uOwner) (Revision : Type uRevision)
     (Occurrence : Type uOccurrence) (Plan : Type uPlan)
     (BranchBinding : Type uBranch) (WorldHandle : Type uWorld) where
@@ -1402,7 +1402,7 @@ structure PureKernel
       successor ∈ kernel.successors continuation ->
         successor.world = continuation.world
 
-namespace PureKernel
+namespace TwoSortKernel
 
 variable {Owner : Type uOwner} {Revision : Type uRevision}
   {Occurrence : Type uOccurrence} {Plan : Type uPlan}
@@ -1411,7 +1411,7 @@ variable {Owner : Type uOwner} {Revision : Type uRevision}
 /-- Any two completed occurrence-preserving strategies agree on the complete
 bag of provenance-bearing answers. -/
 theorem completed_strategies_occurrence_bag_agree
-    (pure : PureKernel Owner Revision Occurrence Plan
+    (pure : TwoSortKernel Owner Revision Occurrence Plan
       BranchBinding WorldHandle)
     {FirstMemory SecondMemory : Type*}
     (first : pure.kernel.Strategy FirstMemory)
@@ -1441,7 +1441,7 @@ theorem completed_strategies_occurrence_bag_agree
 /-- The same certificate separately exposes that scheduler freedom does not
 authorize a world transition. -/
 theorem successor_world_exact
-    (pure : PureKernel Owner Revision Occurrence Plan
+    (pure : TwoSortKernel Owner Revision Occurrence Plan
       BranchBinding WorldHandle)
     (continuation successor : Continuation
       (Cursor Owner Revision Occurrence Plan) BranchBinding WorldHandle)
@@ -1449,7 +1449,7 @@ theorem successor_world_exact
     successor.world = continuation.world :=
   pure.successors_preserve_world continuation successor generated
 
-end PureKernel
+end TwoSortKernel
 
 /-! ## Effect and commitment boundaries -/
 
@@ -2243,7 +2243,7 @@ end Canaries
 #print axioms ContextQualifiedMemoization.sourceIdentityKey_unsound_of_force_ne
 #print axioms EffectDelimited.force_plan_exact
 #print axioms EffectDelimited.normalize_force_and_holes_exact
-#print axioms PureKernel.completed_strategies_occurrence_bag_agree
+#print axioms TwoSortKernel.completed_strategies_occurrence_bag_agree
 #print axioms competing_world_writes_remain_observable
 #print axioms competing_commits_remain_observable
 #print axioms root_layers_le_complete

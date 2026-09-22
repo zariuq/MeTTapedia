@@ -66,6 +66,19 @@ structure ModalAlgebra : Type (u + 1) where
   dia : Carrier → Carrier
   box : Carrier → Carrier
   atom : String → Carrier
+  /-- A scope variable is a constant of the signature; the binding it refers to
+  lives in the interpretation, not in the syntax, which is what keeps the term
+  algebra initial on the nose once a generator is present. -/
+  var : Nat → Carrier
+  /-- A generator is a unary operation on the signature. -/
+  mu : Carrier → Carrier
+  /-- The empty collection of a kind: a constant of the signature, one per
+  collection kind. -/
+  emptyColl : CollType → Carrier
+  /-- The cut of a kind: the binary structural operation. -/
+  cut : CollType → Carrier → Carrier → Carrier
+  /-- Application under a named head: one unary operation per head. -/
+  headed : String → Carrier → Carrier
 
 /-- A homomorphism of modal algebras. -/
 structure ModalHom (A : ModalAlgebra.{u}) (B : ModalAlgebra.{v}) : Type (max u v) where
@@ -78,14 +91,19 @@ structure ModalHom (A : ModalAlgebra.{u}) (B : ModalAlgebra.{v}) : Type (max u v
   map_dia : ∀ x, map (A.dia x) = B.dia (map x)
   map_box : ∀ x, map (A.box x) = B.box (map x)
   map_atom : ∀ a, map (A.atom a) = B.atom a
+  map_var : ∀ k, map (A.var k) = B.var k
+  map_mu : ∀ x, map (A.mu x) = B.mu (map x)
+  map_emptyColl : ∀ kind, map (A.emptyColl kind) = B.emptyColl kind
+  map_cut : ∀ kind x y, map (A.cut kind x y) = B.cut kind (map x) (map y)
+  map_headed : ∀ label x, map (A.headed label x) = B.headed label (map x)
 
 namespace ModalHom
 
 variable {A : ModalAlgebra.{u}} {B : ModalAlgebra.{v}} {C : ModalAlgebra.{w}}
 
 theorem ext {f g : ModalHom A B} (h : ∀ x, f.map x = g.map x) : f = g := by
-  obtain ⟨fm, _, _, _, _, _, _, _, _⟩ := f
-  obtain ⟨gm, _, _, _, _, _, _, _, _⟩ := g
+  obtain ⟨fm, _, _, _, _, _, _, _, _, _, _, _, _, _⟩ := f
+  obtain ⟨gm, _, _, _, _, _, _, _, _, _, _, _, _, _⟩ := g
   have e : fm = gm := funext h
   subst e
   rfl
@@ -100,6 +118,11 @@ def id (A : ModalAlgebra.{u}) : ModalHom A A where
   map_dia := fun _ => rfl
   map_box := fun _ => rfl
   map_atom := fun _ => rfl
+  map_var := fun _ => rfl
+  map_mu := fun _ => rfl
+  map_emptyColl := fun _ => rfl
+  map_cut := fun _ _ _ => rfl
+  map_headed := fun _ _ => rfl
 
 def comp (f : ModalHom A B) (g : ModalHom B C) : ModalHom A C where
   map := fun x => g.map (f.map x)
@@ -111,6 +134,11 @@ def comp (f : ModalHom A B) (g : ModalHom B C) : ModalHom A C where
   map_dia := fun x => by rw [f.map_dia, g.map_dia]
   map_box := fun x => by rw [f.map_box, g.map_box]
   map_atom := fun a => by rw [f.map_atom, g.map_atom]
+  map_var := fun k => by rw [f.map_var, g.map_var]
+  map_mu := fun x => by rw [f.map_mu, g.map_mu]
+  map_emptyColl := fun kind => by rw [f.map_emptyColl, g.map_emptyColl]
+  map_cut := fun kind x y => by rw [f.map_cut, g.map_cut]
+  map_headed := fun label x => by rw [f.map_headed, g.map_headed]
 
 end ModalHom
 
@@ -127,6 +155,11 @@ def formulas : ModalAlgebra.{0} where
   dia := .dia
   box := .box
   atom := .atom
+  var := .var
+  mu := .mu
+  emptyColl := .emptyColl
+  cut := .cut
+  headed := .headed
 
 /-- Evaluation of a formula in an arbitrary modal algebra. -/
 def fold (A : ModalAlgebra.{u}) : OSLFFormula → A.Carrier
@@ -138,6 +171,11 @@ def fold (A : ModalAlgebra.{u}) : OSLFFormula → A.Carrier
   | .imp φ ψ => A.imp (fold A φ) (fold A ψ)
   | .dia φ => A.dia (fold A φ)
   | .box φ => A.box (fold A φ)
+  | .var k => A.var k
+  | .mu φ => A.mu (fold A φ)
+  | .emptyColl kind => A.emptyColl kind
+  | .cut kind φ ψ => A.cut kind (fold A φ) (fold A ψ)
+  | .headed label φ => A.headed label (fold A φ)
 
 def foldHom (A : ModalAlgebra.{u}) : ModalHom formulas A where
   map := fold A
@@ -149,6 +187,11 @@ def foldHom (A : ModalAlgebra.{u}) : ModalHom formulas A where
   map_dia := fun _ => rfl
   map_box := fun _ => rfl
   map_atom := fun _ => rfl
+  map_var := fun _ => rfl
+  map_mu := fun _ => rfl
+  map_emptyColl := fun _ => rfl
+  map_cut := fun _ _ _ => rfl
+  map_headed := fun _ _ => rfl
 
 /-- Every homomorphism out of the term algebra is evaluation. -/
 theorem hom_eq_fold (A : ModalAlgebra.{u}) (h : ModalHom formulas A) :
@@ -171,8 +214,21 @@ theorem hom_eq_fold (A : ModalAlgebra.{u}) (h : ModalHom formulas A) :
   | .dia φ => by
       erw [show OSLFFormula.dia φ = formulas.dia φ from rfl, h.map_dia, hom_eq_fold A h φ]
       rfl
+  | .var k => h.map_var k
+  | .mu φ => by
+      erw [show OSLFFormula.mu φ = formulas.mu φ from rfl, h.map_mu, hom_eq_fold A h φ]
+      rfl
   | .box φ => by
       erw [show OSLFFormula.box φ = formulas.box φ from rfl, h.map_box, hom_eq_fold A h φ]
+      rfl
+  | .emptyColl kind => h.map_emptyColl kind
+  | .cut kind φ ψ => by
+      erw [show OSLFFormula.cut kind φ ψ = formulas.cut kind φ ψ from rfl, h.map_cut,
+        hom_eq_fold A h φ, hom_eq_fold A h ψ]
+      rfl
+  | .headed label φ => by
+      erw [show OSLFFormula.headed label φ = formulas.headed label φ from rfl, h.map_headed,
+        hom_eq_fold A h φ]
       rfl
 
 /-- **Initiality.**  The term algebra has exactly one homomorphism into every
@@ -233,6 +289,11 @@ def pointAlgebra : ModalAlgebra.{0} where
   dia := fun _ => ()
   box := fun _ => ()
   atom := fun _ => ()
+  var := fun _ => ()
+  mu := fun _ => ()
+  emptyColl := fun _ => ()
+  cut := fun _ _ _ => ()
+  headed := fun _ _ => ()
 
 theorem point_identifies_top_bot : Identifies pointAlgebra .top .bot := rfl
 
@@ -242,42 +303,78 @@ theorem formulas_distinguishes_top_bot : ¬ Identifies formulas .top .bot := by
 
 /-! ## Satisfaction is the unique homomorphism -/
 
-/-- The predicate algebra of a reduction relation with an atom interpretation. -/
-def relAlgebra (R : Pattern → Pattern → Prop) (I : AtomSem) : ModalAlgebra.{0} where
-  Carrier := Pattern → Prop
-  top := fun _ => True
-  bot := fun _ => False
-  and := fun φ ψ p => φ p ∧ ψ p
-  or := fun φ ψ p => φ p ∨ ψ p
-  imp := fun φ ψ p => φ p → ψ p
-  dia := fun φ p => ∃ q, R p q ∧ φ q
-  box := fun φ p => ∀ q, R q p → φ q
-  atom := fun a => I a
+/-- The predicate algebra of a reduction relation with an atom interpretation.
 
-/-- `sem` is evaluation in the predicate algebra: the unique homomorphism. -/
-theorem sem_eq_fold (R : Pattern → Pattern → Prop) (I : AtomSem) :
-    ∀ φ, sem R I φ = fold (relAlgebra R I) φ
-  | .top => rfl
-  | .bot => rfl
-  | .atom _ => rfl
-  | .and φ ψ => by
-      funext p
-      simp only [sem, fold, relAlgebra, sem_eq_fold R I φ, sem_eq_fold R I ψ]
-  | .or φ ψ => by
-      funext p
-      simp only [sem, fold, relAlgebra, sem_eq_fold R I φ, sem_eq_fold R I ψ]
-  | .imp φ ψ => by
-      funext p
-      simp only [sem, fold, relAlgebra, sem_eq_fold R I φ, sem_eq_fold R I ψ]
-  | .dia φ => by
-      funext p
-      simp only [sem, fold, relAlgebra, sem_eq_fold R I φ]
-  | .box φ => by
-      funext p
-      simp only [sem, fold, relAlgebra, sem_eq_fold R I φ]
+Its carrier is the environment-indexed predicates, not the bare predicates: a
+generator reads its body under one more binding than itself, so the operation
+interpreting it cannot be a function of the body's meaning at a single
+environment.  This is the same fact that makes generator length a function of
+syntax, seen on the algebraic side. -/
+def relAlgebra (R : Pattern → Pattern → Prop) (F : PredFrame) (I : AtomSem) :
+    ModalAlgebra.{0} where
+  Carrier := ScopeEnv → Pattern → Prop
+  top := fun _ _ => True
+  bot := fun _ _ => False
+  and := fun φ ψ env p => φ env p ∧ ψ env p
+  or := fun φ ψ env p => φ env p ∨ ψ env p
+  imp := fun φ ψ env p => φ env p → ψ env p
+  dia := fun φ env p => ∃ q, R p q ∧ φ env q
+  box := fun φ env p => ∀ q, R q p → φ env q
+  atom := fun a _ => I a
+  var := fun k env => env k
+  mu := fun φ env p =>
+    ∀ candidate : Pattern → Prop, F.Mem candidate →
+      (∀ t, φ (ScopeEnv.push candidate env) t → candidate t) → candidate p
+  emptyColl := fun kind _ p =>
+    F.close (fun term => term = .collection kind [] none) p
+  cut := fun kind left right env p =>
+    F.close
+      (fun term => ∃ leftParts rightParts : List Pattern,
+        term = .collection kind (leftParts ++ rightParts) none ∧
+          left env (.collection kind leftParts none) ∧
+          right env (.collection kind rightParts none)) p
+  headed := fun label body env p =>
+    F.close
+      (fun term => ∃ inner : Pattern, term = .apply label [inner] ∧ body env inner) p
+
+/-- `semEnv` is evaluation in the predicate algebra: the unique homomorphism. -/
+theorem semEnv_eq_fold (R : Pattern → Pattern → Prop) (F : PredFrame) (I : AtomSem) :
+    ∀ (φ : OSLFFormula) (env : ScopeEnv) (p : Pattern),
+      semEnv R F I env φ p = fold (relAlgebra R F I) φ env p
+  | .top, _, _ => rfl
+  | .bot, _, _ => rfl
+  | .atom _, _, _ => rfl
+  | .var _, _, _ => rfl
+  | .and φ ψ, env, p => by
+      simp only [semEnv, fold, relAlgebra, semEnv_eq_fold R F I φ env p,
+        semEnv_eq_fold R F I ψ env p]
+  | .or φ ψ, env, p => by
+      simp only [semEnv, fold, relAlgebra, semEnv_eq_fold R F I φ env p,
+        semEnv_eq_fold R F I ψ env p]
+  | .imp φ ψ, env, p => by
+      simp only [semEnv, fold, relAlgebra, semEnv_eq_fold R F I φ env p,
+        semEnv_eq_fold R F I ψ env p]
+  | .dia φ, env, p => by
+      simp only [semEnv, fold, relAlgebra, semEnv_eq_fold R F I φ env]
+  | .box φ, env, p => by
+      simp only [semEnv, fold, relAlgebra, semEnv_eq_fold R F I φ]
+  | .mu φ, env, p => by
+      simp only [semEnv, fold, relAlgebra, semEnv_eq_fold R F I φ]
+  | .emptyColl _, _, _ => rfl
+  | .cut _ φ ψ, env, p => by
+      simp only [semEnv, fold, relAlgebra, semEnv_eq_fold R F I φ env,
+        semEnv_eq_fold R F I ψ env]
+  | .headed _ φ, env, p => by
+      simp only [semEnv, fold, relAlgebra, semEnv_eq_fold R F I φ env]
+
+/-- `sem` is evaluation in the predicate algebra at the empty environment. -/
+theorem sem_eq_fold (R : Pattern → Pattern → Prop) (I : AtomSem) (φ : OSLFFormula) :
+    sem R I φ = fold (relAlgebra R fullFrame I) φ ScopeEnv.empty :=
+  funext fun p => semEnv_eq_fold R fullFrame I φ ScopeEnv.empty p
 
 theorem sem_eq_foldHom (R : Pattern → Pattern → Prop) (I : AtomSem) (φ : OSLFFormula) :
-    sem R I φ = (default : ModalHom formulas (relAlgebra R I)).map φ :=
+    sem R I φ =
+      (default : ModalHom formulas (relAlgebra R fullFrame I)).map φ ScopeEnv.empty :=
   sem_eq_fold R I φ
 
 /-- The graph span of a relation. -/
@@ -287,9 +384,9 @@ def relSpan (R : Pattern → Pattern → Prop) : ReductionSpan.{0, 0} Pattern wh
   target := fun e => e.1.2
 
 /-- The change-of-base diamond over the graph span is the algebra's `dia`. -/
-theorem derivedDiamond_relSpan (R : Pattern → Pattern → Prop) (I : AtomSem)
-    (φ : Pattern → Prop) :
-    derivedDiamond (relSpan R) φ = (relAlgebra R I).dia φ := by
+theorem derivedDiamond_relSpan (R : Pattern → Pattern → Prop) (F : PredFrame)
+    (I : AtomSem) (φ : Pattern → Prop) (env : ScopeEnv) :
+    derivedDiamond (relSpan R) φ = (relAlgebra R F I).dia (fun _ => φ) env := by
   funext p
   apply propext
   simp only [derivedDiamond, di, pb, relSpan, relAlgebra, Function.comp]
@@ -300,9 +397,9 @@ theorem derivedDiamond_relSpan (R : Pattern → Pattern → Prop) (I : AtomSem)
     exact ⟨⟨(p, q), hR⟩, rfl, hφ⟩
 
 /-- The change-of-base box over the graph span is the algebra's `box`. -/
-theorem derivedBox_relSpan (R : Pattern → Pattern → Prop) (I : AtomSem)
-    (φ : Pattern → Prop) :
-    derivedBox (relSpan R) φ = (relAlgebra R I).box φ := by
+theorem derivedBox_relSpan (R : Pattern → Pattern → Prop) (F : PredFrame)
+    (I : AtomSem) (φ : Pattern → Prop) (env : ScopeEnv) :
+    derivedBox (relSpan R) φ = (relAlgebra R F I).box (fun _ => φ) env := by
   funext p
   apply propext
   simp only [derivedBox, ui, pb, relSpan, relAlgebra, Function.comp]
@@ -315,52 +412,59 @@ theorem derivedBox_relSpan (R : Pattern → Pattern → Prop) (I : AtomSem)
 /-! ## Transport is forced by universality -/
 
 /-- A bisimulation map pulls the target predicate algebra back to the source
-one, homomorphically. -/
-def pullbackHom {R₁ R₂ : Pattern → Pattern → Prop} {I₁ I₂ : AtomSem}
-    (sim : BisimulationMap R₁ R₂ I₁ I₂) :
-    ModalHom (relAlgebra R₂ I₂) (relAlgebra R₁ I₁) where
-  map := fun φ p => φ (sim.f p)
-  map_top := rfl
-  map_bot := rfl
-  map_and := fun _ _ => rfl
-  map_or := fun _ _ => rfl
-  map_imp := fun _ _ => rfl
-  map_dia := fun φ => by
-    funext p
-    apply propext
-    show (∃ q, R₂ (sim.f p) q ∧ φ q) ↔ ∃ q, R₁ p q ∧ φ (sim.f q)
+one on every operation of the base signature.
+
+It does **not** extend to a homomorphism of the full signature, and the reason
+is structural rather than technical: the carrier of `relAlgebra` is indexed by
+scope environments, a bisimulation map acts on terms and so has no action on
+environments, and the generator's operation reads its argument at an
+environment one binding deeper.  The base-signature statement is therefore what
+initiality can deliver here, and the transport theorem below is stated on the
+formulas the base signature generates. -/
+structure PullbackBaseHom {R₁ R₂ : Pattern → Pattern → Prop} {I₁ I₂ : AtomSem}
+    (sim : BisimulationMap R₁ R₂ I₁ I₂) : Prop where
+  dia : ∀ (φ : ScopeEnv → Pattern → Prop) (env : ScopeEnv) (p : Pattern),
+    (relAlgebra R₂ fullFrame I₂).dia φ env (sim.f p)
+      ↔ (relAlgebra R₁ fullFrame I₁).dia (fun e q => φ e (sim.f q)) env p
+  box : ∀ (φ : ScopeEnv → Pattern → Prop) (env : ScopeEnv) (p : Pattern),
+    (relAlgebra R₂ fullFrame I₂).box φ env (sim.f p)
+      ↔ (relAlgebra R₁ fullFrame I₁).box (fun e q => φ e (sim.f q)) env p
+  atom : ∀ (a : String) (env : ScopeEnv) (p : Pattern),
+    (relAlgebra R₂ fullFrame I₂).atom a env (sim.f p)
+      ↔ (relAlgebra R₁ fullFrame I₁).atom a env p
+
+theorem pullbackBaseHom {R₁ R₂ : Pattern → Pattern → Prop} {I₁ I₂ : AtomSem}
+    (sim : BisimulationMap R₁ R₂ I₁ I₂) : PullbackBaseHom sim where
+  dia := by
+    intro φ env p
+    show (∃ q, R₂ (sim.f p) q ∧ φ env q) ↔ ∃ q, R₁ p q ∧ φ env (sim.f q)
     constructor
     · rintro ⟨q₂, h, hφ⟩
       obtain ⟨q₁, hR, rfl⟩ := sim.backward_succ p q₂ h
       exact ⟨q₁, hR, hφ⟩
     · rintro ⟨q₁, h, hφ⟩
       exact ⟨sim.f q₁, sim.forward p q₁ h, hφ⟩
-  map_box := fun φ => by
-    funext p
-    apply propext
-    show (∀ q, R₂ q (sim.f p) → φ q) ↔ ∀ q, R₁ q p → φ (sim.f q)
+  box := by
+    intro φ env p
+    show (∀ q, R₂ q (sim.f p) → φ env q) ↔ ∀ q, R₁ q p → φ env (sim.f q)
     constructor
     · intro h q₁ hR
       exact h _ (sim.forward q₁ p hR)
     · intro h q₂ hR
       obtain ⟨q₁, hR₁, rfl⟩ := sim.backward_pred p q₂ hR
       exact h q₁ hR₁
-  map_atom := fun a => by
-    funext p
-    exact propext (sim.atoms a p).symm
+  atom := by
+    intro a env p
+    exact (sim.atoms a p).symm
 
-/-- Bisimulation transport of modal meaning, derived from initiality alone:
-both `sem R₁ I₁` and `(pullbackHom sim).map ∘ sem R₂ I₂` are homomorphisms out
-of the term algebra, hence equal. -/
+/-- Bisimulation transport of modal meaning on the formulas the base signature
+generates.  The generator is excluded for the reason recorded above, not by
+oversight: past it the two readings are taken in different lattices. -/
 theorem sem_transport_of_initiality {R₁ R₂ : Pattern → Pattern → Prop}
     {I₁ I₂ : AtomSem} (sim : BisimulationMap R₁ R₂ I₁ I₂)
-    (φ : OSLFFormula) (p : Pattern) :
-    sem R₁ I₁ φ p ↔ sem R₂ I₂ φ (sim.f p) := by
-  have factor : ∀ χ, fold (relAlgebra R₁ I₁) χ =
-      (pullbackHom sim).map (fold (relAlgebra R₂ I₂) χ) :=
-    fun χ => (hom_eq_fold _ ((foldHom _).comp (pullbackHom sim)) χ).symm
-  rw [sem_eq_fold R₁ I₁ φ, sem_eq_fold R₂ I₂ φ, factor φ]
-  exact Iff.rfl
+    (φ : OSLFFormula) (free : OSLFFormula.modalOnly φ = true) (p : Pattern) :
+    sem R₁ I₁ φ p ↔ sem R₂ I₂ φ (sim.f p) :=
+  bisimulation_map_preserves_sem sim φ free p
 
 /-! ## Derivability is the least rule-closed set -/
 
@@ -456,30 +560,77 @@ def substAtoms (σ : String → OSLFFormula) : OSLFFormula → OSLFFormula
   | .imp φ ψ => .imp (substAtoms σ φ) (substAtoms σ ψ)
   | .dia φ => .dia (substAtoms σ φ)
   | .box φ => .box (substAtoms σ φ)
+  | .var k => .var k
+  | .mu φ => .mu (substAtoms σ φ)
+  | .emptyColl kind => .emptyColl kind
+  | .cut kind φ ψ => .cut kind (substAtoms σ φ) (substAtoms σ ψ)
+  | .headed label φ => .headed label (substAtoms σ φ)
 
 /-- Substitution lemma: substituting then evaluating is evaluating under the
-substituted atom interpretation. -/
+substituted atom interpretation.
+
+The substituted formulas must be closed and frame-blind, which membership in
+the modal fragment delivers: an atom stands inside any number of binders, so a
+substituted formula that read a scope variable would read a different one at
+each occurrence, and one that read shape would be read in a different frame at
+each occurrence. -/
+theorem semEnv_substAtoms (R : Pattern → Pattern → Prop) (F : PredFrame) (I : AtomSem)
+    (σ : String → OSLFFormula) (closed : ∀ a, OSLFFormula.modalOnly (σ a) = true) :
+    ∀ φ env, semEnv R F I env (substAtoms σ φ)
+      = semEnv R F (fun a => sem R I (σ a)) env φ
+  | .top, _ => rfl
+  | .bot, _ => rfl
+  | .var _, _ => rfl
+  | .atom a, env => by
+      simpa [substAtoms, semEnv, sem] using
+        semEnv_frame_irrelevant R F fullFrame I (σ a) (closed a) env ScopeEnv.empty
+  | .and φ ψ, env => by
+      funext p
+      simp only [substAtoms, semEnv, semEnv_substAtoms R F I σ closed φ env,
+        semEnv_substAtoms R F I σ closed ψ env]
+  | .or φ ψ, env => by
+      funext p
+      simp only [substAtoms, semEnv, semEnv_substAtoms R F I σ closed φ env,
+        semEnv_substAtoms R F I σ closed ψ env]
+  | .imp φ ψ, env => by
+      funext p
+      simp only [substAtoms, semEnv, semEnv_substAtoms R F I σ closed φ env,
+        semEnv_substAtoms R F I σ closed ψ env]
+  | .dia φ, env => by
+      funext p
+      simp only [substAtoms, semEnv, semEnv_substAtoms R F I σ closed φ env]
+  | .box φ, env => by
+      funext p
+      simp only [substAtoms, semEnv, semEnv_substAtoms R F I σ closed φ env]
+  | .mu φ, env => by
+      funext p
+      simp only [substAtoms, semEnv]
+      apply propext
+      constructor
+      · intro holds candidate memc pre
+        refine holds candidate memc ?_
+        intro u hu
+        rw [semEnv_substAtoms R F I σ closed φ (ScopeEnv.push candidate env)] at hu
+        exact pre u hu
+      · intro holds candidate memc pre
+        refine holds candidate memc ?_
+        intro u hu
+        rw [← semEnv_substAtoms R F I σ closed φ (ScopeEnv.push candidate env)] at hu
+        exact pre u hu
+  | .emptyColl _, _ => rfl
+  | .cut _ φ ψ, env => by
+      funext p
+      simp only [substAtoms, semEnv, semEnv_substAtoms R F I σ closed φ env,
+        semEnv_substAtoms R F I σ closed ψ env]
+  | .headed _ φ, env => by
+      funext p
+      simp only [substAtoms, semEnv, semEnv_substAtoms R F I σ closed φ env]
+
 theorem sem_substAtoms (R : Pattern → Pattern → Prop) (I : AtomSem)
-    (σ : String → OSLFFormula) :
-    ∀ φ, sem R I (substAtoms σ φ) = sem R (fun a => sem R I (σ a)) φ
-  | .top => rfl
-  | .bot => rfl
-  | .atom _ => rfl
-  | .and φ ψ => by
-      funext p
-      simp only [substAtoms, sem, sem_substAtoms R I σ φ, sem_substAtoms R I σ ψ]
-  | .or φ ψ => by
-      funext p
-      simp only [substAtoms, sem, sem_substAtoms R I σ φ, sem_substAtoms R I σ ψ]
-  | .imp φ ψ => by
-      funext p
-      simp only [substAtoms, sem, sem_substAtoms R I σ φ, sem_substAtoms R I σ ψ]
-  | .dia φ => by
-      funext p
-      simp only [substAtoms, sem, sem_substAtoms R I σ φ]
-  | .box φ => by
-      funext p
-      simp only [substAtoms, sem, sem_substAtoms R I σ φ]
+    (σ : String → OSLFFormula) (closed : ∀ a, OSLFFormula.modalOnly (σ a) = true)
+    (φ : OSLFFormula) :
+    sem R I (substAtoms σ φ) = sem R (fun a => sem R I (σ a)) φ :=
+  semEnv_substAtoms R fullFrame I σ closed φ ScopeEnv.empty
 
 /-- Any inhabitant of the state type, to instantiate a universally quantified
 model statement. -/

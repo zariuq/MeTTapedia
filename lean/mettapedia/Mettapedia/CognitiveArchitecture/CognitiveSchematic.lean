@@ -24,6 +24,9 @@ in the loose-relation equipment.  Its predicate-transformer presentation is
 `context -> mustPrecondition procedure goal`.  We also expose the distinct
 constructive `mayPrecondition`: branching systems must not silently identify
 "every outcome succeeds" with "a successful outcome can be selected".
+The must certificate is conditional on a supplied execution occurrence. It
+does not prove execution existence, progress, or termination; in particular,
+an empty procedure relation satisfies it vacuously.
 
 `Schematic` contains only a candidate context/procedure/goal triple.
 `MustAchieve` and `MayAchieve` are separate certificates.  Probabilistic
@@ -75,8 +78,9 @@ namespace Schematic
 
 variable {Source Middle Target : Type u}
 
-/-- Demonic or total achievement: every retained execution occurrence from a
-context witness produces goal evidence. -/
+/-- Conditional demonic achievement: every supplied execution occurrence from
+a context witness produces goal evidence. This does not establish execution
+existence or termination. -/
 abbrev MustAchieve (schematic : Schematic Source Target) : Type u :=
   forall {source target},
     schematic.context source ->
@@ -377,8 +381,8 @@ theorem branching_not_must : IsEmpty branching.MustAchieve := by
   exact Empty.elim
     (certificate (source := ()) (target := false) () ())
 
-/-- A candidate with no execution occurrence.  Candidate formation remains
-possible even when no achievement certificate exists. -/
+/-- A candidate with no execution occurrence. Its must certificate is vacuous,
+while no constructive may certificate exists. -/
 def unavailable : Schematic Unit Unit where
   context := fun _ => Unit
   procedure := fun _ _ => Empty
@@ -390,6 +394,18 @@ theorem unavailable_not_may : IsEmpty unavailable.MayAchieve := by
   intro certificate
   obtain ⟨_target, execution, _goal⟩ := certificate (source := ()) ()
   exact Empty.elim execution
+
+/-- The unavailable candidate meets the conditional must contract without
+supplying any execution. This is a vacuity control, not a progress certificate. -/
+def unavailableMust : unavailable.MustAchieve := by
+  intro _source _target _context execution
+  exact Empty.elim execution
+
+/-- Negative control: conditional outcome correctness does not establish the
+existence of a successful execution. -/
+theorem must_does_not_supply_execution :
+    Nonempty unavailable.MustAchieve ∧ IsEmpty unavailable.MayAchieve :=
+  ⟨⟨unavailableMust⟩, unavailable_not_may⟩
 
 inductive DuplicateOccurrence where
   | first
@@ -429,6 +445,7 @@ end Canary
 #print axioms Schematic.mayPreconditionComp
 #print axioms Canary.branching_not_must
 #print axioms Canary.unavailable_not_may
+#print axioms Canary.must_does_not_supply_execution
 #print axioms Canary.duplicate_choices_remain_distinct
 
 end Mettapedia.CognitiveArchitecture.CognitiveSchematic

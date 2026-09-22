@@ -404,7 +404,7 @@ private def exactMiddleStep :
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?]
   premises := .nil exactBindings
   result := by
-    simp [applyBindingsForRule, applyBindingsForRuleUsing, middleTyping,
+    simp [applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, middleTyping,
       middleSite, DisplayedRewriteSite.rewrite, source, sourceLanguage,
       contextualRewrite, exactBindings, leftValue, focusValue, rightValue,
       applyBindings, Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
@@ -433,7 +433,7 @@ theorem middle_occurrence_cannot_invent_left_result :
         source, sourceLanguage, contextualRewrite, ternaryTerm, middleBefore,
         leftValue, focusValue, rightValue, matchPattern, matchArgs,
         mergeBindings, premisesUsing, applyBindingsForRule,
-        applyBindingsForRuleUsing, applyBindings, Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+        applyBindingsForRuleUsing, applyRuleBindings, applyBindings, Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
         Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.matchingPresentationForRule?,
         Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
         Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?] at member

@@ -214,7 +214,8 @@ private theorem apply_succeed (subject : Pattern) (kont : List Frame) :
     nilBindingsPattern,
     metavariable, encodeState, encodeDecision,
     encodeBindings, matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_capture (path : AccessPath) (name : String) (subject : Pattern)
@@ -233,7 +234,8 @@ private theorem apply_capture (path : AccessPath) (name : String) (subject : Pat
     nilBindingsPattern, bindPattern,
     metavariable, encodeState, encodeDecision,
     matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings, tuples_project_none path subject _ projection]
   | some focused =>
       simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
@@ -243,7 +245,8 @@ private theorem apply_capture (path : AccessPath) (name : String) (subject : Pat
     nilBindingsPattern, bindPattern,
     metavariable, encodeState, encodeDecision,
     encodeBindings, matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup, tuples_project_some path subject focused _ projection]
 
 private theorem apply_checkBound (path : AccessPath) (expected : Nat) (subject : Pattern)
@@ -263,7 +266,8 @@ private theorem apply_checkBound (path : AccessPath) (expected : Nat) (subject :
     nilBindingsPattern,
     metavariable, encodeState, encodeDecision,
     matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings, tuples_project_none path subject _ projection]
   | some focused =>
       cases bound : isBoundAt focused expected <;>
@@ -274,7 +278,8 @@ private theorem apply_checkBound (path : AccessPath) (expected : Nat) (subject :
     nilBindingsPattern,
     metavariable, encodeState, encodeDecision,
     encodeBindings, matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup, tuples_project_some path subject focused _ projection, tuples_bound,
         rowWhen, bound]
 
@@ -296,7 +301,8 @@ private theorem apply_checkConstructor (path : AccessPath) (expected : String) (
     checkConstructorPattern,
     metavariable, encodeState, encodeDecision,
     matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings, tuples_project_none path subject _ projection]
   | some focused =>
       cases constructorTest : isConstructorOf focused expected arity <;>
@@ -307,7 +313,8 @@ private theorem apply_checkConstructor (path : AccessPath) (expected : String) (
     checkConstructorPattern,
     metavariable, encodeState, encodeDecision,
     matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup, tuples_project_some path subject focused _ projection,
         tuples_constructor, rowWhen, constructorTest]
 
@@ -322,7 +329,8 @@ private theorem apply_join (head tail : Decision) (subject : Pattern) (kont : Li
     joinPattern, joinRightPattern,
     kconsPattern, metavariable, encodeState, encodeDecision,
     encodeFrame, encodeKont, matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_joinRight (bindings : Bindings) (tail : Decision) (subject : Pattern)
@@ -337,7 +345,8 @@ private theorem apply_joinRight (bindings : Bindings) (tail : Decision) (subject
     joinRightPattern,
     joinMergePattern, kconsPattern, metavariable, encodeState,
     encodeFrame, encodeKont, matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_joinMerge (tailBindings headBindings : Bindings) (subject : Pattern)
@@ -356,7 +365,8 @@ private theorem apply_joinMerge (tailBindings headBindings : Bindings) (subject 
 
     joinMergePattern, kconsPattern, metavariable, encodeState,
     encodeFrame, encodeKont, matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings, tuples_merge_none headBindings tailBindings _ merge]
   | some merged =>
       simp +decide [applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
@@ -366,7 +376,8 @@ private theorem apply_joinMerge (tailBindings headBindings : Bindings) (subject 
 
     joinMergePattern, kconsPattern, metavariable, encodeState,
     encodeFrame, encodeKont, matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup, tuples_merge_some headBindings tailBindings merged _ merge]
 
 private theorem apply_finish (bindings : Bindings) (subject : Pattern) :
@@ -380,7 +391,8 @@ private theorem apply_finish (bindings : Bindings) (subject : Pattern) :
 
     knilPattern, metavariable, encodeState,
     encodeKont, matchPatternForRule_eq_syntactic,
-    applyBindingsForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule_eq_syntactic, applyRuleBindings,
+    matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 /-! ## Executor equations, one per state family -/

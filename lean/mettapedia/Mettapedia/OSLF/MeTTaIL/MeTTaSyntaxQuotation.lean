@@ -495,6 +495,149 @@ elab_rules : term <= expectedType
   | `(metta_sexpr_file% he $path:str) =>
       elaborateSExprFile MeTTailCore.MeTTaSyntax.he path expectedType
 
+/-- Quote all top-level S-expressions with their physical starting lines.
+This is the existing program scanner before lossy pattern lowering, not the
+line-oriented answer-stream reader below. Parsing remains an executable
+boundary, not a kernel theorem about source bytes. -/
+scoped syntax "metta_sexpr_program_file% " (&"petta" <|> &"he") str : term
+
+/-- Balanced list construction keeps whole-program quotation depth logarithmic
+in the number of top-level forms without changing their order or carrier. -/
+private partial def quoteProgramRows
+    (rows : List (Nat × Algorithms.MeTTa.Simple.Parser.SExpr)) :
+    MacroM (TSyntax `term) := do
+  match rows with
+  | [] => `([])
+  | [(line, expression)] =>
+    let tree ← quoteSExpr expression
+    `([ (($(quote line) : Nat), $tree) ])
+  | _ =>
+    let (first, rest) := rows.splitAt (rows.length / 2)
+    let left ← quoteProgramRows first
+    let right ← quoteProgramRows rest
+    `($left ++ $right)
+
+private def elaborateSExprProgramFile (spec : SyntaxSpec) (path : TSyntax `str)
+    (expectedType : Expr) : TermElabM Expr := do
+  let context ← readThe Lean.Core.Context
+  let currentFile := System.FilePath.mk context.fileName
+  let some parent := currentFile.parent
+    | throwErrorAt path "cannot determine the quoting file's parent directory"
+  let contents ← IO.FS.readFile (parent / path.getString)
+  match Algorithms.MeTTa.Simple.Parser.parseSExprProgramWithDetailed spec contents with
+  | .error error => throwErrorAt path s!"MeTTa source program parse failed: {error.render}"
+  | .ok rows =>
+    let quoted ← liftMacroM (quoteProgramRows rows)
+    elabTerm quoted expectedType
+
+elab_rules : term <= expectedType
+  | `(metta_sexpr_program_file% petta $path:str) =>
+      elaborateSExprProgramFile MeTTailCore.MeTTaSyntax.petta path expectedType
+  | `(metta_sexpr_program_file% he $path:str) =>
+      elaborateSExprProgramFile MeTTailCore.MeTTaSyntax.he path expectedType
+
+#guard Algorithms.MeTTa.Simple.Parser.parseSExprProgramWithDetailed
+    MeTTailCore.MeTTaSyntax.petta "; heading\na\n(a)\n; middle\n(f\n  $x)\na\n" =
+  .ok [(2, .atom "a"), (3, .list [.atom "a"]),
+    (5, .list [.atom "f", .atom "$x"]), (7, .atom "a")]
+
+#guard (Algorithms.MeTTa.Simple.Parser.parseSExprProgramWithDetailed
+  MeTTailCore.MeTTaSyntax.he "(a)\n(b\n").isOk = false
+
+#guard (Algorithms.MeTTa.Simple.Parser.parseSExprProgramWithDetailed
+  MeTTailCore.MeTTaSyntax.petta "(quote \"; (still a string)\")\n(empty)\n").isOk = true
+
+/-- Whole source commands, retaining the evaluation-prefix bit separately
+from the raw expression. This does not execute imports or assert queries. -/
+scoped syntax "metta_sexpr_commands_file% " (&"petta" <|> &"he") str : term
+
+/-- The same complete command stream, stored in ordinary finite list chunks.
+Flattening is its ordered list view; no command or subtree is filtered. -/
+scoped syntax "metta_sexpr_command_chunks_file% " (&"petta" <|> &"he") str : term
+
+private def sourceListExpr (type : Expr) (elements : List Expr) : Expr :=
+  elements.foldr (fun value rest => mkAppN (Lean.mkConst ``List.cons [.zero]) #[type, value, rest])
+    (mkApp (Lean.mkConst ``List.nil [.zero]) type)
+
+private partial def sourceSExprExpr : Algorithms.MeTTa.Simple.Parser.SExpr → Expr
+  | .atom token => mkApp (Lean.mkConst ``Algorithms.MeTTa.Simple.Parser.SExpr.atom) (toExpr token)
+  | .list children => mkApp (Lean.mkConst ``Algorithms.MeTTa.Simple.Parser.SExpr.list)
+      (sourceListExpr (Lean.mkConst ``Algorithms.MeTTa.Simple.Parser.SExpr) (children.map sourceSExprExpr))
+
+/-- Construct typed constructor expressions directly. Re-elaborating hundreds
+of large quoted syntax trees needlessly repeats name and type resolution. The
+kernel still checks these ordinary constructor terms. -/
+private partial def sourceCommandsExpr
+    (rows : List (Nat × Bool × Algorithms.MeTTa.Simple.Parser.SExpr)) : Expr :=
+  let treeType := Lean.mkConst ``Algorithms.MeTTa.Simple.Parser.SExpr
+  let tailType := mkApp2 (Lean.mkConst ``Prod [.zero, .zero]) (Lean.mkConst ``Bool) treeType
+  let rowType := mkApp2 (Lean.mkConst ``Prod [.zero, .zero]) (Lean.mkConst ``Nat) tailType
+  match rows with
+  | [] => sourceListExpr rowType []
+  | [(line, query, expression)] =>
+      let tail := mkAppN (Lean.mkConst ``Prod.mk [.zero, .zero])
+        #[Lean.mkConst ``Bool, treeType, toExpr query, sourceSExprExpr expression]
+      sourceListExpr rowType [mkAppN (Lean.mkConst ``Prod.mk [.zero, .zero])
+        #[Lean.mkConst ``Nat, tailType, toExpr line, tail]]
+  | _ =>
+      let (first, rest) := rows.splitAt (rows.length / 2)
+      mkAppN (Lean.mkConst ``List.append [.zero])
+        #[rowType, sourceCommandsExpr first, sourceCommandsExpr rest]
+
+/-- Named ordinary definitions keep compilation of the aggregate from
+normalizing one enormous constructor spine. Each chunk remains transparent,
+kernel-checked source data; its size is a quotation layout choice. -/
+private partial def sourceCommandChunkRefs
+    (rows : List (Nat × Bool × Algorithms.MeTTa.Simple.Parser.SExpr)) : TermElabM (List Expr) := do
+  if rows.isEmpty then
+    return []
+  else if rows.length ≤ 16 then
+    let treeType := Lean.mkConst ``Algorithms.MeTTa.Simple.Parser.SExpr
+    let tailType := mkApp2 (Lean.mkConst ``Prod [.zero, .zero]) (Lean.mkConst ``Bool) treeType
+    let rowType := mkApp2 (Lean.mkConst ``Prod [.zero, .zero]) (Lean.mkConst ``Nat) tailType
+    let chunkType := mkApp (Lean.mkConst ``List [.zero]) rowType
+    let chunk ← Lean.Meta.mkAuxDefinition (← mkAuxName `sourceCommandChunk) chunkType
+      (sourceCommandsExpr rows)
+    return [chunk]
+  else
+    let (first, rest) := rows.splitAt (rows.length / 2)
+    return (← sourceCommandChunkRefs first) ++ (← sourceCommandChunkRefs rest)
+
+private def sourceCommandChunksExpr
+    (rows : List (Nat × Bool × Algorithms.MeTTa.Simple.Parser.SExpr)) : TermElabM Expr := do
+  let treeType := Lean.mkConst ``Algorithms.MeTTa.Simple.Parser.SExpr
+  let tailType := mkApp2 (Lean.mkConst ``Prod [.zero, .zero]) (Lean.mkConst ``Bool) treeType
+  let rowType := mkApp2 (Lean.mkConst ``Prod [.zero, .zero]) (Lean.mkConst ``Nat) tailType
+  let chunkType := mkApp (Lean.mkConst ``List [.zero]) rowType
+  return sourceListExpr chunkType (← sourceCommandChunkRefs rows)
+
+private def elaborateSExprCommandsFile (spec : SyntaxSpec) (path : TSyntax `str)
+    (chunked : Bool := false) : TermElabM Expr := do
+  let context ← readThe Lean.Core.Context
+  let currentFile := System.FilePath.mk context.fileName
+  let some parent := currentFile.parent
+    | throwErrorAt path "cannot determine the quoting file's parent directory"
+  let contents ← IO.FS.readFile (parent / path.getString)
+  match Algorithms.MeTTa.Simple.Parser.parseSExprCommandsWithDetailed spec contents with
+  | .error error => throwErrorAt path s!"MeTTa source command parse failed: {error.render}"
+  | .ok rows =>
+      let chunks ← sourceCommandChunksExpr rows
+      if chunked then return chunks
+      let treeType := Lean.mkConst ``Algorithms.MeTTa.Simple.Parser.SExpr
+      let tailType := mkApp2 (Lean.mkConst ``Prod [.zero, .zero]) (Lean.mkConst ``Bool) treeType
+      let rowType := mkApp2 (Lean.mkConst ``Prod [.zero, .zero]) (Lean.mkConst ``Nat) tailType
+      return mkApp2 (Lean.mkConst ``List.flatten [.zero]) rowType chunks
+
+elab_rules : term
+  | `(metta_sexpr_commands_file% petta $path:str) =>
+      elaborateSExprCommandsFile MeTTailCore.MeTTaSyntax.petta path
+  | `(metta_sexpr_commands_file% he $path:str) =>
+      elaborateSExprCommandsFile MeTTailCore.MeTTaSyntax.he path
+  | `(metta_sexpr_command_chunks_file% petta $path:str) =>
+      elaborateSExprCommandsFile MeTTailCore.MeTTaSyntax.petta path true
+  | `(metta_sexpr_command_chunks_file% he $path:str) =>
+      elaborateSExprCommandsFile MeTTailCore.MeTTaSyntax.he path true
+
 /-- Read a line-oriented sequence through the existing single-expression
 reader. Blank lines are skipped; each other line must contain exactly one
 complete expression. Neither list structure nor repeated rows are erased.

@@ -11,7 +11,9 @@ the example below; a shadowing extension changes the unfolded term's type.
 
 Even when every definition body is checked in the final environment, a cycle
 can exhaust every finite unfolding bound. Local typing and well-founded
-definition dependencies are different conditions.
+definition dependencies are different conditions. The second cycle below also
+passes ordered tail checking: preserving a shadowed name's type does not make
+its unfolding dependencies well founded.
 
 These are boundaries of the explicit `MathdataKernel.Environment` interface,
 not counterexamples to Megalodon's OCaml document checker. In the source
@@ -227,6 +229,53 @@ theorem closedDefinitionTyping_not_deltaTermination :
   exact cyclic_no_success
     (termination cyclicEnvironment cyclic_closedDefinitionsTyped (.named "p") .prop cyclic_infer)
 
+/-- The alias refers to the earlier parameter when its body is checked. In the
+extended first-wins environment it resolves to itself, without changing type.
+This is a raw-environment boundary, not source hash-admission completeness. -/
+def orderedCyclicEnvironment : Environment :=
+  { terms := [cyclicDeclaration, propositionParameter] }
+
+theorem orderedCyclic_tailChecked : TailChecked orderedCyclicEnvironment.terms := by
+  exact .definition "p" .prop (.named "p") [propositionParameter] rfl
+    alias_body_typed_in_tail (.parameter "p" .prop [] rfl .nil)
+
+theorem orderedCyclic_closedDefinitionsTyped :
+    ClosedDefinitionsTyped orderedCyclicEnvironment := by
+  intro declaration member body definition
+  simp only [orderedCyclicEnvironment, List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl
+  · cases definition
+    exact ⟨rfl, by decide⟩
+  · cases definition
+
+theorem orderedCyclic_infer :
+    inferTerm orderedCyclicEnvironment 0 [] (.named "p") = some .prop := by decide
+
+theorem orderedCyclic_delta_none (fuel : Nat) :
+    deltaNormalize orderedCyclicEnvironment fuel (.named "p") = none := by
+  induction fuel with
+  | zero =>
+      simp [deltaNormalize, orderedCyclicEnvironment, cyclicDeclaration,
+        Environment.lookupTerm?, lookupTermList?]
+  | succ fuel ih =>
+      simpa [deltaNormalize, orderedCyclicEnvironment, cyclicDeclaration,
+        Environment.lookupTerm?, lookupTermList?] using ih
+
+/-- Even both ordered tail checking and final-environment body typing leave a
+separate well-foundedness obligation for an eager delta normalizer. -/
+theorem orderedDefinitionTyping_not_deltaTermination :
+    ¬ (∀ environment : Environment, TailChecked environment.terms →
+      ClosedDefinitionsTyped environment →
+      ∀ (term : Tm) (type : Tp),
+        inferTerm environment 0 [] term = some type →
+        ∃ (fuel : Nat) (result : Tm), deltaNormalize environment fuel term = some result) := by
+  intro termination
+  obtain ⟨fuel, result, success⟩ := termination orderedCyclicEnvironment
+    orderedCyclic_tailChecked orderedCyclic_closedDefinitionsTyped
+    (.named "p") .prop orderedCyclic_infer
+  rw [orderedCyclic_delta_none] at success
+  cases success
+
 #print axioms fresh_delta_eq
 #print axioms fresh_closedDefinitionsTyped
 #print axioms tailChecking_not_delta_subject_preservation
@@ -234,5 +283,9 @@ theorem closedDefinitionTyping_not_deltaTermination :
 #print axioms cyclic_not_tailChecked
 #print axioms cyclic_delta_none
 #print axioms closedDefinitionTyping_not_deltaTermination
+#print axioms orderedCyclic_tailChecked
+#print axioms orderedCyclic_closedDefinitionsTyped
+#print axioms orderedCyclic_delta_none
+#print axioms orderedDefinitionTyping_not_deltaTermination
 
 end Mettapedia.Languages.Megalodon.DefinitionEnvironmentBoundary

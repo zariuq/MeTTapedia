@@ -498,7 +498,7 @@ preserves syntactic structure.
 \item For exact source-to-source translation, the translator should be
   written in PeTTa (primary) with a semantic-equivalence version in
   HE/CeTTa.
-\item A future MeTTa-Pure could address this with an explicit quoting
+\item A future dependent-kernel design could address this with an explicit quoting
   mechanism, de~Bruijn indices, or meta-level separation (as formalized
   in the $\rho$-calculus layer of MeTTaIL).
 \end{itemize}
@@ -959,8 +959,8 @@ Runtime morphism diamond witness transport &
   \code{runtime\_mode\_diamond\_transport\_comp} & proved \\
 Pure mode isolation &
   \code{pure\_mode\_isolation} & proved \\
-mettaPure runtime$\to$behavioral transport &
-  \code{mettaPure\_runtime\_behavioral\_transport} & proved \\
+twoSortDependent runtime$\to$behavioral transport &
+  \code{twoSortDependent\_runtime\_behavioral\_transport} & proved \\
 \textbf{Capstone: MeTTa-IL is \code{TwoModeAdjointDocFrag}} &
   \code{mettaIL\_2modeDocFrag} & \textbf{proved} \\
 \midrule
@@ -996,9 +996,9 @@ The out-of-scope items are explicit design choices.
 Full 2-category structure requires 2-cells (natural transformations between
 mode morphisms) and is deferred.
 Syntactic MTT modal type formers require a full dependent kernel with
-mode-indexed context extension; this is the role of MeTTa-Pure
+mode-indexed context extension; this is a prospective dependent-kernel role
 (Appendix~\ref{app:metta-dtt}).
-Pure-mode morphism theory is deferred pending the MeTTa-Pure bridge.
+Pure-mode morphism theory is deferred pending the required dependent-kernel bridge.
 
 \paragraph{Reproducibility.}
 \begin{lstlisting}[language={},caption={Build command for MaTT targets}]
@@ -1294,7 +1294,7 @@ renormalized.
 
 %% ============================================================
 \appendix
-\section{WIP: Toward MeTTa-Pure --- A Dependent Kernel for MeTTa}
+\section{WIP: Toward a Dependent Kernel for MeTTa}
 \label{app:metta-dtt}
 %% ============================================================
 
@@ -1302,6 +1302,18 @@ renormalized.
 trusted dependent type theory (DTT) layer to MeTTa without changing the
 semantics of existing MeTTa programs. It is work-in-progress design notes,
 not a finalized specification.}
+
+The implemented \code{TwoSortPiSigmaId} experiment is narrower than this
+proposal. Its mathematics lives in
+\codepath{Mettapedia/TypeTheory/Calculi/TwoSortPiSigmaId/}; its MeTTa adapters
+live in \codepath{Mettapedia/Languages/MeTTa/Experimental/TwoSortPiSigmaId/}.
+It has a ground type \code{u0}, an untyped formation marker \code{u1},
+$\Pi/\Sigma$, and identity formation/reflexivity, but no $J$ or universe
+hierarchy. Its separate regular judgment has proved strong normalization and
+exact conversion; the older permissive judgment and declaration experiments
+are not covered by those theorems. One-pass complete development is not full
+normalization. The broader features below are proposed obligations, not
+claims about that experiment or adoption of it as Prime.
 
 \subsection{Motivation: Two Results in This Paper}
 
@@ -1323,10 +1335,11 @@ A clean MeTTa-DTT separates concerns across four layers:
 \toprule
 Layer & Role \\
 \midrule
-\textbf{A — MeTTa-Pure} &
-  A tiny intensional DTT kernel: ordered contexts $\Gamma$, $\Pi/\Sigma$-types,
-  identity types, universes, inductive families. Bidirectionally checked.
-  Subject reduction and decidable conversion hold by construction. \\[4pt]
+\textbf{A — Proposed proof core} &
+  Ordered contexts $\Gamma$, $\Pi/\Sigma$-types, identity elimination,
+  universes, and inductive families are intended features.
+  Subject reduction, normalization, and checker correctness require proofs
+  for the chosen rules; they do not hold merely by construction. \\[4pt]
 \textbf{B — Elaboration boundary} &
   A (not necessarily trusted) elaborator translating MeTTa concrete syntax into
   kernel terms. A checked reflection bridge maps quoted MeTTa atoms to kernel
@@ -1357,16 +1370,18 @@ MeTTaIL already provides:
         exact fuel-indexed compiler and no representation-wide descent rule;
   \item OSLF \code{langOSLF} synthesis from any \code{LanguageDef}.
 \end{itemize}
-A MeTTa-Pure \code{LanguageDef} is therefore a \emph{language instance} of
-the existing MeTTaIL framework, not a new implementation. The
-\code{mettaPureOSLF} type system would be a fourth instance alongside
-\code{mettaMinimalOSLF}, \code{mettaFullOSLF}, and \code{tinyMLOSLF}.
+{\raggedright
+The authored \code{twoSortDependent} language definition supplies
+\code{twoSortDependentOSLF} in its \codepath{Pattern/Core.lean}.
+These operationally derived types describe that presentation, not the richer
+dependent-kernel rules proposed here.
+\par}
 
 \subsection{Kernel Judgment Forms}
 
-The kernel uses separate judgment forms distinguished from atomspace typing:
+The proposed kernel would use judgment forms distinguished from atomspace typing:
 
-\begin{lstlisting}[language={},caption={Proposed MeTTa-Pure judgment forms}]
+\begin{lstlisting}[language={},caption={Proposed dependent-kernel judgment forms}]
 -- Well-formed type at universe level i
 Sk ; G |- A  type  i
 
@@ -1388,7 +1403,7 @@ The signature \code{Sk} carries declared kernel constants.
 
 The kernel interface can remain MeTTa-shaped:
 
-\begin{lstlisting}[language={},caption={Proposed MeTTa-Pure source forms}]
+\begin{lstlisting}[language={},caption={Proposed dependent-kernel source forms}]
 (Pi   (($x A)) B)       -- dependent function type
 (lam  (($x A)) t)       -- lambda abstraction
 (app  t u)              -- application
@@ -1451,9 +1466,9 @@ The three-part categorical picture is:
 \toprule
 Layer & Categorical home \\
 \midrule
-Kernel (MeTTa-Pure) &
-  Categories with Families (CwF); contextual categories;
-  locally cartesian closed categories; presheaf and groupoid models. \\[4pt]
+Proposed dependent kernel &
+  Categories with Families (CwF) and contextual structure; stronger semantic
+  models require the corresponding type formers and interpretation theorems. \\[4pt]
 Full MeTTa / OSLF &
   Presheaf/topos/modal/fibrational semantics over the operational rewrite
   system; the $\Diamond \dashv \Box$ modal adjunction. \\[4pt]
@@ -1463,9 +1478,11 @@ Bridge &
 \end{tabular}
 \end{center}
 
-The presheaf topos semantics of OSLF (already in the Mettapedia formalization)
-wraps a CwF kernel---exactly the structure that makes the categorical split
-coherent rather than arbitrary.
+The experiment has an actual regular syntactic CwF and a source-retaining
+presheaf interpretation in \codepath{Regular/SyntacticCwf.lean} and
+\codepath{Regular/PresheafSemantics.lean}. Its equality is raw syntax, with beta
+conversion separate. Neither this construction nor the OSLF semantics alone
+establishes an initial full dependent kernel or the proposed combined model.
 
 \subsection{Implementation Reference Points}
 
@@ -1476,11 +1493,12 @@ The closest existing architectures are:
   \item \textbf{Isabelle/Pure}: tiny LF-style framework underneath object
         logics (HOL, ZF, \ldots). Pure is itself a minimal DTT.
   \item \textbf{Isabelle/Spartan}: DTT as an object logic inside Pure,
-        directly analogous to MeTTa-Pure as an object logic inside MeTTaIL.
+        a design analogy for hosting a dependent object logic in MeTTaIL,
+        not a theorem identifying the two-sort experiment with that logic.
 \end{itemize}
 
-In one sentence: \emph{a clean MeTTa-DTT is the smallest conservative
-extension of MeTTaIL that adds a CwF-style dependent kernel with decidable
+In one sentence, the proposal is to seek \emph{a conservative
+extension of MeTTaIL with a CwF-style dependent kernel, decidable
 conversion and subject reduction, while treating today's MeTTa as an effectful
 reflective metalanguage over that kernel, and OSLF as the behavioral logic of
 the resulting operational world.}

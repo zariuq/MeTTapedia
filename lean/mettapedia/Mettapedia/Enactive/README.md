@@ -21,7 +21,7 @@ extensions.
   Solomonoff-shaped, structural-risk, and quantale-valued profiles through the
   weakest common interface: admissibility plus a preference preorder.
 - `CredalWeakness.lean`, `AntiUnificationWeakness.lean`, `GSLTPolicyBridge.lean`,
-  `PrimeSupport.lean`, and `PrimeGeneration.lean` contain named bridges rather
+  `RelationalSupport.lean`, and `ScopedGeneration.lean` contain named bridges rather
   than silently enlarging Bennett's original claims.
 - `IndividuationGeneration.lean` requires a process and task interpretation
   before individuation warrants a new generation; static closure alone is an

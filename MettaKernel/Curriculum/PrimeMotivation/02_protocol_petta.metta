@@ -11,11 +11,11 @@
 ; The ticket/count agreement then shapes the protocol itself.  The wrong-size
 ; response is uninhabited, so its defensive branch can be deleted rather than
 ; merely optimized.  Lean anchors:
-;   Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeInteractionInterpretation.
 ;     indexedProtocolTy
-;   Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeInteractionInterpretation.
 ;     one_request_rejects_two_field_response
-;   Mettapedia.Languages.MeTTa.Prime.NativeInteractionSeam.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeInteractionSeam.
 ;     unknownCommPlan_raw_reachable
 ;
 ; Unknown or rejected typing evidence does not disable this ordinary program.

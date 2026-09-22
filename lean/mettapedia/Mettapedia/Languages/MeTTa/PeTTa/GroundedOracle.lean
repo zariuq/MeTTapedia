@@ -216,7 +216,7 @@ theorem meTTaEvalG_empty_oracle_iff {s : PeTTaSpace} {p ty : Pattern}
     (h : MeTTaEvalG emptyOracle s p ty bindings results) :
     MeTTaEval s p ty bindings results := by
   cases h with
-  | liftPure _ _ _ _ hpure => exact hpure
+  | liftPure _ _ _ _ htwoSort => exact htwoSort
   | groundedCall _ _ _ _ _ _ _ hexec _ _ => exact hexec.elim
   | groundedNoReduce _ _ _ _ _ _ hexec _ _ => exact hexec.elim
 

@@ -1,5 +1,5 @@
 import Mettapedia.OSLF.MeTTaIL.PremiseDatalog
-import Mettapedia.Languages.MeTTa.Pure.Core
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core
 import Mettapedia.Languages.MeTTa.HE.HELanguageDef
 import Mettapedia.Languages.MeTTa.HE.HEPremises
 import Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef
@@ -11,7 +11,8 @@ import Mettapedia.Languages.MeTTa.OSLFCore.FullPremises
 Canonical profile interface for MeTTa-family languages over the shared
 `LanguageDef` + `PremiseProgram` substrate.
 
-This keeps Pure/HE/Full comparable without collapsing them into one semantics.
+This compares the two-sort experiment, HE and the legacy Full model without
+identifying their semantics or selecting any of them as Prime.
 -/
 
 namespace Mettapedia.Languages.MeTTa.CoreProfile
@@ -44,10 +45,10 @@ def MeTTaCoreProfile.wellFormed (p : MeTTaCoreProfile) : Bool :=
 def MeTTaCoreProfile.stratified (p : MeTTaCoreProfile) : Bool :=
   p.premises.isStratified
 
-/-- Minimal, trusted DTT kernel profile presented as MeTTa language. -/
-def pureProfile : MeTTaCoreProfile where
-  name := "Pure"
-  lang := Mettapedia.Languages.MeTTa.Pure.Core.mettaPure
+/-- Concrete two-sort experiment presented as a MeTTa language profile. -/
+def twoSortProfile : MeTTaCoreProfile where
+  name := "TwoSortPiSigmaId"
+  lang := Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core.twoSortDependent
   premises := emptyPremiseProgram
   stateConstructor := none
 
@@ -69,27 +70,27 @@ def fullLegacyProfile : MeTTaCoreProfile where
 abbrev fullProfile : MeTTaCoreProfile := fullLegacyProfile
 
 def coreProfiles : List MeTTaCoreProfile :=
-  [pureProfile, heProfile, fullLegacyProfile]
+  [twoSortProfile, heProfile, fullLegacyProfile]
 
 def findProfile (name : ProfileName) : Option MeTTaCoreProfile :=
   coreProfiles.find? (fun p => p.name == name)
 
-theorem pureProfile_no_premise_rules :
-    pureProfile.premises.rules = [] := rfl
+theorem twoSortProfile_no_premise_rules :
+    twoSortProfile.premises.rules = [] := rfl
 
-theorem pureProfile_wellFormed : pureProfile.wellFormed = true := by
+theorem twoSortProfile_wellFormed : twoSortProfile.wellFormed = true := by
   decide
 
-theorem pureProfile_stratified : pureProfile.stratified = true := by
-  native_decide
+theorem twoSortProfile_stratified : twoSortProfile.stratified = true := by
+  cbv
 
-theorem pureProfile_eight_rewrites :
-    pureProfile.lang.rewrites.length = 3 := by
-  change Mettapedia.Languages.MeTTa.Pure.Core.mettaPure.rewrites.length = 3
+theorem twoSortProfile_three_rewrites :
+    twoSortProfile.lang.rewrites.length = 3 := by
+  change Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core.twoSortDependent.rewrites.length = 3
   decide
 
-theorem pureProfile_intensional :
-    pureProfile.lang.equations = [] := by
+theorem twoSortProfile_intensional :
+    twoSortProfile.lang.equations = [] := by
   rfl
 
 end Mettapedia.Languages.MeTTa.CoreProfile

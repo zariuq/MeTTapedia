@@ -36,6 +36,37 @@ abbrev DisplayedFamily
     (base : Face.{uContext, vContext, uBase} Context) :=
   base.Elements ⥤ Type uFibre
 
+/-- A natural observation displays its actual source elements over each
+observed value. Its action transports the retained source element along the
+source presheaf and uses naturality only to check the observed index. -/
+def observationFibreFamily
+    {source target : Face.{uContext, vContext, uBase} Context}
+    (observation : source ⟶ target) :
+    DisplayedFamily.{uContext, vContext, uBase, uBase} target where
+  obj value :=
+    { candidate : source.obj value.1 //
+      observation.app value.1 candidate = value.2 }
+  map {first second} substitution := TypeCat.ofHom fun receipt =>
+    ⟨source.map substitution.val receipt.val, by
+      calc
+        observation.app second.1 (source.map substitution.val receipt.val) =
+            target.map substitution.val
+              (observation.app first.1 receipt.val) := by
+                have natural := observation.naturality substitution.val
+                exact congrArg (fun map => map receipt.val) natural
+        _ = target.map substitution.val first.2 := by rw [receipt.property]
+        _ = second.2 := substitution.property⟩
+  map_id value := by
+    apply ConcreteCategory.hom_ext
+    intro receipt
+    apply Subtype.ext
+    simp
+  map_comp first second := by
+    apply ConcreteCategory.hom_ext
+    intro receipt
+    apply Subtype.ext
+    simp
+
 /-- An isomorphism of contextual bases induces an equivalence between their
 categories of elements. -/
 noncomputable def elementCategoryEquivalence
@@ -133,6 +164,7 @@ theorem valueAndRoute_displayed_boundary :
 end OpenTermCanary
 
 #print axioms elementCategoryEquivalence
+#print axioms observationFibreFamily
 #print axioms displayedFamilyEquivalence
 #print axioms recoverSourceFamily
 #print axioms recoverTargetFamily

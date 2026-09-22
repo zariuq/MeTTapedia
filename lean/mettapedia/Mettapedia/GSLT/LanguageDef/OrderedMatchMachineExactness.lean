@@ -419,7 +419,7 @@ private theorem apply_succeed (subject : Pattern) (kont : List Frame) :
     builtinRelationTuples, succeedRewrite, runPattern, retPattern, succeedPattern,
     nilBindingsPattern, metavariable, encodeState, encodeDecision, encodeBindings,
     matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-    applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings]
+    applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings]
 
 private theorem apply_capture (path : AccessPath) (name : String) (subject : Pattern) (kont : List Frame) :
     applyRuleWithPremisesUsing (relationEnv relations source) language captureRewrite
@@ -434,7 +434,7 @@ private theorem apply_capture (path : AccessPath) (name : String) (subject : Pat
         relationQueryStep, builtinRelationTuples, captureRewrite, runPattern, retPattern,
         capturePattern, nilBindingsPattern, bindPattern, metavariable, encodeState,
         encodeDecision, matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-        applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings,
+        applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings,
         tuples_project_none relations source path subject _ projection]
   | some focused =>
       simp +decide [
@@ -442,7 +442,7 @@ private theorem apply_capture (path : AccessPath) (name : String) (subject : Pat
         relationQueryStep, builtinRelationTuples, captureRewrite, runPattern, retPattern,
         capturePattern, nilBindingsPattern, bindPattern, metavariable, encodeState,
         encodeDecision, encodeBindings, matchPatternForRule, matchPatternForRuleUsing,
-        applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs,
+        applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs,
         mergeBindings, applyBindings, matchRelationArgs, matchRelationArgument,
         Bindings.lookup,
         tuples_project_some relations source path subject focused _ projection]
@@ -461,7 +461,7 @@ private theorem apply_checkBound (path : AccessPath) (expected : Nat) (subject :
         relationQueryStep, builtinRelationTuples, checkBoundRewrite, runPattern, retPattern,
         checkBoundPattern, nilBindingsPattern, metavariable, encodeState, encodeDecision,
         matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-        applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings,
+        applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings,
         tuples_project_none relations source path subject _ projection]
   | some focused =>
       cases bound : isBoundAt focused expected <;>
@@ -470,7 +470,7 @@ private theorem apply_checkBound (path : AccessPath) (expected : Nat) (subject :
         relationQueryStep, builtinRelationTuples, checkBoundRewrite, runPattern, retPattern,
         checkBoundPattern, nilBindingsPattern, metavariable, encodeState, encodeDecision,
         encodeBindings, matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-        applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings,
+        applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings,
         matchRelationArgs, matchRelationArgument, Bindings.lookup, rowWhen,
         tuples_project_some relations source path subject focused _ projection,
         tuples_bound relations source, bound]
@@ -491,7 +491,7 @@ private theorem apply_checkConstructor (path : AccessPath) (expected : String) (
         relationQueryStep, builtinRelationTuples, checkConstructorRewrite, runPattern,
         checkConstructorPattern, metavariable, encodeState, encodeDecision,
         matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-        applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings,
+        applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings,
         tuples_project_none relations source path subject _ projection]
   | some focused =>
       cases constructorTest : isConstructorOf focused expected arity <;>
@@ -500,7 +500,7 @@ private theorem apply_checkConstructor (path : AccessPath) (expected : String) (
         relationQueryStep, builtinRelationTuples, checkConstructorRewrite, runPattern,
         checkConstructorPattern, metavariable, encodeState, encodeDecision,
         matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-        applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings,
+        applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings,
         matchRelationArgs, matchRelationArgument, Bindings.lookup, rowWhen,
         tuples_project_some relations source path subject focused _ projection,
         tuples_constructor relations source, constructorTest]
@@ -514,7 +514,7 @@ private theorem apply_join (head tail : Decision) (subject : Pattern) (kont : Li
     builtinRelationTuples, joinRewrite, runPattern, joinPattern, joinRightPattern,
     kconsPattern, metavariable, encodeState, encodeKont, encodeFrame, encodeDecision,
     matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-    applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings]
+    applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings]
 
 private theorem apply_joinRight (bindings : Bindings) (tail : Decision) (subject : Pattern) (kont : List Frame) :
     applyRuleWithPremisesUsing (relationEnv relations source) language joinRightRewrite
@@ -525,7 +525,7 @@ private theorem apply_joinRight (bindings : Bindings) (tail : Decision) (subject
     builtinRelationTuples, joinRightRewrite, runPattern, retPattern, joinRightPattern,
     joinMergePattern, kconsPattern, metavariable, encodeState, encodeKont, encodeFrame,
     matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-    applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings]
+    applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings]
 
 private theorem apply_joinMerge (tailBindings headBindings : Bindings) (subject : Pattern) (kont : List Frame) :
     applyRuleWithPremisesUsing (relationEnv relations source) language joinMergeRewrite
@@ -540,7 +540,7 @@ private theorem apply_joinMerge (tailBindings headBindings : Bindings) (subject 
         relationQueryStep, builtinRelationTuples, joinMergeRewrite, retPattern,
         joinMergePattern, kconsPattern, metavariable, encodeState, encodeKont, encodeFrame,
         matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-        applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings,
+        applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings,
         tuples_merge_none relations source headBindings tailBindings _ merge]
   | some merged =>
       simp +decide [
@@ -548,7 +548,7 @@ private theorem apply_joinMerge (tailBindings headBindings : Bindings) (subject 
         relationQueryStep, builtinRelationTuples, joinMergeRewrite, retPattern,
         joinMergePattern, kconsPattern, metavariable, encodeState, encodeKont, encodeFrame,
         matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-        applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings,
+        applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings,
         matchRelationArgs, matchRelationArgument, Bindings.lookup,
         tuples_merge_some relations source headBindings tailBindings merged _ merge]
 
@@ -560,7 +560,7 @@ private theorem apply_finish (bindings : Bindings) (subject : Pattern) :
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, finishRewrite, retPattern, donePattern, knilPattern, metavariable,
     encodeState, encodeKont, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_drop (next : Program) (subject focused : Pattern) (cursor : List Pattern) :
@@ -571,7 +571,7 @@ private theorem apply_drop (next : Program) (subject focused : Pattern) (cursor 
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, dropRewrite, metavariable, mmRunPattern, dropPattern, cconsPattern,
     encodeState, encodeProgram, encodeCursor, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_tryLeaf (leaf : Leaf) (patterns : List MatrixPattern) (onFailure : Program) (subject : Pattern)
@@ -583,7 +583,7 @@ private theorem apply_tryLeaf (leaf : Leaf) (patterns : List MatrixPattern) (onF
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, tryLeafRewrite, metavariable, mmRunPattern, prefilterPattern,
     tryPattern, encodeState, encodeProgram, encodeLeaf, matchPatternForRule,
-    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, matchPattern,
+    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern,
     matchArgs, mergeBindings, applyBindings]
 
 private theorem apply_tryNext (leaf : Leaf) (patterns : List MatrixPattern) (onFailure : Program) (subject : Pattern)
@@ -595,7 +595,7 @@ private theorem apply_tryNext (leaf : Leaf) (patterns : List MatrixPattern) (onF
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, tryNextRewrite, metavariable, mmRunPattern, tryPattern, encodeState,
     encodeProgram, encodeLeaf, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_switchDefault (branches : Branches) (default : Program) (subject : Pattern) (cursor : List Pattern) :
@@ -606,7 +606,7 @@ private theorem apply_switchDefault (branches : Branches) (default : Program) (s
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, switchDefaultRewrite, metavariable, mmRunPattern, switchPattern,
     encodeState, encodeProgram, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_switchDispatch (branches : Branches) (default : Program) (subject focused : Pattern)
@@ -618,7 +618,7 @@ private theorem apply_switchDispatch (branches : Branches) (default : Program) (
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, switchDispatchRewrite, metavariable, mmRunPattern, dispatchPattern,
     switchPattern, cconsPattern, encodeState, encodeProgram, encodeCursor, matchPatternForRule,
-    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, matchPattern,
+    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern,
     matchArgs, mergeBindings, applyBindings]
 
 private theorem apply_dispatchHit (key : Key) (program : Program) (rest : Branches) (subject focused : Pattern)
@@ -633,7 +633,7 @@ private theorem apply_dispatchHit (key : Key) (program : Program) (rest : Branch
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, dispatchHitRewrite, metavariable, mmRunPattern, dispatchPattern,
     bconsPattern, encodeState, encodeBranches, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup,
     tuples_keyIs relations source focused key, tuples_unfold relations source focused cursor,
     keyTest]
@@ -641,7 +641,7 @@ private theorem apply_dispatchHit (key : Key) (program : Program) (rest : Branch
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, dispatchHitRewrite, metavariable, mmRunPattern, dispatchPattern,
     bconsPattern, encodeState, encodeBranches, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings, tuples_keyIs relations source focused key, keyTest]
 
 private theorem apply_dispatchMiss (key : Key) (program : Program) (rest : Branches) (subject focused : Pattern)
@@ -655,13 +655,13 @@ private theorem apply_dispatchMiss (key : Key) (program : Program) (rest : Branc
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, dispatchMissRewrite, metavariable, dispatchPattern, bconsPattern,
     encodeState, encodeBranches, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings, tuples_keyNot relations source focused key, keyTest]
   · simp +decide [
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, dispatchMissRewrite, metavariable, dispatchPattern, bconsPattern,
     encodeState, encodeBranches, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup,
     tuples_keyNot relations source focused key, keyTest]
 
@@ -675,7 +675,7 @@ private theorem apply_prefilterDone (leaf : Leaf) (subject : Pattern) :
     metavariable, prefilterPattern, cnilPattern, pnilPattern, planPattern, afterPattern,
     encodeState, encodeLeaf, encodePatterns, encodeCursor, encodeKont, encodeFrame,
     matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-    applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings]
+    applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings]
 
 private theorem apply_prefilterWild (patterns : List MatrixPattern) (focused : Pattern) (cursor : List Pattern) (leaf : Leaf)
     (subject : Pattern) :
@@ -687,7 +687,7 @@ private theorem apply_prefilterWild (patterns : List MatrixPattern) (focused : P
     builtinRelationTuples, prefilterWildRewrite, metavariable, prefilterPattern, cconsPattern,
     pconsPattern, wildPattern, encodeState, encodeLeaf, encodePatterns, encodeMatrixPattern,
     encodeCursor, matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-    applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings]
+    applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings]
 
 private theorem apply_prefilterNode (head : Head) (children patterns : List MatrixPattern) (focused : Pattern)
     (cursor : List Pattern) (leaf : Leaf) (subject : Pattern) :
@@ -702,7 +702,7 @@ private theorem apply_prefilterNode (head : Head) (children patterns : List Matr
     builtinRelationTuples, prefilterNodeRewrite, metavariable, prefilterPattern, cconsPattern,
     pconsPattern, nodePattern, encodeState, encodeLeaf, encodePatterns, encodeMatrixPattern,
     encodeCursor, matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-    applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings,
+    applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings,
     matchRelationArgs, matchRelationArgument, Bindings.lookup,
     tuples_keyIs relations source focused ⟨head, children.length⟩,
     tuples_append relations source children patterns,
@@ -712,7 +712,7 @@ private theorem apply_prefilterNode (head : Head) (children patterns : List Matr
     builtinRelationTuples, prefilterNodeRewrite, metavariable, prefilterPattern, cconsPattern,
     pconsPattern, nodePattern, encodeState, encodeLeaf, encodePatterns, encodeMatrixPattern,
     encodeCursor, matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-    applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings,
+    applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings,
     tuples_keyIs relations source focused ⟨head, children.length⟩, keyTest]
 
 private theorem apply_afterMatch (bindings : Bindings) (subject : Pattern) (premises : List PremisePlan) (template : PatternPlan)
@@ -724,7 +724,7 @@ private theorem apply_afterMatch (bindings : Bindings) (subject : Pattern) (prem
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, afterMatchRewrite, retPattern, kconsPattern, metavariable,
     premisesPattern, afterPattern, encodeState, encodeKont, encodeFrame, matchPatternForRule,
-    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, matchPattern,
+    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern,
     matchArgs, mergeBindings, applyBindings]
 
 private theorem apply_premise (query : PremisePlan) (queries : List PremisePlan) (template : PatternPlan) (bindings : Bindings) :
@@ -740,7 +740,7 @@ private theorem apply_premise (query : PremisePlan) (queries : List PremisePlan)
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, premiseRewrite, metavariable, premisesPattern, qconsPattern,
     queryPattern, encodeState, encodeQueries, encodeQuery, matchPatternForRule,
-    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, matchPattern,
+    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern,
     matchArgs, mergeBindings, applyBindings, matchRelationArgs, matchRelationArgument,
     Bindings.lookup, key, map_flatMap_singleton, List.flatMap_map]
 
@@ -753,7 +753,7 @@ private theorem apply_premisesDone (template : PatternPlan) (bindings : Bindings
     builtinRelationTuples, premisesDoneRewrite, metavariable, premisesPattern, instPattern,
     qnilPattern, inilPattern, encodeState, encodeInstantiateKont, encodeQueries,
     matchPatternForRule, matchPatternForRuleUsing, applyBindingsForRule,
-    applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings, applyBindings]
+    applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings, applyBindings]
 
 private theorem apply_instVar (name : String) (bindings : Bindings) (kont : List InstantiateFrame) :
     applyRuleWithPremisesUsing (relationEnv relations source) language instVarRewrite
@@ -763,7 +763,7 @@ private theorem apply_instVar (name : String) (bindings : Bindings) (kont : List
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, instVarRewrite, metavariable, instPattern, iretPattern, tvarPattern,
     encodeState, encodeTemplate, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup,
     tuples_lookup relations source bindings name]
 
@@ -775,7 +775,7 @@ private theorem apply_instBvar (index : Nat) (bindings : Bindings) (kont : List 
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, instBvarRewrite, metavariable, instPattern, iretPattern,
     tbvarPattern, encodeState, encodeTemplate, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup,
     tuples_bvar relations source index]
 
@@ -788,7 +788,7 @@ private theorem apply_instApp (constructor : String) (arguments : List PatternPl
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, instAppRewrite, metavariable, instPattern, instargsPattern,
     cnilPattern, tappPattern, encodeState, encodeCursor, encodeTemplate, matchPatternForRule,
-    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, matchPattern,
+    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern,
     matchArgs, mergeBindings, applyBindings]
 
 private theorem apply_instargsDone (constructor : String) (accumulated : List Pattern) (bindings : Bindings)
@@ -800,7 +800,7 @@ private theorem apply_instargsDone (constructor : String) (accumulated : List Pa
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, instargsDoneRewrite, metavariable, instargsPattern, iretPattern,
     tnilPattern, encodeState, encodeTemplates, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings, matchRelationArgs, matchRelationArgument, Bindings.lookup,
     tuples_build relations source constructor accumulated]
 
@@ -814,7 +814,7 @@ private theorem apply_instargsNext (constructor : String) (accumulated : List Pa
     builtinRelationTuples, instargsNextRewrite, metavariable, instPattern, instargsPattern,
     tconsPattern, iconsPattern, argPattern, encodeState, encodeInstantiateKont,
     encodeInstantiateFrame, encodeTemplates, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_iretArg (value : Pattern) (bindings : Bindings) (constructor : String) (accumulated : List Pattern)
@@ -827,7 +827,7 @@ private theorem apply_iretArg (value : Pattern) (bindings : Bindings) (construct
     builtinRelationTuples, iretArgRewrite, metavariable, instargsPattern, iretPattern,
     cconsPattern, iconsPattern, argPattern, encodeState, encodeCursor, encodeInstantiateKont,
     encodeInstantiateFrame, matchPatternForRule, matchPatternForRuleUsing,
-    applyBindingsForRule, applyBindingsForRuleUsing, matchPattern, matchArgs, mergeBindings,
+    applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern, matchArgs, mergeBindings,
     applyBindings]
 
 private theorem apply_iretDone (value : Pattern) (bindings : Bindings) :
@@ -838,7 +838,7 @@ private theorem apply_iretDone (value : Pattern) (bindings : Bindings) :
     applyRuleWithPremisesUsing, applyPremisesWithEnv, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, iretDoneRewrite, metavariable, iretPattern, mmDonePattern,
     inilPattern, encodeState, encodeInstantiateKont, matchPatternForRule,
-    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, matchPattern,
+    matchPatternForRuleUsing, applyBindingsForRule, applyBindingsForRuleUsing, applyRuleBindings, matchPattern,
     matchArgs, mergeBindings, applyBindings]
 
 /-! ## Executor equations, one per state family -/

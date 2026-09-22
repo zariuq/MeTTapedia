@@ -48,15 +48,15 @@ def distinguished (R : Pat → Pat → Prop) (I : AtomSem) (p q : Pat) : Prop :=
 
 theorem indistObs_refl (R : Pat → Pat → Prop) (I : AtomSem) (p : Pat) :
     indistObs R I p p :=
-  fun _ => Iff.rfl
+  fun _ _ => Iff.rfl
 
 theorem indistObs_symm {R : Pat → Pat → Prop} {I : AtomSem} {p q : Pat}
     (h : indistObs R I p q) : indistObs R I q p :=
-  fun φ => (h φ).symm
+  fun φ free => (h φ free).symm
 
 theorem indistObs_trans {R : Pat → Pat → Prop} {I : AtomSem} {p q r : Pat}
     (h1 : indistObs R I p q) (h2 : indistObs R I q r) : indistObs R I p r :=
-  fun φ => (h1 φ).trans (h2 φ)
+  fun φ free => (h1 φ free).trans (h2 φ free)
 
 /-- `indistObs` is an equivalence relation. -/
 theorem indistObs_equivalence (R : Pat → Pat → Prop) (I : AtomSem) :
@@ -85,7 +85,8 @@ theorem distinguished_symm {R : Pat → Pat → Prop} {I : AtomSem} {p q : Pat}
 
 /-- Distinguished patterns have a separating formula. -/
 theorem distinguished_has_separator {R : Pat → Pat → Prop} {I : AtomSem} {p q : Pat}
-    (h : distinguished R I p q) : ∃ φ, sem R I φ p ∧ ¬ sem R I φ q :=
+    (h : distinguished R I p q) :
+    ∃ φ, OSLFFormula.modalOnly φ = true ∧ sem R I φ p ∧ ¬ sem R I φ q :=
   separator_of_not_obsEq h
 
 /-! ## Full Bisimilarity
@@ -111,7 +112,7 @@ theorem fullBisim_implies_indist
     {p q : Pat} (h : FullBisimilar R I p q) :
     indistObs R I p q := by
   obtain ⟨E, hE, hERev, hAtom, hpq⟩ := h
-  exact fun φ => bisimulation_invariant_sem hE hERev hAtom hpq φ
+  exact fun φ free => bisimulation_invariant_sem hE hERev hAtom hpq φ free
 
 /-- Under forward image-finiteness, `OSLFObsEq R I` is a step-bisimulation for R. -/
 theorem indistObs_is_stepBisimulation
@@ -137,7 +138,7 @@ theorem indistObs_is_revStepBisimulation
     -- Every R-predecessor q' of q fails to be indistObs to p'
     have hfin := hPredFinite q
     have hsep : ∀ q' : Pat, R q' q →
-        ∃ φ, sem R I φ p' ∧ ¬ sem R I φ q' := by
+        ∃ φ, OSLFFormula.modalOnly φ = true ∧ sem R I φ p' ∧ ¬ sem R I φ q' := by
       intro q' hq'q
       exact separator_of_not_obsEq (h_no_match q' hq'q)
     choose f hf using fun q' (h : q' ∈ hfin.toFinset) =>
@@ -152,7 +153,7 @@ theorem indistObs_is_revStepBisimulation
       simp only [formulas, List.mem_map] at hψ
       obtain ⟨q', _, rfl⟩ := hψ
       split_ifs with hmem
-      · exact (hf q' hmem).1
+      · exact (hf q' hmem).2.1
       · exact trivial
     -- No R-predecessor of q satisfies Ψ
     have hqΨ : ∀ t, R t q → ¬ sem R I Ψ t := by
@@ -164,7 +165,7 @@ theorem indistObs_is_revStepBisimulation
         apply htΨ
         simp only [formulas, List.mem_map]
         exact ⟨t, Multiset.mem_toList.mpr (Finset.mem_val.mpr hmem), dif_pos hmem⟩
-      exact (hf t hmem).2 this
+      exact (hf t hmem).2.2 this
     -- Use ¬□¬Ψ = .imp (.box (.imp Ψ .bot)) .bot
     -- At p: p has predecessor p' satisfying Ψ, so □(¬Ψ) fails at p, so ¬□(¬Ψ) holds
     have hpForm : sem R I (.imp (.box (.imp Ψ .bot)) .bot) p := by
@@ -177,14 +178,22 @@ theorem indistObs_is_revStepBisimulation
       apply h
       exact fun t htq htΨ => hqΨ t htq htΨ
     -- This contradicts OSLFObsEq p q
-    exact hqForm ((hpq _).mp hpForm)
+    have hΨfree : OSLFFormula.modalOnly Ψ = true := by
+      refine modalOnly_conjList formulas ?_
+      intro χ hχ
+      simp only [formulas, List.mem_map] at hχ
+      obtain ⟨t, _, rfl⟩ := hχ
+      split_ifs with hmem
+      · exact (hf t hmem).1
+      · simp [OSLFFormula.modalOnly]
+    exact hqForm ((hpq _ (by simp [OSLFFormula.modalOnly, hΨfree])).mp hpForm)
   · -- Back for R⁻¹: indistObs p q → R q' q → ∃ p', R p' p ∧ indistObs p' q'
     intro p q hpq q' hq'q
     by_contra h_no_match
     push Not at h_no_match
     have hfin := hPredFinite p
     have hsep : ∀ p' : Pat, R p' p →
-        ∃ φ, sem R I φ q' ∧ ¬ sem R I φ p' := by
+        ∃ φ, OSLFFormula.modalOnly φ = true ∧ sem R I φ q' ∧ ¬ sem R I φ p' := by
       intro p' hp'p
       have h := h_no_match p' hp'p
       exact separator_of_not_obsEq (fun hobs => h (obsEq_symm hobs))
@@ -199,7 +208,7 @@ theorem indistObs_is_revStepBisimulation
       simp only [formulas, List.mem_map] at hψ
       obtain ⟨p', _, rfl⟩ := hψ
       split_ifs with hmem
-      · exact (hf p' hmem).1
+      · exact (hf p' hmem).2.1
       · exact trivial
     have hpΨ : ∀ t, R t p → ¬ sem R I Ψ t := by
       intro t htp
@@ -210,7 +219,7 @@ theorem indistObs_is_revStepBisimulation
         apply htΨ
         simp only [formulas, List.mem_map]
         exact ⟨t, Multiset.mem_toList.mpr (Finset.mem_val.mpr hmem), dif_pos hmem⟩
-      exact (hf t hmem).2 this
+      exact (hf t hmem).2.2 this
     have hqForm : sem R I (.imp (.box (.imp Ψ .bot)) .bot) q := by
       intro hbox
       exact hbox q' hq'q hq'Ψ
@@ -218,7 +227,15 @@ theorem indistObs_is_revStepBisimulation
       intro h
       apply h
       exact fun t htp htΨ => hpΨ t htp htΨ
-    exact hpForm ((hpq _).mpr hqForm)
+    have hΨfree : OSLFFormula.modalOnly Ψ = true := by
+      refine modalOnly_conjList formulas ?_
+      intro χ hχ
+      simp only [formulas, List.mem_map] at hχ
+      obtain ⟨t, _, rfl⟩ := hχ
+      split_ifs with hmem
+      · exact (hf t hmem).1
+      · simp [OSLFFormula.modalOnly]
+    exact hpForm ((hpq _ (by simp [OSLFFormula.modalOnly, hΨfree])).mpr hqForm)
 
 /-- Under both forward and backward image-finiteness, observer-indistinguishability
 implies full bisimilarity. -/
@@ -231,7 +248,7 @@ theorem indist_implies_fullBisim_imageFinite
   ⟨indistObs R I,
    indistObs_is_stepBisimulation hImageFinite,
    indistObs_is_revStepBisimulation hPredFinite,
-   fun a _ _ h => h (.atom a),
+   fun a _ _ h => h (.atom a) (by simp [OSLFFormula.modalOnly]),
    h⟩
 
 /-- **Hennessy-Milner iff**: under both forward and backward image-finiteness,

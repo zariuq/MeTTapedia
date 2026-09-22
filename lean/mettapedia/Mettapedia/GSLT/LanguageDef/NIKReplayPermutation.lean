@@ -16,10 +16,10 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.NIKReplayPermutation
 
+open Mettapedia.Logic
 open Mettapedia.GSLT.LanguageDef.ExactCheckerWireRefinement
 open Mettapedia.GSLT.LanguageDef.KernelAuthority
 open Mettapedia.GSLT.LanguageDef.NIKFinitaryReplayInitiality
-open Mettapedia.Logic
 open Mettapedia.Logic.FinitaryRuleSystem
 open Mettapedia.Logic.FinitaryRuleSystem.Derivation.PremisePermutationPlan
 open Mettapedia.OSLF.Framework.InitialModalSchema

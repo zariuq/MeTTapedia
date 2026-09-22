@@ -78,7 +78,11 @@ local macro "batch_generation_root" : tactic =>
       TptpFofDefinitionalCnfLanguageDef.clausesCons,
       TptpFofDefinitionalCnfLanguageDef.a,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+      simp only [applyBindings, List.map_nil])
 
 local macro "batch_generation_root_using_all" : tactic =>
   `(tactic|
@@ -106,7 +110,11 @@ local macro "batch_generation_root_using_all" : tactic =>
       TptpFofDefinitionalCnfLanguageDef.clausesCons,
       TptpFofDefinitionalCnfLanguageDef.a,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+      simp only [applyBindings, List.map_nil])
 
 inductive Derivation : Pattern → Pattern → Type
   | entriesNil (occurrence localIndex : Pattern) :

@@ -1006,7 +1006,7 @@ theorem hasCanonicalBinderMetadata_liftBVars
         simp [liftBVars, Pattern.hasCanonicalBinderMetadata, shifted]
   | hfvar name => simp [liftBVars, Pattern.hasCanonicalBinderMetadata]
   | happly constructor arguments inductionHypothesis =>
-      simp only [liftBVars, Pattern.hasCanonicalBinderMetadata]
+      simp only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, Pattern.hasCanonicalBinderMetadata]
       exact canonicalBinderMetadataList_liftBVars cutoff shift arguments
         (fun member membership => inductionHypothesis member membership cutoff)
   | hlambda binder body inductionHypothesis =>
@@ -1019,7 +1019,7 @@ theorem hasCanonicalBinderMetadata_liftBVars
       simp only [liftBVars, Pattern.hasCanonicalBinderMetadata]
       rw [bodyHypothesis, replacementHypothesis]
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [liftBVars, Pattern.hasCanonicalBinderMetadata]
+      simp only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, Pattern.hasCanonicalBinderMetadata]
       exact canonicalBinderMetadataList_liftBVars cutoff shift elements
         (fun member membership => inductionHypothesis member membership cutoff)
 
@@ -1051,19 +1051,19 @@ theorem isObjectPattern_liftBVars
         simp [liftBVars, isObjectPattern, shifted]
   | hfvar name => simp [liftBVars, isObjectPattern]
   | happly constructor arguments inductionHypothesis =>
-      simp only [liftBVars, isObjectPattern]
+      simp only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, isObjectPattern]
       exact isObjectPatternList_liftBVars cutoff shift arguments
         (fun member membership => inductionHypothesis member membership cutoff)
   | hlambda binder body inductionHypothesis =>
-      simpa [liftBVars, isObjectPattern] using
+      simpa [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, isObjectPattern] using
         inductionHypothesis (cutoff + 1)
   | hmultiLambda arity binders body inductionHypothesis =>
-      simpa [liftBVars, isObjectPattern] using
+      simpa [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, isObjectPattern] using
         inductionHypothesis (cutoff + arity)
   | hsubst body replacement bodyHypothesis replacementHypothesis =>
       simp [liftBVars, isObjectPattern]
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [liftBVars, isObjectPattern]
+      simp only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, isObjectPattern]
       rw [isObjectPatternList_liftBVars cutoff shift elements
         (fun member membership => inductionHypothesis member membership cutoff)]
 

@@ -318,9 +318,316 @@ theorem negative_canary (observation : ControlObservation) :
 
 end Canary
 
+/-! ## The composed representation over the two lane covers
+
+`SemanticCoveredTranslation.comp` already composes equation-class covers, with
+the identity, left and right unit laws, and associativity supplied by the
+category of semantic covered theories; both lowering lanes are already such
+composites.  Sequential composition cannot join the two lanes, because the
+target of neither lane pass is the source of the other: the cold lane ends in
+the cold invocation view over `coldRelations` and the hot lane begins at the
+admitted executor language over its own relation environment.  What relates the
+lanes here is the composed representation's own step relation, and the two
+facts below say exactly how its steps are built out of the lane covers.
+
+The cold direction is one-way by construction: a declaration step of the
+coarse compiler is a bounded iteration of cold invocations that stops at the
+next declaration boundary, so it is a finite run of the cold lane's cover,
+while a finite run of that cover need not stop at a boundary.  The hot
+direction is exact: one hot phase step is one step of the hot lane's cover.
+-/
+
+namespace Cold
+export Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardStructuredCPass (structuredCRuns)
+end Cold
+
+/-- Every bounded iteration of cold invocations is a finite run of the cold
+lane's cover.  In particular the cold phase of a composed step is such a
+run. -/
+theorem reflTransGen_of_invokeUntil :
+    ∀ (fuel : Nat) (config config' : Pattern), invokeUntil fuel config = some config' →
+      Relation.ReflTransGen Cold.structuredCRuns.Step config config' := by
+  intro fuel
+  induction fuel with
+  | zero => intro config config' run; cases run
+  | succ fuel inductionHypothesis =>
+      intro config config' run
+      cases found : invoke? config with
+      | none =>
+          simp only [invokeUntil, found] at run
+          cases run
+      | some next =>
+          have first : Cold.structuredCRuns.Step config next :=
+            (structuredCRuns_step_iff_invoke config next).2 found
+          simp only [invokeUntil, found] at run
+          by_cases boundary : configObservable next = true
+          · rw [if_pos boundary] at run
+            have same : next = config' := Option.some.inj run
+            subst same
+            exact Relation.ReflTransGen.single first
+          · rw [if_neg boundary] at run
+            exact Relation.ReflTransGen.head first (inductionHypothesis next config' run)
+
+/-- The cold phase of a composed step is a finite run of the cold lane's
+cover. -/
+theorem reflTransGen_of_coldPhase {owned call config config' : Pattern}
+    (step : ComposedInvocationStep (compilingPattern owned call config)
+      (compilingPattern owned call config')) :
+    Relation.ReflTransGen Cold.structuredCRuns.Step config config' := by
+  rcases step.inv with ⟨_, _, source, target, sourceEq, targetEq, run⟩ |
+    ⟨_, _, _, _, targetEq⟩ | ⟨_, _, sourceEq, _, _⟩
+  · simp only [compilingPattern, Pattern.apply.injEq, List.cons.injEq, and_true,
+      true_and] at sourceEq targetEq
+    obtain ⟨_, _, sourceConfig⟩ := sourceEq
+    obtain ⟨_, _, targetConfig⟩ := targetEq
+    subst sourceConfig
+    subst targetConfig
+    exact reflTransGen_of_invokeUntil _ _ _ run
+  · simp [compilingPattern, executingPattern] at targetEq
+  · simp [compilingPattern, executingPattern] at sourceEq
+
+/-- The hot phase of a composed step is exactly one step of the hot lane's
+cover. -/
+theorem composedInvocationStep_executing_iff (config config' : Pattern) :
+    ComposedInvocationStep (executingPattern config) (executingPattern config') ↔
+      Hot.hotStructuredCRuns.Step config config' := by
+  constructor
+  · intro step
+    rcases step.inv with ⟨_, _, _, _, sourceEq, _, _⟩ | ⟨_, _, _, sourceEq, _⟩ |
+      ⟨source, target, sourceEq, targetEq, run⟩
+    · simp [compilingPattern, executingPattern] at sourceEq
+    · simp [compilingPattern, executingPattern] at sourceEq
+    · simp only [executingPattern, Pattern.apply.injEq, List.cons.injEq, and_true,
+        true_and] at sourceEq targetEq
+      subst sourceEq
+      subst targetEq
+      exact (hotStructuredCRuns_step_iff_invoke _ _).2 run
+  · intro step
+    exact ComposedInvocationStep.hot config config'
+      ((hotStructuredCRuns_step_iff_invoke _ _).1 step)
+
+/-! ## Observations carried along the composed cover
+
+The composed theory's only observation is which control the machine is at, and
+the composed encoding carries it exactly: the encoding is injective, because
+the two phases use distinct heads and each phase's payload is injectively
+encoded.  With that hypothesis discharged the Hennessy--Milner transport
+applies to the composed cover, and adequacy is a corollary rather than a
+separate argument.
+-/
+
+theorem encodeCallGuardInvocation_injective :
+    Function.Injective encodeCallGuardInvocation := by
+  intro left right equal
+  cases left with
+  | compiling ownedLeft callLeft compilerLeft =>
+      cases right with
+      | compiling ownedRight callRight compilerRight =>
+          simp only [encodeCallGuardInvocation, compilingPattern, Pattern.apply.injEq,
+            List.cons.injEq, and_true, true_and] at equal
+          obtain ⟨ownedEq, callEq, configEq⟩ := equal
+          rw [encodeOwned_injective ownedEq, encodeCall_injective callEq,
+            runControl_fineOf_injective configEq]
+      | executing _ =>
+          simp [encodeCallGuardInvocation, compilingPattern, executingPattern] at equal
+  | executing executorLeft =>
+      cases right with
+      | compiling _ _ _ =>
+          simp [encodeCallGuardInvocation, compilingPattern, executingPattern] at equal
+      | executing executorRight =>
+          simp only [encodeCallGuardInvocation, executingPattern, Pattern.apply.injEq,
+            List.cons.injEq, and_true, true_and] at equal
+          rw [hotRunControl_injective equal]
+
+/-- The composed theory observes which control it is at. -/
+def controlObserved : ObservedGSLT MainlineCallGuardControl.callGuardGSLT where
+  Atom := CallGuardControl
+  observes control term := term = control
+
+theorem controlObserved_resp (control : CallGuardControl)
+    {left right : CallGuardControl}
+    (equivalent : MainlineCallGuardControl.callGuardGSLT.Equiv left right) :
+    controlObserved.observes control left ↔ controlObserved.observes control right := by
+  have same : left = right := equivalent
+  subst same
+  exact Iff.rfl
+
+/-- The composed representation observes which encoded control it is at. -/
+def encodedControlObserved : ObservedGSLT composedInvocationRuns where
+  Atom := CallGuardControl
+  observes control pattern := pattern = encodeCallGuardInvocation control
+
+theorem encodedControlObserved_resp (control : CallGuardControl) {left right : Pattern}
+    (equivalent : composedInvocationRuns.Equiv left right) :
+    encodedControlObserved.observes control left ↔
+      encodedControlObserved.observes control right := by
+  have same : left = right := equivalent
+  subst same
+  exact Iff.rfl
+
+/-- Which control the machine is at is carried exactly by the composed
+encoding. -/
+theorem encodeCallGuardInvocation_observes_iff (control term : CallGuardControl) :
+    controlObserved.observes control term ↔
+      encodedControlObserved.observes (id control)
+        (composedInvocationRealization.mapTerm term) :=
+  ⟨fun observed => congrArg encodeCallGuardInvocation observed,
+    fun observed => encodeCallGuardInvocation_injective observed⟩
+
+/-- The composed call guard is a cover of the observed step systems: the
+composed realization covers the steps, and the control observations are
+carried exactly. -/
+def composedInvocationSystemCover :
+    HennessyMilner.SystemCover
+      (HennessyMilner.System.ofObserved controlObserved controlObserved_resp)
+      (HennessyMilner.System.ofObserved encodedControlObserved encodedControlObserved_resp) :=
+  composedInvocationRealization.systemCover controlObserved encodedControlObserved
+    controlObserved_resp encodedControlObserved_resp id
+    encodeCallGuardInvocation_observes_iff
+
+/-- Adequacy along the composed cover, with the atom and label renamings the
+transport records. -/
+theorem composedInvocation_sat_map
+    (formula : HennessyMilner.Formula CallGuardControl Unit) (control : CallGuardControl) :
+    (HennessyMilner.System.ofObserved encodedControlObserved encodedControlObserved_resp).sat
+        (HennessyMilner.Formula.map (Atom := CallGuardControl) (Label := Unit)
+          (Atom' := CallGuardControl) (Label' := Unit) id id formula)
+        (encodeCallGuardInvocation control) ↔
+      (HennessyMilner.System.ofObserved controlObserved controlObserved_resp).sat
+        formula control :=
+  composedInvocationSystemCover.sat_map formula control
+
+/-- Adequacy, stated on the formula itself: a Hennessy--Milner formula over
+control observations holds of an encoded control exactly when it holds of that
+control in the composed theory. -/
+theorem composedInvocation_sat_iff
+    (formula : HennessyMilner.Formula CallGuardControl Unit) (control : CallGuardControl) :
+    (HennessyMilner.System.ofObserved encodedControlObserved encodedControlObserved_resp).sat
+        formula (encodeCallGuardInvocation control) ↔
+      (HennessyMilner.System.ofObserved controlObserved controlObserved_resp).sat
+        formula control := by
+  have mapped := composedInvocation_sat_map formula control
+  rwa [HennessyMilner.Formula.map_id] at mapped
+
+/-- Observed bisimilarity is exact along the composed cover: the atom and label
+renamings are the identity, so both directions of the transport apply. -/
+theorem composedInvocation_bisimilar_iff (left right : CallGuardControl) :
+    (HennessyMilner.System.ofObserved encodedControlObserved
+        encodedControlObserved_resp).Bisimilar
+        (encodeCallGuardInvocation left) (encodeCallGuardInvocation right) ↔
+      (HennessyMilner.System.ofObserved controlObserved controlObserved_resp).Bisimilar
+        left right :=
+  composedInvocationSystemCover.bisimilar_map_iff (fun atom => ⟨atom, rfl⟩)
+    (fun label => ⟨label, rfl⟩) left right
+
+/-! ## Negative control: steps covered, observations not carried
+
+Covering steps is not enough.  The composed encoding covers every step of the
+composed theory, proved above; paired with an observation of the representation
+that sees only the executing phase and not which control the phase holds, the
+carried-observation law fails outright, so no system translation — hence no
+system cover — has that data, and the atomic formula separating two executing
+controls exhibits the failure directly.
+-/
+
+namespace PhaseOnly
+
+def phaseOwned : OwnedSnapshot := ⟨⟨0⟩, ⟨0, [], [], []⟩⟩
+
+def phaseCall : Call := ⟨"f", [], [], .atom "y"⟩
+
+def phaseFamily : CompiledGuardFamily := ⟨⟨0⟩, 0, "f", 0, []⟩
+
+def requested : CallGuardControl :=
+  .executing (.request phaseOwned phaseCall (.compiled phaseFamily))
+
+def planning : CallGuardControl := .executing (.plans phaseOwned.snapshot phaseCall [] [] [])
+
+theorem requested_steps : callGuardStep? requested = some planning := rfl
+
+theorem requested_ne_planning : requested ≠ planning := by
+  simp [requested, planning]
+
+/-- An observation of the composed representation that sees only the executing
+phase: it ignores its atom, so every loaded executor state looks alike. -/
+def phaseObserved : ObservedGSLT composedInvocationRuns where
+  Atom := CallGuardControl
+  observes _atom pattern := ∃ executor : ExecuteControl,
+    pattern = executingPattern (Hot.runControl executor)
+
+theorem phaseObserved_resp (control : CallGuardControl) {left right : Pattern}
+    (equivalent : composedInvocationRuns.Equiv left right) :
+    phaseObserved.observes control left ↔ phaseObserved.observes control right := by
+  have same : left = right := equivalent
+  subst same
+  exact Iff.rfl
+
+/-- The step is covered: the composed encoding maps the executor's request step
+to a composed step. -/
+theorem step_covered :
+    composedInvocationRuns.Step (encodeCallGuardInvocation requested)
+      (encodeCallGuardInvocation planning) :=
+  composedInvocationRealization.mapStep requested_steps
+
+/-- The observation is not carried: the phase observation holds of the encoded
+`planning` at the atom `requested`, which the composed theory does not observe
+there. -/
+theorem observation_not_carried :
+    phaseObserved.observes requested (encodeCallGuardInvocation planning) ∧
+      ¬ controlObserved.observes requested planning :=
+  ⟨⟨_, rfl⟩, fun observed => requested_ne_planning observed.symm⟩
+
+/-- Hence no system translation of the observed systems has the composed
+encoding as its term map, whatever it does to atoms. -/
+theorem no_systemTranslation :
+    ¬ ∃ translation : HennessyMilner.SystemTranslation
+        (HennessyMilner.System.ofObserved controlObserved controlObserved_resp)
+        (HennessyMilner.System.ofObserved phaseObserved phaseObserved_resp),
+      translation.mapTerm = encodeCallGuardInvocation := by
+  rintro ⟨translation, mapTerm⟩
+  have carried := (translation.observes_iff requested planning).2
+    (by rw [mapTerm]; exact ⟨_, rfl⟩)
+  exact requested_ne_planning carried.symm
+
+/-- A fortiori no system cover does, so the Hennessy--Milner transport is
+unavailable for this observation although every step is covered. -/
+theorem no_systemCover :
+    ¬ ∃ cover : HennessyMilner.SystemCover
+        (HennessyMilner.System.ofObserved controlObserved controlObserved_resp)
+        (HennessyMilner.System.ofObserved phaseObserved phaseObserved_resp),
+      cover.mapTerm = encodeCallGuardInvocation := by
+  rintro ⟨cover, mapTerm⟩
+  exact no_systemTranslation ⟨cover.toSystemTranslation, mapTerm⟩
+
+/-- The formula that fails to transport: `planning` satisfies the atom
+`requested` in the phase-observed representation but not in the composed
+theory. -/
+theorem sat_not_reflected :
+    (HennessyMilner.System.ofObserved phaseObserved phaseObserved_resp).sat
+        (.atom requested) (encodeCallGuardInvocation planning) ∧
+      ¬ (HennessyMilner.System.ofObserved controlObserved controlObserved_resp).sat
+        (.atom requested) planning :=
+  observation_not_carried
+
+end PhaseOnly
+
 #print axioms composedInvocationRealization
 #print axioms hotInvoke?_runControl
 #print axioms Canary.request_realized
 #print axioms Canary.negative_canary
+
+#print axioms reflTransGen_of_invokeUntil
+#print axioms reflTransGen_of_coldPhase
+#print axioms composedInvocationStep_executing_iff
+#print axioms encodeCallGuardInvocation_injective
+#print axioms composedInvocationSystemCover
+#print axioms composedInvocation_sat_map
+#print axioms composedInvocation_sat_iff
+#print axioms composedInvocation_bisimilar_iff
+#print axioms PhaseOnly.step_covered
+#print axioms PhaseOnly.observation_not_carried
+#print axioms PhaseOnly.no_systemTranslation
+#print axioms PhaseOnly.no_systemCover
+#print axioms PhaseOnly.sat_not_reflected
 
 end Mettapedia.Languages.MeTTa.PeTTa.MainlineCallGuardComposedInvocationRealization

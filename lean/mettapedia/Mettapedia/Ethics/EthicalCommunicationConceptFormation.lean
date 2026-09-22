@@ -61,20 +61,20 @@ theorem honesty_separates_full_classes :
 theorem honest_true_message_in_full_truth_extent :
     fullObserved.toClass honestTrueMessage ∈
       fullObserved.behavioralExtent fullTruthAttribute := by
-  apply (fullObserved.mem_behavioralExtent_toClass_iff _ fullTruthAttribute).mpr
-  simp [fullTruthAttribute, TrueCommunication, honestTrueMessage]
+  exact (fullObserved.mem_behavioralExtent_toClass_iff _ fullTruthAttribute).mpr
+    honest_true_message_is_true
 
 theorem honest_true_message_in_outcome_truth_extent :
     outcomeObserved.toClass honestTrueMessage ∈
       outcomeObserved.behavioralExtent outcomeTruthAttribute := by
-  apply (outcomeObserved.mem_behavioralExtent_toClass_iff _ outcomeTruthAttribute).mpr
-  simp [outcomeTruthAttribute, TrueCommunication, honestTrueMessage]
+  exact (outcomeObserved.mem_behavioralExtent_toClass_iff _ outcomeTruthAttribute).mpr
+    honest_true_message_is_true
 
 theorem dishonest_true_message_in_outcome_truth_extent :
     outcomeObserved.toClass dishonestTrueMessage ∈
       outcomeObserved.behavioralExtent outcomeTruthAttribute := by
-  apply (outcomeObserved.mem_behavioralExtent_toClass_iff _ outcomeTruthAttribute).mpr
-  simp [outcomeTruthAttribute, TrueCommunication, dishonestTrueMessage]
+  exact (outcomeObserved.mem_behavioralExtent_toClass_iff _ outcomeTruthAttribute).mpr
+    dishonest_true_message_is_true
 
 /-- There is no outcome-observer behavioral attribute whose state predicate
 is honesty.  The missing concept cannot be repaired by merely renaming an

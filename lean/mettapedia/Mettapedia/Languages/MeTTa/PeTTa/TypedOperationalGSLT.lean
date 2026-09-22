@@ -26,6 +26,7 @@ No generated runtime artifact occurs here.  The construction is a Lean
 specification and conformance boundary for a directly implemented runtime.
 -/
 
+open Mettapedia.Logic
 namespace Mettapedia.Languages.MeTTa.PeTTa.TypedOperationalGSLT
 
 open Mettapedia.GSLT
@@ -369,7 +370,7 @@ theorem v2_wrong_base_proof_rejected :
     v2Checked.checkRaw (valueHasType vTrue tNum) wrongBaseProof = false := by
   change checkRaw TypeSystemGSLT.checked
     (valueHasType vTrue tNum) wrongBaseProof = false
-  exact value_true_not_number
+  exact value_true_number_candidate_rejects
 
 /-- The operational run exists independently of whether the optional typing
 profile recognizes the emitted value. -/

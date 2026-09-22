@@ -5,7 +5,7 @@ import Mettapedia.Languages.MeTTa.OSLFCore.Atom
 # Substitution as an algebra
 
 These laws identify which term construction is semantically necessary when a
-substitution is observed, for every MeTTa dialect alike.  They do not assign a
+first-order simultaneous substitution is observed. They do not assign a
 physical allocation cost; that belongs to a separately validated realization.
 
 * Substitution depends only on the variables occurring in the term
@@ -22,9 +22,10 @@ physical allocation cost; that belongs to a separately validated realization.
   merge operation.
 
 This is the algebra of explicit substitutions (Abadi, Cardelli, Curien and
-Lévy) in the first-order case MeTTa needs.  It is stated over the shared
-`OSLFCore.Atom`, so it applies to PeTTa, Hyperon Experimental and Prime
-without change.
+Lévy) over the shared first-order `OSLFCore.Atom` carrier. A dialect operation
+uses these laws when it implements this substitution contract. Opaque quotation
+and binding-aware object-language substitution have separate contracts; the
+shared atom datatype alone does not identify them with this operation.
 -/
 
 namespace Mettapedia.Languages.MeTTa.SubstitutionAlgebra
@@ -268,6 +269,107 @@ theorem comp_comm_of_disjoint (σ τ : Subst) (h : Independent σ τ) :
       · exact absurd h1 (by simp [hσ])
       · exact absurd h1 (by simp [hτ])
 
+/-! ## Syntax insertion and finite unification
+
+Here `quote` is an ordinary expression constructor: it may inhibit evaluation,
+but this first-order substitution algebra does not make it a binder or a scope
+boundary. A staged language with opaque quotation needs a different operation.
+
+A one-pass substitution may insert a term that contains its domain variable.
+That does not make it a unifier of the variable and that term, and applying the
+substitution again need not be inert. These laws separate syntax construction
+from the acyclic logical-store contract without choosing a dialect's `let` rule.
+-/
+
+namespace Insertion
+
+/-- Substitute one variable, leaving other variables untouched. -/
+def single (v : Var) (value : Atom) : Subst :=
+  fun name => if name = v then some value else none
+
+/-- An ordinary unary expression, including syntax such as `(quote payload)`. -/
+def wrap (head : String) (payload : Atom) : Atom :=
+  .expression [.symbol head, payload]
+
+@[simp] theorem subst_single_variable (v : Var) (value : Atom) :
+    subst (single v value) (.var v) = value := by
+  simp [subst, single]
+
+@[simp] theorem subst_wrap (σ : Subst) (head : String) (payload : Atom) :
+    subst σ (wrap head payload) = wrap head (subst σ payload) := by
+  simp [wrap, subst, subst.substList]
+
+/-- Insertion in a template does not recursively insert into the supplied value. -/
+theorem insert_into_quoted_template (v : Var) (head : String) (value : Atom) :
+    subst (single v value) (wrap "quote" (wrap head (.var v))) =
+      wrap "quote" (wrap head value) := by
+  simp
+
+/-- The requested nested quotation is an ordinary, finite substitution result,
+even though the supplied value contains the substituted variable. -/
+theorem self_containing_quotation_is_constructible (v : Var) :
+    subst (single v (wrap "quote" (wrap "f" (.var v))))
+      (wrap "quote" (wrap "g" (.var v))) =
+    wrap "quote" (wrap "g" (wrap "quote" (wrap "f" (.var v)))) :=
+  insert_into_quoted_template v "g" _
+
+/-- A finite tree cannot equal two new constructors wrapped around itself. -/
+theorem finite_atom_ne_double_wrap (atom : Atom) (outer inner : String) :
+    atom ≠ wrap outer (wrap inner atom) := by
+  intro equal
+  have sizes := congrArg sizeOf equal
+  simp [wrap] at sizes
+  omega
+
+/-- No substitution into finite atoms solves `x = (quote (f x))` when quote
+is an ordinary constructor and the two occurrences denote the same variable. -/
+theorem self_containing_quotation_has_no_finite_unifier (σ : Subst) (v : Var) :
+    subst σ (.var v) ≠
+      subst σ (wrap "quote" (wrap "f" (.var v))) := by
+  simp only [subst_wrap]
+  exact finite_atom_ne_double_wrap _ "quote" "f"
+
+/-- Reapplying the insertion descends into the previously inserted value and
+changes it. This is the negative control for one-pass materialization. -/
+theorem self_insertion_is_not_idempotent (v : Var) :
+    let σ := single v (wrap "quote" (wrap "f" (.var v)))
+    subst σ (subst σ (.var v)) ≠ subst σ (.var v) := by
+  dsimp
+  simp only [subst_single_variable, subst_wrap]
+  exact (finite_atom_ne_double_wrap _ "quote" "f").symm
+
+/-- A distinct destination constructs the same quoted result while leaving
+the payload's variable free: no recursive logical equation is required. -/
+theorem fresh_destination_preserves_payload (destination payloadVariable : Var)
+    (distinct : payloadVariable ≠ destination) :
+    let value := wrap "quote" (wrap "f" (.var payloadVariable))
+    let σ := single destination value
+    subst σ (wrap "quote" (wrap "g" (.var destination))) =
+        wrap "quote" (wrap "g" value) ∧
+      subst σ value = value := by
+  dsimp
+  constructor
+  · exact insert_into_quoted_template _ _ _
+  · simp [subst, single, distinct]
+
+/-- In contrast with self-binding, the fresh-destination substitution really
+is a unifier: both sides are sent to the same finite value. -/
+theorem fresh_destination_is_finite_unifier (destination payloadVariable : Var)
+    (distinct : payloadVariable ≠ destination) :
+    let value := wrap "quote" (wrap "f" (.var payloadVariable))
+    let σ := single destination value
+    subst σ (.var destination) = subst σ value := by
+  dsimp
+  rw [subst_single_variable,
+    (fresh_destination_preserves_payload destination payloadVariable distinct).2]
+
+end Insertion
+
+#print axioms Insertion.self_containing_quotation_is_constructible
+#print axioms Insertion.self_containing_quotation_has_no_finite_unifier
+#print axioms Insertion.self_insertion_is_not_idempotent
+#print axioms Insertion.fresh_destination_preserves_payload
+#print axioms Insertion.fresh_destination_is_finite_unifier
 #print axioms subst_congr_on_vars
 #print axioms subst_of_vars_eq_nil
 #print axioms subst_restrict_vars

@@ -484,6 +484,7 @@ if ! git -C "$AIHUB/Mettapedia" diff --check -- \
     MettaKernel/kernel/run_metamath_statement_ledger_v0_gate.sh \
     lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLT.lean \
     lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLTMeTTaExport.lean \
+    lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLTParserDefinition.lean \
     lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLTParserExport.lean \
     lean/mettapedia/Mettapedia/Languages/Metamath/VerifiedCheckerSemantics.lean \
     lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLTCheckerAlignment.lean \
@@ -502,6 +503,7 @@ fi
 if rg -n '\bsorry\b|\badmit\b|_wanted\b|\bnative_decide\b|^\s*axiom\b' \
     "$LEAN_ROOT/Mettapedia/Languages/Metamath/SourceGSLT.lean" \
     "$LEAN_ROOT/Mettapedia/Languages/Metamath/SourceGSLTMeTTaExport.lean" \
+    "$LEAN_ROOT/Mettapedia/Languages/Metamath/SourceGSLTParserDefinition.lean" \
     "$LEAN_ROOT/Mettapedia/Languages/Metamath/SourceGSLTParserExport.lean" \
     "$LEAN_ROOT/Mettapedia/Languages/Metamath/VerifiedCheckerSemantics.lean" \
     "$LEAN_ROOT/Mettapedia/Languages/Metamath/SourceGSLTCheckerAlignment.lean" \

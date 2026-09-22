@@ -16,6 +16,8 @@ import Mettapedia.GSLT.LanguageDef.CalculusAsLanguage
 import Mettapedia.GSLT.LanguageDef.CalculusExtension
 import Mettapedia.GSLT.LanguageDef.CertificateGSLT
 import Mettapedia.GSLT.LanguageDef.RuleMachineCompilation
+import Mettapedia.GSLT.LanguageDef.ContextualEffectTreeLanguage
+import Mettapedia.GSLT.LanguageDef.ContextualEffectTreeExactness
 import Mettapedia.GSLT.LanguageDef.CompiledPlanWireFormat
 import Mettapedia.GSLT.LanguageDef.CompiledPlanAdmission
 import Mettapedia.GSLT.LanguageDef.CompiledPlanLowering
@@ -64,6 +66,7 @@ import Mettapedia.GSLT.LanguageDef.CompiledPlanOptimizationPipeline
 import Mettapedia.GSLT.LanguageDef.CompiledPlanOpenActivationViewCompilation
 import Mettapedia.GSLT.LanguageDef.CompiledOpenMatcherPlan
 import Mettapedia.GSLT.LanguageDef.MatchDecisionContract
+import Mettapedia.GSLT.LanguageDef.MatchDecisionCodeTree
 import Mettapedia.GSLT.LanguageDef.MatchDecisionPrefixObservationCompilation
 import Mettapedia.GSLT.LanguageDef.CandidateSupersetVerificationAlgebra
 import Mettapedia.GSLT.LanguageDef.MatchDecisionVerificationReceipt
@@ -89,6 +92,31 @@ import Mettapedia.GSLT.LanguageDef.OracleExtension
 import Mettapedia.GSLT.LanguageDef.ReflectionExtension
 import Mettapedia.GSLT.LanguageDef.RuntimeProfileExtension
 import Mettapedia.GSLT.LanguageDef.LanguageDefTransformation
+import Mettapedia.GSLT.LanguageDef.BindingSignature
+import Mettapedia.GSLT.LanguageDef.BindingSignatureSubstitution
+import Mettapedia.GSLT.LanguageDef.BindingSignatureControls
+import Mettapedia.GSLT.LanguageDef.BindingSignatureTransport
+import Mettapedia.GSLT.LanguageDef.BindingSignatureReification
+import Mettapedia.GSLT.LanguageDef.BindingSignatureReificationControls
+import Mettapedia.GSLT.LanguageDef.WellSortedOccurrence
+import Mettapedia.GSLT.LanguageDef.WellSortedOccurrenceReplacement
+import Mettapedia.GSLT.LanguageDef.WellSortedOccurrenceAdmission
+import Mettapedia.GSLT.LanguageDef.WellSortedOccurrenceControls
+import Mettapedia.GSLT.LanguageDef.OpenSortedEquationInstance
+import Mettapedia.GSLT.LanguageDef.MetaDependencyBoundary
+import Mettapedia.GSLT.LanguageDef.MetaDependencyBoundaryControls
+import Mettapedia.GSLT.LanguageDef.ScopedMatcherDependencyBoundary
+import Mettapedia.GSLT.LanguageDef.PartialRenamingControls
+import Mettapedia.GSLT.LanguageDef.PartialRenamingInstantiation
+import Mettapedia.GSLT.LanguageDef.PartialRenamingInstantiationControls
+import Mettapedia.GSLT.LanguageDef.VariableArgumentInstantiation
+import Mettapedia.GSLT.LanguageDef.VariableArgumentRecognitionControls
+import Mettapedia.OSLF.Syntax.BoundPrefixProjection
+import Mettapedia.OSLF.Syntax.ScopedMatching
+import Mettapedia.GSLT.LanguageDef.ScopedMatchingControls
+import Mettapedia.GSLT.LanguageDef.BoundPrefixProjectionControls
+import Mettapedia.GSLT.LanguageDef.GSLTILOperationalPlans
+import Mettapedia.GSLT.LanguageDef.GSLTILOperationalPlanControls
 
 /-!
 # Compositional language definitions

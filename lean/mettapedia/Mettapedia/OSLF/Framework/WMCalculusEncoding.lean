@@ -175,7 +175,9 @@ private theorem wmCoreLangReduces_evidenceAdd (pw₁ pw₂ pq : Pattern) :
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleEvidenceAdd, pExtract, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleEvidenceAdd, applyPremisesWithEnv]
-  · simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+      _ _ _ (by decide +kernel)]
+    simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
 
 private theorem wmCoreLangReduces_revisionComm (pw₁ pw₂ : Pattern) :
     langReduces wmCoreLanguageDef
@@ -190,7 +192,9 @@ private theorem wmCoreLangReduces_revisionComm (pw₁ pw₂ : Pattern) :
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleRevisionComm, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleRevisionComm, applyPremisesWithEnv]
-  · simp [bs, ruleRevisionComm, pRevise, applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+      _ _ _ (by decide +kernel)]
+    simp [bs, ruleRevisionComm, pRevise, applyBindings]
 
 private theorem wmCoreLangReduces_revisionAssoc (pw₁ pw₂ pw₃ : Pattern) :
     langReduces wmCoreLanguageDef
@@ -205,7 +209,9 @@ private theorem wmCoreLangReduces_revisionAssoc (pw₁ pw₂ pw₃ : Pattern) :
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleRevisionAssoc, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleRevisionAssoc, applyPremisesWithEnv]
-  · simp [bs, ruleRevisionAssoc, pRevise, applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+      _ _ _ (by decide +kernel)]
+    simp [bs, ruleRevisionAssoc, pRevise, applyBindings]
 
 private theorem wmCoreLangReduces_combineComm (pe₁ pe₂ : Pattern) :
     langReduces wmCoreLanguageDef
@@ -220,7 +226,9 @@ private theorem wmCoreLangReduces_combineComm (pe₁ pe₂ : Pattern) :
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleCombineComm, pCombine, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleCombineComm, applyPremisesWithEnv]
-  · simp [bs, ruleCombineComm, pCombine, applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+      _ _ _ (by decide +kernel)]
+    simp [bs, ruleCombineComm, pCombine, applyBindings]
 
 private theorem wmCoreLangReduces_combineZero (pe : Pattern) :
     langReduces wmCoreLanguageDef
@@ -235,7 +243,9 @@ private theorem wmCoreLangReduces_combineZero (pe : Pattern) :
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleCombineZero, pCombine, pEvidenceZero, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleCombineZero, applyPremisesWithEnv]
-  · simp [bs, ruleCombineZero, applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+      _ _ _ (by decide +kernel)]
+    simp [bs, ruleCombineZero, applyBindings]
 
 /-- Soundness: every `WMStep` lifts to a `langReduces wmCoreLanguageDef` step. -/
 theorem wmStep_sound {s : WMSort} (t₁ t₂ : WMTerm s) :
@@ -306,6 +316,7 @@ theorem wmStep_complete {s : WMSort} (t₁ : WMTerm s) (q : Pattern) :
           simp [encodeWM, pExtract, pRevise, ruleEvidenceAdd, matchPattern,
                 matchArgs, mergeBindings] at hmatch
           subst hmatch
+          rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] at happly
           simp [ruleEvidenceAdd, applyBindings, pCombine, pExtract] at happly
           subst happly
           exact ⟨.combine (.extract s₁ tq) (.extract s₂ tq),
@@ -322,6 +333,7 @@ theorem wmStep_complete {s : WMSort} (t₁ : WMTerm s) (q : Pattern) :
         simp [encodeWM, pRevise, ruleRevisionComm, matchPattern,
               matchArgs, mergeBindings] at hmatch
         subst hmatch
+        rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] at happly
         simp [ruleRevisionComm, applyBindings, pRevise] at happly
         subst happly
         exact ⟨.revise s₂ s₁, .revision_comm s₁ s₂,
@@ -337,6 +349,7 @@ theorem wmStep_complete {s : WMSort} (t₁ : WMTerm s) (q : Pattern) :
           simp [encodeWM, pRevise, ruleRevisionAssoc, matchPattern,
                 matchArgs, mergeBindings] at hmatch
           subst hmatch
+          rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] at happly
           simp [ruleRevisionAssoc, applyBindings, pRevise] at happly
           subst happly
           exact ⟨.revise s₁ (.revise s₂ t₃), .revision_assoc s₁ s₂ t₃,
@@ -353,6 +366,7 @@ theorem wmStep_complete {s : WMSort} (t₁ : WMTerm s) (q : Pattern) :
         simp [encodeWM, pCombine, ruleCombineComm, matchPattern,
               matchArgs, mergeBindings] at hmatch
         subst hmatch
+        rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] at happly
         simp [ruleCombineComm, applyBindings, pCombine] at happly
         subst happly
         exact ⟨.combine e₂ e₁, .combine_comm e₁ e₂,
@@ -368,6 +382,7 @@ theorem wmStep_complete {s : WMSort} (t₁ : WMTerm s) (q : Pattern) :
           simp [encodeWM, pCombine, pEvidenceZero, ruleCombineZero, matchPattern,
                 matchArgs, mergeBindings] at hmatch
           subst hmatch
+          rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] at happly
           simp [ruleCombineZero, applyBindings] at happly
           subst happly
           exact ⟨e₁, .combine_zero e₁, by simp [encodeWM, pCombine, pExtract, pRevise, pEvidenceZero]⟩

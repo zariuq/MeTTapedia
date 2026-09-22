@@ -425,19 +425,19 @@ theorem sem_iff_of_broadFragment
   induction hfrag with
   | top =>
       intro p
-      simp [sem]
+      simp [sem, semEnv]
   | bot =>
       intro p
-      simp [sem]
+      simp [sem, semEnv]
   | atom a =>
       intro p
-      simpa [sem] using hAtomIff a p
+      simpa [sem, semEnv] using hAtomIff a p
   | and hφ hψ ihφ ihψ =>
       intro p
-      simp [sem, ihφ p, ihψ p]
+      exact and_congr (ihφ p) (ihψ p)
   | or hφ hψ ihφ ihψ =>
       intro p
-      simp [sem, ihφ p, ihψ p]
+      exact or_congr (ihφ p) (ihψ p)
   | imp hφ hψ ihφ ihψ =>
       intro p
       constructor

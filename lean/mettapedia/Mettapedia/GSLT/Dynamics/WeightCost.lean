@@ -23,9 +23,9 @@ This file formalizes resource algebras (Definition 7.1) and cost maps
 ## Key Insight
 
 Resources in a computation are heterogeneous (channels, memory, energy, names).
-A vectorial account tracks each resource type independently. The conservation
-theorem (Theorem 7.1) states that net account change is zero on closed paths
-in the reversible envelope — this is the GSLT analogue of energy conservation.
+A vectorial account tracks each resource type independently. Conservation (Theorem 7.1) is the property that net account change is
+zero on closed paths. Exact coboundary costs satisfy it; see
+`GSLT.Dynamics.CostExactness`.
 
 ## References
 
@@ -98,6 +98,12 @@ instance [Zero A] : Zero (VectorialAccount A k) where
 instance [Add A] : Add (VectorialAccount A k) where
   add a b := fun i => a i + b i
 
+/-- Component-wise subtraction -/
+instance [Sub A] : Sub (VectorialAccount A k) where
+  sub a b := fun i => a i - b i
+
+theorem ext {a b : VectorialAccount A k} (h : ∀ i, a i = b i) : a = b := funext h
+
 /-- Component-wise ordering -/
 instance [LE A] : LE (VectorialAccount A k) where
   le a b := ∀ i, a i ≤ b i
@@ -109,6 +115,11 @@ instance [AddCommMonoid A] : AddCommMonoid (VectorialAccount A k) := by
 
 /-- Pointwise partial order. -/
 instance [PartialOrder A] : PartialOrder (VectorialAccount A k) := by
+  dsimp [VectorialAccount]
+  infer_instance
+
+/-- Pointwise additive group, so coboundary costs can telescope. -/
+instance [AddGroup A] : AddGroup (VectorialAccount A k) := by
   dsimp [VectorialAccount]
   infer_instance
 
@@ -223,14 +234,14 @@ structure WeightedGSLT.{u} (W : Type*) (A : Type*) (k : Nat) where
   /-- The cost map (resources) -/
   costs : CostMap gslt A k
 
-/-! ## Conservation Theorem (Statement)
+/-! ## Conservation
 
-    Theorem 7.1 (Meredith 2026): In S†_C, for any closed rewrite path γ,
-    the net account change is zero.
-
-    A "closed path" is one that returns to its starting term.
-    Conservation follows from the reversibility of S†: every forward
-    debit is matched by a backward credit.
+    Theorem 7.1 (Meredith 2026, Finding Mind ch. 7): on a closed path in
+    the reversible envelope — same term *and* same history — the net
+    account change is zero. That is a structural consequence of
+    reversibility (unique parent). The proof is `envelope_conserves` in
+    `CostExactness.lean`. Exactness is whether that potential survives
+    forgetting the history.
 -/
 
 /-- A closed path is a rewrite path whose endpoints coincide.
@@ -248,15 +259,12 @@ theorem isClosedPath_iff {S : GSLT} {t u : S.Term} (γ : S.RewritePath t u) :
 theorem isClosedPath_refl {S : GSLT} {t : S.Term} (γ : S.RewritePath t t) :
     isClosedPath γ := rfl
 
-/-- Statement of the conservation theorem.
+/-- Forward-only conservation: net cost vanishes on `RewritePath` loops.
 
-    Theorem 7.1 (Meredith 2026): For any closed rewrite path in the
-    reversible envelope, the net resource change is zero.
-
-    This is stated as a property that a cost map may satisfy.
-    It holds automatically for cost maps derived from the reversible
-    envelope construction where backward steps credit exactly what
-    forward steps debit.
+    This is *not* Theorem 7.1. The envelope law (`envelope_conserves`)
+    holds for every cost map. This forward-only property holds for
+    coboundaries (`CostMap.exact_conserves`) and fails for the
+    dissipative 2-cycle.
 -/
 def CostMap.conserves {S : GSLT} {A : Type*} {k : Nat}
     [AddGroup A] (cm : CostMap S A k) : Prop :=
@@ -273,13 +281,10 @@ This file establishes:
 5. **ActionMap/totalAction**: Additive action functional (Definition 6.4)
 6. **CostMap**: Resource cost assignment (Definition 7.2)
 7. **WeightedGSLT**: Bundled GSLT + weights + costs (Definition 6.2)
-8. **Conservation statement**: Net cost = 0 on closed paths (Theorem 7.1)
+8. **Conservation**: `CostMap.conserves` is the forward-only loop property.
+   Theorem 7.1 is `envelope_conserves` (no exactness).
 
-**Paper Coverage**: Definitions 6.1–6.4, 7.1–7.2; Theorem 7.1 (statement)
-
-**No sorry statements** — everything is fully proven or cleanly stated.
-
-**Next**: `Dynamics/ExtendedHML.lean` (Definition 8.1)
+**Paper Coverage**: Definitions 6.1–6.4, 7.1–7.2.
 -/
 
 end Mettapedia.GSLT

@@ -8,9 +8,12 @@ functor, and satisfaction relation.  Bundling the signature category makes
 institutions with different native signatures objects of one category;
 institution comorphisms are its arrows.
 
-This is the outer atlas of mathematical logics.  It does not impose a common
-syntax and it does not give a logic an artificial operational semantics.
-GSLTs may be attached later as independently justified operational faces.
+This is the category of institutions and institution comorphisms.  A logic
+graph, in the sense of heterogeneous specification, is a diagram in this
+category; flattening such a diagram yields its Grothendieck institution, which
+is not constructed here.  The category does not impose a common syntax and it
+does not give a logic an artificial operational semantics.  GSLTs may be
+attached later as independently justified operational faces.
 -/
 
 set_option autoImplicit false

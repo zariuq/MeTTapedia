@@ -12,7 +12,7 @@ predecessor-finiteness fails globally) with a positive characterization for
 the reflection-free generated relation:
 
 A `LanguageDef` is **predecessor-finite-safe** when every rewrite rule has
-`isMatchCorrect` LHS and RHS (no `.subst` or `.collection` nodes), is
+`isMatchCorrect` LHS and RHS (no binders, `.subst`, or `.collection` nodes), is
 variable-preserving (every LHS free variable appears in the RHS), and has no
 premises.  The last condition rules out contextual recursion semantically,
 without inspecting any particular `Pattern` representation constructor.
@@ -21,12 +21,8 @@ Under this condition the predecessor set of any term is finite:
 `matchPattern r.right q` gives a finite list of candidate binding sets,
 and each determines a unique predecessor via `applyBindings bs r.left`.
 
-## LLM Primer: WF-recursive equation lemmas
-`applyBindings`, `freeVars`, `matchPattern` are WF-recursive. They do NOT
-reduce via `rfl`, `decide`, or `simp [fn]`. Use `conv_lhs => rw [fn.eq_def]`
-to unfold one level, then iota-reduce on concrete constructors.
-`isMatchCorrectAux`/`isMatchCorrectListAux` are `mutual`-recursive and DO
-reduce via `rfl`/`simp`/`decide` for concrete constructors.
+The collection-rest behavior of `freeVars` does not enlarge this theorem's
+domain: its hypotheses exclude collections and binders altogether.
 -/
 
 namespace Mettapedia.OSLF.Framework.PredFiniteSufficient
@@ -110,7 +106,7 @@ private theorem isMatchCorrectListAux_iff (l : List Pattern) :
 /-! ## Sufficient Condition -/
 
 /-- A rewrite rule is predecessor-finite-safe:
-1. Both LHS and RHS are `isMatchCorrect` (no `.subst`, no `.collection`).
+1. Both sides are `isMatchCorrect` (no binders, `.subst`, or `.collection`).
 2. Variable-preserving: every free variable in the LHS appears in the RHS.
 3. No premises: binding expansion is trivial. -/
 structure RulePredFiniteSafe (r : RewriteRule) : Prop where
@@ -146,6 +142,10 @@ theorem step_decomposes_of_langPredFiniteSafe
     cases hprem
     simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic]
       at hq
+    rw [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
+      Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped_zero_of_binderFree _ _ _
+        (Mettapedia.OSLF.MeTTaIL.Match.binderFree_of_isMatchCorrectAux _
+          (hSafe.rulesSafe r hr).rhsMatchCorrect)] at hq
     exact ⟨r, hr, initialBindings, hbs, hq⟩
 
 theorem applyPremisesWithEnv_nil

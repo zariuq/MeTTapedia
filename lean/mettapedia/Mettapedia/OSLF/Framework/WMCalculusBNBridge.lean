@@ -5,27 +5,25 @@ import Mettapedia.OSLF.Framework.WMCalculusEncoding
 import Mettapedia.PLN.Evidence.EvidenceQuantale
 
 /-!
-# WM Calculus — Bayesian Network Compiled Inference Bridge
-
-Bridges the guarded WM rewrite calculus (Pattern-level) with Bayesian network
-d-separation (oracle-level). Three BN motifs:
-
-1. **Chain (A → B → C)**: d-separated queries use guarded forgetting (positive).
-2. **Fork (A ← B → C)**: symmetric d-separation enables guarded forgetting (positive).
-3. **Collider (A → C ← B)**: no d-separation, guarded forgetting blocked (negative).
+# WM Calculus — Guarded Inference and Evidence Interpretation
 
 The guarded rule `ruleForgetOutsideGuarded` has premise
 `[.relationQuery "outsideScope" [.fvar "S", .fvar "q"]]`.
-A `RelationEnv` answers `outsideScope(S, q)` when `q` is d-separated from scope `S`.
+A `RelationEnv` supplies relation-query answers. These results describe what
+happens when an `outsideScope(S, q)` answer survives premise evaluation; they do
+not construct a Bayesian network or prove that a provider decides d-separation.
+Such an interpretation requires a separate provider-soundness theorem.
 
 Architecture:
 - **Positive** (`guarded_forget_of_dsep`): Parametric in the oracle.
   Given ANY `RelationEnv` that satisfies the outsideScope premise,
-  the guarded forgetting rule fires. The specific BN structure
-  (chain, fork) determines which oracles are sound.
+  the guarded forgetting rule fires. The hypothesis is operational query
+  success, not a checked d-separation certificate.
 - **Negative** (`collider_premise_empty`): With `RelationEnv.empty`,
   the premise evaluation returns `[]`, blocking the rule entirely.
-  This models the collider motif where no d-separation holds.
+  This is an empty-provider control, not a collider-network instance. In a
+  collider `A → C ← B`, the path is blocked without conditioning on `C` or a
+  descendant and becomes open when such conditioning occurs.
 -/
 
 namespace Mettapedia.OSLF.Framework.WMCalculusBNBridge
@@ -60,17 +58,16 @@ theorem ruleForgetOutsideGuarded_mem_guarded (v : WMExtVertex)
 The key positive theorem: given ANY `RelationEnv` that satisfies the
 `outsideScope(S, q)` premise, the guarded forgetting rule fires.
 
-This is parametric in the oracle — the specific BN motif (chain, fork)
-determines which oracles are sound for a given network topology.
-The calculus only cares that the oracle answers positively. -/
+This is parametric in the provider. No network-topology interpretation or
+provider-soundness result is assumed implicitly. -/
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Under any RelationEnv that satisfies the outsideScope premise,
     the guarded forgetting rule fires:
     `Extract(Forget(S, W), q) ↦ Extract(W, q)`.
 
-    The hypothesis `hprem` witnesses that the oracle provides a
-    d-separation certificate for query `q` outside scope `S`. -/
+    The hypothesis `hprem` is membership in the premise evaluator's returned
+    bindings. It does not establish a Bayesian interpretation of the answer. -/
 theorem guarded_forget_of_dsep
     (v : WMExtVertex) (hf : v.forgetting = .scopeBased ∨ v.forgetting = .supportTracked)
     (relEnv : RelationEnv) (pS pW pq : Pattern)
@@ -94,13 +91,13 @@ theorem guarded_forget_of_dsep
       matchPattern, matchArgs, mergeBindings])
     (.relationQuery .nil)
     hprem
-    (by simp [ruleForgetOutsideGuarded, pExtract,
-      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
-      applyBindings])
+    (by
+      rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+        _ _ _ (by decide +kernel)]
+      simp [ruleForgetOutsideGuarded, pExtract, applyBindings])
 
-/-- Existential form: there EXISTS a RelationEnv under which guarded forgetting fires.
-    This witnesses that the guarded rule is not vacuous — it CAN fire with
-    the right d-separation oracle. -/
+/-- Transports an assumed successful provider to an existential reduction.
+    This theorem does not itself construct a provider or a network witness. -/
 theorem guarded_forget_possible
     (v : WMExtVertex) (hf : v.forgetting = .scopeBased ∨ v.forgetting = .supportTracked)
     (pS pW pq : Pattern)
@@ -116,11 +113,10 @@ theorem guarded_forget_possible
   obtain ⟨relEnv, hprem⟩ := hprem
   exact ⟨relEnv, guarded_forget_of_dsep v hf relEnv pS pW pq hprem⟩
 
-/-! ## §3: Negative Theorem — Collider Blocks Forgetting
+/-! ## §3: Negative Theorem — Empty Provider Blocks the Premise
 
 With `RelationEnv.empty`, the `outsideScope` premise can never be satisfied.
-This models the collider BN A→C←B where A and B are NOT d-separated
-(without conditioning on C, "explaining away" creates dependence). -/
+The legacy theorem names below do not supply a collider interpretation. -/
 
 /-- With the empty oracle, the outsideScope premise evaluation returns `[]`.
     No bindings survive, so `ruleForgetOutsideGuarded` cannot fire. -/
@@ -154,8 +150,9 @@ theorem guarded_reduction_lifts_relEnv
   unfold langReducesUsing at hred ⊢
   exact hred.mono_relEnv (RelationEnv.empty_le relEnv)
 
-/-- The evidence-add chain fires under any RelationEnv since it uses
-    only core rules (no premises).
+/-- The existing empty-provider evidence-add chain, using only core rules.
+    Its steps can be lifted with `guarded_reduction_lifts_relEnv`; the relation
+    in this statement itself has no provider parameter.
     `Extract(Revise(Revise(W₁,W₂), W₃), q)` →*
     `Combine(Combine(Extract(W₁,q), Extract(W₂,q)), Extract(W₃,q))`. -/
 theorem evidenceAdd_chain_any_relEnv
@@ -167,10 +164,9 @@ theorem evidenceAdd_chain_any_relEnv
 
 /-! ## §5: Compiled Pipeline -/
 
-/-- Combined pipeline: guarded forget + evidence-add.
-    Under a d-separation oracle, `Extract(Forget(S, Revise(W₁,W₂)), q)` first
-    reduces to `Extract(Revise(W₁,W₂), q)` (guarded forget, oracle-dependent),
-    then to `Combine(Extract(W₁,q), Extract(W₂,q))` (evidence-add, oracle-free). -/
+/-- The guarded-forgetting stage on a revised world model.
+    This statement proves one step to `Extract(Revise(W₁,W₂), q)`, not the
+    subsequent evidence-add step of a combined pipeline. -/
 theorem compiled_dsep_forget_evidenceAdd
     (v : WMExtVertex) (hf : v.forgetting = .scopeBased ∨ v.forgetting = .supportTracked)
     (relEnv : RelationEnv) (pS pW₁ pW₂ pq : Pattern)
@@ -183,23 +179,21 @@ theorem compiled_dsep_forget_evidenceAdd
       (pExtract (pRevise pW₁ pW₂) pq) :=
   guarded_forget_of_dsep v hf relEnv pS (pRevise pW₁ pW₂) pq hprem
 
-/-! ## §6: Clean d-Separation Predicate (Concern 1)
+/-! ## §6: Operational Outside-Scope Predicate
 
-Wrap the raw `applyPremisesWithEnv` membership in a semantic predicate
-that hides the engine plumbing. -/
+Wrap the raw `applyPremisesWithEnv` membership without changing its meaning. -/
 
-/-- `OutsideScope relEnv lang pS pq` holds when the d-separation oracle
-    confirms that query `pq` is outside scope `pS` — i.e., the bindings
-    from matching `ruleForgetOutsideGuarded` survive premise evaluation.
+/-- `OutsideScope relEnv lang pS pq` holds when the bindings from matching
+    `ruleForgetOutsideGuarded` survive premise evaluation for every `pW`.
 
-    This abstracts away the internal `applyPremisesWithEnv` machinery. -/
+    It abbreviates operational query success, not Bayesian d-separation. -/
 def OutsideScope (relEnv : RelationEnv) (lang : LanguageDef)
     (pS pq : Pattern) : Prop :=
   ∀ pW : Pattern, [("q", pq), ("W", pW), ("S", pS)] ∈
     applyPremisesWithEnv relEnv lang
       ruleForgetOutsideGuarded.premises [("q", pq), ("W", pW), ("S", pS)]
 
-/-- With the empty oracle, no query is outside any scope. -/
+/-- The operational `OutsideScope` predicate fails for the empty provider. -/
 theorem outsideScope_empty_false (v : WMExtVertex) (pS pq : Pattern) :
     ¬ OutsideScope RelationEnv.empty (wmExtVertexLanguageDefGuarded v) pS pq := by
   intro h
@@ -218,15 +212,12 @@ theorem guarded_forget_of_outsideScope
       (pExtract pW pq) :=
   guarded_forget_of_dsep v hf relEnv pS pW pq (hdsep pW)
 
-/-! ## §7: Completeness — Guarded Forget is the Unique Applicable Rule
+/-! ## §7: Raw Matcher Exclusions
 
-In the guarded ext vertex calculus, `ruleForgetOutsideGuarded` is the ONLY
-rule whose left-hand side matches `Extract(Forget(S, W), q)`. No core rule,
-overlap rule, or other forgetting rule can fire on this pattern shape.
-
-This gives a genuine completeness result: if guarded forgetting reduces
-`Extract(Forget(S, W), q)` to `Extract(W, q)`, then the d-separation
-oracle MUST have satisfied the `outsideScope(S, q)` premise. -/
+The following lemmas exclude other rules using `matchPattern` on the literal
+shape `Extract(Forget(S, W), q)`. They are not a converse theorem for the
+rule-aware operational relation, matching modulo equations, or Bayesian
+d-separation. -/
 
 /-- No core rule matches `Extract(Forget(S, W), q)`. -/
 private theorem coreRules_no_match_forgetExtract (pS pW pq : Pattern) :
@@ -270,22 +261,20 @@ private theorem forgettingRulesGuarded_unique_match (mode : WMForgettingMode)
     · rfl
     · exact absurd (forgetIdempotent_no_match_forgetExtract pS pW pq) hne
 
-/-! ## §8: Semantic Bridge — BinaryEvidence Interpretation (Concern 2)
+/-! ## §8: Additive Extraction Interpretation
 
-The WM calculus operates on syntactic Patterns. The PLN probability semantics
-interprets these patterns in the `BinaryEvidence` quantale (ℝ≥0∞ × ℝ≥0∞).
-
-An `EvidenceInterpretation` is a denotation function `⟦·⟧` from patterns to
-`BinaryEvidence` values that validates the core rewrite rules: the evidence-add
-rule corresponds to `hplus` (parallel evidence aggregation). -/
+An `EvidenceInterpretation` assigns extraction values in `BinaryEvidence`
+(ℝ≥0∞ × ℝ≥0∞) and assumes additivity under revision and zero extraction.
+The remaining algebraic equalities below follow from these laws. This record
+does not define a denotation for every Pattern or construct an interpretation. -/
 
 /-- An evidence interpretation assigns `BinaryEvidence` values to extraction results
     and validates the core algebraic laws.
 
     `extract W q` denotes the evidence for query `q` in world-model `W`.
-    The key soundness condition `combine_hplus` asserts that the syntactic
-    `Combine(e₁, e₂)` operation corresponds to `BinaryEvidence.hplus`:
-    independent evidence sources aggregate additively. -/
+    The law `combine_hplus` asserts that extraction under syntactic revision
+    aggregates additively in this interpretation. No probabilistic
+    independence theorem is part of the record. -/
 structure EvidenceInterpretation where
   /-- BinaryEvidence for query `q` in world-model `W`. -/
   extract : Pattern → Pattern → BinaryEvidence
@@ -293,14 +282,13 @@ structure EvidenceInterpretation where
       `⟦Extract(Revise(W₁,W₂), q)⟧ = ⟦Extract(W₁,q)⟧ ⊕ ⟦Extract(W₂,q)⟧`. -/
   combine_hplus : ∀ W₁ W₂ q,
     extract (pRevise W₁ W₂) q = extract W₁ q + extract W₂ q
-  /-- Zero-evidence soundness: extracting from zero evidence yields zero.
-      Validates `ruleCombineZero`. -/
+  /-- Extracting from the literal zero world model yields zero evidence.
+      This is separate from the additive identity used by `ruleCombineZero`. -/
   zero_extract : ∀ q, extract (.apply "Zero" []) q = BinaryEvidence.zero
 
-/-! All 5 WM core rules are DERIVED from `combine_hplus` + `zero_extract` +
-the `AddCommMonoid` structure of `BinaryEvidence`. The WM term algebra modulo
-rewriting is the free commutative monoid on world-model atoms;
-`extract` is the unique homomorphism to `(BinaryEvidence, hplus, zero)`. -/
+/-! Revision commutativity and associativity follow from `combine_hplus`;
+combine commutativity and zero are laws of `BinaryEvidence` itself. No free
+term-algebra construction or uniqueness theorem is established here. -/
 
 /-- Rule 1 (evidence-add): direct from `combine_hplus`. -/
 theorem evidence_add_sound (I : EvidenceInterpretation) (W₁ W₂ q : Pattern) :

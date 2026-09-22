@@ -134,7 +134,8 @@ theorem stepAt_mapLanguageDef
               initialBindings ∈ matchPattern authoredRule.left source := by
             simpa using matched
           have targetSyntactic :
-              applyBindings finalBindings authoredRule.right = target := by
+              Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings authoredRule finalBindings
+                = target := by
             simpa using targetEq
           refine StepAt.rule (rule := mapRewriteRule symbols authoredRule)
             (initialBindings := mapBindings symbols initialBindings)
@@ -144,8 +145,9 @@ theorem stepAt_mapLanguageDef
             rw [matchPattern_equivariance symbols constructorInjective]
             exact List.mem_map_of_mem matchedSyntactic
           · simpa only [mapRewriteRule] using premisesMap premisesEvidence
-          · simp only [applyBindingsForRule_eq_syntactic, mapRewriteRule]
-            rw [applyBindings_mapPattern]
+          · simp only [applyBindingsForRule_eq_syntactic, mapRewriteRule,
+              Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings]
+            rw [applyBindingsScoped_mapPattern]
             exact congrArg (mapPattern symbols) targetSyntactic
 
 /-- Unbounded form: the least contextual relation maps into the least
@@ -699,7 +701,7 @@ theorem simulationSource_step :
     simp +decide [sourceRuleAB, matchPattern, matchArgs]
   · exact PremisesAt.nil []
   · rw [applyBindingsForRule_eq_syntactic]
-    simp [sourceRuleAB, applyBindings]
+    simp [sourceRuleAB, Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings]
 
 /-- The headline theorem transports the concrete source step to the concrete
 target step on the tagged patterns. -/
@@ -729,7 +731,7 @@ theorem simulation_is_one_way :
       simp +decide [targetRuleCA, matchPattern, matchArgs]
     · exact PremisesAt.nil []
     · rw [applyBindingsForRule_eq_syntactic]
-      simp [targetRuleCA, applyBindings]
+      simp [targetRuleCA, Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings]
   · intro result
     apply not_step_of_matchPatternForRule_eq_nil
     intro rule membership

@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.SortedABTSubstitution
-import Mettapedia.Languages.MeTTa.PrimeNeedReferenceSemantics
+import Mettapedia.Machines.BranchLocalNeed.ReferenceSemantics
 
 /-!
 # Cross-sort capture controls for sorted substitution
@@ -16,6 +16,8 @@ and forces its cell using the existing Prime Need machine. It introduces no
 evaluator for ABTs, no new thunk semantics, and no claim that an arbitrary
 cached heap was reached from an admitted source program.
 -/
+
+open Mettapedia.Machines.BranchLocalNeed
 
 set_option autoImplicit false
 
@@ -147,7 +149,7 @@ theorem mixed_structural_checks_do_not_detect_capture :
 
 /-! ## Actual Need-cell observations distinguish the captured reference -/
 
-open Mettapedia.Languages.MeTTa.PrimeNeedReference
+open Mettapedia.Machines.BranchLocalNeed.NeedReference
 
 /-- Inspect only the exact retained reference in the preceding binding shape. -/
 def capturedNeedIndex? : Tree → Option Nat

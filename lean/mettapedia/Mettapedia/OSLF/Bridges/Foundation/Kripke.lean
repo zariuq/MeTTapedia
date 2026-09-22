@@ -24,7 +24,7 @@ Foundation uses forward for both. We bridge with two frames per relation:
 namespace Mettapedia.OSLF.Bridges.Foundation.Kripke
 
 open Mettapedia.OSLF.MeTTaIL.Syntax (Pattern)
-open Mettapedia.OSLF.Formula (OSLFFormula AtomSem sem)
+open Mettapedia.OSLF.Formula (OSLFFormula AtomSem sem semEnv)
 
 open LO.Modal
 open LO.Modal.Kripke
@@ -83,7 +83,15 @@ def oslfConverseModel (R : Pattern → Pattern → Prop) (I : AtomSem)
 
 /-- Translate OSLF formula to Foundation modal formula.
 Maps each OSLF connective to its Foundation counterpart.
-The semantics of □ differ by frame choice (forward vs converse). -/
+The semantics of □ differ by frame choice (forward vs converse).
+
+The target logic has neither a fixpoint operator nor structural connectives,
+so a generator, its scope variable, and the three spatial constructors have no
+image here: a generated scope is in general not equivalent to any finite modal
+formula, and a cut reads the shape of a term rather than its behaviour.  The
+value taken on those constructors is arbitrary and carries no meaning; every
+correspondence theorem below is gated by a fragment predicate that excludes
+them, so nothing depends on it. -/
 def translateForward (enc : AtomEncoding) : OSLFFormula → Formula ℕ
   | .top => Formula.imp Formula.falsum Formula.falsum
   | .bot => Formula.falsum
@@ -93,30 +101,46 @@ def translateForward (enc : AtomEncoding) : OSLFFormula → Formula ℕ
   | .imp φ ψ => Formula.imp (translateForward enc φ) (translateForward enc ψ)
   | .dia φ => Formula.neg (Formula.box (Formula.neg (translateForward enc φ)))
   | .box φ => Formula.box (translateForward enc φ)
+  | .var _ => Formula.falsum
+  | .mu _ => Formula.falsum
+  | .emptyColl _ => Formula.falsum
+  | .cut _ _ _ => Formula.falsum
+  | .headed _ _ => Formula.falsum
 
 /-! ## Fragment Predicates -/
 
-/-- Diamond-only formulas: no `.box` subformulas.
+/-- Diamond-only formulas: no `.box` subformulas, no generator, and no
+structural connective.
 On the forward frame, these have exact semantic correspondence. -/
 def diaOnly : OSLFFormula → Prop
   | .top | .bot | .atom _ => True
   | .and φ ψ | .or φ ψ | .imp φ ψ => diaOnly φ ∧ diaOnly ψ
   | .dia φ => diaOnly φ
   | .box _ => False
+  | .var _ => False
+  | .mu _ => False
+  | .emptyColl _ | .cut _ _ _ | .headed _ _ => False
 
-/-- Box-only formulas: no `.dia` subformulas.
+/-- Box-only formulas: no `.dia` subformulas, no generator, and no structural
+connective.
 On the converse frame, these have exact semantic correspondence. -/
 def boxOnly : OSLFFormula → Prop
   | .top | .bot | .atom _ => True
   | .and φ ψ | .or φ ψ | .imp φ ψ => boxOnly φ ∧ boxOnly ψ
   | .box φ => boxOnly φ
   | .dia _ => False
+  | .var _ => False
+  | .mu _ => False
+  | .emptyColl _ | .cut _ _ _ | .headed _ _ => False
 
 /-- Modal-free formulas are both diaOnly and boxOnly. -/
 def modalFree : OSLFFormula → Prop
   | .top | .bot | .atom _ => True
   | .and φ ψ | .or φ ψ | .imp φ ψ => modalFree φ ∧ modalFree ψ
   | .dia _ | .box _ => False
+  | .var _ => False
+  | .mu _ => False
+  | .emptyColl _ | .cut _ _ _ | .headed _ _ => False
 
 theorem modalFree_diaOnly {φ : OSLFFormula} (h : modalFree φ) : diaOnly φ := by
   induction φ with
@@ -126,6 +150,11 @@ theorem modalFree_diaOnly {φ : OSLFFormula} (h : modalFree φ) : diaOnly φ := 
   | imp _ _ ih₁ ih₂ => exact ⟨ih₁ h.1, ih₂ h.2⟩
   | dia _ => exact absurd h (by simp [modalFree])
   | box _ => exact absurd h (by simp [modalFree])
+  | var _ => exact absurd h (by simp [modalFree])
+  | mu _ _ => exact absurd h (by simp [modalFree])
+  | emptyColl _ => exact absurd h (by simp [modalFree])
+  | cut _ _ _ _ _ => exact absurd h (by simp [modalFree])
+  | headed _ _ _ => exact absurd h (by simp [modalFree])
 
 theorem modalFree_boxOnly {φ : OSLFFormula} (h : modalFree φ) : boxOnly φ := by
   induction φ with
@@ -135,6 +164,11 @@ theorem modalFree_boxOnly {φ : OSLFFormula} (h : modalFree φ) : boxOnly φ := 
   | imp _ _ ih₁ ih₂ => exact ⟨ih₁ h.1, ih₂ h.2⟩
   | dia _ => exact absurd h (by simp [modalFree])
   | box _ => exact absurd h (by simp [modalFree])
+  | var _ => exact absurd h (by simp [modalFree])
+  | mu _ _ => exact absurd h (by simp [modalFree])
+  | emptyColl _ => exact absurd h (by simp [modalFree])
+  | cut _ _ _ _ _ => exact absurd h (by simp [modalFree])
+  | headed _ _ _ => exact absurd h (by simp [modalFree])
 
 /-! ## Core Correspondence Theorems -/
 
@@ -148,21 +182,21 @@ theorem sem_iff_satisfies_forward (enc : AtomEncoding)
   induction φ generalizing p with
   | top =>
     -- OSLF: True; Foundation: (⊥ → ⊥) which is True
-    simp [sem, translateForward, Formula.Kripke.Satisfies]
+    simp [sem, semEnv, translateForward, Formula.Kripke.Satisfies]
   | bot =>
-    simp [sem, translateForward, Formula.Kripke.Satisfies]
+    simp [sem, semEnv, translateForward, Formula.Kripke.Satisfies]
   | atom s =>
     -- OSLF: I s p; Foundation: M.Val p (enc.encode s) = I s p (by decode_encode)
-    simp only [sem, translateForward, Formula.Kripke.Satisfies,
+    simp only [sem, semEnv, translateForward, Formula.Kripke.Satisfies,
                oslfForwardModel, enc.decode_encode]
   | imp φ ψ ihφ ihψ =>
     -- Both sides are implications
-    simp only [sem, translateForward, Formula.Kripke.Satisfies]
+    simp only [sem, semEnv, translateForward, Formula.Kripke.Satisfies]
     exact ⟨fun h hφ => (ihψ hdia.2 p).mp (h ((ihφ hdia.1 p).mpr hφ)),
            fun h hφ => (ihψ hdia.2 p).mpr (h ((ihφ hdia.1 p).mp hφ))⟩
   | and φ ψ ihφ ihψ =>
     -- OSLF: φ ∧ ψ; Foundation: ¬(φ → ¬ψ) which is ¬(φ → (ψ → ⊥))
-    simp only [sem, translateForward, Formula.Kripke.Satisfies]
+    simp only [sem, semEnv, translateForward, Formula.Kripke.Satisfies]
     constructor
     · intro ⟨h₁, h₂⟩ hcontra
       exact hcontra ((ihφ hdia.1 p).mp h₁) ((ihψ hdia.2 p).mp h₂)
@@ -174,7 +208,7 @@ theorem sem_iff_satisfies_forward (enc : AtomEncoding)
         exact h (fun _ hψ' => hψ ((ihψ hdia.2 p).mpr hψ'))
   | or φ ψ ihφ ihψ =>
     -- OSLF: φ ∨ ψ; Foundation: ¬φ → ψ which is (φ → ⊥) → ψ
-    simp only [sem, translateForward, Formula.Kripke.Satisfies]
+    simp only [sem, semEnv, translateForward, Formula.Kripke.Satisfies]
     constructor
     · intro h hnφ
       cases h with
@@ -186,7 +220,7 @@ theorem sem_iff_satisfies_forward (enc : AtomEncoding)
       · exact Or.inr ((ihψ hdia.2 p).mpr (h (fun hφ' => hφ ((ihφ hdia.1 p).mpr hφ'))))
   | dia φ ih =>
     -- OSLF: ∃ q, R p q ∧ φ q; Foundation: ¬□¬φ = ¬(∀ y, p ≺ y → ¬φ y)
-    simp only [sem, translateForward, Formula.Kripke.Satisfies,
+    simp only [sem, semEnv, translateForward, Formula.Kripke.Satisfies,
                oslfForwardModel, oslfForwardFrame, Frame.Rel']
     constructor
     · intro ⟨q, hRpq, hq⟩ hbox
@@ -198,6 +232,11 @@ theorem sem_iff_satisfies_forward (enc : AtomEncoding)
         have := (ih hdia q).mpr hq
         exact absurd this (hnoex q hRpq))
   | box _ => exact absurd hdia (by simp [diaOnly])
+  | var _ => exact absurd hdia (by simp [diaOnly])
+  | mu _ _ => exact absurd hdia (by simp [diaOnly])
+  | emptyColl _ => exact absurd hdia (by simp [diaOnly])
+  | cut _ _ _ _ _ => exact absurd hdia (by simp [diaOnly])
+  | headed _ _ _ => exact absurd hdia (by simp [diaOnly])
 
 /-- **Converse correspondence**: for box-only formulas, OSLF `sem` on relation R
 coincides with Foundation `Satisfies` on the converse frame (Rᵒᵖ). -/
@@ -207,17 +246,17 @@ theorem sem_iff_satisfies_converse (enc : AtomEncoding)
     sem R I φ p ↔
     Formula.Kripke.Satisfies (oslfConverseModel R I enc) p (translateForward enc φ) := by
   induction φ generalizing p with
-  | top => simp [sem, translateForward, Formula.Kripke.Satisfies]
-  | bot => simp [sem, translateForward, Formula.Kripke.Satisfies]
+  | top => simp [sem, semEnv, translateForward, Formula.Kripke.Satisfies]
+  | bot => simp [sem, semEnv, translateForward, Formula.Kripke.Satisfies]
   | atom s =>
-    simp only [sem, translateForward, Formula.Kripke.Satisfies,
+    simp only [sem, semEnv, translateForward, Formula.Kripke.Satisfies,
                oslfConverseModel, enc.decode_encode]
   | imp φ ψ ihφ ihψ =>
-    simp only [sem, translateForward, Formula.Kripke.Satisfies]
+    simp only [sem, semEnv, translateForward, Formula.Kripke.Satisfies]
     exact ⟨fun h hφ => (ihψ hbox.2 p).mp (h ((ihφ hbox.1 p).mpr hφ)),
            fun h hφ => (ihψ hbox.2 p).mpr (h ((ihφ hbox.1 p).mp hφ))⟩
   | and φ ψ ihφ ihψ =>
-    simp only [sem, translateForward, Formula.Kripke.Satisfies]
+    simp only [sem, semEnv, translateForward, Formula.Kripke.Satisfies]
     constructor
     · intro ⟨h₁, h₂⟩ hcontra
       exact hcontra ((ihφ hbox.1 p).mp h₁) ((ihψ hbox.2 p).mp h₂)
@@ -228,7 +267,7 @@ theorem sem_iff_satisfies_converse (enc : AtomEncoding)
       · by_contra hψ
         exact h (fun _ hψ' => hψ ((ihψ hbox.2 p).mpr hψ'))
   | or φ ψ ihφ ihψ =>
-    simp only [sem, translateForward, Formula.Kripke.Satisfies]
+    simp only [sem, semEnv, translateForward, Formula.Kripke.Satisfies]
     constructor
     · intro h hnφ
       cases h with
@@ -241,11 +280,16 @@ theorem sem_iff_satisfies_converse (enc : AtomEncoding)
   | box φ ih =>
     -- OSLF: ∀ q, R q p → φ q; Foundation on converse: ∀ y, (Rᵒᵖ) p y → φ y
     -- where (Rᵒᵖ) p y = R y p, so both say ∀ q, R q p → φ q
-    simp only [sem, translateForward, Formula.Kripke.Satisfies,
+    simp only [sem, semEnv, translateForward, Formula.Kripke.Satisfies,
                oslfConverseModel, oslfConverseFrame, Frame.Rel']
     exact ⟨fun h q hRqp => (ih hbox q).mp (h q hRqp),
            fun h q hRqp => (ih hbox q).mpr (h q hRqp)⟩
   | dia _ => exact absurd hbox (by simp [boxOnly])
+  | var _ => exact absurd hbox (by simp [boxOnly])
+  | mu _ _ => exact absurd hbox (by simp [boxOnly])
+  | emptyColl _ => exact absurd hbox (by simp [boxOnly])
+  | cut _ _ _ _ _ => exact absurd hbox (by simp [boxOnly])
+  | headed _ _ _ => exact absurd hbox (by simp [boxOnly])
 
 /-- **Modal-free correspondence**: modal-free formulas work on both frames. -/
 theorem sem_iff_satisfies_modalFree (enc : AtomEncoding)
@@ -316,7 +360,7 @@ private theorem sem_modalFree_irrel' {R₁ R₂ : Pattern → Pattern → Prop}
     (I : AtomSem) {φ : OSLFFormula} (hmf : modalFree φ)
     {p : Pattern} : sem R₁ I φ p ↔ sem R₂ I φ p := by
   induction φ generalizing p with
-  | top | bot | atom _ => simp [sem]
+  | top | bot | atom _ => simp [sem, semEnv]
   | and _ _ ih₁ ih₂ =>
     exact ⟨fun ⟨h₁, h₂⟩ => ⟨(ih₁ hmf.1).mp h₁, (ih₂ hmf.2).mp h₂⟩,
            fun ⟨h₁, h₂⟩ => ⟨(ih₁ hmf.1).mpr h₁, (ih₂ hmf.2).mpr h₂⟩⟩
@@ -328,6 +372,11 @@ private theorem sem_modalFree_irrel' {R₁ R₂ : Pattern → Pattern → Prop}
            fun h hφ => (ih₂ hmf.2).mpr (h ((ih₁ hmf.1).mp hφ))⟩
   | dia _ => exact absurd hmf (by simp [modalFree])
   | box _ => exact absurd hmf (by simp [modalFree])
+  | var _ => exact absurd hmf (by simp [modalFree])
+  | mu _ _ => exact absurd hmf (by simp [modalFree])
+  | emptyColl _ => exact absurd hmf (by simp [modalFree])
+  | cut _ _ _ _ _ => exact absurd hmf (by simp [modalFree])
+  | headed _ _ _ => exact absurd hmf (by simp [modalFree])
 
 /-- Anti-monotonicity of OSLF box under relation inclusion for modal-free subformulas.
 Shrinking R preserves box satisfaction since fewer predecessors are quantified over. -/

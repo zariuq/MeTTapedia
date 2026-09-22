@@ -5,13 +5,15 @@ import Mathlib.Data.Set.Finite.Basic
 /-!
 # Böhm Trees
 
-This file formalizes Böhm trees from Bucciarelli-Salibra "Graph Lambda Theories" (2008).
+This file defines finite, search-bounded tree observations motivated by Böhm trees
+in Bucciarelli-Salibra "Graph Lambda Theories" (2008). It is not yet a
+formalization of the source's unbounded Böhm tree or Böhm lambda theory.
 
 ## Main Definitions
 
-* `BohmTree` - Possibly infinite trees labelled by head variables
-* `bohmTree` - Compute the Böhm tree of a lambda term
-* `BohmTheory` - The Böhm theory B: equality of Böhm trees
+* `BohmTree` - Finite trees labelled by head variables
+* `bohmTree` - Finite-depth observation with a bounded head-search budget
+* `BohmTheory` - Attempted lambda-theory packaging, depending on admitted laws
 
 ## Key Insights
 
@@ -21,7 +23,7 @@ A **Böhm tree** BT(M) of a lambda term M is:
 
 The **Böhm theory** B consists of all equations M = N such that BT(M) = BT(N).
 
-**Key Results** (Bucciarelli-Salibra):
+**Source Results** (Bucciarelli-Salibra, not established by this packaging):
 - B is sensible (all unsolvable terms have ⊥ as their Böhm tree)
 - B is a graph theory (realized by a specific graph model)
 - B is the UNIQUE maximal sensible graph theory
@@ -44,15 +46,14 @@ A Böhm tree is a possibly infinite tree where each node is labelled with:
 - Children corresponding to arguments
 -/
 
-/-- A Böhm tree is a potentially infinite tree with nodes labelled by:
+/-- A finite tree observation with nodes labelled by:
     - Number of lambda abstractions at this node
     - The head variable (de Bruijn index)
     - Children for each argument
 
-    We represent this coinductively to handle infinite trees.
-    For simplicity, we use a finite approximation here. -/
+    This is an inductive finite tree, not a coinductive representation. -/
 inductive BohmTree : Type where
-  /-- The bottom element ⊥, representing unsolvable terms -/
+  /-- Bottom, also used for depth truncation and exhausted head-search budget. -/
   | bot : BohmTree
   /-- A node with lambda-abstractions, head variable, and argument subtrees -/
   | node : (numLams : Nat) → (headVar : Nat) → (args : List BohmTree) → BohmTree
@@ -207,6 +208,97 @@ def toHNF (fuel : Nat) (t : LambdaTerm) : Option LambdaTerm :=
       else match headReduce t with
            | some t' => toHNF fuel' t'
            | none => none
+
+private theorem collectArgs_isSome_eq (t : LambdaTerm) (arguments : List LambdaTerm) :
+    (extractHNF.collectArgs t arguments).isSome = t.isAppHead := by
+  induction t generalizing arguments with
+  | var n => rfl
+  | lam t ih => rfl
+  | app t s ih _ =>
+      simp only [extractHNF.collectArgs, LambdaTerm.isAppHead]
+      exact ih (s :: arguments)
+
+/-- The structural HNF extractor recognizes exactly the Boolean HNF predicate. -/
+theorem extractHNF_isSome_eq_isHNF (t : LambdaTerm) :
+    (extractHNF t).isSome = t.isHNF := by
+  induction t with
+  | var n => rfl
+  | lam t ih =>
+      cases h : extractHNF t with
+      | none =>
+          simpa only [extractHNF, h, LambdaTerm.isHNF, Option.isSome_none] using ih
+      | some value =>
+          simpa only [extractHNF, h, LambdaTerm.isHNF, Option.isSome_some] using ih
+  | app t s ih _ =>
+      cases t with
+      | var n => rfl
+      | lam body => rfl
+      | app f a =>
+          have h := collectArgs_isSome_eq (.app f a) [s]
+          cases hCollect : extractHNF.collectArgs (.app f a) [s] with
+          | none =>
+              simpa only [extractHNF, hCollect, LambdaTerm.isHNF, Option.isSome_none] using h
+          | some value =>
+              simpa only [extractHNF, hCollect, LambdaTerm.isHNF, Option.isSome_some] using h
+
+/-- A successful head-reduction operation is an actual parallel β step. -/
+theorem headReduce_parRed {t result : LambdaTerm}
+    (h : headReduce t = some result) : t ⇛ result := by
+  induction t generalizing result with
+  | var n => simp [headReduce] at h
+  | lam body ih =>
+      cases hBody : headReduce body with
+      | none => simp [headReduce, hBody] at h
+      | some reduced =>
+          simp only [headReduce, hBody, Option.some.injEq] at h
+          subst result
+          exact ParRed.lam (ih hBody)
+  | app function argument ihFunction _ =>
+      cases function with
+      | var n => simp [headReduce] at h
+      | lam body =>
+          simp only [headReduce, Option.some.injEq] at h
+          subst result
+          exact ParRed.beta (ParRed.refl body) (ParRed.refl argument)
+      | app f a =>
+          cases hFunction : headReduce (.app f a) with
+          | none => simp [headReduce, hFunction] at h
+          | some reduced =>
+              simp only [headReduce, hFunction, Option.some.injEq] at h
+              subst result
+              exact ParRed.app (ihFunction hFunction) (ParRed.refl argument)
+
+/-- Successful bounded search retains both a real reduction path and actual HNF. -/
+theorem toHNF_sound {fuel : Nat} {t hnf : LambdaTerm}
+    (h : toHNF fuel t = some hnf) : (t ⇛* hnf) ∧ hnf.isHNF = true := by
+  induction fuel generalizing t with
+  | zero => simp [toHNF] at h
+  | succ fuel ih =>
+      simp only [toHNF] at h
+      split at h
+      · rename_i hExtract
+        simp only [Option.some.injEq] at h
+        subst hnf
+        exact ⟨Relation.ReflTransGen.refl,
+          (extractHNF_isSome_eq_isHNF t).symm.trans hExtract⟩
+      · cases hStep : headReduce t with
+        | none => simp [hStep] at h
+        | some reduced =>
+            simp only [hStep] at h
+            obtain ⟨hPath, hHead⟩ := ih h
+            exact ⟨Relation.ReflTransGen.head (headReduce_parRed hStep) hPath, hHead⟩
+
+/-- A successful search is evidence of reduction-sensitive solvability. -/
+theorem solvable_of_toHNF {fuel : Nat} {t hnf : LambdaTerm}
+    (h : toHNF fuel t = some hnf) : t.Solvable :=
+  ⟨hnf, toHNF_sound h⟩
+
+/-- Actual unsolvability prevents search success at every fuel. -/
+theorem unsolvable_toHNF_none {t : LambdaTerm} (h : t.Unsolvable) (fuel : Nat) :
+    toHNF fuel t = none := by
+  cases hSearch : toHNF fuel t with
+  | none => rfl
+  | some hnf => exact (h (solvable_of_toHNF hSearch)).elim
 
 /-! ### Helper lemmas for lambda terms -/
 
@@ -654,19 +746,16 @@ lemma toHNF_result_stable {t : LambdaTerm} {fuel1 fuel2 : Nat} {hnf : LambdaTerm
   rw [hk]
   exact toHNF_mono_add h1
 
-/-- Compute the Böhm tree of a term with bounded depth.
-    Returns bottom if the term is unsolvable (no HNF found).
-
-    IMPORTANT: The fuel parameter controls TREE DEPTH. For head reduction,
-    we use sufficient fuel (depth * (depth + 1) + 1) to ensure that beta
-    reductions don't artificially truncate the tree. -/
+/-- Compute a finite, search-bounded tree observation. Tree depth determines
+the head-search budget as well as recursive depth. Bottom may therefore mean
+an unsolvable term, depth truncation, or exhausted head-search fuel; this
+budget is not a normalization bound. -/
 def bohmTree (depth : Nat) : LambdaTerm → BohmTree
   | t =>
       match depth with
       | 0 => .bot
       | depth' + 1 =>
-          -- Use ample reduction fuel to avoid truncation from beta reductions
-          -- At depth d, we allow d*(d+1)+1 reduction steps
+          -- The finite head-search budget can truncate a solvable term.
           let reductionFuel := depth * (depth + 1) + 1
           match toHNF reductionFuel t with
           | none => .bot
@@ -816,24 +905,22 @@ theorem shift_preserves_bohmEqual' (s s' : LambdaTerm) (d c : Nat)
 
 /-! ## The Böhm Theory
 
-Two terms are Böhm-equal if they have the same Böhm tree.
+The following equations compare bounded observations at every depth.
+Their agreement with the source's unbounded Böhm equality is not established.
 -/
 
-/-- Two terms are Böhm-equal (same Böhm tree) -/
+/-- Equality of the current search-bounded observations at every depth. -/
 def BohmEqual (t s : LambdaTerm) : Prop :=
   ∀ n, bohmTree n t = bohmTree n s
 
-/-- The Böhm theory B: equations where terms have equal Böhm trees -/
+/-- Equations induced by the current bounded observations. -/
 def BohmEquations : Set LambdaEq :=
   { eq | BohmEqual eq.lhs eq.rhs }
 
-/-- Beta reduction preserves Böhm equality.
-
-    This is a fundamental property: (λx.t)s and t[s/x] have the same Böhm tree
-    because Böhm trees are computed via head reduction, and beta reduction
-    is exactly head reduction at the outermost redex.
-
-    See: Barendregt, "The Lambda Calculus", Chapter 10
+/-- Admitted beta-invariance claim, false for the current fixed-budget
+observation. `bounded_beta_equality_fails` in `HeadSearchControls` gives an
+exact checked counterexample. The source's unbounded beta-invariance does not
+justify this bounded statement.
 -/
 theorem bohmTree_beta_eq (t s : LambdaTerm) (n : Nat) :
     bohmTree n (.app (.lam t) s) = bohmTree n (s.subst 0 t) := by
@@ -856,16 +943,9 @@ theorem bohmTree_beta_eq (t s : LambdaTerm) (n : Nat) :
       cases h' : toHNF ((d + 1) * (d + 1 + 1) + 1) (s.subst 0 t) with
       | none => rfl  -- Both return .bot
       | some hnf' =>
-        -- This case: less fuel fails, more fuel succeeds
-        -- By toHNF_mono contrapositive, this shouldn't happen if the term
-        -- truly has no HNF. But with finite fuel, we might timeout.
-        -- However, both return BohmTrees - we just need same structure.
-        -- With 1 extra fuel, if we get an HNF, the result depends on extractHNF.
-        -- Since the term is the same, the Böhm tree should still be correct.
-        -- But we return .bot on LHS and something else on RHS - not equal!
-        -- This requires the fuel formula to be tight enough to avoid this case.
-        -- For now, the formula (d+1)*(d+2)+1 with 1 less = (d+1)*(d+2) should suffice
-        -- for reasonable terms. We leave a sorry for this edge case.
+        -- Less fuel fails while one extra unit succeeds. This branch occurs
+        -- in the checked control, so its unequal observations cannot be proved
+        -- equal by enlarging a fixed polynomial depth-only budget.
         sorry
     | some hnf =>
       -- By monotonicity, RHS is also some hnf
@@ -1082,7 +1162,10 @@ theorem bohmTree_congAppRight (t s s' : LambdaTerm) (h : ∀ n, bohmTree n s = b
     bohmTree m (.app t s) = bohmTree m (.app t s') :=
   bohmTree_congAppRight' t s s' h m
 
-/-- The Böhm theory as a LambdaTheory structure. -/
+/-- Attempted lambda-theory packaging of bounded observations. It depends on
+admitted beta and application-congruence laws. The bounded beta law is refuted
+by `reduction_changes_bounded_tree` in `HeadSearchControls`; this record must
+not be used as a qualified realization of the source's Böhm theory. -/
 noncomputable def BohmTheory : LambdaTheory where
   equations := BohmEquations
   refl := fun t => by
@@ -1115,12 +1198,13 @@ noncomputable def BohmTheory : LambdaTheory where
 
 /-! ## Key Properties of the Böhm Theory -/
 
-/-- Semantic unsolvability: a term has no head normal form reachable by reduction.
-    This is the operationally correct definition for Böhm tree computation. -/
+/-- Failure of the existing head-search procedure at every finite fuel.
+Actual unsolvability implies this predicate by `unsolvable_toHNF_none`;
+the converse is not established here and would require head-search completeness. -/
 def SemanticUnsolvable (t : LambdaTerm) : Prop :=
   ∀ fuel, toHNF fuel t = none
 
-/-- Semantically unsolvable terms have bottom as their Böhm tree. -/
+/-- All-fuel head-search failure gives bottom in every bounded tree observation. -/
 theorem semanticUnsolvable_bohmTree_bot {t : LambdaTerm} (h : SemanticUnsolvable t) :
     ∀ n, bohmTree n t = .bot := by
   intro n
@@ -1131,28 +1215,14 @@ theorem semanticUnsolvable_bohmTree_bot {t : LambdaTerm} (h : SemanticUnsolvable
     have h_none := h ((d + 1) * (d + 1 + 1) + 1)
     simp only [h_none]
 
-/-- Unsolvable terms have bottom as their Böhm tree.
-
-    **NOTE**: The syntactic definition `LambdaTerm.Unsolvable` (∄ args with
-    (t args...).isHNF = true) doesn't match the semantic definition needed
-    for Böhm trees. For example, (λx.x)y is syntactically "unsolvable" but
-    has bohmTree ≠ .bot because it reduces to y.
-
-    This theorem would require proving that syntactic unsolvability implies
-    semantic unsolvability, which requires showing that terms that are
-    syntactically stuck are also operationally stuck.
-
-    For fully general lambda terms, use `semanticUnsolvable_bohmTree_bot` instead.
--/
+/-- Actual unsolvable terms have bottom at every bounded tree observation.
+Only search soundness is needed: success would give a real path to HNF. -/
 theorem unsolvable_bohmTree_bot {t : LambdaTerm} (h : t.Unsolvable) :
     ∀ n, bohmTree n t = .bot := by
-  -- This requires connecting syntactic and semantic unsolvability.
-  -- The syntactic definition checks if (t args...).isHNF = false for all args.
-  -- For terms like Omega, syntactic ⟹ semantic because no args can "fix" the head.
-  -- But for beta redexes, the syntactic definition is too strict.
-  sorry
+  exact semanticUnsolvable_bohmTree_bot (unsolvable_toHNF_none h)
 
-/-- The Böhm theory is sensible (equates all unsolvable terms) -/
+/-- The equation component equates unsolvable terms. The `BohmTheory` record
+itself still depends on admitted laws, so this is not a qualification of it. -/
 theorem BohmTheory_sensible : BohmTheory.Sensible := by
   unfold LambdaTheory.Sensible
   intro t s ht hs
@@ -1161,16 +1231,9 @@ theorem BohmTheory_sensible : BohmTheory.Sensible := by
   intro n
   rw [unsolvable_bohmTree_bot ht n, unsolvable_bohmTree_bot hs n]
 
-/-- The Böhm theory is a graph theory (Bucciarelli-Salibra Theorem 45).
-
-    The proof constructs a specific graph model D∞ (the limit of finite
-    approximations) and shows that its induced theory equals B.
-
-    The graph model D∞ has:
-    - Carrier: Böhm trees themselves
-    - Coding function: encodes application/abstraction structure
-
-    See: Bucciarelli & Salibra, "Graph Lambda Theories" (2008), Theorem 45
+/-- Unproved graph-realization claim for the attempted record. A source-faithful
+unbounded Böhm theory must first replace the beta-noninvariant bounded
+observations; no realizing graph model is constructed here.
 -/
 theorem BohmTheory_isGraphTheory : IsGraphTheory BohmTheory := by
   sorry
@@ -1193,36 +1256,17 @@ theorem BohmTheory_maximal_sensible :
 
 /-! ## Summary
 
-This file establishes Böhm trees and the Böhm theory:
+The finite tree datatype has decidable equality. Head-search success gives an
+actual parallel-reduction path to HNF (`toHNF_sound`), and actual unsolvability
+therefore gives bottom at every bounded observation (`unsolvable_bohmTree_bot`).
+Search exhaustion alone is not unsolvability.
 
-1. **BohmTree**: Possibly infinite trees (finite approximation via fuel)
-2. **bohmTree**: Computes Böhm tree of a lambda term
-3. **BohmTheory**: Lambda-theory where M = N iff BT(M) = BT(N)
-
-**Proven Results**:
-- ✓ `BohmTree.beq_eq_true_iff`: DecidableEq correctness (mutual recursion proof)
-- ✓ `BohmTheory_sensible`: B is sensible (all unsolvables equal ⊥)
-
-**Open Sorries** (require deep lambda calculus theory):
-- `bohmTree_beta_eq`: Beta reduction preserves Böhm equality
-  (requires analysis of fuel consumption in head reduction)
-- `bohmTree_congLam/AppLeft/AppRight`: Congruence properties
-  (require standardization-like arguments)
-- `unsolvable_bohmTree_bot`: Unsolvable terms have bottom Böhm tree
-  (requires connection between solvability and head reduction termination)
-- `BohmTheory_isGraphTheory`: B is a graph theory (Theorem 45)
-  (requires constructing the graph model D∞)
-- `BohmTheory_maximal_sensible`: B is maximal sensible (Theorem 45)
-  (requires approximation theorems and q-sequences)
-
-**References**:
-- Barendregt, "The Lambda Calculus", Chapter 10 (Böhm trees, standardization)
-- Bucciarelli & Salibra, "Graph Lambda Theories" (2008), Theorem 45
-
-**Technical Notes**:
-- We use a fuel parameter for termination (not full coinduction)
-- The `bohmTree_beta_eq` theorem may need modification to account for
-  fuel consumption during beta reduction
+The admitted `bohmTree_beta_eq` is false for the current bounded definition;
+`reduction_changes_bounded_tree` in `HeadSearchControls` supplies a checked
+counterexample. Application/substitution congruence remains admitted in
+`congSubstAt_all`, as do graph realization and maximality. Consequently the
+attempted `BohmTheory` record and declarations depending on it are not qualified
+source results. A faithful unbounded construction is a separate remaining task.
 -/
 
 end Mettapedia.GSLT.GraphTheory

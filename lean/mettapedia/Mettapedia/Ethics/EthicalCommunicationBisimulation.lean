@@ -1,4 +1,4 @@
-import Mettapedia.Ethics.MetaEthicsOntology
+import Mettapedia.Ethics.CommunicationLanguage
 import Mettapedia.GSLT.Core.ObservedBisimulation
 
 /-!
@@ -10,10 +10,12 @@ The Formal Ethics Ontology distinguishes:
   during the communication; and
 * true communication: the message is in fact true during the communication.
 
-This module gives that distinction a small operational semantics. Belief and
-truth are stable facts of one communication episode while its phase advances.
-The full observer can inspect both; the outcome observer can inspect truth and
-completion but not belief.
+The operational semantics of one communication episode is the authored
+`communicationLanguage`, and every result below is stated over the GSLT the OSLF
+construction generates from it.  Belief and truth are arguments of an episode
+that its rewrites carry forward unchanged while its phase advances.  The full
+observer can inspect both; the outcome observer can inspect truth and completion
+but not belief.
 
 The positive results show that both concepts are saturated unions of classes
 for a sufficiently discriminating observer. The negative result shows that
@@ -27,57 +29,46 @@ set_option autoImplicit false
 namespace Mettapedia.Ethics.EthicalCommunicationBisimulation
 
 open Mettapedia.GSLT
-
-/-! ## Communication dynamics -/
-
-inductive CommunicationPhase : Type
-  | prepared
-  | communicating
-  | completed
-  deriving DecidableEq, Repr
-
-/-- The ethically relevant state of one communication episode. -/
-structure CommunicationState : Type where
-  phase : CommunicationPhase
-  communicatorBelievesTrue : Bool
-  messageTrue : Bool
-  deriving DecidableEq, Repr
-
-/-- A communication starts and finishes without changing its belief or truth
-facts. -/
-inductive CommunicationStep : CommunicationState → CommunicationState → Prop
-  | start (belief truth : Bool) :
-      CommunicationStep
-        ⟨.prepared, belief, truth⟩
-        ⟨.communicating, belief, truth⟩
-  | finish (belief truth : Bool) :
-      CommunicationStep
-        ⟨.communicating, belief, truth⟩
-        ⟨.completed, belief, truth⟩
-
-/-- The communication episode as a GSLT. -/
-def communicationGSLT : GSLT where
-  Term := CommunicationState
-  equations := ⟨Eq, ⟨Eq.refl, Eq.symm, Eq.trans⟩⟩
-  rewrites := CommunicationStep
-  rewrites_resp_left := by
-    intro left equalLeft right equal step
-    subst equalLeft
-    exact ⟨right, step, rfl⟩
-  rewrites_resp_right := by
-    intro left right equalRight step equal
-    subst equalRight
-    exact step
+open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.Ethics.CommunicationLanguage
 
 /-! ## Source concepts -/
 
 /-- The communicator believes the message to be true throughout the episode. -/
-def HonestCommunication (state : CommunicationState) : Prop :=
-  state.communicatorBelievesTrue = true
+def HonestCommunication (term : Pattern) : Prop :=
+  ∃ phase truth, term = episode phase yes truth
 
 /-- The message is true throughout the episode. -/
-def TrueCommunication (state : CommunicationState) : Prop :=
-  state.messageTrue = true
+def TrueCommunication (term : Pattern) : Prop :=
+  ∃ phase belief, term = episode phase belief yes
+
+/-- The episode has completed. -/
+def CompletedCommunication (term : Pattern) : Prop :=
+  ∃ belief truth, term = episode completed belief truth
+
+theorem honestCommunication_episode_iff (phase belief truth : Pattern) :
+    HonestCommunication (episode phase belief truth) ↔ belief = yes := by
+  constructor
+  · rintro ⟨_, _, same⟩
+    exact (episode_injective same).2.1
+  · rintro rfl
+    exact ⟨phase, truth, rfl⟩
+
+theorem trueCommunication_episode_iff (phase belief truth : Pattern) :
+    TrueCommunication (episode phase belief truth) ↔ truth = yes := by
+  constructor
+  · rintro ⟨_, _, same⟩
+    exact (episode_injective same).2.2
+  · rintro rfl
+    exact ⟨phase, belief, rfl⟩
+
+theorem completedCommunication_episode_iff (phase belief truth : Pattern) :
+    CompletedCommunication (episode phase belief truth) ↔ phase = completed := by
+  constructor
+  · rintro ⟨_, _, same⟩
+    exact (episode_injective same).1
+  · rintro rfl
+    exact ⟨belief, truth, rfl⟩
 
 /-! ## Full and outcome observers -/
 
@@ -87,64 +78,57 @@ inductive FullAtom : Type
   | completed
   deriving DecidableEq, Repr
 
-def fullObserved : ObservedGSLT communicationGSLT where
+def fullObserved : ObservedGSLT communicationTheory where
   Atom := FullAtom
-  observes atom state :=
+  observes atom term :=
     match atom with
-    | .beliefTrue => HonestCommunication state
-    | .messageTrue => TrueCommunication state
-    | .completed => state.phase = .completed
+    | .beliefTrue => HonestCommunication term
+    | .messageTrue => TrueCommunication term
+    | .completed => CompletedCommunication term
 
 inductive OutcomeAtom : Type
   | messageTrue
   | completed
   deriving DecidableEq, Repr
 
-def outcomeObserved : ObservedGSLT communicationGSLT where
+def outcomeObserved : ObservedGSLT communicationTheory where
   Atom := OutcomeAtom
-  observes atom state :=
+  observes atom term :=
     match atom with
-    | .messageTrue => TrueCommunication state
-    | .completed => state.phase = .completed
+    | .messageTrue => TrueCommunication term
+    | .completed => CompletedCommunication term
 
 /-! ## The outcome bisimulation -/
 
 /-- The outcome observer retains phase and message truth but forgets the
 communicator's belief. -/
-def SameOutcome (left right : CommunicationState) : Prop :=
-  left.phase = right.phase ∧ left.messageTrue = right.messageTrue
+def SameOutcome (left right : Pattern) : Prop :=
+  left = right ∨
+    ∃ phase belief belief' truth, left = episode phase belief truth ∧ right = episode phase belief' truth
 
-theorem SameOutcome.symm {left right : CommunicationState}
-    (same : SameOutcome left right) : SameOutcome right left :=
-  ⟨same.1.symm, same.2.symm⟩
+theorem SameOutcome.symm {left right : Pattern}
+    (same : SameOutcome left right) : SameOutcome right left := by
+  rcases same with rfl | ⟨phase, belief, belief', truth, rfl, rfl⟩
+  · exact .inl rfl
+  · exact .inr ⟨phase, belief', belief, truth, rfl, rfl⟩
 
-theorem sameOutcome_forward {left right next : CommunicationState}
+theorem sameOutcome_forward {left right next : Pattern}
     (same : SameOutcome left right)
-    (step : communicationGSLT.Step left next) :
-    ∃ rightNext, communicationGSLT.Step right rightNext ∧
+    (step : communicationTheory.Step left next) :
+    ∃ rightNext, communicationTheory.Step right rightNext ∧
       SameOutcome next rightNext := by
-  cases step with
-  | start belief truth =>
-      rcases right with ⟨phase, rightBelief, rightTruth⟩
-      rcases same with ⟨phaseEqual, truthEqual⟩
-      change CommunicationPhase.prepared = phase at phaseEqual
-      change truth = rightTruth at truthEqual
-      cases phaseEqual
-      cases truthEqual
-      exact ⟨⟨.communicating, rightBelief, truth⟩,
-        .start rightBelief truth, rfl, rfl⟩
-  | finish belief truth =>
-      rcases right with ⟨phase, rightBelief, rightTruth⟩
-      rcases same with ⟨phaseEqual, truthEqual⟩
-      change CommunicationPhase.communicating = phase at phaseEqual
-      change truth = rightTruth at truthEqual
-      cases phaseEqual
-      cases truthEqual
-      exact ⟨⟨.completed, rightBelief, truth⟩,
-        .finish rightBelief truth, rfl, rfl⟩
+  rcases same with rfl | ⟨phase, belief, belief', truth, rfl, rfl⟩
+  · exact ⟨next, step, .inl rfl⟩
+  · obtain ⟨stepBelief, stepTruth, (⟨source, rfl⟩ | ⟨source, rfl⟩)⟩ := (step_iff _ _).mp step
+    · obtain ⟨rfl, rfl, rfl⟩ := episode_injective source
+      exact ⟨episode communicating belief' truth, start_step belief' truth,
+        .inr ⟨communicating, belief, belief', truth, rfl, rfl⟩⟩
+    · obtain ⟨rfl, rfl, rfl⟩ := episode_injective source
+      exact ⟨episode completed belief' truth, finish_step belief' truth,
+        .inr ⟨completed, belief, belief', truth, rfl, rfl⟩⟩
 
 theorem sameOutcome_is_step_bisimulation :
-    communicationGSLT.IsBisimulation SameOutcome := by
+    communicationTheory.IsBisimulation SameOutcome := by
   constructor
   · intro left right same next step
     exact sameOutcome_forward same step
@@ -154,16 +138,17 @@ theorem sameOutcome_is_step_bisimulation :
     exact ⟨leftNext, leftStep, nextSame.symm⟩
 
 theorem sameOutcome_preserves_outcome_atoms
-    {left right : CommunicationState} (same : SameOutcome left right)
+    {left right : Pattern} (same : SameOutcome left right)
     (atom : OutcomeAtom) :
     outcomeObserved.observes atom left ↔
       outcomeObserved.observes atom right := by
-  rcases same with ⟨phaseEqual, truthEqual⟩
-  cases atom
-  · change (left.messageTrue = true ↔ right.messageTrue = true)
-    rw [truthEqual]
-  · change (left.phase = .completed ↔ right.phase = .completed)
-    rw [phaseEqual]
+  rcases same with rfl | ⟨phase, belief, belief', truth, rfl, rfl⟩
+  · exact Iff.rfl
+  · cases atom
+    · change TrueCommunication _ ↔ TrueCommunication _
+      rw [trueCommunication_episode_iff, trueCommunication_episode_iff]
+    · change CompletedCommunication _ ↔ CompletedCommunication _
+      rw [completedCommunication_episode_iff, completedCommunication_episode_iff]
 
 theorem sameOutcome_is_observed_bisimulation :
     outcomeObserved.IsBisimulation SameOutcome := by
@@ -196,39 +181,45 @@ def honestClass : fullObserved.Class → Prop :=
 def trueOutcomeClass : outcomeObserved.Class → Prop :=
   outcomeObserved.classify TrueCommunication true_saturated_outcome
 
-@[simp] theorem honestClass_correct (state : CommunicationState) :
-    honestClass (fullObserved.toClass state) ↔ HonestCommunication state :=
+@[simp] theorem honestClass_correct (term : Pattern) :
+    honestClass (fullObserved.toClass term) ↔ HonestCommunication term :=
   Iff.rfl
 
-@[simp] theorem trueOutcomeClass_correct (state : CommunicationState) :
-    trueOutcomeClass (outcomeObserved.toClass state) ↔
-      TrueCommunication state :=
+@[simp] theorem trueOutcomeClass_correct (term : Pattern) :
+    trueOutcomeClass (outcomeObserved.toClass term) ↔
+      TrueCommunication term :=
   Iff.rfl
 
-def honestTrueMessage : CommunicationState :=
-  ⟨.communicating, true, true⟩
+def honestTrueMessage : Pattern :=
+  episode communicating yes yes
 
-def dishonestTrueMessage : CommunicationState :=
-  ⟨.communicating, false, true⟩
+def dishonestTrueMessage : Pattern :=
+  episode communicating no yes
 
 theorem honest_and_dishonest_true_same_outcome :
     outcomeObserved.Bisimilar honestTrueMessage dishonestTrueMessage :=
-  ⟨SameOutcome, sameOutcome_is_observed_bisimulation, by
-    exact ⟨rfl, rfl⟩⟩
+  ⟨SameOutcome, sameOutcome_is_observed_bisimulation,
+    .inr ⟨communicating, yes, no, yes, rfl, rfl⟩⟩
+
+theorem honest_true_message_is_honest :
+    HonestCommunication honestTrueMessage :=
+  ⟨communicating, yes, rfl⟩
+
+theorem dishonest_true_message_is_not_honest :
+    ¬ HonestCommunication dishonestTrueMessage := by
+  rw [dishonestTrueMessage, honestCommunication_episode_iff]
+  simp [no, yes]
+
+theorem honest_true_message_is_true : TrueCommunication honestTrueMessage :=
+  ⟨communicating, yes, rfl⟩
+
+theorem dishonest_true_message_is_true : TrueCommunication dishonestTrueMessage :=
+  ⟨communicating, no, rfl⟩
 
 theorem honest_and_dishonest_true_full_distinction :
     ¬ fullObserved.Bisimilar honestTrueMessage dishonestTrueMessage :=
   fullObserved.distinguished_of_observation .beliefTrue
-    (by rfl) (by simp [fullObserved, HonestCommunication,
-      dishonestTrueMessage])
-
-theorem honest_true_message_is_honest :
-    HonestCommunication honestTrueMessage :=
-  rfl
-
-theorem dishonest_true_message_is_not_honest :
-    ¬ HonestCommunication dishonestTrueMessage := by
-  simp [HonestCommunication, dishonestTrueMessage]
+    honest_true_message_is_honest dishonest_true_message_is_not_honest
 
 /-- Honesty is not saturated by outcome bisimilarity. -/
 theorem honest_not_saturated_outcome :
@@ -240,11 +231,11 @@ theorem honest_not_saturated_outcome :
     (honestyEquivalent.mp honest_true_message_is_honest)
 
 /-- Consequently no predicate on outcome classes can recover honesty for all
-communication states. -/
+communication terms. -/
 theorem no_honesty_classifier_on_outcome_classes :
     ¬ ∃ classifier : outcomeObserved.Class → Prop,
-      ∀ state, classifier (outcomeObserved.toClass state) ↔
-        HonestCommunication state := by
+      ∀ term, classifier (outcomeObserved.toClass term) ↔
+        HonestCommunication term := by
   rintro ⟨classifier, correct⟩
   exact honest_not_saturated_outcome
     (outcomeObserved.saturated_of_classifier

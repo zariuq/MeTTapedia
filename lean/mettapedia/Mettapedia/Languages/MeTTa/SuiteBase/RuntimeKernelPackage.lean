@@ -10,6 +10,7 @@ Internal package/theorem layer for the MeTTa runtime-boundary package.
 namespace Mettapedia.Languages.MeTTa.RuntimeKernel
 
 open Mettapedia.Languages.MeTTa.ElaboratedCore
+
 open Mettapedia.Languages.MeTTa.RuntimeExec
 open MeTTailCore.MeTTaIL.EffectSafety
 

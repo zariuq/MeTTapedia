@@ -1,90 +1,94 @@
 import Mettapedia.Languages.MeTTa.ElaboratedCoreBase
-import Mettapedia.Languages.MeTTa.PureCertificateFragment
-import Mettapedia.Languages.MeTTa.PureCheckingService
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Services.CertificateFragment
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Services.CheckingService
 import Mettapedia.Languages.MeTTa.RuntimeExec
 import Mettapedia.Languages.MeTTa.OSLFCore.Bridge
-import Mettapedia.Languages.MeTTa.PureRuntimeFrontier
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Services.RuntimeFrontier
 
 /-!
 # Elaborated MeTTa-Core
 
-Classification layer sitting above `IntrinsicPure` and `RuntimeExec`.
+Classification layer sitting above `TwoSortPiSigmaId` and `RuntimeExec`.
 
 Current regions:
 
-- `pureKernelRegion`: trusted typed fragment routed to `IntrinsicPure`
+- `twoSortKernelRegion`: trusted typed fragment routed to `TwoSortPiSigmaId`
 - `runtimeExecRegion`: effectful/runtime fragment routed to `RuntimeSpec` and
   an execution/query seam
 - `oracleRegion`: grounded/FFI/oracle boundary kept explicit
 - `metaRegion`: proof/elaboration-time reflection layer
 
-In the live default path, the trusted `IntrinsicPure` is only the small
-Pi/Sigma/Id/universe waist plus ordinary families admitted through the general
-`DeclSpec`/`DeclEnv` mechanism.
+This classifier routes one experimental branch through the two-sort calculus
+and its declaration-aware judgments. That branch is not Prime's dependent
+core: it has a ground type and formation marker, not cumulative universes.
+The classification does not establish adequacy of a runtime or select the
+calculus as a language foundation.
 -/
 
 namespace Mettapedia.Languages.MeTTa.ElaboratedCore
+
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Services
 
 open Mettapedia.Languages.MeTTa.DialectProfile
 open Mettapedia.Languages.MeTTa.RuntimeSpec
 open Mettapedia.Languages.MeTTa.RuntimeExec
 open Mettapedia.Languages.MeTTa.OSLFCore.Bridge
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Typing
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Permissive.Typing
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.PatternBridge
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 abbrev CoreAtom := Mettapedia.Languages.MeTTa.OSLFCore.Atom
 abbrev CoreAtomspace := Mettapedia.Languages.MeTTa.OSLFCore.Atomspace
 abbrev CoreGroundedValue := Mettapedia.Languages.MeTTa.OSLFCore.GroundedValue
 
-/-- Thin elaborated-core wrapper around the explicit Pure checking/conversion
+/-- Thin elaborated-core wrapper around the explicit two-sort checking/conversion
 service. This keeps the proof-side checking API visibly attached to the middle
 layer rather than buried only inside the certificate fragment file. -/
-noncomputable def elaborateCheckedPureConversion
-    (cert : CheckedPureCertificate)
-    (targetType : PureTm 0)
+noncomputable def elaborateCheckedTwoSortConversion
+    (cert : CheckedTwoSortCertificate)
+    (targetType : ScopedTerm 0)
     (h : Conv cert.claimedType targetType) :
-    CheckedPureConversion :=
-  convertCheckedPureCertificate cert targetType h
+    CheckedTwoSortConversion :=
+  convertCheckedTwoSortCertificate cert targetType h
 
-theorem elaborateCheckedPureConversion_region
-    (cert : CheckedPureCertificate)
-    (targetType : PureTm 0)
+theorem elaborateCheckedTwoSortConversion_region
+    (cert : CheckedTwoSortCertificate)
+    (targetType : ScopedTerm 0)
     (h : Conv cert.claimedType targetType) :
-    (elaborateCheckedPureConversion cert targetType h).region =
-      ElaboratedRegion.pureKernelRegion := by
+    (elaborateCheckedTwoSortConversion cert targetType h).region =
+      ElaboratedRegion.twoSortKernelRegion := by
   rfl
 
-theorem elaborateCheckedPureConversion_overlap
-    (cert : CheckedPureCertificate)
-    (targetType : PureTm 0)
+theorem elaborateCheckedTwoSortConversion_overlap
+    (cert : CheckedTwoSortCertificate)
+    (targetType : ScopedTerm 0)
     (h : Conv cert.claimedType targetType) :
-    (elaborateCheckedPureConversion cert targetType h).overlapClass =
+    (elaborateCheckedTwoSortConversion cert targetType h).overlapClass =
       cert.overlapClass := by
   rfl
 
-theorem elaborateCheckedPureConversion_typing
-    (cert : CheckedPureCertificate)
-    (targetType : PureTm 0)
+theorem elaborateCheckedTwoSortConversion_typing
+    (cert : CheckedTwoSortCertificate)
+    (targetType : ScopedTerm 0)
     (h : Conv cert.claimedType targetType) :
     HasType .nil
-      (elaborateCheckedPureConversion cert targetType h).term
+      (elaborateCheckedTwoSortConversion cert targetType h).term
       targetType := by
-  exact (elaborateCheckedPureConversion cert targetType h).typing
+  exact (elaborateCheckedTwoSortConversion cert targetType h).typing
 
-theorem elaborateCheckedPureConversion_quoteAgreement
-    (cert : CheckedPureCertificate)
-    (targetType : PureTm 0)
+theorem elaborateCheckedTwoSortConversion_quoteAgreement
+    (cert : CheckedTwoSortCertificate)
+    (targetType : ScopedTerm 0)
     (h : Conv cert.claimedType targetType) :
-    (elaborateCheckedPureConversion cert targetType h).artifact.pattern =
-      quoteClosedTm (elaborateCheckedPureConversion cert targetType h).term := by
-  exact (elaborateCheckedPureConversion cert targetType h).quoteAgreement
+    (elaborateCheckedTwoSortConversion cert targetType h).artifact.pattern =
+      quoteClosedTm (elaborateCheckedTwoSortConversion cert targetType h).term := by
+  exact (elaborateCheckedTwoSortConversion cert targetType h).quoteAgreement
 
 /-- Small typed MeTTa-Core source fragment whose atoms already have a shared
 artifact view through `Core.Bridge.atomToPattern`.
 
-This is intentionally weaker than a direct IntrinsicPure compilation target:
+This is intentionally weaker than a direct TwoSortPiSigmaId compilation target:
 - positive example: symbolic atoms, variables, and expression constructors that
   already admit a `Pattern` view
 - negative example: grounded atoms do not currently admit such a view and are
@@ -200,21 +204,21 @@ structure MetaCertificate where
 
 /-- The explicit elaborated-core object. -/
 inductive ElaboratedNode where
-  | pureNode (cert : PureCertificate)
+  | twoSortNode (cert : TwoSortCertificate)
   | coreTypedNode (cert : CoreTypedCertificate)
   | runtimeNode (cert : RuntimeCertificate)
   | oracleNode (cert : OracleCertificate)
   | metaNode (cert : MetaCertificate)
 
 def ElaboratedNode.region : ElaboratedNode → ElaboratedRegion
-  | ElaboratedNode.pureNode _ => ElaboratedRegion.pureKernelRegion
-  | ElaboratedNode.coreTypedNode _ => ElaboratedRegion.pureKernelRegion
+  | ElaboratedNode.twoSortNode _ => ElaboratedRegion.twoSortKernelRegion
+  | ElaboratedNode.coreTypedNode _ => ElaboratedRegion.twoSortKernelRegion
   | ElaboratedNode.runtimeNode _ => ElaboratedRegion.runtimeExecRegion
   | ElaboratedNode.oracleNode _ => ElaboratedRegion.oracleRegion
   | ElaboratedNode.metaNode _ => ElaboratedRegion.metaRegion
 
 def ElaboratedNode.artifact : ElaboratedNode → SharedArtifact
-  | ElaboratedNode.pureNode cert => cert.artifact
+  | ElaboratedNode.twoSortNode cert => cert.artifact
   | ElaboratedNode.coreTypedNode cert => cert.artifact
   | ElaboratedNode.runtimeNode cert => cert.artifact
   | ElaboratedNode.oracleNode cert => cert.artifact
@@ -222,7 +226,7 @@ def ElaboratedNode.artifact : ElaboratedNode → SharedArtifact
 
 /-- Source language for elaboration. -/
 inductive SyntaxNode where
-  | pureClosedSyntax (term : PureSyntaxTerm 0)
+  | twoSortClosedSyntax (term : TwoSortSyntaxTerm 0)
   | coreTypedAtom (sourceAtom : CoreTypedSyntaxAtom)
   | heRuntimeRule (pattern : Pattern)
   | heRuntimeQuery (pattern : Pattern)
@@ -238,8 +242,8 @@ inductive SyntaxNode where
 
 /-- Elaborator from source language into the elaborated MeTTa-Core. -/
 noncomputable def elaborate : SyntaxNode → ElaboratedNode
-  | SyntaxNode.pureClosedSyntax term =>
-      ElaboratedNode.pureNode (certifyPureSyntax term).pure
+  | SyntaxNode.twoSortClosedSyntax term =>
+      ElaboratedNode.twoSortNode (certifyTwoSortSyntax term).twoSort
   | SyntaxNode.coreTypedAtom sourceAtom =>
       ElaboratedNode.coreTypedNode (certifyCoreTypedSyntaxAtom sourceAtom)
   | SyntaxNode.heRuntimeRule pattern =>
@@ -296,13 +300,13 @@ noncomputable def elaborate : SyntaxNode → ElaboratedNode
         artifact := ⟨pattern⟩
       }
 
-theorem elaborate_pureClosedSyntax_region (term : PureSyntaxTerm 0) :
-    ElaboratedNode.region (elaborate (SyntaxNode.pureClosedSyntax term)) =
-      ElaboratedRegion.pureKernelRegion := rfl
+theorem elaborate_twoSortClosedSyntax_region (term : TwoSortSyntaxTerm 0) :
+    ElaboratedNode.region (elaborate (SyntaxNode.twoSortClosedSyntax term)) =
+      ElaboratedRegion.twoSortKernelRegion := rfl
 
 theorem elaborate_coreTypedAtom_region (sourceAtom : CoreTypedSyntaxAtom) :
     ElaboratedNode.region (elaborate (SyntaxNode.coreTypedAtom sourceAtom)) =
-      ElaboratedRegion.pureKernelRegion := rfl
+      ElaboratedRegion.twoSortKernelRegion := rfl
 
 theorem elaborate_heRuntimeRule_region (pattern : Pattern) :
     ElaboratedNode.region (elaborate (SyntaxNode.heRuntimeRule pattern)) =
@@ -324,9 +328,9 @@ theorem elaborate_metaQuoted_region
     ElaboratedNode.region (elaborate (SyntaxNode.metaQuoted description pattern)) =
       ElaboratedRegion.metaRegion := rfl
 
-theorem elaborate_pureClosedSyntax_artifact
-    (term : PureSyntaxTerm 0) :
-    (ElaboratedNode.artifact (elaborate (SyntaxNode.pureClosedSyntax term))).pattern =
+theorem elaborate_twoSortClosedSyntax_artifact
+    (term : TwoSortSyntaxTerm 0) :
+    (ElaboratedNode.artifact (elaborate (SyntaxNode.twoSortClosedSyntax term))).pattern =
       term.toClosedPattern := rfl
 
 theorem elaborate_coreTypedAtom_artifact
@@ -334,17 +338,17 @@ theorem elaborate_coreTypedAtom_artifact
     (ElaboratedNode.artifact (elaborate (SyntaxNode.coreTypedAtom sourceAtom))).pattern =
       sourceAtom.pattern := rfl
 
-theorem elaborate_pureClosedSyntax_term
-    (term : PureSyntaxTerm 0) :
-    match elaborate (SyntaxNode.pureClosedSyntax term) with
-    | ElaboratedNode.pureNode cert => cert.term = term.toPureTm
+theorem elaborate_twoSortClosedSyntax_term
+    (term : TwoSortSyntaxTerm 0) :
+    match elaborate (SyntaxNode.twoSortClosedSyntax term) with
+    | ElaboratedNode.twoSortNode cert => cert.term = term.toScopedTerm
     | _ => False := by
-  simp [elaborate, certifyPureSyntax]
+  simp [elaborate, certifyTwoSortSyntax]
 
-theorem elaborate_pureClosedSyntax_quoteAgreement
-    (term : PureSyntaxTerm 0) :
-    (ElaboratedNode.artifact (elaborate (SyntaxNode.pureClosedSyntax term))).pattern =
-      Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge.quoteClosedTm term.toPureTm := by
+theorem elaborate_twoSortClosedSyntax_quoteAgreement
+    (term : TwoSortSyntaxTerm 0) :
+    (ElaboratedNode.artifact (elaborate (SyntaxNode.twoSortClosedSyntax term))).pattern =
+      Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.PatternBridge.quoteClosedTm term.toScopedTerm := by
   exact term.toClosedPattern_eq_quoteClosedTm
 
 theorem elaborate_heRuntimeRule_backend
@@ -371,10 +375,10 @@ theorem elaborate_fullLegacyRuntime_auditOnly
     | _ => False := by
   simp [elaborate, RuntimeLowering.backendName]
 
-/-- Proof-of-concept certificate that a closed Pure term already has a shared
+/-- Proof-of-concept certificate that a closed two-sort term already has a shared
 artifact view at the MeTTaIL substrate. -/
-noncomputable def pureArtifactCertificate (term : PureSyntaxTerm 0) : SharedArtifact :=
-  ElaboratedNode.artifact (elaborate (SyntaxNode.pureClosedSyntax term))
+noncomputable def twoSortArtifactCertificate (term : TwoSortSyntaxTerm 0) : SharedArtifact :=
+  ElaboratedNode.artifact (elaborate (SyntaxNode.twoSortClosedSyntax term))
 
 theorem certifyCoreTypedSyntaxAtom_overlapClass (sourceAtom : CoreTypedSyntaxAtom) :
     (certifyCoreTypedSyntaxAtom sourceAtom).overlapClass = OverlapClass.artifactOnly := rfl
@@ -388,15 +392,15 @@ theorem coreTypedSyntaxAtom_overlap_is_not_directExec
       OverlapClass.directExec morkRuntimeExec0 := by
   simp [certifyCoreTypedSyntaxAtom]
 
-/-- Language-level summary imported from `PureRuntimeFrontier`: the current
-`mettaPure` rewrite system still does not satisfy the direct `R_exec₀`
+/-- Language-level summary imported from `TwoSortRuntimeFrontier`: the current
+`twoSortDependent` rewrite system still does not satisfy the direct `R_exec₀`
 source-rule bridge hypotheses. -/
-theorem mettaPure_language_frontier_is_not_directExec0
+theorem twoSortDependent_language_frontier_is_not_directExec0
     (r : RewriteRule)
-    (hr : r ∈ Mettapedia.Languages.MeTTa.Pure.Core.mettaPure.rewrites) :
+    (hr : r ∈ Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core.twoSortDependent.rewrites) :
     ¬ ∃ x, r.left = .fvar x ∧
       Mettapedia.Languages.ProcessCalculi.MORK.morkTranslatable r.right = true :=
-  PureRuntimeFrontier.no_mettaPure_rewrite_fits_direct_runtimeExec0_source_bridge r hr
+  Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Services.RuntimeFrontier.no_twoSortDependent_rewrite_fits_direct_runtimeExec0_source_bridge r hr
 
 /-- Proof-of-concept certificate that HE runtime rules and PeTTa runtime rules
 already target the same theoremic backend seam, even though they remain

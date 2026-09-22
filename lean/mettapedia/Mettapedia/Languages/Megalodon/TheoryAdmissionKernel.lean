@@ -463,14 +463,16 @@ def admitDefinitionRule : RuleSchema :=
             [m "identifier", m "type", m "body", m "declarations"],
           m "known" ]))
 
+/-- A source axiom may quantify over a prefix of simple types, just like a
+source theorem. Formation is checked; truth remains an explicit assumption.
+This does not permit prefix-polymorphic propositions as local hypotheses. -/
 def admitAxiomRule : RuleSchema :=
   rule "megalodon-theory-admit-axiom"
     ["primitives", "declarations", "signature", "known", "identifier",
       "proposition"]
-    [ DefinitionConversionKernel.projectSignature
-        (m "declarations") (m "signature"),
-      hasType (m "primitives") (m "signature") (a "MNZero")
-        (a "MTyCtxNil") (m "proposition") (a "MTpProp") ]
+    [ propositionRepresentative
+        (m "primitives") (m "declarations") (m "signature")
+        (a "MNZero") (a "MTyCtxNil") (m "proposition") (m "proposition") ]
     (admits
       (a "MFullEnvironment"
         [m "primitives", m "declarations", m "known"])
@@ -928,13 +930,13 @@ private theorem lookupAdditionalRule (id : String) (candidate : RuleSchema)
   rw [missing]
   exact lookup
 
-@[simp] private theorem lookup_checksConsRule :
+@[simp] theorem lookup_checksConsRule :
     definition.lookupRule?
         ({ value := "megalodon-theory-checks-cons" } : RuleId) =
       some checksConsRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
 
-@[simp] private theorem lookup_checksNilRule :
+@[simp] theorem lookup_checksNilRule :
     definition.lookupRule?
         ({ value := "megalodon-theory-checks-nil" } : RuleId) =
       some checksNilRule :=
@@ -957,6 +959,77 @@ private theorem lookupAdditionalRule (id : String) (candidate : RuleSchema)
         ({ value := "megalodon-theory-admit-theorem" } : RuleId) =
       some admitTheoremRule :=
   lookupAdditionalRule _ _ (by rfl) (by rfl)
+
+private def proofNode (id : String) (arguments : List Pattern)
+    (children : List RawProof := []) : RawProof :=
+  .node { ruleId := ruleId id, arguments } children
+
+/-- In every source environment, an accepted axiom-admission node contains
+accepted formation evidence for the actual declared proposition. This is a
+formation guarantee, not validation of the assumed proposition's truth. -/
+theorem admitted_axiom_requires_formation
+    (primitives declarations signature known identifier proposition goal : Pattern)
+    (formation : RawProof)
+    (accepted : checkRaw validated goal
+      (proofNode "megalodon-theory-admit-axiom"
+        [primitives, declarations, signature, known, identifier, proposition]
+        [formation]) = true) :
+    checkRaw validated
+      (propositionRepresentative primitives declarations signature
+        (a "MNZero") (a "MTyCtxNil") proposition proposition) formation = true := by
+  simp [proofNode, checkRaw, instantiateRule?, validated,
+    ruleId, admitAxiomRule, rule, a, m, propositionRepresentative, admits,
+    instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
+    instantiateSchemaAt?, lookupArgumentAt?] at accepted ⊢
+  split_ifs at accepted
+  simp_all [checkRawChildren]
+
+/-- The corresponding theorem node must supply both formation and a proof
+in its exact pre-admission environment. Neither premise replaces the other. -/
+theorem admitted_theorem_requires_formation_and_proof
+    (primitives declarations signature known identifier proposition goal : Pattern)
+    (formation proof : RawProof)
+    (accepted : checkRaw validated goal
+      (proofNode "megalodon-theory-admit-theorem"
+        [primitives, declarations, signature, known, identifier, proposition]
+        [formation, proof]) = true) :
+    checkRaw validated
+      (propositionRepresentative primitives declarations signature
+        (a "MNZero") (a "MTyCtxNil") proposition proposition) formation = true ∧
+    checkRaw validated
+      (DefinitionConversionKernel.fullProves
+        (a "MFullEnvironment" [primitives, declarations, known])
+        (a "MNZero") (a "MTyCtxNil") (a "MPfCtxNil") proposition) proof = true := by
+  simp [proofNode, checkRaw, instantiateRule?, validated,
+    ruleId, admitTheoremRule, rule, a, m, propositionRepresentative, admits,
+    DefinitionConversionKernel.fullProves, DefinitionConversionKernel.a,
+    instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
+    instantiateSchemaAt?, lookupArgumentAt?] at accepted ⊢
+  split_ifs at accepted
+  simp_all [checkRawChildren]
+
+#print axioms admitted_axiom_requires_formation
+#print axioms admitted_theorem_requires_formation_and_proof
+
+/-- Sequential checking joins the first admission to the remainder at the
+same intermediate environment. Neither an unconnected tail nor a missing
+admission is accepted as a checked source sequence. -/
+theorem checked_cons_requires_connected_admission
+    (initial item items middle final goal : Pattern)
+    (admission remainder : RawProof)
+    (accepted : checkRaw validated goal
+      (proofNode "megalodon-theory-checks-cons"
+        [initial, item, items, middle, final] [admission, remainder]) = true) :
+    checkRaw validated (admits initial item middle) admission = true ∧
+      checkRaw validated (checks middle items final) remainder = true := by
+  simp [proofNode, checkRaw, instantiateRule?, validated,
+    ruleId, checksConsRule, rule, a, m, admits, checks,
+    instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
+    instantiateSchemaAt?, lookupArgumentAt?] at accepted ⊢
+  split_ifs at accepted
+  simp_all [checkRawChildren]
+
+#print axioms checked_cons_requires_connected_admission
 
 @[simp] private theorem lookup_primitiveAppendZeroRule :
     definition.lookupRule?
@@ -1042,10 +1115,6 @@ def coGSLTSource : coGSLTDefinition.authoredGSLT.Term :=
 
 /-! ## Ordered admission canaries -/
 
-private def proofNode (id : String) (arguments : List Pattern)
-    (children : List RawProof := []) : RawProof :=
-  .node { ruleId := ruleId id, arguments } children
-
 def canaryPrimitiveIdentifier : Pattern := a "MTheoryCanaryPrimitive"
 def canaryAxiomIdentifier : Pattern := a "MTheoryCanaryAxiom"
 def canaryTheoremIdentifier : Pattern := a "MTheoryCanaryTheorem"
@@ -1104,7 +1173,7 @@ def canaryItems : Pattern :=
           a "MTheoryItemsCons"
             [canaryTheoremItem, a "MTheoryItemsNil"] ] ]
 
-private def canaryPrimitiveAdmissionArticle : RawProof :=
+def canaryPrimitiveAdmissionArticle : RawProof :=
   proofNode "megalodon-theory-admit-primitive"
     [ a "MPrimNil", a "MDeclNil", a "MKnownNil",
       canaryPrimitiveIdentifier, a "MNZero", a "MTpProp",
@@ -1114,11 +1183,14 @@ private def canaryPrimitiveAdmissionArticle : RawProof :=
         [proofNode "megalodon-poly-type-prop" [a "MNZero"]],
       proofNode "megalodon-theory-primitive-append-zero" [a "MTpProp"] ]
 
-private def canaryAxiomAdmissionArticle : RawProof :=
+def canaryAxiomAdmissionArticle : RawProof :=
   proofNode "megalodon-theory-admit-axiom"
     [ canaryPrimitiveTypes, canaryDeclarations, canarySignature,
       a "MKnownNil", canaryAxiomIdentifier, canaryProposition ]
-    [ proofNode "megalodon-def-project-definition"
+    [ proofNode "megalodon-theory-proposition-plain"
+      [ canaryPrimitiveTypes, canaryDeclarations, canarySignature,
+        a "MNZero", a "MTyCtxNil", canaryProposition, canaryProposition ]
+      [ proofNode "megalodon-def-project-definition"
         [ canaryPrimitiveIdentifier, a "MTpProp", canaryProposition,
           a "MDeclNil", a "MSigNil" ]
         [proofNode "megalodon-def-project-nil" []],
@@ -1126,7 +1198,9 @@ private def canaryAxiomAdmissionArticle : RawProof :=
         [ canaryPrimitiveTypes, canarySignature, a "MNZero",
           a "MTyCtxNil", a "MNZero", a "MTpProp" ]
         [ proofNode "megalodon-theory-primitive-type-zero"
-            [a "MTpProp", a "MPrimNil"] ] ]
+            [a "MTpProp", a "MPrimNil"] ],
+        proofNode "megalodon-def-path-refl"
+          [canaryDeclarations, canaryProposition] ] ]
 
 private def canaryKnownProofArticle : RawProof :=
   proofNode "megalodon-theory-proof-known"
@@ -1154,7 +1228,7 @@ private def canaryPropositionFormationArticle : RawProof :=
       proofNode "megalodon-def-path-refl"
         [canaryDeclarations, canaryProposition] ]
 
-private def canaryTheoremAdmissionArticle : RawProof :=
+def canaryTheoremAdmissionArticle : RawProof :=
   proofNode "megalodon-theory-admit-theorem"
     [ canaryPrimitiveTypes, canaryDeclarations, canarySignature, canaryAxiomKnown,
       canaryTheoremIdentifier, canaryProposition ]
@@ -1399,6 +1473,16 @@ private def theoremGoal : Pattern :=
     (a "MFullEnvironment" [emptyPrimitives, emptyDeclarations,
       a "MKnownCons" [canaryTheoremIdentifier, prefixIdentity, emptyKnown]])
 
+private def axiomArticle (proposition : Pattern) (formation : RawProof) : RawProof :=
+  proofNode "megalodon-theory-admit-axiom"
+    [emptyPrimitives, emptyDeclarations, emptySignature, emptyKnown,
+      canaryAxiomIdentifier, proposition] [formation]
+
+private def axiomGoal (proposition : Pattern) : Pattern :=
+  admits emptyEnvironment (a "MTheoryAxiom" [canaryAxiomIdentifier, proposition])
+    (a "MFullEnvironment" [emptyPrimitives, emptyDeclarations,
+      a "MKnownCons" [canaryAxiomIdentifier, proposition, emptyKnown]])
+
 private def malformedProposition : Pattern := a "MTmImp" [prefixProposition, prefixProposition]
 private def unformedKnown : Pattern :=
   a "MKnownCons" [canaryAxiomIdentifier, malformedProposition, emptyKnown]
@@ -1466,6 +1550,10 @@ private def guardedTheoremGoal : Pattern :=
     definition.lookupRule? (ruleId "megalodon-theory-admit-theorem") =
       some admitTheoremRule := lookup_admitTheoremRule
 
+@[simp] private theorem lookup_admitAxiom :
+    definition.lookupRule? (ruleId "megalodon-theory-admit-axiom") =
+      some admitAxiomRule := lookup_admitAxiomRule
+
 @[simp] private theorem lookup_projectNil :
     definition.lookupRule? (ruleId "megalodon-def-project-nil") =
       some DefinitionConversionKernel.projectNilRule := lookup_projectNilRule
@@ -1488,6 +1576,7 @@ attribute [local simp] zero one propType emptyTypes emptyProofs emptySignature
   ordinaryIdentityArticle prefixHypothesisArticle identityBody prefixIdentity
   identityFormationArticle prefixIdentityFormationArticle prefixIdentityProofArticle
   theoremArticle theoremGoal malformedProposition unformedKnown unformedEnvironment
+  axiomArticle axiomGoal admitAxiomRule
   unformedKnownProof guardedTheoremArticle guardedTheoremGoal proofNode
   typeAllRule typeVarZeroRule typeImpRule propositionPlainRule propositionTypeAllRule
   proofHypZeroRule proofImpIntroRule proofTypeIntroRule proofKnownRule admitTheoremRule
@@ -1538,6 +1627,34 @@ theorem prefix_hypothesis_rejected :
 theorem prefix_theorem_admitted : checkRaw validated theoremGoal theoremArticle = true := by
   simp (config := { decide := true })
 
+/-- A polymorphic axiom is admitted as an assumption, not as a proved theorem. -/
+theorem prefix_axiom_admitted :
+    checkRaw validated (axiomGoal prefixProposition)
+      (axiomArticle prefixProposition prefixFormationArticle) = true := by
+  simp (config := { decide := true })
+
+/-- Even axiom admission requires formation of the actual declared formula. -/
+theorem axiom_requires_formation (proposition : Pattern) (formation : RawProof)
+    (accepted : checkRaw validated (axiomGoal proposition)
+      (axiomArticle proposition formation) = true) :
+    checkRaw validated
+      (propositionRepresentative emptyPrimitives emptyDeclarations emptySignature
+        zero emptyTypes proposition proposition) formation = true := by
+  exact admitted_axiom_requires_formation _ _ _ _ _ _ _ _ accepted
+
+/-- An admitted axiom cannot use formation evidence for a different formula. -/
+theorem malformed_axiom_rejected :
+    checkRaw validated (axiomGoal malformedProposition)
+      (axiomArticle malformedProposition prefixFormationArticle) = false := by
+  simp (config := { decide := true })
+
+/-- Formation of a polymorphic axiom is not a proof of that axiom. -/
+theorem axiom_formation_is_not_proof :
+    checkRaw validated
+      (DefinitionConversionKernel.fullProves emptyEnvironment zero emptyTypes emptyProofs
+        prefixProposition) prefixFormationArticle = false := by
+  simp (config := { decide := true })
+
 /-- Raw known-inventory lookup is not a theorem-formation judgment. This
 fixture deliberately does not claim that its initial inventory was admitted. -/
 theorem unformed_inventory_proof_accepted :
@@ -1554,8 +1671,7 @@ theorem theorem_requires_formation (formation proof : RawProof)
     checkRaw validated
       (propositionRepresentative emptyPrimitives emptyDeclarations emptySignature zero
         emptyTypes malformedProposition malformedProposition) formation = true := by
-  simp (config := { decide := true }) at accepted ⊢
-  exact accepted.1
+  exact (admitted_theorem_requires_formation_and_proof _ _ _ _ _ _ _ _ _ accepted).1
 
 /-- Even genuine proof evidence cannot replace the separate formation
 evidence required for document admission. Both children are supplied. -/
@@ -1568,6 +1684,10 @@ theorem proof_without_formation_rejected :
 #print axioms ordinary_identity_accepted
 #print axioms prefix_hypothesis_rejected
 #print axioms prefix_theorem_admitted
+#print axioms prefix_axiom_admitted
+#print axioms axiom_requires_formation
+#print axioms malformed_axiom_rejected
+#print axioms axiom_formation_is_not_proof
 #print axioms unformed_inventory_proof_accepted
 #print axioms theorem_requires_formation
 #print axioms proof_without_formation_rejected

@@ -138,7 +138,7 @@ theorem emptyTransition_rewriteAt_exact (relationEnv : RelationEnv)
     run, halted, nilStatements, consStatement, appendStatements,
     evaluationValue, evaluationFault, commonContext, query, typed, v, a,
     matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
-    applyBindings]
+    Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, applyBindings]
 
 /-- A statement step is the unique value reduct of the authored rules. -/
 theorem statementStep?_sound (handler : ExternalHandler)

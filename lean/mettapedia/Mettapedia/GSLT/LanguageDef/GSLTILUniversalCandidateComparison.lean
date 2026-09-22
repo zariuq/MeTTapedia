@@ -99,7 +99,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.GSLT.LanguageDef.GSLTIL.UniversalCandidateComparison
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.GSLT.Core
 open Mettapedia.GSLT.Core.ResourceAwareControl
@@ -527,19 +527,20 @@ theorem observer_control_pullback_composes
 /-- A bounded operational translation has three independently constructed
 views: its represented companion route, the OSLF predicate pullback, and the
 sentence translation of the semantic Pi-institution.  All three use the same
-term map.  This is the coherence law that makes the institution a doctrine
+induced map on semantic equation classes, not an identification of raw terms
+with their classes. This is the coherence law that makes the institution a doctrine
 over the operational equipment rather than a parallel execution semantics. -/
 theorem bounded_route_sentence_oslf_coherence
     {source target : ModallyCoveredTheory.{uTerm}}
     (translation : source ⟶ target)
-    (predicate : Set target.theory.Term) :
+    (predicate : Set (SemanticTerm target.theory)) :
     predicateSentence.map (Quiver.Hom.op translation) predicate =
         Set.preimage
-          (modalAsRepresentedRoute translation).toOperationalTranslation.mapTerm
+          (modalAsRepresentedRoute translation).toOperationalTranslation.mapSemantic
           predicate ∧
       (ModalTranslation.pullback translation).mapPred predicate =
         Set.preimage
-          (modalAsRepresentedRoute translation).toOperationalTranslation.mapTerm
+          (modalAsRepresentedRoute translation).toOperationalTranslation.mapSemantic
           predicate := by
   constructor <;> rfl
 
@@ -550,26 +551,29 @@ read this same composite represented execution map. -/
 theorem bounded_route_sentence_oslf_coherence_composes
     {first middle last : ModallyCoveredTheory.{uTerm}}
     (earlier : first ⟶ middle) (later : middle ⟶ last)
-    (predicate : Set last.theory.Term) :
+    (predicate : Set (SemanticTerm last.theory)) :
     predicateSentence.map
         (Quiver.Hom.op (ModalTranslation.comp earlier later)) predicate =
         predicateSentence.map (Quiver.Hom.op earlier)
           (predicateSentence.map (Quiver.Hom.op later) predicate) ∧
       Set.preimage
           (modalAsRepresentedRoute (ModalTranslation.comp earlier later)
-            ).toOperationalTranslation.mapTerm predicate =
+            ).toOperationalTranslation.mapSemantic predicate =
         Set.preimage
-          (modalAsRepresentedRoute earlier).toOperationalTranslation.mapTerm
+          (modalAsRepresentedRoute earlier).toOperationalTranslation.mapSemantic
           (Set.preimage
-            (modalAsRepresentedRoute later).toOperationalTranslation.mapTerm
+            (modalAsRepresentedRoute later).toOperationalTranslation.mapSemantic
             predicate) ∧
       (ModalTranslation.pullback
         (ModalTranslation.comp earlier later)).mapPred predicate =
         (ModalTranslation.pullback earlier).mapPred
           ((ModalTranslation.pullback later).mapPred predicate) := by
-  constructor
-  · rfl
-  constructor <;> rfl
+  refine ⟨?_, ?_, ?_⟩
+  all_goals
+    apply Set.ext
+    intro state
+    induction state using Quotient.inductionOn with
+    | _ representative => rfl
 
 /-- Exact logical reindexing is a capability of the bounded tight sublayer,
 not a consequence of having an arbitrary forward operational translation.

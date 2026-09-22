@@ -6,14 +6,18 @@ import Mettapedia.PLN.WorldModel.PLNWorldModel
 /-!
 # Canonical Semantic WM: Factorization + Marginalization
 
-This module records the **semantic world-model** core as a factorized valuation:
+This module records a factorized source and an additive world-model ledger:
 
-* The WM state is an explicit **factor list**.
-* Revision = add factors (at the state level).
-* Queries are answered by **exact VE** on that factorization.
+* A `WMSource` is an explicit list of factors for one valuation.
+* A `WMState` is a multiset of such sources. Revision adds source-ledger
+  entries; it does not append factors inside one source.
+* Each source answers a query by exact variable elimination. The ledger sums
+  the resulting evidence across its source entries.
 
-This is the canonical “WM = factorized valuation + marginalization” form,
-independent of any PLN rule heuristics.
+The source-level factor product and the state-level evidence sum are distinct
+operations. In particular, this construction does not identify adding a
+factor to one probabilistic model with revising a world model by an
+independent evidence source.
 -/
 
 namespace Mettapedia.ProbabilityTheory.BayesianNetworks

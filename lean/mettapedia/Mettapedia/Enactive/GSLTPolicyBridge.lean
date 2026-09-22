@@ -1,5 +1,5 @@
 import Mettapedia.Enactive.Bennett2023
-import Mettapedia.Enactive.PrimeSupport
+import Mettapedia.Enactive.RelationalSupport
 import Mettapedia.GSLT.Core.PolicyFamilyTransport
 
 /-!
@@ -219,7 +219,7 @@ theorem statement_completion_query_natural
 /-! ### A lossy presentation map can conceal refusal -/
 
 def includeSingleton :
-    PrimeSupport.Completion.singletonLayer.Statement →
+    RelationalSupport.Completion.singletonLayer.Statement →
       Finite.Canary.boolLayer.Statement :=
   fun _ => Finite.Canary.emptyStatement
 
@@ -237,7 +237,7 @@ theorem singleton_pullback_supports_collapsed :
         candidate Finite.Canary.emptyStatement
     agrees := ?_ }⟩
   intro candidate source
-  rw [PrimeSupport.Completion.singletonLayer_statement_eq source]
+  rw [RelationalSupport.Completion.singletonLayer_statement_eq source]
   rfl
 
 /-- Negative target-side control: the same collapsed readout cannot answer

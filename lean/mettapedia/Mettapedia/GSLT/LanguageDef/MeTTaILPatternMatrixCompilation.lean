@@ -109,7 +109,13 @@ mutual
         simp [lowerPattern, lowerSubject, OPM.structuralMatch,
           OPM.structuralMatchList,
           structuralMatch_of_matchRel bodyMatches]
-    | collection =>
+    | collection _ _ =>
+        simp [lowerPattern, lowerSubject, OPM.structuralMatch,
+          OPM.structuralMatchList]
+    | vector _ =>
+        simp [lowerPattern, lowerSubject, OPM.structuralMatch,
+          OPM.structuralMatchList]
+    | vectorRest _ _ =>
         simp [lowerPattern, lowerSubject, OPM.structuralMatch,
           OPM.structuralMatchList]
     | subst bodyMatches replacementMatches _ =>

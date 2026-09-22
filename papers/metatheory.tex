@@ -115,6 +115,63 @@ product language, and names such as ``native'', ``extensional'', and
 language design should be selected only after concrete calculi and runtimes have
 crossed the same experiments.
 
+\subsection{Higher-order MeTTa integration as the experimental objective}
+
+The immediate language-facing objective is an integrated environment for
+higher-order mathematics and reasoning: extensional HOL and HOTG theories,
+intensional dependent constructions, OSLF/GSLT-IL presentations and semantics,
+and NIK-qualified native computation should be usable together. It is not
+necessary to finish specifying every Prime binding convention, search
+presentation or runtime effect combination before experimenting with these
+connections. Conversely, merely placing several unrelated checkers behind
+one syntax does not establish their semantic integration.
+
+The experimental unit is a declared mathematical task and its connected
+representations. Its premises identify the actual source calculi, assumptions,
+contexts and universe levels; the judgments and observations used by the task;
+and the interpretation and realization maps between them. Preservation,
+substitution and no-invention claims concern these actual maps. A broader
+language profile may remain parameterized, provided each experiment fixes the
+operations it consumes and does not present unsupported cases as qualified.
+Such experimental choices do not ratify global defaults.
+
+Four connected lines organize this objective:
+\begin{enumerate}[leftmargin=*]
+\item Mathematical environments support definitions, quantification, induction,
+  proofs and theorem application in their own right, not merely validation of
+  an otherwise fixed runtime. Shared simply typed infrastructure does not
+  reduce dependent mathematics to simple typing, and a finite collection
+  implementation is not an abstract HOTG universe.
+\item Intensional--extensional bridges explain how a predicate becomes a
+  dependent family, a theorem supplies a dependent use, and code and model
+  semantics correspond under substitution. Equality transport, scoped identity,
+  retained presentations and universe enclosure belong to this line. A
+  faithful comparison must state its image and assumptions; it need not be a
+  global identification of HOL, DTT and HOTG.
+\item GSLT/OSLF and NIK connect declared rules and mathematical judgments to
+  justified realizations. The most appropriate qualified native operation may
+  compute directly; trace replay is not the default meaning of integration.
+  A fast route must preserve and reflect the selected observation, while
+  profitability and runtime cost remain measured implementation claims.
+\item Worked higher-order developments exercise these connections together:
+  uniform induction, model discrimination, higher-order hypothesis formation,
+  theorem reuse and specialized execution followed by justified reconstruction.
+  The four-way comparison of a deep GSLT, HOL and DTT representations, and an
+  explicit HOTG/model interpretation is a discriminating experiment, not a
+  declaration that those representations are already equivalent.
+\end{enumerate}
+
+The thirty-row candidate-specification inventory mixes these connections with
+source isolation, whole-language public policies and final handoff. Its row
+count is not a readiness measure or a prerequisite graph for higher-order
+experimentation. Its proved components remain usable at their exact scope.
+The concrete HOTG adequacy composition below, native dependent attachment of
+semantic bridges, and the relevant end-to-end runtime comparisons are genuine
+integration work. Unrelated syntax defaults and stronger universal models are
+not silently promoted to blockers. Further compatibility laws may constrain
+currently open policies; independence under a small ground model does not
+establish independence under the eventual combined higher-order requirements.
+
 We use three statuses.
 
 \begin{description}[leftmargin=2.7cm,style=nextline]
@@ -497,8 +554,8 @@ or completeness for every feature selection. Together these works motivate
 dependency-sensitive proof reuse and separately qualified conversion components,
 not automatic compatibility of arbitrary kernel features.
 
-The current \nolinkurl{Prime.NIKEntryModeSelection.nativeProofOperation}
-already supplies a claim/native-proof service interface independent of a
+The candidate \nolinkurl{PrimeCandidates.NIKEntryModeSelection.nativeProofOperation}
+supplies a claim/native-proof service interface independent of a
 programming-language run. Its comparison with replay uses two interfaces to
 the same guest kernel, not independent physical implementations. A direct
 interactive client remains to be implemented. Likewise, coGSLT-authored
@@ -823,7 +880,7 @@ optimality theorem.
 
 The available \nolinkurl{RegularJudgment.subject_accessible} and
 \nolinkurl{regularCheckBool_correct} theorems are useful formation and
-checking precedents, but concern the sealed regular Pure fragment. Its
+checking precedents, but concern the sealed regular two-sort fragment. Its
 \nolinkurl{u0} is a ground type and \nolinkurl{u1} an untyped formation
 marker, not two cumulative universes. Its syntax has neither type-level
 quantification nor the indexed declarations and dependent eliminator of
@@ -1054,16 +1111,17 @@ typing does not recover those annotations. Exact syntactic round trips must
 retain that information or explicitly restrict the requested observation.
 
 \nolinkurl{FormationSensitiveHOLInterface} separately represents the actual
-intrinsic HOL variables, constants, application, abstraction, implication and
-universal quantification in the same presentation grammar. Independently
+intrinsic HOL variables, constants, application, abstraction, implication,
+universal quantification and equality in the same presentation grammar. Independently
 formed closed symbol interpretations imply formation-sensitive admission;
 renaming and simultaneous substitution commute exactly with representation.
 The proposition carrier and logical operators are supplied by a signature:
 universal quantification is an operator applied to a lambda, not identified
-with dependent-product formation. Other HOL constructors, including equality,
-are explicitly outside this partial interface.
-\nolinkurl{FormationSensitiveHOLInvariant} supplies six actual opaque
-declarations and independently forms the type-indexed universal operator.
+with dependent-product formation. Equality is an independently typed
+proposition-former, not native identity. Other HOL constructors, including
+conjunction and existential quantification, remain outside this partial interface.
+\nolinkurl{FormationSensitiveHOLInvariant} supplies seven actual opaque
+declarations and independently forms the type-indexed universal and equality operators.
 It represents the existing call-guard conclusion exactly, including its two
 binder indices. Function-valued specialization beneath a quantifier and
 quantification over predicates give higher-order consumers. Henkin substitution
@@ -1291,6 +1349,80 @@ compiler or a higher-dimensional framework before using the language. The
 planned CBPV basis must connect its explicit strategy choices to the current
 revision-keyed need layer. Shared syntax, proof conversion and a CBPV
 translation alone do not establish that operational correspondence.
+
+\subsection{Intensional, extensional and operational presentations}
+
+The three useful vertices are intensional mathematics, extensional mathematics,
+and a language/operation presentation in GSLT-IL. These are semantic roles,
+not three necessarily disjoint logics or three mandatory implementations.
+HOL has inspectable proof syntax; a dependent calculus can have extensional
+models. A single native dependent framework can expose a simple logical
+fragment, a dependent fragment and a set-theoretic theory through different
+interfaces, provided their interpretations and admitted extensions agree on
+the promised overlap. In particular, a proposed \texttt{hol:} interface need
+not imply a second proof kernel, and the \texttt{lang:} role need not be a
+fourth mathematical foundation.
+
+The categorical requirement is comparison respecting contexts and
+substitution. In \nolinkurl{ComputationalTrinity}, contextual presentations
+are presheaves and comparison maps are natural transformations forming a
+commuting triangle. Invertibility is a stronger property: its explicit
+information-loss control rules out a compatible inverse when a view forgets
+a distinction. This abstract framework is not yet an instantiation of the
+entire native DTT/HOTG/GSLT-IL triangle. The concrete family interpretation
+below fills part of an edge, rather than assuming the whole triangle in a
+record of required laws.
+
+\paragraph{A simple fragment is a bridge, not automatic HOL adequacy.}
+The formation-sensitive native embedding already preserves actual simple
+terms and substitutions and characterizes conversion on its image.
+Separately, the constant-family embedding is fully faithful in the selected
+set-family contextual models. Neither result says that every native
+inhabitant of a represented simple type comes from a source HOL proof.
+The existing native HOL interface represents formulas and their substitution;
+HOL equality is a declared proposition-former there, not native identity.
+Realizing a HOL proof consequently requires a proposition/proof family and
+the chosen logical rules, including the appropriate extensional principles.
+
+There is a concrete interoperability hazard: HOL type variables range over
+nonempty types, whereas a dependent host can express empty types. A translation
+cannot silently extend that range to all host types. Assaf and Cauderlier
+address this mismatch with inhabited-type representations in their combined
+HOL/Coq development \cite{AssafCauderlierMixing}. Quantifier domains,
+propositional truth versus proof inhabitation, universe levels, choice and
+the added set axioms must likewise be stated at the selected interface.
+These are focused mathematical obligations, not a demand to decide all
+future language conventions.
+
+\paragraph{What must precede an accelerated realization.}
+Three levels of evidence have different dependencies:
+\begin{enumerate}
+  \item Mathematical coherence: actual interpretations of contexts, terms,
+    proofs and substitutions, with the required equality and universe laws.
+  \item Operational adequacy: the GSLT-IL presentation and its logical
+    observations implement the specified mathematical tasks on the stated
+    input domain.
+  \item Realization and acceleration: the selected native implementation
+    preserves those operations, and a comparison on the same task establishes
+    any claimed performance benefit.
+\end{enumerate}
+The first level does not depend on generated NIK code. The second needs an
+operational interpretation, but this may initially be a mathematical reference
+semantics. Executable NIK qualification belongs to the third. The useful
+reading of NIK as the language side hosting mathematics is therefore a
+meaning-preserving realization of operations, not an independent source of
+their truth. A fast implementation cannot establish the first two levels by
+its speed or its regression tests.
+
+OpenTheory is a plausible bootstrap route: Assaf and Burel translated its
+standard library into a dependent logical framework while preserving binding,
+typing and reduction \cite{AssafBurelHOL}. Their result is a precedent, not
+an adequacy theorem for this native tower. Conservativity also has its own
+theorems and hypotheses, as the functional-pure-type-system embeddings studied
+by Assaf illustrate \cite{AssafConservativity}; it does not follow from merely
+sharing arrow syntax. HOTG supplies another coexistence and theorem-transfer
+precedent \cite{BrownKaliszykPakHOTG}, not permission to identify all the
+extensional and intensional judgments globally.
 
 \subsection{Biform theories and GSLTs as the semantic transformation waist}
 
@@ -2062,7 +2194,7 @@ the result. A shared effectful choice returns $(x,\mathsf{refl}(x))$ with one
 producer effect per branch; its two native judgments follow through the
 whole-machine theorem. An altered reflexivity primitive still returns a term
 operationally but fails the declared identity fibre and the primitive contract.
-\nolinkurl{PrimeNeedAllocationBound} separately proves that every occupied
+\nolinkurl{NeedAllocationBound} separately proves that every occupied
 slot stays below the next allocation counter under every actual machine step,
 for arbitrary language specifications. Consequently the actual allocator
 succeeds in every world reached from an empty heap, including resampling
@@ -2201,11 +2333,11 @@ environments. Its answer carrier distinguishes returned values from
 native-argument and value-argument computation functions; Need can cache any
 of those answer forms. A cached function resumes in the current consumer's
 continuation, while an ordinary thunk stores neither that continuation nor
-a world. \nolinkurl{PrimeNeedLocalSteps} provides silent local transitions
+a world. \nolinkurl{NeedLocalSteps} provides silent local transitions
 without modifying the reference machine: each changes control and charges
 one transition, leaving the complete world and outer stack unchanged.
 Disabling interception preserves every reference specification's ordered
-bounded frontiers exactly. \nolinkurl{PrimeNeedRepresentation} separately
+bounded frontiers exactly. \nolinkurl{NeedRepresentation} separately
 proves exact step and frontier commutation under explicit representation
 maps and specification compatibility. Its occurrence law retains list
 position and duplicate alternatives, with finite-path lifting in both
@@ -2536,7 +2668,7 @@ The generic need protocol proves
 one evaluation while a cached observation claims none. These checked demand
 contracts do not by themselves prove a complete runtime/CBPV correspondence.
 An actual-machine connection is now supplied by
-\nolinkurl{PrimeNeedDependentService}. A total producer returns a packet in
+\nolinkurl{NeedDependentService}. A total producer returns a packet in
 the family indexed by its complete immutable request. The existing owned
 need machine evaluates and commits it; the resumed consumer checks the packet
 index before returning it at the requested fibre. Exact frontier equalities
@@ -3162,12 +3294,14 @@ from arbitrary host sets back to native codes is not assumed.  If claimed, it
 requires a separate definability or reification theorem.
 \end{obligation}
 
-The two halves of this target are now separately machine checked.  On the
+Two relevant endpoints are now machine checked, with different scopes. On the
 type-theoretic side, an abstract extensional universe algebra exposes host
 objects, their elements, and the operations interpreting $0$, $1$, $\mathbb N$,
-sums, $\Pi$, $\Sigma$, identity, and W-types.  A family-universe adequacy
-structure gives a total code interpretation, element equivalences, and
-constructor-commuting laws.  On the HOTG side, the selected host
+sums, $\Pi$, $\Sigma$, identity, and W-types. A family-universe adequacy
+interface requires a total code interpretation, element equivalences, and
+constructor-commuting laws; consequences of those supplied fields are proved.
+This interface is not an independently constructed HOTG interpretation.
+On the HOTG side, the selected host
 \[
   \mathsf{UnivOf}\bigl(\{\sem A,
     \{\sem{B(a)}\mid a\in\sem A\}\}\bigr)
@@ -3221,6 +3355,785 @@ set theory provide further precedent for moving between intensional and
 extensional foundations \cite{AczelTypeTheorySetTheory,GambinoAczelCZF}.
 These ingredients make the programme credible, but none by itself is the desired
 HOTG adequacy theorem.
+
+\subsubsection{HOL predicates as dependent families}
+
+An actual higher-order predicate gives a more informative bridge than sending
+each simple type to a constant family. Fix a Henkin model $M$, an admissible
+parameter valuation $\rho$ for $\Gamma$, and an actual HOL formula
+$\varphi$ in context $A::\Gamma$. Write $\operatorname{Adm}_M(A)$ for
+the admitted domain, rather than silently replacing it with the full ambient
+function space. Define
+\[
+  F_{\varphi,\rho}(a)
+    = \operatorname{Lift}\bigl(M\models\varphi[\rho,a]\bigr),
+  \qquad
+  R_{\varphi,\rho}=\sum_{a:\operatorname{Adm}_M(A)}F_{\varphi,\rho}(a).
+\]
+The lift presents a truth-valued proposition as a type. In
+\nolinkurl{HenkinPredicateFamilyInterpretation}, the refinement is equivalent
+to the corresponding subtype, and the actual syntactic substitution law is
+proved:
+\[
+  F_{\varphi[\sigma^+],\rho}(a)
+     =F_{\varphi,\sem\sigma(\rho)}(a).
+\]
+The resulting comprehension equivalence keeps the underlying admitted value.
+Moreover,
+\[
+  M\models(\forall a.\varphi)[\rho]
+    \quad\Longleftrightarrow\quad
+      \operatorname{Nonempty}\!\left(\prod_a F_{\varphi,\rho}(a)\right),
+  \qquad
+  M\models(\exists a.\varphi)[\rho]
+    \quad\Longleftrightarrow\quad
+      \operatorname{Nonempty}(R_{\varphi,\rho}).
+\]
+An actual HOL proof supplies a section on valuations satisfying its hypotheses,
+under the model's explicit extensional-congruence condition. A proof of
+$\forall a.(\varphi(a)\Rightarrow\psi(a))$ therefore transports a witness of
+$R_{\varphi,\rho}$ to $R_{\psi,\rho}$ without changing its underlying value.
+The positive control uses an actual proof quantified over two predicate
+parameters, $\forall P,Q.\forall a.((P(a)\land Q(a))\Rightarrow P(a))$.
+A Boolean interpretation has an inhabited true fibre and an empty false
+fibre, proving that this family is not constant. With an independently supplied
+family envelope, the universal also has a dependent-product code whose
+decoding is equivalent to the section type.
+
+These statements neither extract computational witnesses from arbitrary
+existential proofs nor identify truth fibres with native dependent proof syntax.
+Two distinct HOL proof trees are proved to yield the same truth section:
+inspection must retain the supplied proof separately. Attaching these families
+and sections to actual native types and terms, and composing that attachment
+with the intended HOTG interpretation, remain distinct construction tasks.
+
+\paragraph{Proof actions and their substitution square.}
+\nolinkurl{HenkinPredicateFamilyCoherence} constructs actual HOL proof trees
+for the universally quantified identity implication and for composition of
+two universally quantified implications. If $\mathcal R(p)_\rho$ is the
+map of refinement witnesses induced by such a proof, the interpretation
+satisfies
+\[
+ \mathcal R(\mathrm{id}_\varphi)_\rho=\mathrm{id},
+ \qquad
+ \mathcal R(q\circ p)_\rho
+      =\mathcal R(q)_\rho\circ\mathcal R(p)_\rho.
+\]
+Simultaneous substitution is a traversal of all constructors of the retained
+\nolinkurl{ProofSyntax}, including quantifiers, equality and extensionality;
+it is not a reconstruction from the proposition that a derivation exists.
+A valuation satisfying the substituted hypotheses pulls back to one
+satisfying the original hypotheses. Writing $c_{\varphi,\sigma,\rho}$ for
+the existing comprehension-substitution equivalence, the proved square is
+\[
+ c_{\psi,\sigma,\rho}\circ\mathcal R(p[\sigma])_\rho
+   =\mathcal R(p)_{\sem\sigma(\rho)}\circ c_{\varphi,\sigma,\rho}.
+\]
+The section supplied by an arbitrary proof, and the dependent section
+supplied by a universal proof, obey the corresponding substitution laws.
+These equalities compare the actions on truth-valued witnesses, not the
+identity of the retained proof trees. A non-ground control substitutes
+$P:=\lambda x.(x=y)$ and $Q:=\lambda x.\top$ into the higher-order
+intersection proof: the free $y$ survives both binders, the four rule nodes
+remain, and changing $y$ changes membership.
+
+\paragraph{Induction is carried through the same interpretation.}
+\nolinkurl{UniformListPredicateFamily} interprets the actual object-HOL
+map-fusion induction proof as a section over every admitted list. Applying
+object-HOL equality congruence to an arbitrary predicate $P$ constructs
+proofs in both directions of
+\[
+  P(\operatorname{map}\,f\,(\operatorname{map}\,g\,xs))
+  \quad\Longleftrightarrow\quad
+  P(\operatorname{map}\,(f\circ g)\,xs).
+\]
+Their interpreted refinement equivalence preserves the input list. The
+ordinary-list model exercises arbitrary Boolean endofunctions, lists and
+predicates, without requiring the predicate to be decidable. The displayed
+fusion equation is obtained from the object proof through soundness, not
+by substituting an independent metatheoretic map-fusion theorem.
+
+The incorrect composition order has an inhabited empty-list fibre but an
+empty singleton fibre. It passes all empty-list and equal-function samples,
+but supplies no uniform section. Separately, the equation-only junk model
+has neither an induction witness nor a universal map-length witness. That
+second control concerns induction and map length, not a claim that this
+particular junk model refutes map fusion. These are already connected HO
+mathematical examples. The native dependent proof-term realization and
+operational fusion refinement are constructed below; neither follows from
+this semantic paragraph alone.
+
+\paragraph{Retained proofs compiled to native dependent terms.}
+\nolinkurl{FormationSensitiveHOLProofFamily} extends the uniform HOL
+declaration interface with a proposition-to-type decoder and two equations:
+\[
+ \mathsf{Prf}(P\Rightarrow Q)\longrightarrow
+     \prod_{p:\mathsf{Prf}(P)}\mathsf{Prf}(Q),\qquad
+ \mathsf{Prf}(\forall x:A.\,P(x))\longrightarrow
+     \prod_{x:A}\mathsf{Prf}(P(x)).
+\]
+These are explicit equations of a candidate presentation, not consequences
+of naming a constant \(\mathsf{Prf}\), and not a global language selection.
+Their formation and capture-safe structural laws are proved.
+\nolinkurl{HOLNaturalDeductionNativeTranslation} then traverses the actual
+retained HOL proof syntax. Hypotheses, implication introduction/elimination
+and universal introduction/elimination produce native variables, lambdas
+and applications. Unsupported rules produce no term. A successful traversal
+preserves the complete native judgment in a formed telescope whose object
+and proof environments realize the source assumptions. The emitted term
+commutes with native substitution; supplying a proof argument gives exactly
+the substitution computed by native beta reduction.
+
+The closed quantified transitivity proof yields
+\(\lambda P,Q,R,f,g,x.\,g(f(x))\), with its actual dependent typing
+judgment. Applying the existing higher-order list induction sentence yields
+the native application of its retained principle to its predicate, base and
+step. That is an application of an assumption, not a derivation of a native
+recursor from induction-shaped syntax. The full equality-based fusion proof
+is not covered by this initial compiler; a separate equality-aware compiler
+is treated below. Nor does the typing-preservation theorem
+establish consistency, conservativity, or a semantic model for the extended
+decoder calculus. In particular, the universal decoder accepts arbitrary
+native-small types, a larger domain than the represented HOL simple fragment.
+
+\nolinkurl{FormationSensitiveHOLProofConversion} supplies additional
+noncollapse results without assuming the missing injectivity laws. A concrete
+untyped expansion respects decoder conversion and separates Pi/Sigma from
+universe heads; universe conversion equates exactly levels with the same
+interpretation. In particular, \(U_0\) and \(U_1\) remain distinct. This
+one-way expansion forgets information and is not a typed semantic model.
+Typed substitution proves the beta laws for translated implication and
+universal introduction/elimination. Composing the implication law with the
+actual compiler proves that supplying an argument produces the same
+substituted proof term with the same complete native judgment before and
+after reduction.
+\nolinkurl{HOLNativeProofSourceSubstitution} additionally traverses
+substitution on the original retained HOL proof, rather than merely
+substituting its emitted native term. Its compatibility theorem relates
+represented source inputs to an independently formed native context
+morphism. Compilation commutes with this source traversal, including under
+mixed object and proof binders. Universal specialization and the native
+beta step consequently retain the same complete judgment. Substitution
+does not enlarge the compiler's supported proof fragment.
+
+\nolinkurl{FormationSensitiveHOLProofConfluence} establishes stronger
+properties for the exact decoder presentation itself. A parallel complete
+development proves Church--Rosser for the two decoder roots together with
+the underlying beta and projection reductions; no additional completion
+rules are introduced. Pi and Sigma conversion then recover component
+conversion, and their heads remain distinct. Inverting the actual declared
+application spines proves preservation for each decoder root; the structural
+preservation theorem extends this to arbitrary contextual steps and finite
+paths in a formed telescope. These are subject-reduction theorems for this
+presentation, not normalization or consistency, and do not automatically
+extend to a union with native List or identity-elimination rules.
+
+\paragraph{Retained equality and native predicate consumption.}
+\nolinkurl{HOLLeibnizProofComparison} constructs retained proofs in both
+directions between primitive HOL equality and
+\(\forall P:A\to\mathsf{prop}.\ P(x)\Rightarrow P(y)\).
+The reverse direction specializes the predicate to equality with \(x\);
+neither direction adds a logical axiom or identifies this relation with
+native identity. Predicate reflexivity, transitivity and consumption use
+only rules already translated by the native compiler. Their emitted terms
+include \(\lambda x,P,h.\,h\) and
+\(\lambda x,y,z,h_{xy},h_{yz},P,h_x.\,h_{yz}\,P\,(h_{xy}\,P\,h_x)\),
+with complete native typing judgments. The primitive comparison proofs
+themselves still use unsupported native rules. The comparison commutes
+with source renaming and substitution; a retained proof's round trip
+preserves admission but need not reproduce its original proof tree.
+
+\nolinkurl{HOLLeibnizZFSetInterpretation} connects these retained equality
+proofs to the same set model described below. Predicate transport induces
+both an actual inclusion between separated sets and a map between dependent
+refinements, and the two maps agree on witnesses. The equality-induced
+maps commute with source proof substitution. A beta-equality example keeps
+the source proof's nontrivial inference tree; changing its parameter to the
+powerset of the empty set invalidates the required fibre and admits no
+corresponding equality proof in this model. This semantic square does not
+identify primitive HOL equality with native identity or supply a model of
+the full native decoder calculus.
+
+\nolinkurl{FormationSensitiveHOLLeibnizInterface} constructs a separate
+logical signature whose equality operator is the native closed expression
+\(\lambda x,y.\,\forall P.\,P(x)\Rightarrow P(y)\). Its typing is
+proved before constructing that signature, using the unchanged quantifier
+and implication declarations. Equality application exposes the predicate
+formula by two ordinary beta steps. The existing two proof-decoder rules
+then expose the required dependent function type, without a new equality
+root. \nolinkurl{FormationSensitiveHOLLeibnizRules} types introduction,
+specialization, consumption and reflexivity; reflexive consumption returns
+its original input proof by two beta steps, including at function carriers.
+The original primitive-equality signature remains available and unchanged.
+
+\nolinkurl{NativeHOLLeibnizDenotation} interprets both the actual equality
+application and its beta contractum using the existing constructorwise
+native denotation judgment. On admissible valuations, when the Henkin
+functions respect its equality relation, their predicate meaning is
+equivalent to the original HOL equality. This uses the retained source
+comparison and does not assume full predicate domains. The same square
+commutes with native substitution whose components have independently
+constructed interpretations. Unequal Boolean operands give a concrete
+negative control; coherence excludes any alternative true denotation of
+that same expression. These are expression-interpretation theorems, not
+a model of arbitrary native proof inhabitants.
+
+\nolinkurl{FormationSensitiveHOLLeibnizDerived} constructs native symmetry,
+transitivity, application congruence and propositional transport from these
+predicate operations. \nolinkurl{HOLLeibnizNativeProofTranslation} traverses
+the original retained proof syntax with those actual terms. Every successful
+translation preserves its complete formation-sensitive judgment and
+commutes with native substitution. Unsupported function extensionality,
+lambda equality and propositional extensionality rules explicitly return
+no translation; they are not needed by the retained fusion proof.
+
+In \nolinkurl{HOLLeibnizMapFusionNative}, the original
+\nolinkurl{UniformListMapFusion.mapFusionProof} now successfully compiles,
+including its induction application. Abstracting the original five ordered
+theory assumptions gives a closed native proof of the corresponding
+conditional theorem. None of those assumptions is added as a native proof
+constant. The body is the original proof tree, not a separately written
+fusion argument. This advances beyond the earlier implication/universal-only
+compiler, which remains unchanged as a separate instance.
+
+\nolinkurl{HOLLeibnizRepresentationSemantics} expands equality throughout
+actual HOL terms. The old representation of an expanded term is exactly
+the alternative representation of the original. Independent Henkin
+semantics proves extensional agreement on admissible valuations, including
+equality nested beneath functions and quantifiers. Native denotation
+coherence therefore fixes the original truth value of every represented
+formula. \nolinkurl{HOLLeibnizNativeProofAdequacy} joins this result with
+actual compilation: its native typing judgment, interpreted conclusion and
+source-justified truth refer to the same emitted proposition. The original
+fusion proof is an instance. A represented false arithmetic equation has
+neither a true native denotation nor a closed source proof in the model.
+This establishes source adequacy of successful translation, not soundness
+for arbitrary native inhabitants. Interpreting the source sequence carrier
+by native List and supplying the native induction/equation witnesses remain
+separate construction tasks.
+
+\paragraph{Actual set operations and dependent refinements.}
+\nolinkurl{ZFSetHenkinInterpretation} supplies a full-domain HOL model on
+extensional \nolinkurl{ZFSet}, with actual membership, union, powerset,
+separation and higher-order replacement. Its seven closed set-theory
+sentences, including higher-order set induction, are validated independently
+of proof acceptance. HOL domains are inhabited and Hilbert choice is supplied
+by the ambient classical model. For a set bound \(B\) and a HOL predicate
+\(\varphi\), the bounded refinement is equivalent to the elements of
+\(\{x\in B\mid M\models\varphi(x)\}\). This equivalence retains \(x\),
+and separation commutes with actual HOL substitution. A retained universal
+implication proof induces inclusion of the separated sets; the resulting
+inclusion and dependent refinement map commute on witnesses. Two such
+implications imply extensional equality of the sets, not identity of their
+proof trees. The same model has both inhabited and empty refinement fibres
+and refutes an internal universal-set sentence. This construction is not
+by itself the HOTG universe operator or an interpretation of the native decoder.
+
+\paragraph{Least internal universes under a stated model assumption.}
+\nolinkurl{ZFSetUniverseClosure} constructs the additional set operation.
+An inaccessible-rank segment \(V_\kappa\) is transitive and closed under
+union, powerset and higher-order replacement. Replacement closure follows
+from the cardinal bound on a member and regularity of \(\kappa\), rather
+than an assumed universe-adequacy field. Inside any such enclosure of \(N\),
+separation constructs the intersection of all closed universes containing
+\(N\). Closure, membership of \(N\), leastness, and independence of the
+initial enclosure are proved. Cofinally many inaccessible cardinals at the
+fixed set level suffice to make this operation \(\mathsf{UnivOf}\) total.
+This is an explicit relative assumption, not a theorem supplying that
+cofinal family. Separately, a lower Lean universe supplies one concrete
+closed rank segment at a higher set level and a least enclosure of the empty
+set; that example does not establish the global cofinal assumption.
+
+\nolinkurl{ZFSetUniverseInterpretation} extends the actual HOL set model by
+this operation. The four universe sentences state membership, transitivity,
+closure and leastness, matching the retained HOTG universe conditions. Their
+validity combines with the seven set sentences into a satisfied eleven-formula
+theory. Its retained proofs supply dependent truth sections in the same
+model. The signature reduct is the earlier set model; old bounded predicates
+therefore retain their separated sets. New predicates may themselves mention
+\(\mathsf{UnivOf}\), and their separated sets lie in the universe enclosing
+their bound. Membership and foundation imply
+\(\mathsf{UnivOf}(\mathsf{UnivOf}(N))\ne\mathsf{UnivOf}(N)\): this is
+not an idempotent subset-closure operation. Exact translation of the full
+imported HOTG preamble, and its common interpretation with the native
+dependent decoder, are not consequences of these fragment results.
+
+\nolinkurl{ZFSetDependentProducts} adds actual dependent set codes to
+these universes. A dependent sum is a set of Kuratowski pairs; a dependent
+product is a set of total single-valued graphs with the stipulated fibres.
+Their closure follows from replacement, powerset and separation. Graph
+lookup is uniquely determined, and encoding followed by decoding, and
+decoding followed by encoding, are proved inverse. The pair encoding is
+bijective. A nonconstant family is inhabited, while another example has
+an empty product because one fibre is empty although its dependent sum
+remains inhabited.
+
+\nolinkurl{ZFSetUniverseLevelInterpretation} uses the same relative
+cardinal hypothesis and a supplied seed set to construct
+\(U_0=\mathsf{UnivOf}(\mathit{seed})\) and
+\(U_{n+1}=\mathsf{UnivOf}(U_n)\). Codes at level \(n\) are members of
+\(U_n\); decoding takes their elements. Cumulative lifts preserve the
+underlying set, and the next level contains a code for the preceding code
+carrier. Dependent products and sums lie at the maximum of the input
+levels and decode equivalently to dependent functions and pairs. The
+existing native zero, successor, maximum and level-substitution semantics
+commute with this tower. The seed is a parameter, not an implicit choice
+of all bottom-level mathematics. These constructions supply universe and
+type-former model content; an interpretation of all native syntax, identity
+elimination and inductive interpretation require additional work.
+
+\nolinkurl{ZFSetContextualInterpretation} constructs contexts, substitution,
+comprehension and terms for these actual set codes. Lambda encodes a total
+graph, application performs its unique lookup, and pairing uses Kuratowski
+pairs. Their beta, eta and substitution laws follow from the independent
+encoding inverses. A nonconstant family and a noninjective context map
+exercise dependent computation and reindexing; a wrong constant result is
+excluded. \nolinkurl{ZFSetContextualUniverseInterpretation} then instantiates
+the contextual Tarski hierarchy with these same operations. Its strict
+product, sum, lifting and substitution equations compare actual set codes;
+they do not identify graph carriers definitionally with Lean function types.
+The earlier HOL carrier consisting of the entire external ZF set type is
+not itself an internal set at that same ambient level. Connecting that
+carrier to these internal codes requires an explicit universe shift or
+another justified large-type interpretation.
+
+\nolinkurl{ZFSetUniverseLift} supplies that shift. Recursive pre-set lifting
+descends to an injective map of ZF sets, preserving and reflecting membership.
+Every larger-level subset of a lifted set is proved to be the lift of a
+lower-level separation; this establishes preservation of the actual target
+powerset, not just its lifted members. Empty set, union, pairs, separation
+and replacement also commute. The range of the lift is a larger set whose
+elements decode bijectively to the entire original carrier. It is transitive
+and closed under the actual universe operations. Conversely, no same-level
+set can have a decoding bijective with that entire carrier. These results
+need no inaccessible-cardinal hypothesis.
+\nolinkurl{ZFSetLiftedCarrierInterpretation} places this code in the fixed
+unbounded contextual tower and supplies actual decoded terms and operation
+equations. That placement explicitly assumes cofinal inaccessibles at the
+larger ambient level; it does not silently promote the lower-level assumption.
+
+\nolinkurl{ZFSetLiftedUniverseClosure} also constructs the least closed
+enclosure of a lifted input inside this larger carrier. Closure is preserved
+and reflected by the lift. Classification of bounded subsets turns that
+larger enclosure back into a lower closed set; the two minimality properties
+then show that it is exactly the lift of the original \(\mathsf{UnivOf}\).
+Consequently the actual carrier operation, not an operation defined by
+transporting the old answer, commutes with decoding under the original
+lower-ambient hypothesis. Comparing it with a globally available
+larger-ambient universe operator states the additional hypothesis separately.
+Containment and minimality are proved, and membership irreflexivity excludes
+idempotence of this universe operation.
+
+\nolinkurl{ZFSetHOLTypeInterpretation} codes all types of that same HOL
+model recursively: propositions by two truth values, the set sort by the
+shifted carrier, and arrows by actual total graphs.
+\nolinkurl{ZFSetHOLTermInterpretation} independently traverses every source
+term constructor using these graph and set operations. Induction on source
+syntax proves agreement with the original Henkin denotation, including
+quantifiers, extensional equality, the universe operation and substitution.
+\nolinkurl{ZFSetHOLContextualInterpretation} then identifies valuations
+with contexts of the existing set-coded CwF. Its explicit comprehension
+equivalence, graph lambda/application comparison and substitution squares
+connect the same interpreted terms to the dependent contextual structure.
+A variable-identifying substitution cannot reproduce an off-diagonal truth
+valuation; these lawful context maps are not assumed invertible.
+
+\nolinkurl{ZFSetHOLProofInterpretation} interprets retained source proof
+trees into actual truth fibres and maps between separated refinement sets.
+These maps agree with the earlier Henkin dependent-family construction,
+including simultaneous substitution. Bounded refinement of the shifted set
+carrier is exactly the lift of the original separated set. A retained
+function-eta proof supplies a higher-order positive example, while a changed
+predicate rejects the original point and the false fibre has no inhabitant.
+This extensional interpretation does not recover proof syntax from truth.
+
+There is a strictness obstruction to extending this particular assembly
+directly to the native proof decoder. In
+\nolinkurl{ZFSetHOLProofDecoderBoundary}, the truth fibre of
+\(\top\Rightarrow\top\) is \(\{\varnothing\}\), whereas the actual
+function-graph code from \(\{\varnothing\}\) to itself does not contain
+\(\varnothing\): its unique element is a nonempty graph. These sets are
+unequal even though their element carriers have an explicit equivalence.
+Thus this particular graph-code interpretation does not validate the native
+\(\mathsf{Prf}\)-implication conversion. The following constructions
+separate a weak graph comparison from a strict trace-code repair; neither
+imposes a global proof-erasure or identity policy.
+
+\nolinkurl{ZFSetHOLWeakProofDecoding} constructs the two weak comparisons
+for arbitrary implication and universal quantification over the original
+HOL carriers. The comparison maps commute with source substitution;
+introduction produces actual graphs and application satisfies beta--eta.
+A retained higher-order function-eta proof is interpreted over function
+graphs, while a nonconstant predicate with an empty fibre has an empty
+universal product. These comparisons do not turn an equivalence into
+equality of universe codes. Separately,
+\nolinkurl{ZFSetHOLContextualProofConsumption} makes each retained
+universal-implication proof's refinement map a first-class term of the same
+set-coded CwF. Its graph application agrees with the original Henkin map,
+preserves the represented value and commutes with contextual reindexing.
+
+The function representation itself supplies a stricter alternative.
+Aczel's trace encoding replaces the graph of a set-valued function by
+\(\{(x,z)\mid x\in A,\ z\in f(x)\}\), with application recovering
+the fibre. Lee and Werner use this uniform encoding to handle the
+interaction between proposition proofs and dependent function types
+\cite{LeeWernerTraceModel}. \nolinkurl{ZFSetTraceProducts} constructs
+this encoding on actual sets, its typed application, inverse comparison
+with function graphs and beta--eta laws. The encoding is faithful at a
+fixed typed domain, but an untyped trace need not recover its domain:
+different domains can give the same empty trace.
+
+\nolinkurl{ZFSetTraceContextual} equips the same set-coded CwF with
+these dependent products. Lambda, application and graph comparison commute
+with arbitrary contextual substitution. This is a uniform construction
+for arbitrary set-valued fibres, not a special case for proof types.
+For \(\mathsf{Tr}(P)=\{\varnothing\mid P\}\),
+\nolinkurl{ZFSetTraceProofDecoding} proves the actual set equality
+\[
+ \Pi^{\mathrm{trace}}_{x\in A}\mathsf{Tr}(P(x))
+   =\mathsf{Tr}(\forall x\in A.\,P(x)).
+\]
+The implication case follows by taking the domain to be a truth fibre.
+These equalities are stable under reindexing and may be used beneath
+arbitrary families depending on the actual code; the dependent consumer
+keeps its original set element. In particular the true-implies-true case
+that fails for graph products succeeds here, while true-implies-false
+still has empty code.
+
+\nolinkurl{ZFSetTraceUniverseInterpretation} uses the existing actual
+cumulative hierarchy, not a new assumed hierarchy. Trace product codes
+lie at the maximum input level and their decoding and cumulative lifts
+commute. The displayed truth-code equality also proves that a proof
+product over any set domain in the same ambient set universe lies in the
+bottom internal universe.
+This establishes these model components and decoder equations, not yet
+soundness for every native identity, universe and inductive rule together.
+Retained proof presentations remain separate from this extensional meaning.
+
+\nolinkurl{ZFSetHOLTraceTypeInterpretation} uses these trace products
+at every simple arrow type, recursively including higher-order domains.
+The set carrier and truth-value code are unchanged. An independently
+recursive interpreter in \nolinkurl{ZFSetHOLTraceTermInterpretation}
+handles every original HOL term constructor, with the same actual set
+operations and universe interpretation. Structural comparison with the
+graph interpreter proves agreement with the original Henkin model and
+simultaneous substitution. Graph and trace arrows are explicitly proved
+unequal as set codes; the comparison does not silently identify them.
+
+\nolinkurl{ZFSetHOLTraceProofDecoding} attaches the generic strict laws
+to these actual source expressions. Implication and universal proof fibres
+are literally contextual trace products, including lifted source
+substitution. Retained source proof trees cross the existing proof-family
+interpretation, and universal elimination uses actual trace application.
+A retained higher-order eta proof is consumed at the trace-coded powerset
+function. The false implication has empty fibre and no source proof under
+the stated model assumptions. This is a source-to-model result, not yet
+the full semantics of its separately compiled native proof term.
+
+\paragraph{Actual lists and their universe boundary.}
+\nolinkurl{ZFSetList} represents nil by the empty set and cons by an
+ordered pair of the head and tail code. The constructors are distinct and
+injective; the actual list set has a dependent eliminator with both
+computation equations and a uniqueness theorem.
+\nolinkurl{ZFSetListContextual} proves contextual substitution laws
+for these constructors, maps and eliminators on the same CwF.
+\nolinkurl{ZFSetTraceListContextual} independently builds the same
+contextual list operations using trace lambda and application. Constructor
+computation and substitution hold, and its actual eliminator is compared
+with the graph eliminator through the typed trace map. A varying motive
+has different nil and cons results, rejecting a constant-result replacement.
+
+Closure under the earlier finite set operations and replacement alone
+does not imply that the entire list set is an element of the universe.
+\nolinkurl{ZFSetIndexedClosure} constructs the counterexample
+\(V_\omega\), and \nolinkurl{ZFSetListClosure} proves that the list
+set on its singleton empty-set carrier is not an element of it, although
+every individual encoded list belongs to it. A separate natural-index
+seed supplies the missing closure: replacement builds the sequence of
+constructor stages and their union is proved equal to the actual list
+set. Starting the existing least-universe tower from the parameter and
+this index seed consequently supports list codes at every level, with
+literal compatibility under cumulative lifting. List smallness is thus
+derived from an independent seed, not assumed as a premise of itself.
+
+\nolinkurl{ZFSetUniformListModel} interprets the exact original
+\nolinkurl{mapFusionProof} over these actual set-coded lists. All five
+original assumptions are independently validated; the induction assumption
+uses the constructed dependent list eliminator. This does not replace
+the source proof by a separate semantic proof of map composition.
+\nolinkurl{ZFSetUniformListProofConsumption} interprets its existing
+predicate-consumption proof as maps between actual separated list sets.
+Graph and trace applications agree with the same retained-proof interpreter
+and preserve the input list code. The map codes belong to the same
+universe under the explicit natural-index premise. A two-element carrier
+validates the five assumptions while refuting the reversed-composition
+HOL sentence. Empty element carriers are permitted by this choice-free
+fragment; full HOL choice over such carriers is not asserted.
+
+\nolinkurl{ZFSetUniformListTraceTypeInterpretation} now gives this exact
+uniform-list theory a trace-coded simple-type interpretation: the three
+ground carriers are unchanged and every arrow is an Aczel trace product.
+\nolinkurl{ZFSetUniformListTraceTermInterpretation} traverses every original
+HOL term and proves, structurally, that decoding its trace value gives the
+existing set-model denotation. Thus this is a change of function
+representation within one validated list model, rather than a second model
+chosen to agree only on the final theorem.
+
+\nolinkurl{ZFSetUniformListTraceProofBridge} applies the retained
+\nolinkurl{mapFusionProof} three times through the literal trace products.
+At each functions-and-list instance, the resulting source proof fibre is
+the same set code as contextual dependent identity between the two map
+terms. The actual contextual (J) operation can therefore consume that
+source proof under an arbitrary set-valued motive. Reversed composition has
+no inhabitant in the same trace interpretation, by the concrete two-element
+countermodel rather than by failure of proof search.
+
+On the native side, \nolinkurl{NativeTraceLambdaSemantics} gives actual
+native variables, lambdas and applications a typed trace denotation.
+\nolinkurl{NativeHOLNaturalDeductionTraceAttachment} independently compiles
+the corresponding natural-deduction fragment and proves that erasure is
+exactly the output of the existing compiler; implication identity supplies
+a semantic positive case. Constants are not hidden behind an opaque term.
+Instead, \nolinkurl{NativeHOLUniformListTraceRepresentation} interprets the
+exact native representation of every supported constant-bearing HOL term
+constructor-by-constructor and proves agreement with the trace term
+interpreter. \nolinkurl{NativeHOLTraceMixedTermSemantics} combines object
+values and retained proof sections in telescopes where their binders may
+interleave.
+
+\nolinkurl{NativeHOLTraceLeibnizProofSemantics} then interprets the exact
+native proof combinators used by the equality-aware compiler. Native lambda
+and application realize implication and universal introduction and
+elimination through the literal trace-product decoder. Leibniz equality is
+interpreted as transport through all trace predicates; symmetry,
+transitivity, congruence and propositional transport are consequently
+derived from the emitted terms rather than added as semantic operations.
+\nolinkurl{NativeHOLTraceLeibnizCompilerSemantics} proves by induction over
+the complete retained source proof that every successful compilation in
+this supported fragment denotes a section of the original conclusion's
+truth family. Source objects and hypotheses are independently interpreted,
+and weakening, instantiation and mixed object/proof binders commute with the
+construction. Unsupported proof rules remain unsuccessful compiler cases.
+
+That partiality now has an exact executable boundary rather than an informal
+constructor list.  \nolinkurl{HOLLeibnizNativeProofCoverage} defines a
+structural classifier over retained HOL proof trees and proves, for every
+native object and hypothesis environment, that the real compiler returns a
+term if and only if the classifier accepts.  Compiler support is therefore
+environment-invariant even though emitted terms depend on the environment.
+Positive implication proofs are accepted, while valid instances of function
+extensionality, equality under lambda, and propositional extensionality are
+explicitly classified as unsupported.  Consequently failure to compile one
+of these proofs is a coverage result, not a refutation; extending the boundary
+requires a separately justified extensionality realization.
+
+Finally, \nolinkurl{NativeHOLCompiledMapFusionTrace} applies this general
+theorem to the compiler's exact open output for the original
+\nolinkurl{mapFusionProof}. Its five ordered source assumptions form an
+explicit semantic telescope and receive witnesses from the independently
+validated uniform-list model. Evaluating the retained section at that
+environment and applying three trace-coded universal eliminations yields the
+map-fusion proof value. Its truth fibre is literally the contextual identity
+family between the two map programs, so the existing dependent eliminator
+\(J\) consumes that same compiled value under an arbitrary set-valued motive.
+This is one proof crossing source syntax, compiler output, set-valued trace
+meaning and dependent consumption; it is not a second handwritten fusion
+proof. It still does not establish conservativity for arbitrary native
+inhabitants or the full common HOTG/native universe interpretation.
+
+\nolinkurl{NativeHOLCompiledMapFusionUniverse} composes this crossing with
+the existing seeded internal universe tower under the explicit
+cofinal-inaccessibles assumption. Every simple type of the uniform-list
+theory, every proof-hypothesis family in the mixed telescope, the exact open
+compiler section, the specialized fusion proof value, its contextual identity
+family and the concrete endpoint motive consumed by \(J\) are codes or values
+of the same bottom universe. This is a theorem about the actual sets used by
+the construction, not an interface postulating smallness. The negative
+control remains essential: elementary set closure and membership of every
+individual encoded list do not imply membership of the collecting list type.
+Thus the natural-index seed is a mathematical premise of this common
+universe construction, not bookkeeping that may be erased.
+
+The uniform-list element carrier can now be chosen to be the actual shifted
+code of the entire lower set universe. In
+\nolinkurl{NativeHOLCompiledMapFusionHOTG}, recursively translating each
+set-theory simple type into the uniform-list signature gives literal equality
+of its trace code with the full set/HOL trace interpretation. In particular,
+the set and set-to-set function codes agree definitionally at the bridge.
+The powerset constant and the independently constructed least-universe
+operation may therefore be supplied directly as the two functions of the
+exact compiled fusion proof. Their applications decode respectively to
+\(\mathcal P(x)\) and \(\mathsf{UnivOf}(x)\), and the specialized proof is
+consumed by the same dependent \(J\) operation. No user-facing coercion or
+new fusion axiom is introduced.
+
+This literal agreement requires a real universe shift. There is no set at
+the lower ambient level whose elements are equivalent to all sets at that
+same level, since such a code would yield an internal universal set. The
+least-universe operation uses the stated lower-ambient inaccessible
+assumption; placing the resulting list/proof construction in an independently
+selected unbounded tower one level higher uses a separately stated
+higher-ambient assumption. Neither is inferred from the other.
+
+\nolinkurl{NativeTraceContextMorphisms} isolates the categorical structure
+needed for that remaining theorem. Its context morphisms are oriented like
+substitutions, compose strictly, lift through comprehension while retaining
+the newest component, and reindex trace products, abstractions and
+applications by the existing Aczel-trace substitution laws. A
+non-surjective control records why reindexing by itself cannot establish
+reflection or conservativity. The displayed syntax attachment remains a
+separate obligation: dependent context records are not identified merely to
+avoid their fibre transports.
+
+\paragraph{The rule data actually execute.}
+\nolinkurl{DeclarationAwareSubstitutionExecution} orients all thirty
+original binding schemas into recursive operations of the generic
+\texttt{LanguageDef} interpreter. Unsupported schema forms are refused;
+none of the thirty authored cases is lost. Structural proofs compare
+execution with independently defined weakening and substitution, including
+explicit sufficient derivation-depth bounds.
+\nolinkurl{DeclarationAwareSubstitutionExecutionBeta} identifies the
+result with native scoped instantiation. A binder-crossing example returns
+the correctly shifted free variable and never returns its captured variant.
+No native substitution callback or supplied derivation is an input.
+
+\nolinkurl{HOLNativeMixedRuleData} puts these helpers, ten computation
+roots and fifteen native context positions into one flat fifty-five-rule
+language. These contexts do not descend into encoded names, indices or
+universe-expression metadata. The generic closed-subsystem theorem proves
+that helper queries have exactly the same output lists after extension,
+including order and multiplicity.
+\nolinkurl{HOLNativeMixedRuleDataCompleteness} proves that every
+computational step and finite derivation of the unchanged native profile
+is realized by this actual interpreter.
+\nolinkurl{HOLNativeMixedRuleDataSoundness} proves the converse on canonical
+encodings: every matcher output reconstructs an independently defined native
+computational step. The equivalence lifts both to the OSLF contextual-step
+interface and to finite derivations. The proof exhausts all fifty-five rules:
+thirty binding rules are separated by their operation heads, while every
+root and contextual computation rule is reconstructed. It does not claim
+soundness for malformed encodings or add determinism, confluence or
+normalization.
+
+The full profile additionally compares semantically equal universe-level
+spellings. \nolinkurl{HOLNativeMixedOperationalDecomposition} gives
+an exact step and finite-derivation decomposition, with an independently
+proved exact normal-form query for head equality. The expression
+\(\max(u,u)\) can step to \(u\) in the full relation but not in its
+purely computational component. A finite computational rule inventory is
+therefore not claimed to enumerate the full equality relation.
+
+\paragraph{Native execution consumes the HOL-derived property.}
+\nolinkurl{IntrinsicNativeListMapComputation} proves directed beta/iota
+execution of the existing native List eliminator on arbitrary finite
+constructor spines with open element terms. Both pure map programs reach
+the same native constructor output; function composition is an ordinary
+lambda, not an added fusion rule. For the GSLT built from this actual
+reduction relation, the generated finite-execution OSLF observation satisfies
+\[
+ \Diamond_{\mathrm{fin}} O(t)
+ \quad\Longleftrightarrow\quad
+ \exists u.\ t\longrightarrow^{*}u\ \land\ O(u).
+\]
+\nolinkurl{NativeListHOLPredicateObservation} observes native spines using
+the independently defined native denotation of their element terms. The
+original object-HOL induction/congruence proof transports an arbitrary
+property of the unfused value, which this observation consumes after either
+native program. Code, paths and observations respect interpreted context
+substitution. With \(f\) constant true, \(g\) Boolean negation and input
+\([\mathrm{false}]\), correct composition observes \([\mathrm{true}]\);
+the reversed-composition constructor output cannot satisfy that observation.
+
+The result concerns existential finite execution, not every execution,
+equal traces, effects or costs. The reduction-based GSLT is not the separate
+textual \nolinkurl{LanguageDef} interpreter. Native List spines have a
+concrete observation here, but the abstract HOL sequence carrier is not
+thereby identified with native List, and the full common typed execution
+and native dependent proof-consumption judgments are distinct obligations.
+\nolinkurl{FormationSensitiveNativeHOLMapExecution} now joins the actual
+native List/relator declarations and retained HOL declarations at a common
+level, with explicit rule morphisms. It independently formation-types the
+existing eliminator-based map, its generic applications and encoded outputs.
+Both fusion programs and their common result have complete judgments in
+one formed telescope, and both full reduction paths belong to those rules.
+The HOL-derived predicate observation composes with that admission.
+A reversed-composition result is well typed but rejected by the observation,
+separating typing from correctness of the requested equation. Endpoint
+typing and path inclusion do not establish unrestricted subject reduction
+of the mixed profile, full native equality-proof attachment, or the common
+HOTG interpretation.
+
+\nolinkurl{FormationSensitiveHOLProofListIntegration} further combines
+the proof decoder with the native List/relator presentation. Explicit
+morphisms lift the actual proof compiler's complete judgments and the
+native map execution paths into one extension. In a common formed
+telescope, the emitted predicate consumer \(h_{xy}\,P\,h_x\) has its
+dependent proof type while a nonempty singleton map computes by the
+existing eliminator rules. The HOL sequence and native List variables
+remain distinct: sharing a telescope is not an interpretation equating
+their carriers. The conditional fusion proof translation is supplied by the
+alternative compiler described above. Actual native implementations of all
+its source theory inputs remain a further obligation.
+
+\nolinkurl{FormationSensitiveConstantInterpretation} supplies a generic
+typed substitution of closed bodies for declared constants. Preservation of
+contexts, substitutions, conversion and complete judgments follows from
+independently typed declaration images and root conversions.
+\nolinkurl{HOLNativeListDeclarationInterpretation} instantiates it with
+actual native List, constructors, map and an eliminator-defined length.
+\nolinkurl{HOLNativeListInduction} constructs the original represented
+predicate-quantified induction premise using the native dependent eliminator.
+\nolinkurl{HOLNativeListEquationInputs} proves all four original map and
+length equations by native beta/iota computation. Finally,
+\nolinkurl{HOLNativeListProofInputs.native_map_fusion} applies these five
+witnesses to the original retained compiler output and obtains a complete
+empty-context native judgment of the original uniformly quantified formula.
+No source premise is silently dropped, and no equation or induction witness
+is an opaque added declaration. A concrete instance uses the existing small
+count carrier, without asserting a natural-number interpretation for it.
+This discharges the native-input obligation just described; it does not yet
+give an independent semantic model of all native inhabitants or full HOL
+conservativity.
+
+\nolinkurl{HOLNativeListProofConsumption} specializes that very same
+compiled proof at arbitrary typed native functions and lists in a formed
+caller context. For \(P:\mathsf{List}(E)\to\mathsf{prop}\), it checks
+\[
+ ((\mathit{compiledFusion}\ f\ g\ xs)\ P)\ h
+ :\mathsf{Prf}\bigl(P(\mathsf{map}(f\circ g)\,xs)\bigr)
+\]
+from \(h:\mathsf{Prf}(P(\mathsf{map}\,f\,(\mathsf{map}\,g\,xs)))\).
+The caller's functions, list and predicate need not be source-HOL expressions.
+The small element type is closed, and the predicate ranges over HOL
+propositions; this is not transport along native identity into an arbitrary
+universe-valued family.
+
+\nolinkurl{FormationSensitiveInterpretationComposition} proves that the
+declaration interpretations used here compose on actual bodies, terms,
+contexts and typed substitutions. Successive translation agrees with the
+single composed translation. Associativity holds, and identity is qualified
+by actual declaration formation. An explicit constant-expansion example
+shows that changing interpretation order can change the resulting program.
+
+\nolinkurl{FormationSensitiveMixedListElimination} checks the generic
+dependent eliminator on arbitrary mixed-typed motives and branches.
+\nolinkurl{FormationSensitiveMixedHOLProofRules} similarly admits proof
+introduction and elimination on predicates over these native List types,
+reusing the independently constructed decoder equations.
+
+\nolinkurl{FormationSensitiveHOLNativeMixedPreservation} proves full
+contextual subject reduction for the unchanged joint profile, including
+all five native and both proof-decoder roots. Pi/Sigma conversion boundaries
+are obtained through a separately proved conservative auxiliary development;
+each auxiliary contraction is convertible by the authored rules, but is
+not installed as an executable rule. Thus every finite operational endpoint
+of an admitted term retains its displayed type, including endpoints selected
+by the generated OSLF observation. A decoder step in one duplicated metadata
+argument temporarily blocks an exact native iota root; an explicit authored
+path reconciles both copies and joins the peak. A separate formed example
+computes a nonempty map beneath a proof-family binder. The development proves
+these conversion boundaries and preservation, not raw execution confluence,
+normalization or textual \nolinkurl{LanguageDef} adequacy.
 
 \subsubsection{Three different intensional--extensional bridges}
 
@@ -5260,6 +6173,1520 @@ the other.
 \section{Status ledger: proved, refuted, conditional, open}
 \label{sec:status-ledger}
 
+\paragraph{Candidate provenance.}
+Prime remains a language-design target, not the name of a foundation selected
+by an import or an implementation. Named reusable presentations include the
+cumulative tower, staged-reflective calculus, and branch-local Need reference.
+\texttt{PrimeCandidates} collects candidate integrations;
+\texttt{PrimeCeTTaCurrent} separates inspected runtime artifacts and bounded
+V1 calibrations. Compatibility proofs, necessity relative to stated
+requirements, experimental preference, and implementation qualification are
+four different claims. A Lean emitter is not required to start a parallel
+implementation, although that implementation cannot claim a refinement theorem
+before the theorem is supplied.
+
+\texttt{DesignDetermination} makes necessity nonvacuous by requiring an
+inhabited admissible class as well as implication for every candidate in that
+class. Its quotation countermodel proves that preserving unevaluated quoted
+syntax alone does not force non-strict evaluation of ordinary arguments.
+\texttt{PrimeCandidates.DecisionSurface} combines the existing shared/fresh
+provider workload with a new obstruction: equal returned-value supports do
+not suffice to recover the distinct occurrence/effect observations. Neither
+result selects a universal evaluation strategy. Similarly, the declaration
+\texttt{CumulativeTower.Id.eliminate} names J in that presentation; its
+formation and qualified preservation proofs do not adopt global K/UIP or
+determine Prime's identity theory.
+
+\paragraph{Theory-driven specification development.}
+\texttt{DesignStudy.Specification} indexes requirements by their actual
+semantic predicates. Evidence is indexed by one candidate, so a completed
+requirement list establishes compatibility for that candidate rather than
+combining unrelated existence witnesses. Extending the list narrows the
+admissible class; necessity is retained only for a consistent extension.
+The existing \texttt{Razor.Criterion} supplies independent comparison orders,
+including product orders, without selecting a globally best language.
+The finite evaluation study proves both positive narrowing by an added
+unused-effect requirement and a negative control: individually satisfiable
+requirements may have no joint candidate.
+Requirements on a component can now be pulled back along the projection from
+an assembly; conjunction retains that same assembly index. Adding evidence
+does not change old predicates. These laws do not manufacture compatibility:
+the agreement of interfaces remains a further predicate on the assembly.
+\texttt{ScopedComputationSpecification} instantiates this distinction with
+one native handler and an independently authored primitive-world function.
+Exact realization and preservation of dependent results qualify admitted
+source programs under refined substitution. Concrete misindexed and
+unrealized implementations refute either implication between these two
+requirements. The resulting inhabited shared study is not yet the whole
+candidate contract.
+
+\texttt{SharedJudgmentFragment} now supplies a raw assembly of actual
+declarations, scoped execution, receipt reconstruction, intrinsic HOL proof
+production and contextual readouts. Seven independent semantic predicates
+qualify those same data. Rules derive from the declarations; contextual
+resumption uses the assembly's own primitive worlds and is related to its
+handler by exact realization. Coverage excludes an always-declining matcher.
+The HOL producer must agree with independently checked submitted certificates
+and bind the complete claim. A different admitted reflexivity reconstruction
+also qualifies, so the contract does not force the reference J syntax.
+Altered handlers, indices, declarations and answer-only views provide
+independent negative controls.
+
+\texttt{SharedJudgmentServices} now gives the actual matching and HOL
+producers request-indexed invocation rules. Successful replies bind their
+native payload in the submitted dependent continuation; declined replies
+remain observable but select no continuation. The HOL payload is formed
+proposition syntax with a separate source proof, not native proof inhabitation
+of that proposition. Altered indices, outputs, premises, claims and submitted
+certificates provide independent non-admission controls.
+
+\texttt{SharedJudgmentServiceOSLF} connects this protocol to an independently
+authored backend, \texttt{ContextualEffectTreeLanguage}. Six rules implement the pure,
+choice, read, write and intent constructors. Recursive premises execute the
+subprograms; the relation environment only appends lists and prefixes intents,
+never invoking the source evaluator. At sufficient structural depth, execution
+returns exactly one completion containing the entire ordered world list.
+Arbitrary returned patterns are proved to equal that completion. Insufficient
+depth yields no partial prefix and cannot establish semantic absence.
+The native codec retains payload scope, branch traces, private states,
+intent order and repeated occurrences. Exact execution and native dependent
+admission remain independently necessary: a misindexed handler can execute
+exactly and still fail admission.
+
+The protocol's generated native type applies three semantic diamonds to an
+equation-invariant occurrence observation. Satisfaction is proved equivalent
+to the actual submitted request, selected reply and continuation, and an
+occurrence in its exact completed worlds. This is existential membership;
+multiplicity is retained by the separate complete-list laws. Actual matching
+worlds have equal native answers but different returned states, refuting
+general state recovery from answers alone. Erasing deferred intents also
+fails the exact observation. No claim is made that those intents were
+performed externally.
+
+\texttt{NativeHOLFragmentDenotation} now interprets the actual scoped native
+HOL constructors and their simple-type arguments. Induction on source syntax
+proves the representation square; native meaning is not defined by a decoder
+into source HOL. Renaming, actual capture-avoiding substitution and native
+beta computation preserve the interpretation. Every interpreted value is
+admissible under an admissible Henkin valuation, without a full-domain
+assumption. Componentwise interpretation therefore also makes the submitted
+native substitution an admissible semantic environment transformation.
+At a fixed HOL context and type, independently constructed native denotations
+are now pointwise equal. The proof uses a heterogeneous logical relation:
+erased lambdas can have different hidden application domains, so uniqueness
+of those domains cannot be assumed. This coherence requires neither
+normalization nor full Henkin function domains.
+
+The actual service response retains that constructorwise formula meaning.
+An observation of its payload through the generated native type inherits
+conditional model truth from the qualified source proof and the interpreted
+substitution. Any independent constructorwise meaning of the same observed
+payload agrees with that value; this does not itself establish truth.
+Operational success does not discharge the source assumptions.
+The same returned native map-length formula is true in the standard model
+and false in the junk model; the latter satisfies the displayed equations but
+not the induction premise of the accepted proof. This is a native HOL image
+interpretation; it does not alone interpret the surrounding mixed contexts,
+dependent products, identity, lists or arbitrary native universe levels.
+
+The matching payload now has a separate constructorwise interpretation in
+\nolinkurl{NativeMatchedTransportDenotation}. Wire constructors and independently
+Data-typed variables receive their structural meanings; the endpoint-dependent
+native J spine is interpreted through the existing full set-family J.
+Actual capture-avoiding substitution commutes with this interpretation.
+An open Data parameter over the common native context can be filled by the
+selected pattern: native typing, substitution, consumed source and semantic J
+then commute. Encoded receipt data has no identity interpretation, and a
+formed Data expression outside the structural Wire grammar is explicitly
+excluded. Thus native formation does not silently supply this partial meaning.
+
+\nolinkurl{NativeWireDataDenotation} supplies a total free algebra for the
+actual Data constructors, including nonsymbol application heads and improper
+cons tails. Its initial-algebra law determines all constructor meanings;
+canonical Wire values embed injectively and every semantic value has an
+admitted native representative. Actual refined substitution retains the
+constructor meaning for arbitrary Data parameters in the mixed context.
+The former partial interpretation agrees on its image. The algebra is total,
+but its native denotation relation remains a constructor fragment, not a
+fundamental interpretation of all native functions returning Data.
+
+\texttt{SharedJudgmentMatchingMeaning} constrains the actual assembly's
+reconstruction operation by that semantic property, separately from native
+admission. The original J reconstruction and its reflexivity alternative
+both satisfy the combined requirements without identifying their code.
+Their actual lifted payloads and generated OSLF observations inherit the
+endpoint meaning. This is not a semantics of arbitrary admitted motives or
+unrelated fields of the mixed context, and it selects no native K/UIP rule.
+
+\nolinkurl{FormationSensitiveCompletedRelatorPreservation} first establishes
+subject reduction for the completed native roots and their contextual and
+parallel development, including the full J motive. Authored conversion of
+two independently admitted terms has a common reduct admitted at both
+original displayed types. Consequently,
+\nolinkurl{FormationSensitiveCompletedConversion} identifies authored
+conversion at a fixed displayed type with the equivalence closure of
+completed development on admitted terms. Its intermediate states are formed,
+and the relation is stable under actual refined substitution. This
+reconstructs an admitted path, not the route identity of every supplied raw
+receipt. A valid reflexive conversion certificate for a missing declaration
+still cannot supply its admission. Neither normalization nor a full native
+model is established by this result.
+
+\nolinkurl{SharedJudgmentInterpretation} attaches raw context, type,
+annotated-term and substitution relations to the same native assembly.
+Their totality and structural, substitution and conversion laws are independent
+predicates. For the stated strict interpretation class, soundness of the
+actual native conversion rule separates into formed completed-development
+invariance and transport across convertible annotations. A nonempty raw
+relation preserves fixed-annotation conversion yet fails the latter condition.
+An actual mixed HOL-list/wire projection illustrates the positive transport
+at a distinct beta-expanded Data annotation. This theorem transports an
+established meaning; it does not manufacture a full model, infer constructor
+meanings from totality, or impose strict equality on all possible hosts.
+
+\nolinkurl{SharedJudgmentUniverseInterpretation} supplies raw code constructors
+on this same semantic CwF, with totality, decoding and cumulative meaning
+stated independently. Under these laws and actual formed substitution, native
+cumulativity yields a semantic code square. A concrete weakening supplies a
+positive native control; the tagged native formation interpretation excludes
+strict code uniqueness. The operations and conditional square do not by
+themselves construct a full universe model.
+
+\nolinkurl{SharedJudgmentServiceInterpretation} likewise separates the four
+raw NIK faces from qualification at independently supplied target meanings.
+It retains the exact accepted artifact and derives its separately qualified
+native judgment and meaning, including transport under formed substitution.
+A real wire decision and a nonidentity Data-parameter substitution exercise
+that connection. Changed parameters or payloads fail the corresponding
+meaning claim even when the native payload remains formed. The unchanged
+intrinsic HOL checker also cannot acquire unconditional junk-model truth.
+Neither arbitrary external proof-byte checking, required service coverage,
+nor a full common interpretation follows from these fragment controls.
+
+\nolinkurl{SharedJudgmentServiceRegistry} now fixes required interfaces outside
+the proposed implementations: the guest proof system, operation input target,
+certificate carrier and exact native surface are part of the caller's
+contract. Independent face/target qualification cannot replace these bindings.
+A native operation with an empty input domain satisfies the weaker face laws
+but fails the required interface; a differently scoped native payload fails
+the surface contract despite independent formation and meaning. Four actual
+wire invocations qualify on one shared fragment interpretation. This does not
+extend that interpretation to the whole native mathematical host.
+
+\nolinkurl{ContextualTypeOperations} supplies independent raw Pi, Sigma and
+identity constructor data over one CwF. Beta, full identity-context boundary
+and substitution laws are separate predicates on those same data. Strict
+type/term representative comparisons are an explicitly named interpretation
+class. A nonconstant set-family instance satisfies the laws, including full
+J motive reindexing; indiscrete identity on that same full family structure
+cannot qualify dependent elimination. These are semantic interfaces and
+controls, not an interpretation of every native constructor or universe.
+
+\nolinkurl{SharedJudgmentTypeInterpretation} connects raw Pi, Sigma, identity
+and based-J operations to the same native interpretation data. Context
+extensions are compared by maps rather than assumed equal. Independent
+coverage concerns actual admitted native families and motives, not all
+ambient families. Constructor agreement and typed-substitution laws derive
+the principal-result meaning of any admitted based-J application and its
+reflexivity computation. A concrete dependent telescope and weakening past a
+new identity witness connect source admission, method admission, both meanings
+and the semantic reindex/reflexivity square. Empty implication-shaped
+agreement relations fail coverage at this source. The separate full set-family
+operation laws do not construct the native interpretation; converted
+annotations and universe-code coherence remain distinct obligations.
+
+\nolinkurl{SharedJudgmentUniverseTypeCoherence} now separates the actual
+native Pi/Sigma code-value agreement from the semantic type-formation
+clauses. Independent decoding, coverage and qualified comprehension
+comparisons derive display-map isomorphisms for both constructors on the
+same admitted open family. The comparison condition concerns the actual
+base projection, not just the newest variable: a checked invertible map
+retains that variable while changing the base. A nonidentity connector
+repairs the square without imposing strict agreement of the original
+presentations. A genuine mixed-level chart has fibres of sizes two and
+three; its dependent product has six elements and its dependent sum five,
+excluding the wrong constructor code. This local chart is not a model of
+all native levels. These laws imply neither code equality nor automatic
+transport of every annotated-term meaning through an arbitrary isomorphism.
+
+\nolinkurl{SharedJudgmentServiceTypeCoherence} connects successful use of
+the required registry to that same returned payload's independently formed
+native type. Code totality and decoding supply its code meaning; formed
+substitution transports the original code and the original interpreted
+payload value. A concrete type automorphism exchanges two admitted,
+interpreted payload values without preserving the first native term's
+meaning. The existing four-face wire registry is qualified at its constructor
+interpretation but has no universe-code meaning for its returned Data type.
+Thus service qualification does not supply the missing mathematical host.
+
+\nolinkurl{SharedJudgmentSemanticRequirements} collects 31 native semantic
+predicates, four declaration predicates, the source predicates and the
+externally fixed service contract on one record of raw assembly data,
+interpretation, universe operations, type operations, registry and declaration
+meanings. Required declaration instances are supplied by the caller: actual
+installation and closed formation precede semantic coverage. Normative
+references resolve separately from proof evidence. The source-only evidence
+list leaves every semantic and declaration obligation unlisted as discharged; this is
+bookkeeping, not logical independence of all clauses. Empty relations and a nonempty
+annotation-sensitive relation fail this collection. Qualification interprets
+the actual conversion rule, supplies the accepted-type code connection and
+extends required closed declaration meanings into formed caller contexts.
+Presheaf comparison and the remaining public operation/consumer contracts
+remain to be incorporated. This collection is neither
+a completed six-family specification nor a jointly inhabited model.
+
+\nolinkurl{SharedJudgmentDeclarationInterpretation} retains the name, schema
+and actual universe-level instance, with the effective installed lookup.
+Independent closed type and head meanings, together with the existing
+substitution clauses, derive contextual use. Declared application uses the
+actual Pi-meaning clause with an explicitly sufficient strict representative
+comparison; it is not a universal demand for strict equality. The installed
+natural declarations have nontrivial Value meanings. Changing seven's meaning
+to eight retains native formation and semantic type coverage but fails head
+agreement. Raising the requested Data instance remains formed but does not
+change the installed signature. Neither a name nor formation supplies the
+missing instance. Arbitrary definition bodies and delta soundness are not
+proved by this opaque-declaration control.
+
+\nolinkurl{SharedJudgmentPublicContext} retains original source, native
+environment and claimed admission metadata separately from actual backend
+configuration and completion. Expanding the implicit environment preserves
+and reflects completion with identical outputs, including the full reply
+and world records, without asserting a bijection of paths or costs. Two
+admitted programs nevertheless have identical authentic outputs and
+distinct source syntax. Output-only use and source inspection therefore
+require different declared readouts. Full CBPV, live dependency binding and
+an exhaustive public consumer family remain separate obligations.
+
+\nolinkurl{SharedJudgmentProgramContexts} closes the complete-world
+observation under seven actual source-context operations: substitution,
+either position of ordinary sequencing, either position of dependent
+sequencing, and either choice branch. Quantification over the actual target
+environment, initial state and branch derives congruence and exact backend
+completion in every finite path through this inventory. A genuine
+administrative detour is invisible to these computational contexts but
+remains visible as code. Equal present answers do not support an admitted
+continuation whose effects inspect retained state. This is a particular
+contextual view contract, not a global forgetting policy or a claim about
+all reflection, sharing and resampling contexts.
+
+\nolinkurl{SharedJudgmentPolarizedServices} supplies actual matching and
+HOL callbacks to the existing native-indexed polarized machine. A HOL
+environment template is filled by the actual captured native argument;
+successful values retain dependent native admission from the independently
+formed request environment. Unreadable input and rejected requests produce
+distinct retryable residuals, not a false proposition or an empty successful
+answer. The dependent invocation sidecar retains the submitted request and
+response before payload observation. Active thunk/function equations hold
+under the existing continuation consumer and preserve complete worlds; the
+same wrappers remain distinguishable as stored producer origins. A captured
+valid receipt succeeds despite a changed caller argument, and a genuinely
+function-valued HOL argument instantiates the represented induction claim.
+These fixed-target-scope laws do not establish full polarized primitive
+typing or every receipt/sharing consumer. Cross-target transport is now
+qualified separately in \nolinkurl{SharedJudgmentServiceNaturality}. The
+actual HOL callback commutes with native substitution under its argument
+binder; matching commutes on encoded wire arguments. More precisely, the
+complete retained matching invocation commutes if and only if decoding
+the substituted argument gives the same wire observation as before. A
+formed Data variable is unreadable before substitution and becomes an
+accepted receipt afterward, under an independently admitted substitution.
+Formation alone therefore does not imply this inspection law. The changed
+answer resolves a retryable residual; it is not a reversal of a logical
+refutation. A function-valued HOL argument crosses a genuinely extended
+target context without variable capture, retaining its submitted request
+and dependent result admission. These callback laws do not yet transport
+arbitrary captured heaps, sharing or resampling consumers.
+
+\nolinkurl{FormationSensitiveContextualCategory} constructs the structural
+base using actual refined context formation and substitution, with natural
+comprehension and a faithful forgetful functor to the earlier
+declaration-aware contextual category. The earlier category uses the older
+typing relation; its existence cannot replace this refined-judgment
+comparison. Under the existing explicit universe-regularity condition, every
+common-package admitted judgment is represented on its formed telescope.
+This unquotiented structure is not yet the required conversion-invariant
+model: a real mixed projection and its result determine distinct raw
+sections despite being convertible. Identifying distinct encoded wires,
+on the other hand, prevents recovery by the specifically required wire
+decoder. The model must therefore support the declared semantic comparisons
+without claiming that all code-inspection consumers factor through them.
+
+\nolinkurl{FormationSensitiveContextualComparison} supplies one explicit
+comparison before any quotient: independently formed convertible binder
+annotations yield isomorphic extensions by actual refined identity
+substitutions. Projection, reindexing and roundtrip laws preserve the native
+type and term codes. The newest-variable comparison uses an explicit
+conversion to the independently formed target annotation. A dependent
+$\mathsf{Id}\;\mathsf{Data}\;x\;x$ family and its reflexivity term move to a
+context annotated by a distinct beta expansion of Data, while raw context
+inspection still distinguishes the two contexts. This needs no object-level
+K/UIP or equality reflection; it is not equality of the context objects or
+the missing full semantic interpretation.
+
+\nolinkurl{FormationSensitiveContextualQuotient} and
+\nolinkurl{FormationSensitiveConversionFibres} supply a conversion-invariant
+structural route. Actual admitted substitutions are quotiented by pointwise
+native conversion; Mathlib's quotient category makes exactly those
+identifications. Its objects remain formed native contexts. Type classes
+contain independently formed annotations; total term classes retain both
+annotation conversion and term conversion. Actual substitution descends
+to type and term presheaves on the quotient category, with a natural
+term-to-type projection. The real dependent identity family and reflexivity
+term agree after the convertible mixed substitutions, although their raw
+codes differ. For opaque extensions, term-class equality also has an
+entirely formed completed-conversion path after annotation conversion.
+
+\nolinkurl{FormationSensitiveQuotientCwf} constructs all structural CwF
+laws and a terminal empty context from these carriers. Comprehension
+chooses an actual formed type representative; a term class can be represented
+at that annotation by the existing refined conversion rule. Pairing,
+projection, variable and uniqueness laws are proved, not supplied as
+qualification assumptions. Reindexing agrees with the descended presheaves.
+An explicit context isomorphism relates the chosen extension to every
+actual formed annotation in its class, preserving the base projection.
+This is a syntactic CwF route in the standard organization of dependent
+syntax \cite{CastellanClairambaultDybjerCwfs}, without an initiality claim or
+literal equality of raw context objects. The very same constructed term
+fibre identifies the mixed computation with its result while keeping seven
+and eight distinct.
+
+This route intentionally forgets a selected universe witness, not universe
+membership: one actual Data class has independently proved membership at
+two cumulative levels. Neither every original witness nor every original
+term code can be reconstructed from the respective class. Those inspections
+remain available on retained presentation data; the quotient is not a
+universal observer.
+
+\nolinkurl{FormationSensitiveQuotientUniverses} constructs a Tarski hierarchy
+on this same CwF, using actual native terms of the universe type as codes.
+Decoding returns their independently formed type class. At each supplied
+level, a class has such a code exactly when it has an actual formation
+witness at that level; every type of this syntactic CwF has a code at some
+level. Decoding is injective on these fixed-level code classes. Cumulative
+lifting preserves the decoded class, is injective, and commutes with the
+actual quotient substitution. A larger-level code descends along a supplied
+level order exactly when its decoded type has the required lower formation
+witness. This does not recover an original raw code or selected witness.
+Under the proved opacity condition, native universe conversion is exactly
+equality of level-expression evaluations; successive universes remain
+distinct. No consistency theorem follows just from their distinction.
+
+\nolinkurl{FormationSensitiveQuotientProducts} adds actual native dependent
+products and sums, not externally supplied operations. Lambda/application
+and pairing/projections satisfy beta and their full typed substitution
+laws. Lifted context maps are compared by the proved comprehension property.
+Formation at independently supplied domain and codomain levels survives
+transport across the chosen binder representative. Consequently,
+\nolinkurl{FormationSensitiveQuotientUniverseProducts} constructs product
+and sum codes at the maximum of those levels, decoding to those very same
+operations. Each level is closed under same-level products and sums;
+identifying the level expressions $\max(\ell,\ell)$ and $\ell$ here is not
+universe resizing. A dependent family
+$\mathsf{Id}\;\mathsf{Data}\;x\;x$ returns the actual native reflexivity
+term at its supplied wire. That dependent function is itself passed through
+a higher-order lambda/application. Dependent pair projections retain the
+wire and its reflexivity term, while pairs carrying seven and eight remain
+distinct. The code constructors have proved decoding laws; their own
+code-level substitution API is separate from the already proved substitution
+laws of the underlying products and sums.
+
+\nolinkurl{FormationSensitiveQuotientIdentity} makes identity formation and
+reflexivity substitution-stable in the same model. The existing native J
+declaration has a more specific scope: its element level is parameter zero
+and its motive level is parameter one. Every actual motive body admitted
+at that profile, including dependence on both the endpoint and path, is
+represented by a typed double lambda. Native iota gives beta in the actual
+term fibre, and the two-binder substituted J commutes with reindexing.
+Explicit isomorphisms compare the native based context with the CwF's chosen
+one; converted formed motive bodies and methods give the same J class at a
+fixed endpoint context. An actual lower-bound theorem for universe typing
+handles all refined conversion and cumulativity tails. It shows that
+identity/reflexivity can exist at a domain excluded by the fixed J
+declaration's argument type. This boundary concerns the declaration's scope,
+not a selection between J, K or UIP.
+
+\nolinkurl{FormationSensitiveLevelInstantiation} and
+\nolinkurl{NativeIdentityLevelInstantiation} now qualify the explicit
+level-instantiation route. Refined judgments, formed contexts and typed
+substitutions transport through a transformed native and extension signature.
+Every admitted motive body at the instantiated element and motive levels
+has native J, beta, and caller-substitution preservation. The transformation
+respects identity and composition of level substitutions; it is not asserted
+injective or invertible. A higher-universe motive computes in the transformed
+environment and rejects a crossed result or endpoint. The original fixed
+environment cannot supply that same admission. Appending a same-named
+declaration leaves the native lookup unchanged. Consequently, these theorems
+give a family of indexed environments, not simultaneous level-polymorphic
+instances in the current assembly. Embedding that family requires an explicit
+rule/environment index or a qualified declaration-elaboration route.
+
+\nolinkurl{FormationSensitiveQuotientInterpretation} supplies interpretation
+graphs on the actual formed native contexts, covering and reflecting
+admitted judgments under the existing universe-regularity condition.
+The graphs preserve native substitution and compare independently formed
+convertible annotations. Actual native families have comprehension coverage
+through the proved context isomorphisms. An exact raw-context-preserving
+total section from every raw context into this formed-context model is
+impossible when an unformed context is present. This is a domain obstruction
+for that exact section, not a theorem against arbitrary semantic maps or
+exploratory unformed syntax. Conversion invariance likewise cannot make two
+distinct raw comprehension objects literally the same chosen object.
+
+\nolinkurl{FormationSensitiveContextSourceObstruction} makes the formation
+boundary stronger. In the actual common rules, consider the raw telescope
+\[
+ A:U_{\max(0,1)},\qquad f:A,\qquad x:f\;\mathsf{wire}_0.
+\]
+The prefix is formed, but its final annotation cannot treat the abstract
+$f:A$ as a function. Substituting
+$A:=\Pi(\_:\mathsf{Data}).U_0$, $f:=\lambda\_.\mathsf{Data}$ and
+$x:=\mathsf{wire}_0$ gives a refined-typed substitution into the formed empty
+context. The last annotation becomes a formed beta redex, yet this does not
+make the original telescope formed. Thus independently formed target and
+typed substitution do not supply source formation. The shared semantic
+interface now indexes formed native contexts explicitly. Raw service requests,
+terms and proof records remain representable; a retained unformed application
+request cannot acquire the qualified native-admission predicate.
+
+\nolinkurl{SharedJudgmentQuotientInterpretation} attaches these actual graphs
+to that corrected interface. The same data prove admission coverage and
+reflection, substitution totality and constructors, type/term substitution,
+conversion, annotation transport, comprehension and dependent-family coverage.
+\nolinkurl{SharedJudgmentQuotientUniverses} adds sort meaning, code coverage,
+decoding, cumulative meaning and universe substitution on the same CwF.
+An actual open type code crosses a new Data binder and two cumulative lifts
+with a coherent decoded meaning. Changing its universe carrier to the
+successor is rejected; cumulative admission is not universe equality.
+
+\nolinkurl{FormationSensitiveQuotientDeclarations} and
+\nolinkurl{SharedJudgmentQuotientDeclarations} attach installed declarations
+to the same interpretation. The table selects exactly independently installed
+and formed instances; their closed types and heads have meanings that extend
+to arbitrary formed callers and commute with actual substitution. A real HOL
+universal declaration retains its class through a filled mixed HOL/wire caller.
+A formed annotation does not install a missing name, and changing seven to
+eight does not preserve the actual selected meaning.
+
+\nolinkurl{SharedJudgmentQuotientComprehension} proves that the independently
+qualified projection and newest-variable meanings uniquely determine the
+comprehension comparison. Every qualified dependent family consequently has
+its actual canonical quotient representation; this does not identify distinct
+raw context objects. On that basis,
+\nolinkurl{SharedJudgmentQuotientProducts} proves all eight shared Pi/Sigma
+clauses, including lambda, application, pairing, projections and beta.
+\nolinkurl{SharedJudgmentQuotientProductCodes} identifies their actual native
+code values at the fixed result universe, even with mixed input levels and
+an arbitrary qualified comparison. The product clauses take only product
+operations; proving them no longer requires an unrelated total J field.
+\nolinkurl{SharedJudgmentQuotientIdentity} similarly attaches native identity
+formation and reflexivity. A changed endpoint remains separately admitted
+but cannot receive the original computation's meaning.
+
+\nolinkurl{SharedJudgmentQuotientServices} attaches the original required
+four-face specimen to this same interpretation. Its targets, submitted inputs
+and native-surface contract are unchanged; actual caller substitution preserves
+the response meaning. Wrong-face, empty-source and separately meaningful but
+changed-payload services fail that independent contract. This is qualification
+of the stated constructor-classification specimen, not all future services or
+an assertion that callback reexecution commutes with every substitution.
+
+\nolinkurl{FormationSensitiveQuotientBasedContextRepresentation} and
+\nolinkurl{FormationSensitiveQuotientIdentityGeometry} prove the actual
+projection, endpoint, path and reflexivity-section comparisons for the
+two-binder native telescope. These maps retain different raw annotations;
+the two context presentations are compared by typed inverse maps rather
+than silently identified.
+\nolinkurl{SharedJudgmentQuotientMotiveCoverage} uses them to construct a
+qualified frame for every original admitted native parameter tuple, in
+every formed source context. No constant-motive or closed-term restriction
+is introduced. Independent projection, endpoint, path, motive and method
+meanings uniquely determine that frame. The same construction gives the
+submitted native J its motive meaning and returns its actual method at
+reflexivity. The fully variable telescope and a path-dependent mixed
+HOL/list/wire input exercise coverage; endpoint and path remain distinct.
+
+\nolinkurl{FormationSensitiveQuotientBasedJRepresentation} separately proves
+representative independence when all four admitted parameters---type,
+left endpoint, motive and method---are converted. The resulting J terms
+agree in the compared dependent fibre, even when the submitted raw
+contexts differ. Changing an admitted method from seven to eight changes
+the J result, witnessed by its actual reflexivity computation. These are
+coherence laws for retained requests, not identification of all proof
+objects and not K/UIP.
+
+The attachment now supplies component-level proofs corresponding to twenty-eight
+of the thirty-one native predicates and three of the four declaration
+predicates. Required-entry presence remains a demand from the caller, proved
+for actual installed instances rather than inferred from coverage. Native
+motive coverage and boundary laws require only frame operations. Three
+predicates use the full total-operation interface: J meaning, beta and
+substitution. The canonical family-only attachment to the exact source
+quotient is now refuted by the J-meaning clause, as described below;
+the beta and substitution clauses are not independently refuted. The
+twenty-eight component proofs remain valid, but the full shared semantic
+record has not been jointly qualified.
+
+\paragraph{A motive family can forget a function that native J observes.}
+\nolinkurl{FormationSensitiveQuotientIdentityInputCoherence} constructs
+two independently admitted requests in the actual open parameter telescope:
+\[
+ (A,x,P,d),\qquad (A,x,\lambda y.\lambda q.\,P\,y\,q,d).
+\]
+Their interpreted type, left endpoint, applied motive family and
+reflexivity method agree. Indeed, abstracting the applied body preserves
+that entire semantic input for every admitted request. The two open J
+outputs nevertheless differ in this presentation's exact conversion
+quotient: both are neutral under every parallel development, and their
+retained motive arguments have different constructors. The conversion
+relation has beta and the declared native contractions, not function eta.
+Both requests compute to the same method at reflexivity, so testing only
+that computation misses the distinction.
+
+\nolinkurl{SharedJudgmentQuotientMotiveAbstraction} connects this example
+to the unchanged constructor requirement. With the canonical frames,
+no function of the family-only input has the exact submitted native J
+meaning. Restricting the function's domain cannot repair this while both
+required requests remain admitted. The result refutes
+\texttt{SEM-ID-004} for this particular attachment; it does not refute J,
+arbitrary CwFs or every interpretation of the source language.
+
+There is a positive comparison on the same source: equality of the actual
+typed motive-function classes, together with the type, left and method
+classes, gives representative-independent dependent J transport. The
+mixed HOL/list/wire workload exercises this law with genuinely changed
+representatives. Retaining this function is sufficient for that comparison;
+no least-representation theorem is claimed.
+Separately, \nolinkurl{FormationSensitiveQuotientIdentityReindexing}
+constructs the general quotient based-context map and proves its base,
+endpoint, path and reflexivity-square laws along every semantic
+substitution, without presupposing any J operation.
+
+\paragraph{A constructed retained-input identity interface.}
+\nolinkurl{ContextualRetainedIdentityOperations} adds a typed motive
+function to the family/method input. Its domain predicate does not assert
+that elimination succeeds: it identifies independently admitted input
+tuples. \nolinkurl{FormationSensitiveQuotientRetainedIdentityInterface}
+constructs the operation on the complete semantic image of those tuples.
+Equality of inputs implies equality of outputs for every representative,
+not just a chosen source witness. The operation computes to the submitted
+method at reflexivity. Its domain is closed under every semantic quotient
+substitution, and the output commutes with substitution for every method
+heterogeneously equal to the transported one.
+
+\nolinkurl{SharedJudgmentQuotientRetainedIdentity} relates this operation
+to every independently qualified native frame. Frame coverage, scope
+coverage, exact constructor meaning, beta and substitution hold together
+on the same interpretation. The old family-only requirements are not
+silently weakened: they remain a separate, failed attachment. The retained
+interface does not supply elimination on unrelated off-image semantic
+inputs, a normalization proof, an independent set/presheaf model, or a
+K/UIP policy.
+
+The companion \nolinkurl{SharedJudgmentRetainedSemanticRequirements}
+reuses exactly twenty-eight original predicate bodies and identifiers and
+adds five separately identified retained-input clauses. None of the three
+changed original identities is reused. In
+\nolinkurl{SharedJudgmentQuotientRetainedSemantics}, one actual record
+satisfies all thirty-three semantic clauses, the seven source clauses,
+the original six service/binding clauses and four declaration clauses.
+Required entries include independently named wire and HOL declarations;
+the caller's requirements are not defined to mean whatever is admitted.
+A changed but independently admitted service payload passes the semantic
+clauses yet fails the fixed service contract. A required absent declaration
+fails despite having a formed type. These controls distinguish shared
+qualification from a collection of unrelated valid components.
+
+The ergonomic fork is therefore about an interface's permitted forgetting:
+ordinary motive application may use the family view, while exact native
+inspection and reuse must retain distinctions they observe. Alternatives
+are a retained-function interface, a separately qualified coarser
+mathematical observation, or an explicit change to conversion or elaboration.
+Adding semantic eta would lose the present conversion-reflection contract;
+it need not lose admission reflection when native formation remains an
+independent premise. None of these alternatives selects K/UIP or a final
+language profile.
+
+\nolinkurl{ContextualBasedIdentityScope} isolates the extra requirement in its
+current total-operation field. A scoped raw operation extends, agreeing on its
+scope, exactly when every off-scope output fibre is inhabited. This is a
+statement about operation data, not a proof of off-scope beta or substitution.
+A nonempty substitution-stable scope of pulled-back motives on an indiscrete
+identity structure has an eliminator, yet an endpoint-sensitive motive with an
+empty off-reflexivity fibre prevents a boundary-correct total extension.
+The separating scope is not proposed as a restriction on native consumers:
+all admitted native parameter/motive inputs and their admitted semantic
+substitutions must still be covered. Thus the total field is a stronger
+candidate-class restriction, not a derived desideratum. The motive-function
+collision above is a separate obstruction even within the required native
+scope; the off-scope extension criterion alone cannot repair it. Indexed
+environment instantiation and qualified implicit elaboration may be composed,
+but do not automatically qualify a compatible constructor interface or
+select K/UIP.
+
+The retained native component therefore has joint constructor and required
+service qualification. The full six-family assembly still needs its
+operational-presheaf, independent host and public-consumer comparisons;
+normalization and K/UIP are not established. A Hofmann--Streicher universe comparison remains a separate
+classification and size-sensitive construction
+\cite{AwodeyHofmannStreicherUniverses}, not a consequence of forming this
+syntax quotient. TRACE-004 and ASM-005 remain open for the remaining shared
+bindings, public consumer predicates and joint qualification.
+
+\nolinkurl{HOL.ProofSyntax} retains all 29 rules of the existing extensional
+HOL calculus as indexed proof data, including hypothesis occurrences and
+typed binder arguments. Its erasure proves exactly the original judgment;
+the converse establishes existence of syntax, not recovery of an original
+proof. A two-node direct proof and a five-node detour have the same intrinsic
+admission but different structural observations. No decoder from that
+admission recovers both originals. \nolinkurl{UniformListChartProofSyntax} and
+\nolinkurl{SharedJudgmentProofEvidence} now provide the richer output for the
+actual submitted chart requests. Structural reconstruction yields a 50-node
+HOL proof or a 52-node detour; erasure agrees with the unchanged shared
+producer. Both support the same theorem application, while a structural
+strategy consumer distinguishes them. Restoring the original strategy requires
+its retained request and successful replay. Pairing that request with another
+valid proof fails producer faithfulness. This is a bounded structural consumer,
+not general proof learning, external proof-byte checking or live authorization.
+
+\nolinkurl{SharedJudgmentAssemblyServices} now drives the existing NIK
+interfaces with the actual assembly callbacks. Its receipt decision has an
+independent decoded occurrence/index meaning; a separate theorem retains the
+actual returned native proof and selected proposition. Two admitted callbacks
+agree as decisions but return different proof syntax. The HOL adapter passes
+the actual producer output to the unchanged native-proof service at the
+original claim. A deliberately certificate-ignoring callback returns a valid
+proof of the same claim, yet fails faithful replay of the submitted history.
+This separates a proof-of-goal service from a replay/strategy consumer; it
+does not require all native proof services to factor through certificates.
+
+\nolinkurl{EquationPremiseStability} separates open program rewriting from
+qualified mathematical equation use. Retaining equation text alone is
+insufficient: a validated example adds an actual rewrite $C\to D$ which
+enables the unchanged conditional equation $A=B$. Agreement of the retained
+equations' actual premise judgments, together with retained grammar, preserves
+the complete contextual equation equivalence, including presentation-derived
+laws. A nontrivial premise-free $A=B$ remains stable under the same rewrite
+addition. These are sufficient semantic conditions, not a requirement to
+protect a namespace from ordinary definitions or to promote every program
+rewrite into judgmental equality.
+
+\paragraph{Propositions as inputs to live programs.}
+\nolinkurl{NIKPropositionBranching} fixes the meaning of a claim at an
+explicit scope. Accepted support for that exact claim selects the then body;
+accepted evidence of its semantic negation selects else. An independently
+supplied complete decision kernel has exact positive and negative
+specializations. A rejected submitted proof, malformed found tree, closed
+search traversal or exhausted budget does not supply negation. Failed search
+retains the requested claim, polarity, actual goal and original outcome.
+The existing authority outcomes express evidence status, not three-valued
+truth or a choice of the object language's proposition universe.
+
+The contextual effect-program combinator runs exactly the selected body,
+retaining evidence, branch, state and recorded intents. Its residual case
+runs neither body and changes no state or intents. Actual SAT assignment and
+complete-refutation services exercise both branches; a rejected assignment
+and an empty candidate search can both concern a satisfiable proposition.
+Changing the assumption formula changes the checking scope. These laws do
+not turn an intentionally empty collection into an error, prescribe all
+search-resumption policies, or supply a textual/C implementation. An
+explicitly defeasible action remains possible as a separately specified
+policy, not as a relabeling of unfinished work as mathematical refutation.
+
+\paragraph{An empty answer and a recoverable attempt are different views.}
+\nolinkurl{AuthorityOutcomeViews} characterizes when the partial Boolean
+answer determines the existing four-way public status: exactly when the
+boundary and incomplete payload types are not both inhabited. A specified
+consumer distinguishing authority refinement from budget refinement cannot
+factor through that answer if both cases are present. This is a
+carrier-relative result, not a requirement that every producer expose both
+cases. Public status itself still forgets distinctions between incomplete
+receipts.
+
+The actual assignment sampler in \nolinkurl{NIKOutcomeViewControls}
+illustrates both sides. It has no outside-fragment constructor, so its
+status factors through the answer view. But an empty submission and a
+rejected singleton submission give the same answer and status, whereas
+their submitted-work counts are zero and one. Neither coarse view can
+implement even this inspection. Retaining the unresolved payload with its
+explicit theory/query context supports the inspection. The construction
+does not preserve positive proof histories, implement a resumption
+scheduler or prescribe a global receipt store. Whether syntax exposes an
+empty collection, a residual expression or an outcome value remains a
+presentation choice subject to the promised consumer operations; an
+outcome value is not an extra truth value.
+
+\nolinkurl{FiniteSetRepresentationService} connects ordinary list computation
+to this brancher without extending trusted conversion. An independently
+fixed relation identifies the abstract set represented by a list. Actual
+append implements union under its source-admission condition, returning the
+ordered list $[2,1,2,3,1]$ unchanged. Its finite membership decision selects
+then for $3$ and else for $4$, retaining exactly the selected body's worlds.
+A deliberately right-dropping implementation fails the same external union
+contract on admitted input. Reordered and deduplicated lists represent the
+same set but cannot all be recovered from that set meaning. Unadmitted input
+still computes, without acquiring the promised representation theorem.
+This is a native-operation/decision specimen, not a full set-theory host or
+a CeTTa realization. Representation/refinement is therefore a concrete
+alternative to making every executable body a trusted delta rule.
+
+The universe boundary is now attached to the actual common judgment.
+\nolinkurl{NativeUniverseModelBoundary} proves each native successor formation
+and specifies its minimal semantic data: the upper level codes both the
+lower code carrier and its decoded types. Embeddings compose. Under the
+separate predicative-rank condition, distinct finite successor stages require
+distinct semantic levels, excluding every finite level family and in
+particular the existing two-level set-family span. This is not a language
+ceiling. An explicit finite-rank family realizes every formation head,
+respecting level conversion and instantiation, but fails dependent-product
+closure at rank three. Unbounded formation alone is therefore insufficient.
+
+\nolinkurl{FamilyEnclosingUniverseTower} constructs a conditional alternative
+from an independently supplied small family-enclosing operator. Each next
+stage encloses the previous code carrier and decoding family. The same tower
+has successor embeddings, canonical cumulative paths and Pi/Sigma/identity
+closure. The native universe boundary interprets actual successor/max levels,
+respects level substitution and head equality, and builds mixed-level
+Pi/Sigma codes at their native maximum. The cumulative paths satisfy identity
+and composition. This does not construct the small enclosing operator.
+In particular, the concrete ambient enclosing
+operator raises the code universe and cannot silently supply this same-level
+iteration.
+
+This enclosing operator is one sufficient model-construction route, not
+a requirement forced by the desiderata. It encloses every ambient family
+and supplies full set-function domains, W-types, Nat and host-equality
+identity. INV-TT-006 instead requires agreement with a presheaf-universe
+interpretation, and INV-TT-009 rejects making the sealed pure fragment the
+ceiling. All actual native levels and admitted motives must still receive
+their required interpretation. A relative construction must expose its
+host assumptions; neither its conditional correctness nor a two-level
+control supplies an independently inhabited full model. Other interpretation
+routes need their own qualification rather than silent substitution.
+
+\nolinkurl{TarskiClosureRankObstruction} now derives predicative ranks from
+full dependent products and sums together with a Boolean code. If a level
+coded its own code carrier, dependent sum closure would represent its total
+decoded carrier, and dependent product closure would represent all Boolean
+functions on that carrier. Their injection back into the carrier contradicts
+Cantor's theorem. The actual enclosing envelopes contain Booleans as the sum
+of two units, so the conditional tower satisfies this rank condition without
+another assumption. Connected to the native successor formations, these
+closure operations alone exclude every finite semantic level family.
+Restricted Henkin function domains are outside this result's premises;
+neither operator existence nor the full native interpretation follows.
+
+\nolinkurl{TarskiDecodedFamilyCoherence} derives contextual substitution
+laws from independent code constructors and decoding equivalences.
+Products and sums agree with the existing set-family CwF operations after
+the explicit decoding transports. Arbitrary motives over full comprehension
+commute with reindexing and composition. A genuinely varying example changes
+a value from three to one under a nontrivial comparison; its dependent motive
+then has fibres of different finite cardinalities. Keeping only the code and
+omitting the chosen decoding transport would change the meaning. Semantic
+beta/eta here is not an addition to native conversion.
+
+\nolinkurl{TarskiCumulativeCodeCoherenceBoundary} exposes a further distinction.
+For arbitrary dependent inputs, forming a product or sum and then lifting
+its code has an equivalent decoded carrier to lifting the inputs and forming
+above. A tag adapter preserves the entire enclosing interface, including
+identity and W closure, but makes these actual codes different. In the same
+lower universe, a semantic motive selects the unit code at one tag and the
+empty code at the other. It cannot descend through any observation identifying
+the two routes, including decoded cardinality. The result is conditional on
+the supplied small operator and proves non-entailment of code/motive
+coherence from that interface. The tag test is not proved definable in the
+native language. It neither establishes native unsoundness nor requires a
+particular code quotient or observer; coherence for admitted motives remains
+to be qualified.
+
+\nolinkurl{NativeCumulativeFormationCoherenceBoundary} connects this semantic
+obstruction to the actual refined native formation rules. In the context
+\(A:U_l, B:\Pi x:A.U_l\), the open type \(\Pi x:A.B\,x\) is formed and
+then raised, or formed after raising both premises. Both constructions give
+the same admitted term at the same upper displayed universe, and this
+formation survives refined substitution. A strict interpretation satisfying
+the independently specified Pi and cumulativity equations must identify their
+two semantic codes. The tagged operator cannot satisfy both equations, even
+though their decoded dependent function spaces are equivalent. This identifies
+a compatibility obligation for the supplied interpretation operations; it
+does not require a native K rule, a definable tag test or a chosen quotient.
+
+\texttt{ContextualIdentitySubstitution} supplies the set-family model's
+full dependent J substitution square and its reflexivity computation square.
+The motive may depend on both endpoints and the identity witness. This
+semantic equality model validates proof irrelevance without selecting native
+K or UIP. Separately, \texttt{IndexedPolynomialListRelSmall} reconstructs the
+existing list relator from a fixed-endpoint fibre in the relation's universe,
+retaining every witness. Its equivalence commutes with evidence maps and
+arbitrary endpoint reindexing. No order between the element and relation
+universes is needed. Interpreting these operations in the actual mixed native
+judgments remains a distinct obligation.
+
+\texttt{HenkinLogicalCodeDescent} isolates another required interface.
+A carrier-preserving map of HOL types into semantic codes supports global
+admissibility and logical-equality policies exactly when each policy agrees
+at code collisions, after transporting its arguments. The resulting universal
+and equality operations have their Henkin meanings on the retained image;
+off-image logical axioms and native product/substitution compatibility are
+not inferred. No full-domain premise is needed for this criterion.
+One noninjective, carrier- and application-preserving Boolean/proposition
+coding supports both policies in the standard model but obstructs both in
+the stated monotone Henkin model. The latter fails the additional
+\texttt{FunctionsRespectEqv} condition and is not a countermodel in the
+narrower institution requiring it. Standardizing its domains changes a
+sentence's truth, so that repair is a model change, not a lossless presentation
+change. Conversely, the positive example excludes any general requirement
+that code names be injective.
+
+The Pattern-language backend covers one typed service crossing and a finite native
+body, not raw external proof parsing or unrestricted OSLF formula checking.
+\texttt{SharedJudgmentServicePrograms} separately supplies arbitrary finite
+source compositions of actual matching/HOL requests, ordinary and dependent
+sequencing, and choice. Capture-avoiding substitution acts on submitted
+environments and bound continuation bodies. The callback-relative
+interpretation has exactly the independently defined ordered source worlds,
+retaining private state, intents, branch occurrences and chronological
+responses. The old one-crossing source embeds with unchanged worlds.
+\texttt{SharedJudgmentServiceProgramAdmission} gives an independent admission
+relation and proves native result preservation under formed contexts and
+refined substitutions. A nested Sigma workload retains both service values
+and an identity witness; an admitted changed-claim program instead stops
+without producing a value. Admission does not imply successful evidence.
+
+\nolinkurl{SharedJudgmentServiceProgramBackend} now gives these finite
+compositions an independently authored typed GSLT. Explicit request, invocation,
+response and continuation states retain the submitted environments. Native
+bodies execute through the effect-tree LanguageDef, not a rule whose premise
+runs the complete source evaluator. Every completion is exactly the full
+ordered source-world list, including private states, recorded intents,
+stopped outcomes and chronological request/reply histories. Capture-safe
+substitution and independent native result admission transfer to these runs.
+Reversing or deleting the nested matching/HOL history is rejected by the exact
+completion law. This typed backend is not a Pattern codec for whole programs,
+an external proof-byte checker or an unrestricted proof-search algorithm.
+
+\nolinkurl{SharedJudgmentServiceProgramOSLF} derives the complete-run view
+directly from finite paths of that typed backend, without a Pattern codec.
+Generic GSLT synthesis yields native types whose satisfaction is exactly
+the chosen predicate of the complete source-world list, under execution
+qualification. Actual substitution preserves that meaning. Existential
+output and finite-position predicates deliberately retain less: the real
+single and double matching/HOL programs both expose the same value, but
+complete-list predicates distinguish one occurrence from two, and a
+second-position predicate separates them. Stopped results remain observable
+without supplying successful native values. The generated right adjoint is
+the existing predecessor-universal box, not an unrestricted forward must-run
+decision procedure. Native term admission requires the independent source
+judgment in addition to behavioral observation.
+
+The neutral \texttt{NIKServiceResumption} composes the four existing service
+faces at one semantic target. Its qualification theorem preserves source
+admission and actual invocation for every chronological receipt, proves
+meaning for every successful result, and identifies a rejected last receipt
+for stopped execution. A four-face sequence constructs later requests from
+earlier returned values. Malformed proof and certificate submissions stop
+without refuting their meaningful claim; a false direct decision is a
+distinct response. Executing an operation on an inadmissible source does not
+produce qualification. These general callback-relative results do not yet
+provide a common native interpretation of all four service faces. The typed
+backend above implements repeated matching/HOL requests, not that further
+four-face integration.
+
+The next semantic target is one fundamental interpretation of the actual
+refined native judgments, contexts, substitutions and conversion rules.
+The HOL and matching fragment meanings must be its agreement corollaries.
+The total Data algebra and decoded-family transport laws are now available,
+but must still enter that same interpretation of all admitted motives and
+conversion rules. The conditional enclosing tower supplies formation and
+type-former codes in one family; an inhabited unbounded universe-code model
+remains a separate requirement. A conditional fundamental theorem would not
+by itself construct that model.
+
+The seven fragment predicates do not replace the six normative decision
+families. Intended-model and universe interpretation and common native
+four-face qualification remain open. The ledger
+records these connections as partial evidence, not a completed language.
+
+\texttt{PrimeCandidates.Specification} now connects six normative questions
+to actual theorem terms, scoped alternatives and remaining investigations.
+Its prose questions are not themselves necessity theorems. The versioned
+\texttt{DEC-ID-20260912} record selects scoped identity and optional retained
+presentation references as a development direction, not as a fully qualified
+foundation. Its remaining proof obligations stay explicit; the other five
+families have no selection record. \texttt{PrimeComparisons} independently
+joins all six decision families to pinned source observations. The additional
+identity, mathematical-host and reasoning comparisons distinguish computed
+conversion from native identity elimination, deferred universe formation from
+a cumulative host, and rechecked inhabitants or imported unit-superposition
+certificates from a qualified HOL service. Certificate-internal conversion
+replay also remains distinct from binding a result to a caller's requested
+claim and premise revision. The separate experimental scoped-judgment draft
+review now adds five recorded runs with 74 literal outputs. Supported beta/eta
+and an anonymous-index dependent round trip succeed on both reviewed binaries;
+the experimental prefix handler suppresses otherwise ordinary definitions,
+and publication loses proof/dependency distinctions. Five corresponding probe
+topics retain these observations alongside the relevant candidate laws.
+These are historical observations of the first pinned draft, not claims
+about its later source. A separate second-pass source snapshot records exact
+operation-name ownership, retained proofs and dependency-sensitive reuse,
+alongside the remaining raw-record qualification and structural-conversion
+fallbacks. Its eight source observations include the authored live-proposition
+program. A separate isolated probe of the existing binary records five
+outputs: positive and mismatched-proof controls, accepted use of a directly
+inserted theorem record, inert explicit recheck and an empty stored proof.
+That path acts as an unchecked premise; its record label is not checked
+theorem provenance. This is no C rebuild or full-gate result. Preserving the
+earlier runs, later source inspection and isolated probe separately prevents
+any from silently replacing another's evidence.
+Earlier proposed experiments remain unexecuted, and the C-execution
+correspondences remain open. No runtime qualification follows from source
+hashes, recorded examples or the abstract checker's correctness.
+The common set-family capability theorem explicitly uses the same universe
+parameter throughout its statement.
+
+The scoped-identity named-context connection now uses actual native proof
+presentations in the common HOL/List/wire declaration environment. Direct
+J congruence and conditional export followed by discharge have the same
+typed claim, distinct syntax and a proved beta conversion. Original inspection
+resolves a retained proof reference; current application separately resolves a
+named binding and performs capture-avoiding substitution. The resulting native
+judgment follows from source typing and the independently typed substitution,
+not from a record label. An unavailable live hypothesis binding blocks this
+application without invalidating the original conditional proof. A retained
+old binding still permits application, and unrelated revision changes preserve
+it. A six-to-seven-variable control shifts the retained motive and selects the
+old witness rather than the fresh binder. These statements neither impose
+proof replay on reuse nor equate failed binding resolution with logical
+non-derivability.
+
+For datatype-specific identity proofs, an additional declaration-extension
+bridge instantiates the native J schema while retaining the extension's genuine
+computation roots. The opaque-extension interface cannot supply this property:
+its roots are deliberately empty. The bridge proves J application typing and
+preserves the inherited reflexivity computation. It does not claim preservation
+or normalization for arbitrary added datatype equations.
+
+The internal Hedberg core is now represented by native proof terms, not
+imported from the external route-family theorem. Let
+\(c_y : \operatorname{Id}_A(x,y)\to\operatorname{Id}_A(x,y)\)
+be a based selector. Native J first constructs inverse, composition and
+cancellation, then proves that
+\(c_x(\operatorname{refl}_x)^{-1}\mathbin{\cdot}c_y(p)\)
+is propositionally equal to \(p\). A supplied native proof
+\(c_y(p)=c_y(q)\), transported through this normalization, therefore yields
+a native proof \(p=q\). The seven arguments are abstracted into a closed
+Pi theorem, and substitution instantiates its checked schema in extensions
+with genuine datatype roots. The selector and its constancy proof are actual
+typed object-language inputs; they are neither a UIP axiom nor a host-language
+decision procedure. A separate internal adapter now constructs those inputs
+from a native equality decision for any \(A:U_0\). A decision is a dependent
+pair containing a Boolean tag and either an identity witness or a function
+from that identity type to the small-type empty encoding
+\(\Pi X:U_0.\,X\). Native Boolean elimination constructs a weakly constant
+selector; the Hedberg core then produces UIP. Abstracting \(A\), its decision
+procedure, both endpoints and both paths gives a closed six-argument native
+theorem. Positive and negative decision constructors compute through the actual
+Boolean, pair and beta rules. A rejected candidate proof is not such a negative
+decision: the latter contains an actual refutation.
+
+The Boolean datatype supplies genuine region evidence rather than a declared
+type name with an assumed decision procedure. Its four declarations have fresh
+names and formed types; its dependent eliminator retains both iota roots.
+Native J transports through a constructor-discriminating type family to obtain
+a refutation from an opposite-constructor path. Boolean elimination constructs
+the required selector and constancy proof, and a further native elimination
+over the left endpoint yields
+\[
+  \Pi x,y:\mathrm{Bool}.\,
+  \Pi p,q:\operatorname{Id}_{\mathrm{Bool}}(x,y).\,
+  \operatorname{Id}_{\operatorname{Id}_{\mathrm{Bool}}(x,y)}(p,q).
+\]
+Both endpoints may be neutral variables; this is not a host-language check
+of two closed cases. The resulting derived proof is retained and applied
+through a named binding in this same Boolean/J rule instance. The four-to-five
+variable substitution keeps the original endpoints and paths, while missing
+live bindings and available retained bindings have distinct, checked outcomes.
+There is no uniqueness hypothesis in this context. The actual computational
+extension now has a proved conversion boundary and subject reduction for all
+seven installed roots: two Boolean, two List, native J, and two relator roots.
+Declaration-spine recovery starts from arbitrary admitted source typing,
+recovers the dependent arguments, and preserves the original displayed type,
+including its conversion and cumulativity adjustments. The proof-only parallel
+completion retains conversion-sensitive duplicated metadata and has a proved
+diamond; it is not a new runtime reduction relation. Pi/Sigma injectivity and
+constructor separation follow for the authored conversion. In particular,
+the two Boolean constructors are not convertible, without a fuel bound.
+
+The syntactic quotient CwF is instantiated with these same Boolean/J rules.
+It interprets the actual closed Hedberg term, derived Boolean region, retained
+native motive function, J beta, and substitution through every semantic arrow
+class. Named application is interpreted by the same substitution operation;
+an unavailable live binding does not erase the original judgment or its
+interpretation. A beta-expanded original supplies a positive example of equal
+semantic classes with distinct retained syntax. An inhabited propositional
+identity type does not identify its endpoints in the conversion quotient.
+
+An explicitly assumed region is a local native binder, not a new computation
+rule. Export retains the region premise as a dependent Pi; discharge supplies
+a typed witness and computes by beta. The scope extension commutes with typed
+substitution. A genuinely derived Boolean region simultaneously witnesses path
+uniqueness and distinguishes the submitted path codes under raw inspection.
+More strongly, its semantic identity type is inhabited while the two submitted
+path values remain distinct in the actual conversion quotient.
+Thus path collapse is valid only for compatible observations. A guest whose
+transport realizes both identity and Boolean swap cannot also identify those
+paths; this is a conditional compatibility boundary, not a constructed
+univalent universe. No propositional path law is inserted into definitional
+conversion. Global normalization, new guest models and runtime conformance are
+separate claims, not consequences of this identity qualification.
+
+A separately pinned later draft audit exercises these public boundaries
+constructively and adversarially. Native conditional congruence and explicit
+retention of an actual HOL proof succeed. Three expectations fail: a writable
+\texttt{signature} origin tag bypasses admission, a supposedly nonpublishing
+\texttt{try} changes admission state, and an explicit-space type query loses
+its context routing under \texttt{try}. The same failures were reproduced on
+a second copied binary. The comparison ledger preserves independently authored
+expected and actual outputs rather than promoting the observed failures into
+the specification. None refutes the scoped mathematical construction. A later
+draft report records repairs and a structural-definition prototype; those
+runtime claims require a new pinned comparison and are not established by
+the present theoretical qualification.
+
+The audited known-proof path does not rerun the proof checker, but it serializes
+and hashes the retained record and recursively visits dependencies. Small
+process measurements with independently checked inputs expose this work;
+they include parsing and output and are not isolated kernel timings or a
+speedup claim. The available runtime counters report zero even on a positive
+proof check and do not expose scoped counters, so they cannot establish
+zero allocations, traversals or executions. Qualifying an optimized current-use
+contract remains different from requiring proof replay or mandatory history.
+
+Recursive-definition admission has a separate mathematical boundary. A true
+predicate induction principle does not by itself make its displayed cases free
+constructors. Boolean false and negation satisfy natural-number-shaped
+predicate induction, and negation is injective, but no function into the
+natural numbers can satisfy \(h(\neg x)=h(x)+1\): the two-cycle would force
+\(h(\mathsf{false})=h(\mathsf{false})+2\). The generic theorem characterizes
+this predicate induction precisely by finite successor reachability, not
+unique constructor decomposition. A constructed natural-number fold supplies
+the positive recursion and uniqueness control. Thus admitting recursive
+equations needs a justified recursion principle or suitable datatype
+construction, beyond extracting apparent cases from an induction statement.
+This boundary does not assert that a particular runtime accepts the invalid
+definition and does not reopen the qualified scoped-identity fragment.
+
+The versioned \texttt{DevelopmentPlan}, version \texttt{2026-09-13.1}, retains
+30 scoped obligations across six milestones. Every row records its acceptance
+condition, normative references and earlier dependencies. Proved rows carry
+theorem terms; partially supported rows remain open; mechanical isolation rows
+require fresh source-gate results. The status readout separates closed/total,
+partial evidence, unmet predecessors and collection build coverage. A separate
+planning readout counts closed rows together with selected development
+directions: selecting a direction does not change \texttt{isClosed}, discharge
+the row's acceptance condition, or supply a theorem. The unchanged identity
+acceptance condition is now discharged by one fixed-fragment qualification
+combining scope laws, seven-root preservation and the actual retained-J
+interpretation. With the five source-isolation gates and ledger gate passed,
+the readout is 20 of 30 closed obligations, rather than 19 closed and one merely
+selected. This does not close the remaining public-observation, host,
+evaluation, admission, reasoning or joint-runtime comparisons. These
+counts concern this specification plan, not all future language research or
+the readiness of a runtime. In particular, a fully narrowed decision family
+is not the same thing as a family with several proved constraints.
+
+Preserving answers for a single client is only one admissibility condition.
+Uniform representation, substitution, proof transport and learning over a
+family of tasks also matter: one induction principle with reusable
+instantiation is not assessed merely by comparison with a finite list of
+instances. Specialized first-order or propositional execution charts may
+retain a higher-order representation, subject to their own recognition,
+transport and reconstruction laws. This is a comparison programme, not a
+claim of a universal optimal host or an implemented general optimizer.
+
+\texttt{HOL.UniformListInduction} now supplies an object-HOL specimen of that
+programme. One predicate-quantified induction principle is instantiated to
+prove that map preserves length uniformly in the function. Actual equational
+base and step derivations feed a proof-reconstruction theorem. The standard
+list model validates the theory; an explicit two-point junk model validates
+the displayed equations but rejects both induction and the map-length
+conclusion. Soundness therefore excludes an equation-only derivation. This
+negative control concerns those displayed equations, not an arbitrary
+first-order theory augmented with Peano or constructor axioms.
+
+\paragraph{Named value contexts and actual native execution.}
+\texttt{NamedValueContexts} separates an explicit versioned reference from
+an explicit live name and separates context storage from the live revision
+selector. Fresh publication checks that the target version is unoccupied;
+accepted publication preserves each existing versioned binding. Pure
+inspection returns the original code and a requested finite binding
+footprint. It has no evaluator argument. The independent
+\texttt{NamedContextDataflow} application proves that agreement on the actual
+instruction operands preserves the existing readiness evaluator, including
+missing operands. For one unchanged addition instruction a captured context
+continues to yield ten while its live counterpart yields twelve after a
+binding revision. An unrelated binding edit preserves readiness. Missing
+context and missing operand are distinct, and a separately exhibited firing
+step writes the output that inspection leaves untouched.
+
+\texttt{SharedJudgmentNamedContext} supplies the candidate attachment to
+the existing service-program source and independently authored backend. Its
+table payload is the actual native substitution, not just a typing context.
+Resolved execution preserves complete backend outputs and the independently
+admitted result judgment. Fresh publication preserves both an occupied
+version's computation and its original admission; no checker rerun is used
+to derive that law. Substituting scoped source agrees with precomposing the
+named environments at the same final native scope. The actual typed wire
+program distinguishes stable and live binding changes. These are semantic
+interfaces and preservation laws, not a copying algorithm, universal history
+requirement, runtime speed claim, or default capture policy. A lexical
+snapshot does not freeze mutable objects reachable through a binding.
+
+\paragraph{Evaluation scope, retained references, and effects.}
+\texttt{ContextualEvaluationReferences} places two independently selected
+references over the existing contextual program monad: an origin reference
+$O$ and the current evaluation reference $E$. This is a reader environment,
+not a mutable heap. Its scoped operation satisfies
+\[
+ (\mathsf{atSpace}\ B\ p \mathbin{\gg\!=} k)(O,E)
+ =p(O,B)\mathbin{\gg\!=}(x\mapsto k(x)(O,E)).
+\]
+An outside continuation resumes at $E$, whereas a continuation inside the
+scope remains at $B$. The scope law holds for the existing state, choice and
+intent syntax before choosing a handler. This separates the operations from
+their effect interpretation in the sense of algebraic
+handlers~\cite{PlotkinPretnarHandling}.
+The two reference setters commute; arbitrary effects on the referenced
+spaces need not. Concrete executions distinguish origin and current reads,
+restore a caller's evaluation reference after nested evaluation without
+rolling back writes, and retain an earlier value while a fresh read observes
+an update. Neither coordinate alone recovers the paired-read consumer.
+The component does not choose the surface meaning of \texttt{\&self}, make
+raw stored syntax a closure, prescribe context allocation, or establish
+asynchronous read consistency. A captured reference and a delayed symbolic
+lookup remain different promises, which a source-level binding interface
+must distinguish coherently.
+Resolving a reference value and immediately reading through it gives the same
+effect program as direct role use. Relocation after that resolution cannot
+redirect the saved reference. Executions distinguish a saved field reference
+read from a remote scope ($23$), delayed current-role lookup there ($31$), and
+the saved reference read after its field was updated ($99$). Capturing identity
+does not freeze contents or preserve a role's later meaning.
+This value law does not demand eager resolution by a surface binding form.
+Passing a delayed role computation and running it in another scope is a
+different, coherent operation; its changed result is not a violation of
+reference-value substitutability.
+
+\paragraph{The same references in native named execution.}
+\texttt{SharedJudgment\-EvaluationReferences} selects the actual typed named
+substitution with the evaluation coordinate and retains the origin for pure
+source/environment inspection. It lowers the existing service interpreter to
+the existing effect program. Its decoded worlds agree exactly with the named
+runner and the independently authored backend completion relation.
+Relocation commutes with source substitution and environment precomposition
+at that effect-program level, before observing answers, replies, branch
+histories or intents. Two independently typed context morphisms preserve the
+dependent result judgment in their common final native context. Concrete
+controls use nonidentity parameter substitution and matching followed by
+HOL induction and native dependent-pair/reflexivity construction. Fresh
+publication preserves retained origin inspection while deliberately live
+evaluation changes its actual output. A missing evaluation reference is an
+explicit outer resolution failure, not a fallback to origin or an empty
+successful enumeration. This connects the components in one interpretation;
+it does not identify runtime space handles with logical contexts or prove
+naturality of arbitrary effect handlers between different native scopes.
+Named resolution here happens at program entry from the supplied table and
+version selector. The live native control compares executions before and
+after publication; within-execution mutation and rereading of that named
+table are not yet connected to the native interpreter. The separate generic
+state example does exercise fresh reads across an intervening heap write.
+
+\paragraph{Handling a rejected binding without accepting it.}
+\texttt{ContextualBindingConflict} connects explicit rejection handling to
+the existing ground refinement semantics. Acceptance is exactly the original
+refinement step. Rejection supplies the unchanged input store to a different
+continuation; projecting only successful updates recovers precisely the old
+partial operation. Both outcomes preserve every prior binding. Moreover, no
+information-preserving extension can establish a rejected assignment: from
+$x=a$ and $a\ne b$, accepting $x=b$ remains impossible even after successful
+recovery work. Concrete controls retain $x=a$, reject $x=b$, and then admit
+$y=c$, while the conjunction $x=a\land x=b$ remains unsatisfiable. Thus the
+inconsistency of a proposal need not destroy its consistent surrounding
+context. These are ground-store and dispatch laws, not non-ground unification,
+automatic rollback of arbitrary effects, or a mandate to allocate diagnostics
+on ordinary execution paths.
+
+\paragraph{Ground binding as a categorical common extension.}
+\texttt{GroundBindingCategory} gives the preceding refinement algorithm an
+actual categorical universal property. Objects are partial ground stores;
+an arrow adds information without changing any known binding. If the actual
+\texttt{refineStep} accepts proposal $(x,a)$ in store $\Gamma$, its output is
+the coproduct of $\Gamma$ and the singleton assignment $[x\mapsto a]$ in
+this category. The constructed colimit witness factors every compatible
+extension, not just the extensions produced by the algorithm. For a finite
+run, the exact law is
+\[
+ \Gamma'\leq\Delta
+ \quad\Longleftrightarrow\quad
+ \Gamma\leq\Delta\ \land\ \Delta\models\textit{proposals},
+ \qquad
+ \mathsf{refineRun}(\Gamma,\textit{proposals})=\mathsf{some}(\Gamma').
+\]
+Existence of a compatible extension is equivalent to success of that
+computation. Accordingly, joining compatible information intersects its
+sets of possible future extensions. Completion is a computable functor on
+the compatible-input subcategory, with a natural map from each input to its
+completion. The restriction matters: adding $x=a$ can make a previously
+acceptable proposal $x=b$ incompatible. When $a\ne b$, the two singleton
+assignments have no cocone at all, not merely no result within some fuel
+bound. Positive controls add a genuine fresh binding and have no arrow back
+to the less informative input.
+
+These results concern the same logical name across ground constraints, not
+imperative replacement or distinct lexical binders with the same spelling.
+They do not establish the general substitution-category property of a
+non-ground most-general unifier. Nor does the absence of a common extension
+determine what a program reports: two handlers for the identical rejected
+step return, respectively, no report and a conflict report, with precisely
+the same absent successful-update projection. Retaining the old store is
+also possible, but does not make the rejected assignment true.
+
+\paragraph{Absence, ordinary data, and failure observation.}
+The existing finite-occurrence model in \texttt{EmptyDemandCoherence}
+distinguishes every singleton datum, including an atom named
+\texttt{Empty} or printed as \texttt{()}, from zero occurrences.
+\texttt{EmptinessTaxonomy} proves that ordinary success sequencing cannot
+produce a report from an empty input: there is no answer on which to invoke
+its continuation. An explicit zero observer can instead choose its empty
+branch. This distinguishes continuation algebra from reporting policy; it
+neither mandates a quiet interface nor requires a new diagnostic namespace.
+The separate finite-outcome model in \texttt{CollapseSuperposeRoundTrip}
+retains values, coverage and faults. Its value-only collection cannot recover
+discarded coverage or faults; re-expansion recovers the complete outcome
+exactly when that outcome was complete and fault-free. These are scoped
+observer laws, not a mandatory runtime record or a claim that a currently
+empty, unfinished search has been exhausted. A known ground conflict is
+different again: the no-cocone theorem rules out future solutions without
+revision of the existing constraints.
+
+\paragraph{Retained originals and reconstructed presentations.}
+\texttt{RetainedPresentationViews} separates a local observation from an
+explicit versioned reference. Capturing an existing presentation computes
+the supplied observation once; recovering the original is a table lookup
+with no evaluator, observer or proof-checker input. Coarsening the visible
+value retains that lookup, and accepted fresh publication preserves it within
+the same store lineage. A missing reference returns no presentation.
+In contrast, an observation quotient can reconstruct a chosen representative
+only under a supplied section law. Exact reconstruction of every original
+would force the observation to be injective. The actual indexed-conversion
+instance supplies both a nonconstant observation and a collision: a retained
+five-constructor path is recovered unchanged, whereas representative recovery
+chooses a one-constructor path with the same nonzero result. Another live
+version may also select that shorter path without changing the captured one.
+Same-key overwrite and unrelated-store controls show why a key and a matching
+mathematical observation do not authenticate an original. The preservation
+law assumes the declared publication discipline; it does not establish proof
+authority, garbage-collection safety or mandatory history retention.
+
+\paragraph{Constructed native proofs for conditional identity regions.}
+The \texttt{SharedJudgment\-IdentityRegions} module constructs congruence using the actual
+native J declaration and its submitted motive. From independently formed
+types $B,C$, a typed $f:B\to C$, and $r:\operatorname{Id}_B(p,q)$ it derives
+an admitted term of $\operatorname{Id}_C(f(p),f(q))$. Taking
+$B=\operatorname{Id}_A(a,b)$ gives the pointwise region rule without adding
+K or a new conversion equation. The construction exports an assumed $r$ as a
+conditional Pi theorem; applying a separately typed witness discharges that
+same condition and beta-reduces to the explicit native body. Substitution
+preserves the body and retained motive exactly, and reflexivity computes by
+the native iota rule. Under the stated opacity condition a variable witness
+has no root J computation. Formed five- and six-entry native contexts exercise
+conditional and assumed use while retaining distinct endpoint syntax. These
+are native proof terms, not a transport-preservation axiom. The construction
+does not itself produce uniqueness from decidability, implement every named
+context transition, or qualify a complete univalent guest.
+
+\paragraph{Uniform higher-order fusion.}
+\texttt{HOL.UniformListMapFusion} constructs an inspectable object-HOL proof
+of
+\[
+  \forall f\,g\,xs.\quad
+  \operatorname{map}\,f\,(\operatorname{map}\,g\,xs)
+  =\operatorname{map}\,(\lambda x.\,f(g(x)))\,xs
+\]
+in the unchanged list theory. The proof uses the single predicate-quantified
+induction sentence, explicit base and cons proofs, and object-level beta
+and congruence steps. Its universal result is actually specialized to
+arbitrary symbolic functions and lists, is stable under capture-avoiding
+substitution, and may be used beneath a typed higher-order application.
+Soundness gives validity in the existing standard list model. Reversing the
+composition order yields a false universal statement, even though it has
+object proofs for every empty-list sample and every diagonal function pair
+on arbitrary lists. The model's noncommuting-function counterexample excludes
+a proof of that statement from the full original theory. This establishes a
+uniform mathematical discriminator, not completeness of a learning or search
+algorithm or coverage of a new imported-library host.
+
+\paragraph{Observer-relative replacement of equality evidence.}
+\texttt{MonoidIndexedTransportCoherence} extends independently interpreted
+primitive conversion steps by an actual structural fold on accepted paths.
+For paths $p,q:A\to B$ with transport equivalences $T_p,T_q$, replacement
+is harmless for an observer $o$ precisely when
+\[
+  \forall b\in B.\quad o(T_q(T_p^{-1}(b)))=o(b).
+\]
+This is an observer-invariance condition on the induced loop, not uniqueness
+of equality proofs. For the existing monoid-indexed family, the fold agrees
+with the independently specified canonical-word transport; hence parallel
+paths act identically on its nonconstant fibres. Two accepted paths still
+have different inspectable syntax. In particular their sizes are one and
+five, whereas their action on a nonzero two-element-fibre cursor agrees.
+Actual index substitution preserves the transport square, including an
+expansion from two to three values and an erasure from two to one. The latter
+map is provably noninjective, so its naturality cannot be justified by
+assuming an equivalence of the pre- and post-substitution fibres. This is a
+qualified conversion-family result, not a model of unrestricted native J,
+global UIP or permission to erase evidence inspected by another consumer.
+
+\texttt{GroundUnaryEquationalChart} supplies a reusable specialized scope:
+registered HOL atoms and unary-application spines at one declared type.
+An independently stated grammar is recognized completely at sufficient
+depth, including duplicate registrations and atom-priority shortcuts.
+Successful reification has an exact syntactic round trip. An accepted
+equational certificate reconstructs an actual HOL derivation bound to the
+source assumptions and goal. The list-induction workload uses three-node and
+nine-node certificates for its base and step, then rebuilds the original
+predicate-quantified proof. These are replay-tree counts, not runtime or
+whole-proof cost comparisons. Changed premises, goals, malformed trees and
+insufficient depth are rejected by the chart; non-admission does not refute
+the HOL formula. The outer induction principle remains outside the chart and
+is still necessary in the source theory. General first-order/propositional
+search and candidate-native proof admission are not established.
+
+\paragraph{Joint matching and source-proof boundaries.}
+\texttt{MatchedIndexDependentTransport} connects actual completed
+selected-match replies to an executable request validator and index lookup.
+The resulting native J term has an endpoint-dependent identity family;
+typed substitution establishes its source judgment and the checked J step
+preserves admission of its result. The receipt remains encoded Data, not an
+identity proof. Changed indices, outputs and occurrence bindings are rejected.
+The construction is parametric in the input list and valid index, but makes
+no claim to implement a native Fin type.
+
+\texttt{UniformListChartNIKService} reconstructs the retained HOL induction
+proof from independently supplied equational certificates and premise lists.
+Its intrinsic NIK proof service binds the resulting proof to the complete
+source claim. The intrinsic binding checker is not a checker for arbitrary
+external HOL proof bytes. Missing induction excludes an equations-only proof;
+native proposition formation cannot repair that missing assumption.
+
+\texttt{HOLNativeRelatorCompatibility} transfers the same proposition and
+assumption representations into a fresh common HOL/wire/List/J/relator
+environment. A newly admitted mixed payload contains an abstract HOL sequence
+inside a native List, paired with wire Data; checked projection preserves its
+judgment. The two sequence/list carriers are not thereby identified.
+
+The reusable \texttt{OpaqueRelatorExtension} theorem qualifies every
+extended-admitted source, including terms not admitted in the original
+environment. Absence of new computation and definition unfolding preserves
+the exact conversion-certificate checker and full step preservation. A defined
+universe alias refutes extending that claim to arbitrary declarations. A
+separate declaration-collision control shows that opacity alone does not
+establish freshness or component embedding. These are scoped compatibility
+results, not consistency, normalization or host-optimality theorems.
+
+\paragraph{One connected cognitive workload.}
+\texttt{UniformListCognitiveWorkload} enumerates a bounded expression grammar
+and filters its hypotheses using actual samples. The empty-list sample
+underdetermines the answer; a nonempty sample and the standard list model
+reject the overfitted zero-length hypothesis. The retained map-length claim
+is reconstructed from independently supplied equational certificates and
+the same source induction assumption. General pipeline laws bind the output
+to that generated formula, exact theory and consulted premise dependencies.
+A consulted revision changes reuse from current to historical and invalidates
+the original certificate against the new live premises; an unrelated revision
+preserves currentness. Historical derivability remains intact. Generation
+and recognition bounds, malformed proof data and semantic countermodels have
+different meanings. This is a connected bounded workload, not unrestricted
+higher-order learning, model finding or external proof-byte parsing.
+
+\paragraph{Operation-stable contextual views.}
+\texttt{PolicyFamilyOperationClosure} adds a sufficient constructive closure
+condition: each requested target observation after an operation is computed
+from a named source-policy coordinate and a dependent result translation.
+This derives congruence for policy equivalence, an operation on observational
+classes, and an executable canonical-vector action. Identity, composition and
+closed-restriction squares are proved. The condition is sufficient, not a
+necessity theorem for every congruent operation: some operations combine
+several coordinates.
+
+The refresh control retains a count and its cached emptiness answer while
+forgetting an unrelated tag. That compact readout supports refresh exactly.
+The cached Boolean alone answers the current question but cannot determine
+the refreshed answer when it hides distinct counts. For a general sufficient
+readout, the theorem reconstructs the requested post-operation answers, not
+automatically the whole next readout. The canonical vector, quotient and
+explicit compact specimen have their stated stronger commuting laws.
+Carrier-level dependent descent and object-language substitution remain
+distinct requirements on any proposed integration.
+
+\texttt{SyntacticPolicyDependentDescent} now connects them for a declared
+code-and-formation-level family over actual syntactic contexts. Its code-only
+restriction admits both raw term fibres and independently refined values.
+Actual capture-avoiding substitution acts on the descended quotient fibres
+without recovering a representative. The refined J computation commutes with
+the same family identification and substitution; an arity-changing weakening
+provides a concrete instance. A consumer requiring the retained formation
+level cannot descend through the code-only view, even after substitution.
+Thus the scoped substitution/descent obligation closes without adopting
+K/UIP or claiming descent for arbitrary dependent consumers.
+
+\texttt{ScopedComputationObservation} supplies a second operational boundary.
+The ordered answer list retains native result admission for the shared
+implementation, but cannot reconstruct state-sensitive continuation intents.
+Bounded prefixes retain genuine positive answers; a missing prefix answer
+does not establish absence from the complete finite result list. The admission
+readout here is proposition-valued, not an executable type checker.
+
+\texttt{ScopedComputationContextViews} now closes the declared consumers under
+one actual native resumption. Ordered answer/state-bit lists are exact and
+informationally least at the producer stage; dependent answers and new-intent
+suffixes are exact at the terminal stage. The compact resumption agrees with
+the existing interpreted \texttt{sequenceSigma} semantics. Admitted source
+programs and dependent result judgments witness both the positive protocol
+and the failure of answer-only observation. Branch histories and old intents
+may be hidden only while they are not public consumers: adding either
+invalidates this readout. The theorem does not quantify over arbitrary later
+continuations or select a global evaluation strategy.
+
+\texttt{OpaqueRelatorScopedComputation} qualifies the unchanged handler and
+world semantics under arbitrary extended native signatures. Its admission
+theorem covers newly admitted programs, contexts and refined substitutions,
+not merely the image of old typing derivations. In the common environment,
+actual mixed HOL-list/wire payloads pass through substituted arguments, the
+original evaluator and the same contextual operation square. Independent
+wrong-handler and wrong-dependent-index controls remain invalid. The result
+connects these scoped computations to their actual shared rules; it neither
+interprets arbitrary added declarations nor proves general Need equations.
+
+The staged-reflective observation tables are authored requirement policies,
+not derivations forcing that architecture. \texttt{PresentationEvidence}
+separates model reports, operational adequacy and artifact binding without
+an authority ranking. Generic reduction-view laws and presentation evidence
+are separated from candidate instances. An import and qualified-name gate checks these
+declared boundaries and full collection coverage across separate library and
+exporter targets. The staged-reflective presentation, revisioned occurrence
+proof flow, returned-fibre internal language, first-class route interface,
+gluing-morphism laws, operational
+space/activation interfaces and PLN scheduler bridge are now separated from
+their selected instances. The shared rule-schema projector is independent of
+both candidates and current calibrations; an explicit cache profile preserves
+the existing calibration wire output. Reviewed concrete applications and build
+entries may import candidates, but no such entry becomes a foundation by doing
+so. The lexical check complements imports and does not replace compilation.
+The gate checks the declared source classifications, not an arbitrary
+mathematical claim made in a module's prose.
+
 This section is the one place where the state of the programme is recorded
 without narrative.  Every entry names the checked module or theorem that
 carries it; an entry without a name is a claim, not a result.  The layer
@@ -5470,7 +7897,7 @@ framework with a theory, a theory with a model, or a target with a service.
   sequencing, including selected state, branch history and ordered intents.
   \nolinkurl{FormationSensitiveDependentComputation} constructs actual native
   dependent pairs, commutes with native value substitution, and rejects a
-  wrong selected identity index. \nolinkurl{PrimeNeedDependentService} proves
+  wrong selected identity index. \nolinkurl{NeedDependentService} proves
   first and cached consumer runs of the existing owned machine, with full
   request-index validation and exact execution-answer erasure.
   \nolinkurl{NativeConversionNeedConsumer} connects the actual finite checker
@@ -5566,11 +7993,20 @@ framework with a theory, a theory with a model, or a target with a service.
   \nolinkurl{FormationSensitiveHOLInterface} proves successful representation
   typing and exact renaming/substitution laws for the supported HOL
   constructors under independently typed symbol interpretations.
-  \nolinkurl{FormationSensitiveHOLInvariant} uses six actual declarations,
-  including an independently formed type-indexed universal operator, to
+  \nolinkurl{FormationSensitiveHOLInvariant} uses seven actual declarations,
+  including independently formed type-indexed universal and equality operators, to
   represent the call-guard invariant, function-valued specialization and
   predicate quantification. Independent source Henkin validity does not
-  follow from formula formation; equality remains explicitly unsupported.
+  follow from formula formation. Equality at every represented simple type,
+  including function types, is an explicitly declared HOL proposition-former,
+  not native identity or a semantic extensionality axiom.
+  \nolinkurl{FormationSensitiveHOLUniformList} represents the actual list
+  equations, predicate-quantified induction and map-length conclusion using
+  thirteen opaque declarations with four distinct carriers. Formation and
+  function-valued substitution are checked. The source HOL derivation remains
+  distinct from formation of its represented native proposition. The
+  specialized chart reconstruction reaches that same represented conclusion;
+  it does not turn proposition formation into a native proof inhabitant.
   No proof-as-inhabitant translation or final Prime logic is selected.
 \item \textbf{Actual Tower conversion has a proved Pi boundary.}
   \nolinkurl{PureConversion} constructs complete development and
@@ -6149,7 +8585,7 @@ framework with a theory, a theory with a model, or a target with a service.
   existing intrinsic simple syntax. Renaming and simultaneous substitution
   preserve this equality, including substitution by pointwise-convertible
   terms (\nolinkurl{SimpleFragmentConversion}). Strong normalization follows
-  by a type-preserving interpretation into the existing regular Pure kernel;
+  by a type-preserving interpretation into the existing regular two-sort kernel;
   no injectivity of raw erasure is used. An executable, intrinsically typed
   normalizer returns a finite reduction and an irreducible result
   (\nolinkurl{SimpleFragmentNormalization.strong_normalization}). Normal forms
@@ -6417,7 +8853,7 @@ postponed.
   \nolinkurl{omega_tower_synthesis_meaning}); this is a semantic assertion,
   not acceptance by an executable checker. This is a boundary of the
   implemented permissive relation, not of Martin-L\"of type theory, the
-  regular Pure kernel, or Lean's kernel. It is compatible with conversion
+  regular two-sort kernel, or Lean's kernel. It is compatible with conversion
   conservativity between two already translated simple terms. The separate
   four-rule declaration-aware structural checker does not include the
   lambda, application, or conversion rules used by this counterexample;
@@ -7200,6 +9636,12 @@ D. Patterson and A. Ahmed.
   71, Article 12, 2017.
 \newblock \url{https://doi.org/10.4230/LIPIcs.SNAPL.2017.12}.
 
+\bibitem{PlotkinPretnarHandling}
+G. D. Plotkin and M. Pretnar.
+\newblock Handling algebraic effects.
+\newblock \emph{Logical Methods in Computer Science} 9(4:23):1--36, 2013.
+\newblock \url{https://arxiv.org/abs/1312.1399v2}.
+
 \bibitem{TuriPlotkinMOS}
 D. Turi and G. D. Plotkin.
 \newblock Towards a mathematical operational semantics.
@@ -7495,6 +9937,13 @@ P. Aczel.
 \newblock The type theoretic interpretation of constructive set theory.
 \newblock In \emph{Logic Colloquium '77}, pp. 55--66, 1978.
 
+\bibitem{LeeWernerTraceModel}
+Gyesik Lee and Benjamin Werner.
+\newblock Proof-irrelevant model of CC with predicative induction and
+  judgmental equality.
+\newblock \emph{Logical Methods in Computer Science} 7(4:5), 2011.
+\newblock \url{https://doi.org/10.2168/LMCS-7(4:5)2011}.
+
 \bibitem{GambinoAczelCZF}
 N. Gambino and P. Aczel.
 \newblock The generalised type-theoretic interpretation of constructive set
@@ -7649,6 +10098,12 @@ S. Castellan, P. Clairambault, and P. Dybjer.
 \newblock arXiv:1904.00827, 2019.
 \newblock \url{https://arxiv.org/abs/1904.00827}.
 
+\bibitem{AwodeyHofmannStreicherUniverses}
+S. Awodey.
+\newblock On Hofmann--Streicher universes.
+\newblock \emph{Mathematical Structures in Computer Science}, 2024.
+\newblock \url{https://www.cambridge.org/core/journals/mathematical-structures-in-computer-science/article/on-hofmannstreicher-universes/97FD8FFB986B0336F9E1072427284B13}.
+
 \bibitem{BlanquiModularTypeTheories}
 F. Blanqui, G. Dowek, E. Grienenberger, G. Hondet, and F. Thir\'e.
 \newblock A modular construction of type theories.
@@ -7701,6 +10156,24 @@ C. Fields and M. Levin.
 Y. Futamura.
 \newblock Partial evaluation of computation process, revisited.
 \newblock \emph{Higher-Order and Symbolic Computation} 12:377--380, 1999.
+
+\bibitem{AssafBurelHOL}
+A. Assaf and G. Burel.
+\newblock Translating HOL to Dedukti.
+\newblock \emph{EPTCS} 186:74--88, 2015.
+\newblock \url{https://arxiv.org/abs/1507.08720}.
+
+\bibitem{AssafCauderlierMixing}
+A. Assaf and R. Cauderlier.
+\newblock Mixing HOL and Coq in Dedukti (extended abstract).
+\newblock \emph{EPTCS} 186:89--96, 2015.
+\newblock \url{https://arxiv.org/abs/1507.08721}.
+
+\bibitem{AssafConservativity}
+A. Assaf.
+\newblock Conservativity of embeddings in the lambda Pi calculus modulo rewriting.
+\newblock Long version of the TLCA 2015 paper.
+\newblock \url{https://arxiv.org/abs/1504.05038}.
 
 \bibitem{TurchinSupercompiler}
 V. F. Turchin.

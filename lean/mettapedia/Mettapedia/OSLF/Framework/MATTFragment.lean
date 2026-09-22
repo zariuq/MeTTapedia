@@ -26,7 +26,7 @@ category of `LanguageDef`s — not the syntactic MTT of Gratzer et al.
 
 | MeTTa layer     | Theory                                      |
 |-----------------|---------------------------------------------|
-| MeTTa-Pure      | DTT / CwF (pure dependent kernel)           |
+| two-sort experiment      | DTT / CwF (pure dependent kernel)           |
 | MeTTa-IL runtime| Operational type theory (PathMap/rewriting) |
 | MeTTa-IL + OSLF | **2-mode indexed hyperdoctrine** (this file)|
 
@@ -35,7 +35,7 @@ category of `LanguageDef`s — not the syntactic MTT of Gratzer et al.
 This file does **NOT** claim:
 - Full 2-category structure with 2-morphisms between mode morphisms (out of scope)
 - Syntactic MTT modal type formers □_μ A, locks, context extension (out of scope)
-- MeTTa-Pure subject reduction (separate work in SubjectReduction.lean)
+- two-sort experiment subject reduction (separate work in SubjectReduction.lean)
 - Full modalization of the pure boundary (pure is isolated, not yet modalized)
 
 ## References

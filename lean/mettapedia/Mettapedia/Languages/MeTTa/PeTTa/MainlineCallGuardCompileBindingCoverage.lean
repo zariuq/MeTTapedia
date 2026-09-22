@@ -50,6 +50,14 @@ theorem root_left_holeSkeleton
     patternHoleSkeleton (rootTyping index).site.rewrite.left = true := by
   fin_cases index <;> decide +kernel
 
+/-- Every selected cold target is an ambient-hole skeleton.  With both sides
+hole skeletons, no metavariable of a cold transition crosses a binder, so
+firing one is plain binding application. -/
+theorem root_target_holeSkeleton
+    (index : Fin coldSource.language.rewrites.length) :
+    patternHoleSkeleton (rootTyping index).site.rewrite.right = true := by
+  fin_cases index <;> decide +kernel
+
 /-- Every decoded selected premise argument is a variable from the exact
 authored rewrite source. -/
 theorem selected_view_sourceBound (slot : Occurrence)

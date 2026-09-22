@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.ElaboratedCore
-import Mettapedia.Languages.MeTTa.PureCheckingService
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Services.CheckingService
 import Mettapedia.Languages.MeTTa.RuntimeExec
 import Mettapedia.Languages.MeTTa.SpaceEngineBoundary
 import Mettapedia.Languages.MeTTa.SuiteBase.RuntimeKernelPackage
@@ -10,7 +10,7 @@ import Mettapedia.Languages.MeTTa.SuiteBase.RuntimeKernelPackage
 Packages the current authoritative integration waist for MeTTa:
 
 - the elaboration boundary (`ElaboratedCore`)
-- the DTT kernel checking/conversion waist (`PureCheckingService`)
+- the DTT kernel checking/conversion waist (`TwoSortCheckingService`)
 - the runtime execution/query waist (`RuntimeExec`)
 - the backend-neutral runtime kernel package
 - the native / PathMap / MORK engine capability boundary
@@ -19,16 +19,18 @@ This file does **not** introduce a new evaluator. It makes explicit which lane
 is authoritative for which kind of syntax node.
 
 Positive example:
-- closed Pure terms route to the Pure checking waist.
+- closed two-sort terms route to the two-sort checking waist.
 
 Negative example:
-- ordinary HE runtime rules are not secretly reclassified as Pure kernel terms.
+- ordinary HE runtime rules are not secretly reclassified as two-sort kernel terms.
 -/
 
 namespace Mettapedia.Languages.MeTTa.AbstractMachineBoundary
 
 open Mettapedia.Languages.MeTTa.DialectProfile
 open Mettapedia.Languages.MeTTa.ElaboratedCore
+
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Services
 open Mettapedia.Languages.MeTTa.RuntimeExec
 open Mettapedia.Languages.MeTTa.RuntimeKernel
 open Mettapedia.Languages.MeTTa.SpaceEngineBoundary
@@ -38,21 +40,21 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-- The current authoritative MeTTa abstract-machine waist. -/
 structure MeTTaAbstractMachineBoundary where
-  checkingBoundary : PureCheckingBoundary
+  checkingBoundary : TwoSortCheckingBoundary
   execInterface : MeTTaRuntimeExecExtendedInterface
   queryInterface : MeTTaRuntimeQueryInterface
   runtimeKernel : RuntimeKernelPackage
 
 /-- The live MeTTa abstract-machine waist in this repository. -/
 noncomputable def mettaAbstractMachineBoundary : MeTTaAbstractMachineBoundary where
-  checkingBoundary := pureCheckingBoundary
+  checkingBoundary := twoSortCheckingBoundary
   execInterface := morkRuntimeExec0Ext
   queryInterface := morkRuntimeQueryExec0
   runtimeKernel := morkRuntimeKernelPackage
 
 theorem checkingBoundary_region :
     mettaAbstractMachineBoundary.checkingBoundary.region =
-      ElaboratedRegion.pureKernelRegion := by
+      ElaboratedRegion.twoSortKernelRegion := by
   rfl
 
 theorem checkingBoundary_overlap :
@@ -76,7 +78,7 @@ theorem runtimeKernel_exec_backend :
 
 /-- Which authoritative lane a syntax node is routed to. -/
 inductive AbstractMachineLane where
-  /-- Closed Pure terms whose authority is the DTT kernel checking waist. -/
+  /-- Closed two-sort terms whose authority is the DTT kernel checking waist. -/
   | kernelCertificateLane
   /-- Typed Core atoms that already have a shared artifact view. -/
   | kernelTypedArtifactLane
@@ -94,16 +96,16 @@ deriving DecidableEq, Repr
 
 /-- The elaboration region controlled by each authority lane. -/
 def AbstractMachineLane.region : AbstractMachineLane → ElaboratedRegion
-  | AbstractMachineLane.kernelCertificateLane => ElaboratedRegion.pureKernelRegion
-  | AbstractMachineLane.kernelTypedArtifactLane => ElaboratedRegion.pureKernelRegion
+  | AbstractMachineLane.kernelCertificateLane => ElaboratedRegion.twoSortKernelRegion
+  | AbstractMachineLane.kernelTypedArtifactLane => ElaboratedRegion.twoSortKernelRegion
   | AbstractMachineLane.runtimeRuleLane => ElaboratedRegion.runtimeExecRegion
   | AbstractMachineLane.runtimeQueryLane => ElaboratedRegion.runtimeExecRegion
   | AbstractMachineLane.runtimeAuditLane => ElaboratedRegion.runtimeExecRegion
   | AbstractMachineLane.oracleLane => ElaboratedRegion.oracleRegion
   | AbstractMachineLane.metaLane => ElaboratedRegion.metaRegion
 
-/-- Whether the lane fundamentally relies on the Pure checking waist. -/
-def AbstractMachineLane.needsPureChecking : AbstractMachineLane → Bool
+/-- Whether the lane fundamentally relies on the two-sort checking waist. -/
+def AbstractMachineLane.needsTwoSortChecking : AbstractMachineLane → Bool
   | AbstractMachineLane.kernelCertificateLane => true
   | _ => false
 
@@ -115,7 +117,7 @@ def AbstractMachineLane.needsRuntimeKernel : AbstractMachineLane → Bool
 
 /-- Which authority lane a syntax node belongs to. -/
 def SyntaxNode.abstractMachineLane : SyntaxNode → AbstractMachineLane
-  | SyntaxNode.pureClosedSyntax _ => AbstractMachineLane.kernelCertificateLane
+  | SyntaxNode.twoSortClosedSyntax _ => AbstractMachineLane.kernelCertificateLane
   | SyntaxNode.coreTypedAtom _ => AbstractMachineLane.kernelTypedArtifactLane
   | SyntaxNode.heRuntimeRule _ => AbstractMachineLane.runtimeRuleLane
   | SyntaxNode.pettaRuntimeRule _ => AbstractMachineLane.runtimeRuleLane
@@ -129,8 +131,8 @@ theorem syntaxNode_region_agrees_with_lane (s : SyntaxNode) :
     (elaborate s).region = (SyntaxNode.abstractMachineLane s).region := by
   cases s <;> rfl
 
-theorem kernelCertificateLane_needsPureChecking :
-    AbstractMachineLane.needsPureChecking AbstractMachineLane.kernelCertificateLane = true := by
+theorem kernelCertificateLane_needsTwoSortChecking :
+    AbstractMachineLane.needsTwoSortChecking AbstractMachineLane.kernelCertificateLane = true := by
   rfl
 
 theorem runtimeRuleLane_needsRuntimeKernel :
@@ -147,12 +149,12 @@ theorem kernelTypedArtifactLane_not_runtimeKernel :
 
 /-! ## §3. Syntax-node routing facts -/
 
-theorem pureClosedSyntax_routes_to_checking_boundary (term : PureSyntaxTerm 0) :
-    SyntaxNode.abstractMachineLane (SyntaxNode.pureClosedSyntax term) =
+theorem twoSortClosedSyntax_routes_to_checking_boundary (term : TwoSortSyntaxTerm 0) :
+    SyntaxNode.abstractMachineLane (SyntaxNode.twoSortClosedSyntax term) =
       AbstractMachineLane.kernelCertificateLane ∧
     mettaAbstractMachineBoundary.checkingBoundary.supportsImportedCertificates = true ∧
     mettaAbstractMachineBoundary.checkingBoundary.supportsConversion = true := by
-  simp [SyntaxNode.abstractMachineLane, mettaAbstractMachineBoundary, pureCheckingBoundary]
+  simp [SyntaxNode.abstractMachineLane, mettaAbstractMachineBoundary, twoSortCheckingBoundary]
 
 theorem coreTypedAtom_routes_to_artifact_lane (sourceAtom : CoreTypedSyntaxAtom) :
     SyntaxNode.abstractMachineLane (SyntaxNode.coreTypedAtom sourceAtom) =
@@ -278,14 +280,14 @@ theorem runtimeRule_requires_exec_capability
 
 /-! ## §5. Honest frontier theorem -/
 
-/-- The Pure kernel lane is authoritative through the Pure checking waist, not
+/-- The two-sort kernel lane is authoritative through the two-sort checking waist, not
 through the current direct `R_exec₀` source-rule bridge. -/
 theorem kernel_lane_not_direct_runtimeExec0
     (r : RewriteRule)
-    (hr : r ∈ Mettapedia.Languages.MeTTa.Pure.Core.mettaPure.rewrites) :
+    (hr : r ∈ Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core.twoSortDependent.rewrites) :
     ¬ ∃ x, r.left = .fvar x ∧
       Mettapedia.Languages.ProcessCalculi.MORK.morkTranslatable r.right = true := by
-  exact mettaPure_language_frontier_is_not_directExec0 r hr
+  exact twoSortDependent_language_frontier_is_not_directExec0 r hr
 
 /-- HE and PeTTa runtime rules already meet at the same runtime-exec backend
 waist even though they remain distinct dialects. -/

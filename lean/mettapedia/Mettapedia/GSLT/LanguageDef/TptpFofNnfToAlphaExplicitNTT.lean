@@ -86,7 +86,8 @@ theorem nested_inhabits_derived_native_type :
   have reduction : langReduces language nestedRequest nestedResult :=
     (langReducesUsing_iff_execUsing RelationEnv.empty language _ _).2
       ⟨formulaHeight TptpFofAlphaExplicitNnf.Canary.nestedSource, executable⟩
-  refine ⟨⟨(nestedRequest, nestedResult), reduction⟩, rfl, ?_⟩
+  refine ⟨⟨(nestedRequest, nestedResult),
+    langReduces_to_semantic language reduction⟩, rfl, ?_⟩
   refine ⟨[
     nestedSource,
     TptpFofAlphaExplicitNnfLanguageDef.encodeBinderId 0,

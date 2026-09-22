@@ -1,0 +1,7 @@
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Typing
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Reduction
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.FVarSubst
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Confluence
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.SubjectReduction
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.TypedLangDef

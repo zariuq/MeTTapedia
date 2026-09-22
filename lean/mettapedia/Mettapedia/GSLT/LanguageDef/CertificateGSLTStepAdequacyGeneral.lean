@@ -133,6 +133,234 @@ termination_by sizeOf patterns
 
 end
 
+mutual
+
+/-- A closed skeleton has no metavariable, so no name is captured inside one. -/
+theorem captureDepth_of_closedSkeleton {pattern : Pattern}
+    (closed : patternClosedSkeleton pattern = true) (name : String) (depth : Nat) :
+    captureDepth name depth pattern = none := by
+  cases pattern with
+  | bvar index => simp [captureDepth]
+  | fvar x => simp [patternClosedSkeleton] at closed
+  | apply constructor arguments =>
+      have argumentsClosed : patternsClosedSkeleton arguments = true := by
+        simpa [patternClosedSkeleton] using closed
+      simpa [captureDepth] using
+        captureDepthList_of_closedSkeletons argumentsClosed name depth
+  | lambda binder body =>
+      have bodyClosed : patternClosedSkeleton body = true := by
+        simpa [patternClosedSkeleton] using closed
+      simpa [captureDepth] using
+        captureDepth_of_closedSkeleton bodyClosed name (depth + 1)
+  | multiLambda arity binders body =>
+      have bodyClosed : patternClosedSkeleton body = true := by
+        simpa [patternClosedSkeleton] using closed
+      simpa [captureDepth] using
+        captureDepth_of_closedSkeleton bodyClosed name (depth + arity)
+  | subst body replacement => simp [patternClosedSkeleton] at closed
+  | collection collectionType elements rest =>
+      simp [patternClosedSkeleton] at closed
+termination_by sizeOf pattern
+
+/-- Ordered-list companion to `captureDepth_of_closedSkeleton`. -/
+theorem captureDepthList_of_closedSkeletons {patterns : List Pattern}
+    (closed : patternsClosedSkeleton patterns = true) (name : String) (depth : Nat) :
+    captureDepthList name depth patterns = none := by
+  cases patterns with
+  | nil => simp [captureDepthList]
+  | cons head tail =>
+      simp only [patternsClosedSkeleton, Bool.and_eq_true] at closed
+      simp only [captureDepthList,
+        captureDepth_of_closedSkeleton closed.1 name depth]
+      exact captureDepthList_of_closedSkeletons closed.2 name depth
+termination_by sizeOf patterns
+
+end
+
+mutual
+
+/-- In a hole skeleton every metavariable stands outside every binder, so a
+capture happens at exactly the ambient depth. -/
+theorem captureDepth_of_holeSkeleton {pattern : Pattern}
+    (hole : patternHoleSkeleton pattern = true) (name : String) (depth : Nat) :
+    ∀ captured, captureDepth name depth pattern = some captured →
+      captured = depth := by
+  cases pattern with
+  | bvar index => intro captured found; simp [captureDepth] at found
+  | fvar x =>
+      intro captured found
+      simp only [captureDepth] at found
+      split at found
+      · injection found with found'; exact found'.symm
+      · simp at found
+  | apply constructor arguments =>
+      have argumentsHole : patternsHoleSkeleton arguments = true := by
+        simpa [patternHoleSkeleton] using hole
+      intro captured found
+      simp only [captureDepth] at found
+      exact captureDepthList_of_holeSkeletons argumentsHole name depth captured found
+  | lambda binder body =>
+      have bodyClosed : patternClosedSkeleton body = true := by
+        simpa [patternHoleSkeleton] using hole
+      intro captured found
+      rw [captureDepth,
+        captureDepth_of_closedSkeleton bodyClosed name (depth + 1)] at found
+      simp at found
+  | multiLambda arity binders body =>
+      have bodyClosed : patternClosedSkeleton body = true := by
+        simpa [patternHoleSkeleton] using hole
+      intro captured found
+      rw [captureDepth,
+        captureDepth_of_closedSkeleton bodyClosed name (depth + arity)] at found
+      simp at found
+  | subst body replacement => simp [patternHoleSkeleton] at hole
+  | collection collectionType elements rest =>
+      simp [patternHoleSkeleton] at hole
+termination_by sizeOf pattern
+
+/-- Ordered-list companion to `captureDepth_of_holeSkeleton`. -/
+theorem captureDepthList_of_holeSkeletons {patterns : List Pattern}
+    (hole : patternsHoleSkeleton patterns = true) (name : String) (depth : Nat) :
+    ∀ captured, captureDepthList name depth patterns = some captured →
+      captured = depth := by
+  cases patterns with
+  | nil => intro captured found; simp [captureDepthList] at found
+  | cons head tail =>
+      simp only [patternsHoleSkeleton, Bool.and_eq_true] at hole
+      intro captured found
+      simp only [captureDepthList] at found
+      split at found
+      · rename_i inHead headFound
+        injection found with found'
+        subst found'
+        exact captureDepth_of_holeSkeleton hole.1 name depth _ headFound
+      · exact captureDepthList_of_holeSkeletons hole.2 name depth captured found
+termination_by sizeOf patterns
+
+end
+
+mutual
+
+/-- A closed skeleton is depth-aligned against any left-hand side at any
+ambient depth: it has no metavariable to misalign. -/
+theorem depthAligned_of_closedSkeleton (lhs : Pattern) {pattern : Pattern}
+    (closed : patternClosedSkeleton pattern = true) (depth : Nat) :
+    depthAligned lhs depth pattern = true := by
+  cases pattern with
+  | bvar index => simp [depthAligned]
+  | fvar x => simp [patternClosedSkeleton] at closed
+  | apply constructor arguments =>
+      have argumentsClosed : patternsClosedSkeleton arguments = true := by
+        simpa [patternClosedSkeleton] using closed
+      simpa [depthAligned] using
+        depthAlignedList_of_closedSkeletons lhs argumentsClosed depth
+  | lambda binder body =>
+      have bodyClosed : patternClosedSkeleton body = true := by
+        simpa [patternClosedSkeleton] using closed
+      simpa [depthAligned] using
+        depthAligned_of_closedSkeleton lhs bodyClosed (depth + 1)
+  | multiLambda arity binders body =>
+      have bodyClosed : patternClosedSkeleton body = true := by
+        simpa [patternClosedSkeleton] using closed
+      simpa [depthAligned] using
+        depthAligned_of_closedSkeleton lhs bodyClosed (depth + arity)
+  | subst body replacement => simp [patternClosedSkeleton] at closed
+  | collection collectionType elements rest =>
+      simp [patternClosedSkeleton] at closed
+termination_by sizeOf pattern
+
+/-- Ordered-list companion to `depthAligned_of_closedSkeleton`. -/
+theorem depthAlignedList_of_closedSkeletons (lhs : Pattern)
+    {patterns : List Pattern}
+    (closed : patternsClosedSkeleton patterns = true) (depth : Nat) :
+    depthAlignedList lhs depth patterns = true := by
+  cases patterns with
+  | nil => simp [depthAlignedList]
+  | cons head tail =>
+      simp only [patternsClosedSkeleton, Bool.and_eq_true] at closed
+      simp only [depthAlignedList, Bool.and_eq_true]
+      exact ⟨depthAligned_of_closedSkeleton lhs closed.1 depth,
+        depthAlignedList_of_closedSkeletons lhs closed.2 depth⟩
+termination_by sizeOf patterns
+
+end
+
+mutual
+
+/-- A hole-skeleton right-hand side is depth-aligned against a left-hand side
+that captures only at the ambient depth. -/
+theorem depthAligned_of_holeSkeleton (lhs : Pattern)
+    (lhsAmbient : ∀ name captured,
+      captureDepth name 0 lhs = some captured → captured = 0)
+    {pattern : Pattern} (hole : patternHoleSkeleton pattern = true) :
+    depthAligned lhs 0 pattern = true := by
+  cases pattern with
+  | bvar index => simp [depthAligned]
+  | fvar x =>
+      simp only [depthAligned]
+      split
+      · rename_i captured found
+        simpa using lhsAmbient x captured found
+      · rfl
+  | apply constructor arguments =>
+      have argumentsHole : patternsHoleSkeleton arguments = true := by
+        simpa [patternHoleSkeleton] using hole
+      simpa [depthAligned] using
+        depthAlignedList_of_holeSkeletons lhs lhsAmbient argumentsHole
+  | lambda binder body =>
+      have bodyClosed : patternClosedSkeleton body = true := by
+        simpa [patternHoleSkeleton] using hole
+      simpa [depthAligned] using
+        depthAligned_of_closedSkeleton lhs bodyClosed 1
+  | multiLambda arity binders body =>
+      have bodyClosed : patternClosedSkeleton body = true := by
+        simpa [patternHoleSkeleton] using hole
+      simpa [depthAligned] using
+        depthAligned_of_closedSkeleton lhs bodyClosed (0 + arity)
+  | subst body replacement => simp [patternHoleSkeleton] at hole
+  | collection collectionType elements rest =>
+      simp [patternHoleSkeleton] at hole
+termination_by sizeOf pattern
+
+/-- Ordered-list companion to `depthAligned_of_holeSkeleton`. -/
+theorem depthAlignedList_of_holeSkeletons (lhs : Pattern)
+    (lhsAmbient : ∀ name captured,
+      captureDepth name 0 lhs = some captured → captured = 0)
+    {patterns : List Pattern}
+    (hole : patternsHoleSkeleton patterns = true) :
+    depthAlignedList lhs 0 patterns = true := by
+  cases patterns with
+  | nil => simp [depthAlignedList]
+  | cons head tail =>
+      simp only [patternsHoleSkeleton, Bool.and_eq_true] at hole
+      simp only [depthAlignedList, Bool.and_eq_true]
+      exact ⟨depthAligned_of_holeSkeleton lhs lhsAmbient hole.1,
+        depthAlignedList_of_holeSkeletons lhs lhsAmbient hole.2⟩
+termination_by sizeOf patterns
+
+end
+
+/-- **A rule whose binders stand only over closed bodies is depth-aligned.**
+No metavariable of such a rule crosses a binder, so the scope correction
+leaves it firing exactly as plain binding application did.  This covers rules
+that do carry binders, which binder-freeness does not. -/
+theorem ruleDepthAligned_of_holeSkeletons {rule : RewriteRule}
+    (left : patternHoleSkeleton rule.left = true)
+    (right : patternHoleSkeleton rule.right = true) :
+    ruleDepthAligned rule = true :=
+  depthAligned_of_holeSkeleton rule.left
+    (fun name captured found =>
+      captureDepth_of_holeSkeleton left name 0 captured found) right
+
+/-- Firing such a rule is plain binding application. -/
+theorem applyRuleBindings_of_holeSkeletons {rule : RewriteRule}
+    (bindings : Bindings)
+    (left : patternHoleSkeleton rule.left = true)
+    (right : patternHoleSkeleton rule.right = true) :
+    applyRuleBindings rule bindings = applyBindings bindings rule.right :=
+  applyRuleBindings_eq_applyBindings rule bindings
+    (ruleDepthAligned_of_holeSkeletons left right)
+
 /-- The ambient metavariable names of a pattern. -/
 def patternOccurrenceNames (pattern : Pattern) : List String :=
   (patternMetavariableOccurrencesAt 0 pattern).map Prod.fst
@@ -665,6 +893,16 @@ theorem applyBindingsList_closedSkeleton {patterns : List Pattern}
 termination_by sizeOf patterns
 
 end
+
+/-- The scope-corrected applier also leaves a closed skeleton alone, at any
+ambient depth: there is no metavariable in it to shift. -/
+theorem applyBindingsScoped_closedSkeleton {pattern : Pattern}
+    (closed : patternClosedSkeleton pattern = true)
+    (lhs : Pattern) (bindings : Bindings) (depth : Nat) :
+    applyBindingsScoped lhs bindings depth pattern = pattern :=
+  (applyBindingsScoped_eq_applyBindings lhs bindings depth pattern
+    (depthAligned_of_closedSkeleton lhs closed depth)).trans
+    (applyBindings_closedSkeleton closed bindings)
 
 mutual
 
@@ -2019,7 +2257,7 @@ private theorem mapped_find?_fixed_none (source : DirectTraceLanguage)
   intro candidate candidateMember
   obtain ⟨rewrite, -, candidateEq⟩ := List.mem_map.mp candidateMember
   subst candidateEq
-  simp only [decide_eq_true_eq, rewriteStepRule_id]
+  simp only [rewriteStepRule_id]
   intro idEq
   have valueEq : ("step-rewrite-" ++ rewrite.name : String) =
       fixedId.value := congrArg RuleId.value (of_decide_eq_true idEq)
@@ -2626,7 +2864,10 @@ private theorem general_sound_bounded (source : DirectTraceLanguage)
                     rewrite finalBindings =
                       applyBindings (zipBindings (rewriteStepRule rewrite).metavariables
                       ruleInstance.arguments) rewrite.right := by
-                  rw [applyBindingsForRule_eq_syntactic]
+                  rw [applyBindingsForRule_eq_syntactic,
+                    applyRuleBindings_of_holeSkeletons finalBindings
+                      (rewriteDirectTraceAdequate_left ruleAdequate)
+                      (rewriteDirectTraceAdequate_right ruleAdequate)]
                   apply applyBindings_agree
                     (rewriteDirectTraceAdequate_right ruleAdequate)
                   intro name nameMember
@@ -3158,7 +3399,10 @@ private theorem general_complete_stepAt (source : DirectTraceLanguage)
               name patternName
           have targetEq : applyBindings finalBindings rewrite.right =
               stepTarget := by
-            rw [applyBindingsForRule_eq_syntactic] at applyEq
+            rw [applyBindingsForRule_eq_syntactic,
+              applyRuleBindings_of_holeSkeletons finalBindings
+                (rewriteDirectTraceAdequate_left ruleAdequate)
+                (rewriteDirectTraceAdequate_right ruleAdequate)] at applyEq
             exact applyEq
           have leftComponent : applyBindings
               (zipBindings (rewriteStepRule rewrite).metavariables

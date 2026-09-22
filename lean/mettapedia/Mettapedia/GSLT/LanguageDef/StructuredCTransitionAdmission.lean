@@ -72,7 +72,7 @@ theorem effectValueTransition_rewriteAt_exact
         (run (consStatement (a "structured-c:effect" [expression]) rest)
           environment receipt)) = _
   simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
-    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    applyBindingsForRuleUsing, applyRuleBindings, substitutionPresentationForRule?, reflectiveRuleForRule?,
     transitions, applyRuleUsing,
     matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
@@ -166,7 +166,7 @@ theorem ifValueTransition_rewriteAt_exact
           (a "structured-c:if" [condition, thenBranch, elseBranch]) rest)
           environment receipt)) = _
   simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
-    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    applyBindingsForRuleUsing, applyRuleBindings, substitutionPresentationForRule?, reflectiveRuleForRule?,
     transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
     emptyTransition, appendEmptyTransition, appendConsTransition,
@@ -208,7 +208,7 @@ theorem whileExpandTransition_rewriteAt_exact
           (a "structured-c:while" [condition, body]) rest)
           environment receipt)) = _
   simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
-    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    applyBindingsForRuleUsing, applyRuleBindings, substitutionPresentationForRule?, reflectiveRuleForRule?,
     transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
     emptyTransition, appendEmptyTransition, appendConsTransition,
@@ -236,7 +236,7 @@ theorem appendEmptyTransition_rewriteAt_exact
         (run (appendStatements nilStatements continuation)
           environment receipt)) = _
   simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
-    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    applyBindingsForRuleUsing, applyRuleBindings, substitutionPresentationForRule?, reflectiveRuleForRule?,
     transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing,
     emptyTransition, appendEmptyTransition, appendConsTransition,
@@ -265,7 +265,7 @@ theorem appendConsTransition_rewriteAt_exact
         (run (appendStatements (consStatement statement tail) continuation)
           environment receipt)) = _
   simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
-    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    applyBindingsForRuleUsing, applyRuleBindings, substitutionPresentationForRule?, reflectiveRuleForRule?,
     transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing,
     emptyTransition, appendEmptyTransition, appendConsTransition,
@@ -289,7 +289,7 @@ theorem halted_rewriteAt_empty
         (rewriteAt (engineBasePremises relationEnv) language 0) rule
         (halted outcome environment receipt)) = []
   simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
-    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    applyBindingsForRuleUsing, applyRuleBindings, substitutionPresentationForRule?, reflectiveRuleForRule?,
     transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing,
     emptyTransition, appendEmptyTransition, appendConsTransition,
@@ -349,7 +349,7 @@ theorem returnValueTransition_rewriteAt_exact
         (run (consStatement (a "structured-c:return" [expression]) rest)
           environment receipt)) = _
   simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
-    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    applyBindingsForRuleUsing, applyRuleBindings, substitutionPresentationForRule?, reflectiveRuleForRule?,
     transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
     emptyTransition, appendEmptyTransition, appendConsTransition,
@@ -430,7 +430,7 @@ theorem declareValueTransition_rewriteAt_exact
           (a "structured-c:declare" [variableName, type, expression]) rest)
           environment receipt)) = _
   simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
-    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    applyBindingsForRuleUsing, applyRuleBindings, substitutionPresentationForRule?, reflectiveRuleForRule?,
     transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
     emptyTransition, appendEmptyTransition, appendConsTransition,
@@ -514,7 +514,7 @@ theorem switchValueTransition_rewriteAt_exact
           (a "structured-c:switch" [scrutinee, cases, defaultBranch]) rest)
           environment receipt)) = _
   simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
-    applyBindingsForRuleUsing, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    applyBindingsForRuleUsing, applyRuleBindings, substitutionPresentationForRule?, reflectiveRuleForRule?,
     transitions, applyRuleUsing, matchPatternForRule_eq_syntactic,
     premisesUsing, premiseStepUsing, engineBasePremises,
     emptyTransition, appendEmptyTransition, appendConsTransition,

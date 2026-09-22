@@ -15,10 +15,10 @@ open Mettapedia.Languages.GF.Typing
 open Mettapedia.Languages.GF.GFWMConnections
 open Mettapedia.Languages.GF.GFWMObligationAdapter
 open Mettapedia.PLN.WorldModel.PLNWorldModel
-open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelIntrinsicPureBridge
+open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelTwoSortBridge
 open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.PLN.Evidence.EvidenceQuantale
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.ProfileTheory
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.ProfileTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open scoped ENNReal
 
@@ -40,7 +40,7 @@ def B : GFSyntaxObj := ⟨t₂⟩
 def hAB : A ⟶ B := PLift.up rfl
 
 /-- Identity-pattern interface, used only as an adapter fixture. -/
-def testPureInterface : PureJudgmentWMInterface TestState Pattern where
+def testTwoSortInterface : TwoSortJudgmentWMInterface TestState Pattern where
   encode := fun p => p
   side := fun _ => True
   profileStep_sound := by
@@ -54,37 +54,37 @@ def testPureInterface : PureJudgmentWMInterface TestState Pattern where
 /-- Direct GF syntactic transport consumed as a pure-style WM obligation. -/
 theorem canary_gfSyntaxHom_to_pureStyleObligation (W : TestState) :
     WMStrengthObligation TestState Pattern W
-      ((testPureInterface.encode) (syntaxQuery A))
-      ((testPureInterface.encode) (syntaxQuery B)) := by
-  have hW : testPureInterface.side W := by
-    simp [testPureInterface]
+      ((testTwoSortInterface.encode) (syntaxQuery A))
+      ((testTwoSortInterface.encode) (syntaxQuery B)) := by
+  have hW : testTwoSortInterface.side W := by
+    simp [testTwoSortInterface]
   exact gfSyntaxHom_to_wmStrengthObligation
-    (I := testPureInterface) (f := hAB) (W := W) hW
+    (I := testTwoSortInterface) (f := hAB) (W := W) hW
 
 /-- End-to-end fixture:
 GF syntactic transport -> WM consequence rule -> pure-style obligation witness. -/
 theorem canary_endToEnd_gfRule_to_pureStyleObligation (W : TestState) :
     let rule :=
-      wmConsequenceRuleOn_of_gfSyntaxHom_viaPureInterface
-        (I := testPureInterface) (A := A) (B := B) hAB
+      wmConsequenceRuleOn_of_gfSyntaxHom_viaTwoSortInterface
+        (I := testTwoSortInterface) (A := A) (B := B) hAB
     WMStrengthObligation TestState Pattern W rule.premise rule.conclusion := by
-  have hW : testPureInterface.side W := by
-    simp [testPureInterface]
-  simp [wmConsequenceRuleOn_of_gfSyntaxHom_viaPureInterface]
+  have hW : testTwoSortInterface.side W := by
+    simp [testTwoSortInterface]
+  simp [wmConsequenceRuleOn_of_gfSyntaxHom_viaTwoSortInterface]
   exact gfSyntaxHom_to_wmStrengthObligation
-    (I := testPureInterface) (f := hAB) (W := W) hW
+    (I := testTwoSortInterface) (f := hAB) (W := W) hW
 
 /-- Frege-strong wrapper endpoint is consumable on the pure-style WM obligation
 interface. -/
 theorem canary_fregeStrong_to_pureStyleObligation (W : TestState) :
     let rule :=
-      wmConsequenceRuleOn_of_fregeStrong_viaPureInterface
-        (I := testPureInterface)
+      wmConsequenceRuleOn_of_fregeStrong_viaTwoSortInterface
+        (I := testTwoSortInterface)
         FunctionSig.UseN [mkLeaf "house" "N"] [mkLeaf "house" "N"] rfl
     WMStrengthObligation TestState Pattern W rule.premise rule.conclusion := by
-  simp [wmConsequenceRuleOn_of_fregeStrong_viaPureInterface,
-    wmConsequenceRuleOn_of_gfTreePatternEq_viaPureInterface,
-    wmConsequenceRuleOn_of_gfSyntaxHom_viaPureInterface, testPureInterface]
+  simp [wmConsequenceRuleOn_of_fregeStrong_viaTwoSortInterface,
+    wmConsequenceRuleOn_of_gfTreePatternEq_viaTwoSortInterface,
+    wmConsequenceRuleOn_of_gfSyntaxHom_viaTwoSortInterface, testTwoSortInterface]
 
 /-- Negative expressivity fixture:
 under constant evidence semantics and distinct syntax queries, the GF->WM

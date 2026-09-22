@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.Core.GSLTConstructions
 import Mettapedia.GSLT.Core.IndexedOperational
+import Mettapedia.GSLT.Core.SemanticImplementation
 
 /-!
 # Functorial writer enrichment of operational GSLTs
@@ -106,6 +107,21 @@ def erase {Grade : Type u} [Monoid Grade]
   mapTerm := Prod.fst
   mapEquiv := fun equivalent => equivalent.1
   mapStep := fun step => GSLT.spendLift_erase_step system.spend step
+
+/-- When every step is graded, erasure is a cover: every base step lifts
+from every accumulator value. HML and bisimilarity then transport along
+the existing `SemanticCoveredTranslation` theorems. -/
+def spendEraseCover {Grade : Type u} [Monoid Grade]
+    (system : CostedTheory.{u} Grade) (total : system.spend.Total) :
+    SemanticCoveredTranslation
+      (system.theory.spendLift system.spend) system.theory where
+  mapTerm := Prod.fst
+  mapEquiv := fun equivalent => equivalent.1
+  mapStep := fun step => GSLT.spendLift_erase_step system.spend step
+  liftStep := fun {sourceTerm} {targetTerm} step => by
+    obtain ⟨value, lifted⟩ :=
+      GSLT.spendLift_lift_step system.spend total step sourceTerm.2
+    exact ⟨(targetTerm, value), lifted, system.theory.equations.iseqv.refl _⟩
 
 end CostedTranslation
 

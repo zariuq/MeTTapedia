@@ -294,14 +294,26 @@ def applyBindingsForRuleUsing
     (bindings : Bindings) : Pattern :=
   match substitutionPresentationForRule? profile rule with
   | some declaration => applyBindingsReflective declaration bindings rule.right
-  | none => applyBindings bindings rule.right
+  | none => Match.applyRuleBindings rule bindings
 
-/-- An empty reflection profile selects ordinary syntactic substitution. -/
+/-- An empty reflection profile selects ordinary syntactic substitution, made
+scope-correct: a matched value is shifted from the depth at which the rule's
+left-hand side captured it to the depth at which its right-hand side uses it. -/
 @[simp] theorem applyBindingsForRuleUsing_empty
     (rule : RewriteRule) (bindings : Bindings) :
     applyBindingsForRuleUsing .empty rule bindings =
-      applyBindings bindings rule.right := by
+      Match.applyRuleBindings rule bindings := by
   simp [applyBindingsForRuleUsing, ReflectionProfile.empty]
+
+/-- On a rule that never moves a metavariable across a binder this is the plain
+applier, so nothing changes for such a rule. -/
+theorem applyBindingsForRuleUsing_empty_eq_applyBindings
+    (rule : RewriteRule) (bindings : Bindings)
+    (aligned : Match.ruleDepthAligned rule = true) :
+    applyBindingsForRuleUsing .empty rule bindings =
+      applyBindings bindings rule.right := by
+  rw [applyBindingsForRuleUsing_empty]
+  exact Match.applyRuleBindings_eq_applyBindings rule bindings aligned
 
 /-- Binding application for the five-field core.  Reflection-free operation
 is definitionally ordinary syntactic substitution. -/
@@ -328,14 +340,14 @@ theorem applyBindingsForRule_eq_syntactic_of_no_presentation
     (missing : substitutionPresentationForRule? profile rule = none)
     (bindings : Bindings) :
     applyBindingsForRuleUsing profile rule bindings =
-      applyBindings bindings rule.right := by
+      Match.applyRuleBindings rule bindings := by
   simp [applyBindingsForRuleUsing, missing]
 
 @[simp] theorem applyBindingsForRule_eq_syntactic_of_no_presentations
     {profile : ReflectionProfile} (empty : profile.presentations = [])
     (rule : RewriteRule) (bindings : Bindings) :
     applyBindingsForRuleUsing profile rule bindings =
-      applyBindings bindings rule.right := by
+      Match.applyRuleBindings rule bindings := by
   apply applyBindingsForRule_eq_syntactic_of_no_presentation
   exact substitutionPresentationForRule?_eq_none_of_no_presentations empty rule
 
@@ -343,17 +355,27 @@ theorem applyBindingsForRule_eq_syntactic_of_no_presentation
     {profile : ReflectionProfile} (empty : profile.rules = [])
     (rule : RewriteRule) (bindings : Bindings) :
     applyBindingsForRuleUsing profile rule bindings =
-      applyBindings bindings rule.right := by
+      Match.applyRuleBindings rule bindings := by
   apply applyBindingsForRule_eq_syntactic_of_no_presentation
   exact substitutionPresentationForRule?_eq_none_of_no_rules empty rule
 
 @[simp] theorem applyBindingsForRule_eq_syntactic
     (language : LanguageDef) (rule : RewriteRule) (bindings : Bindings) :
     applyBindingsForRule language rule bindings =
-      applyBindings bindings rule.right := by
+      Match.applyRuleBindings rule bindings := by
   simp [applyBindingsForRule, applyBindingsForRuleUsing,
     ReflectionProfile.empty, substitutionPresentationForRule?,
     reflectiveRuleForRule?]
+
+/-- And on a rule that never moves a metavariable across a binder it is the
+plain applier, so a depth-aligned language is unaffected. -/
+theorem applyBindingsForRule_eq_applyBindings
+    (language : LanguageDef) (rule : RewriteRule) (bindings : Bindings)
+    (aligned : Match.ruleDepthAligned rule = true) :
+    applyBindingsForRule language rule bindings =
+      applyBindings bindings rule.right := by
+  rw [applyBindingsForRule_eq_syntactic]
+  exact Match.applyRuleBindings_eq_applyBindings rule bindings aligned
 
 /-! ## Executable boundary examples -/
 

@@ -74,6 +74,58 @@ mutual
         pure (compiled :: tail)
 end
 
+/- The first-order compiler and the generic matcher-reconstruction theorem
+admit exactly the same pattern fragment. This concerns syntax admission, not
+typing or the semantic support of a compiled value. -/
+mutual
+  theorem compilePattern?_isSome_eq_isMatchCorrectAux (pattern : Pattern) :
+      (compilePattern? pattern).isSome = isMatchCorrectAux pattern := by
+    cases pattern with
+    | fvar _ => rfl
+    | bvar _ => rfl
+    | apply constructor arguments =>
+        have ih := compilePatterns?_isSome_eq_isMatchCorrectListAux arguments
+        cases h : compilePatterns? arguments with
+        | none => simpa [compilePattern?, isMatchCorrectAux, h] using ih
+        | some compiled => simpa [compilePattern?, isMatchCorrectAux, h] using ih
+    | lambda _ _ => rfl
+    | multiLambda _ _ _ => rfl
+    | subst _ _ => rfl
+    | collection _ _ _ => rfl
+  termination_by sizeOf pattern
+  decreasing_by all_goals (simp_all only [Pattern.apply.sizeOf_spec]; omega)
+
+  theorem compilePatterns?_isSome_eq_isMatchCorrectListAux
+      (patterns : List Pattern) :
+      (compilePatterns? patterns).isSome = isMatchCorrectListAux patterns := by
+    cases patterns with
+    | nil => rfl
+    | cons pattern patterns =>
+        have head := compilePattern?_isSome_eq_isMatchCorrectAux pattern
+        have tail := compilePatterns?_isSome_eq_isMatchCorrectListAux patterns
+        cases hhead : compilePattern? pattern with
+        | none =>
+            have headFalse : isMatchCorrectAux pattern = false := by
+              simpa [hhead] using head.symm
+            simp [compilePatterns?, isMatchCorrectListAux, hhead, headFalse]
+        | some compiled =>
+            have headTrue : isMatchCorrectAux pattern = true := by
+              simpa [hhead] using head.symm
+            cases htail : compilePatterns? patterns with
+            | none =>
+                have tailFalse : isMatchCorrectListAux patterns = false := by
+                  simpa [htail] using tail.symm
+                simp [compilePatterns?, isMatchCorrectListAux, hhead, htail,
+                  headTrue, tailFalse]
+            | some compiledTail =>
+                have tailTrue : isMatchCorrectListAux patterns = true := by
+                  simpa [htail] using tail.symm
+                simp [compilePatterns?, isMatchCorrectListAux, hhead, htail,
+                  headTrue, tailTrue]
+  termination_by sizeOf patterns
+  decreasing_by all_goals (simp_all only [List.cons.sizeOf_spec]; omega)
+end
+
 mutual
   /-- Erase a compiled plan to its complete source pattern. -/
   def PatternPlan.erase : PatternPlan -> Pattern
@@ -498,6 +550,26 @@ theorem erase_of_compileRule?
                   premisesCompiled,
                 erase_of_compilePattern? _ right rightCompiled]
 
+mutual
+  /-- The admitted fragment has no binder former, so an erased plan is
+  binder-free.  This is what makes the compiled instantiator agree with the
+  depth-aligned one: with no binder to cross, the alignment shift is zero. -/
+  theorem binderFree_erase : ∀ plan : PatternPlan, binderFree plan.erase = true
+    | .metavariable _ => rfl
+    | .bound _ => rfl
+    | .application _ arguments => by
+        simp only [PatternPlan.erase, binderFree]
+        exact binderFreeList_erasePatterns arguments
+
+  /-- Ordered-list companion to `binderFree_erase`. -/
+  theorem binderFreeList_erasePatterns :
+      ∀ plans : List PatternPlan, binderFreeList (erasePatterns plans) = true
+    | [] => rfl
+    | plan :: plans => by
+        simp only [erasePatterns, binderFreeList, Bool.and_eq_true]
+        exact ⟨binderFree_erase plan, binderFreeList_erasePatterns plans⟩
+end
+
 /-- Interpret a plan using one declared relation environment.  Matching,
 ordered premise control, and contractum construction all come from the plan;
 the relation table is the sole semantic primitive. -/
@@ -554,9 +626,14 @@ theorem run_compileRule?_eq_applyRuleUsing
     compiled.run relations language subject =
       Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.applyRuleUsing
         RuleInterpretation.syntactic (engineBasePremises relations) language
-          recursiveStep source subject :=
-  run_compileRule? relations language recursiveStep source compiled subject
-    accepted
+          recursiveStep source subject := by
+  have erased := erase_of_compileRule? source compiled accepted
+  subst erased
+  rw [run_compileRule? relations language recursiveStep _ compiled subject accepted]
+  simp only [Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.applyRuleUsing,
+    RuleInterpretation.syntactic, RulePlan.erase, applyRuleBindings,
+    applyBindingsScoped_zero_of_binderFree _ _ _
+      (binderFree_erase compiled.right)]
 
 /-! ## Ordered rule-program compilation -/
 
@@ -673,6 +750,8 @@ example : compilePattern? (.lambda (some "x") (.bvar 0)) = none := by
 example : compilePattern? repeatedSource = some repeatedPlan := by
   rfl
 
+#print axioms compilePattern?_isSome_eq_isMatchCorrectAux
+#print axioms compilePatterns?_isSome_eq_isMatchCorrectListAux
 #print axioms erase_of_compilePattern?
 #print axioms run_compilePattern?
 #print axioms instantiate_eq_applyBindings

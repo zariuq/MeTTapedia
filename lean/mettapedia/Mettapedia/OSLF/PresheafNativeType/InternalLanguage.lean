@@ -1,4 +1,7 @@
 import Mettapedia.OSLF.PresheafNativeType.PresheafSemantics
+import Mettapedia.GSLT.Topos.PresheafPredicateProjectionPreservation
+import Mettapedia.GSLT.Topos.PresheafPredicateReification
+import Mettapedia.GSLT.Topos.PresheafPredicateYonedaRestriction
 import Mathlib.CategoryTheory.Comma.Arrow
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
 import Mathlib.CategoryTheory.Types.Basic
@@ -6,18 +9,22 @@ import Mathlib.CategoryTheory.Types.Basic
 /-!
 # Internal dependent language of the presheaf topos
 
-This file closes the remaining strict NTT paper claims by bundling
-proven infrastructure into theorem-level endpoints keyed to:
+This file bundles presheaf infrastructure into endpoints keyed to:
   Williams & Stay, "Native Type Theory" (ACT 2021).
 
-## Claims Closed
+## Constructed endpoints and boundaries
 
 - **Prop 12**: Indexed adjoints with Beck-Chevalley
-- **Prop 14**: Cosmic fibration (Frame fibers = CCC + complete)
-- **Prop 17**: Reification right adjoint layer
+- **Prop 14**: Indexed adjoints and frame fibers, plus chosen total products
+  and exponentials with curry/uncurry and strict projection laws. The total
+  constructions currently use a common universe for the base and values.
+- **Prop 17**: Function-object reification is right adjoint to curried
+  evaluation on predicate fibres (`GSLT.Topos.reify_adjunction`). The older
+  same-fiber infimum below is a separate, weaker construction.
 - **Def 21**: Codomain fibration (arrow category) + Cartesian lifts
 - **Sec 4**: Image-comprehension adjunction i ⊣ c (full iff characterization)
-- **Thm 23**: Internal language package + functorial laws
+- **Thm 23**: An object package and operation-preservation endpoints, not yet
+  an internal-language functor or 2-functor
 -/
 
 open CategoryTheory
@@ -25,6 +32,14 @@ open CategoryTheory
 universe u v w
 
 namespace Mettapedia.OSLF.PresheafNativeType
+
+-- These imports and declaration anchors join the total/function-object
+-- constructions to the established native-language entry point.
+#check GSLT.Topos.expHomEquiv
+#check GSLT.Topos.expCurry_naturality
+#check GSLT.Topos.projection_preserves_cartesianClosed
+#check GSLT.Topos.reify_adjunction
+#check GSLT.Topos.yonedaExpPredicate
 
 /-! ## NTT Proposition 12: Indexed Adjoints with Beck-Chevalley -/
 
@@ -43,7 +58,7 @@ theorem prop12_indexedAdjoints (C : Type u) [Category.{w} C]
    (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback_universal_adj f⟩
 
 /-- NTT Prop 12 (Beck-Chevalley). -/
-noncomputable def prop12_beckChevalley (C : Type u) [Category.{w} C] :
+theorem prop12_beckChevalley (C : Type u) [Category.{w} C] :
     GSLT.Topos.BeckChevalleyCondition
       (GSLT.Topos.presheafPredicateFib.{u, v, w} C)
       (GSLT.Topos.presheafChangeOfBase.{u, v, w} C) :=
@@ -64,7 +79,7 @@ structure Prop12_IndexedAdjoints (C : Type u) [Category.{w} C] where
       (GSLT.Topos.presheafPredicateFib.{u, v, w} C)
       (GSLT.Topos.presheafChangeOfBase.{u, v, w} C)
 
-noncomputable def prop12_package (C : Type u) [Category.{w} C] :
+theorem prop12_package (C : Type u) [Category.{w} C] :
     Prop12_IndexedAdjoints.{u, v, w} C where
   existLeft f := (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).direct_pullback_adj f
   univRight f := (GSLT.Topos.presheafChangeOfBase.{u, v, w} C).pullback_universal_adj f
@@ -207,7 +222,7 @@ structure PiSigmaPredicateRulePack (C : Type u) [Category.{w} C] where
       Δ.sigmaForm φ ≤ ψ ↔ φ ≤ Δ.pb ψ
 
 /-- Prop 12 packaged as explicit Π/Σ predicate rules over presheaf fibers. -/
-noncomputable def prop12_piSigmaPredicateRulePack :
+theorem prop12_piSigmaPredicateRulePack :
     PiSigmaPredicateRulePack.{u, v, w} C where
   piIntro := by
     intro Δ ψ φ h
@@ -257,8 +272,8 @@ end PiSigmaPredicateRules
 
 /-! ## NTT Proposition 14: Cosmic Fibration -/
 
-/-- NTT Prop 14: cosmic fibration structure.
-    Reference: Williams & Stay, NTT (ACT 2021), Prop 14 & 19. -/
+/-- Indexed adjoints and frame fibers relevant to NTT Props 14 and 19.
+This package does not construct the cartesian closed total category/fibration. -/
 structure Prop14_CosmicFibration (C : Type u) [Category.{w} C] where
   indexed : Prop12_IndexedAdjoints.{u, v, w} C
   frameFibers : ∀ (F : Cᵒᵖ ⥤ Type v), Order.Frame (Subfunctor F)
@@ -268,10 +283,11 @@ noncomputable def prop14_cosmicFibration (C : Type u) [Category.{w} C] :
   indexed := prop12_package C
   frameFibers F := GSLT.Topos.presheafSubfunctorFrame (C := Cᵒᵖ) F
 
-/-! ## NTT Proposition 17: Reification Right Adjoint -/
+/-! ## Same-fiber predicate-transformer infimum -/
 
-/-- Reification predicate: chi.F = inf { phi => F(phi) | phi }.
-    Reference: Williams & Stay, NTT (ACT 2021), Prop 17. -/
+/-- The infimum of `phi => F(phi)` in one predicate fiber. NTT Prop 17 instead
+requires predicates on a function object and an adjunction to curried evaluation;
+neither is established by this construction. -/
 noncomputable def reificationPred
     (L : CategoryTheory.LambdaTheories.LambdaTheory)
     (S : L.Obj)
@@ -290,7 +306,8 @@ theorem reificationPred_mono
   rcases hψ with ⟨φ, rfl⟩
   exact le_trans (sInf_le ⟨φ, rfl⟩) (himp_le_himp_left (hFG φ))
 
-/-- NTT Prop 17 package: reification right adjoint layer. -/
+/-- Monotonicity and a one-sided bound for the same-fiber infimum.
+These laws do not assert the function-object adjunction of NTT Prop 17. -/
 structure Prop17_Reification
     (L : CategoryTheory.LambdaTheories.LambdaTheory) where
   reify : ∀ (S : L.Obj),
@@ -498,8 +515,8 @@ end ImageComprehension
 
 /-! ## NTT Theorem 23: Internal Language Package -/
 
-/-- NTT Thm 23: internal language package L(e) = <pi_Omega, pi_Delta, i, c>.
-    Reference: Williams & Stay, NTT (ACT 2021), Thm 23. -/
+/-- Object-level predicate/codomain and image-comprehension data relevant to
+NTT Thm 23. Its categorical action and coherence are not fields of this package. -/
 structure InternalLanguagePackage (C : Type u) [Category.{w} C] where
   predicateFib : Prop14_CosmicFibration.{u, v, w} C
   codomainFib : Def21_CodomainFibration (Cᵒᵖ ⥤ Type v)
@@ -512,19 +529,19 @@ noncomputable def thm23_internalLanguagePackage
   codomainFib := def21_codomainFibration (Cᵒᵖ ⥤ Type v)
   imageComprehension := imageComprehensionAdjunction (Cᵒᵖ ⥤ Type v)
 
-/-! ### Thm 23 Strengthening: Functorial Laws
+/-! ### Identity and composite operation-preservation endpoints
 
-The internal language assignment respects identity and composition of theory
-morphisms. That is, the identity theory morphism preserves the Π/Ω/Prop
-contract, and composition of theory morphisms preserves the Π/Ω/Prop contract.
-These are the functorial laws making L a functor from the category of lambda
-theories to the category of internal language packages. -/
+These endpoints concern identity and composition of law-bearing fiber-algebra
+maps, whose fields already require Π/Ω/Prop preservation. No source base
+functor, presheaf-precomposition action or substitution compatibility is supplied.
+These endpoints do not construct morphisms of internal-language packages or
+prove an internal-language map's identity/composition laws. The 2-functor of
+NTT Thm 23 remains a separate obligation. -/
 
 open Mettapedia.CategoryTheory.LambdaTheories in
 open TheoryMorphism in
-/-- Functorial laws for the internal language package (Thm 23 strengthening).
-    Witnesses that the assignment L ↦ InternalLanguagePackage respects identity
-    and composition of theory morphisms. -/
+/-- Preservation of Π/Ω/Prop by identity and composite theory morphisms.
+Despite the existing name, this is not a package of internal-language functor laws. -/
 structure InternalLanguageFunctorialLaws where
   /-- Identity morphism preserves Π/Ω/Prop. -/
   map_id : ∀ (L : LambdaTheory.{u}) (S : L.Obj)
@@ -556,8 +573,9 @@ structure InternalLanguageFunctorialLaws where
 
 open Mettapedia.CategoryTheory.LambdaTheories in
 open TheoryMorphism in
-/-- The internal language functorial laws are satisfied. -/
-def thm23_functorialLaws : InternalLanguageFunctorialLaws.{u} where
+/-- The identity and composite theory morphisms satisfy the stated
+operation-preservation endpoints. -/
+theorem thm23_functorialLaws : InternalLanguageFunctorialLaws.{u} where
   map_id L S types φ ψ :=
     TheoryMorphism.id_piOmegaProp_translation_endpoint L S types φ ψ
   map_comp F G S types φ ψ :=

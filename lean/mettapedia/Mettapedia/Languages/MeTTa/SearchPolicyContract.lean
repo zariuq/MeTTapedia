@@ -23,6 +23,7 @@ Negative example:
 namespace Mettapedia.Languages.MeTTa.SearchPolicyContract
 
 open Mettapedia.Languages.MeTTa.ElaboratedCore
+
 open MeTTailCore.MeTTaIL.EffectSafety
 
 /-- Coarse search-kernel families. -/

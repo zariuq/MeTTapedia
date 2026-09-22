@@ -1,10 +1,10 @@
 import Mettapedia.Languages.MeTTa.PeTTa.TypedEval
 import Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
-import Mettapedia.Languages.MeTTa.Pure.Intrinsic.NatDecl
-import Mettapedia.Languages.MeTTa.Pure.Intrinsic.RecursorDecl
-import Mettapedia.Languages.MeTTa.Pure.Intrinsic.InductiveDecl
-import Mettapedia.Languages.MeTTa.Pure.Intrinsic.Substitution
-import Mettapedia.Languages.MeTTa.Pure.Intrinsic.CoreEmbedding
+import Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.NatDecl
+import Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.RecursorDecl
+import Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.InductiveDecl
+import Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Substitution
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.CoreEmbedding
 
 /-!
 # DTT Seed Proof Path
@@ -14,7 +14,7 @@ A tiny, executable proof path for the he-prime DTT tranche:
 1. A typed PeTTa rule application is accepted by the typed evaluation judgment.
 2. Erasing the type guard gives an ordinary PeTTa evaluation.
 3. The same rule application is sound in the compiled LP model.
-4. The IntrinsicPure side has the matching checked-step shape: a typed closed term
+4. The TwoSortPiSigmaId side has the matching checked-step shape: a typed closed term
    reduces while preserving its type.
 
 This file is intentionally small. It records the first reusable proof shape for
@@ -29,20 +29,20 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.Logic.LP
 open Mettapedia.OSLF.MeTTaIL.LPBridge
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Context
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationEnv
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSpec
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.UnitDecl
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.NatDecl
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.RecursorDecl
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.IndDecl
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Substitution
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.PatternBridge
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.ProfileTheory
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Assembly
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.CoreEmbedding
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Context
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationEnv
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSpec
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.UnitDecl
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.NatDecl
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.RecursorDecl
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.IndDecl
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Substitution
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.PatternBridge
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.ProfileTheory
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Assembly
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.CoreEmbedding
 
 /-! ## PeTTa-side typed program -/
 
@@ -109,21 +109,21 @@ theorem typedSucc_first_proof_path :
       leastHerbrandModel (pettaSpaceToLPKB typedSuccSpace) :=
   ⟨typedSucc_eval, typedSucc_erases_to_petta, typedSucc_rule_lp_sound⟩
 
-/-! ## IntrinsicPure-side checked-step shape -/
+/-! ## TwoSortPiSigmaId-side checked-step shape -/
 
 theorem pureNatAlias_preserves_type_step :
-    ∃ A : PureTm 0,
-      HasTypeDecl natDeclEnv .nil ((.const natAliasName : PureTm 0)) A ∧
+    ∃ A : ScopedTerm 0,
+      HasTypeDecl natDeclEnv .nil ((.const natAliasName : ScopedTerm 0)) A ∧
       RedDecl natDeclEnv
-        ((.const natAliasName : PureTm 0))
-        ((.const natZeroName : PureTm 0)) ∧
-      HasTypeDecl natDeclEnv .nil ((.const natZeroName : PureTm 0)) A :=
+        ((.const natAliasName : ScopedTerm 0))
+        ((.const natZeroName : ScopedTerm 0)) ∧
+      HasTypeDecl natDeclEnv .nil ((.const natZeroName : ScopedTerm 0)) A :=
   natAlias_checked_step
 
 /-! ## Recursor / inductive triangulation seeds -/
 
 theorem pureNatRec_declared_type :
-    HasTypeDecl natRecDeclEnv .nil ((.const natRecName : PureTm 0)) natRecType :=
+    HasTypeDecl natRecDeclEnv .nil ((.const natRecName : ScopedTerm 0)) natRecType :=
   hasType_natRec
 
 theorem pureNatRec_env_wellFormed :
@@ -239,7 +239,7 @@ def tutUnitCtorPattern : Pattern := .apply "TutUnitCtor" []
 def tutUnitRecSyntaxOnCtorPattern : Pattern :=
   .apply "TutUnitRecSyntax" [tutUnitPattern, tutUnitCtorPattern, tutUnitCtorPattern]
 
-def elaborateTutUnitOraclePattern : Pattern → Option (PureTm 0)
+def elaborateTutUnitOraclePattern : Pattern → Option (ScopedTerm 0)
   | .apply "TutUnit" [] => some unitTyTerm
   | .apply "TutUnitCtor" [] => some unitCtorTerm
   | .apply "TutUnitRecSyntax"
@@ -250,8 +250,8 @@ def elaborateTutUnitOraclePattern : Pattern → Option (PureTm 0)
 structure HePrimeOracleReduction where
   syntaxSource : Pattern
   syntaxTarget : Pattern
-  source : PureTm 0
-  target : PureTm 0
+  source : ScopedTerm 0
+  target : ScopedTerm 0
   sourceElab : elaborateTutUnitOraclePattern syntaxSource = some source
   targetElab : elaborateTutUnitOraclePattern syntaxTarget = some target
   sourceType : HasTypeDecl unitRecDeclEnv .nil source (.const unitTyName)
@@ -260,7 +260,7 @@ structure HePrimeOracleReduction where
 
 /-- First runtime/oracle bridge: the he-prime syntax call
 `(TutUnitRecSyntax TutUnit TutUnitCtor TutUnitCtor)` is the same closed
-Unit-rec computation witnessed by the IntrinsicPure oracle. -/
+Unit-rec computation witnessed by the TwoSortPiSigmaId oracle. -/
 def hePrime_tutUnitRecSyntax_oracle_certificate : HePrimeOracleReduction :=
   { syntaxSource := tutUnitRecSyntaxOnCtorPattern
     syntaxTarget := tutUnitCtorPattern
@@ -302,10 +302,10 @@ theorem generatedRecursor_currentBoundary_noValues_profileBridge_of_all_none_spe
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn (envOfSpecs specs) contract)
     (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
     (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
-    {t u : PureTm 0}
+    {t u : ScopedTerm 0}
     (h :
       Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u) :
-    PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u) := by
+    TwoSortProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u) := by
   let hPkg :=
     generatedRecursorContract_admitted_current_boundary_package_of_all_none_specs
       (contract := contract) (specs := specs) hAdm hSig hNone hReal
@@ -313,12 +313,12 @@ theorem generatedRecursor_currentBoundary_noValues_profileBridge_of_all_none_spe
     checkedNoValuesDeclKernelBoundaryOfPackage
       hSig hNone (hSig.declSpecAndNoValuesPackage_of_all_none hNone)
   have hStepToDecl :
-      ∀ {t u : PureTm 0},
+      ∀ {t u : ScopedTerm 0},
         Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
           RedStarDecl (envOfSpecs specs) t u :=
     hPkg.2.2.1.2.1
   exact
-    checkedNoValuesDeclKernel_star_sound_pureProfileTheoryStepStar_quoteClosed
+    checkedNoValuesDeclKernel_star_sound_twoSortProfileTheoryStepStar_quoteClosed
       hSig hNone hinst0 hcompat0 (hStepToDecl h)
 
 /-- The same no-values current-boundary package gives the full typed/profile
@@ -334,12 +334,12 @@ theorem generatedRecursor_currentBoundary_noValues_subjectReduction_and_profileB
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn (envOfSpecs specs) contract)
     (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
     (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
-    {t u A : PureTm 0}
+    {t u A : ScopedTerm 0}
     (ht : HasTypeDecl (envOfSpecs specs) .nil t A)
     (h :
       Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u) :
     HasTypeDecl (envOfSpecs specs) .nil u A ∧
-      PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u) := by
+      TwoSortProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u) := by
   let hPkg :=
     generatedRecursorContract_admitted_current_boundary_package_of_all_none_specs
       (contract := contract) (specs := specs) hAdm hSig hNone hReal
@@ -347,7 +347,7 @@ theorem generatedRecursor_currentBoundary_noValues_subjectReduction_and_profileB
     checkedNoValuesDeclKernelBoundaryOfPackage
       hSig hNone (hSig.declSpecAndNoValuesPackage_of_all_none hNone)
   have hStepToDecl :
-      ∀ {t u : PureTm 0},
+      ∀ {t u : ScopedTerm 0},
         Relation.ReflTransGen (GeneratedRecursorContractClosedIotaStep contract) t u →
           RedStarDecl (envOfSpecs specs) t u :=
     hPkg.2.2.1.2.1
@@ -368,13 +368,13 @@ theorem generatedRecursor_currentBoundary_noValues_convByNormalization_profileBr
     (hReal : GeneratedRecursorContractClosedIotaRealizedIn (envOfSpecs specs) contract)
     (hinst0 : Inst0OpenBridgeCompat defaultBinderName)
     (hcompat0 : QuoteCompat defaultBinderName 0 emptyEnv)
-    {t u : PureTm 0}
+    {t u : ScopedTerm 0}
     {w : GeneratedRecursorContractClosedIotaConvWitness contract t u}
     (hw :
       generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w) :
     ∃ q : Pattern,
-      PureProfileTheoryStepStar (quoteClosedTm t) q ∧
-      PureProfileTheoryStepStar (quoteClosedTm u) q := by
+      TwoSortProfileTheoryStepStar (quoteClosedTm t) q ∧
+      TwoSortProfileTheoryStepStar (quoteClosedTm u) q := by
   let hPkg :=
     generatedRecursorContract_admitted_current_boundary_package_of_all_none_specs
       (contract := contract) (specs := specs) hAdm hSig hNone hReal
@@ -382,7 +382,7 @@ theorem generatedRecursor_currentBoundary_noValues_convByNormalization_profileBr
     checkedNoValuesDeclKernelBoundaryOfPackage
       hSig hNone (hSig.declSpecAndNoValuesPackage_of_all_none hNone)
   have hConvSome :
-      ∀ {t u : PureTm 0}
+      ∀ {t u : ScopedTerm 0}
         {w : GeneratedRecursorContractClosedIotaConvWitness contract t u},
         generatedRecursorContractClosedIotaConvByNormalization? contract t u = some w →
           ConvDecl (envOfSpecs specs) t u :=
@@ -407,10 +407,10 @@ theorem generatedRecursor_currentBoundary_churchRosser_frontier_and_embedding_of
     GeneratedRecursorCurrentBoundaryChurchRosserFrontierPackage
         (envOfSpecs specs) contract ∧
       ∃ hBoundary : CheckedChurchRosserDeclKernelBoundary hSig hCR,
-        (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).kernel =
+        (checkedChurchRosserDeclKernelIntoTwoSortProfile hSig hCR).kernel =
           hBoundary.typed ∧
-        (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).profile =
-          Mettapedia.Languages.MeTTa.CoreProfile.pureProfile := by
+        (checkedChurchRosserDeclKernelIntoTwoSortProfile hSig hCR).profile =
+          Mettapedia.Languages.MeTTa.CoreProfile.twoSortProfile := by
   have hWf : DeclEnvWellFormed (envOfSpecs specs) :=
     envOfSpecs_wellFormed_of_specObligations specs hSig.obligations
   have hFrontier :
@@ -422,10 +422,10 @@ theorem generatedRecursor_currentBoundary_churchRosser_frontier_and_embedding_of
       hAdm hWf hReal hCR
   let hBoundary := checkedChurchRosserDeclKernelBoundary hSig hCR
   have hEmbed :
-      (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).kernel =
+      (checkedChurchRosserDeclKernelIntoTwoSortProfile hSig hCR).kernel =
           hBoundary.typed ∧
-        (checkedChurchRosserDeclKernelIntoPureProfile hSig hCR).profile =
-          Mettapedia.Languages.MeTTa.CoreProfile.pureProfile :=
+        (checkedChurchRosserDeclKernelIntoTwoSortProfile hSig hCR).profile =
+          Mettapedia.Languages.MeTTa.CoreProfile.twoSortProfile :=
     checkedChurchRosserDeclKernelBoundary_kernel_and_profile hBoundary
   exact
     ⟨ hFrontier
@@ -440,7 +440,7 @@ theorem simplest_general_inductive_checker_path :
       checkIndDecl badNegDecl = none :=
   ⟨unitDecl_specs_agree, natDecl_specs_agree, check_badNegDecl⟩
 
-/-! ## Capability-safety IntrinsicPure seed -/
+/-! ## Capability-safety TwoSortPiSigmaId seed -/
 
 def capPrincipalName : DeclName := `DTTSeed.Principal
 def capSecretName : DeclName := `DTTSeed.Secret
@@ -453,32 +453,32 @@ def capAliceDocCapName : DeclName := `DTTSeed.AliceDocCap
 def capBobDocCapName : DeclName := `DTTSeed.BobDocCap
 def capReadName : DeclName := `DTTSeed.read
 
-def capPrincipalTy : PureTm 0 := .const capPrincipalName
-def capSecretTy : PureTm 0 := .const capSecretName
-def capAliceTerm : PureTm 0 := .const capAliceName
-def capBobTerm : PureTm 0 := .const capBobName
-def capDocTerm : PureTm 0 := .const capDocName
-def capAliceDocCapTerm : PureTm 0 := .const capAliceDocCapName
-def capBobDocCapTerm : PureTm 0 := .const capBobDocCapName
+def capPrincipalTy : ScopedTerm 0 := .const capPrincipalName
+def capSecretTy : ScopedTerm 0 := .const capSecretName
+def capAliceTerm : ScopedTerm 0 := .const capAliceName
+def capBobTerm : ScopedTerm 0 := .const capBobName
+def capDocTerm : ScopedTerm 0 := .const capDocName
+def capAliceDocCapTerm : ScopedTerm 0 := .const capAliceDocCapName
+def capBobDocCapTerm : ScopedTerm 0 := .const capBobDocCapName
 
-def capCanReadType : PureTm 0 :=
+def capCanReadType : ScopedTerm 0 :=
   .pi (.const capPrincipalName)
     (.pi (.const capSecretName) .u0)
 
-def capReadOKType : PureTm 0 :=
+def capReadOKType : ScopedTerm 0 :=
   .pi (.const capPrincipalName)
     (.pi (.const capSecretName) .u0)
 
-def capCanRead (who doc : PureTm 0) : PureTm 0 :=
+def capCanRead (who doc : ScopedTerm 0) : ScopedTerm 0 :=
   .app (.app (.const capCanReadName) who) doc
 
-def capReadOK (who doc : PureTm 0) : PureTm 0 :=
+def capReadOK (who doc : ScopedTerm 0) : ScopedTerm 0 :=
   .app (.app (.const capReadOKName) who) doc
 
-def capAliceDocCapType : PureTm 0 := capCanRead capAliceTerm capDocTerm
-def capBobDocCapType : PureTm 0 := capCanRead capBobTerm capDocTerm
+def capAliceDocCapType : ScopedTerm 0 := capCanRead capAliceTerm capDocTerm
+def capBobDocCapType : ScopedTerm 0 := capCanRead capBobTerm capDocTerm
 
-def capReadType : PureTm 0 :=
+def capReadType : ScopedTerm 0 :=
   .pi (.const capPrincipalName)
     (.pi (.const capSecretName)
       (.pi (.app (.app (.const capCanReadName) (.var 1)) (.var 0))
@@ -524,7 +524,7 @@ def capDeclEnv : DeclEnv := envOfSpecs capSpecs
   decide
 
 theorem hasType_capRead :
-    HasTypeDecl capDeclEnv .nil ((.const capReadName : PureTm 0)) capReadType :=
+    HasTypeDecl capDeclEnv .nil ((.const capReadName : ScopedTerm 0)) capReadType :=
   hasType_const_from_lookup (E := capDeclEnv) (Γ := .nil) (c := capReadName) (A0 := capReadType) (by
     simp)
 
@@ -555,10 +555,10 @@ theorem hasType_capBobDocCap :
     (E := capDeclEnv) (Γ := .nil) (c := capBobDocCapName) (A0 := capBobDocCapType) (by
       simp)
 
-def capReadAliceDocTerm : PureTm 0 :=
+def capReadAliceDocTerm : ScopedTerm 0 :=
   .app (.app (.app (.const capReadName) capAliceTerm) capDocTerm) capAliceDocCapTerm
 
-def capReadAliceDocType : PureTm 0 :=
+def capReadAliceDocType : ScopedTerm 0 :=
   capReadOK capAliceTerm capDocTerm
 
 theorem hasType_capReadAliceDoc :
@@ -572,19 +572,19 @@ theorem hasType_capReadAliceDoc :
       hasType_capDoc)
       hasType_capAliceDocCap)
 
-def capReadBobDocPrefixTerm : PureTm 0 :=
+def capReadBobDocPrefixTerm : ScopedTerm 0 :=
   .app (.app (.const capReadName) capBobTerm) capDocTerm
 
-def capReadBobDocPrefixType : PureTm 0 :=
+def capReadBobDocPrefixType : ScopedTerm 0 :=
   .pi capBobDocCapType (liftClosed (n := 1) (capReadOK capBobTerm capDocTerm))
 
-def capReadBobDocWithAliceCapTerm : PureTm 0 :=
+def capReadBobDocWithAliceCapTerm : ScopedTerm 0 :=
   .app capReadBobDocPrefixTerm capAliceDocCapTerm
 
-def capReadBobDocWithBobCapTerm : PureTm 0 :=
+def capReadBobDocWithBobCapTerm : ScopedTerm 0 :=
   .app capReadBobDocPrefixTerm capBobDocCapTerm
 
-def capReadBobDocType : PureTm 0 :=
+def capReadBobDocType : ScopedTerm 0 :=
   capReadOK capBobTerm capDocTerm
 
 theorem hasType_capReadBobDocPrefix :
@@ -600,26 +600,26 @@ theorem capAliceDocCap_type_ne_bobDocCap_type :
     capAliceDocCapType ≠ capBobDocCapType := by
   decide
 
-def capCapabilityOwner? : PureTm 0 → Option (PureTm 0)
+def capCapabilityOwner? : ScopedTerm 0 → Option (ScopedTerm 0)
   | .const c =>
       if c = capAliceDocCapName then some capAliceTerm
       else if c = capBobDocCapName then some capBobTerm
       else none
   | _ => none
 
-def capCapabilitySecret? : PureTm 0 → Option (PureTm 0)
+def capCapabilitySecret? : ScopedTerm 0 → Option (ScopedTerm 0)
   | .const c =>
       if c = capAliceDocCapName then some capDocTerm
       else if c = capBobDocCapName then some capDocTerm
       else none
   | _ => none
 
-def capReadRequestParts? : PureTm 0 → Option (PureTm 0 × PureTm 0 × PureTm 0)
+def capReadRequestParts? : ScopedTerm 0 → Option (ScopedTerm 0 × ScopedTerm 0 × ScopedTerm 0)
   | .app (.app (.app (.const c) who) doc) cap =>
       if c = capReadName then some (who, doc, cap) else none
   | _ => none
 
-def capAuthorizesReadRequest? (who doc cap : PureTm 0) : Bool :=
+def capAuthorizesReadRequest? (who doc cap : ScopedTerm 0) : Bool :=
   match capCapabilityOwner? cap, capCapabilitySecret? cap with
   | some owner, some capDoc =>
       if owner = who then
@@ -644,7 +644,7 @@ theorem capability_bob_request_with_alice_cap_fails_owner_check :
       capAuthorizesReadRequest? capBobTerm capDocTerm capAliceDocCapTerm = false := by
   decide
 
-def inferClosedDeclAppType? (E : DeclEnv) : PureTm 0 → Option (PureTm 0)
+def inferClosedDeclAppType? (E : DeclEnv) : ScopedTerm 0 → Option (ScopedTerm 0)
   | .const c => typeOf? E c
   | .app f a =>
       match inferClosedDeclAppType? E f, inferClosedDeclAppType? E a with

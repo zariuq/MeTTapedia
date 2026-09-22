@@ -1008,9 +1008,8 @@ namespace LanguageDef
 def empty (name : String) : LanguageDef :=
   { name, types := [], terms := [], equations := [], rewrites := [] }
 
-/-- Construct the original operational core while leaving every optional
-    extension at its declared default.  Keeping this wrapper stable prevents
-    additions to `LanguageDef` from shifting generated positional arguments. -/
+/-- Construct the five-field language definition. Dependent capability
+    extensions are separate values, not optional fields of this core. -/
 def ofCore
     (name : String)
     (types : List TypeDecl)

@@ -2,6 +2,7 @@ import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Semantics
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.OSLF.MeTTaIL.Match
+import Mettapedia.OSLF.MeTTaIL.ScopedSyntax
 import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
@@ -10,6 +11,13 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 import Mettapedia.OSLF.Framework.RewriteSystem
+import Mettapedia.OSLF.Framework.RedexPosition
+import Mettapedia.OSLF.Framework.GeneratedHypercube
+import Mettapedia.OSLF.Framework.GeneratedHypercubeInstances
+import Mettapedia.OSLF.Framework.GeneratedModality
+import Mettapedia.OSLF.Framework.GeneratedModalFamily
+import Mettapedia.OSLF.Framework.GeneratedModalityRho
+import Mettapedia.OSLF.Framework.RelyPossiblyScheme
 import Mettapedia.OSLF.Framework.RhoInstance
 import Mettapedia.OSLF.Framework.DerivedModalities
 import Mettapedia.OSLF.Framework.InitialModalSchema
@@ -33,6 +41,8 @@ import Mettapedia.OSLF.Framework.MATTProvableNow
 import Mettapedia.OSLF.Framework.MATTClaimMap
 import Mettapedia.OSLF.Framework.FULLStatus
 import Mettapedia.OSLF.Framework.TypeSynthesis
+import Mettapedia.OSLF.Framework.SelectedNativeTypeCalculusCompilerTransport
+import Mettapedia.OSLF.Framework.DisplayedRewriteOccurrenceTyping
 import Mettapedia.OSLF.StructuralModal.Recursive
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefDSL
 import Mettapedia.OSLF.Framework.GeneratedTyping
@@ -63,6 +73,40 @@ import Mettapedia.GSLT.LanguageDef.DerivedEquationCanaries
 import Mettapedia.OSLF.StructuralModal.EquationInvariance
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SpatialReadingCanary
 import Mettapedia.GSLT.Logic.HennessyMilnerDirections
+import Mettapedia.GSLT.Logic.AdmissibleContextCongruence
+import Mettapedia.OSLF.StructuralModal.SeparatingConjunction
+import Mettapedia.OSLF.Framework.ObserverExtension
+import Mettapedia.OSLF.Framework.ObserverBisimilarity
+import Mettapedia.OSLF.Framework.ObserverReconstruction
+import Mettapedia.OSLF.Framework.FormulaFixpoint
+import Mettapedia.OSLF.Framework.TubeShape
+import Mettapedia.OSLF.Framework.GeneratedScope
+import Mettapedia.OSLF.Framework.GeneratedScopeRho
+import Mettapedia.OSLF.Framework.SourceGenerator
+import Mettapedia.OSLF.StructuralModal.AdmissibleEquations
+import Mettapedia.OSLF.Framework.ScopeComparison
+import Mettapedia.OSLF.Framework.SortedEquationFrame
+import Mettapedia.OSLF.Framework.GeneratorLength
+import Mettapedia.GSLT.Dynamics.EvidenceWeighting
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PlatformPresentation
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PlatformSlotLaws
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PlatformValidation
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PlatformModalFamily
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PlatformLabels
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PlatformSubstitutability
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PlatformEquations
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PlatformEquationDiscipline
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PlatformSourceScope
+import Mettapedia.OSLF.Framework.RelyPossiblyTypeFormer
+import Mettapedia.OSLF.Framework.GeneratedScopeSignature
+import Mettapedia.GSLT.Logic.LeastEnablerBox
+import Mettapedia.GSLT.Logic.IPOBox
+import Mettapedia.GSLT.Logic.RelativePushout
+import Mettapedia.GSLT.Logic.RedexRelativeCongruence
+import Mettapedia.GSLT.Logic.BagRelativePushout
+import Mettapedia.GSLT.Logic.RedexRelativeEnabling
+import Mettapedia.GSLT.Logic.ParallelLeastEnablerFails
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.AdmissibleContexts
 import Mettapedia.GSLT.Logic.HennessyMilnerTransport
 import Mettapedia.OSLF.Framework.FormulaAdequacy
 import Mettapedia.OSLF.Framework.EnumeratedAdequacy
@@ -70,8 +114,11 @@ import Mettapedia.OSLF.Framework.IndexedOperationalAdequacy
 import Mettapedia.OSLF.StructuralModal.BehaviouralAdequacy
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubstitutionInterpretationCanary
 import Mettapedia.GSLT.Logic.HennessyMilnerAdequacy
+import Mettapedia.GSLT.Logic.HigherOrderHML
+import Mettapedia.GSLT.Logic.HigherOrderHMLControls
 import Mettapedia.GSLT.Logic.MinimalEnablingContext
 import Mettapedia.OSLF.Framework.HennessyMilnerNativeTypes
+import Mettapedia.OSLF.Framework.HigherOrderNativeTypeControls
 import Mettapedia.OSLF.Framework.ConcreteHennessyMilnerBridge
 import Mettapedia.OSLF.Framework.MinimalContextNativeTypes
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.HennessyMilnerInstance
@@ -88,6 +135,55 @@ import Mettapedia.OSLF.Framework.DistinctionGraph.Weighted
 import Mettapedia.OSLF.Framework.DistinctionGraph.WorldModel
 import Mettapedia.OSLF.Framework.DistinctionGraph.Entropy
 import Mettapedia.OSLF.Bridges.Foundation.Kripke
+import Mettapedia.OSLF.Syntax.BindingSignature
+import Mettapedia.OSLF.Syntax.PartialRenaming
+import Mettapedia.OSLF.Syntax.ScopedMatching
+import Mettapedia.OSLF.Syntax.RedexPositionIsExtraInput
+import Mettapedia.OSLF.Syntax.RhoCommunicationSchema
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SubstitutionCaptureCanary
+import Mettapedia.OSLF.Syntax.ProcAsBindingSignature
+import Mettapedia.OSLF.Syntax.SignatureMorphism
+import Mettapedia.OSLF.Syntax.SignatureMorphismMetas
+import Mettapedia.OSLF.Syntax.TheoryMorphism
+import Mettapedia.OSLF.Syntax.PositionEnumeration
+import Mettapedia.OSLF.Syntax.EquationalQuotient
+import Mettapedia.OSLF.Syntax.EquationTransport
+import Mettapedia.OSLF.Syntax.PatternAsBindingSignature
+import Mettapedia.OSLF.Syntax.StepRelationCaptureWitness
+import Mettapedia.OSLF.Syntax.PatternRepairWitness
+import Mettapedia.OSLF.Syntax.PatternSubstEquation
+import Mettapedia.OSLF.Syntax.SubstitutionRegressionGuard
+import Mettapedia.OSLF.Syntax.CollectionRestWitness
+import Mettapedia.OSLF.Syntax.CollectionRestCaptureWitness
+import Mettapedia.OSLF.Syntax.RuleVariableSurvivalWitness
+import Mettapedia.OSLF.MeTTaIL.RuleBindingRegression
+import Mettapedia.OSLF.MeTTaIL.CollectionMatchingRegression
+import Mettapedia.OSLF.Syntax.ObservationClosure
+import Mettapedia.OSLF.Syntax.ObservationClosureWitness
+import Mettapedia.OSLF.Syntax.NormalFormStrength
+import Mettapedia.OSLF.Syntax.ScopedShift
+import Mettapedia.OSLF.Syntax.ContextualSplitting
+import Mettapedia.OSLF.Syntax.FireSparseness
+import Mettapedia.OSLF.Syntax.SyntacticCategory
+import Mettapedia.OSLF.Syntax.SyntacticTermPresheaf
+import Mettapedia.OSLF.Syntax.Presentation
+import Mettapedia.OSLF.Framework.GeneratedLayerAdjunction
+import Mettapedia.OSLF.Framework.LogicalMetric
+import Mettapedia.OSLF.Framework.ScopeStratum
+import Mettapedia.OSLF.Framework.ObserverIdempotence
+import Mettapedia.OSLF.Framework.TypeFormerExtension
+import Mettapedia.OSLF.SourceLedger
+import Mettapedia.OSLF.Syntax.UniqueDecompositionFails
+import Mettapedia.OSLF.Syntax.UniqueDecompositionRepaired
+import Mettapedia.OSLF.Syntax.UnfoldingBreaksDecomposition
+import Mettapedia.OSLF.Syntax.GSLTBridge
+import Mettapedia.OSLF.Syntax.ModalityAndObservation
+import Mettapedia.OSLF.Syntax.ContextCategory
+import Mettapedia.OSLF.Syntax.LinearContexts
+import Mettapedia.OSLF.Syntax.TermClone
+import Mettapedia.OSLF.MeTTaIL.DepthAlignmentAudit
+import Mettapedia.GSLT.Logic.ImageFinitenessNecessary
+import Mettapedia.OSLF.Syntax.TransitionsAreEvents
 -- SpecIndex.lean imports Main (not vice versa) — no cycle
 
 /-!
@@ -565,10 +661,10 @@ export Mettapedia.OSLF.Framework.Mode2PureBoundary (
   no_behavioral_to_pure
   pure_endo_unique
   pure_boundary_characterization
-  mettaPureRuntimeObj
-  mettaPureBehavioralObj
-  mettaPureRuntimeToBehavioral
-  mettaPure_runtime_behavioral_diamond_transport
+  twoSortDependentRuntimeObj
+  twoSortDependentBehavioralObj
+  twoSortDependentRuntimeToBehavioral
+  twoSortDependent_runtime_behavioral_diamond_transport
 )
 
 export Mettapedia.OSLF.Framework.Mode2SkeletonLaws (
@@ -602,7 +698,7 @@ export Mettapedia.OSLF.Framework.MATTProvableNow (
   runtime_mode_diamond_transport
   runtime_mode_diamond_transport_comp
   pure_mode_isolation
-  mettaPure_runtime_behavioral_transport
+  twoSortDependent_runtime_behavioral_transport
   matt_provable_now_bundle
   matt_provable_now_bundle_ext
   matt_provable_now_bundle_transport

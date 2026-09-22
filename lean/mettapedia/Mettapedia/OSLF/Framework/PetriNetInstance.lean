@@ -337,7 +337,7 @@ theorem petriNet_AB_rawStep_CD :
   · simp [petriNet]
   · decide +kernel
   · simp [bindings, transitionT1, applyPremisesWithEnv]
-  · simp [bindings, transitionT1, marking, tokC, tokD,
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped_zero_of_binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, bindings, transitionT1, marking, tokC, tokD,
       applyBindingsForRule, applyBindings]
 
 /-- Positive `E;R;E` canary: both endpoints may change representatives while
@@ -358,7 +358,7 @@ theorem petriNet_BA_not_rawStep_DC :
   change marking [tokD, tokC] ∉
     rewriteAt (engineBasePremises RelationEnv.empty) petriNet 1
       (marking [tokB, tokA])
-  simp [rewriteAt, petriNet, transitionT1, transitionT2, marking,
+  simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped_zero_of_binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, rewriteAt, petriNet, transitionT1, transitionT2, marking,
     tokA, tokB, tokC, tokD, applyRuleUsing, matchPatternForRule,
     matchPattern, matchBag, mergeBindings, premisesUsing,
     applyBindingsForRule, applyBindings]

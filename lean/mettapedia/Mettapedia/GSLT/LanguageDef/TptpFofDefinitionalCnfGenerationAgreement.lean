@@ -65,7 +65,11 @@ local macro "generation_root" : tactic =>
       TptpFofDefinitionalCnfLanguageDef.cnfOutput,
       TptpFofDefinitionalCnfLanguageDef.a,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 local macro "generation_root_using_all" : tactic =>
   `(tactic|
@@ -141,7 +145,11 @@ local macro "generation_root_using_all" : tactic =>
       TptpFofDefinitionalCnfLanguageDef.cnfOutput,
       TptpFofDefinitionalCnfLanguageDef.a,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 inductive Derivation : Pattern → Pattern → Type
   | variablesZero (next : Pattern) :

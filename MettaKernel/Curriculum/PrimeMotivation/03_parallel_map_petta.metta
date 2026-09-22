@@ -10,11 +10,11 @@
 ; with WorkSpan <2,1>; a contested single purse has no license.  The ordinary
 ; pair-map still runs when analysis cannot establish separation.
 ; Lean anchors:
-;   Mettapedia.Languages.MeTTa.Prime.NativeFibredCost.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeFibredCost.
 ;     compiledSchedule_workSpan
-;   Mettapedia.Languages.MeTTa.Prime.NativeFibredCost.Examples.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeFibredCost.Examples.
 ;     contested_has_no_prime_parallel_license
-;   Mettapedia.Languages.MeTTa.Prime.NativeInteractionFibration.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeInteractionFibration.
 ;     CostEffectSeparation.realizes_productSquare
 ;
 ; The type/effect layer licenses parallel execution; it does not redefine map.

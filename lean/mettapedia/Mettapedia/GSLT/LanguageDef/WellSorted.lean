@@ -271,6 +271,23 @@ theorem ArgumentsHaveTypes.length_eq
       | cons representation parameterType argumentTyped argumentsTyped =>
           simp [inductionHypothesis argumentsTyped]
 
+/-- Invert the first ordinary constructor parameter without inspecting any
+particular language's declaration list. This is the typed argument premise
+needed when elaborating a supported open first-order pattern. -/
+theorem ArgumentsHaveTypes.simple_cons_inv
+    {language : LanguageDef} {free : FreeTypeContext}
+    {bound : List TypeExpr} {argument : Pattern} {arguments : List Pattern}
+    {name : String} {type : TypeExpr} {parameters : List TermParam}
+    (typed : ArgumentsHaveTypes language free bound
+      (argument :: arguments) (.simple name type :: parameters)) :
+    HasType language free bound argument type ∧
+      ArgumentsHaveTypes language free bound arguments parameters := by
+  cases typed with
+  | cons representation expectedType argumentTyped argumentsTyped =>
+      simp only [parameterType?, Option.some.injEq] at expectedType
+      cases expectedType
+      exact ⟨argumentTyped, argumentsTyped⟩
+
 /-- Base-sort specialization of the generic type-expression judgment. -/
 abbrev HasSort (language : LanguageDef) (free : FreeTypeContext)
     (bound : List TypeExpr) (pattern : Pattern) (sort : String) : Prop :=

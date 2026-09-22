@@ -337,7 +337,11 @@ local macro "serialization_root" : tactic =>
       oneDisjunction, moreDisjunction, cnfFormula,
       formulaRole, annotatedCnf,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 local macro "serialization_root_using_all" : tactic =>
   `(tactic|
@@ -397,7 +401,11 @@ local macro "serialization_root_using_all" : tactic =>
       oneDisjunction, moreDisjunction, cnfFormula,
       formulaRole, annotatedCnf,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 theorem terms_nil_rewriteAt_exact (plan : LexicalPlan) (fuel : Nat) :
     rewriteAt (engineBasePremises plan.relationEnv) language (fuel + 1)
@@ -534,6 +542,8 @@ theorem term_variable_rewriteAt_exact (plan : LexicalPlan)
     numericTerm, distinctObjectTerm, a, v, applyRuleUsing,
     matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
     matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
+    applyRuleBindings_eq_applyBindings, ruleDepthAligned, depthAligned,
+    depthAlignedList, captureDepth, captureDepthList,
     applyBindings, engineBasePremises, premiseStepWithEnv,
     relationQueryStep, builtinRelationTuples,
     TptpFofCnfOfficialSerializationPlan.variableRelation,
@@ -673,7 +683,9 @@ theorem generated_term_rewriteAt_exact (plan : LexicalPlan)
     definedFunctorAst, systemFunctorAst, numericTerm, distinctObjectTerm, a, v,
     applyRuleUsing, matchPatternForRule_eq_syntactic, premisesUsing,
     premiseStepUsing, matchPattern, matchArgs, mergeBindings,
-    applyBindingsForRule, applyBindings, engineBasePremises,
+    applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+    ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+    captureDepthList, applyBindings, engineBasePremises,
     premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
     TptpFofCnfOfficialSerializationPlan.variableRelation,
     TptpFofCnfOfficialSerializationPlan.skolemFunctorRelation]
@@ -887,6 +899,8 @@ private theorem generated_literal_rewriteAt_exact (plan : LexicalPlan)
       positiveLiteral, negativeLiteral, a, v, applyRuleUsing,
       matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
       matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
+      applyRuleBindings_eq_applyBindings, ruleDepthAligned, depthAligned,
+      depthAlignedList, captureDepth, captureDepthList,
       applyBindings, engineBasePremises, premiseStepWithEnv,
       relationQueryStep, builtinRelationTuples,
       TptpFofCnfOfficialSerializationPlan.definitionFunctorRelation]
@@ -1030,7 +1044,9 @@ private theorem entries_cons_rewriteAt_exact (plan : LexicalPlan)
       serializedEntriesCons, formulaRole, annotatedCnf, a, v,
       applyRuleUsing, matchPatternForRule_eq_syntactic, premisesUsing,
       premiseStepUsing, matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings, engineBasePremises,
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings, engineBasePremises,
       premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
       TptpFofCnfOfficialSerializationPlan.clauseNameRelation]
     simp (config := { maxSteps := 1000000 }) [matchRelationArgs,
@@ -2344,6 +2360,8 @@ theorem missing_variable_has_no_authored_result (fuel : Nat) :
     numericTerm, distinctObjectTerm, a, v, applyRuleUsing,
     matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
     matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
+    applyRuleBindings_eq_applyBindings, ruleDepthAligned, depthAligned,
+    depthAlignedList, captureDepth, captureDepthList,
     applyBindings, engineBasePremises, premiseStepWithEnv,
     relationQueryStep, builtinRelationTuples,
     TptpFofCnfOfficialSerializationPlan.variableRelation,

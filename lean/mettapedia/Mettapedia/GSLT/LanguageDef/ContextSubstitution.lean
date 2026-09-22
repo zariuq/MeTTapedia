@@ -237,6 +237,7 @@ theorem renameAmbientBVarsAt_add_eq_liftBVars
   | hfvar name => simp [renameAmbientBVarsAt, liftBVars]
   | happly constructor arguments inductionHypothesis =>
       simp only [renameAmbientBVarsAt, liftBVars,
+        Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map,
         Pattern.apply.injEq, true_and]
       apply List.map_congr_left
       intro argument membership
@@ -250,6 +251,7 @@ theorem renameAmbientBVarsAt_add_eq_liftBVars
         replacementInduction]
   | hcollection collectionType elements rest inductionHypothesis =>
       simp only [renameAmbientBVarsAt, liftBVars,
+        Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map,
         Pattern.collection.injEq, true_and]
       constructor
       · apply List.map_congr_left
@@ -307,7 +309,7 @@ theorem binderSafeAt_liftBVars
   | hfvar name => simp [liftBVars, binderSafeAt]
   | happly constructor arguments inductionHypothesis =>
       cases arguments with
-      | nil => simp [liftBVars, binderSafeAt, binderSafeListAt]
+      | nil => simp [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, binderSafeAt, binderSafeListAt]
       | cons argument arguments =>
           cases arguments with
           | nil =>
@@ -318,20 +320,21 @@ theorem binderSafeAt_liftBVars
                   isWellScopedAt_of_binderSafeAt quoteConstructor safe
                 have ordinaryCutoff := isWellScopedAt_mono ordinaryZero
                   (Nat.zero_le cutoff)
-                simp only [liftBVars, List.map, binderSafeAt,
-                  beq_self_eq_true, if_true] at ⊢
+                simp only [liftBVars,
+                  Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map,
+                  List.map, binderSafeAt, beq_self_eq_true, if_true] at ⊢
                 change binderSafeAt quoteConstructor 0
                   (liftBVars cutoff shift argument) = true
                 rw [liftBVars_eq_self_of_isWellScopedAt ordinaryCutoff]
                 exact safe
-              · simp only [liftBVars, binderSafeAt, beq_iff_eq,
+              · simp only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, binderSafeAt, beq_iff_eq,
                   List.map, if_neg quoted, binderSafeListAt,
                   Bool.and_true] at safe ⊢
                 exact inductionHypothesis argument (by simp) safe
           | cons second remainder =>
               change binderSafeListAt quoteConstructor (ambient + cutoff)
                 (argument :: second :: remainder) = true at safe
-              simp only [liftBVars] at ⊢
+              simp only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map] at ⊢
               change binderSafeListAt quoteConstructor
                 (ambient + cutoff + shift)
                 ((argument :: second :: remainder).map
@@ -365,7 +368,7 @@ theorem binderSafeAt_liftBVars
   | hcollection collectionType elements rest inductionHypothesis =>
       change binderSafeListAt quoteConstructor (ambient + cutoff) elements = true
         at safe
-      simp only [liftBVars] at ⊢
+      simp only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map] at ⊢
       change binderSafeListAt quoteConstructor (ambient + cutoff + shift)
         (elements.map (liftBVars cutoff shift)) = true
       rw [binderSafeListAt_eq_true_iff] at safe ⊢
@@ -432,11 +435,11 @@ private theorem matchesParameterRepresentation_liftBVars
   cases parameter with
   | simple => exact fun _ => trivial
   | abstractionNamed binderName bodyName type =>
-      cases pattern <;> simp [MatchesParameterRepresentation, liftBVars]
+      cases pattern <;> simp [MatchesParameterRepresentation, liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map]
       case lambda binder body =>
         cases binder <;> simp
   | multiAbstractionNamed binderNames bodyName type =>
-      cases pattern <;> simp [MatchesParameterRepresentation, liftBVars]
+      cases pattern <;> simp [MatchesParameterRepresentation, liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map]
       case multiLambda arity binders body =>
         cases binders <;> simp
 
@@ -455,17 +458,17 @@ mutual
     cases typed with
     | @bvar _ index type lookup =>
         by_cases beyond : index ≥ inner.length
-        · simpa [liftBVars, beyond] using
+        · simpa [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, beyond] using
             (HasType.bvar (free := free)
               (getElem?_insert (inserted := inserted) lookup))
-        · simpa [liftBVars, beyond] using
+        · simpa [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map, beyond] using
             (HasType.bvar (free := free)
               (getElem?_insert (inserted := inserted) lookup))
     | @fvar _ name type lookup =>
-        simpa only [liftBVars] using
+        simpa only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map] using
           (HasType.fvar (bound := (inner ++ inserted) ++ outer) lookup)
     | @constructor _ rule arguments membership notBare argumentsTyped =>
-        simpa only [liftBVars] using
+        simpa only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map] using
           (HasType.constructor membership notBare
             (argumentsTyped.liftBVars_insert
               (inner := inner) (outer := outer) (inserted := inserted)))
@@ -478,7 +481,7 @@ mutual
             (liftBVars (inner.length + 1) inserted.length body) codomain := by
           simpa only [List.cons_append, List.length_cons, Nat.add_comm] using
             liftedBody
-        simpa only [liftBVars] using
+        simpa only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map] using
           HasType.lambda (binder := binder) liftedBody'
     | @multiLambda _ arity binders body domain codomain bodyTyped =>
         have bodyTyped' : HasType language free
@@ -492,7 +495,7 @@ mutual
             (liftBVars (inner.length + arity) inserted.length body) codomain := by
           simpa only [List.append_assoc, List.length_append,
             List.length_replicate, Nat.add_comm] using liftedBody
-        simpa only [liftBVars] using
+        simpa only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map] using
           HasType.multiLambda (binders := binders) liftedBody'
     | @subst _ body replacement domain codomain bodyTyped replacementTyped =>
         have liftedBody := bodyTyped.liftBVars_insert
@@ -505,16 +508,16 @@ mutual
             (liftBVars (inner.length + 1) inserted.length body) type := by
           simpa only [List.cons_append, List.length_cons, Nat.add_comm] using
             liftedBody
-        simpa only [liftBVars] using
+        simpa only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map] using
           HasType.subst liftedBody' liftedReplacement
     | @collection _ collectionType elements rest elementType elementsTyped =>
-        simpa only [liftBVars] using
+        simpa only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map] using
           (HasType.collection (rest := rest)
             (elementsTyped.liftBVars_insert
               (inner := inner) (outer := outer) (inserted := inserted)))
     | @collectionConstructor _ rule parameterName collectionType elements rest
         elementType membership parameterShape elementsTyped =>
-        simpa only [liftBVars] using
+        simpa only [liftBVars, Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map] using
           (HasType.collectionConstructor membership parameterShape
             (elementsTyped.liftBVars_insert
               (inner := inner) (outer := outer) (inserted := inserted)))

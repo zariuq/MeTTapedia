@@ -28,7 +28,7 @@ provides:
 It is deliberately the *proof-composition* representation, not the executable
 conformance spec. See "Relationship to Other Layers" below for how it differs
 from the computable HE mirror, the PeTTa Prolog pipeline, and the dependently
-typed PureKernel.
+typed TwoSortKernel.
 
 ## Modules
 
@@ -77,7 +77,7 @@ typed PureKernel.
 - **vs `PeTTa/`**: PeTTa compiles MeTTa expressions into Prolog goals. Core
   provides the atom algebra that PeTTa's translation and soundness proofs reason
   about.
-- **vs `PureKernel/`**: PureKernel is a dependently-typed kernel (Pi/Sigma/Id).
+- **vs `TwoSortKernel/`**: TwoSortKernel is a dependently-typed kernel (Pi/Sigma/Id).
   Core is untyped symbolic atoms with a shallow type layer on top.
 
 ## Formalization status

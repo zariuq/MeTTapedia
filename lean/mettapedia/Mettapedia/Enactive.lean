@@ -13,8 +13,8 @@ import Mettapedia.Enactive.BennettReparameterization
 import Mettapedia.Enactive.GeneralizationOptimality
 import Mettapedia.Enactive.StochasticTaskProcess
 import Mettapedia.Enactive.ComplexityIllusion
-import Mettapedia.Enactive.PrimeSupport
-import Mettapedia.Enactive.PrimeGeneration
+import Mettapedia.Enactive.RelationalSupport
+import Mettapedia.Enactive.ScopedGeneration
 import Mettapedia.Enactive.IndividuationGeneration
 import Mettapedia.Enactive.MetasystemTransition
 import Mettapedia.Enactive.HierarchicalComplexityBridge

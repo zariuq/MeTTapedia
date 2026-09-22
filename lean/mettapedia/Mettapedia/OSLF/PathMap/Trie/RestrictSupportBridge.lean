@@ -1,6 +1,6 @@
 import Mettapedia.OSLF.PathMap.PathPrefixRestrictRefinement
 import Mettapedia.OSLF.PathMap.Trie.EntriesKeys
-import Mettapedia.OSLF.PathMap.Trie.EntriesLookup
+import Mettapedia.OSLF.PathMap.Trie.LookupEntries
 import Mettapedia.OSLF.PathMap.Trie.RestrictRefinement
 import Mettapedia.OSLF.PathMap.Trie.UnitBridge
 

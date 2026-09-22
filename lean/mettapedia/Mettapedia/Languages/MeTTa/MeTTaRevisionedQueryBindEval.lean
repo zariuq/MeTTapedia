@@ -1,6 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.ContextSupport
 import Mettapedia.GSLT.Dynamics.CollapseAlgebra
-import Mettapedia.Languages.MeTTa.EmptinessTaxonomy
+import Mettapedia.Languages.FiniteChoice.EmptinessTaxonomy
 import Mettapedia.Languages.MeTTa.MeTTaZero
 
 /-!
@@ -568,7 +568,7 @@ the frontier it presents.  A partial search must instead retain residual work.
 namespace ObservationBoundary
 
 open Mettapedia.GSLT.Dynamics.Collapse
-open Mettapedia.Languages.MeTTa.Emptiness
+open Mettapedia.Languages.FiniteChoice.Emptiness
 
 /-- If the producer has no event from the input world, patterned or ordinary
 bind cannot manufacture a result through its continuation. -/

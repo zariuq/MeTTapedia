@@ -17,9 +17,11 @@ complete ordered list of grammar and lexical occurrences with a given name;
 admission requires this list to be a singleton rather than selecting its first
 member.  This makes duplicate definitions and namespace collisions visible.
 
-The structured scalar carrier is `Nat`.  Negative integers are rejected by the
-wire decoder before reaching this layer; Unicode range, surrogate exclusion,
-nonemptiness, and strict ordering are checked here.
+This independent model uses String text and Nat scalars/spans. Its partial
+Lean codec admits only that representation domain; it is not a mandatory guard
+on public structured input. The predicates below check Unicode range, surrogate
+exclusion, nonemptiness, and strict ordering for lexical matcher scalars.
+Arbitrary edited signed text and span fields remain outside this model.
 -/
 
 set_option autoImplicit false

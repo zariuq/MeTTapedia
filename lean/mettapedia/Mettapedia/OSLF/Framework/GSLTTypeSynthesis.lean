@@ -1,6 +1,7 @@
 import Mettapedia.GSLT.Core.GSLT
 import Mettapedia.OSLF.Framework.DerivedModalities
 import Mettapedia.OSLF.Framework.RewriteSystem
+import Mettapedia.OSLF.Syntax.ObservationClosure
 
 /-!
 # OSLF synthesis from an abstract GSLT
@@ -169,6 +170,16 @@ def EquationInvariant (theory : GSLT.{uTheory})
     (predicate : theory.Term → Prop) : Prop :=
   ∀ ⦃left right : theory.Term⦄,
     theory.Equiv left right → (predicate left ↔ predicate right)
+
+/-- **Equation-invariance is stability at the theory's own equality.**  One
+concept, two names: the general observation ladder's notion of an observation,
+and the name it carries in the generated type system.  Recorded as a theorem so
+the two cannot drift. -/
+theorem equationInvariant_iff_stable (theory : GSLT.GSLT)
+    (predicate : theory.Term → Prop) :
+    EquationInvariant theory predicate ↔
+      Mettapedia.OSLF.Syntax.ObservationClosure.Stable theory.Equiv predicate :=
+  ⟨fun h _ _ hxy => h hxy, fun h _ _ hxy => h _ _ hxy⟩
 
 /-- Predicates on authored terms equipped with their equation-invariance
 law.  Keeping the authored carrier avoids forcing programs through a second

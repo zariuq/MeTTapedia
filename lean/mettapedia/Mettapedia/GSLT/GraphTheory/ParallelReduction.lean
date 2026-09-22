@@ -42,35 +42,9 @@ Parallel reduction allows multiple redexes to contract simultaneously.
 This is stronger than single-step beta reduction but has nicer properties.
 -/
 
-/-- Parallel reduction: multiple beta redexes can contract simultaneously.
-
-    The key constructors:
-    - `var`: Variables reduce to themselves
-    - `lam`: Reduction under lambda (congruence)
-    - `app`: Reduction in both parts of application (congruence)
-    - `beta`: Beta reduction with simultaneous reduction in both parts -/
-inductive ParRed : LambdaTerm → LambdaTerm → Prop where
-  /-- Variables reduce to themselves -/
-  | var (n : Nat) : ParRed (.var n) (.var n)
-  /-- Reduction under lambda abstraction -/
-  | lam {t t' : LambdaTerm} : ParRed t t' → ParRed (.lam t) (.lam t')
-  /-- Reduction in both parts of an application -/
-  | app {t t' s s' : LambdaTerm} : ParRed t t' → ParRed s s' →
-      ParRed (.app t s) (.app t' s')
-  /-- Beta reduction with simultaneous reduction in redex parts
-      Note: subst 0 s' t' means "substitute s' for variable 0 in t'" -/
-  | beta {t t' s s' : LambdaTerm} : ParRed t t' → ParRed s s' →
-      ParRed (.app (.lam t) s) (LambdaTerm.subst 0 s' t')
-
-notation:50 t " ⇛ " t' => ParRed t t'
+/-! The relation is declared in `Basic`, before the solvability predicate. -/
 
 /-! ## Basic Properties -/
-
-/-- Parallel reduction is reflexive: every term reduces to itself. -/
-theorem ParRed.refl : ∀ t : LambdaTerm, t ⇛ t
-  | .var n => .var n
-  | .lam t => .lam (ParRed.refl t)
-  | .app t s => .app (ParRed.refl t) (ParRed.refl s)
 
 /-- Single-step beta reduction is a special case of parallel reduction. -/
 theorem beta_to_parRed (t s : LambdaTerm) :
@@ -266,11 +240,6 @@ theorem parRed_diamond {M N₁ N₂ : LambdaTerm} (h1 : M ⇛ N₁) (h2 : M ⇛ 
 Confluence follows from the diamond property using Mathlib's infrastructure.
 -/
 
-/-- The reflexive-transitive closure of parallel reduction. -/
-def ParRedStar := Relation.ReflTransGen ParRed
-
-notation:50 t " ⇛* " t' => ParRedStar t t'
-
 /-- **CONFLUENCE**: If M ⇛* N₁ and M ⇛* N₂, then there exists P such that
     N₁ ⇛* P and N₂ ⇛* P.
 
@@ -284,6 +253,47 @@ theorem confluence {M N₁ N₂ : LambdaTerm} (h1 : M ⇛* N₁) (h2 : M ⇛* N�
     obtain ⟨d, hbd, hcd⟩ := parRed_diamond hab hac
     exact ⟨d, Relation.ReflGen.single hbd, Relation.ReflTransGen.single hcd⟩
   exact Relation.church_rosser diamond h1 h2
+
+/-- Reducing arguments cannot change a variable-headed application into a redex. -/
+theorem ParRed.preserves_isAppHead {term result : LambdaTerm} (h : term ⇛ result)
+    (head : term.isAppHead = true) : result.isAppHead = true := by
+  induction h with
+  | var n => rfl
+  | lam _ _ => simp [LambdaTerm.isAppHead] at head
+  | app _ _ ihFn _ => exact ihFn head
+  | beta _ _ _ _ => simp [LambdaTerm.isAppHead] at head
+
+/-- Head normal forms remain head normal forms under arbitrary parallel steps. -/
+theorem ParRed.preserves_isHNF {term result : LambdaTerm} (h : term ⇛ result)
+    (head : term.isHNF = true) : result.isHNF = true := by
+  induction h with
+  | var n => rfl
+  | lam _ ih => exact ih head
+  | app hFn _ _ _ => exact hFn.preserves_isAppHead head
+  | beta _ _ _ _ => simp [LambdaTerm.isHNF, LambdaTerm.isAppHead] at head
+
+/-- A whole retained reduction from a head normal form preserves its head. -/
+theorem ParRedStar.preserves_isHNF {term result : LambdaTerm} (h : term ⇛* result)
+    (head : term.isHNF = true) : result.isHNF = true := by
+  induction h with
+  | refl => exact head
+  | tail _ hStep ih => exact hStep.preserves_isHNF ih
+
+/-- Solvability is invariant under actual beta computation. Confluence joins a
+searched head normal form with the retained computation; head preservation
+makes the joined result another genuine witness. -/
+theorem solvable_iff_of_parRedStar {term result : LambdaTerm} (h : term ⇛* result) :
+    term.Solvable ↔ result.Solvable := by
+  constructor
+  · rintro ⟨head, hHeadPath, hHead⟩
+    obtain ⟨joined, hHeadJoined, hResultJoined⟩ := confluence hHeadPath h
+    exact ⟨joined, hResultJoined, hHeadJoined.preserves_isHNF hHead⟩
+  · exact LambdaTerm.solvable_of_reduces h
+
+/-- Unsolvability is a beta-invariant observation, not a syntactic redex test. -/
+theorem unsolvable_iff_of_parRedStar {term result : LambdaTerm} (h : term ⇛* result) :
+    term.Unsolvable ↔ result.Unsolvable :=
+  not_congr (solvable_iff_of_parRedStar h)
 
 /-! ## Summary
 

@@ -29,10 +29,13 @@ structure RuleInterpretation where
 
 namespace RuleInterpretation
 
-/-- Ordinary first-order matching and substitution. -/
+/-- Ordinary first-order matching and substitution, with the binder-depth
+alignment rule firing requires: a value captured outside a binder and delivered
+underneath one is shifted by the difference in depth. -/
 def syntactic : RuleInterpretation where
   matchRule := fun _ rule term => matchPattern rule.left term
-  instantiateRule := fun _ rule bindings => applyBindings bindings rule.right
+  instantiateRule := fun _ rule bindings =>
+    Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings rule bindings
 
 /-- Matching and substitution selected by a separately authored profile. -/
 def reflection (profile : ReflectionProfile) : RuleInterpretation where

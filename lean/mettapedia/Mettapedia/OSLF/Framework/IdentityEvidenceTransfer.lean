@@ -71,41 +71,86 @@ noncomputable def equationAtomSemWithIdentityUsing
     (W : State) (threshold : ℝ≥0∞) : EquationAtomSemUsing relEnv lang :=
   saturateAtomSemUsing relEnv lang (atomSemWithIdentity cfg W threshold)
 
-/-- Pointwise-equivalent atom interpretations induce equivalent formula semantics. -/
+/-- Pointwise-equivalent atom interpretations induce equivalent formula
+semantics, at every frame and every scope environment.  The generator case is
+where the environment has to be general: its body is read under one more
+binding than the generator itself. -/
+theorem semEnv_iff_of_atomSem_pointwise
+    {R : Pattern → Pattern → Prop} {F : PredFrame}
+    {I J : AtomSem}
+    (hIJ : ∀ a p, I a p ↔ J a p)
+    (φ : OSLFFormula) :
+    ∀ (env : ScopeEnv) (p : Pattern),
+      semEnv R F I env φ p ↔ semEnv R F J env φ p := by
+  induction φ with
+  | top => intro _ _; exact Iff.rfl
+  | bot => intro _ _; exact Iff.rfl
+  | atom a => intro _ p; exact hIJ a p
+  | and φ ψ ihφ ihψ => intro env p; exact and_congr (ihφ env p) (ihψ env p)
+  | or φ ψ ihφ ihψ => intro env p; exact or_congr (ihφ env p) (ihψ env p)
+  | imp φ ψ ihφ ihψ => intro env p; exact imp_congr (ihφ env p) (ihψ env p)
+  | dia φ ih =>
+      intro env p
+      exact exists_congr fun q => and_congr_right fun _ => ih env q
+  | box φ ih =>
+      intro env p
+      exact forall_congr' fun q => imp_congr_right fun _ => ih env q
+  | var _ => intro _ _; exact Iff.rfl
+  | emptyColl _ => intro _ _; exact Iff.rfl
+  | headed label φ ih =>
+      intro env p
+      have body : (fun term : Pattern => ∃ inner : Pattern,
+            term = .apply label [inner] ∧ semEnv R F I env φ inner)
+          = (fun term : Pattern => ∃ inner : Pattern,
+            term = .apply label [inner] ∧ semEnv R F J env φ inner) := by
+        funext term
+        exact propext (exists_congr fun inner => and_congr_right fun _ => ih env inner)
+      simp only [semEnv, body]
+  | cut kind φ ψ ihφ ihψ =>
+      intro env p
+      have body : (fun term : Pattern => ∃ leftParts rightParts : List Pattern,
+            term = .collection kind (leftParts ++ rightParts) none ∧
+              semEnv R F I env φ (.collection kind leftParts none) ∧
+              semEnv R F I env ψ (.collection kind rightParts none))
+          = (fun term : Pattern => ∃ leftParts rightParts : List Pattern,
+            term = .collection kind (leftParts ++ rightParts) none ∧
+              semEnv R F J env φ (.collection kind leftParts none) ∧
+              semEnv R F J env ψ (.collection kind rightParts none)) := by
+        funext term
+        exact propext (exists_congr fun leftParts => exists_congr fun rightParts =>
+          and_congr_right fun _ => and_congr (ihφ env _) (ihψ env _))
+      simp only [semEnv, body]
+  | mu φ ih =>
+      intro env p
+      have body : ∀ candidate : Pattern → Prop,
+          semEnv R F I (ScopeEnv.push candidate env) φ
+            = semEnv R F J (ScopeEnv.push candidate env) φ := by
+        intro candidate
+        funext t
+        exact propext (ih (ScopeEnv.push candidate env) t)
+      simp only [semEnv]
+      constructor
+      · intro holds candidate memc pre
+        refine holds candidate memc ?_
+        intro u hu
+        rw [body candidate] at hu
+        exact pre u hu
+      · intro holds candidate memc pre
+        refine holds candidate memc ?_
+        intro u hu
+        rw [← body candidate] at hu
+        exact pre u hu
+
+/-- Pointwise-equivalent atom interpretations induce equivalent formula
+semantics. -/
 theorem sem_iff_of_atomSem_pointwise
     {R : Pattern → Pattern → Prop}
     {I J : AtomSem}
     (hIJ : ∀ a p, I a p ↔ J a p)
     (φ : OSLFFormula)
     (p : Pattern) :
-    sem R I φ p ↔ sem R J φ p := by
-  induction φ generalizing p with
-  | top =>
-      simp [sem]
-  | bot =>
-      simp [sem]
-  | atom a =>
-      simpa [sem] using hIJ a p
-  | and φ ψ ihφ ihψ =>
-      simp [sem, ihφ, ihψ]
-  | or φ ψ ihφ ihψ =>
-      simp [sem, ihφ, ihψ]
-  | imp φ ψ ihφ ihψ =>
-      simp [sem, ihφ, ihψ]
-  | dia φ ih =>
-      constructor
-      · intro h
-        rcases h with ⟨q, hstep, hq⟩
-        exact ⟨q, hstep, (ih q).1 hq⟩
-      · intro h
-        rcases h with ⟨q, hstep, hq⟩
-        exact ⟨q, hstep, (ih q).2 hq⟩
-  | box φ ih =>
-      constructor
-      · intro h q hstep
-        exact (ih q).1 (h q hstep)
-      · intro h q hstep
-        exact (ih q).2 (h q hstep)
+    sem R I φ p ↔ sem R J φ p :=
+  semEnv_iff_of_atomSem_pointwise hIJ φ ScopeEnv.empty p
 
 theorem transferAtomEvidence_disabled
     (cfg : IdentityAtomLayerConfig Entity Query)

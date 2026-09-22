@@ -10,11 +10,11 @@
 ; raw execution.  No demand contributes no checking work; the first demand
 ; contributes one unit and caches evidence or blame; later observations reuse
 ; the cache.  Lean anchors:
-;   Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan.NativeCanary.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.GradualExecutionPlan.NativeCanary.
 ;     rejected_check_does_not_gate_raw_execution
-;   Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan.CheckedPlan.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.GradualExecutionPlan.CheckedPlan.
 ;     executionWorkSpanWithDemand_ne_withoutDemand
-;   Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan.CheckedPlan.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.GradualExecutionPlan.CheckedPlan.
 ;     cachedValue_zero_work_one_observation
 ;
 ; Thus laziness is useful here as a semantic boundary: evidence is demanded

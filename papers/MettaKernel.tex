@@ -6,7 +6,7 @@
 %%
 %% Status: design + curriculum memo (prototype-first), with a realized-architecture
 %% update (June 2026) and a proof-aware NIK/native-MeTTa theory update (August
-%% 2026). The MeTTa kernel is built and runnable. Lean PureKernel, Megalodon,
+%% 2026). The MeTTa kernel is built and runnable. Lean TwoSortPiSigmaId, Megalodon,
 %% and the Lean-verified LeaTTa are calibration authorities. The generated-rule
 %% subject-reduction/confluence metatheorem remains open for the runnable LF
 %% kernel; the more general NIK and native-type-theory interfaces are formalized
@@ -79,7 +79,7 @@ compute judgments directly when decidable, compose admitted sound operations
 without interior rechecking, preserve native proof objects when they are genuine
 mathematical data, and request certificates only at explicit search or trust
 boundaries. We present the
-two reference kernels we mirror (the Lean \code{PureKernel} for \DTT{} and
+two calibration sources (the Lean \code{TwoSortPiSigmaId} fragment for \DTT{} and
 Megalodon's \code{tp/tm/pf}+\code{check\_doc} core for \HOTG{}), a graded
 \emph{curriculum} of the easiest examples that pin down the smallest fully
 expressive kernel (a \DTT{} ladder following Smolka \& Brown's \emph{Introduction
@@ -89,7 +89,7 @@ prototype-first build plan whose first milestone is an honest \emph{capacity led
 \MeTTa{} kernel's verdicts are treated as a \emph{subject} to be measured against
 the reference authorities, not as an oracle itself.  We also state the proved
 relationship among evolving Zero/Prime/HE/PeTTa dialect points, intrinsic
-\code{PureKernel}, the locally nameless Pattern Pure presentation, proof-relevant
+\code{TwoSortPiSigmaId}, the locally nameless two-sort Pattern presentation, proof-relevant
 \NIK{}, and the strictly descending bootstrap tower.  The account distinguishes
 closed formal interfaces from executable fragments and from remaining adequacy
 obligations.
@@ -133,25 +133,41 @@ MeTTa-native type theory, dialect regions, and their exact boundaries.
 \section{The two reference kernels (calibration authorities and templates)}
 \label{sec:oracles}
 
-\subsection{\DTT{}: the Lean \code{PureKernel}}
-A trusted, \emph{sorry-free} dependently-typed kernel already exists in Lean
-(\path{Mettapedia/.../MeTTa/PureKernel/}, 28 files). Its term language is
+\subsection{\DTT{} calibration: the fixed \code{TwoSortPiSigmaId} fragment}
+The concrete Lean experiment lives in
+\path{Mettapedia/TypeTheory/Calculi/TwoSortPiSigmaId/}.
+Its intrinsically scoped, not intrinsically typed, term language is
 \begin{lstlisting}
-PureTm n ::= var (Fin n) | const DeclName | U0 | U1
+ScopedTerm n ::= var (Fin n) | const DeclName | u0 | u1
            | pi A B | sigma A B | id A t u
            | lam B | app f a | pair t u | fst p | snd p | refl t
 \end{lstlisting}
 {\raggedright
-with two universes ($\code{U0}:\code{U1}$), $\Pi$, $\Sigma$, and identity types. It
-provides one-step $\beta/\delta/\iota$ reduction, Church--Rosser confluence,
-\code{HasType}, a \emph{decidable} definitional equality
-(\code{defEqByNormalization?}), subject reduction, and a bidirectional checker.
-Ordinary families (\code{Bool}, \code{Nat}, \code{Unit}) are \emph{not} hard-coded:
-they enter through a general declaration mechanism (\code{DeclSpec},
-\code{InductiveDecl}, \code{RecursorDecl}) with full well-formedness proofs. This is
-both our \DTT{} calibration authority and our design template; crucially, the existing
-runtime-to-kernel bridge marks \code{directExecEquivalence} as \code{false}, so the
-runtime is \emph{not} yet known to agree with this kernel.
+with a ground type \code{u0} and an untyped formation marker \code{u1},
+where $\code{u0}:\code{u1}$. Products and sums use \code{u1} for domain,
+codomain, and result formation. Identity formation and reflexivity are present;
+identity elimination, a universe hierarchy, and quantification over a universe
+of types are not. Core reduction contracts function application and pair
+projections and has a Church--Rosser theorem.
+
+The old \code{Permissive.Typing.HasType} omits formation premises.
+The separate \code{RegularJudgment} includes a regular context and
+presupposition-closed, declaration-free typing. Strong normalization and exact
+conversion by computed normal forms are proved for this regular boundary in
+\path{Regular/Fundamental.lean} and \path{Regular/Normalization.lean}.
+The Boolean checker is proved equivalent to the independent bidirectional
+predicate \code{RegularPublicChecks}, not automatically to every declarative
+typing derivation. The older \code{defEqByNormalization?} compares one complete
+development and is proved incomplete; its name is not a total-normalization
+guarantee.
+
+Declaration and family modules retain separate pilot typing, validation, and
+computation results. These do not extend the declaration-free normalization
+theorem to arbitrary inductives. The experiment is a fragment calibration
+source, not a complete \DTT{} or an adopted Prime theory. Its MeTTa-specific
+presentation and runtime adapters live under
+\path{Mettapedia/Languages/MeTTa/Experimental/TwoSortPiSigmaId/}; shared-artifact
+agreement is not direct runtime equivalence.
 \par}
 
 \subsection{\HOTG{}: the Megalodon \code{mathdata} core}
@@ -199,7 +215,7 @@ driver, and hashing/provenance for imports. The two checkers below are
 impredicative \code{Prop}; classical/set/TG axioms are a \emph{profile} layered
 above the core, admitted only after the bare proof-term checker is green.
 
-\paragraph{\DTT{} checker.} Mirror \code{PureTm} ($\code{U0}/\code{U1}$, $\Pi$,
+\paragraph{\DTT{} checker.} Mirror \code{ScopedTerm} ($\code{U0}/\code{U1}$, $\Pi$,
 $\Sigma$, \code{Id}) with bidirectional infer/check, $\beta/\delta/\iota$, and
 decidable definitional equality by normalization; inductive families via
 \code{DeclSpec}, never hard-coded. Where the \CeTTa{} engine's \code{--profile
@@ -224,7 +240,7 @@ negative tests.
 \begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.06\textwidth}
                        >{\raggedright\arraybackslash}p{0.42\textwidth}
                        >{\raggedright\arraybackslash}p{0.46\textwidth}@{}}
-\caption{\DTT{} ladder (ICL spine + \CeTTa{} \code{he-prime} seeds + \code{PureKernel}).}\\
+\caption{\DTT{} ladder (ICL spine + \CeTTa{} \code{he-prime} seeds + \code{TwoSortPiSigmaId}).}\\
 \toprule
 \textbf{Step} & \textbf{Example (source)} & \textbf{Kernel feature it pins}\\
 \midrule
@@ -278,10 +294,10 @@ stale import/hash;\ \code{VecN \dots -1} wrongly accepted. The kernel must
 
 \begin{description}
 \item[Phase 0.] Shared \MeTTa{} waist + the ledger harness (three deciders:
-  \MeTTa{}-kernel vs.\ Lean \code{PureKernel} reference vs.\ \code{he-prime} C).
+  \MeTTa{}-kernel vs.\ Lean \code{TwoSortPiSigmaId} reference vs.\ \code{he-prime} C).
 \item[Phase 1 (\HOTG{} prototype).] \MeTTa{} \code{tp/tm/pf} + proof-term checker +
   $\beta$; \emph{check the eight \code{01\_basics.mg} theorems green} (H1--H2).
-\item[Phase 2 (\DTT{} prototype).] \MeTTa{} \code{PureTm} + bidirectional checker +
+\item[Phase 2 (\DTT{} prototype).] \MeTTa{} \code{ScopedTerm} + bidirectional checker +
   $\beta/\delta/\iota$ + decidable def-eq; \emph{D1--D5 green}; ledger vs.\ the Lean
   reference authority and \code{he-prime} C.
 \item[Phase 3 (unify + harden).] Both checkers share the waist; cross-profile smoke
@@ -302,7 +318,7 @@ first-class outputs, not blemishes to hide. Only then does external review becom
 useful, and its question is whether the fragment boundary is honest and which
 divergences are bugs versus legitimate language semantics --- not whether the final
 kernel is settled. The \MeTTa{}-kernel verdicts are labelled \textbf{subject}; Lean
-\code{PureKernel} and Megalodon are the \textbf{calibration authorities}.
+\code{TwoSortPiSigmaId} and Megalodon are the \textbf{calibration authorities}.
 
 \section{Realized architecture and results (June 2026)}
 \label{sec:realized}
@@ -312,7 +328,7 @@ honestly, where realization \emph{refined} the plan above; the earlier sections 
 as the original intent.
 
 \paragraph{One $\lambda\Pi$-modulo checker; object logics as signatures.} Rather than
-two separate term languages (\code{PureTm} and \code{tp/tm/pf}), the realized kernel is
+two separate term languages (\code{ScopedTerm} and \code{tp/tm/pf}), the realized kernel is
 a \emph{single} $\lambda\Pi$-style logical-framework checker
 (\code{Srt}/\code{Con}/\code{Var}/\code{Pi}/\code{Lam}/\code{App}/\code{Def}) with one
 \code{infer}/\code{check}/\code{conv}; each object logic enters as a \emph{signature} of
@@ -441,7 +457,7 @@ checks that acceptance.  The guest fixes the object logic.  Consequently \NIK{}
 has a metajudgment about accepted evidence, but no privileged object logic.  The
 native MeTTa type theory is both a guest and the intended language in which
 language definitions, translations, proof operations, and lower-level authorities
-are represented as ordinary typed values.  Megalodon and \code{PureKernel} remain
+are represented as ordinary typed values.  Megalodon and \code{TwoSortPiSigmaId} remain
 independent calibration authorities rather than components silently baked into
 the \NIK{} waist.
 
@@ -1347,17 +1363,19 @@ declarations, and a currently broken \code{.olean} output route.  Lean4Less is
 therefore evidence that explicit profile transport is a real architecture, not a
 completed Lean-as-NIK instance.
 
-\subsection{Pure is an exact source fragment, not the owner of the native theory}
+\subsection{The two-sort source fragment does not own the native theory}
 
-There are two distinct Pure developments.  The intrinsic
-\code{PureKernel.HasType} uses de Bruijn terms, declarations, universes,
-$\Pi/\Sigma/\mathsf{Id}$, conversion, and inductive infrastructure.  The Pattern
-presentation uses locally nameless terms and the extrinsic judgment
-\code{PureHasType}.  The native-theory development now proves a substantial
-relationship for the intrinsic side:
+The scoped calculus and its Pattern presentation are distinct developments.
+The intrinsic \code{Permissive.Typing.HasType} uses de Bruijn terms and the
+fixed ground-type/formation-marker pair, with $\Pi/\Sigma$ and identity
+formation/reflexivity. Declaration-aware experiments use separate judgments.
+The Pattern presentation uses locally nameless terms and the extrinsic judgment
+\code{TwoSortHasType}. The named native encoding has a scoped bridge from the
+intrinsic side; its statements concern that encoding and its image, not the
+selection of a final Prime type theory:
 
 \begin{lstlisting}
-intrinsic PureKernel
+intrinsic TwoSortPiSigmaId fragment
     -- faithful, exact on its image; substitution and typing commute -->
 native raw terms and the native contextual support
 \end{lstlisting}
@@ -1366,16 +1384,16 @@ The embedding has projection, round-trip, image, and injectivity theorems.
 Renaming and substitution commute with it, typing is exact on its image, and the
 typed context/substitution map is faithful.  It is not full: staged substitution
 and quotation provide named native terms with no typed preimage in intrinsic
-Pure.  Thus the native theory conservatively retains the Pure fragment while
-strictly extending it with Pattern collections, staging, costs, evidence, and
-language codes.
+syntax. These image-specific results retain the mapped fragment in the named
+encoding; they are not a blanket conservativity theorem for a final Prime
+theory with collections, staging, costs, evidence, and language codes.
 
 The other side of the triangle is now sharply delimited, but not yet closed.
 The two authored typing judgments are not merely notational variants.
-\code{PureKernel.HasType} omits domain or codomain well-formedness premises from
-several introduction and elimination rules which \code{PureHasType} records
+\code{Permissive.Typing.HasType} omits domain or codomain well-formedness premises from
+several introduction and elimination rules which \code{TwoSortHasType} records
 explicitly.  For example, the raw intrinsic relation types a lambda whose domain
-is the untyped top universe; a new regular intrinsic spine rejects that derivation
+is the untyped formation marker; a separate regular intrinsic spine rejects that derivation
 and forgets soundly into the raw relation.  Conversion in the regular spine is
 intensional, but conversion to an ordinary target now requires a derivation that
 the target is a type; conversion to the untyped top sort is a distinct rule.  Raw
@@ -1387,10 +1405,10 @@ This selection is no longer merely editorial.  The regular rules are packaged as
 a rule-model interface, and the inductive regular judgment maps into every relation
 closed under that interface.  It is therefore the \emph{least} rule-closed relation
 generated by the stated finite rules.  The inclusion into raw
-\code{PureKernel.HasType} is proved, and three independent ablations prove that
+\code{Permissive.Typing.HasType} is proved, and three independent ablations prove that
 the reverse inclusion fails: raw typing accepts a lambda with an unformed
 codomain, reflexivity over an unformed carrier, and a dependent pair whose
-declared domain is the untyped top universe.  The regular rules reject all three.
+declared domain is the untyped formation marker. The regular rules reject all three.
 Removing any corresponding premise therefore strictly enlarges the calculus.
 
 The structural metatheory now proves why these local repairs compose.  Regular
@@ -1411,15 +1429,15 @@ preorder of typing relations, not an unproved adjunction.
 
 The prospective native kernel should therefore enforce context and type regularity
 by construction, with
-\code{PureKernel.HasType} retained as a permissive raw presentation rather than
+\code{Permissive.Typing.HasType} retained as a permissive raw presentation rather than
 silently crowned as the final MeTTa judgment.
 
 The syntax boundary has also been made exact.  Declaration-free intrinsic terms
-quote into \code{PureTmPattern}, and a tagged constant quotation has Pattern-purity
+quote into \code{TwoSortTermPattern}, and a tagged constant quotation has Pattern-purity
 if and only if its source is declaration-free.  A negative constant witness is
 proved.  The exercise additionally exposed a real defect in the legacy artifact
 quote: it renders a declaration name directly as an application label, so a
-declaration printed as \code{U0} collides with the reserved universe constructor.
+declaration printed as \code{U0} collides with the reserved ground-type constructor.
 The tagged quote removes that collision while agreeing byte-for-byte with the
 legacy quote on the constant-free fragment.  The exact boundary no longer uses
 the declaration-name pretty-printer at all: names are encoded structurally by
@@ -1439,7 +1457,7 @@ without postulating alpha equivalence.  Every declaration-free intrinsic
 reduction constructor maps to Pattern conversion; an explicitly
 fragment-internal conversion proof maps recursively; and every regular intrinsic
 typing derivation, including dependent formation and elimination, maps to
-\code{PureHasType}.  The identity function supplies a positive end-to-end witness.
+\code{TwoSortHasType}.  The identity function supplies a positive end-to-end witness.
 The conversion proof fibre needed strengthening during this proof: requiring only
 constant-free endpoints was insufficient, because raw symmetric conversion can
 leave the fragment through a term containing a declaration constant and later
@@ -1456,17 +1474,17 @@ reverse square must use a Pattern boundary whose presuppositions are intrinsic,
 or an elaboration into the regular intrinsic kernel.  It may not be obtained by
 silently identifying the two authored judgments.  Reflection for that corrected
 boundary remains open.
-``Pure'' should consequently name an admissible region of related intrinsic and
-presented authorities, not whichever encoding was implemented first.
+The two-sort experiment consequently supplies explicitly scoped authorities,
+not whichever final MeTTa judgment an earlier name might suggest.
 
 The sound computational conversion component of that corrected boundary is now
 available.  One-step and finite reduction are proved to preserve the
 declaration-free fragment; complete development therefore yields a
-fragment-internal conversion proof.  The executable regular comparison uses the
-same complete-development computation as the earlier checker, but returns the
+fragment-internal conversion proof. The earlier partial regular comparison uses
+the same complete-development computation as the permissive checker, but returns the
 strengthened conversion relation whose every edge, endpoint, and intermediate
-term remains in the common fragment.  Positive universe reflexivity and negative
-cross-universe computations prevent the comparison from being vacuous.
+term remains in the common fragment. Positive ground-type reflexivity and
+negative ground-type/marker comparison prevent the comparison from being vacuous.
 
 The old one-pass comparator is not a complete decision procedure.  A declaration-free two-step redex
 is proved fragment-internally convertible to a variable while the current
@@ -1484,9 +1502,12 @@ The self-reducing declaration-free omega term is proved outside the domain, so
 syntax purity cannot masquerade as termination.  The required logical-relations
 theorem is now proved: every subject admitted by a full regular judgment is
 reduction-accessible.  This promotes the existing normalizer from an explicitly
-supplied accessibility domain to every admitted regular subject.  Building a
-production bidirectional checker which constructs the full regular judgment
-remains a separate realization task.
+supplied accessibility domain to every admitted regular subject. The executable
+bidirectional checker now uses that exact conversion.
+\path{Regular/BidirectionalCompleteness.lean} proves its Boolean result
+equivalent to \code{RegularPublicChecks}; successful checking yields regular
+typing in the supplied regular context. Completeness against all declarative
+regular judgments is a separate statement, not implied by that equivalence.
 The first reducibility layer for that proof is now formal.  Accessibility is
 closed under dependent function, dependent pair, identity, lambda, pair, and
 reflexivity constructors, and it reflects from applications and projections to
@@ -3235,7 +3256,7 @@ forgetting remains an explicit truncation or quotient.
 
 ``Ultrainfinite'' names a two-variance ambient programme, not a completed
 $(\infty,1)$- or $(\infty,2)$-category.  Filtered compact stages map into an
-ambient GSLT (the Ind-like growth direction), while a cofiltered atlas projects
+ambient GSLT (the Ind-like growth direction), while a cofiltered cone projects
 the ambient object out to compact perspectives (the Pro-like observation
 direction).  Compact probes into a supplied filtered colimit factor through a
 finite stage; recovery of the ambient object from all shadows is a separate
@@ -3246,7 +3267,8 @@ transformations, transformations between transformations, and their coherences;
 the present formalization stops honestly at finite routes and generated 2-cells.
 
 The bootstrap tower is orthogonal but compatible: its level index orients
-authority edges strictly downward, while the ambient charts organize growth and
+authority edges strictly downward, while filtered presentations with perspective
+cones organize growth and
 observation.  One says which level may check which lower level; the other says how
 finite stages and perspectives relate to an ambient system.  Neither entails
 semantic consistency, reconstruction, or provenance.  Their common design rule
@@ -3283,7 +3305,7 @@ successor-indexed quotation and universe tower remains open.
 \subsection{Status boundary and division of exposition}
 
 The current consolidation unit is
-\code{NativePrimeTheoryCrown.lean}.  It is deliberately an intentional leaf
+\code{NativeCandidateTheoryCrown.lean}.  It is deliberately an intentional leaf
 gate rather than an import of the repository-wide umbrella.  A successful
 build of this leaf establishes that the named Prime, GSLT-IL, NIK, observation,
 and Cost interfaces typecheck in one dependency graph.  It does not by itself
@@ -3345,7 +3367,7 @@ omega is the negative non-admission witness.
 The following claims remain outside that closure: Prime-internal morphism and
 admission terms satisfying the four internalization gates above; a production full-DTT Pattern
 checker; automatic extraction of dialect bags from live realizations; the exact
-authored-calculus projection-plus-delta theorem; the intrinsic--Pattern Pure typing
+authored-calculus projection-plus-delta theorem; the intrinsic--two-sort Pattern typing
 reflection theorem for a regularized Pattern boundary beyond the now-proved syntax,
 proof-fibre, cofinite-renaming, and forward-typing results; the full
 arbitrary-theory Prime--GSLT-IL language algebra; discharge of
@@ -3389,8 +3411,8 @@ the \code{VecN}/index-domain question (indices are an arbitrary telescope under
 \code{DIndG}); the first dependent-typing fragment ($\lambda\Pi$ + \code{DIndG}
 indexed inductives, predicative); the trust boundary (it is signature
 \emph{admission}); and the convergence target (the kernel is its own $\lambda\Pi$-LF,
-with \code{PureKernel}/Megalodon as templates and the Lean-verified LeaTTa as the
-runnable reference floor, rather than \code{PureKernel} itself).
+with \code{TwoSortPiSigmaId}/Megalodon as templates and the Lean-verified LeaTTa as the
+runnable reference floor, rather than \code{TwoSortPiSigmaId} itself).
 
 \emph{Live and deliberately open:} (1)~the \textbf{universal subject-reduction /
 confluence / termination metatheorem} for the generated $\iota$-rules --- the single
@@ -3408,9 +3430,9 @@ For the generalized architecture of \S\ref{sec:nik-native}, the main open goals
 are complementary rather than replacements for that calculus theorem:
 (6)~a full executable native Pattern DTT with exact parity to its declarative
 evidence doctrine; (7)~live capability and parity witnesses for each advertised
-Zero/Prime/HE/PeTTa bag entry; (8)~the intrinsic--Pattern Pure typing
+Zero/Prime/HE/PeTTa bag entry; (8)~the intrinsic--two-sort Pattern typing
 reflection theorem after making Pattern-side presuppositions intrinsic (raw
-\code{PureHasType} is now proved too permissive for equivalence, while the regular
+\code{TwoSortHasType} is now proved too permissive for equivalence, while the regular
 intrinsic side is globally presupposition-closed); (9)~the indexed Prime--GSLT-IL
 language-manipulation algebra beyond the now-proved arbitrary validated-language
 Data family and contextual hygiene, especially authority-preserving action on
@@ -3439,23 +3461,25 @@ self-consistency from the bootstrap index.
 \item Megalodon: \path{repos/megalodon-1.13/src/mathdata.mli} (the \HOTG{}
   \code{tp/tm/pf} + \code{check\_doc} core); \code{examples/} (Egal/Mizar
   preambles); \path{experiments/01_basics.mg} (seed).
-\item Lean \code{PureKernel/README.md} and modules (the \DTT{} reference/template).
-\item \code{PureKernel/RegularNormalizationBoundary.lean},
-  \code{RegularNormalizationAlgorithm.lean}, and
-  \code{RegularReducibility.lean}, and
-  \code{RegularKripkeCandidates.lean}, and
-  \code{RegularCandidateSemantics.lean}, and
-  \code{RegularCandidateCoherence.lean}, and
-  \code{RegularHeadExpansion.lean}, and
-  \code{RegularContextualCandidates.lean}, and
-  \code{RegularContextualPi.lean}, and
-  \code{RegularContextualSigma.lean}, and
-  \code{RegularAccessibleConversion.lean}, and
-  \code{RegularContextualIdentity.lean}, and
-  \code{RegularStructural.lean}, and
-  \code{RegularSemanticUniverse.lean}, and
-  \code{RegularSemanticCoherence.lean}, and
-  \code{RegularFundamental.lean} (exact conversion boundary, executable
+\item Lean \path{Mettapedia/TypeTheory/Calculi/TwoSortPiSigmaId/README.md}
+  and modules (the fixed two-sort fragment, not a complete \DTT{}).
+  The following regular-module paths are relative to that calculus directory.
+\item \path{Regular/NormalizationBoundary.lean},
+  \path{Regular/NormalizationAlgorithm.lean}, and
+  \path{Regular/Reducibility.lean}, and
+  \path{Regular/KripkeCandidates.lean}, and
+  \path{Regular/CandidateSemantics.lean}, and
+  \path{Regular/CandidateCoherence.lean}, and
+  \path{Regular/HeadExpansion.lean}, and
+  \path{Regular/ContextualCandidates.lean}, and
+  \path{Regular/ContextualPi.lean}, and
+  \path{Regular/ContextualSigma.lean}, and
+  \path{Regular/AccessibleConversion.lean}, and
+  \path{Regular/ContextualIdentity.lean}, and
+  \path{Regular/Structural.lean}, and
+  \path{Regular/SemanticUniverse.lean}, and
+  \path{Regular/SemanticCoherence.lean}, and
+  \path{Regular/Fundamental.lean} (exact conversion boundary, executable
   accessibility-driven normalizer, and the renaming-stable reducibility layer
   with substitution counterexamples, scope-aware function candidates, and the
   first genuinely argument-sensitive codomain, followed by semantic context
@@ -3613,7 +3637,7 @@ self-consistency from the bootstrap index.
 \item \path{Mettapedia/Languages/MeTTa/NativeTypeTheoryDerivation.lean}
   (dialect observations and commitments, native modal DTT, Pure refinement,
   equality profiles, Prime returned-fibre bridge, exact parity audit).
-\item \path{Mettapedia/Languages/MeTTa/Prime/DataFibration.lean} and
+\item \path{Mettapedia/Languages/MeTTa/PrimeCandidates/DataFibration.lean} and
   \code{DataTranslationKernel.lean} (non-idempotent language-indexed Data,
   validated-language structural action, chosen strongly cocartesian push-forwards,
   four entry modes, syntax-axis separation, exact first dialect delta, and

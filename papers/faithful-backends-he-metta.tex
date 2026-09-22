@@ -274,10 +274,9 @@ This paper should carry the full backend-correctness story:
 
 The seeded-rematch result is the key new contribution: CeTTa's imported backend is binding-correct because candidate narrowing (from PathMap trie or exact match) is followed by seeded native rematch (\code{space\_subst\_match\_with\_seed}).  The theorem \code{imported\_seedRematch\_binding\_parity} proves that when imported candidates are sound, the two-phase query (candidates then rematch) produces the same result set as direct matching.  Loop rejection (\code{seedRematchSafe\_no\_loop}) and seed extension (\code{seedRematch\_extends\_seed}) complete the safety story.
 
-An implementation checklist (\code{imported-fast-path-checklist.md}) maps
-each proved precondition to a specific CeTTa runtime check, identifies the
-remaining blockers for enabling direct bridge bindings, and recommends a
-phased enablement path (ground-only, single-variable, full V2).
+Enabling direct bridge bindings requires mapping each proved precondition to
+a specific CeTTa runtime check. The relevant fragments are ground-only,
+single-variable, and full V2; each has its own decode and binding obligations.
 
 As of April 2026, ground-only is enabled in the runtime (tracked by
 \code{imported-v2-ground-skip}).  The next rung, single-variable queries,
@@ -370,10 +369,10 @@ The most urgent next formal obligations are:
 These are the theorems most likely to help with the remaining nasty
 binder bugs in the current \CeTTa{} runtime work.
 
-A companion document (\texttt{theorem-runtime-matrix.md}) maps each proved
-theorem to its runtime seam (\texttt{space.c}, \texttt{table\_store.c},
-\texttt{space\_match\_backend.c}, \texttt{term\_universe.c}) and its
-corresponding regression test target.  This matrix is the integration
-contract between the formal development and the \CeTTa{} runtime.
+The integration contract must connect each proved theorem to its runtime
+implementation (\texttt{space.c}, \texttt{table\_store.c},
+\texttt{space\_match\_backend.c}, \texttt{term\_universe.c}) and the
+corresponding regression test target. A theorem alone does not establish
+that a particular runtime path satisfies its premises.
 
 \end{document}

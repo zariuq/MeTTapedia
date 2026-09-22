@@ -5,9 +5,9 @@ import Mettapedia.GSLT.LanguageDef.CertificateGSLTUltrafilterSemanticAuthority
 # Ordinary Stone meaning and ultrafilter-relative meaning share one checker
 
 The concrete Cantor-clopen calculus has an ordinary structural semantics.
-This module equips the same calculus with a coordinate atlas.  Every ordinary
-Stone-gunk fact holds at every coordinate, while one additional declared
-verdict holds at all nonzero coordinates.
+This module equips the same calculus with a family of meanings indexed by the
+coordinates `ℕ`.  Every ordinary Stone-gunk fact holds at every coordinate,
+while one additional declared verdict holds at all nonzero coordinates.
 
 At the principal view at zero, ultrafilter-relative meaning is exactly the
 ordinary structural meaning.  At the free hyperfilter, every ordinary fact
@@ -35,7 +35,7 @@ open Mettapedia.GSLT.LanguageDef.CertificateGSLTStoneGunkSemanticAuthority
 open Mettapedia.Logic.Metaphysics
 
 /-- A semantic verdict deliberately absent from the ordinary Stone model but
-true on the cofinite tail of the coordinate atlas. -/
+true on the cofinite tail of the coordinates. -/
 def cofinitePerspectiveClaim : Pattern :=
   .apply "stone-cofinite-perspective" []
 

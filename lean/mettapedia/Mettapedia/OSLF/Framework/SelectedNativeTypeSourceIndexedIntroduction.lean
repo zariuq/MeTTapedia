@@ -1064,7 +1064,7 @@ theorem profiledRules_locallyValid {source : ValidatedLanguageDef}
   exact rulesAt_locallyValid demand slot (admission slot)
 
 /-- Elimination is absent, so only result-family application is needed from
-the former three-constructor support surface. -/
+the former three-constructor support vocabulary. -/
 def familyApplicationTerms {source : ValidatedLanguageDef}
     (demand : SelectedNativeTypeDemand source) : List GrammarRule :=
   List.ofFn fun slot : Occurrence demand =>

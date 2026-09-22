@@ -823,7 +823,11 @@ local macro "normalize_root" : tactic =>
       sourceAll, sourceEx, targetVerum, targetFalsum, targetPositive,
       targetNegative, targetEqual, targetNotEqual, targetAnd, targetOr,
       targetAll, targetEx, a, v, matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+      simp only [applyBindings, List.map_nil])
 
 local syntax "normalize_root_using " term,* : tactic
 local macro_rules
@@ -842,7 +846,11 @@ local macro_rules
           sourceNand, sourceAll, sourceEx, targetVerum, targetFalsum,
           targetPositive, targetNegative, targetEqual, targetNotEqual,
           targetAnd, targetOr, targetAll, targetEx, a, v, matchPattern,
-          matchArgs, mergeBindings, applyBindingsForRule, applyBindings])
+          matchArgs, mergeBindings, applyBindingsForRule,
+          applyRuleBindings_eq_applyBindings, ruleDepthAligned, depthAligned,
+          depthAlignedList, captureDepth, captureDepthList, applyBindings] <;>
+          rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+          simp only [applyBindings, List.map_nil])
 
 theorem positive_verum_rewriteAt_exact (fuel : Nat) :
     rewriteAt (engineBasePremises RelationEnv.empty) language (fuel + 1)

@@ -781,8 +781,8 @@ Moved paths:
   bridges moved to `Mettapedia/PLN/Bridges/Languages/WorldModel/*`.
 - PeTTa runtime, core-fragment, space-core, and concrete runtime-instance
   bridges moved to `Mettapedia/PLN/Bridges/Languages/WorldModel/*`.
-- The IntrinsicPure-to-world-model bridge moved to
-  `Mettapedia/PLN/Bridges/Languages/WorldModel/PLNWorldModelIntrinsicPureBridge.lean`.
+- The TwoSortPiSigmaId-to-world-model bridge moved to
+  `Mettapedia/PLN/Bridges/Languages/WorldModel/PLNWorldModelTwoSortBridge.lean`.
 - A new `Mettapedia/PLN/Bridges/Languages/WorldModel.lean` hub imports the
   runtime bridge package and is imported by the language-bridge room hub.
 
@@ -793,12 +793,12 @@ Namespace:
   `Mettapedia.Languages.*`; this is the intended bridge direction.
 
 References repointed:
-- Lean imports and qualified references for the moved HE, PeTTa, IntrinsicPure,
+- Lean imports and qualified references for the moved HE, PeTTa, TwoSortPiSigmaId,
   and generic runtime bridge modules were repointed away from the old
   `Mettapedia.Logic.PLNWorldModel*` namespaces.
-- GF and PureRuntime language consumers now import/open the moved IntrinsicPure
+- GF and the two-sort runtime-boundary consumers import/open the moved TwoSortPiSigmaId
   world-model bridge through the PLN language-bridge namespace.
-- Paper references for the moved IntrinsicPure bridge were repointed away from the
+- Paper references for the moved TwoSortPiSigmaId bridge were repointed away from the
   old logic-attic path.
 
 Facade deletion:
@@ -806,7 +806,7 @@ Facade deletion:
 
 Verification scope:
 - Targeted build:
-  `lake build Mettapedia.PLN.Bridges.Languages.WorldModel Mettapedia.PLN.Bridges.Languages Mettapedia.Languages.GF.GFWMObligationAdapter Mettapedia.Languages.MeTTa.PureRuntimeFrontier`
+  `lake build Mettapedia.PLN.Bridges.Languages.WorldModel Mettapedia.PLN.Bridges.Languages Mettapedia.Languages.GF.GFWMObligationAdapter Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Services.RuntimeFrontier`
 - Check no old `Mettapedia.Logic.PLNWorldModelRuntimeBridge`,
   `Mettapedia.Logic.PLNWorldModelHERuntimeBridge`,
   `Mettapedia.Logic.PLNWorldModelHECoreBridge`,
@@ -816,7 +816,7 @@ Verification scope:
   `Mettapedia.Logic.PLNWorldModelPeTTaCoreBridge`,
   `Mettapedia.Logic.PLNWorldModelPeTTaRuntimeInstance`,
   `Mettapedia.Logic.PLNWorldModelPeTTaSpaceCoreBridge`, or
-  `Mettapedia.Logic.PLNWorldModelIntrinsicPureBridge` namespace/path reference
+  `Mettapedia.Logic.PLNWorldModelTwoSortPiSigmaIdBridge` namespace/path reference
   remains outside this ledger.
 - Check no migration facade marker remains.
 - The moved runtime world-model bridge proof-hole scan found no active
@@ -4626,12 +4626,12 @@ Status: completed in the working tree.
 
 Moved paths:
 - `Mettapedia/Logic/HOL/LogicalInduction/PureBridge.lean` moved to
-  `Mettapedia/Languages/MeTTa/Pure/Intrinsic/HOLLogicalInductionBridge.lean`.
+  `Mettapedia/Languages/MeTTa/Experimental/TwoSortPiSigmaId/Adapters/HOLLogicalInductionBridge.lean`.
 
 Namespace:
 - The artifact-boundary declarations moved from
   `Mettapedia.Logic.HOL.LogicalInduction` to
-  `Mettapedia.Languages.MeTTa.Pure.Intrinsic.HOLLogicalInductionBridge`.
+  `Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.HOLLogicalInductionBridge`.
 
 Rationale:
 - The moved file is not part of the core HOL logical-induction semantics. It
@@ -4641,11 +4641,11 @@ Rationale:
 - `Mettapedia.Logic.HOL.LogicalInduction` now remains the logical-induction
   code/process/market/criterion/conditioning/calibration entrypoint.
 - The Pure artifact boundary is housed on the language side, next to the
-  existing IntrinsicPure HOL integration contract.
+  existing TwoSortPiSigmaId HOL integration contract.
 
 References repointed:
 - `Mettapedia.Logic.HOL.LogicalInduction` no longer imports the Pure bridge.
-- `Mettapedia.Languages.MeTTa.Pure.Intrinsic` and `Mettapedia.Languages.MeTTa`
+- `Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId` and `Mettapedia.Languages.MeTTa`
   import the new language-side bridge module.
 - The WM-PLN book code path for the bridge was repointed to the new location.
 
@@ -4655,8 +4655,8 @@ Facade deletion:
 
 Verification scope:
 - Targeted build:
-  `lake build Mettapedia.Languages.MeTTa.Pure.Intrinsic.HOLLogicalInductionBridge
-  Mettapedia.Logic.HOL.LogicalInduction Mettapedia.Languages.MeTTa.Pure.Intrinsic
+  `lake build Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.HOLLogicalInductionBridge
+  Mettapedia.Logic.HOL.LogicalInduction Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Regular.Normalization
   Mettapedia.Languages.MeTTa Mettapedia.TaxonomyMigrationLedger`
 - Check no old `Mettapedia.Logic.HOL.LogicalInduction.PureBridge` import path,
   qualified namespace, or file path remains outside this ledger.

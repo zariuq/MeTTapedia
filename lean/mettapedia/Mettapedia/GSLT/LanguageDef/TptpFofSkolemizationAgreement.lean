@@ -99,7 +99,11 @@ local macro "skolemization_root" : tactic =>
       TptpFofSkolemLanguageDef.introducedCons,
       TptpFofSkolemLanguageDef.a,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 local syntax "skolemization_root_using " term,* : tactic
 local macro_rules
@@ -212,7 +216,11 @@ local macro_rules
           TptpFofSkolemLanguageDef.introducedCons,
           TptpFofSkolemLanguageDef.a,
           matchPattern, matchArgs, mergeBindings,
-          applyBindingsForRule, applyBindings])
+          applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+          ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+          captureDepthList, applyBindings] <;>
+          (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+            simp only [applyBindings, List.map_nil])))
 
 local macro "term_extension_silent" : tactic =>
   `(tactic|
@@ -241,7 +249,11 @@ local macro "term_extension_silent" : tactic =>
       TptpFofSkolemLanguageDef.a,
       applyRuleUsing, matchPatternForRule_eq_syntactic,
       premisesUsing, premiseStepUsing, matchPattern, matchArgs,
-      mergeBindings, applyBindingsForRule, applyBindings])
+      mergeBindings, applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 local macro "term_extension_root" : tactic =>
   `(tactic|
@@ -288,7 +300,11 @@ local macro "term_extension_root" : tactic =>
       TptpFofSkolemLanguageDef.termsCons,
       TptpFofSkolemLanguageDef.a,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 local syntax "term_extension_root_using " term,* : tactic
 local macro_rules
@@ -365,7 +381,11 @@ local macro_rules
           TptpFofSkolemLanguageDef.termsCons,
           TptpFofSkolemLanguageDef.a,
           matchPattern, matchArgs, mergeBindings,
-          applyBindingsForRule, applyBindings])
+          applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+          ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+          captureDepthList, applyBindings] <;>
+          (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+            simp only [applyBindings, List.map_nil])))
 
 /-! ## The inherited term substrate remains exact in the extension -/
 

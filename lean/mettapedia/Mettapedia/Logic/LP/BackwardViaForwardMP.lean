@@ -1,6 +1,6 @@
 import Mathlib.Tactic
 import Mathlib.Logic.Relation
-import Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSpec
+import Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSpec
 
 /-!
 Nil Geisweiller's backward-via-forward propositional MP fragment, following
@@ -10,13 +10,13 @@ Nil Geisweiller's backward-via-forward propositional MP fragment, following
 
 namespace Mettapedia.Logic.LP.BackwardViaForwardMP
 
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Syntax
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Renaming
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Substitution
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.Context
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationEnv
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSemantics
-open Mettapedia.Languages.MeTTa.Pure.Intrinsic.DeclarationSpec
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Renaming
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Substitution
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Context
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationEnv
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics
+open Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSpec
 
 universe u
 
@@ -972,7 +972,7 @@ theorem idBwd_forwardSeed_roundtrip (p : Formula Atom) :
 
 end Examples
 
-namespace IntrinsicPureCanary
+namespace TwoSortPiSigmaIdCanary
 
 def formulaName : DeclName := `Mettapedia.Logic.LP.BackwardViaForwardMP.Formula
 def impName : DeclName := `Mettapedia.Logic.LP.BackwardViaForwardMP.Formula.imp
@@ -983,11 +983,11 @@ def ax2Name : DeclName := `Mettapedia.Logic.LP.BackwardViaForwardMP.BwdProof.ax2
 def ax3Name : DeclName := `Mettapedia.Logic.LP.BackwardViaForwardMP.BwdProof.ax3
 def mpName : DeclName := `Mettapedia.Logic.LP.BackwardViaForwardMP.BwdProof.mp
 
-def formulaTm : PureTm n := .const formulaName
-def impTm (a b : PureTm n) : PureTm n := .app (.app (.const impName) a) b
-def negTm (a : PureTm n) : PureTm n := .app (.const negName) a
-def proofTm : PureTm n := .const proofName
-def proofTy (phi : PureTm n) : PureTm n := .app proofTm phi
+def formulaTm : ScopedTerm n := .const formulaName
+def impTm (a b : ScopedTerm n) : ScopedTerm n := .app (.app (.const impName) a) b
+def negTm (a : ScopedTerm n) : ScopedTerm n := .app (.const negName) a
+def proofTm : ScopedTerm n := .const proofName
+def proofTy (phi : ScopedTerm n) : ScopedTerm n := .app proofTm phi
 
 def formulaSpec : DeclSpec :=
   { name := formulaName, type := .u0 }
@@ -1001,12 +1001,12 @@ def negSpec : DeclSpec :=
 def proofSpec : DeclSpec :=
   { name := proofName, type := .pi formulaTm .u0 }
 
-def ax1Type : PureTm 0 :=
+def ax1Type : ScopedTerm 0 :=
   .pi formulaTm
     (.pi formulaTm
       (proofTy (impTm (.var 1) (impTm (.var 0) (.var 1)))))
 
-def ax2Type : PureTm 0 :=
+def ax2Type : ScopedTerm 0 :=
   .pi formulaTm
     (.pi formulaTm
       (.pi formulaTm
@@ -1017,7 +1017,7 @@ def ax2Type : PureTm 0 :=
               (impTm (.var 2) (.var 1))
               (impTm (.var 2) (.var 0)))))))
 
-def ax3Type : PureTm 0 :=
+def ax3Type : ScopedTerm 0 :=
   .pi formulaTm
     (.pi formulaTm
       (proofTy
@@ -1025,7 +1025,7 @@ def ax3Type : PureTm 0 :=
           (impTm (negTm (.var 1)) (negTm (.var 0)))
           (impTm (.var 0) (.var 1)))))
 
-def mpType : PureTm 0 :=
+def mpType : ScopedTerm 0 :=
   .pi formulaTm
     (.pi formulaTm
       (.pi (proofTy (impTm (.var 1) (.var 0)))
@@ -1111,6 +1111,6 @@ theorem hasType_mp :
     (E := declEnv) (c := mpName) (A0 := mpType) (by
       simp)
 
-end IntrinsicPureCanary
+end TwoSortPiSigmaIdCanary
 
 end Mettapedia.Logic.LP.BackwardViaForwardMP

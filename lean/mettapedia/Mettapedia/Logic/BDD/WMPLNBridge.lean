@@ -3,9 +3,14 @@ import Mettapedia.Logic.BDD.ProbMeTTaBridge
 import Mettapedia.PLN.Evidence.BinaryEvidence
 
 /-!
-# WM-PLN = ProbMeTTa = ProbLog: The Full Bridge
+# WM-PLN, ProbLog, and BDD: weight correspondence
 
-Composes two independently proved chains:
+This module proves the weight correspondence and a concrete evidence-revision
+example. The exact reindexing of numbered worlds to Boolean assignments,
+normalization of the finite sum, and ordered-BDD WMC equality with a WM-PLN
+strength readout are proved in `WMPLNBDDWMCExact`.
+
+The supporting results are:
 
 1. **WM-PLN = ProbLog** (`ProbLogDistributionSemantics.lean`):
    `queryStrength (probLogToJointEvidence probs) query = queryProb probs query`
@@ -69,11 +74,12 @@ WM-PLN queryStrength ─── queryStrength_prop_eq_queryProb ──→ ProbLog
 ProbMeTTa BDD-WMC ───── bdd_wmc_correct ──────────────────→ weightedSat
 ```
 
-The weight correspondence shows that `queryProb` and `weightedSat` compute
-the same sum, just indexed over `Fin (2^n)` vs `Fin n → Bool`.
+The weight correspondence suggests that `queryProb` and `weightedSat` compute
+the same sum, indexed over `Fin (2^n)` and `Fin n → Bool`. The sum reindexing
+and the required normalization theorem are in `WMPLNBDDWMCExact`.
 
-Combined: **WM-PLN queryStrength = ProbMeTTa BDD-WMC** (for queries representable
-as single-proposition lookups). -/
+For ordered BDDs faithful to a world query, that downstream module proves
+**WM-PLN proposition strength = BDD-WMC**. -/
 
 /-! ## §3 What WM-PLN Adds: Evidence Accumulation Example
 

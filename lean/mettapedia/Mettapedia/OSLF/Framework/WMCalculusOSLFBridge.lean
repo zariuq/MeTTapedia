@@ -88,12 +88,17 @@ be revalidated. -/
 /-- Equation-respecting observation at a six-axis WM vertex. -/
 def wmExtPredicate (v : WMExtVertex) (predicate : Pattern → Prop) :
     GSLTTypeSynthesis.EquationPredicate (langGSLT (wmExtVertexLanguageDef v)) :=
-  equationPredicateOfEquationFree (by rfl) predicate
+  equationPredicateOfEquationFree (by
+    rcases v with ⟨base, overlap, forgetting⟩
+    cases overlap <;> cases forgetting <;> rfl) predicate
 
 /-- Equation-respecting observation at a full WM vertex. -/
 def wmFullPredicate (v : WMFullVertex) (predicate : Pattern → Prop) :
     GSLTTypeSynthesis.EquationPredicate (langGSLT (wmFullVertexLanguageDef v)) :=
-  equationPredicateOfEquationFree (by rfl) predicate
+  equationPredicateOfEquationFree (by
+    rcases v with ⟨base, overlap, forgetting, provenance, fixpoint, cost,
+      conservation, experiment, kripke, carrier⟩
+    cases overlap <;> cases forgetting <;> rfl) predicate
 
 /-- Equation-respecting observation for a guarded six-axis WM vertex. -/
 def wmExtGuardedPredicateUsing
@@ -101,7 +106,9 @@ def wmExtGuardedPredicateUsing
     (predicate : Pattern → Prop) :
     GSLTTypeSynthesis.EquationPredicate
       (langGSLTUsing relEnv (wmExtVertexLanguageDefGuarded v)) :=
-  equationPredicateUsingOfEquationFree relEnv (by rfl) predicate
+  equationPredicateUsingOfEquationFree relEnv (by
+    rcases v with ⟨base, overlap, forgetting⟩
+    cases overlap <;> cases forgetting <;> rfl) predicate
 
 /-! ## Section 2: Diamond Theorems (Layer 1)
 
@@ -554,9 +561,9 @@ theorem wmLangReduces_combineCongLeft_evidenceAdd (v : WMExtVertex)
   · simp [matchPattern]
   · simp [bs, bs0, mergeBindings]
   · -- Applying the rule contractum yields the contextual target.
-    simp [bs, ruleCombineCongLeft, pCombine,
-      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
-      applyBindings]
+    rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+      _ ruleCombineCongLeft bs (by decide +kernel)]
+    simp [bs, ruleCombineCongLeft, pCombine, applyBindings]
 
 /-- Fully nested two-step chain:
     `Extract(Revise(Revise(W₁,W₂), W₃), q)` reduces in two steps to
@@ -613,9 +620,9 @@ theorem wmFullLangReduces_combineCongLeft_evidenceAdd (v : WMFullVertex)
       (wmCongFullLangReduces_evidenceAdd v pw₁ pw₂ pq)
   · simp [matchPattern]
   · simp [bs, bs0, mergeBindings]
-  · simp [bs, ruleCombineCongLeft, pCombine,
-      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
-      applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+      _ ruleCombineCongLeft bs (by decide +kernel)]
+    simp [bs, ruleCombineCongLeft, pCombine, applyBindings]
 
 /-- Full-vertex: fully nested two-step chain via context closure. -/
 theorem full_chain_evidence_add_fully_nested (v : WMFullVertex) (pw₁ pw₂ pw₃ pq : Pattern) :
@@ -648,9 +655,9 @@ theorem wmGuardedCongLangReduces_evidenceAdd (relEnv : RelationEnv)
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
       matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleEvidenceAdd, applyPremisesWithEnv]
-  · simp [bs, ruleEvidenceAdd, pExtract, pCombine,
-      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
-      applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+      _ ruleEvidenceAdd bs (by decide +kernel)]
+    simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Guarded+cong: congruence on left Combine via evidence-add. -/
@@ -682,9 +689,9 @@ theorem wmGuardedCongLangReduces_combineCongLeft_evidenceAdd (relEnv : RelationE
       (wmGuardedCongLangReduces_evidenceAdd relEnv v pw₁ pw₂ pq)
   · simp [matchPattern]
   · simp [bs, bs0, mergeBindings]
-  · simp [bs, ruleCombineCongLeft, pCombine,
-      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
-      applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+      _ ruleCombineCongLeft bs (by decide +kernel)]
+    simp [bs, ruleCombineCongLeft, pCombine, applyBindings]
 
 /-- Guarded+cong: fully nested two-step chain via context closure.
     Both evidence-add (core rule, empty premises) and the congruence premise
@@ -825,9 +832,9 @@ theorem wmGuardedLangReduces_evidenceAdd (relEnv : RelationEnv)
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
       matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleEvidenceAdd, applyPremisesWithEnv]
-  · simp [bs, ruleEvidenceAdd, pExtract, pCombine,
-      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
-      applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+      _ ruleEvidenceAdd bs (by decide +kernel)]
+    simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
 
 /-- Guarded decomposability adjunction. -/
 theorem wmGuardedCalc_decomposability_safety (relEnv : RelationEnv)

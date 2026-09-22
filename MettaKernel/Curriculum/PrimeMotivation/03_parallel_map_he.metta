@@ -7,11 +7,11 @@
 ; evaluator.
 ;
 ; Lean anchors:
-;   Mettapedia.Languages.MeTTa.Prime.NativeFibredCost.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeFibredCost.
 ;     compiledSchedule_workSpan
-;   Mettapedia.Languages.MeTTa.Prime.NativeFibredCost.Examples.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeFibredCost.Examples.
 ;     contested_analysis_produces_no_schedule
-;   Mettapedia.Languages.MeTTa.Prime.NativeInteractionCost.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeInteractionCost.
 ;     parallel_two_events_ne_sequential
 
 (= (flip zero) one)

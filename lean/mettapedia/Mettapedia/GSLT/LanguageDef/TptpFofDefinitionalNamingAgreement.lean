@@ -71,7 +71,11 @@ local macro "naming_root" : tactic =>
       TptpFofDefinitionalCnfLanguageDef.namedOutput,
       TptpFofDefinitionalCnfLanguageDef.a,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 local macro "naming_root_using_all" : tactic =>
   `(tactic|
@@ -157,7 +161,11 @@ local macro "naming_root_using_all" : tactic =>
       TptpFofDefinitionalCnfLanguageDef.namedOutput,
       TptpFofDefinitionalCnfLanguageDef.a,
       matchPattern, matchArgs, mergeBindings,
-      applyBindingsForRule, applyBindings])
+      applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      (try (rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+        simp only [applyBindings, List.map_nil])))
 
 /-! ## Independent pattern-level derivation -/
 

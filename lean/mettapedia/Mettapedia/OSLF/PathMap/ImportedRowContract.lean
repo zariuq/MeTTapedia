@@ -270,8 +270,6 @@ variable, where the bridge binding is query-side and ground-valued.
 Ground-only is ENABLED (April 2026). Single-variable is SPECIFIED here
 but NOT enabled in the runtime.
 
-Maps to: the next step in `imported-fast-path-checklist.md` Phase 3.
-
 ### Why single-variable is safe (when conditions hold)
 
 1. Exactly one variable → exactly one binding entry

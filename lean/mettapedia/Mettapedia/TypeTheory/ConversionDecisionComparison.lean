@@ -579,7 +579,7 @@ def endpointEqualityAlgebra :
   onSymm := fun equality => ⟨equality.down.symm⟩
   onTrans := fun first second => ⟨first.down.trans second.down⟩
 
-def pathEndpointEquality {source target : Bool} :
+theorem pathEndpointEquality {source target : Bool} :
     SourcePath source target → source = target :=
   fun path => (endpointEqualityAlgebra.fold path).down
 

@@ -1,4 +1,5 @@
 import Mettapedia.Cybernetics.DistinctionCalculus.Finite
+import Mettapedia.Cybernetics.DistinctionCalculus.Completeness
 import Mettapedia.Cybernetics.DistinctionCalculus.Weighted
 
 /-!
@@ -124,6 +125,69 @@ theorem graded_completion_is_least : LeastMetricExtension graded gradedCompletio
 theorem graded_fractional_bound_checked :
     check graded ⟨0, 2, 2 / 5⟩ (throughMiddle 0 2) = true := by
   norm_num [check, infer, throughMiddle, graded, Tolerance.distance, Fin.ext_iff]
+
+theorem graded_path_cost : pathCost graded [0, 1, 2] = 2 / 5 := by
+  simp [pathCost, combine, graded, Tolerance.distance, Fin.ext_iff]
+  norm_num
+
+theorem graded_path_derives :
+    Derives graded ⟨0, 2, 2 / 5⟩ := by
+  have h := derives_of_path graded [0, 1, 2] (by simp)
+    (x := 0) (y := 2) (by simp) (by simp)
+  simpa [graded_path_cost] using h
+
+theorem graded_path_complete :
+    Derives graded ⟨0, 2, 2 / 5⟩ ∧
+      ∀ model, graded.Extends model → model.Metric →
+        model.distance 0 2 ≤ 2 / 5 :=
+  path_bound_derivable_and_valid graded [0, 1, 2] (by simp)
+    (x := 0) (y := 2) (r := (2 / 5 : ℚ)) (by simp) (by simp)
+    (le_of_eq graded_path_cost)
+
+/-- The unique vertex of `Fin 3` distinct from both endpoints. -/
+def other (x y : Fin 3) : Fin 3 :=
+  if x ≠ 0 ∧ y ≠ 0 then 0
+  else if x ≠ 1 ∧ y ≠ 1 then 1
+  else 2
+
+/-- Shortest-path producer on three nodes: the direct edge, or the unique
+two-edge path through the remaining vertex. -/
+def produce3 (a : Tolerance (Fin 3)) (x y : Fin 3) : Certificate (Fin 3) :=
+  if x = y then .refl x
+  else
+    let z := other x y
+    if pathCost a [x, z, y] < a.distance x y then
+      .triangle (.edge x z) (.edge z y)
+    else .edge x y
+
+theorem produce3_eq_gradedPaths (x y : Fin 3) :
+    produce3 graded x y = gradedPaths x y := by
+  fin_cases x <;> fin_cases y <;>
+    norm_num [produce3, gradedPaths, other, pathCost, combine, graded,
+      Tolerance.distance, throughMiddle, Fin.ext_iff]
+
+theorem produce3_graded_completion :
+    completionCheck graded gradedCompletion (produce3 graded) = true := by
+  have h : produce3 graded = gradedPaths :=
+    funext fun x => funext fun y => produce3_eq_gradedPaths x y
+  rw [h]
+  exact graded_completion_checked
+
+theorem produce3_is_least :
+    LeastMetricExtension graded gradedCompletion :=
+  completionCheck_sound produce3_graded_completion
+
+/-- The Fin 3 graded completion is the simple-path infimum. -/
+theorem gradedCompletion_eq_shortest :
+    gradedCompletion.similarity = (shortestTolerance graded).similarity :=
+  leastMetricExtension_unique graded_completion_is_least
+    (shortestTolerance_is_least graded)
+
+/-- The Fin 3 crisp chain completion is the simple-path infimum. -/
+theorem chain_eq_shortest :
+    collapsed.similarity = (shortestTolerance chain).similarity :=
+  leastMetricExtension_unique chain_completion_is_least
+    (shortestTolerance_is_least chain)
 
 /-- Feasible all-ones completion is not automatically the least completion. -/
 theorem graded_no_endpoint_collapse_certificate :

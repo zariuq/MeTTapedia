@@ -180,7 +180,7 @@ theorem plnSelector_lang_extBayes2 (pp qq ll : Pattern) :
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       matchPatternForRule, bs0, ruleExtBayes2, pUpdate, pFuse,
       matchPattern, matchArgs, mergeBindings]
-  · simp [Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
@@ -201,7 +201,7 @@ theorem plnSelector_lang_extBayesFamily (xsp ll : Pattern) :
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       matchPatternForRule, bs0, ruleExtBayesFamily, pUpdate,
       pFuseFamily, matchPattern, matchArgs, mergeBindings]
-  · simp [Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
@@ -220,7 +220,7 @@ theorem plnSelector_lang_normalize (ep : Pattern) :
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       matchPatternForRule, bs0, ruleNormalizeStrength, pNormalizeNZ,
       matchPattern, matchArgs, mergeBindings]
-  · simp [Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
+  · simp [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.substitutionPresentationForRule?,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.reflectiveRuleForRule?,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRuleUsing,
@@ -456,7 +456,7 @@ theorem langReduces_to_reduces_exists_of_normalizeFinite
   cases hStep with
   | @rule fuel source target r bs0 bs hr hbs0 hprem hq =>
   simp only [matchPatternForRule_eq_syntactic] at hbs0
-  simp only [applyBindingsForRule_eq_syntactic] at hq
+  simp only [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, applyBindingsForRule_eq_syntactic] at hq
   have hrCases :
       r = ruleExtBayes2 ∨ r = ruleExtBayesFamily ∨ r = ruleNormalizeStrength := by
     simpa [plnSelectorLanguageDef] using hr
@@ -476,7 +476,7 @@ theorem langReduces_to_reduces_exists_of_normalizeFinite
             have hq' :
                 q = pFuse (pUpdate (encodeExpr p) (encodeExpr l))
                   (pUpdate (encodeExpr q0) (encodeExpr l)) := by
-              simpa [ruleExtBayes2, pFuse, pUpdate, applyBindings] using hq.symm
+              simpa [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped_zero_of_binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, ruleExtBayes2, pFuse, pUpdate, applyBindings] using hq.symm
             refine ⟨.fuse (.update p l) (.update q0 l), ?_, ?_⟩
             · exact PLNSelectorExpr.Reduces.extBayes2 p q0 l
             · simpa [hq'] using
@@ -520,7 +520,7 @@ theorem langReduces_to_reduces_exists_of_normalizeFinite
             subst bs0
             have hq' :
                 q = pFuseFamily (pFMapUpdate (encodeFamily xs) (encodeExpr l)) := by
-              simpa [ruleExtBayesFamily, pFuseFamily, pFMapUpdate, applyBindings] using hq.symm
+              simpa [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped_zero_of_binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, ruleExtBayesFamily, pFuseFamily, pFMapUpdate, applyBindings] using hq.symm
             refine ⟨.fuseFamily (xs.map (fun e => .update e l)), ?_, ?_⟩
             · exact PLNSelectorExpr.Reduces.extBayesFamily xs l
             · simpa [hq'] using
@@ -560,7 +560,7 @@ theorem langReduces_to_reduces_exists_of_normalizeFinite
             pNormalizeNZ, pFuseFamily, matchPattern, matchArgs, mergeBindings] using hbs0
         subst bs0
         have hq' : q = encodeExpr e0 := by
-          simpa [ruleNormalizeStrength, pNormalizeNZ, applyBindings] using hq.symm
+          simpa [Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings, Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped_zero_of_binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFree, Mettapedia.OSLF.MeTTaIL.Match.binderFreeList, ruleNormalizeStrength, pNormalizeNZ, applyBindings] using hq.symm
         refine ⟨e0, PLNSelectorExpr.Reduces.normalizeStrength t ht htop e0, ?_⟩
         simpa [hq'] using encodeExpr_encodes e0
     | atom _ =>

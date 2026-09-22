@@ -124,7 +124,7 @@ theorem rhoStepAt_one_comm {elements : List Pattern} {inputIndex outputIndex : N
     rhoCommRewrite_mem ?_ (PremisesAt.nil _) rfl
   change _ ∈ matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite _
   rw [matchPatternForRule_rhoComm_iff]
-  apply MatchRelWith.collection
+  apply MatchRelWith.collection (by decide)
   refine MatchBagRelWith.cons
     (headBindings := [("p", body), ("n", inputChannel)])
     (tailBindings :=
@@ -207,7 +207,7 @@ theorem rhoParCong_match_shape {source : Pattern} {bindings : Bindings}
   rw [matchPatternForRuleUsing_iff_matchRel_of_no_presentation
     rhoParCong_no_matchingPresentation] at matched
   cases matched
-  rename_i elements termRest bagMatch
+  rename_i elements termRest notVector bagMatch
   cases bagMatch
   rename_i headBindings restBindings index indexBound headMatch restMatch merged
   cases headMatch
@@ -259,7 +259,10 @@ theorem rhoStepAt_succ_inv {fuel : Nat} {source target : Pattern}
                 · simpa [applyBindings] using componentStep
                 · rw [← applied]
                   change applyBindingsForRuleUsing rhoReflectionProfile rhoParCongRewrite _ = _
-                  rw [applyBindingsForRuleUsing, rhoParCong_no_substitutionPresentation]
+                  rw [applyBindingsForRuleUsing, rhoParCong_no_substitutionPresentation,
+                    Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
+                    Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped_zero_of_binderFree
+                      _ _ _ (by decide)]
                   simp [rhoParCongRewrite, applyBindings]
 
 /-! ## Bag bookkeeping -/

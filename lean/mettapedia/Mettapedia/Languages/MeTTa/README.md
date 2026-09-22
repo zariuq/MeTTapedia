@@ -42,7 +42,7 @@ scope (files whose nearest README is this one) is 54.
 | OSLF instance | `OSLFCore/` | Full-language OSLF `LanguageDef` (state-indexed, legacy) |
 
 Supporting modules and data:
-- `PureKernel/` — declaration kernel (inductive types as MeTTa atoms)
+- `TwoSortKernel/` — declaration kernel (inductive types as MeTTa atoms)
 - `Prime/` — Prime-facing semantic bridges. In particular,
   `SourceScopedAdaptiveRealization.lean` separates semantic sufficiency,
   distinction conservation, currentness, profitability, and cache residence;
@@ -64,7 +64,7 @@ together and export a unified interface for the rest of Mettapedia.
 Own scope is 54 `.lean` files with **0 `sorry`** (comment-stripped). No source-level
 `axiom` declarations appear in these files — this is a source grep, *not* a
 per-theorem `#print axioms` audit, so a theorem can still inherit a Mathlib axiom
-transitively. The core layers (`Pure/`, `PureKernel/`, and the HE metatheory) are
+transitively. The core layers (`Pure/`, `TwoSortKernel/`, and the HE metatheory) are
 kernel-checked.
 
 **Trusted base — `native_decide`.** 49 `native_decide` invocations remain in the

@@ -17,6 +17,7 @@ The construction is calculus-generic: it assumes neither Horn clauses nor a
 particular object logic.
 -/
 
+open Mettapedia.Logic
 set_option autoImplicit false
 
 namespace Mettapedia.TypeTheory.CertificateGSLTProofRelevantPathBridge

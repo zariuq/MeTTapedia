@@ -1,19 +1,19 @@
 import Mettapedia.GSLT.ReproducibleBuild.HattaProfile
-import Mettapedia.Languages.MeTTa.Prime.PeTTaChainerDAGReplayV1
-import Mettapedia.Languages.MeTTa.Prime.SourceScopedAdaptiveRealization
+import Mettapedia.Languages.MeTTa.PrimeCeTTaCurrent.Calibration.PeTTaChainerDAGReplayV1
+import Mettapedia.GSLT.Dynamics.AnswerDistinctionConservation
 import Mettapedia.Languages.MeTTa.HE.StateFreeExecution
 
 /-!
-# Prime and HE trajectory instances
+# CeTTa DAG-replay calibration and HE trajectory instances
 
-Prime's PeTTaChainer DAG replay and HE's derivation-local state-free execution
+The pinned PeTTaChainer DAG replay and HE's derivation-local state-free execution
 are different evidence disciplines.  This file connects each to the generic
 trajectory boundary without identifying them.
 
-The Prime instance reuses the actual DAG-node replay machine.  The HE instance
+The calibration instance reuses the actual DAG-node replay machine. The HE instance
 turns one actual interpreter step into a replay event and transports an
 existing `StateFreeExecution.Certificate` to a world-preservation theorem.
-The existing Prime occurrence-erasure obstruction is reused as the collapsed
+The generic occurrence-erasure obstruction is reused as the collapsed
 receipt control rather than re-proved.
 -/
 
@@ -23,14 +23,14 @@ namespace Mettapedia.GSLT.ReproducibleBuild.ReplayInstances
 
 open Mettapedia.GSLT.ReproducibleBuild.TrajectoryReplay
 
-/-! ## Prime PeTTaChainer DAG replay -/
+/-! ## CeTTa PeTTaChainer DAG-replay V1 calibration -/
 
-namespace Prime
+namespace CeTTaDAGCalibrationV1
 
-open Mettapedia.Languages.MeTTa.Prime.PeTTaChainerDAGReplayV1
+open Mettapedia.Languages.MeTTa.PrimeCeTTaCurrent.Calibration.PeTTaChainerDAGReplayV1
 
 /-- The generic event system whose states and events are exactly those of the
-existing Prime DAG replay engine. -/
+existing V1 calibration DAG replay engine. -/
 def dagEventSystem : EventSystem (List CheckedNode) DAGNode where
   Step := fun initial node final => PLift (replayNode initial node = some final)
   step? := replayNode
@@ -43,7 +43,7 @@ theorem dagEventSystem_transitionAdequate :
   · rintro ⟨⟨replayed⟩⟩
     exact replayed
 
-/-- Generic trajectory replay is definitionally the existing Prime DAG-node
+/-- Generic trajectory replay is definitionally the existing V1 DAG-node
 replay loop.  This is an interface theorem, not a replacement implementation. -/
 theorem replay_eq_replayNodes (environment : List CheckedNode)
     (nodes : List DAGNode) :
@@ -58,7 +58,7 @@ theorem replay_eq_replayNodes (environment : List CheckedNode)
       | some next =>
           simpa [dagEventSystem] using ih next
 
-/-- Successful Prime node replay yields an authoritative proof-relevant
+/-- Successful V1 node replay yields a proof-relevant
 trajectory through the generic transition boundary. -/
 theorem replayNodes_eq_some_iff_trajectory
     (environment : List CheckedNode) (nodes : List DAGNode)
@@ -69,7 +69,7 @@ theorem replayNodes_eq_some_iff_trajectory
   exact replay_eq_some_iff_trajectory dagEventSystem
     dagEventSystem_transitionAdequate environment nodes final
 
-end Prime
+end CeTTaDAGCalibrationV1
 
 /-! ## HE derivation-local state-free replay -/
 
@@ -84,7 +84,7 @@ open Mettapedia.Languages.MeTTa.HE.StateFreeExecution
 abbrev Event := Nat × Item
 
 /-- The HE event system exposes the real interpreter state transition.  It
-does not use Prime DAG nodes or Prime certificate checking. -/
+does not use the V1 calibration's DAG nodes or certificate checking. -/
 def eventSystem (env : MinEnv) : EventSystem St Event where
   Step := fun initial event final =>
     PLift (final = (interpretStack1 env event.1 initial event.2).2)
@@ -139,17 +139,20 @@ end HE
 
 /-! ## Receipt-collapse control -/
 
-/-- Reuse the existing source-scoped Prime obstruction: replacing an
+/-- Reuse the generic multiplicity collision: replacing an
 occurrence multiset by its support cannot preserve exact receipt distinctions. -/
 theorem occurrenceSupportErasure_not_exactReceiptReplay :
     Not (Mettapedia.Cybernetics.Distinction.Conserves
       (Mettapedia.Cybernetics.Distinction.inequality (Multiset Unit))
       (Mettapedia.Cybernetics.Distinction.inequality (Finset Unit))
-      (@Mettapedia.GSLT.Dynamics.AnswerEffects.bagToSupport.{0}.map Unit)) :=
-  Mettapedia.Languages.MeTTa.Prime.SourceScopedAdaptiveRealization.occurrenceSupportErasure_not_exactDistinctionConserving
+      (@Mettapedia.GSLT.Dynamics.AnswerEffects.bagToSupport.{0}.map Unit)) := by
+  intro conserves
+  obtain ⟨different, collision⟩ :=
+    Mettapedia.GSLT.Dynamics.AnswerEffects.bagToSupport_multiplicity_collision
+  exact conserves {()} {(), ()} different collision
 
 end Mettapedia.GSLT.ReproducibleBuild.ReplayInstances
 
-#print axioms Mettapedia.GSLT.ReproducibleBuild.ReplayInstances.Prime.replayNodes_eq_some_iff_trajectory
+#print axioms Mettapedia.GSLT.ReproducibleBuild.ReplayInstances.CeTTaDAGCalibrationV1.replayNodes_eq_some_iff_trajectory
 #print axioms Mettapedia.GSLT.ReproducibleBuild.ReplayInstances.HE.fullPrelude_finished_replay_preservesWorld
 #print axioms Mettapedia.GSLT.ReproducibleBuild.ReplayInstances.occurrenceSupportErasure_not_exactReceiptReplay

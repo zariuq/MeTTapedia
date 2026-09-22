@@ -1,17 +1,17 @@
 import Mettapedia.GSLT.LanguageDef.GenerativeCantorSemanticGrounding
 import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
-import Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas
+import Mettapedia.GSLT.LanguageDef.NIKBaseChecker
 
 /-!
-# Exact finite-stage grounding in the plural bootstrap atlas
+# Exact finite-stage grounding in the base checker
 
-The exhaustive Cantor-stage authority and the plural bootstrap atlas have
+The exhaustive Cantor-stage authority and the base checker have
 different claim and certificate languages.  This module connects them at the
 strongest available boundary: an exact authority translation into the
-atlas's `modelSound` lane.
+base checker's `modelSound` lane.
 
 A closed atomless formula becomes a tagged lower contract claim.  The staged
-unit receipt becomes the atlas's semantic-decision receipt.  Checker replay
+unit receipt becomes the base checker's semantic-decision receipt.  Checking
 commutes exactly, and the translation is conservative because finite-stage
 meaning is equivalent to cold Cantor-clopen meaning.
 
@@ -36,26 +36,26 @@ private abbrev finiteStageTheory :=
 private abbrev finiteStageContract :=
   Mettapedia.GSLT.LanguageDef.GenerativeCantorSemanticGrounding.stagedContract
 
-private abbrev atlasTheory :=
-  Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas.layer.toTheoryFamily
+private abbrev baseCheckerTheory :=
+  Mettapedia.GSLT.LanguageDef.NIKBaseChecker.layer.toTheoryFamily
 
-private abbrev atlasContract :=
-  Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas.layer.toAuthorityContract
+private abbrev baseCheckerContract :=
+  Mettapedia.GSLT.LanguageDef.NIKBaseChecker.layer.toAuthorityContract
 
 /-! ## Exact translation into `modelSound` -/
 
 /-- Interpret each finite-stage semantic claim as the corresponding tagged
-`modelSound` claim in the plural lower atlas. -/
-def stagedToAtlasModel :
-    CertifiedTranslation finiteStageContract atlasContract where
+`modelSound` claim in the base checker. -/
+def stagedToBaseCheckerModel :
+    CertifiedTranslation finiteStageContract baseCheckerContract where
   mapKind := id
-  mapSignature := fun _signature => atlasTheory.signatureOf ()
+  mapSignature := fun _signature => baseCheckerTheory.signatureOf ()
   signature_commutes := by
     intro kind
     cases kind
     rfl
   mapClaim := fun _kind formula =>
-    Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas.modelClaim formula
+    Mettapedia.GSLT.LanguageDef.NIKBaseChecker.modelClaim formula
   mapCertificate := fun _kind _certificate => .semanticDecision
   check_commutes := by
     intro kind formula certificate
@@ -69,19 +69,19 @@ def stagedToAtlasModel :
     change ColdMeaning formula
     exact (stagedMeaning_iff_coldMeaning formula).mp meaningful
 
-@[simp] theorem stagedToAtlasModel_mapClaim (formula : Formula 0) :
-    stagedToAtlasModel.mapClaim () formula =
-      Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas.modelClaim
+@[simp] theorem stagedToBaseCheckerModel_mapClaim (formula : Formula 0) :
+    stagedToBaseCheckerModel.mapClaim () formula =
+      Mettapedia.GSLT.LanguageDef.NIKBaseChecker.modelClaim
         formula :=
   rfl
 
-@[simp] theorem stagedToAtlasModel_mapCertificate
+@[simp] theorem stagedToBaseCheckerModel_mapCertificate
     (certificate : finiteStageContract.Certificate ()) :
-    stagedToAtlasModel.mapCertificate () certificate = .semanticDecision :=
+    stagedToBaseCheckerModel.mapCertificate () certificate = .semanticDecision :=
   rfl
 
-theorem stagedToAtlasModel_conservative :
-    stagedToAtlasModel.toTheoryTranslation.Conservative where
+theorem stagedToBaseCheckerModel_conservative :
+    stagedToBaseCheckerModel.toTheoryTranslation.Conservative where
   scope_reflecting := by
     intro kind formula meaningful
     cases kind
@@ -96,30 +96,30 @@ theorem stagedToAtlasModel_conservative :
     exact (stagedMeaning_iff_coldMeaning formula).mpr meaningful
 
 /-- Exact replay survives the change in both claim and certificate syntax. -/
-theorem stagedToAtlasModel_check_commutes (formula : Formula 0)
+theorem stagedToBaseCheckerModel_check_commutes (formula : Formula 0)
     (certificate : finiteStageContract.Certificate ()) :
-    (atlasContract.checker ()).check
-        (Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas.modelClaim
+    (baseCheckerContract.checker ()).check
+        (Mettapedia.GSLT.LanguageDef.NIKBaseChecker.modelClaim
           formula)
         .semanticDecision =
       (finiteStageContract.checker ()).check formula certificate :=
-  stagedToAtlasModel.check_commutes () formula certificate
+  stagedToBaseCheckerModel.check_commutes () formula certificate
 
-/-- Atlas `modelSound` meaning is exactly finite-stage meaning on the image. -/
-theorem atlasModelMeaning_iff_stagedMeaning (formula : Formula 0) :
-    atlasTheory.Meaning ()
-        (Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas.modelClaim
+/-- Base-checker `modelSound` meaning is exactly finite-stage meaning on the image. -/
+theorem baseCheckerModelMeaning_iff_stagedMeaning (formula : Formula 0) :
+    baseCheckerTheory.Meaning ()
+        (Mettapedia.GSLT.LanguageDef.NIKBaseChecker.modelClaim
           formula) <->
       finiteStageTheory.Meaning () formula :=
   TheoryTranslation.meaning_iff_of_conservative
-    stagedToAtlasModel.toTheoryTranslation
-    stagedToAtlasModel_conservative () formula
+    stagedToBaseCheckerModel.toTheoryTranslation
+    stagedToBaseCheckerModel_conservative () formula
 
-/-- Atlas acceptance is qualified against staged meaning rather than used to
+/-- Base-checker acceptance is qualified against staged meaning rather than used to
 define it. -/
-theorem atlasModelAccepts_iff_stagedMeaning (formula : Formula 0) :
-    (atlasContract.checker ()).check
-        (Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas.modelClaim
+theorem baseCheckerModelAccepts_iff_stagedMeaning (formula : Formula 0) :
+    (baseCheckerContract.checker ()).check
+        (Mettapedia.GSLT.LanguageDef.NIKBaseChecker.modelClaim
           formula)
         .semanticDecision = true <->
       finiteStageTheory.Meaning () formula := by
@@ -132,12 +132,12 @@ namespace Canary
 
 open Mettapedia.GSLT.LanguageDef.AtomlessBooleanFirstOrderDecision.Canary
 
-theorem properPart_replays_in_atlas :
-    (atlasContract.checker ()).check
-        (Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas.modelClaim
+theorem properPart_accepted_by_base_checker :
+    (baseCheckerContract.checker ()).check
+        (Mettapedia.GSLT.LanguageDef.NIKBaseChecker.modelClaim
           properPartSentence)
         .semanticDecision = true := by
-  rw [stagedToAtlasModel_check_commutes properPartSentence ()]
+  rw [stagedToBaseCheckerModel_check_commutes properPartSentence ()]
   exact
     Mettapedia.GSLT.LanguageDef.GenerativeCantorSemanticGrounding.Canary.properPart_replays
 
@@ -145,8 +145,8 @@ theorem properPart_replays_in_atlas :
 cannot appear in the source-soundness lane. -/
 theorem sourceSound_not_in_image (formula : Formula 0) :
     Not (exists stagedFormula : Formula 0,
-      stagedToAtlasModel.mapClaim () stagedFormula =
-        Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas.sourceSoundClaim
+      stagedToBaseCheckerModel.mapClaim () stagedFormula =
+        Mettapedia.GSLT.LanguageDef.NIKBaseChecker.sourceSoundClaim
           formula) := by
   rintro ⟨stagedFormula, equalClaims⟩
   have equalKinds := congrArg
@@ -160,8 +160,8 @@ from the staged semantic receipt. -/
 theorem refinementEvidence_not_in_certificate_image
     (evidence : RefinementMetaAuthority.Certificate) :
     Not (exists certificate : finiteStageContract.Certificate (),
-      stagedToAtlasModel.mapCertificate () certificate =
-        Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas.Certificate.refinementEvidence
+      stagedToBaseCheckerModel.mapCertificate () certificate =
+        Mettapedia.GSLT.LanguageDef.NIKBaseChecker.Certificate.refinementEvidence
           evidence) := by
   rintro ⟨certificate, equalCertificates⟩
   cases certificate
@@ -169,12 +169,12 @@ theorem refinementEvidence_not_in_certificate_image
 
 end Canary
 
-#print axioms stagedToAtlasModel
-#print axioms stagedToAtlasModel_conservative
-#print axioms stagedToAtlasModel_check_commutes
-#print axioms atlasModelMeaning_iff_stagedMeaning
-#print axioms atlasModelAccepts_iff_stagedMeaning
-#print axioms Canary.properPart_replays_in_atlas
+#print axioms stagedToBaseCheckerModel
+#print axioms stagedToBaseCheckerModel_conservative
+#print axioms stagedToBaseCheckerModel_check_commutes
+#print axioms baseCheckerModelMeaning_iff_stagedMeaning
+#print axioms baseCheckerModelAccepts_iff_stagedMeaning
+#print axioms Canary.properPart_accepted_by_base_checker
 #print axioms Canary.sourceSound_not_in_image
 #print axioms Canary.refinementEvidence_not_in_certificate_image
 

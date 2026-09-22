@@ -173,6 +173,16 @@ theorem liftedInputAccept_right :
     DerivationCheckMachineLanguageDef.a,
     DerivationCheckMachineLanguageDef.v]
 
+private theorem liftedInputAccept_depthAligned :
+    ruleDepthAligned
+      (liftRewrite DerivationCheckMachineLanguageDef.inputAcceptTransition) = true := by
+  simp [ruleDepthAligned, liftedInputAccept_left, liftedInputAccept_right,
+    run, recordsCons, v, DerivationWordMachineLanguageDef.a,
+    DerivationCheckMachineLanguageDef.nodesCons,
+    DerivationCheckMachineLanguageDef.node,
+    DerivationCheckMachineLanguageDef.a, depthAligned, depthAlignedList,
+    captureDepth, captureDepthList]
+
 theorem matchDecisionState_exact (nextServiceState : Pattern) :
     matchPattern
       (DerivationCheckMachineLanguageDef.decisionState
@@ -519,7 +529,9 @@ theorem input_accept_step_mem
         applyBindings final
           (liftRewrite
             DerivationCheckMachineLanguageDef.inputAcceptTransition).right
-          by rfl]
+          by
+            apply Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+            exact liftedInputAccept_depthAligned]
       rw [liftedInputAccept_right]
       simp [final, inputAcceptedBindings, inputIndexedBindings,
         inputDecodedBindings, inputStartBindings, run,
@@ -729,7 +741,9 @@ theorem input_accept_applyRule_exact
       applyBindings final
         (liftRewrite
           DerivationCheckMachineLanguageDef.inputAcceptTransition).right
-      by rfl]
+      by
+        apply Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_applyBindings
+        exact liftedInputAccept_depthAligned]
     rw [liftedInputAccept_right]
     simp [final, inputAcceptedBindings, inputIndexedBindings,
       inputDecodedBindings, inputStartBindings, run,
@@ -1026,7 +1040,9 @@ theorem input_index_fault_applyRule_exact
     recordDecoded, nextIdDecoded, idDecoded, indexFaulted,
     premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
     matchRelationArgs, matchRelationArgument, matchPattern, matchArgs,
-    mergeBindings, applyBindings, Bindings.lookup]
+    mergeBindings, applyRuleBindings_eq_applyBindings,
+    ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+    captureDepthList, applyBindings, Bindings.lookup]
 
 #print axioms input_index_fault_applyRule_exact
 
@@ -1185,7 +1201,9 @@ theorem input_relevance_fault_applyRule_exact
     recordDecoded, nextIdDecoded, idDecoded, relevanceDecoded,
     indexAccepted, relevanceFaulted, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, matchRelationArgs, matchRelationArgument,
-    matchPattern, matchArgs, mergeBindings, applyBindings, Bindings.lookup]
+    matchPattern, matchArgs, mergeBindings, applyRuleBindings_eq_applyBindings,
+    ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+    captureDepthList, applyBindings, Bindings.lookup]
 
 #print axioms input_relevance_fault_applyRule_exact
 
@@ -1368,7 +1386,9 @@ theorem input_decision_fault_applyRule_exact
     serviceStateDecoded, provenanceDecoded, formulaDecoded, indexAccepted,
     relevanceAccepted, inputFaulted, premiseStepWithEnv, relationQueryStep,
     builtinRelationTuples, matchRelationArgs, matchRelationArgument,
-    matchPattern, matchArgs, mergeBindings, applyBindings, Bindings.lookup]
+    matchPattern, matchArgs, mergeBindings, applyRuleBindings_eq_applyBindings,
+    ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+    captureDepthList, applyBindings, Bindings.lookup]
 
 #print axioms input_decision_fault_applyRule_exact
 

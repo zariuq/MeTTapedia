@@ -1,4 +1,5 @@
 import Mettapedia.Machines.ConeDuality
+import Mettapedia.Machines.BranchLocalNeed
 import Mettapedia.Machines.DepthFirstStack
 import Mettapedia.Machines.RevisionedOccurrenceStore
 import Mettapedia.Machines.RevisionDependencySet

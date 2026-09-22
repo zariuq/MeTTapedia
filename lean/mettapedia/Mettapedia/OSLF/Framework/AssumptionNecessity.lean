@@ -318,7 +318,7 @@ theorem counterexample_hAtomAll_for_global_diaBox_transfer :
   · intro hall
     have hAt : Mettapedia.OSLF.Formula.sem relAll atomNone (.atom "a") witnessPat :=
       hall witnessPat
-    simp [Mettapedia.OSLF.Formula.sem, atomNone] at hAt
+    simp [Mettapedia.OSLF.Formula.sem, Mettapedia.OSLF.Formula.semEnv, atomNone] at hAt
 
 /-- Counterexample pattern: dropping global `◇⊤` (`hDiaTopAll`) from the same
 global transfer shape is unsound even when atoms are universally true. -/

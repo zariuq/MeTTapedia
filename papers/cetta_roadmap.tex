@@ -1521,20 +1521,22 @@ endgame.
 \section{The Dual-Target Architecture}
 \label{sec:dual-target}
 
-The mature vision for \CeTTa{} connects to a \textbf{Lean-style dual-target
-elaborator} architecture formalized in \code{papers/PureMeTTa.tex} and
-implemented across \code{Mettapedia/Languages/MeTTa/}.
+The mature vision for \CeTTa{} includes a \textbf{Lean-style dual-target
+elaborator}. This is a design direction, not an already proved dual-target
+implementation. \code{papers/PureMeTTa.tex} now records the narrower
+\code{TwoSortPiSigmaId} experiment and its verified boundaries.
 
-\subsection{Source Syntax → Elaborated → Pure + Runtime}
+\subsection{Proposed Source Syntax → Elaborated → Proof + Runtime}
 
-The architecture mirrors Lean's pipeline: source language elaborates to
-a shared typed core, which then compiles to two targets:
+The intended architecture mirrors Lean's pipeline: source language would
+elaborate to a shared typed core with separately justified proof and runtime
+lowerings. The diagram states that target, not a completed correspondence:
 
 \begin{center}
 \begin{tikzpicture}[node distance=1.2cm and 2.5cm]
   \node[neutralbox] (syntax) {Source MeTTa};
   \node[sharedbox, below=of syntax] (core) {Elaborated MeTTa-Core};
-  \node[proofbox, below left=1cm and 1.5cm of core] (pure) {MeTTa-Pure};
+  \node[proofbox, below left=1cm and 1.5cm of core] (pure) {Proposed proof target};
   \node[rtbox, below right=1cm and 1.5cm of core] (runtime) {\CeTTa{} RuntimeExec};
 
   \draw[arrw] (syntax) -- node[right,font=\small] {elaborate} (core);
@@ -1543,10 +1545,20 @@ a shared typed core, which then compiles to two targets:
 \end{tikzpicture}
 \end{center}
 
-\paragraph{MeTTa-Pure (Proof Target).}
-Dependently-typed kernel with Pi, Sigma, Id, universes.  Full metatheory:
-subject reduction, confluence, substitution preservation.  Zero sorries,
-zero axioms beyond Lean's kernel.  This is where correctness is proved.
+\paragraph{Existing fragment calibration: \code{TwoSortPiSigmaId}.}
+{\raggedright
+The calculus in
+\path{Mettapedia/TypeTheory/Calculi/TwoSortPiSigmaId/} has a ground type
+\code{u0}, an untyped formation marker \code{u1}, Pi/Sigma, and identity
+formation/reflexivity. It has no identity eliminator or universe hierarchy.
+The older permissive typing relation is distinct from the declaration-free
+\code{RegularJudgment}, whose subjects are proved strongly normalizing.
+Exact regular conversion uses computed normal forms; one-pass complete
+development does not provide full normalization. The MeTTa-specific
+\path{Mettapedia/Languages/MeTTa/Experimental/TwoSortPiSigmaId/} adapters
+establish shared-artifact and restricted operational bridges, not full runtime
+equivalence. This experiment is not selected as Prime's proof theory.
+\par}
 
 \paragraph{CeTTa RuntimeExec (Execution Target).}
 Efficient C runtime with Layer~3 term sharing, hash-consing, \PathMap{}
@@ -1554,21 +1566,24 @@ joins, variant tabling.  Decidable fragments of the full semantics.
 This is where performance is achieved.
 
 \paragraph{Elaborated Core (Shared Representation).}
-Four regions: \code{pureKernelRegion} (trusted typed),
+The proof-of-concept classifier distinguishes four regions:
+\code{twoSortKernelRegion} (the experiment's certificate lane),
 \code{runtimeExecRegion} (effectful), \code{oracleRegion} (FFI/grounded),
-\code{metaRegion} (reflection).  Both targets lower from this shared core.
+\code{metaRegion} (reflection). Sharing this representation does not prove
+that proof-side reduction and runtime execution agree.
 
 \subsection{Semantic Skeleton: CBPV First, MATT Later}
 
-The dual-target architecture instantiates \textbf{Call-By-Push-Value}
-(CBPV, Levy 2001) as its immediate semantic skeleton:
+The proposed dual-target architecture uses \textbf{Call-By-Push-Value}
+(CBPV, Levy 2001) as a design guide. The following is an intended
+correspondence, not a proved CBPV model of the two-sort experiment:
 
 \begin{center}
 \begin{tabular}{ll}
 \toprule
 \textbf{CBPV Concept} & \textbf{CeTTa Lane} \\
 \midrule
-Value types (things that ARE) & MeTTa-Pure: types, proofs, data \\
+Value types (things that ARE) & Proposed proof lane: types, proofs, data \\
 Computation types (things that DO) & RuntimeExec: effects, search, space ops \\
 $F A$ (thunk returning $A$) & Suspend a pure value into runtime \\
 $U C$ (suspended computation) & Embed runtime computation as a value \\
@@ -1589,17 +1604,17 @@ valid MATT from day one.
 
 \subsection{Why This Matters}
 
-The traditional trade-off---beauty vs.\ efficiency---dissolves:
+The intended benefits depend on establishing the operational correspondence:
 
 \begin{itemize}
-\item \textbf{Write once, verify and execute}: Source code elaborates to
-  both targets.  You don't maintain separate ``proof code'' and ``fast code.''
-\item \textbf{Proven semantics, optimized execution}: Pure provides
-  confluence and type preservation theorems; Runtime provides hash-consing
-  and search parameterization.
-\item \textbf{Gradual restriction}: Full MeTTa-Pure is undecidable.
-  Runtime executes decidable fragments.  The elaborator routes each
-  expression to the appropriate lane.
+\item \textbf{Write once, verify and execute}: A future elaborator should
+  support both targets with a proved relation between their results.
+\item \textbf{Proven semantics, optimized execution}: Fragment-specific
+  confluence and typing theorems must be connected to the actual runtime's
+  sharing and search behavior.
+\item \textbf{Explicit fragment boundaries}: Exact conversion is proved on
+  the regular two-sort normalization domain. That does not decide arbitrary
+  runtime behavior or justify an undecidability claim about this fragment.
 \end{itemize}
 
 \subsection{Layer 3 as the Runtime Bridge}
@@ -1641,19 +1656,20 @@ requires three distinct sharing regimes, each optimized for its context:
 \midrule
 1. Persistent exact & Universe store & Hash-consing, canonical reps \\
 2. Runtime open-term & Evaluator/search & Layer~3 (skeleton + \code{slot\_env}) \\
-3. Pure binder-aware & PureKernel & Closures, NbE, explicit substitutions \\
+3. Proof-side binder-aware & Proposed proof normalizer & Closures, NbE, substitutions \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\paragraph{Anti-goal:} Do \emph{not} force Layer~3 into the PureKernel.
-Binder-aware normalization (NbE) requires different internal machinery
-than runtime variant sharing.  The shared artifact layer sits above
-these regimes; overlap certificates connect them.
+\paragraph{Anti-goal:} Do \emph{not} identify runtime Layer~3 sharing with
+proof-side normalization. NbE is a possible implementation choice; the
+existing two-sort regular normalizer is accessibility-driven reduction.
+A shared artifact alone does not prove equivalence of these representations.
 
 \subsection{Seven-Mode Structure}
 
-The four-region model refines into seven modes for full MATT compatibility:
+The proposed four-region design could refine into seven modes. This is not
+an implemented MATT theorem or a feature list of the fixed two-sort fragment:
 
 \begin{enumerate}
 \item \textbf{Pure} --- Trusted kernel: Pi/Sigma/Id/universes, normalization, certificates

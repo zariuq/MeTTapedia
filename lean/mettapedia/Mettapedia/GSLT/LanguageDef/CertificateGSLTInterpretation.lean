@@ -37,8 +37,9 @@ namespace Interpretation
 
 mutual
 
-/-- Translate an open derivation through a rule interpretation.  Premise
-occurrence positions are retained exactly. -/
+/-- Translate an open derivation through a rule interpretation. The ordered
+context is retained, but a rule template may copy or drop premise uses; an
+additional local linearity law is needed to preserve occurrence ledgers. -/
 def mapOpen {source target : Object}
     (interpretation : Interpretation source target)
     {context : List Pattern} {goal : Pattern} :

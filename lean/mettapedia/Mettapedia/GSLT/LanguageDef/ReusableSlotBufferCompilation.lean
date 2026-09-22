@@ -1029,4 +1029,82 @@ example :
       executeFresh binderTransactions := by
   decide
 
+/-! ## Demand-allocated buffers
+
+An absent physical allocation represents empty slots. Reads and writes demand
+storage; invalidation clears an existing allocation but need not allocate an
+unused one. Allocation timing is independent of slot values and reset policy.
+-/
+
+inductive BufferAction (width : Nat) (Value : Type uValue) where
+  | read (slot : Fin width)
+  | write (slot : Fin width) (value : Value)
+  | clear
+
+/-- The semantic contents of optional physical storage. -/
+def decodeOptionalBuffer (storage : Option (Buffer width Value)) :
+    Buffer width Value := storage.getD emptyBuffer
+
+def bufferStep (buffer : Buffer width Value) :
+    BufferAction width Value -> List (Option Value) × Buffer width Value
+  | .read slot => ([buffer slot], buffer)
+  | .write slot value => ([], write buffer (slot, value))
+  | .clear => ([], reset buffer)
+
+def demandedBufferStep (storage : Option (Buffer width Value)) :
+    BufferAction width Value ->
+      List (Option Value) × Option (Buffer width Value)
+  | .read slot =>
+      let ready := decodeOptionalBuffer storage
+      ([ready slot], some ready)
+  | .write slot value =>
+      ([], some (write (decodeOptionalBuffer storage) (slot, value)))
+  | .clear => ([], storage.map reset)
+
+/-- Allocation demand commutes with slot observation and logical update. -/
+theorem demandedBufferStep_refines (storage : Option (Buffer width Value))
+    (action : BufferAction width Value) :
+    (demandedBufferStep storage action).1 =
+        (bufferStep (decodeOptionalBuffer storage) action).1 ∧
+      decodeOptionalBuffer (demandedBufferStep storage action).2 =
+        (bufferStep (decodeOptionalBuffer storage) action).2 := by
+  cases action <;> cases storage <;>
+    simp [demandedBufferStep, bufferStep, decodeOptionalBuffer, reset]
+
+def bufferTrace : Buffer width Value -> List (BufferAction width Value) ->
+    List (Option Value)
+  | _, [] => []
+  | buffer, action :: actions =>
+      let next := bufferStep buffer action
+      next.1 ++ bufferTrace next.2 actions
+
+def demandedBufferTrace : Option (Buffer width Value) ->
+    List (BufferAction width Value) -> List (Option Value)
+  | _, [] => []
+  | storage, action :: actions =>
+      let next := demandedBufferStep storage action
+      next.1 ++ demandedBufferTrace next.2 actions
+
+/-- Every read, including misses and reads after invalidation, is preserved. -/
+theorem demandedBufferTrace_refines (actions : List (BufferAction width Value))
+    (storage : Option (Buffer width Value)) :
+    demandedBufferTrace storage actions =
+      bufferTrace (decodeOptionalBuffer storage) actions := by
+  induction actions generalizing storage with
+  | nil => rfl
+  | cons action actions ih =>
+      simp only [demandedBufferTrace, bufferTrace]
+      rw [ih, (demandedBufferStep_refines storage action).1,
+        (demandedBufferStep_refines storage action).2]
+
+example : demandedBufferTrace (none : Option (Buffer 1 Nat))
+    [.read 0, .write 0 7, .read 0, .clear, .read 0] =
+      [none, some 7, none] := by decide
+
+/-- Dropping invalidation is observable even with lazy physical storage. -/
+example : demandedBufferTrace (none : Option (Buffer 1 Nat))
+    [.write 0 7, .read 0] ≠
+      demandedBufferTrace (none : Option (Buffer 1 Nat))
+        [.write 0 7, .clear, .read 0] := by decide
+
 end Mettapedia.GSLT.LanguageDef.ReusableSlotBufferCompilation

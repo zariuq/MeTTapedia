@@ -424,8 +424,13 @@ theorem instantiate_introductionBodyConclusion
         some (applyBindingsForRule language
           (typingAt demand slot).site.rewrite
           instantiation.endpoint.bindings) := by
+    have leftHole : patternHoleSkeleton (typingAt demand slot).site.rewrite.left = true := by
+      rw [typingAt_eq_rootTyping]; exact root_left_holeSkeleton _
+    have rightHole : patternHoleSkeleton (typingAt demand slot).site.rewrite.right = true := by
+      rw [typingAt_eq_rootTyping]; exact root_target_holeSkeleton _
     simpa only [instantiateSchema?, authoredTarget,
-      applyBindingsForRule_eq_syntactic] using
+      applyBindingsForRule_eq_syntactic,
+      applyRuleBindings_of_holeSkeletons _ leftHole rightHole] using
       instantiation.instantiate_authoredPattern
         (generated_introductionFormalNames_nodup slot)
         (generated_introductionEndpoint_declared slot)
@@ -703,10 +708,13 @@ theorem endpointTargetForRule_eq_worldTargetForRule_of_variableRowEvidence
         reference.bindings =
       applyBindingsForRule language (typingAt demand slot).site.rewrite
         world.environment.bindings := by
-  simp only [applyBindingsForRule_eq_syntactic]
-  apply applyBindings_agree
-  · rw [typingAt_eq_rootTyping]
-    exact root_target_holeSkeleton _
+  have leftHole : patternHoleSkeleton (typingAt demand slot).site.rewrite.left = true := by
+    rw [typingAt_eq_rootTyping]; exact root_left_holeSkeleton _
+  have rightHole : patternHoleSkeleton (typingAt demand slot).site.rewrite.right = true := by
+    rw [typingAt_eq_rootTyping]; exact root_target_holeSkeleton _
+  simp only [applyBindingsForRule_eq_syntactic,
+    applyRuleBindings_of_holeSkeletons _ leftHole rightHole]
+  apply applyBindings_agree rightHole
   · intro name occurrenceMember
     have targetMember :
         name ∈ (typingAt demand slot).site.rewrite.right.freeFvarNames := by

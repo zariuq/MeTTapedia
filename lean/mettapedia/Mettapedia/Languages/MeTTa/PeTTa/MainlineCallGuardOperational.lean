@@ -182,6 +182,11 @@ end
     applyBindings bindings (encodeTerm term) = encodeTerm term :=
   applyBindings_closedSkeleton (encodeTerm_closedSkeleton term) bindings
 
+@[simp] theorem applyBindingsScoped_encodeTerm (lhs : Pattern) (bindings : Bindings)
+    (depth : Nat) (term : Term) :
+    applyBindingsScoped lhs bindings depth (encodeTerm term) = encodeTerm term :=
+  applyBindingsScoped_closedSkeleton (encodeTerm_closedSkeleton term) lhs bindings depth
+
 def declarationPattern (occurrence function inputs output : Pattern) : Pattern :=
   a "petta-call-guard:declaration" [occurrence, function, inputs, output]
 def declarationsNil : Pattern := a "petta-call-guard:declarations-nil"
@@ -235,6 +240,11 @@ def encodeArgMode : ArgMode → Pattern
     applyBindings bindings (encodeArgMode mode) = encodeArgMode mode :=
   applyBindings_closedSkeleton (encodeArgMode_closedSkeleton mode) bindings
 
+@[simp] theorem applyBindingsScoped_encodeArgMode (lhs : Pattern) (bindings : Bindings)
+    (depth : Nat) (mode : ArgMode) :
+    applyBindingsScoped lhs bindings depth (encodeArgMode mode) = encodeArgMode mode :=
+  applyBindingsScoped_closedSkeleton (encodeArgMode_closedSkeleton mode) lhs bindings depth
+
 def encodeArgModes (modes : List ArgMode) : Pattern :=
   modes.foldl (fun encoded mode => argModesSnoc encoded (encodeArgMode mode))
     argModesNil
@@ -273,6 +283,11 @@ def encodeResultMode : ResultMode → Pattern
     (bindings : Bindings) (mode : ResultMode) :
     applyBindings bindings (encodeResultMode mode) = encodeResultMode mode :=
   applyBindings_closedSkeleton (encodeResultMode_closedSkeleton mode) bindings
+
+@[simp] theorem applyBindingsScoped_encodeResultMode (lhs : Pattern) (bindings : Bindings)
+    (depth : Nat) (mode : ResultMode) :
+    applyBindingsScoped lhs bindings depth (encodeResultMode mode) = encodeResultMode mode :=
+  applyBindingsScoped_closedSkeleton (encodeResultMode_closedSkeleton mode) lhs bindings depth
 
 def planPattern (occurrence modes result declaration : Pattern) : Pattern :=
   a "petta-call-guard:plan" [occurrence, modes, result, declaration]
@@ -1720,7 +1735,7 @@ theorem language_finish_step_exact
     encodeCompileLanguageControl, compileRunning, compileArguments,
     compileResult, compileHalted, encodeCompilationResult, encodeFamily,
     familyPattern, compiledPattern, encodeDeclarations, declarationsNil,
-    declarationsCons, a, v, applyBindings,
+    declarationsCons, a, v, applyRuleBindings, applyBindings,
     matchPattern, matchArgs, mergeBindings]
 
 #print axioms language_finish_step_exact
@@ -1968,6 +1983,7 @@ private theorem language_step_of_ambient
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule
           language rule bindings = target := by
     rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+      applyRuleBindings_of_holeSkeletons bindings leftHole rightHole,
       targetAgreement, targetEq]
   exact Mettapedia.OSLF.MeTTaIL.ContextualStep.step_of_rule ruleMember matched
     noncontextual (premisesSelf bindings agree bindingsCover) appliedTarget
@@ -2106,7 +2122,8 @@ theorem language_skipHead_step
           language skipHeadTransition bindings =
         encodeCompileLanguageControl
           (.running owner revision head arity remaining accepted) := by
-    rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic]
+    rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+      applyRuleBindings, applyBindingsScoped_zero_of_binderFree _ _ _ (by decide)]
     unfold skipHeadTransition encodeCompileLanguageControl compileRunning a
     simp only [applyBindings, List.map_cons, List.map_nil,
       applyBindings_fvar]

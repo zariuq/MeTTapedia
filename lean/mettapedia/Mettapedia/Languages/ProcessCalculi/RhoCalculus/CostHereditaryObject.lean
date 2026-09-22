@@ -48,7 +48,7 @@ private theorem mem_freeFvarNames_liftBVars_iff
         simp [liftBVars, Pattern.freeFvarNames, shifted]
   | hfvar variableName => simp [liftBVars, Pattern.freeFvarNames]
   | happly constructor arguments inductionHypothesis =>
-      simp only [liftBVars, Pattern.freeFvarNames, List.mem_flatMap,
+      simp only [liftBVars, liftBVarsList_eq_map, Pattern.freeFvarNames, List.mem_flatMap,
         List.mem_map]
       constructor
       · rintro ⟨normalized, ⟨argument, membership, rfl⟩, support⟩
@@ -68,7 +68,7 @@ private theorem mem_freeFvarNames_liftBVars_iff
       simp [liftBVars, Pattern.freeFvarNames,
         bodyInduction (cutoff + 1), replacementInduction cutoff]
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [liftBVars, Pattern.freeFvarNames, List.mem_append,
+      simp only [liftBVars, liftBVarsList_eq_map, Pattern.freeFvarNames, List.mem_append,
         List.mem_flatMap, List.mem_map]
       constructor
       · rintro (⟨normalized, ⟨element, membership, rfl⟩, support⟩ | support)

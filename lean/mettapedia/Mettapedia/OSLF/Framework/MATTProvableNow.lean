@@ -182,15 +182,15 @@ theorem pure_mode_isolation
   pure_boundary_characterization f
 
 /-- Specialization: canonical runtime→behavioral witness transport for
-`mettaPure` in the current mode skeleton. -/
-theorem mettaPure_runtime_behavioral_transport
+`twoSortDependent` in the current mode skeleton. -/
+theorem twoSortDependent_runtime_behavioral_transport
     {φ : EquationPredicate
-      (langGSLT Mettapedia.Languages.MeTTa.Pure.Core.mettaPure)} {p : Pattern}
-    (h : langDiamond Mettapedia.Languages.MeTTa.Pure.Core.mettaPure φ p) :
-    ∃ q, langSemanticReduces Mettapedia.Languages.MeTTa.Pure.Core.mettaPure p q ∧ φ q ∧
-      ∃ T, LangReducesStar Mettapedia.Languages.MeTTa.Pure.Core.mettaPure
-        (mettaPureRuntimeToBehavioral.termMap p) T ∧
-        T = mettaPureRuntimeToBehavioral.termMap q :=
-  mettaPure_runtime_behavioral_diamond_transport h
+      (langGSLT Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core.twoSortDependent)} {p : Pattern}
+    (h : langDiamond Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core.twoSortDependent φ p) :
+    ∃ q, langSemanticReduces Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core.twoSortDependent p q ∧ φ q ∧
+      ∃ T, LangReducesStar Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core.twoSortDependent
+        (twoSortDependentRuntimeToBehavioral.termMap p) T ∧
+        T = twoSortDependentRuntimeToBehavioral.termMap q :=
+  twoSortDependent_runtime_behavioral_diamond_transport h
 
 end Mettapedia.OSLF.Framework.MATTProvableNow

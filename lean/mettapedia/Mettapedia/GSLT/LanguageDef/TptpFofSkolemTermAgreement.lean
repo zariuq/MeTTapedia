@@ -35,7 +35,11 @@ local macro "skolem_term_root" : tactic =>
       sourceTermFunction, sourceTermsNil, sourceTermsCons, targetTermVariable,
       targetTermOriginal, targetTermGenerated, targetTermsNil,
       targetTermsCons, envNil, envCons, a, v, matchPattern, matchArgs,
-      mergeBindings, applyBindingsForRule, applyBindings])
+      mergeBindings, applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+      ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+      captureDepthList, applyBindings] <;>
+      rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+      simp only [applyBindings, List.map_nil])
 
 local syntax "skolem_term_root_using " term,* : tactic
 local macro_rules
@@ -61,7 +65,11 @@ local macro_rules
           sourceTermsCons, targetTermVariable, targetTermOriginal,
           targetTermGenerated, targetTermsNil, targetTermsCons, envNil,
           envCons, a, v, matchPattern, matchArgs, mergeBindings,
-          applyBindingsForRule, applyBindings])
+          applyBindingsForRule, applyRuleBindings_eq_applyBindings,
+          ruleDepthAligned, depthAligned, depthAlignedList, captureDepth,
+          captureDepthList, applyBindings] <;>
+          rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)] <;>
+          simp only [applyBindings, List.map_nil])
 
 /-! ## Exact root rules -/
 

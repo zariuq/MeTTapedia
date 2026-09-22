@@ -20,6 +20,8 @@ set, both of which respect the equations:
   bisimilarity, so the two coincide;
 * for the negation-free fragment (with falsity and disjunction), the logical
   preorder coincides with the simulation preorder under the same hypothesis;
+* both converses also hold under finite successor covers by actual bisimilarity,
+  without replacing the authored equations;
 * the equations themselves are bisimulations, so every notion descends to the
   quotient, where the theorem is restated.
 
@@ -243,13 +245,33 @@ theorem logicallyEquivalent_of_bisimilar {left right : S.Term}
 
 /-! ## Adequacy, completeness direction -/
 
-/-- Image-finiteness modulo the equations: every term has finitely many
-successor classes under every label. -/
-def ImageFiniteModulo : Prop :=
+/-- Each labelled successor set has a finite cover by the specified relation.
+The covering representatives need not themselves be successors. -/
+def ImageFiniteUpTo (relation : S.Term → S.Term → Prop) : Prop :=
   ∀ (label : M.Label) (term : S.Term),
     ∃ representatives : Set S.Term, representatives.Finite ∧
       ∀ ⦃target⦄, M.act label term target →
-        ∃ representative ∈ representatives, S.Equiv target representative
+        ∃ representative ∈ representatives, relation target representative
+
+/-- Image-finiteness modulo the authored equations. -/
+def ImageFiniteModulo : Prop := M.ImageFiniteUpTo S.Equiv
+
+/-- A finite cover by actual bisimilarity, without changing the authored equations. -/
+def ImageFiniteBisimilar : Prop := M.ImageFiniteUpTo M.Bisimilar
+
+theorem imageFiniteUpTo_mono {first second : S.Term → S.Term → Prop}
+    (included : ∀ {left right}, first left right → second left right)
+    (finite : M.ImageFiniteUpTo first) : M.ImageFiniteUpTo second := by
+  intro label term
+  obtain ⟨representatives, hFinite, covered⟩ := finite label term
+  refine ⟨representatives, hFinite, ?_⟩
+  intro target step
+  obtain ⟨representative, hMember, related⟩ := covered step
+  exact ⟨representative, hMember, included related⟩
+
+theorem imageFiniteBisimilar_of_imageFiniteModulo (finite : M.ImageFiniteModulo) :
+    M.ImageFiniteBisimilar :=
+  M.imageFiniteUpTo_mono M.bisimilar_of_equiv finite
 
 /-- A formula true at one term and false at another logically inequivalent
 term, oriented by negation when needed. -/
@@ -265,8 +287,12 @@ theorem exists_separating_formula {left right : S.Term}
     intro rightFails
     exact disagreement ⟨fun holds => absurd holds leftHolds, fun holds => absurd holds rightFails⟩
 
-/-- One transfer step of the completeness argument. -/
-theorem exists_matching_step (finite : M.ImageFiniteModulo)
+/-- One finite-cover distinguishing-formula argument. Only satisfaction
+invariance is used; no equation or step closure is imposed on the cover. -/
+theorem exists_matching_step_of_finite_cover {cover : S.Term → S.Term → Prop}
+    (respect : ∀ (formula : Formula M.Atom M.Label) {first second},
+      cover first second → (M.sat formula first ↔ M.sat formula second))
+    (finite : M.ImageFiniteUpTo cover)
     {left right : S.Term} (equivalent : M.LogicallyEquivalent left right)
     (label : M.Label) {left' : S.Term} (step : M.act label left left') :
     ∃ right', M.act label right right' ∧ M.LogicallyEquivalent left' right' := by
@@ -276,11 +302,17 @@ theorem exists_matching_step (finite : M.ImageFiniteModulo)
     exact noMatch ⟨right', step', equivalent'⟩
   have separators : ∀ candidate : S.Term,
       ∃ formula : Formula M.Atom M.Label,
-        M.sat formula left' ∧ (M.act label right candidate → ¬ M.sat formula candidate) := by
+        M.sat formula left' ∧
+          ((∃ target, M.act label right target ∧ cover target candidate) →
+            ¬ M.sat formula candidate) := by
     intro candidate
-    by_cases reachable : M.act label right candidate
-    · obtain ⟨formula, holds, fails⟩ :=
-        M.exists_separating_formula (unmatched candidate reachable)
+    by_cases reachable : ∃ target, M.act label right target ∧ cover target candidate
+    · obtain ⟨target, actualStep, related⟩ := reachable
+      have inequivalent : ¬ M.LogicallyEquivalent left' candidate := by
+        intro equivalentCandidate
+        exact unmatched target actualStep (fun formula =>
+          (equivalentCandidate formula).trans (respect formula related).symm)
+      obtain ⟨formula, holds, fails⟩ := M.exists_separating_formula inequivalent
       exact ⟨formula, holds, fun _ => fails⟩
     · exact ⟨.top, trivial, fun reached => absurd reached reachable⟩
   choose separator separatorHolds separatorFails using separators
@@ -298,8 +330,6 @@ theorem exists_matching_step (finite : M.ImageFiniteModulo)
     (equivalent (.dia label bundle)).mp leftSatisfies
   obtain ⟨right', step', holds⟩ := rightSatisfies
   obtain ⟨representative, membership, representativeEquivalent⟩ := covered step'
-  have representativeStep : M.act label right representative :=
-    M.act_resp_right step' representativeEquivalent
   have representativeHolds : M.sat (separator representative) representative := by
     have holdsAtTarget : M.sat (separator representative) right' := by
       rw [sat_conjList] at holds
@@ -311,22 +341,60 @@ theorem exists_matching_step (finite : M.ImageFiniteModulo)
         rw [coe]
         exact membership
       exact Finset.mem_coe.mp this
-    exact (M.sat_resp (separator representative) representativeEquivalent).mp holdsAtTarget
-  exact separatorFails representative representativeStep representativeHolds
+    exact (respect (separator representative) representativeEquivalent).mp holdsAtTarget
+  exact separatorFails representative ⟨right', step', representativeEquivalent⟩ representativeHolds
 
-/-- Logical equivalence is a bisimulation when the system is image-finite
-modulo the equations. -/
-theorem isBisimulation_logicallyEquivalent (finite : M.ImageFiniteModulo) :
+/-- The original equation-cover endpoint of the common completeness argument. -/
+theorem exists_matching_step (finite : M.ImageFiniteModulo)
+    {left right : S.Term} (equivalent : M.LogicallyEquivalent left right)
+    (label : M.Label) {left' : S.Term} (step : M.act label left left') :
+    ∃ right', M.act label right right' ∧ M.LogicallyEquivalent left' right' :=
+  M.exists_matching_step_of_finite_cover M.sat_resp finite equivalent label step
+
+/-- Logical equivalence is a bisimulation under any finite successor cover
+whose relation preserves satisfaction of the existing formulas. -/
+theorem isBisimulation_logicallyEquivalent_of_finite_cover {cover : S.Term → S.Term → Prop}
+    (respect : ∀ (formula : Formula M.Atom M.Label) {first second},
+      cover first second → (M.sat formula first ↔ M.sat formula second))
+    (finite : M.ImageFiniteUpTo cover) :
     M.IsBisimulation M.LogicallyEquivalent := by
   refine ⟨?_, ?_, ?_⟩
   · intro left right equivalent label left' step
-    exact M.exists_matching_step finite equivalent label step
+    exact M.exists_matching_step_of_finite_cover respect finite equivalent label step
   · intro left right equivalent label right' step
     obtain ⟨left', step', equivalent'⟩ :=
-      M.exists_matching_step finite (M.logicallyEquivalent_symm equivalent) label step
+      M.exists_matching_step_of_finite_cover respect finite
+        (M.logicallyEquivalent_symm equivalent) label step
     exact ⟨left', step', M.logicallyEquivalent_symm equivalent'⟩
   · intro left right equivalent atom
     exact equivalent (.atom atom)
+
+/-- Logical equivalence is a bisimulation under the original equation cover. -/
+theorem isBisimulation_logicallyEquivalent (finite : M.ImageFiniteModulo) :
+    M.IsBisimulation M.LogicallyEquivalent :=
+  M.isBisimulation_logicallyEquivalent_of_finite_cover M.sat_resp finite
+
+/-- Bisimilar covering pairs already preserve satisfaction, independently of
+any completeness or image-finiteness premise. -/
+theorem isBisimulation_logicallyEquivalent_of_imageFiniteBisimilar
+    (finite : M.ImageFiniteBisimilar) : M.IsBisimulation M.LogicallyEquivalent :=
+  M.isBisimulation_logicallyEquivalent_of_finite_cover
+    (fun formula {first second} related =>
+      M.logicallyEquivalent_of_bisimilar (left := first) (right := second) related formula) finite
+
+theorem bisimilar_of_logicallyEquivalent_of_imageFiniteBisimilar
+    (finite : M.ImageFiniteBisimilar) {left right : S.Term}
+    (equivalent : M.LogicallyEquivalent left right) : M.Bisimilar left right :=
+  ⟨M.LogicallyEquivalent, M.isBisimulation_logicallyEquivalent_of_imageFiniteBisimilar finite,
+    equivalent⟩
+
+/-- Full HML adequacy under finite behavioral covers. The authored equations
+remain exactly those of S. -/
+theorem logicallyEquivalent_iff_bisimilar_of_imageFiniteBisimilar
+    (finite : M.ImageFiniteBisimilar) (left right : S.Term) :
+    M.LogicallyEquivalent left right ↔ M.Bisimilar left right :=
+  ⟨M.bisimilar_of_logicallyEquivalent_of_imageFiniteBisimilar finite,
+    M.logicallyEquivalent_of_bisimilar⟩
 
 /-- Logically equivalent terms are bisimilar (image-finite modulo the
 equations). -/
@@ -419,9 +487,28 @@ theorem logicalPreorder_of_similar {left right : S.Term} (similar : M.Similar le
   intro formula holds
   exact M.psat_of_isSimulation simulation formula related holds
 
-/-- One transfer step for the simulation preorder; no negation is needed
-because a failure of the preorder is already an oriented separator. -/
-theorem exists_matching_step_pos (finite : M.ImageFiniteModulo)
+/-- Forgetting the backward step and observation implications gives a simulation. -/
+theorem similar_of_bisimilar {left right : S.Term} (related : M.Bisimilar left right) :
+    M.Similar left right := by
+  obtain ⟨relation, bisimulation, pair⟩ := related
+  exact ⟨relation, ⟨bisimulation.1, fun {first second} related atom =>
+    (bisimulation.2.2 (left := first) (right := second) related atom).mp⟩, pair⟩
+
+/-- Unconditional simulation soundness in both directions supplies positive
+satisfaction invariance for the behavioral cover. No completeness is used. -/
+theorem psat_iff_of_bisimilar (formula : PosFormula M.Atom M.Label)
+    {left right : S.Term} (related : M.Bisimilar left right) :
+    M.psat formula left ↔ M.psat formula right :=
+  ⟨M.logicalPreorder_of_similar (M.similar_of_bisimilar related) formula,
+    M.logicalPreorder_of_similar (M.similar_of_bisimilar (M.bisimilar_symm related)) formula⟩
+
+/-- One finite-cover transfer argument for the simulation preorder. A failure
+of the preorder is already an oriented positive separator, so no negation is
+needed. Covering representatives need not themselves be successors. -/
+theorem exists_matching_step_pos_of_finite_cover {cover : S.Term → S.Term → Prop}
+    (respect : ∀ (formula : PosFormula M.Atom M.Label) {first second},
+      cover first second → (M.psat formula first ↔ M.psat formula second))
+    (finite : M.ImageFiniteUpTo cover)
     {left right : S.Term} (ordered : M.LogicalPreorder left right)
     (label : M.Label) {left' : S.Term} (step : M.act label left left') :
     ∃ right', M.act label right right' ∧ M.LogicalPreorder left' right' := by
@@ -431,10 +518,17 @@ theorem exists_matching_step_pos (finite : M.ImageFiniteModulo)
     exact noMatch ⟨right', step', ordered'⟩
   have separators : ∀ candidate : S.Term,
       ∃ formula : PosFormula M.Atom M.Label,
-        M.psat formula left' ∧ (M.act label right candidate → ¬ M.psat formula candidate) := by
+        M.psat formula left' ∧
+          ((∃ target, M.act label right target ∧ cover target candidate) →
+            ¬ M.psat formula candidate) := by
     intro candidate
-    by_cases reachable : M.act label right candidate
-    · obtain ⟨formula, disagreement⟩ := not_forall.mp (unmatched candidate reachable)
+    by_cases reachable : ∃ target, M.act label right target ∧ cover target candidate
+    · obtain ⟨target, actualStep, related⟩ := reachable
+      have notOrdered : ¬ M.LogicalPreorder left' candidate := by
+        intro orderedCandidate
+        exact unmatched target actualStep (fun formula holds =>
+          (respect formula related).mpr (orderedCandidate formula holds))
+      obtain ⟨formula, disagreement⟩ := not_forall.mp notOrdered
       have holds : M.psat formula left' := by
         by_contra fails
         exact disagreement fun holds => absurd holds fails
@@ -455,8 +549,6 @@ theorem exists_matching_step_pos (finite : M.ImageFiniteModulo)
     ordered (.dia label bundle) leftSatisfies
   obtain ⟨right', step', holds⟩ := rightSatisfies
   obtain ⟨representative, membership, representativeEquivalent⟩ := covered step'
-  have representativeStep : M.act label right representative :=
-    M.act_resp_right step' representativeEquivalent
   have representativeHolds : M.psat (separator representative) representative := by
     have holdsAtTarget : M.psat (separator representative) right' := by
       rw [psat_conjList] at holds
@@ -468,16 +560,44 @@ theorem exists_matching_step_pos (finite : M.ImageFiniteModulo)
         rw [coe]
         exact membership
       exact Finset.mem_coe.mp this
-    exact (M.psat_resp (separator representative) representativeEquivalent).mp holdsAtTarget
-  exact separatorFails representative representativeStep representativeHolds
+    exact (respect (separator representative) representativeEquivalent).mp holdsAtTarget
+  exact separatorFails representative ⟨right', step', representativeEquivalent⟩ representativeHolds
 
-theorem isSimulation_logicalPreorder (finite : M.ImageFiniteModulo) :
+/-- The original equation-cover endpoint of the positive transfer argument. -/
+theorem exists_matching_step_pos (finite : M.ImageFiniteModulo)
+    {left right : S.Term} (ordered : M.LogicalPreorder left right)
+    (label : M.Label) {left' : S.Term} (step : M.act label left left') :
+    ∃ right', M.act label right right' ∧ M.LogicalPreorder left' right' :=
+  M.exists_matching_step_pos_of_finite_cover M.psat_resp finite ordered label step
+
+theorem isSimulation_logicalPreorder_of_finite_cover {cover : S.Term → S.Term → Prop}
+    (respect : ∀ (formula : PosFormula M.Atom M.Label) {first second},
+      cover first second → (M.psat formula first ↔ M.psat formula second))
+    (finite : M.ImageFiniteUpTo cover) :
     M.IsSimulation M.LogicalPreorder := by
   refine ⟨?_, ?_⟩
   · intro left right ordered label left' step
-    exact M.exists_matching_step_pos finite ordered label step
+    exact M.exists_matching_step_pos_of_finite_cover respect finite ordered label step
   · intro left right ordered atom holds
     exact ordered (.atom atom) holds
+
+theorem isSimulation_logicalPreorder (finite : M.ImageFiniteModulo) :
+    M.IsSimulation M.LogicalPreorder :=
+  M.isSimulation_logicalPreorder_of_finite_cover M.psat_resp finite
+
+theorem isSimulation_logicalPreorder_of_imageFiniteBisimilar (finite : M.ImageFiniteBisimilar) :
+    M.IsSimulation M.LogicalPreorder :=
+  M.isSimulation_logicalPreorder_of_finite_cover M.psat_iff_of_bisimilar finite
+
+theorem similar_of_logicalPreorder_of_imageFiniteBisimilar (finite : M.ImageFiniteBisimilar)
+    {left right : S.Term} (ordered : M.LogicalPreorder left right) : M.Similar left right :=
+  ⟨M.LogicalPreorder, M.isSimulation_logicalPreorder_of_imageFiniteBisimilar finite, ordered⟩
+
+/-- Positive HML adequacy under the same finite behavioral-cover hypothesis
+as the full-fragment theorem. The authored equations remain unchanged. -/
+theorem logicalPreorder_iff_similar_of_imageFiniteBisimilar (finite : M.ImageFiniteBisimilar)
+    (left right : S.Term) : M.LogicalPreorder left right ↔ M.Similar left right :=
+  ⟨M.similar_of_logicalPreorder_of_imageFiniteBisimilar finite, M.logicalPreorder_of_similar⟩
 
 /-- Logically ordered terms are similar (image-finite modulo the equations). -/
 theorem similar_of_logicalPreorder (finite : M.ImageFiniteModulo)

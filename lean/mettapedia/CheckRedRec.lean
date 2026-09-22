@@ -1,14 +1,14 @@
-import Mettapedia.Languages.MeTTa.PureKernel.PresentationBoundary
+import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.PresentationBoundary
 
-namespace Mettapedia.Languages.MeTTa.PureKernel.PresentationBoundary
+namespace Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.PatternKernel.PresentationBoundary
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
-open Mettapedia.Languages.MeTTa.Pure.Core
-open Mettapedia.Languages.MeTTa.Pure.BinderOps
-open Mettapedia.Languages.MeTTa.PureKernel.Syntax
-open Mettapedia.Languages.MeTTa.PureKernel.Context
-open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.Core
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Pattern.BinderOps
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.PatternKernel.Syntax
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.PatternKernel.Context
+open Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.PatternKernel.PatternBridge
 
 theorem closeFVar_zero_injective_test {x : String} {p q : Pattern}
     (hp : lc_at 0 p = true) (hq : lc_at 0 q = true)
@@ -109,7 +109,7 @@ theorem quoteExactWith_injective_test
 theorem quoteTmWith_injective_of_constantFree_test
     {ν : Nat → String} {k : Nat} {ρ : QuoteEnv n}
     (hρ : Function.Injective ρ) (hcompat : QuoteCompat ν k ρ)
-    {t u : PureTm n} (ht : ConstantFree t) (hu : ConstantFree u)
+    {t u : ScopedTerm n} (ht : ConstantFree t) (hu : ConstantFree u)
     (h : quoteTmWith ν k ρ t = quoteTmWith ν k ρ u) : t = u := by
   apply quoteExactWith_injective_test hρ hcompat
   rw [quoteExactWith_eq_quoteTmWith ht, quoteExactWith_eq_quoteTmWith hu]
@@ -126,7 +126,7 @@ theorem quotePureCtx_injective_test
     {ν : Nat → String} {k : Nat} {ρ : QuoteEnv n}
     (hρ : Function.Injective ρ) (hcompat : QuoteCompat ν k ρ)
     {Γ Δ : Ctx n} (hΓ : RegularCtx Γ) (hΔ : RegularCtx Δ)
-    (h : quotePureCtx ν k ρ Γ = quotePureCtx ν k ρ Δ) : Γ = Δ := by
+    (h : quoteTwoSortCtx ν k ρ Γ = quoteTwoSortCtx ν k ρ Δ) : Γ = Δ := by
   induction hΓ with
   | nil =>
       cases hΔ
@@ -152,4 +152,4 @@ theorem quotePureCtx_injective_test
           have hΓΔ := ih hρtail hcompatTail hΔ hparts.2
           exact congrArg₂ Ctx.snoc hΓΔ hAB
 
-end Mettapedia.Languages.MeTTa.PureKernel.PresentationBoundary
+end Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.PatternKernel.PresentationBoundary

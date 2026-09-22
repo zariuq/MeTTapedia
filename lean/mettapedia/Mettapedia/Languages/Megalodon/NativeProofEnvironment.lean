@@ -330,4 +330,158 @@ theorem checkProof_frame_of_check {source target : Environment} {support : Suppo
 #print axioms proofFrameCheck_iff
 #print axioms checkProof_frame_of_check
 
+/-! ## Computed least manifests for complete proof requests -/
+
+/-- All environment names occurring in the submitted proof, goal and assumptions. -/
+def requestSupport (proofContext : List Tm) (proof : Pf) (proposition : Tm) : Support :=
+  proofSupport proof ∪ termSupport proposition ∪ proofContext.toFinset.biUnion termSupport
+
+theorem requestSupport_contains (proofContext : List Tm) (proof : Pf) (proposition : Tm) :
+    ContextSupported (requestSupport proofContext proof proposition) proofContext ∧
+      proofSupport proof ⊆ requestSupport proofContext proof proposition ∧
+      termSupport proposition ⊆ requestSupport proofContext proof proposition := by
+  refine ⟨?_, Finset.subset_union_left.trans Finset.subset_union_left,
+    Finset.subset_union_right.trans Finset.subset_union_left⟩
+  intro assumption member dependency depends
+  exact Finset.mem_union_right _
+    (Finset.mem_biUnion.mpr ⟨assumption, List.mem_toFinset.mpr member, depends⟩)
+
+theorem requestSupport_subset {support : Support} {proofContext : List Tm}
+    {proof : Pf} {proposition : Tm}
+    (context : ContextSupported support proofContext)
+    (proofSupported : proofSupport proof ⊆ support)
+    (propositionSupported : termSupport proposition ⊆ support) :
+    requestSupport proofContext proof proposition ⊆ support := by
+  apply Finset.union_subset (Finset.union_subset proofSupported propositionSupported)
+  intro dependency member
+  obtain ⟨assumption, member, depends⟩ := Finset.mem_biUnion.mp member
+  exact context assumption (List.mem_toFinset.mp member) depends
+
+/-- No manifest is supplied by the caller: follow the actual selected native
+lookups transitively from the request's syntactic support. -/
+def requestClosure (environment : Environment) (proofContext : List Tm)
+    (proof : Pf) (proposition : Tm) : Support :=
+  EnvironmentDependencyCheck.dependencyClosure environment
+    (requestSupport proofContext proof proposition)
+
+/-- Leastness is relative to the syntactic closure condition, not a claim that
+every dependency will be queried in each execution of the checker. -/
+theorem requestClosure_least {environment : Environment} {support : Support}
+    {proofContext : List Tm} {proof : Pf} {proposition : Tm}
+    (closed : Closed environment support) (context : ContextSupported support proofContext)
+    (proofSupported : proofSupport proof ⊆ support)
+    (propositionSupported : termSupport proposition ⊆ support) :
+    requestClosure environment proofContext proof proposition ⊆ support :=
+  EnvironmentDependencyCheck.dependencyClosure_least _ _ _
+    (requestSupport_subset context proofSupported propositionSupported) closed
+
+/-- Compare only the computed dependency manifest. This is a sufficient test
+for verdict reuse, not a test that the proof or either theory is sound. -/
+def requestFrameCheck (source target : Environment) (proofContext : List Tm)
+    (proof : Pf) (proposition : Tm) : Bool :=
+  EnvironmentDependencyCheck.agreementCheck source target
+    (requestClosure source proofContext proof proposition)
+
+/-- Computing the manifest discharges all support and closure obligations of
+the original executable manifest checker. -/
+theorem requestFrameCheck_eq_proofFrameCheck (source target : Environment)
+    (proofContext : List Tm) (proof : Pf) (proposition : Tm) :
+    requestFrameCheck source target proofContext proof proposition =
+      proofFrameCheck source target (requestClosure source proofContext proof proposition)
+        proofContext proof proposition := by
+  obtain ⟨context, proofSupported, propositionSupported⟩ :=
+    requestSupport_contains proofContext proof proposition
+  have contains := EnvironmentDependencyCheck.subset_dependencyClosure source
+    (requestSupport proofContext proof proposition)
+  have context' : ContextSupported (requestClosure source proofContext proof proposition)
+      proofContext := fun assumption member => (context assumption member).trans contains
+  have proof' := proofSupported.trans contains
+  have proposition' := propositionSupported.trans contains
+  apply Bool.eq_iff_iff.mpr
+  rw [proofFrameCheck_iff]
+  simp only [requestFrameCheck, EnvironmentDependencyCheck.agreementCheck_iff]
+  constructor
+  · intro agreement
+    exact ⟨agreement, EnvironmentDependencyCheck.dependencyClosure_closed _ _,
+      context', proof', proposition'⟩
+  · exact fun valid => valid.1
+
+/-- A successful comparison of a computed manifest preserves the actual full
+native checker for every fuel bound, including its false verdicts. -/
+theorem checkProof_eq_of_requestFrameCheck {source target : Environment}
+    {proofContext : List Tm} {proof : Pf} {proposition : Tm}
+    (checked : requestFrameCheck source target proofContext proof proposition = true)
+    (fuel typeDepth : Nat) (termContext : List Tp) :
+    checkProof target fuel typeDepth termContext proofContext proof proposition =
+      checkProof source fuel typeDepth termContext proofContext proof proposition := by
+  apply checkProof_frame_of_check
+  rwa [← requestFrameCheck_eq_proofFrameCheck]
+
+/-- Computing the least manifest loses no revision accepted by the existing
+manifest discipline. A larger closed manifest cannot repair a failed comparison
+on the least one. This is not completeness for observational checker equality. -/
+theorem requestFrameCheck_iff_exists_manifest (source target : Environment)
+    (proofContext : List Tm) (proof : Pf) (proposition : Tm) :
+    requestFrameCheck source target proofContext proof proposition = true ↔
+      ∃ support, proofFrameCheck source target support proofContext proof proposition = true := by
+  constructor
+  · intro checked
+    exact ⟨requestClosure source proofContext proof proposition,
+      (requestFrameCheck_eq_proofFrameCheck _ _ _ _ _).symm ▸ checked⟩
+  · rintro ⟨support, checked⟩
+    obtain ⟨agreement, closed, context, proofSupported, propositionSupported⟩ :=
+      proofFrameCheck_iff.mp checked
+    exact (EnvironmentDependencyCheck.agreementCheck_iff _ _ _).mpr
+      (agreement.mono (requestClosure_least closed context proofSupported propositionSupported))
+
+namespace ComputedControls
+
+open EnvironmentDependencyCheck
+
+def source : Environment where
+  terms := [⟨"x", .prop, some (.named "y")⟩, ⟨"y", .prop, none⟩,
+    ⟨"unused", .prop, some (.named "outside")⟩]
+  known := [⟨"k", .named "x"⟩]
+
+def changedUnused : Environment :=
+  { source with terms := source.terms ++ [⟨"outside", .prop, none⟩] }
+
+theorem exact_request : requestClosure source [] (.known "k") (.named "y") =
+    {.knownName "k", .termName "x", .termName "y"} := by decide
+
+/-- The overapproximation rejects this revision; the computed closed manifest
+licenses reuse without changing the checker or its fuel. -/
+theorem unnecessary_invalidation_removed :
+    frameCheck source changedUnused
+      (conservativeSupport source (requestSupport [] (.known "k") (.named "y"))) = false ∧
+    requestFrameCheck source changedUnused [] (.known "k") (.named "y") = true := by decide
+
+theorem hidden_dependency_change_rejected :
+    requestFrameCheck source { source with terms := [⟨"x", .prop, none⟩] }
+      [] (.known "k") (.named "y") = false := by decide
+
+theorem absent_dependency_retained :
+    requestFrameCheck source changedUnused [] (.hyp 0) (.named "outside") = false := by decide
+
+theorem framed_checker (fuel : Nat) :
+    checkProof changedUnused fuel 0 [] [] (.known "k") (.named "y") =
+      checkProof source fuel 0 [] [] (.known "k") (.named "y") :=
+  checkProof_eq_of_requestFrameCheck (by decide) fuel 0 []
+
+theorem accepted_and_exhausted :
+    checkProof source 8 0 [] [] (.known "k") (.named "y") = true ∧
+      checkProof source 0 0 [] [] (.known "k") (.named "y") = false := by
+  simp [source, checkProof, checkNormalizedProof, inferProof, normalize, deltaNormalize,
+    Tm.normalize, Tm.normalizeOne, Environment.lookupTerm?, lookupTermList?,
+    Environment.lookupKnown?, lookupKnownList?]
+
+end ComputedControls
+
+#print axioms EnvironmentDependencyCheck.dependencyClosure_eq_of_agreement
+#print axioms requestClosure_least
+#print axioms checkProof_eq_of_requestFrameCheck
+#print axioms requestFrameCheck_iff_exists_manifest
+#print axioms ComputedControls.unnecessary_invalidation_removed
+#print axioms ComputedControls.framed_checker
+
 end Mettapedia.Languages.Megalodon.NativeProofEnvironment

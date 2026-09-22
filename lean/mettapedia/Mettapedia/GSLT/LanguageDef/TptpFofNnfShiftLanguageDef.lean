@@ -583,7 +583,8 @@ local macro "shift_root" : tactic =>
       indexSucc, termVariable, termFunction, termsNil, termsCons, verum,
       falsum, positive, negative, equal, notEqual, and, or, all, ex, a, v,
       matchPattern, matchArgs, mergeBindings, applyBindingsForRule_eq_syntactic,
-      applyBindings])
+      applyRuleBindings_eq_applyBindings, ruleDepthAligned, depthAligned,
+      depthAlignedList, captureDepth, captureDepthList, applyBindings])
 
 local syntax "shift_root_using " term,* : tactic
 local macro_rules
@@ -601,7 +602,9 @@ local macro_rules
           formulaResult, indexZero, indexSucc, termVariable, termFunction,
           termsNil, termsCons, verum, falsum, positive, negative, equal,
           notEqual, and, or, all, ex, a, v, matchPattern, matchArgs,
-          mergeBindings, applyBindingsForRule_eq_syntactic, applyBindings])
+          mergeBindings, applyBindingsForRule_eq_syntactic,
+          applyRuleBindings_eq_applyBindings, ruleDepthAligned, depthAligned,
+          depthAlignedList, captureDepth, captureDepthList, applyBindings])
 
 theorem index_zero_at_zero_exact (fuel : Nat) :
     rewriteAt (engineBasePremises RelationEnv.empty) language (fuel + 1)
@@ -1208,7 +1211,7 @@ theorem sourceTermPattern_exact {depth : Nat}
   | bvar index => rfl
   | fvar impossible => exact nomatch impossible
   | func function arguments inductionHypothesis =>
-      simp only [sourceTermPattern, encodeTerm_func]
+      simp only [sourceTermPattern]
       rw [encodePatternList_exact]
       congr 2
       exact List.ofFn_inj.mpr (funext inductionHypothesis)
@@ -1235,7 +1238,7 @@ theorem shiftedTermPattern_exact (base cutoff : Nat)
   | fvar impossible => exact nomatch impossible
   | func function arguments inductionHypothesis =>
       rw [LO.FirstOrder.Rew.func]
-      simp only [shiftedTermPattern, encodeTerm_func]
+      simp only [shiftedTermPattern]
       rw [encodePatternList_exact]
       congr 2
       exact List.ofFn_inj.mpr (funext inductionHypothesis)

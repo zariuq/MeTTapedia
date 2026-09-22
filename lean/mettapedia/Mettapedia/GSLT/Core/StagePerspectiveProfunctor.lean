@@ -3,7 +3,8 @@ import Mettapedia.GSLT.Core.Ultrainfinite
 /-!
 # The stage--perspective profunctor
 
-An ultrainfinite ambient chart has two independently meaningful indices:
+A filtered presentation with a perspective cone has two independently
+meaningful indices:
 
 * filtered stages enter the ambient object; and
 * cofiltered perspectives receive projections from it.
@@ -19,7 +20,7 @@ form a profunctor `Jᵒᵖ ⥤ I ⥤ Type`.  This is the variable-set object alr
 implicit in the two variances: changing a stage acts by precomposition and
 changing a perspective acts by postcomposition.
 
-An `AmbientChart` supplies one coherent element of every such hom-set through
+An `FilteredPresentationWithCone` supplies one coherent element of every such hom-set through
 `stageToShadow`.  The two naturality theorems below prove that these elements
 respect both indices.  Neither the profunctor nor its distinguished coherent
 element says that the stages or shadows reconstruct the ambient object;
@@ -73,7 +74,7 @@ def stagePerspectiveProfunctor
     ext perspective stageView
     simp [Category.assoc]
 
-namespace AmbientChart
+namespace FilteredPresentationWithCone
 
 variable {J : Type uJ} [SmallCategory J] [IsFiltered J]
 variable {I : Type uI} [SmallCategory I] [IsCofiltered I]
@@ -83,37 +84,37 @@ variable {stages : J ⥤ C} {shadows : I ⥤ C}
 direction.  Enlarging a stage and then observing it is the same map as
 observing the earlier stage directly. -/
 theorem stageToShadow_natural_stage
-    (chart : AmbientChart stages shadows)
+    (presentation : FilteredPresentationWithCone stages shadows)
     {first second : J} (stageMap : first ⟶ second)
     (perspective : I) :
-    stages.map stageMap ≫ chart.stageToShadow second perspective =
-      chart.stageToShadow first perspective := by
+    stages.map stageMap ≫ presentation.stageToShadow second perspective =
+      presentation.stageToShadow first perspective := by
   have stageNaturality :
-      stages.map stageMap ≫ chart.growth.cocone.ι.app second =
-        chart.growth.cocone.ι.app first :=
-    chart.growth.cocone.w stageMap
+      stages.map stageMap ≫ presentation.growth.cocone.ι.app second =
+        presentation.growth.cocone.ι.app first :=
+    presentation.growth.cocone.w stageMap
   simpa only [stageToShadow, Category.assoc] using!
     stageNaturality =≫
-      (chart.identifyApex.hom ≫
-        chart.atlas.toPerspectiveAtlas.project perspective)
+      (presentation.identifyApex.hom ≫
+        presentation.perspectives.toPerspectiveCone.project perspective)
 
 /-- The canonical stage-to-shadow map is natural in the perspective
 direction.  Observing a stage and then refining its perspective is the same
 map as observing it directly at the refined perspective. -/
 theorem stageToShadow_natural_perspective
-    (chart : AmbientChart stages shadows)
+    (presentation : FilteredPresentationWithCone stages shadows)
     (stage : J) {first second : I}
     (perspectiveMap : first ⟶ second) :
-    chart.stageToShadow stage first ≫ shadows.map perspectiveMap =
-      chart.stageToShadow stage second := by
+    presentation.stageToShadow stage first ≫ shadows.map perspectiveMap =
+      presentation.stageToShadow stage second := by
   have perspectiveNaturality :=
-    chart.atlas.toPerspectiveAtlas.cone.w perspectiveMap
+    presentation.perspectives.toPerspectiveCone.cone.w perspectiveMap
   have whiskered := congrArg
     (fun projection =>
-      chart.growth.cocone.ι.app stage ≫ chart.identifyApex.hom ≫
+      presentation.growth.cocone.ι.app stage ≫ presentation.identifyApex.hom ≫
         projection)
     perspectiveNaturality
-  simpa only [stageToShadow, PerspectiveAtlas.project, Category.assoc]
+  simpa only [stageToShadow, PerspectiveCone.project, Category.assoc]
     using whiskered
 
 /-- The terminal-valued profunctor used to express a coherent chosen element
@@ -122,41 +123,41 @@ private def terminalProfunctor : Jᵒᵖ ⥤ I ⥤ Type vC :=
   (Functor.const Jᵒᵖ).obj
     ((Functor.const I).obj (ULift.{vC} PUnit))
 
-/-- An ambient chart selects a coherent element of the stage--perspective
+/-- A filtered presentation with a perspective cone selects a coherent element of the stage--perspective
 profunctor.  This packages both naturality laws into one natural
 transformation without adding a reconstruction assumption. -/
 def stageToShadowSection
-    (chart : AmbientChart stages shadows) :
+    (presentation : FilteredPresentationWithCone stages shadows) :
     terminalProfunctor ⟶ stagePerspectiveProfunctor stages shadows where
   app stage :=
     { app := fun perspective =>
         ↾(fun _ : ULift.{vC} PUnit =>
-          chart.stageToShadow stage.unop perspective)
+          presentation.stageToShadow stage.unop perspective)
       naturality := by
         intro first second perspectiveMap
         ext element
-        exact (chart.stageToShadow_natural_perspective
+        exact (presentation.stageToShadow_natural_perspective
           stage.unop perspectiveMap).symm }
   naturality := by
     intro first second stageMap
     ext perspective element
-    exact (chart.stageToShadow_natural_stage stageMap.unop perspective).symm
+    exact (presentation.stageToShadow_natural_stage stageMap.unop perspective).symm
 
 /-- Evaluating the coherent section recovers the original composite through
 the ambient object. -/
 theorem stageToShadowSection_apply
-    (chart : AmbientChart stages shadows)
+    (presentation : FilteredPresentationWithCone stages shadows)
     (stage : J) (perspective : I) :
-    (chart.stageToShadowSection.app (Opposite.op stage)).app perspective
+    (presentation.stageToShadowSection.app (Opposite.op stage)).app perspective
         (ULift.up PUnit.unit) =
-      chart.stageToShadow stage perspective :=
+      presentation.stageToShadow stage perspective :=
   rfl
 
-end AmbientChart
+end FilteredPresentationWithCone
 
 #print axioms stagePerspectiveProfunctor
-#print axioms AmbientChart.stageToShadow_natural_stage
-#print axioms AmbientChart.stageToShadow_natural_perspective
-#print axioms AmbientChart.stageToShadowSection
+#print axioms FilteredPresentationWithCone.stageToShadow_natural_stage
+#print axioms FilteredPresentationWithCone.stageToShadow_natural_perspective
+#print axioms FilteredPresentationWithCone.stageToShadowSection
 
 end Mettapedia.GSLT.Ultrainfinite

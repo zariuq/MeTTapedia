@@ -113,7 +113,7 @@ theorem HasType.ReflectiveSupportSafeAt.liftBVars_insert
       subst bound
       let liftedTyped : HasType language free ((inner ++ inserted) ++ outer)
           (.fvar name) type := HasType.fvar lookup
-      simpa only [liftBVars] using
+      simpa only [liftBVars, liftBVarsList_eq_map] using
         (⟨liftedTyped, HasType.ReflectiveSupportSafeAt.fvar
           (binderImage := binderImage) lookup available shape⟩))
     (by
@@ -124,7 +124,7 @@ theorem HasType.ReflectiveSupportSafeAt.liftBVars_insert
       obtain ⟨liftedArguments, liftedSafe⟩ :=
         argumentsIH inner outer inserted rfl
       let liftedTyped := HasType.constructor membership notBare liftedArguments
-      simpa only [liftBVars] using
+      simpa only [liftBVars, liftBVarsList_eq_map] using
         (⟨liftedTyped, HasType.ReflectiveSupportSafeAt.constructorQuote
           (membership := membership) (notBare := notBare) quoted liftedSafe⟩))
     (by
@@ -135,7 +135,7 @@ theorem HasType.ReflectiveSupportSafeAt.liftBVars_insert
       obtain ⟨liftedArguments, liftedSafe⟩ :=
         argumentsIH inner outer inserted rfl
       let liftedTyped := HasType.constructor membership notBare liftedArguments
-      simpa only [liftBVars] using
+      simpa only [liftBVars, liftBVarsList_eq_map] using
         (⟨liftedTyped, HasType.ReflectiveSupportSafeAt.constructorOrdinary
           (membership := membership) (notBare := notBare) ordinary liftedSafe⟩))
     (by
@@ -157,7 +157,7 @@ theorem HasType.ReflectiveSupportSafeAt.liftBVars_insert
       let liftedTyped := HasType.lambda (binder := binder) finalBodyTyped
       have liftedSafe : liftedTyped.ReflectiveSupportSafeAt profile support
           available binderImage := .lambda finalBodySafe
-      simpa only [liftBVars] using (⟨liftedTyped, liftedSafe⟩))
+      simpa only [liftBVars, liftBVarsList_eq_map] using (⟨liftedTyped, liftedSafe⟩))
     (by
       intro bound arity binders body domain codomain bodyTyped available
         binderImage bodySafe bodyIH inner outer inserted boundEquality
@@ -180,7 +180,7 @@ theorem HasType.ReflectiveSupportSafeAt.liftBVars_insert
       let liftedTyped := HasType.multiLambda (binders := binders) finalBodyTyped
       have liftedSafe : liftedTyped.ReflectiveSupportSafeAt profile support
           available binderImage := .multiLambda finalBodySafe
-      simpa only [liftBVars] using (⟨liftedTyped, liftedSafe⟩))
+      simpa only [liftBVars, liftBVarsList_eq_map] using (⟨liftedTyped, liftedSafe⟩))
     (by
       intro bound body replacement domain codomain bodyTyped replacementTyped
         available binderImage bodySafe replacementSafe bodyIH replacementIH
@@ -203,7 +203,7 @@ theorem HasType.ReflectiveSupportSafeAt.liftBVars_insert
       let liftedTyped := HasType.subst liftedBody' liftedReplacement
       have liftedSafe : liftedTyped.ReflectiveSupportSafeAt profile support
           available binderImage := .subst liftedBodySafe' liftedReplacementSafe
-      simpa only [liftBVars, List.length_cons, Nat.add_comm] using
+      simpa only [liftBVars, liftBVarsList_eq_map, List.length_cons, Nat.add_comm] using
         (⟨liftedTyped, liftedSafe⟩))
     (by
       intro bound collectionType elements rest elementType elementsTyped
@@ -214,7 +214,7 @@ theorem HasType.ReflectiveSupportSafeAt.liftBVars_insert
         elementsIH inner outer inserted rfl
       let liftedTyped := HasType.collection (collectionType := collectionType)
         (rest := rest) liftedElements
-      simpa only [liftBVars] using
+      simpa only [liftBVars, liftBVarsList_eq_map] using
         (⟨liftedTyped, HasType.ReflectiveSupportSafeAt.collection liftedSafe⟩))
     (by
       intro bound rule parameterName collectionType elements rest elementType
@@ -225,7 +225,7 @@ theorem HasType.ReflectiveSupportSafeAt.liftBVars_insert
         elementsIH inner outer inserted rfl
       let liftedTyped := HasType.collectionConstructor (rest := rest)
         membership parameterShape liftedElements
-      simpa only [liftBVars] using
+      simpa only [liftBVars, liftBVarsList_eq_map] using
         (⟨liftedTyped, HasType.ReflectiveSupportSafeAt.collectionConstructor
           (membership := membership) (parameterShape := parameterShape)
           liftedSafe⟩))
@@ -429,7 +429,7 @@ theorem mem_freeFvarNames_liftBVars_iff
         simp [liftBVars, Pattern.freeFvarNames, shifted]
   | hfvar variableName => simp [liftBVars, Pattern.freeFvarNames]
   | happly constructor arguments inductionHypothesis =>
-      simp only [liftBVars, Pattern.freeFvarNames, List.mem_flatMap,
+      simp only [liftBVars, liftBVarsList_eq_map, Pattern.freeFvarNames, List.mem_flatMap,
         List.mem_map]
       constructor
       · rintro ⟨normalized, ⟨argument, membership, rfl⟩, support⟩
@@ -449,7 +449,7 @@ theorem mem_freeFvarNames_liftBVars_iff
       simp [liftBVars, Pattern.freeFvarNames,
         bodyInduction (cutoff + 1), replacementInduction cutoff]
   | hcollection collectionType elements rest inductionHypothesis =>
-      simp only [liftBVars, Pattern.freeFvarNames, List.mem_append,
+      simp only [liftBVars, liftBVarsList_eq_map, Pattern.freeFvarNames, List.mem_append,
         List.mem_flatMap, List.mem_map]
       constructor
       · rintro (⟨normalized, ⟨element, membership, rfl⟩, support⟩ | support)

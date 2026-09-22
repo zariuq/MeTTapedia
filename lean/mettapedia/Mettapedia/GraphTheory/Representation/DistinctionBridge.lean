@@ -39,7 +39,7 @@ def semanticGraph (R : Pat → Pat → Prop) (I : AtomSem) : SimpleGraph Pat whe
 theorem semanticGraph_edge_has_separator {R : Pat → Pat → Prop}
     {I : AtomSem} {first second : Pat}
     (edge : (semanticGraph R I).Adj first second) :
-    ∃ formula,
+    ∃ formula, Mettapedia.OSLF.Formula.OSLFFormula.modalOnly formula = true ∧
       sem R I formula first ∧ ¬ sem R I formula second :=
   DistinctionGraph.distinguished_has_separator edge
 

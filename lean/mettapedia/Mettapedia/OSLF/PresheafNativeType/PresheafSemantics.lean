@@ -51,7 +51,7 @@ We build NT in two layers:
 
 namespace Mettapedia.OSLF.PresheafNativeType
 
-open CategoryTheory
+open _root_.CategoryTheory
 open Mettapedia.CategoryTheory.LambdaTheories
 
 /-! ## Native Types over a Lambda Theory
@@ -391,8 +391,8 @@ section ConcreteMathlibGrothendieck
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.ConstructorCategory
-open CategoryTheory Opposite
-open CategoryTheory
+open _root_.CategoryTheory Opposite
+open _root_.CategoryTheory
 
 /-- Dual-order reindexing map used to build a Mathlib Grothendieck fiber functor. -/
 def constructorReindexDualOrderHom (lang : LanguageDef) {s t : ConstructorObj lang}
@@ -516,8 +516,8 @@ section FullPresheafGrothendieck
 
 open Mettapedia.OSLF.Framework.CategoryBridge
 open Mettapedia.OSLF.Framework.ConstructorCategory
-open CategoryTheory Opposite
-open CategoryTheory
+open _root_.CategoryTheory Opposite
+open _root_.CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-- Presheaf object type over constructor sorts for a concrete language. -/

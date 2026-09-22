@@ -8,6 +8,8 @@ import Mettapedia.Languages.MeTTa
 import Mettapedia.Languages.Metamath
 import Mettapedia.Languages.TPTP
 import Mettapedia.Languages.MinskyLite
+import Mettapedia.Languages.PartrecMachine
+import Mettapedia.Languages.ChoicePoints
 import Mettapedia.Languages.OSLFNTTReadout
 import Mettapedia.Languages.ProcessCalculi
 import Mettapedia.Languages.Prolog

@@ -53,14 +53,14 @@ def mattClaimList : List MATTClaim :=
       "runtime_mode_diamond_transport + runtime_mode_diamond_transport_comp", .proven⟩
   , ⟨"Pure mode isolation in current skeleton",
       "pure_mode_isolation", .proven⟩
-  , ⟨"mettaPure runtime→behavioral diamond witness transport",
-      "mettaPure_runtime_behavioral_transport", .proven⟩
+  , ⟨"twoSortDependent runtime→behavioral diamond witness transport",
+      "twoSortDependent_runtime_behavioral_transport", .proven⟩
   , ⟨"MeTTa-IL is a 2-mode adjoint doctrine fragment (TwoModeAdjointDocFrag)",
       "MATTFragment.mettaIL_2modeDocFrag", .proven⟩
   , ⟨"Full mode-2-category formalization",
       "intentionally omitted from current theorem scope", .intentionallyOutOfScope⟩
   , ⟨"Pure-mode morphism theory",
-      "deferred until MeTTa-Pure bridge is completed", .intentionallyOutOfScope⟩
+      "deferred until two-sort experiment bridge is completed", .intentionallyOutOfScope⟩
   ]
 
 /-- Count claims by status. -/
@@ -117,7 +117,7 @@ theorem matt_canonical_runtime_behavioral_package
 #check @runtime_mode_diamond_transport
 #check @runtime_mode_diamond_transport_comp
 #check @pure_mode_isolation
-#check @mettaPure_runtime_behavioral_transport
+#check @twoSortDependent_runtime_behavioral_transport
 #check @matt_pure_boundary_package
 #check @matt_canonical_runtime_behavioral_package
 

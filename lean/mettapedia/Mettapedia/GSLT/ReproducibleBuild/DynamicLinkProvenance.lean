@@ -40,6 +40,7 @@ The GSLT-IL provenance decoration, its composition laws, and the technical/
 legal non-entailment controls are new.
 -/
 
+
 set_option autoImplicit false
 
 namespace Mettapedia.GSLT.ReproducibleBuild.DynamicLinkProvenance
@@ -47,7 +48,7 @@ namespace Mettapedia.GSLT.ReproducibleBuild.DynamicLinkProvenance
 open Mettapedia.GSLT.LooseRelationEquipment
 open Mettapedia.GSLT.ReproducibleBuild.GSLTIL
 open Mettapedia.GSLT.WorldOfViews
-open Mettapedia.Languages.MeTTa.TypeTheory.CumulativeTower.RelationalInternalLanguage
+open Mettapedia.GSLT.RelationPresentation
 
 universe u
 
@@ -141,7 +142,7 @@ end History
 each proof-relevant route witness. -/
 structure ProvenancedRelation
     (Source Target Metadata : Type u) where
-  relation : Semantic.Rel Source Target
+  relation : Mettapedia.GSLT.RelationPresentation.Rel Source Target
   provenance : forall {source target},
     relation.evidence source target -> List Metadata
 
@@ -159,7 +160,7 @@ def Chain
     (earlier : ProvenancedRelation First Middle Metadata)
     (later : ProvenancedRelation Middle Last Metadata) :
     ProvenancedRelation First Last Metadata where
-  relation := Semantic.Rel.Chain earlier.relation later.relation
+  relation := Mettapedia.GSLT.RelationPresentation.Rel.Chain earlier.relation later.relation
   provenance witness :=
     earlier.provenance witness.2.1 ++ later.provenance witness.2.2
 
@@ -167,7 +168,7 @@ def Chain
     (earlier : ProvenancedRelation First Middle Metadata)
     (later : ProvenancedRelation Middle Last Metadata) :
     (Chain earlier later).relation =
-      Semantic.Rel.Chain earlier.relation later.relation :=
+      Mettapedia.GSLT.RelationPresentation.Rel.Chain earlier.relation later.relation :=
   rfl
 
 @[simp] theorem chain_provenance
@@ -182,7 +183,7 @@ def Chain
 /-- A direct graph with one declared history. -/
 def graph {Source Target : Type u} (map : Source -> Target)
     (history : List Metadata) : ProvenancedRelation Source Target Metadata where
-  relation := Semantic.Rel.graph map
+  relation := Mettapedia.GSLT.RelationPresentation.Rel.graph map
   provenance _ := history
 
 /-- Exact functional transport is inherited only from representation
@@ -190,9 +191,9 @@ certificates for both component relations. -/
 def chainRepresentation
     {earlier : ProvenancedRelation First Middle Metadata}
     {later : ProvenancedRelation Middle Last Metadata}
-    (earlierRepresentation : Semantic.Rel.Representation earlier.relation)
-    (laterRepresentation : Semantic.Rel.Representation later.relation) :
-    Semantic.Rel.Representation (Chain earlier later).relation :=
+    (earlierRepresentation : Mettapedia.GSLT.RelationPresentation.Rel.Representation earlier.relation)
+    (laterRepresentation : Mettapedia.GSLT.RelationPresentation.Rel.Representation later.relation) :
+    Mettapedia.GSLT.RelationPresentation.Rel.Representation (Chain earlier later).relation :=
   Representation.horizontalComp earlierRepresentation laterRepresentation
 
 end ProvenancedRelation
@@ -279,7 +280,7 @@ omitted from its ledger. -/
 def missingInvocationRoute : ProvenancedRelation Unit Unit Metadata :=
   ProvenancedRelation.graph id []
 
-def identityEvidence : (Semantic.Rel.graph (id : Unit -> Unit)).evidence () () :=
+def identityEvidence : (Mettapedia.GSLT.RelationPresentation.Rel.graph (id : Unit -> Unit)).evidence () () :=
   ⟨⟨rfl⟩⟩
 
 def completeChain := ProvenancedRelation.Chain compileRoute invocationRoute
@@ -338,29 +339,29 @@ theorem same_relation_different_provenance :
   · rfl
   · decide
 
-def compileRepresentation : Semantic.Rel.Representation compileRoute.relation :=
-  Semantic.Rel.graphRepresentation id
+def compileRepresentation : Mettapedia.GSLT.RelationPresentation.Rel.Representation compileRoute.relation :=
+  Mettapedia.GSLT.RelationPresentation.Rel.graphRepresentation id
 
 def invocationRepresentation :
-    Semantic.Rel.Representation invocationRoute.relation :=
-  Semantic.Rel.graphRepresentation id
+    Mettapedia.GSLT.RelationPresentation.Rel.Representation invocationRoute.relation :=
+  Mettapedia.GSLT.RelationPresentation.Rel.graphRepresentation id
 
 /-- Functional composition is available for the exact graph routes because
 both carry explicit representation certificates. -/
 def completeChainRepresentation :
-    Semantic.Rel.Representation completeChain.relation :=
+    Mettapedia.GSLT.RelationPresentation.Rel.Representation completeChain.relation :=
   ProvenancedRelation.chainRepresentation compileRepresentation
     invocationRepresentation
 
 def choiceRoute : ProvenancedRelation Unit Bool Metadata where
-  relation := Semantic.Canary.choice
+  relation := Mettapedia.GSLT.RelationPresentation.Canary.choice
   provenance _ := [invocationMetadata]
 
 /-- Machine-readable provenance does not turn an open nondeterministic route
 into a function. -/
 theorem choiceRoute_not_functional :
-    Not (Nonempty (Semantic.Rel.Representation choiceRoute.relation)) :=
-  Semantic.Canary.choice_not_representable
+    Not (Nonempty (Mettapedia.GSLT.RelationPresentation.Rel.Representation choiceRoute.relation)) :=
+  Mettapedia.GSLT.RelationPresentation.Canary.choice_not_representable
 
 /-! ### Legal non-entailment -/
 

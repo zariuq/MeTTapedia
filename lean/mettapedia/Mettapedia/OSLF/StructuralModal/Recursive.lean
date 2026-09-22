@@ -29,10 +29,28 @@ inductive Argument (Index : Type uIndex) where
   | recur (index : Index)
 deriving Repr
 
+/-- What a branch matches at the root.
+
+A recursive spatial signature previously spoke only of application nodes, so a
+collection former could not be a branch at all and the scope construction had to
+be built beside this module rather than on it.  A collection is a term former
+like any other and belongs here. -/
+inductive BranchShape where
+  /-- Headed by a named constructor. -/
+  | headed (constructor : String)
+  /-- A collection of the given kind, with no remainder. -/
+  | collected (kind : CollType)
+deriving Repr, DecidableEq
+
+/-- What it is for a term to present a branch's shape with the given children. -/
+def BranchShape.Matches : BranchShape → Pattern → List Pattern → Prop
+  | .headed constructor, pattern, children => pattern = .apply constructor children
+  | .collected kind, pattern, children => pattern = .collection kind children none
+
 /-- The indexed spatial shape contributed by one constructor branch. -/
 structure BranchDescription (Index : Type uIndex) where
   output : Index
-  constructor : String
+  shape : BranchShape
   arguments : List (Argument Index)
 deriving Repr
 
@@ -43,20 +61,34 @@ structure Signature (Index : Type uIndex) where
   Branch : Type uBranch
   describe : Branch → BranchDescription Index
   declared : ∀ branch,
-    ∃ rule ∈ language.terms,
-      rule.label = (describe branch).constructor ∧
-      rule.params.length = (describe branch).arguments.length
+    match (describe branch).shape with
+    | .headed constructor =>
+        ∃ rule ∈ language.terms,
+          rule.label = constructor ∧
+          rule.params.length = (describe branch).arguments.length
+    | .collected kind =>
+        ∃ rule ∈ language.terms, ∃ parameterName elementType,
+          rule.params = [.simple parameterName (.collection kind elementType)]
 
 mutual
 
 /-- Least-fixed-point inhabitation of an indexed recursive spatial signature. -/
 inductive Satisfies {Index : Type uIndex} (span : ReductionSpan Pattern)
     (signature : Signature Index) : Index → Pattern → Prop where
-  | intro (branch : signature.Branch) (children : List Pattern)
-      (shape : pattern = .apply (signature.describe branch).constructor children)
+  | headed (branch : signature.Branch) (constructor : String)
+      (children : List Pattern)
+      (shape : (signature.describe branch).shape = .headed constructor)
       (childrenEvidence :
         SatisfiesAll span signature (signature.describe branch).arguments children) :
-      Satisfies span signature (signature.describe branch).output pattern
+      Satisfies span signature (signature.describe branch).output
+        (.apply constructor children)
+  | collected (branch : signature.Branch) (kind : CollType)
+      (children : List Pattern)
+      (shape : (signature.describe branch).shape = .collected kind)
+      (childrenEvidence :
+        SatisfiesAll span signature (signature.describe branch).arguments children) :
+      Satisfies span signature (signature.describe branch).output
+        (.collection kind children none)
 
 /-- Pointwise inhabitation of recursive and ordinary base formulas. -/
 inductive SatisfiesAll {Index : Type uIndex} (span : ReductionSpan Pattern)
@@ -95,7 +127,7 @@ def layer {Index : Type uIndex} (span : ReductionSpan Pattern)
   ∃ branch : signature.Branch,
     (signature.describe branch).output = index ∧
     ∃ children : List Pattern,
-      pattern = .apply (signature.describe branch).constructor children ∧
+      (signature.describe branch).shape.Matches pattern children ∧
       layerAll span predicate (signature.describe branch).arguments children
 
 theorem SatisfiesAll.toLayerAll {Index : Type uIndex}
@@ -142,13 +174,28 @@ theorem satisfies_iff_layer {Index : Type uIndex}
   constructor
   · intro evidence
     cases evidence with
-    | intro branch children shape childrenEvidence =>
-        exact ⟨branch, rfl, children, shape,
-          childrenEvidence.toLayerAll⟩
+    | headed branch constructor children shape childrenEvidence =>
+        refine ⟨branch, rfl, children, ?_, childrenEvidence.toLayerAll⟩
+        simp [shape, BranchShape.Matches]
+    | collected branch kind children shape childrenEvidence =>
+        refine ⟨branch, rfl, children, ?_, childrenEvidence.toLayerAll⟩
+        simp [shape, BranchShape.Matches]
   · rintro ⟨branch, output, children, shape, childrenEvidence⟩
     subst output
-    exact .intro branch children shape
-      (satisfiesAll_of_layerAll childrenEvidence)
+    revert shape
+    cases hshape : (signature.describe branch).shape with
+    | headed constructor =>
+        intro shape
+        simp only [BranchShape.Matches] at shape
+        subst shape
+        exact .headed branch constructor children hshape
+          (satisfiesAll_of_layerAll childrenEvidence)
+    | collected kind =>
+        intro shape
+        simp only [BranchShape.Matches] at shape
+        subst shape
+        exact .collected branch kind children hshape
+          (satisfiesAll_of_layerAll childrenEvidence)
 
 /-- A candidate interpretation is closed when it contains one complete
 polynomial layer over itself. -/
@@ -169,10 +216,14 @@ theorem Satisfies.least {Index : Type uIndex}
     (evidence : Satisfies span signature index pattern) :
     predicate index pattern := by
   cases evidence with
-  | intro branch children shape childrenEvidence =>
+  | headed branch constructor children shape childrenEvidence =>
       apply closed
-      exact ⟨branch, rfl, children, shape,
-        childrenEvidence.least closed⟩
+      refine ⟨branch, rfl, children, ?_, childrenEvidence.least closed⟩
+      simp [shape, BranchShape.Matches]
+  | collected branch kind children shape childrenEvidence =>
+      apply closed
+      refine ⟨branch, rfl, children, ?_, childrenEvidence.least closed⟩
+      simp [shape, BranchShape.Matches]
 
 /-- Pointwise recursive part of the leastness proof. -/
 theorem SatisfiesAll.least {Index : Type uIndex}
@@ -189,5 +240,92 @@ theorem SatisfiesAll.least {Index : Type uIndex}
 
 end
 
+
+/-! ## A collection branch, inhabited
+
+The extension is not decorative: a signature whose branch is a collection has a
+term inhabiting it, and an application node of the same arity does not.  Before
+it, no branch could match a collection at all, which is why the generated scope
+construction was built beside this module instead of on it. -/
+
+namespace CollectionBranch
+
+/-- A presentation with a bag carrier and one nullary constructor. -/
+def language : LanguageDef where
+  name := "BagPair"
+  types := [TypeDecl.plain "T"]
+  terms :=
+    [ { label := "Par"
+        category := "T"
+        params := [.simple "parts" (.collection .hashBag (.base "T"))]
+        syntaxPattern := [.terminal "Par"] },
+      { label := "A"
+        category := "T"
+        params := []
+        syntaxPattern := [.terminal "A"] } ]
+  equations := []
+  rewrites := []
+
+/-- One state. -/
+inductive State where
+  | pair
+  deriving DecidableEq, Repr
+
+/-- One branch, and it is a collection. -/
+inductive Branch where
+  | pairBranch
+  deriving DecidableEq, Repr
+
+/-- The branch: a bag of exactly two `A`s. -/
+def describe : Branch → BranchDescription State
+  | .pairBranch =>
+      ⟨.pair, .collected .hashBag,
+        [.formula (.headed "A" []), .formula (.headed "A" [])]⟩
+
+/-- **The signature, with its collection branch witnessed by the
+presentation.**  The obligation for a collection branch is that the language
+declares a carrier of that kind, which this one does. -/
+def signature : Signature State where
+  language := language
+  Branch := Branch
+  describe := describe
+  declared := by
+    intro branch
+    cases branch
+    exact ⟨{ label := "Par"
+             category := "T"
+             params := [.simple "parts" (.collection .hashBag (.base "T"))]
+             syntaxPattern := [.terminal "Par"] },
+      by simp [language], "parts", .base "T", rfl⟩
+
+/-- The `A` constructor as a term. -/
+def atomA : Pattern := .apply "A" []
+
+/-- A two-element bag of them. -/
+def pairTerm : Pattern := .collection .hashBag [atomA, atomA] none
+
+/-- Each element inhabits the branch's argument formula. -/
+theorem atomA_satisfies (span : ReductionSpan Pattern) :
+    satisfiesOver span (.headed "A" []) atomA :=
+  ⟨[], rfl, trivial⟩
+
+/-- **The bag inhabits the collection branch.** -/
+theorem pairTerm_satisfies (span : ReductionSpan Pattern) :
+    Satisfies span signature .pair pairTerm :=
+  .collected (Branch.pairBranch) .hashBag [atomA, atomA] rfl
+    (.formula (atomA_satisfies span) (.formula (atomA_satisfies span) .nil))
+
+/-- **And an application node does not**, whatever its children: the branch's
+shape is a collection, and the two shapes are different term formers. -/
+theorem apply_not_satisfies (span : ReductionSpan Pattern)
+    (constructor : String) (children : List Pattern) :
+    ¬ Satisfies span signature .pair (.apply constructor children) := by
+  intro evidence
+  cases evidence with
+  | headed branch label childrenList shape _ =>
+      cases branch
+      simp [signature, describe] at shape
+
+end CollectionBranch
 
 end Mettapedia.OSLF.StructuralModal.Recursive

@@ -254,7 +254,6 @@ Total: ~1,700 new lines
 ## Mathlib Dependencies (Already Available)
 
 ```lean
-import Mathlib.Probability.Martingale.Basic
 import Mathlib.Probability.Martingale.Convergence
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.MeasureTheory.Function.ConditionalExpectation.Basic

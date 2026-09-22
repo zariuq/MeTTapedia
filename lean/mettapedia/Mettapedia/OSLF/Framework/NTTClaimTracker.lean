@@ -1,9 +1,12 @@
 import Mettapedia.OSLF.PresheafNativeType.InternalLanguage
+import Mettapedia.OSLF.PresheafNativeType.TheoryTranslationCounterexample
 import Mettapedia.OSLF.Framework.ToposTOGLBridge
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.AssumptionNecessity
 import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
 import Mettapedia.OSLF.MeTTaIL.LPRelationEnvBridge
+import Mettapedia.GSLT.Topos.PresheafPredicateProjection
+import Mettapedia.GSLT.Topos.PresheafFunctionPredicateJudgments
 
 /-!
 # Native Type Theory Strict Claim Tracker
@@ -11,10 +14,9 @@ import Mettapedia.OSLF.MeTTaIL.LPRelationEnvBridge
 This tracker is keyed to endpoint-claim anchors in the Native Type Theory
 paper.
 
-It tracks theorem-level endpoint anchors only. Semantic adequacy of the
-operational modal route is tracked separately in canonical bridge modules
-(`ModalSubobjectBridge`, `OSLFNTTWMBridge`); endpoint closure here must not be
-read as "all semantic layers are closed."
+It records endpoint anchors and remaining source obligations. Declaration
+existence and metadata counts do not certify statement fidelity. Semantic
+adequacy of the operational modal route is tracked separately in bridge modules.
 -/
 
 namespace Mettapedia.OSLF.Framework.NTTClaimTracker
@@ -37,27 +39,28 @@ structure NTTClaim where
 
 /-- Strict NTT endpoint-claim inventory (paper keyed). -/
 def nttClaimList : List NTTClaim :=
-  [ ⟨"Def 11", "Predicate fibration piOmega over the base category",
-      "CategoryBridge.predFibration / CategoryBridge.oslf_fibration", .proven⟩
+  [ ⟨"Def 11", "Predicate fibration piOmega on presheaves over any small category, with presheaf values in the same universe",
+      "Topos.presheafPredicateFunctor / predicateReindex_identity / predicateReindex_composition / PresheafPredicateTotal / presheafPredicateProjection / predicateTotalHomEquiv / predicateLift_stronglyCartesian / predicateLift_factorization / presheafPredicateProjection_fibered: actual Grothendieck total category with source-shaped morphisms and unique factorization; predicateLift_original_pullback connects the original subfunctor preimage operations",
+      .proven⟩
   , ⟨"Sec 3", "Native type as (sort, predicate) pair",
       "NativeType.NativeType / NativeType.NativeTypeFiber", .proven⟩
   , ⟨"Prop 12", "Indexed adjoints (exists_f dashv Omega^f dashv forall_f) with Beck-Chevalley",
       "NativeType.prop12_package / NativeType.prop12_beckChevalley", .proven⟩
-  , ⟨"Prop 14", "Fibered internal logic structure (cosmic-style package) for predicate fibers",
-      "NativeType.prop14_cosmicFibration", .proven⟩
-  , ⟨"Prop 17", "Reification right adjoint layer",
-      "NativeType.prop17_reification", .proven⟩
+  , ⟨"Prop 14", "Cartesian closed total predicate category and fibration; indexed adjoints and frame fibers alone do not establish this",
+      "NativeType.prop14_cosmicFibration supplies indexed adjoints and frame fibers. The total category's cartesian closed structure is now built over the cartesian closed presheaf base: Topos.unitTotalIsTerminal (terminal), Topos.prodTotalLift_fst/prodTotalLift_snd/prodTotalLift_unique (binary products), Topos.expPredicate with Topos.le_expPredicate_preimage_iff (transposition, a biconditional), Topos.expUncurry_expCurry and Topos.expCurry_expUncurry (beta and eta), Topos.expHomEquiv (the defining bijection), Topos.expEvalHom (evaluation) and Topos.expCurry_naturality (naturality in the context). Supporting layers: Topos.forallAlong with preimage_le_iff_le_forallAlong and forallAlong_eq_universalImage, Topos.forallAlong_snd_preimage (Beck-Chevalley along pairing squares), Topos.himpPointwise_eq_himp and Topos.preimage_himp. Topos.projection_preserves_cartesianClosed records that the projection sends every piece of that structure to the base's corresponding piece strictly, with Topos.projection_faithful and Topos.projection_not_full showing the projection is faithful but not full, so the predicate layer restricts the base rather than relabelling it. Cartesian closure of the fibration itself, as opposed to the total category, is not separately established", .partiallyFormalized⟩
+  , ⟨"Prop 17", "Function-object reification right adjoint to curried evaluation",
+      "NativeType.prop17_reification supplies only a same-fiber infimum with monotonicity and a one-sided bound. The function-object adjunction is now built: Topos.applyPred is curried evaluation on predicates (the direct image along evaluation of argument-and-function), Topos.reifyPred is its reification, and Topos.reify_adjunction is the adjunction as a biconditional, with Topos.applyPred_reifyPred_le and Topos.le_reifyPred_applyPred as counit and unit derived from it. Topos.reifyPred_unique proves any operation satisfying the same biconditional is this one, so it is an adjoint rather than a bound that happens to hold. Topos.reifyPred_le_expPredicate is the typed comparison with the exponential predicate, and Topos.mem_expPredicate gives the stagewise reading on generalized elements. The transformer argument is an arbitrary function between predicate fibres; monotonicity is not assumed. Naturality in the object arguments is not established", .proven⟩
   , ⟨"Def 21", "Codomain fibration piDelta + Cartesian lifts via pullbacks",
       "NativeType.def21_codomainFibration / def21_cartesianLift_proj / def21_cartesianLift_universal_comp", .proven⟩
   , ⟨"Sec 4", "Image-comprehension adjunction i dashv c (full iff characterization)",
       "NativeType.imageComprehensionAdjunction (with iff_characterization) / imageComprehension_iff", .proven⟩
-  , ⟨"Thm 23", "Internal language package with functorial laws (identity/composition)",
-      "NativeType.thm23_internalLanguagePackage / thm23_functorialLaws", .proven⟩
-  , ⟨"Sec 5", "Theory morphism preservation for Pi/Sigma/Omega translation",
-      "TheoryMorphism.piSigmaOmegaProp_translation_endpoint", .proven⟩
-  , ⟨"Sec 5", "Colax Pi/Sigma/Prop translation rule set",
-      "TheoryMorphism.piSigmaProp_colax_rules", .proven⟩
-  , ⟨"Sec 5", "Representable Pi/Sigma transport package (rule-pack-first endpoint; Prop-12 wrappers for compatibility)",
+  , ⟨"Thm 23", "Internal-language 2-functor, including its categorical action and coherence",
+      "NativeType.thm23_internalLanguagePackage constructs object data; thm23_functorialLaws proves operation preservation by identity/composite theory morphisms, not the internal-language functor laws", .partiallyFormalized⟩
+  , ⟨"Sec 5", "Theory translation by presheaf precomposition, with Pi/Omega preservation requiring additional hypotheses",
+      "TheoryMorphism.piSigmaOmegaProp_translation_endpoint derives fiber-operation preservation from map_sInf/map_sSup/map_top/map_himp; it constructs neither the source base functor nor its precomposition/substitution action. General source translation does not preserve Pi/Omega", .partiallyFormalized⟩
+  , ⟨"Sec 5", "Colax Pi/Sigma/Prop translation for the source theory-translation action",
+      "TheoryMorphism.piSigmaProp_colax_rules assumes exact fiber-operation preservation, stronger than the source translation; TheoryTranslationCounterexample.actual_precomposition_does_not_preserve_implication witnesses the gap using actual presheaves. Compatibility with source precomposition and substitution is not established", .partiallyFormalized⟩
+  , ⟨"Sec 5", "Representable Pi/Sigma transport package; canonical closure/fixpoint wrappers retain their own strength and transport hypotheses, not a general evidence-to-strength theorem",
       "ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_rulePack / ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_rulePack / ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_prop12 / ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_prop12_pack / OSLFNTTWMCanonicalClosure.canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_goal / OSLFNTTWMCanonicalClosure.canonical_prop12_transport_pack_and_fixpoint_endpoint_of_goal / OSLFNTTWMCanonicalClosure.canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal / OSLFNTTWMCanonicalClosure.canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal / OSLFNTTWMCanonicalClosure.canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal / OSLFNTTWMCanonicalClosure.canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal",
       .proven⟩
   , ⟨"Sec 5", "Necessity audit for nonempty-family guard in Pi/Sigma package",
@@ -67,9 +70,8 @@ def nttClaimList : List NTTClaim :=
 /-! ## HOL kernel-profile OSLF/NTT claim ledger
 
 This is a separate ledger from the strict NTT-paper endpoint list above.  The
-endpoint list remains closed; the rows below track the newer HOL-kernel-profile
-work and explicitly separate what is available from what is still an O3
-obligation.
+endpoint list has its own remaining source obligations; the rows below track
+HOL-kernel-profile work separately.
 -/
 
 /-- HOL-kernel profile claims and obligations. -/
@@ -151,39 +153,44 @@ def nttRemaining : List NTTClaim :=
 def nttRemainingCount : Nat :=
   nttRemaining.length
 
-/-- No unresolved endpoint claims remain in this tracker. -/
-theorem nttRemaining_empty : nttRemaining = [] := by
+/-- Source anchors whose full obligations are not established by the packages. -/
+theorem nttRemaining_locations : nttRemaining.map (·.loc) =
+    ["Prop 14", "Thm 23", "Sec 5", "Sec 5"] := by
   decide
 
-/-- Endpoint unresolved count is zero for this tracker inventory. -/
-theorem nttRemainingCount_zero : nttRemainingCount = 0 := by
+/-- Exact unresolved count in the recorded inventory. -/
+theorem nttRemainingCount_eq : nttRemainingCount = 4 := by
   decide
 
 /-- Resolved endpoint claims currently classified as `proven`.
     This is an endpoint-inventory count only. -/
-theorem provenCount_eq : countByStatus .proven = 12 := by
+theorem provenCount_eq : countByStatus .proven = 8 := by
   decide
 
 /-- No strict endpoint remains `assumptionScoped` in this tracker. -/
 theorem assumptionScopedCount_eq : countByStatus .assumptionScoped = 0 := by
   decide
 
-/-- No partially formalized claims remain. -/
-theorem partialCount_eq : countByStatus .partiallyFormalized = 0 := by
+/-- Four source claims have related packages but lack their full source action or laws. -/
+theorem partialCount_eq : countByStatus .partiallyFormalized = 4 := by
   decide
 
 /-- No missing claims remain. -/
 theorem missingCount_eq : countByStatus .notFormalized = 0 := by
   decide
 
-/-- Endpoint parity inventory in this tracker is closed. -/
-theorem fullNTTParity_closed : nttRemainingCount = 0 :=
-  nttRemainingCount_zero
+/-- The recorded source-obligation inventory is not closed. This is a metadata
+statement, not a theorem that the remaining mathematics is impossible. -/
+theorem fullNTTParity_open : nttRemainingCount ≠ 0 := by
+  decide
 
 /-! ## Anchor checks -/
 
 #check @Mettapedia.OSLF.PresheafNativeType.NativeType
 #check @Mettapedia.OSLF.Framework.CategoryBridge.predFibration
+#check @Mettapedia.GSLT.Topos.predicateTotalHomEquiv
+#check @Mettapedia.GSLT.Topos.predicateLift_factorization
+#check @Mettapedia.GSLT.Topos.presheafPredicateProjection_fibered
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_full_internal_logic_bridge_package
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_via_rulePack
 #check @Mettapedia.OSLF.Framework.ToposTOGLBridge.topos_representable_patternPred_piSigma_transport_pack_via_rulePack
@@ -193,6 +200,9 @@ theorem fullNTTParity_closed : nttRemainingCount = 0 :=
 #check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piSigmaOmegaProp_translation_endpoint
 #check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piProp_colax_rules
 #check @Mettapedia.OSLF.PresheafNativeType.TheoryMorphism.piSigmaProp_colax_rules
+#check Mettapedia.OSLF.PresheafNativeType.TheoryTranslationCounterexample.actual_precomposition_does_not_preserve_implication
+#check Mettapedia.OSLF.PresheafNativeType.TheoryTranslationCounterexample.restrict_top
+#check Mettapedia.OSLF.PresheafNativeType.TheoryTranslationCounterexample.selectTerminal_monoidalClosed
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.types_nonempty_necessary_for_piSigma
 #check Mettapedia.OSLF.MeTTaIL.LogicSemantics.mem_datalogClosureStep_iff_supported
 #check Mettapedia.OSLF.MeTTaIL.LogicSemantics.mem_datalogClosureWithFuel_iff_trace

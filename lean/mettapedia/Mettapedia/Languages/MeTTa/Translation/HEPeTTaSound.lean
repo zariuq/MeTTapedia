@@ -320,21 +320,21 @@ theorem mettaCall_equation_step_sound
   exact ⟨lhs_orig, rhs_orig, hmem_atoms, fun hl hr =>
     heSpaceToPeTTaSpace_has_rule space lhs_orig rhs_orig hl hr hmem_atoms⟩
 
-/-! ## Phase 2, Step 1: PureTranslatable + isMatchCorrect
+/-! ## Phase 2, Step 1: TwoSortTranslatable + isMatchCorrect
 
 `atomToPattern` can produce `.lambda`/`.subst` patterns (from `"λ"`/`"subst"` head
 symbols), which are NOT `isMatchCorrect`. Standard MeTTa equations never use these.
-`PureTranslatable` refines `Translatable` to guarantee `isMatchCorrect`. -/
+`TwoSortTranslatable` refines `Translatable` to guarantee `isMatchCorrect`. -/
 
 /-- An atom translates to an `isMatchCorrect` pattern: no `.lambda`, `.subst`,
     or `.collection` nodes in the output. Covers all standard MeTTa atoms. -/
-def PureTranslatable (a : Atom) : Prop :=
+def TwoSortTranslatable (a : Atom) : Prop :=
   ∃ p, atomToPattern a = some p ∧ isMatchCorrectAux p = true
 
-theorem pureTranslatable_var (v : String) : PureTranslatable (.var v) :=
+theorem pureTranslatable_var (v : String) : TwoSortTranslatable (.var v) :=
   ⟨.fvar v, by simp [atomToPattern], rfl⟩
 
-theorem pureTranslatable_symbol (s : String) : PureTranslatable (.symbol s) :=
+theorem pureTranslatable_symbol (s : String) : TwoSortTranslatable (.symbol s) :=
   ⟨.apply s [], by simp [atomToPattern], rfl⟩
 
 /-- `isMatchCorrectListAux` holds when all elements satisfy `isMatchCorrectAux`. -/
@@ -349,11 +349,11 @@ private theorem isMatchCorrectListAux_of_forall {ps : List Pattern}
            ih (fun q hq => h q (.tail _ hq))⟩
 
 /-- Standard expression atoms (head is not `"λ"` or `"subst"`) translate to
-    `isMatchCorrect` patterns when all arguments are `PureTranslatable`. -/
+    `isMatchCorrect` patterns when all arguments are `TwoSortTranslatable`. -/
 theorem pureTranslatable_expr (c : String) (args : List Atom)
     (hc_not_lam : c ≠ "λ") (hc_not_subst : c ≠ "subst")
-    (hargs : ∀ a ∈ args, PureTranslatable a) :
-    PureTranslatable (.expression (.symbol c :: args)) := by
+    (hargs : ∀ a ∈ args, TwoSortTranslatable a) :
+    TwoSortTranslatable (.expression (.symbol c :: args)) := by
   -- Each arg has a pattern witness
   have hpats : ∀ a ∈ args, ∃ p, atomToPattern a = some p ∧ isMatchCorrectAux p = true := hargs
   -- Build the list of pattern witnesses: filterMap preserves length
@@ -386,8 +386,8 @@ theorem pureTranslatable_expr (c : String) (args : List Atom)
     rw [this]; exact hmc'
   exact ⟨.apply c patArgs, hatp, hmc⟩
 
-/-- `PureTranslatable` implies `Translatable`. -/
-theorem PureTranslatable.toTranslatable {a : Atom} (h : PureTranslatable a) :
+/-- `TwoSortTranslatable` implies `Translatable`. -/
+theorem TwoSortTranslatable.toTranslatable {a : Atom} (h : TwoSortTranslatable a) :
     Translatable a := by
   obtain ⟨p, hp, _⟩ := h
   simp [Translatable, hp]
@@ -398,7 +398,7 @@ This mirrors the narrow operational translator extension used for successful
 append-suffix function-head lowering.  The key architectural fact is:
 
 - the base recovered-tail helper application stays in the current
-  `PureTranslatable` fragment
+  `TwoSortTranslatable` fragment
 - the recursive structural `case` step does not, because the branch pattern is
   encoded as a raw non-symbol-headed atom rather than an OSLF `Pattern`
 -/
@@ -456,12 +456,12 @@ def buildAppendSuffixHeadExtension
 /-- The recovered-tail base case stays in the current pure bridge fragment. -/
 theorem buildAppendSuffixHeadExtension_nil_pureTranslatable
     (actual tailVar applyArg : Atom)
-    (hactual : PureTranslatable actual)
-    (htail : PureTranslatable tailVar)
-    (harg : PureTranslatable applyArg) :
-    PureTranslatable (buildAppendSuffixHeadExtension [] actual [] tailVar applyArg) := by
+    (hactual : TwoSortTranslatable actual)
+    (htail : TwoSortTranslatable tailVar)
+    (harg : TwoSortTranslatable applyArg) :
+    TwoSortTranslatable (buildAppendSuffixHeadExtension [] actual [] tailVar applyArg) := by
   simp [buildAppendSuffixHeadExtension]
-  have happ : PureTranslatable
+  have happ : TwoSortTranslatable
       (.expression [.symbol "__tr-raw-apply1", tailVar, applyArg]) := by
     exact pureTranslatable_expr "__tr-raw-apply1" [tailVar, applyArg]
       (by simp) (by simp)
@@ -489,43 +489,43 @@ theorem buildAppendSuffixHeadExtension_cons_pureTranslatable
     (prefixAtom : Atom) (rest : List Atom) (actual : Atom)
     (pairName tailName : String) (binders : List (Atom × Atom))
     (tailVar applyArg : Atom)
-    (hprefix : PureTranslatable prefixAtom)
-    (hactual : PureTranslatable actual)
-    (_htailVar : PureTranslatable tailVar)
-    (_harg : PureTranslatable applyArg)
-    (hinner : PureTranslatable
+    (hprefix : TwoSortTranslatable prefixAtom)
+    (hactual : TwoSortTranslatable actual)
+    (_htailVar : TwoSortTranslatable tailVar)
+    (_harg : TwoSortTranslatable applyArg)
+    (hinner : TwoSortTranslatable
       (buildAppendSuffixHeadExtension rest (.var tailName) binders tailVar applyArg)) :
-    PureTranslatable
+    TwoSortTranslatable
       (buildAppendSuffixHeadExtension (List.cons prefixAtom rest) actual
         (List.cons (.var pairName, .var tailName) binders) tailVar applyArg) := by
   simp [buildAppendSuffixHeadExtension, appendSuffixHeadBinder]
-  have hpair : PureTranslatable (.var pairName) := pureTranslatable_var pairName
-  have hhead : PureTranslatable (appendSuffixHeadBinder (.var pairName)) := by
+  have hpair : TwoSortTranslatable (.var pairName) := pureTranslatable_var pairName
+  have hhead : TwoSortTranslatable (appendSuffixHeadBinder (.var pairName)) := by
     simp [appendSuffixHeadBinder, pureTranslatable_var]
-  have htail : PureTranslatable (.var tailName) := pureTranslatable_var tailName
-  have hdecons : PureTranslatable (.expression [.symbol "decons-atom", actual]) := by
+  have htail : TwoSortTranslatable (.var tailName) := pureTranslatable_var tailName
+  have hdecons : TwoSortTranslatable (.expression [.symbol "decons-atom", actual]) := by
     exact pureTranslatable_expr "decons-atom" [actual]
       (by decide) (by decide) (by
         intro a ha
         simp at ha
         rcases ha with rfl
         exact hactual)
-  have hfirst : PureTranslatable (.expression [.symbol "first-from-pair", .var pairName]) := by
+  have hfirst : TwoSortTranslatable (.expression [.symbol "first-from-pair", .var pairName]) := by
     exact pureTranslatable_expr "first-from-pair" [.var pairName]
       (by decide) (by decide) (by
         intro a ha
         simp at ha
         rcases ha with rfl
         exact hpair)
-  have hsecond : PureTranslatable (.expression [.symbol "second-from-pair", .var pairName]) := by
+  have hsecond : TwoSortTranslatable (.expression [.symbol "second-from-pair", .var pairName]) := by
     exact pureTranslatable_expr "second-from-pair" [.var pairName]
       (by decide) (by decide) (by
         intro a ha
         simp at ha
         rcases ha with rfl
         exact hpair)
-  have hempty : PureTranslatable (.symbol "Empty") := pureTranslatable_symbol "Empty"
-  have hunify : PureTranslatable
+  have hempty : TwoSortTranslatable (.symbol "Empty") := pureTranslatable_symbol "Empty"
+  have hunify : TwoSortTranslatable
       (.expression
         [.symbol "unify",
           appendSuffixHeadBinder (.var pairName),
@@ -545,7 +545,7 @@ theorem buildAppendSuffixHeadExtension_cons_pureTranslatable
         · exact hprefix
         · exact hinner
         · exact hempty)
-  have hletTail : PureTranslatable
+  have hletTail : TwoSortTranslatable
       (.expression
         [.symbol "let",
           .var tailName,
@@ -572,7 +572,7 @@ theorem buildAppendSuffixHeadExtension_cons_pureTranslatable
         · exact htail
         · exact hsecond
         · exact hunify)
-  have hletHead : PureTranslatable
+  have hletHead : TwoSortTranslatable
       (.expression
         [.symbol "let",
           appendSuffixHeadBinder (.var pairName),
@@ -681,10 +681,10 @@ def buildAppendSuffixLetExtension
 in the current pure bridge fragment when the translated body does. -/
 theorem buildAppendSuffixLetExtension_nil_pureTranslatable
     (actual tailVar translatedBody : Atom)
-    (hactual : PureTranslatable actual)
-    (htail : PureTranslatable tailVar)
-    (hbody : PureTranslatable translatedBody) :
-    PureTranslatable (buildAppendSuffixLetExtension [] actual [] tailVar translatedBody) := by
+    (hactual : TwoSortTranslatable actual)
+    (htail : TwoSortTranslatable tailVar)
+    (hbody : TwoSortTranslatable translatedBody) :
+    TwoSortTranslatable (buildAppendSuffixLetExtension [] actual [] tailVar translatedBody) := by
   simp [buildAppendSuffixLetExtension]
   exact pureTranslatable_expr "let"
     [tailVar, actual, translatedBody]
@@ -702,43 +702,43 @@ theorem buildAppendSuffixLetExtension_cons_pureTranslatable
     (prefixAtom : Atom) (rest : List Atom) (actual : Atom)
     (pairName tailName : String) (binders : List (Atom × Atom))
     (tailVar translatedBody : Atom)
-    (hprefix : PureTranslatable prefixAtom)
-    (hactual : PureTranslatable actual)
-    (_htailVar : PureTranslatable tailVar)
-    (_hbody : PureTranslatable translatedBody)
-    (hinner : PureTranslatable
+    (hprefix : TwoSortTranslatable prefixAtom)
+    (hactual : TwoSortTranslatable actual)
+    (_htailVar : TwoSortTranslatable tailVar)
+    (_hbody : TwoSortTranslatable translatedBody)
+    (hinner : TwoSortTranslatable
       (buildAppendSuffixLetExtension rest (.var tailName) binders tailVar translatedBody)) :
-    PureTranslatable
+    TwoSortTranslatable
       (buildAppendSuffixLetExtension (List.cons prefixAtom rest) actual
         (List.cons (.var pairName, .var tailName) binders) tailVar translatedBody) := by
   simp [buildAppendSuffixLetExtension, appendSuffixHeadBinder]
-  have hpair : PureTranslatable (.var pairName) := pureTranslatable_var pairName
-  have hhead : PureTranslatable (appendSuffixHeadBinder (.var pairName)) := by
+  have hpair : TwoSortTranslatable (.var pairName) := pureTranslatable_var pairName
+  have hhead : TwoSortTranslatable (appendSuffixHeadBinder (.var pairName)) := by
     simp [appendSuffixHeadBinder, pureTranslatable_var]
-  have htail : PureTranslatable (.var tailName) := pureTranslatable_var tailName
-  have hdecons : PureTranslatable (.expression [.symbol "decons-atom", actual]) := by
+  have htail : TwoSortTranslatable (.var tailName) := pureTranslatable_var tailName
+  have hdecons : TwoSortTranslatable (.expression [.symbol "decons-atom", actual]) := by
     exact pureTranslatable_expr "decons-atom" [actual]
       (by decide) (by decide) (by
         intro a ha
         simp at ha
         rcases ha with rfl
         exact hactual)
-  have hfirst : PureTranslatable (.expression [.symbol "first-from-pair", .var pairName]) := by
+  have hfirst : TwoSortTranslatable (.expression [.symbol "first-from-pair", .var pairName]) := by
     exact pureTranslatable_expr "first-from-pair" [.var pairName]
       (by decide) (by decide) (by
         intro a ha
         simp at ha
         rcases ha with rfl
         exact hpair)
-  have hsecond : PureTranslatable (.expression [.symbol "second-from-pair", .var pairName]) := by
+  have hsecond : TwoSortTranslatable (.expression [.symbol "second-from-pair", .var pairName]) := by
     exact pureTranslatable_expr "second-from-pair" [.var pairName]
       (by decide) (by decide) (by
         intro a ha
         simp at ha
         rcases ha with rfl
         exact hpair)
-  have hempty : PureTranslatable (.symbol "Empty") := pureTranslatable_symbol "Empty"
-  have hunify : PureTranslatable
+  have hempty : TwoSortTranslatable (.symbol "Empty") := pureTranslatable_symbol "Empty"
+  have hunify : TwoSortTranslatable
       (.expression
         [.symbol "unify",
           appendSuffixHeadBinder (.var pairName),
@@ -758,7 +758,7 @@ theorem buildAppendSuffixLetExtension_cons_pureTranslatable
         · exact hprefix
         · exact hinner
         · exact hempty)
-  have hletTail : PureTranslatable
+  have hletTail : TwoSortTranslatable
       (.expression
         [.symbol "let",
           .var tailName,
@@ -785,7 +785,7 @@ theorem buildAppendSuffixLetExtension_cons_pureTranslatable
         · exact htail
         · exact hsecond
         · exact hunify)
-  have hletHead : PureTranslatable
+  have hletHead : TwoSortTranslatable
       (.expression
         [.symbol "let",
           appendSuffixHeadBinder (.var pairName),
@@ -982,10 +982,10 @@ private abbrev HEBindingsExtends := Bindings.Extends
 private abbrev heExt_refl := Bindings.extends_refl
 private abbrev heExt_trans := @Bindings.extends_trans
 
-/-! ### Step B: PureTranslatable isMatchCorrect extraction -/
+/-! ### Step B: TwoSortTranslatable isMatchCorrect extraction -/
 
 private theorem pureTranslatable_hmc_of_eq {a : Atom} {p : Pattern}
-    (h : PureTranslatable a) (hp : atomToPattern a = some p) :
+    (h : TwoSortTranslatable a) (hp : atomToPattern a = some p) :
     isMatchCorrectAux p = true := by
   obtain ⟨p', hp', hmc'⟩ := h
   have : p = p' := Option.some.inj (hp ▸ hp')
@@ -1038,7 +1038,7 @@ theorem filterMap_length_eq_length_implies_some
 
 /-! ### Step F: pure_expr_translation_shape -/
 
-/-- A PureTranslatable expression translates to `.apply c patArgs` with matching length. -/
+/-- A TwoSortTranslatable expression translates to `.apply c patArgs` with matching length. -/
 private theorem pure_expr_translation_shape
     (c : String) (args : List Atom) (p : Pattern)
     (hpat : atomToPattern (.expression (.symbol c :: args)) = some p)
@@ -1085,12 +1085,12 @@ private theorem pure_expr_translation_shape
 
 /-! ### Step G: pure_args_of_expr_translation -/
 
-/-- All arguments of a PureTranslatable expression are themselves PureTranslatable. -/
+/-- All arguments of a TwoSortTranslatable expression are themselves TwoSortTranslatable. -/
 private theorem pure_args_of_expr_translation
     (c : String) (args : List Atom) (p : Pattern)
     (hpat : atomToPattern (.expression (.symbol c :: args)) = some p)
     (hmc : isMatchCorrectAux p = true) :
-    ∀ a ∈ args, PureTranslatable a := by
+    ∀ a ∈ args, TwoSortTranslatable a := by
   obtain ⟨patArgs, hpEq, hfm, hlen⟩ := pure_expr_translation_shape c args p hpat hmc
   subst hpEq
   have hlistmc : isMatchCorrectListAux patArgs = true := by
@@ -1116,14 +1116,14 @@ Then `matchPattern_applyBindings_complete` finishes the job. -/
 private theorem simpleMatch_applyBindings_all (fuel : Nat) :
     (∀ lhs target b qb,
       Mettapedia.Languages.MeTTa.HE.simpleMatch lhs target b fuel = some qb →
-      PureTranslatable lhs → PureTranslatable target →
+      TwoSortTranslatable lhs → TwoSortTranslatable target →
       ∀ qb', HEBindingsExtends qb qb' →
       ∀ pl pa,
         atomToPattern lhs = some pl → atomToPattern target = some pa →
         applyBindings (heBindingsToOSLF qb') pl = pa) ∧
     (∀ ps ts b qb,
       Mettapedia.Languages.MeTTa.HE.simpleMatch.simpleMatchList ps ts b fuel = some qb →
-      (∀ a ∈ ps, PureTranslatable a) → (∀ a ∈ ts, PureTranslatable a) →
+      (∀ a ∈ ps, TwoSortTranslatable a) → (∀ a ∈ ts, TwoSortTranslatable a) →
       ∀ qb', HEBindingsExtends qb qb' →
       (ps.filterMap atomToPattern).map (applyBindings (heBindingsToOSLF qb')) =
         ts.filterMap atomToPattern) := by
@@ -1139,7 +1139,7 @@ private theorem simpleMatch_applyBindings_all (fuel : Nat) :
     obtain ⟨ih_match, ih_list⟩ := ih
     have hpat : ∀ lhs target b qb,
         Mettapedia.Languages.MeTTa.HE.simpleMatch lhs target b (n + 1) = some qb →
-        PureTranslatable lhs → PureTranslatable target →
+        TwoSortTranslatable lhs → TwoSortTranslatable target →
         ∀ qb', HEBindingsExtends qb qb' →
         ∀ pl pa, atomToPattern lhs = some pl → atomToPattern target = some pa →
         applyBindings (heBindingsToOSLF qb') pl = pa := by
@@ -1213,9 +1213,9 @@ private theorem simpleMatch_applyBindings_all (fuel : Nat) :
                       pure_expr_translation_shape c args pl hpl hmc_l
                     obtain ⟨tArgsP, hpaEq, hpaFm, _⟩ :=
                       pure_expr_translation_shape c targs pa hpa hmc_a
-                    have hargsPure : ∀ a ∈ args, PureTranslatable a :=
+                    have hargsPure : ∀ a ∈ args, TwoSortTranslatable a :=
                       pure_args_of_expr_translation c args pl hpl hmc_l
-                    have htargsPure : ∀ a ∈ targs, PureTranslatable a :=
+                    have htargsPure : ∀ a ∈ targs, TwoSortTranslatable a :=
                       pure_args_of_expr_translation c targs pa hpa hmc_a
                     have htail :=
                       ih_list args targs b'' qb hmatch hargsPure htargsPure qb' hext
@@ -1246,7 +1246,7 @@ private theorem simpleMatch_applyBindings_all (fuel : Nat) :
             simp [atomToPattern] at hp
     have hlist : ∀ ps ts b qb,
         Mettapedia.Languages.MeTTa.HE.simpleMatch.simpleMatchList ps ts b (n + 1) = some qb →
-        (∀ a ∈ ps, PureTranslatable a) → (∀ a ∈ ts, PureTranslatable a) →
+        (∀ a ∈ ps, TwoSortTranslatable a) → (∀ a ∈ ts, TwoSortTranslatable a) →
         ∀ qb', HEBindingsExtends qb qb' →
         (ps.filterMap atomToPattern).map (applyBindings (heBindingsToOSLF qb')) =
           ts.filterMap atomToPattern := by
@@ -1287,7 +1287,7 @@ private theorem simpleMatch_applyBindings_all (fuel : Nat) :
 /-- **Part 3: Specialization** — `qb' = qb`. -/
 private theorem simpleMatch_applyBindings_comm
     (lhs target : Atom) (b qb : Bindings) (fuel : Nat)
-    (hl : PureTranslatable lhs) (ha : PureTranslatable target)
+    (hl : TwoSortTranslatable lhs) (ha : TwoSortTranslatable target)
     (hmatch : Mettapedia.Languages.MeTTa.HE.simpleMatch lhs target b fuel = some qb)
     (pl pa : Pattern)
     (hpl : atomToPattern lhs = some pl) (hpa : atomToPattern target = some pa) :
@@ -1296,14 +1296,14 @@ private theorem simpleMatch_applyBindings_comm
 
 /-! ### Step L: Main theorem via commutation + completeness -/
 
-/-- **Match correspondence**: if HE's `simpleMatch` succeeds on PureTranslatable
+/-- **Match correspondence**: if HE's `simpleMatch` succeeds on TwoSortTranslatable
     atoms, PeTTa's `matchPattern` on the translated patterns is nonempty.
 
     Derived from `simpleMatch_applyBindings_comm` via
     `matchPattern_applyBindings_complete`. -/
 theorem simpleMatch_implies_matchPattern_nonempty
     (lhs atom : Atom) (b : Bindings) (fuel : Nat) (qb : Bindings)
-    (hl : PureTranslatable lhs) (ha : PureTranslatable atom)
+    (hl : TwoSortTranslatable lhs) (ha : TwoSortTranslatable atom)
     (hmatch : Mettapedia.Languages.MeTTa.HE.simpleMatch lhs atom b fuel = some qb) :
     ∃ pl pa, atomToPattern lhs = some pl ∧ atomToPattern atom = some pa ∧
       (matchPattern pl pa).length > 0 := by
@@ -1333,9 +1333,9 @@ theorem simpleMatch_implies_matchPattern_nonempty
 - `evalAtom_variable_sound` — variable passthrough
 - `evalAtom_error_sound` — error leaf passthrough
 
-**Phase 2 Step 1 (PureTranslatable + isMatchCorrect):**
-- `pureTranslatable_var/symbol/expr` — PureTranslatable witnesses
-- `PureTranslatable.toTranslatable` — PureTranslatable ⊂ Translatable
+**Phase 2 Step 1 (TwoSortTranslatable + isMatchCorrect):**
+- `pureTranslatable_var/symbol/expr` — TwoSortTranslatable witnesses
+- `TwoSortTranslatable.toTranslatable` — TwoSortTranslatable ⊂ Translatable
 - `isMatchCorrectListAux_of_forall` — list helper
 
 **Phase 2 Step 4 (symbol passthrough):**

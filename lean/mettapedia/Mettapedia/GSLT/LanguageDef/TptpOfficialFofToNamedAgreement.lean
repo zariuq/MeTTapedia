@@ -23,6 +23,8 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.GSLT.LanguageDef.TptpOfficialFofToNamedLanguageDef
 
 attribute [local simp]
+  applyRuleBindings_eq_applyBindings
+  ruleDepthAligned depthAligned depthAlignedList captureDepth captureDepthList
   TptpFofSymbolLanguageDef.a
   TptpFofSymbolLanguageDef.encodeFunctionHead
   TptpFofSymbolLanguageDef.encodePredicateHead
@@ -1526,8 +1528,9 @@ private theorem defined_true_eventuallyExact :
       sourceDefinedFunctor, sourceToken, targetNullary, mkRule,
       congruence, request, a, v, applyRuleUsing,
       matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
-      matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
-      applyBindings])
+      matchPattern, matchArgs, mergeBindings, applyBindingsForRule]
+    rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)]
+    simp only [applyBindings, List.map_nil])
 
 private theorem defined_false_eventuallyExact :
     EventuallyExact
@@ -1543,8 +1546,9 @@ private theorem defined_false_eventuallyExact :
       sourceDefinedFunctor, sourceToken, targetNullary, mkRule,
       congruence, request, a, v, applyRuleUsing,
       matchPatternForRule_eq_syntactic, premisesUsing, premiseStepUsing,
-      matchPattern, matchArgs, mergeBindings, applyBindingsForRule,
-      applyBindings])
+      matchPattern, matchArgs, mergeBindings, applyBindingsForRule]
+    rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)]
+    simp only [applyBindings, List.map_nil])
 
 private theorem defined_predicate_eventuallyExact
     (lexeme arguments argumentsResult : Pattern)
@@ -3016,7 +3020,9 @@ private theorem tuple_conjunction_empty_eventuallyExact :
       targetNullary, mkRule, congruence, request, requestWithBody,
       a, v, applyRuleUsing, matchPatternForRule_eq_syntactic,
       premisesUsing, premiseStepUsing, matchPattern, matchArgs,
-      mergeBindings, applyBindingsForRule, applyBindings])
+      mergeBindings, applyBindingsForRule, applyBindings]
+    rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)]
+    simp only [applyBindings, List.map_nil])
 
 private theorem tuple_disjunction_empty_eventuallyExact :
     EventuallyExact
@@ -3031,7 +3037,9 @@ private theorem tuple_disjunction_empty_eventuallyExact :
       targetNullary, mkRule, congruence, request, requestWithBody,
       a, v, applyRuleUsing, matchPatternForRule_eq_syntactic,
       premisesUsing, premiseStepUsing, matchPattern, matchArgs,
-      mergeBindings, applyBindingsForRule, applyBindings])
+      mergeBindings, applyBindingsForRule, applyBindings]
+    rw [applyRuleBindings_eq_applyBindings _ _ (by decide +kernel)]
+    simp only [applyBindings, List.map_nil])
 
 private theorem tuple_conjunction_nonempty_eventuallyExact
     (first rest firstResult result : Pattern)

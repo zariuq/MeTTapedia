@@ -67,6 +67,21 @@ inductive Formula where
   | diamond (inner : Formula)
   /-- **Behavioural**: every predecessor satisfies the inner type. -/
   | box (inner : Formula)
+  /-- **Spatial**: the empty collection of the given kind.  Without it no
+  formula is satisfied by a terminated process, so a generated scope has no
+  base case. -/
+  | emptyColl (kind : CollType)
+  /-- **Spatial**: a collection of the given kind that splits into two parts
+  satisfying the two sub-formulas — the cut.  Neither this nor `emptyColl` is
+  derivable from the rest: `collections_indistinguishable` proves that with
+  nothing reducing, every other former either ignores the term or matches an
+  application node, so no formula of the remaining language separates any two
+  collections at all.
+
+  Read here on the term as written, which is what the span-only interface can
+  say; read modulo the equations of a presentation it is the separating
+  conjunction, which is where the tag's permutation law enters. -/
+  | cut (kind : CollType) (left right : Formula)
 deriving Repr
 
 mutual
@@ -90,6 +105,12 @@ def satisfiesOver (span : ReductionSpan Pattern) : Formula → Pattern → Prop
       derivedDiamond span (satisfiesOver span inner) pattern
   | .box inner, pattern =>
       derivedBox span (satisfiesOver span inner) pattern
+  | .emptyColl kind, pattern => pattern = .collection kind [] none
+  | .cut kind left right, pattern =>
+      ∃ leftElements rightElements : List Pattern,
+        pattern = .collection kind (leftElements ++ rightElements) none ∧
+          satisfiesOver span left (.collection kind leftElements none) ∧
+          satisfiesOver span right (.collection kind rightElements none)
 
 /-- Pointwise inhabitation of an argument vector. -/
 def satisfiesAllOver (span : ReductionSpan Pattern) :
@@ -158,6 +179,15 @@ inductive Certificate (span : ReductionSpan Pattern) :
       (sourceEq : span.source edge = source)
       (targetEvidence : Certificate span inner (span.target edge)) :
       Certificate span (.diamond inner) source
+  | emptyColl (kind : CollType) (pattern : Pattern)
+      (shape : pattern = .collection kind [] none) :
+      Certificate span (.emptyColl kind) pattern
+  | cut {left right} (kind : CollType) (pattern : Pattern)
+      (leftElements rightElements : List Pattern)
+      (shape : pattern = .collection kind (leftElements ++ rightElements) none)
+      (leftEvidence : Certificate span left (.collection kind leftElements none))
+      (rightEvidence : Certificate span right (.collection kind rightElements none)) :
+      Certificate span (.cut kind left right) pattern
 
 /-- Pointwise finite certificates for a spatial argument vector. -/
 inductive CertificateAll (span : ReductionSpan Pattern) :
@@ -185,6 +215,9 @@ theorem Certificate.sound {span : ReductionSpan Pattern} :
       ⟨children, shape, childrenEvidence.sound⟩
   | _, _, .diamond edge sourceEq targetEvidence => by
       exact ⟨edge, sourceEq, targetEvidence.sound⟩
+  | _, _, .emptyColl _ _ shape => shape
+  | _, _, .cut _ _ leftElements rightElements shape leftEvidence rightEvidence =>
+      ⟨leftElements, rightElements, shape, leftEvidence.sound, rightEvidence.sound⟩
 
 /-- Pointwise certificate soundness. -/
 theorem CertificateAll.sound {span : ReductionSpan Pattern} :
@@ -219,6 +252,9 @@ def Formula.finitelyCertifiable : Formula → Bool
   | .headed _ arguments => formulasFinitelyCertifiable arguments
   | .diamond inner => inner.finitelyCertifiable
   | .box _ => false
+  | .emptyColl _ => true
+  | .cut _ left right =>
+      left.finitelyCertifiable && right.finitelyCertifiable
 
 def formulasFinitelyCertifiable : List Formula → Bool
   | [] => true
@@ -267,6 +303,19 @@ theorem Certificate.complete {span : ReductionSpan Pattern} :
       exact ⟨.diamond edge sourceEq targetEvidence⟩
   | .box _, _, supported, _ => by
       simp [Formula.finitelyCertifiable] at supported
+  | .emptyColl kind, pattern, _, inhabited => ⟨.emptyColl kind pattern inhabited⟩
+  | .cut kind left right, pattern, supported, inhabited => by
+      simp only [Formula.finitelyCertifiable, Bool.and_eq_true] at supported
+      obtain ⟨leftElements, rightElements, shape, leftInhabited, rightInhabited⟩ :=
+        inhabited
+      obtain ⟨leftEvidence⟩ :=
+        Certificate.complete left (.collection kind leftElements none)
+          supported.1 leftInhabited
+      obtain ⟨rightEvidence⟩ :=
+        Certificate.complete right (.collection kind rightElements none)
+          supported.2 rightInhabited
+      exact ⟨.cut kind pattern leftElements rightElements shape leftEvidence
+        rightEvidence⟩
 
 /-- Pointwise completeness for finite spatial argument vectors. -/
 theorem CertificateAll.complete {span : ReductionSpan Pattern} :

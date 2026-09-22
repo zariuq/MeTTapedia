@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.CertificateGSLTOpen
 import Mathlib.CategoryTheory.Category.Basic
+import Mathlib.CategoryTheory.Limits.Shapes.BinaryProducts
 
 /-!
 # The classifying category of a CertificateGSLT
@@ -88,6 +89,18 @@ theorem toEmpty_unique {source : ClassifyingContext definition}
     morphism = toEmpty source :=
   OpenDerivationList.eq_nil morphism
 
+/-- The empty premise context is terminal by the actual uniqueness of empty
+derivation vectors, not by forgetting derivations. -/
+def emptyIsTerminal (definition : ValidatedCalculusLanguageDef) :
+    CategoryTheory.Limits.IsTerminal (emptyContext definition) :=
+  CategoryTheory.Limits.IsTerminal.ofUniqueHom
+    (fun source => toEmpty source)
+    (fun _ morphism => toEmpty_unique morphism)
+
+instance hasTerminal (definition : ValidatedCalculusLanguageDef) :
+    CategoryTheory.Limits.HasTerminal (ClassifyingContext definition) :=
+  (emptyIsTerminal definition).hasTerminal
+
 end ClassifyingContext
 
 /-! ## Concatenation of derivation vectors -/
@@ -104,6 +117,60 @@ def append {context firstGoals secondGoals : List Pattern}
   match left with
   | .nil => right
   | .cons head tail => .cons head (tail.append right)
+
+/-- Recover the left vector from a vector over concatenated goals, preserving
+each derivation rather than merely its conclusion. -/
+def takeLeft {context : List Pattern} :
+    (firstGoals secondGoals : List Pattern) →
+      OpenDerivationList definition context (firstGoals ++ secondGoals) →
+        OpenDerivationList definition context firstGoals
+  | [], _, _ => .nil
+  | _ :: firstGoals, secondGoals, .cons head tail =>
+      .cons head (takeLeft firstGoals secondGoals tail)
+
+/-- Recover the right vector from a vector over concatenated goals. -/
+def takeRight {context : List Pattern} :
+    (firstGoals secondGoals : List Pattern) →
+      OpenDerivationList definition context (firstGoals ++ secondGoals) →
+        OpenDerivationList definition context secondGoals
+  | [], _, derivations => derivations
+  | _ :: firstGoals, secondGoals, .cons _ tail =>
+      takeRight firstGoals secondGoals tail
+
+/-- Ordered derivation vectors split and reassemble on the nose. -/
+theorem append_take {context firstGoals secondGoals : List Pattern}
+    (derivations : OpenDerivationList definition context
+      (firstGoals ++ secondGoals)) :
+    (takeLeft firstGoals secondGoals derivations).append
+      (takeRight firstGoals secondGoals derivations) = derivations := by
+  induction firstGoals with
+  | nil => rfl
+  | cons goal goals inductionHypothesis =>
+      cases derivations with
+      | cons head tail =>
+          exact congrArg (OpenDerivationList.cons head)
+            (inductionHypothesis tail)
+
+@[simp] theorem takeLeft_append {context firstGoals secondGoals : List Pattern}
+    (left : OpenDerivationList definition context firstGoals)
+    (right : OpenDerivationList definition context secondGoals) :
+    takeLeft firstGoals secondGoals (left.append right) = left := by
+  cases left with
+  | nil => rfl
+  | cons head tail =>
+      exact congrArg (OpenDerivationList.cons head)
+        (takeLeft_append tail right)
+termination_by sizeOf left
+
+@[simp] theorem takeRight_append {context firstGoals secondGoals : List Pattern}
+    (left : OpenDerivationList definition context firstGoals)
+    (right : OpenDerivationList definition context secondGoals) :
+    takeRight firstGoals secondGoals (left.append right) = right := by
+  cases left with
+  | nil => rfl
+  | cons head tail =>
+      exact takeRight_append tail right
+termination_by sizeOf left
 
 @[simp] theorem nil_append {context secondGoals : List Pattern}
     (right : OpenDerivationList definition context secondGoals) :
@@ -311,6 +378,91 @@ right derivation vector exactly. -/
     (toFirst : source ⟶ first) (toSecond : source ⟶ second) :
     pair toFirst toSecond ≫ sndProjection first second = toSecond :=
   OpenDerivationList.rightProjection_bind_append toFirst toSecond
+
+/-- Every map into a concatenated context is exactly the pairing of its two
+projections. In particular, this keeps each proof occurrence, not just each
+conclusion, in the product universal property. -/
+theorem pair_eta {source first second : ClassifyingContext definition}
+    (morphism : source ⟶ concat first second) :
+    pair (morphism ≫ fstProjection first second)
+      (morphism ≫ sndProjection first second) = morphism := by
+  let left := OpenDerivationList.takeLeft first.judgments second.judgments morphism
+  let right := OpenDerivationList.takeRight first.judgments second.judgments morphism
+  have decompose : pair left right = morphism :=
+    OpenDerivationList.append_take morphism
+  have leftLaw : morphism ≫ fstProjection first second = left := by
+    rw [← decompose]
+    exact pair_fst left right
+  have rightLaw : morphism ≫ sndProjection first second = right := by
+    rw [← decompose]
+    exact pair_snd left right
+  calc
+    pair (morphism ≫ fstProjection first second)
+        (morphism ≫ sndProjection first second) = pair left right := by
+          rw [leftLaw, rightLaw]
+    _ = morphism := decompose
+
+/-- Concatenation satisfies the full binary-product universal property. -/
+theorem pair_unique {source first second : ClassifyingContext definition}
+    (toFirst : source ⟶ first) (toSecond : source ⟶ second)
+    (morphism : source ⟶ concat first second)
+    (firstEq : morphism ≫ fstProjection first second = toFirst)
+    (secondEq : morphism ≫ sndProjection first second = toSecond) :
+    morphism = pair toFirst toSecond := by
+  calc
+    morphism = pair (morphism ≫ fstProjection first second)
+        (morphism ≫ sndProjection first second) := (pair_eta morphism).symm
+    _ = pair toFirst toSecond := by rw [firstEq, secondEq]
+
+/-- Pairing commutes with contextual substitution, with both derivation
+vectors and their premise occurrences retained exactly. -/
+@[simp] theorem comp_pair {prior source first second : ClassifyingContext definition}
+    (substitution : prior ⟶ source)
+    (toFirst : source ⟶ first) (toSecond : source ⟶ second) :
+    substitution ≫ pair toFirst toSecond =
+      pair (substitution ≫ toFirst) (substitution ≫ toSecond) := by
+  apply pair_unique (substitution ≫ toFirst) (substitution ≫ toSecond)
+  · rw [Category.assoc, pair_fst]
+  · rw [Category.assoc, pair_snd]
+
+/-- The explicit cone of ordered-context concatenation is limiting. -/
+def concatIsLimit (first second : ClassifyingContext definition) :
+    CategoryTheory.Limits.IsLimit
+      (CategoryTheory.Limits.BinaryFan.mk
+        (fstProjection first second) (sndProjection first second)) :=
+  CategoryTheory.Limits.BinaryFan.IsLimit.mk _
+    (fun toFirst toSecond => pair toFirst toSecond)
+    (fun toFirst toSecond => pair_fst toFirst toSecond)
+    (fun toFirst toSecond => pair_snd toFirst toSecond)
+    (fun toFirst toSecond morphism firstEq secondEq =>
+      pair_unique toFirst toSecond morphism firstEq secondEq)
+
+instance hasLimitPair (first second : ClassifyingContext definition) :
+    CategoryTheory.Limits.HasLimit (CategoryTheory.Limits.pair first second) :=
+  ⟨⟨CategoryTheory.Limits.BinaryFan.mk
+      (fstProjection first second) (sndProjection first second),
+    concatIsLimit first second⟩⟩
+
+instance hasBinaryProducts (definition : ValidatedCalculusLanguageDef) :
+    CategoryTheory.Limits.HasBinaryProducts (ClassifyingContext definition) :=
+  CategoryTheory.Limits.hasBinaryProducts_of_hasLimit_pair
+    (ClassifyingContext definition)
+
+/-- Two equal judgment labels at different ordered premise positions remain
+different proof terms. Binary products above therefore do not collapse the
+classifying category to an extensional relation on conclusions. -/
+theorem duplicate_assumptions_distinct
+    (definition : ValidatedCalculusLanguageDef) (judgment : Pattern) :
+    (OpenDerivation.assumption (definition := definition)
+      (context := [judgment, judgment]) (0 : Fin 2)) ≠
+    OpenDerivation.assumption (definition := definition)
+      (context := [judgment, judgment]) (1 : Fin 2) := by
+  intro equal
+  cases equal
+
+#print axioms ClassifyingContext.emptyIsTerminal
+#print axioms ClassifyingContext.concatIsLimit
+#print axioms duplicate_assumptions_distinct
 
 end ClassifyingContext
 

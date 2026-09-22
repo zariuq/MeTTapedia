@@ -5,7 +5,7 @@ import Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
 
 A conservative mode skeleton with explicit objects and currently provable
 morphisms. This is not yet a full 2-category formalization; it is the
-maximal sound scaffold before MeTTa-Pure is introduced.
+maximal sound scaffold before two-sort experiment is introduced.
 -/
 
 namespace Mettapedia.OSLF.Framework.Mode2Skeleton

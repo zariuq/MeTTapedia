@@ -78,6 +78,12 @@ interface at top-level rule application.
 def heGuardedPremiseCoreRule (r : ILRewriteRule) : Prop :=
   heCoreRule r ∧ allPremisesTranslatableExt r.premises = true
 
+/-- No authored HE core rule moves a metavariable under a binder, so firing one
+is plain binding application. -/
+theorem mettaHE_depthAligned :
+    ∀ r ∈ mettaHE.rewrites,
+      Mettapedia.OSLF.MeTTaIL.Match.ruleDepthAligned r = true := by decide
+
 /-- The first explicit HE runtime core fragment.
 
 This is the maximal low-risk fragment that already aligns with the current
@@ -230,6 +236,9 @@ theorem toLanguageStep {p q : ILPattern} (h : HECoreStep p q) :
       have target :
           Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule
             mettaHE r bs = q := by
+        rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+          Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings_eq_applyBindings r bs
+            (mettaHE_depthAligned r hr)]
         simpa [mettaHE] using hq
       exact step_of_rule hr matched (by rw [hprem]; exact .nil) premises target
 
@@ -257,7 +266,10 @@ theorem premiseCoreToLanguageStep {relEnv : ILRelEnv} {p q : ILPattern}
       · exact allPremisesTranslatable_noncontextual r.premises
           (hePremiseCoreRule_premises hcore)
       · exact hbs
-      · simpa [mettaHE] using hq
+      · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+          Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings_eq_applyBindings r bs
+            (mettaHE_depthAligned r hr)]
+        simpa [mettaHE] using hq
 
 /-- Star closure of the premise-bearing fragment embeds in the authored
 contextual relation's star closure. -/
@@ -428,7 +440,10 @@ theorem guardedCoreToLanguageStep {relEnv : ILRelEnv} {p q : ILPattern}
       · exact allPremisesTranslatableExt_noncontextual r.premises
           (heGuardedPremiseCoreRule_premises hcore)
       · exact hbs
-      · simpa [mettaHE] using hq
+      · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+          Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings_eq_applyBindings r bs
+            (mettaHE_depthAligned r hr)]
+        simpa [mettaHE] using hq
 
 /-- Star closure of guarded core steps embeds in the authored contextual
 relation's star closure. -/

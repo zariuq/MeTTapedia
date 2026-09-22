@@ -25,8 +25,8 @@ little-theories graph:
   meaning formula by one commuting law.
 
 The construction deliberately does not turn semantic theoremhood into an
-executable checker.  A NIK authority may be attached only when an independent
-certificate/replay theorem is supplied.  It also does not manufacture a
+executable checker. A NIK service needs its own independently qualified
+decision, native-proof, native-operation or certificate boundary. It also does not manufacture a
 meaning formula for a multi-step path: composing local meanings requires the
 composition principles of the particular native theory.
 -/

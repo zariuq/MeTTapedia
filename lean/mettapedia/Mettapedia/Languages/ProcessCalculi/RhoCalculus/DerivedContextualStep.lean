@@ -157,7 +157,7 @@ theorem rhoComm_match_shape
          ("p", body), ("n", inputChannel)] := by
   rw [LanguageDefAdequacy.matchPatternForRule_rhoComm_iff] at matched
   cases matched
-  rename_i elements termRest bagMatch
+  rename_i elements termRest notVector bagMatch
   cases bagMatch
   rename_i inputBindings tailBindings inputIndex inputBound inputMatch tailMatch mergeAll
   generalize inputTermEq : elements[inputIndex] = inputTerm at inputMatch
@@ -228,7 +228,7 @@ theorem rhoComm_match_exact
           ([.apply "PInput" [channel, .lambda none body],
             .apply "POutput" [channel, payload]] ++ rest) none) := by
   rw [LanguageDefAdequacy.matchPatternForRule_rhoComm_iff]
-  apply MatchRelWith.collection
+  apply MatchRelWith.collection (by decide)
   apply MatchBagRelWith.cons 0 (by simp)
   · apply MatchRelWith.apply
     · apply MatchArgsRelWith.cons MatchRelWith.fvar
@@ -258,7 +258,7 @@ theorem rhoComm_apply_exact
         (rhoCommMatchedBindings channel body payload rest) =
       applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (LanguageDefAdequacy.rhoCommBindings channel body payload rest) := by
-  rw [applyBindingsForRuleUsing, applyBindingsForRuleUsing,
+  rw [applyBindingsForRuleUsing, applyRuleBindings, applyBindingsForRuleUsing, applyRuleBindings,
     LanguageDefAdequacy.rhoComm_substitutionPresentation_selected]
   simp [rhoCommMatchedBindings, LanguageDefAdequacy.rhoCommBindings,
     rhoCommRewrite, applyBindingsReflective, applyBindingsReflectiveList]
@@ -472,7 +472,7 @@ private theorem rhoParCong_match_shape
   rw [matchPatternForRuleUsing_iff_matchRel_of_no_presentation
     rhoParCong_no_matchingPresentation] at matched
   cases matched
-  rename_i elements termRest bagMatch
+  rename_i elements termRest notVector bagMatch
   cases bagMatch
   rename_i headBindings tailBindings index indexBound headMatch tailMatch mergeAll
   generalize selectedEq : elements[index] = selected at headMatch
@@ -490,7 +490,7 @@ theorem rhoParCong_match_exact (process : Pattern) (rest : List Pattern) :
         (.collection .hashBag (process :: rest) none) := by
   rw [matchPatternForRuleUsing_iff_matchRel_of_no_presentation
     rhoParCong_no_matchingPresentation]
-  apply MatchRel.collection
+  apply MatchRel.collection (by decide)
   apply MatchBagRel.cons 0 (by simp) MatchRel.fvar MatchBagRel.nilRest
   rfl
 
@@ -522,7 +522,8 @@ theorem RhoStep.par {source target : Pattern} (rest : List Pattern)
       [("T", target),
        ("rest", .collection .hashBag rest none),
        ("S", source)] = _
-    rw [applyBindingsForRuleUsing, rhoParCong_no_substitutionPresentation]
+    rw [applyBindingsForRuleUsing, rhoParCong_no_substitutionPresentation,
+      applyRuleBindings, applyBindingsScoped_zero_of_binderFree _ _ _ (by decide)]
     simp [rhoParCongRewrite, applyBindings]
 
 /-- Interpreting the single congruence premise of `ParCong` with a sound
@@ -574,7 +575,9 @@ private theorem rhoParCong_application_sound
   have targetShape :
       target = .collection .hashBag (candidate :: elements.eraseIdx index) none := by
     rw [← targetEq]
-    simp only [applyBindingsForRuleUsing, rhoParCong_no_substitutionPresentation]
+    simp only [applyBindingsForRuleUsing, rhoParCong_no_substitutionPresentation,
+      applyRuleBindings, applyBindingsScoped_zero_of_binderFree _ _ _
+        (by decide : binderFree rhoParCongRewrite.right = true)]
     simp [rhoParCongRewrite, applyBindings]
   rw [targetShape]
   obtain ⟨innerPaper⟩ := innerPaper
@@ -783,7 +786,9 @@ private theorem rhoParCong_application_preserves_closed
       target = .collection .hashBag
         (candidate :: elements.eraseIdx selectedIndex) none := by
     rw [← targetEq]
-    simp only [applyBindingsForRuleUsing, rhoParCong_no_substitutionPresentation]
+    simp only [applyBindingsForRuleUsing, rhoParCong_no_substitutionPresentation,
+      applyRuleBindings, applyBindingsScoped_zero_of_binderFree _ _ _
+        (by decide : binderFree rhoParCongRewrite.right = true)]
     simp [rhoParCongRewrite, applyBindings]
   rw [targetShape]
   exact ⟨ProcWellSorted.parallel

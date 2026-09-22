@@ -51,6 +51,12 @@ import Mettapedia.GSLT.Core.ProofRelevantTranslationCategory
 import Mettapedia.GSLT.Core.ProofRelevantJudgment
 import Mettapedia.GSLT.Core.JudgmentComposition
 import Mettapedia.GSLT.Logic.ObserverRefinement
+import Mettapedia.GSLT.Logic.HigherOrderBisimulation
+import Mettapedia.GSLT.Logic.HigherOrderHML
+import Mettapedia.GSLT.Logic.HigherOrderHMLControls
+import Mettapedia.GSLT.Logic.HennessyMilnerBehavioralCoverControls
+import Mettapedia.GSLT.Logic.HigherOrderContextClosure
+import Mettapedia.GSLT.Logic.HigherOrderContextClosureControls
 import Mettapedia.GSLT.Core.WeightedMuScheduler
 import Mettapedia.GSLT.Core.WeightedOccurrenceControl
 import Mettapedia.GSLT.Core.BranchCaptureAlgebra
@@ -109,14 +115,42 @@ import Mettapedia.GSLT.Dynamics.StagedDefinitionObservation
 import Mettapedia.GSLT.Dynamics.PartialRegionPlan
 import Mettapedia.GSLT.Dynamics.AlgebraHomomorphicRegionFusion
 import Mettapedia.GSLT.Dynamics.EffectTraceInterleaving
+import Mettapedia.GSLT.Dynamics.ServiceEffectProtocol
+import Mettapedia.GSLT.Dynamics.ServiceResumption
 import Mettapedia.GSLT.GraphTheory.Basic
+import Mettapedia.GSLT.GraphTheory.Interpretation
+import Mettapedia.GSLT.GraphTheory.InterpretationControls
+import Mettapedia.GSLT.GraphTheory.InterpretationTransport
+import Mettapedia.GSLT.GraphTheory.InterpretationTransportControls
 import Mettapedia.GSLT.GraphTheory.BohmTree
+import Mettapedia.GSLT.GraphTheory.HeadSearchControls
+import Mettapedia.GSLT.GraphTheory.BohmObservations
+import Mettapedia.GSLT.GraphTheory.BohmObservationControls
 import Mettapedia.GSLT.GraphTheory.WeakProduct
+import Mettapedia.GSLT.GraphTheory.PartialPair
+import Mettapedia.GSLT.GraphTheory.PartialPairCompletionStep
+import Mettapedia.GSLT.GraphTheory.PartialPairCompletionStepControls
+import Mettapedia.GSLT.GraphTheory.PartialPairCompletionStages
+import Mettapedia.GSLT.GraphTheory.PartialPairCompletionStagesControls
+import Mettapedia.GSLT.GraphTheory.PartialPairCompletion
+import Mettapedia.GSLT.GraphTheory.PartialPairCompletionControls
+import Mettapedia.GSLT.GraphTheory.PartialPairFactorEmbedding
+import Mettapedia.GSLT.GraphTheory.PartialPairFactorEmbeddingControls
+import Mettapedia.GSLT.GraphTheory.IndexedPartialPair
+import Mettapedia.GSLT.GraphTheory.IndexedPartialPairControls
+import Mettapedia.GSLT.GraphTheory.FactorFlattening
+import Mettapedia.GSLT.GraphTheory.FactorFlatteningControls
+import Mettapedia.GSLT.GraphTheory.CompletionCodeReflection
+import Mettapedia.GSLT.GraphTheory.FactorInterpretation
+import Mettapedia.GSLT.GraphTheory.FactorInterpretationControls
+import Mettapedia.GSLT.GraphTheory.WeakProductControls
 import Mettapedia.GSLT.GraphTheory.Substitution
 import Mettapedia.GSLT.GraphTheory.ParallelReduction
 import Mettapedia.GSLT.Topos.Yoneda
 import Mettapedia.GSLT.Topos.SubobjectClassifier
 import Mettapedia.GSLT.Topos.PredicateFibration
+import Mettapedia.GSLT.Topos.PresheafPredicateProjection
+import Mettapedia.GSLT.Topos.PresheafPredicateProjectionControls
 import Mettapedia.GSLT.Parsing.CompilerCorrespondence
 import Mettapedia.GSLT.Parsing.GuardCorrespondence
 import Mettapedia.GSLT.Parsing.HornCertificate
@@ -173,6 +207,10 @@ import Mettapedia.GSLT.LanguageDef.InstitutionConsequence
 import Mettapedia.GSLT.LanguageDef.InstitutionConsequenceCanary
 import Mettapedia.GSLT.LanguageDef.NIK
 import Mettapedia.GSLT.LanguageDef.NIKServiceFamily
+import Mettapedia.GSLT.LanguageDef.NIKServiceInvocation
+import Mettapedia.GSLT.LanguageDef.NIKServiceResumption
+import Mettapedia.GSLT.LanguageDef.NIKPropositionBranching
+import Mettapedia.GSLT.LanguageDef.FiniteSetRepresentationService
 import Mettapedia.GSLT.LanguageDef.NIKLowerConsistencyQualification
 import Mettapedia.GSLT.LanguageDef.NIKConservativeProofEmbedding
 import Mettapedia.GSLT.LanguageDef.PettaOrderedLibraryResolution
@@ -195,7 +233,7 @@ import Mettapedia.GSLT.LanguageDef.GenerativeCantorSemanticGrounding
 import Mettapedia.GSLT.LanguageDef.GenerativeCantorBootstrapGrounding
 import Mettapedia.GSLT.LanguageDef.NIKSemanticGroundSelection
 import Mettapedia.GSLT.LanguageDef.NIKSemanticGroundDecidabilityFrontier
-import Mettapedia.GSLT.LanguageDef.NIKPluralBootstrapGroundAtlas
+import Mettapedia.GSLT.LanguageDef.NIKBaseChecker
 import Mettapedia.GSLT.LanguageDef.NIKUltrainfiniteGroundProfileSelection
 import Mettapedia.GSLT.LanguageDef.CertifiedTheoryCategory
 import Mettapedia.GSLT.LanguageDef.NIKTheoryTranslationExt
@@ -280,6 +318,8 @@ import Mettapedia.GSLT.LanguageDef.StructuralLanguageDefCategory
 import Mettapedia.GSLT.LanguageDef.DisjointExtensionGluing
 import Mettapedia.GSLT.LanguageDef.ArithmeticTargetCoproduct
 import Mettapedia.GSLT.LanguageDef.ArithmeticTargetCoproductNTT
+import Mettapedia.GSLT.LanguageDef.AuthoredRuleSorting
+import Mettapedia.GSLT.Examples.AuthoredRuleSorting
 import Mettapedia.GSLT.LanguageDef.CarrierWellSorted
 import Mettapedia.GSLT.LanguageDef.StructuredC
 import Mettapedia.GSLT.LanguageDef.StructuredCNTT
@@ -366,8 +406,8 @@ import Mettapedia.GSLT.LanguageDef.HOLHenkinTheoryNode
 import Mettapedia.GSLT.LanguageDef.HOLTypeDerivedConsequence
 import Mettapedia.GSLT.LanguageDef.HOLFullDomainTheory
 import Mettapedia.GSLT.LanguageDef.BiformTheory
-import Mettapedia.GSLT.LanguageDef.BiformTheory
 import Mettapedia.GSLT.LanguageDef.TheoryGraph
+import Mettapedia.GSLT.LanguageDef.EquationPremiseStability
 import Mettapedia.GSLT.LanguageDef.TheoryGraphModels
 import Mettapedia.GSLT.LanguageDef.TheoryGraphModelsCanary
 import Mettapedia.GSLT.LanguageDef.BiformTheoryGraph
@@ -377,7 +417,6 @@ import Mettapedia.GSLT.LanguageDef.CertifiedBiformTheoryGraphCanary
 import Mettapedia.GSLT.LanguageDef.BiformObserverControl
 import Mettapedia.GSLT.LanguageDef.BiformObserverControlCanary
 import Mettapedia.GSLT.LanguageDef.ClosedTheorySemanticTarget
-import Mettapedia.GSLT.LanguageDef.BiformCertificateBoundary
 import Mettapedia.GSLT.LanguageDef.BiformCertificateBoundary
 import Mettapedia.GSLT.LanguageDef.BiformCertificateBoundaryCanary
 import Mettapedia.GSLT.LanguageDef.HOLHenkinBiformCanary
@@ -397,12 +436,26 @@ This module formalizes the GSLT framework from Bucciarelli & Salibra's
 * `GraphTheory/` - Graph models, Böhm trees, weak products
 * `Topos/` - Presheaf topos construction (Yoneda, subobject classifier)
 
-## Main Results
+## Qualified constructions and open source results
 
-* Lambda theories form a category with CCCs
-* Graph models provide semantics for lambda calculus
-* Böhm theory B is the maximal sensible graph theory (Theorem 45)
-* Presheaf categories have subobject classifiers
+* Graph-model interpretation constructs a consistent lambda theory using
+  actual finite-support coding; model transport follows primitive coding laws.
+* Reachable head-normal-form observations have reduction invariance and
+  coherent finite-depth families. These results do not yet construct the
+  source's maximal sensible graph theory.
+* The canonical completion of an injective partial pair has total injective
+  coding. One generic factor flattening and the actual interpreter prove
+  theory inclusion into any factor satisfying the primitive coding laws.
+  Both disjoint-union factors discharge those laws, yielding the existing
+  graph-theory lower-bound theorem. Indexed family construction and source
+  stratification remain open.
+* The categorical theory interfaces package supplied products, exponentials,
+  and limits; they do not derive those structures from every authored theory.
+* Presheaf subobject infrastructure is supplied by `Topos/`.
+
+This umbrella still imports unfinished legacy graph-theory declarations.
+Import success is not a qualification of those declarations, and proofs that
+depend on their admitted fields are not established results.
 
 ## References
 

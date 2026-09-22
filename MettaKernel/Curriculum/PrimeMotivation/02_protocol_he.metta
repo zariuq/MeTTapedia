@@ -7,11 +7,11 @@
 ; fallback.
 ;
 ; Lean anchors:
-;   Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeInteractionInterpretation.
 ;     indexedProtocolTy
-;   Mettapedia.Languages.MeTTa.Prime.NativeInteractionInterpretation.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeInteractionInterpretation.
 ;     one_request_rejects_two_field_response
-;   Mettapedia.Languages.MeTTa.Prime.NativeGradualQuotation.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.NativeGradualQuotation.
 ;     rejected_blame_does_not_gate_raw_execution
 
 (= (nat-eq Z Z) True)

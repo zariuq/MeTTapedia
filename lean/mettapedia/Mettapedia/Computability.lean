@@ -118,3 +118,5 @@ import Mettapedia.Computability.PNP.WeightAsymmetryObstruction
 import Mettapedia.Computability.PNP.WeightedFiberNeutralityObstruction
 import Mettapedia.Computability.ProbabilisticTM
 import Mettapedia.Computability.ProbabilisticTMRefined
+import Mettapedia.Computability.ToPartrecCodeEncoding
+import Mettapedia.Computability.HaltingGate

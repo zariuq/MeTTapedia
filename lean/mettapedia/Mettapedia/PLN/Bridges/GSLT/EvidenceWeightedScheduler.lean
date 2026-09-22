@@ -17,9 +17,11 @@ Neither representation authorizes an inference edge.
 -/
 
 import Mettapedia.GSLT.Core.WeightedMuScheduler
-import Mettapedia.Languages.MeTTa.Prime.TypedScheduler
+import Mettapedia.Machines.BranchLocalNeed.ReferenceSemantics
 import Mettapedia.PLN.Bridges.GSLT.GuidanceOptimization
 import Mettapedia.PLN.Evidence.EvidenceHplusQuantale
+
+open Mettapedia.Machines.BranchLocalNeed
 
 namespace Mettapedia.PLN.Bridges.GSLT.EvidenceWeightedScheduler
 
@@ -27,7 +29,8 @@ open scoped ENNReal
 
 open Mettapedia.GSLT.Core.BranchingTemporal
 open Mettapedia.GSLT.Core.WeightedMuScheduler
-open Mettapedia.Languages.MeTTa.Prime.TypedScheduler
+open Mettapedia.GSLT.Core.InferenceControl
+open Mettapedia.Machines.BranchLocalNeed.NeedReference (Machine Produced)
 open Mettapedia.PLN.Bridges.GSLT.GuidanceOptimization
 open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.PLN.InferenceControl.PremiseSelection
@@ -164,46 +167,29 @@ theorem strength_does_not_determine_propensity :
 
 end Examples
 
-/-! ## Prime semantic internalization -/
+/-! ## Evidence policy for the named Need reference machine -/
 
-section PrimeNeed
+section ReferenceNeed
 
 variable {Origin Local Resume Rule Value StableFault RetryableFault Effect : Type}
 
-/-- Evidence-guided control for the actual Prime Need occurrence machine.
-The policy remains occurrence-preserving and all evidence stays available in
-its native carrier. -/
+/-- Evidence-guided control for the named Need reference machine.  The policy
+uses its existing occurrence and answer carriers directly.  Evidence stays
+in its native carrier; the selected breadth-first base is this policy's
+explicit choice, not a language default. -/
 def needEvidencePolicy
-    (score : NeedOccurrence Origin Local Resume Rule Value StableFault
-      RetryableFault Effect → BinaryEvidence)
+    (score : WorkOccurrence
+      (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect) →
+        BinaryEvidence)
     (prefer : EvidenceHplus → EvidenceHplus → Bool) :
     QuantalePolicy EvidenceHplus
-      (NeedOccurrence Origin Local Resume Rule Value StableFault RetryableFault Effect)
-      (NeedAnswer Value StableFault RetryableFault) Unit :=
+      (WorkOccurrence
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault Effect))
+      (Produced Value StableFault RetryableFault × List Nat) Unit :=
   ofScorer ⟨fun _ node => score node⟩ prefer (fun _ => Scheduler.breadthFirst)
     () (fun _ _ _ _ => ())
 
-/-- The evidence policy is an ordinary closed Prime semantic term.  Interface
-syntax and its independent elaboration theorem remain a separate obligation. -/
-def internalNeedEvidencePolicy
-    (score : NeedOccurrence Origin Local Resume Rule Value StableFault
-      RetryableFault Effect → BinaryEvidence)
-    (prefer : EvidenceHplus → EvidenceHplus → Bool) :
-    Mettapedia.Languages.MeTTa.StagedReflective.familiesCwF.Tm PrimeContext
-      (policyTyFor (Origin := Origin) (Local := Local) (Resume := Resume)
-        (Rule := Rule) (Value := Value) (StableFault := StableFault)
-        (RetryableFault := RetryableFault) (Effect := Effect) EvidenceHplus) :=
-  fun _ => needEvidencePolicy score prefer
-
-@[simp] theorem internalNeedEvidencePolicy_apply
-    (score : NeedOccurrence Origin Local Resume Rule Value StableFault
-      RetryableFault Effect → BinaryEvidence)
-    (prefer : EvidenceHplus → EvidenceHplus → Bool) :
-    internalNeedEvidencePolicy score prefer PUnit.unit =
-      needEvidencePolicy score prefer :=
-  rfl
-
-end PrimeNeed
+end ReferenceNeed
 
 end
 

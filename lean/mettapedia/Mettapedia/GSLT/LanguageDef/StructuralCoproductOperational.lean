@@ -163,8 +163,8 @@ private theorem applyRuleUsing_equivariance
   simp only [List.map_map]
   apply List.map_congr_left
   intro finalBindings finalMembership
-  simpa only [Function.comp_apply] using
-    applyBindings_mapPattern symbols finalBindings rule.right
+  simpa only [Function.comp_apply, Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings] using
+    applyBindingsScoped_mapPattern symbols rule.left finalBindings 0 rule.right
 
 private theorem mappedRules_apply_exact
     (symbols : LanguageDefSymbolMap)

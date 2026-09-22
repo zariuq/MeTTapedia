@@ -246,7 +246,7 @@ def negativeDeps (prog : PremiseProgram) (rel : String) : List String :=
 
 /-- Compute a stratification by iterative fixed-point.
     Returns `none` if the program is not stratifiable (negation cycle). -/
-partial def stratify (prog : PremiseProgram) : Option (List (String × Nat)) :=
+def stratify (prog : PremiseProgram) : Option (List (String × Nat)) :=
   let rels := prog.relationNames
   let init := rels.map (·, 0)
   go rels init (rels.length + 1)
@@ -265,6 +265,7 @@ where
         (r, max posMax negMax)
       if newStrata == strata then some strata
       else go rels newStrata fuel'
+  termination_by fuel
 
 /-- Check that the program has a valid stratification (no negation cycles). -/
 def isStratified (prog : PremiseProgram) : Bool :=

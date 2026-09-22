@@ -21,7 +21,7 @@ The intended reading is:
 
 - `R_exec` may be implemented by an MM2/MORK-like substrate
 - `R_spec` remains recognizably MeTTa
-- IntrinsicPure `A/B/C1` stays separate and untouched
+- TwoSortPiSigmaId `A/B/C1` stays separate and untouched
 - future maps `HE -> R_spec`, `PeTTa -> R_spec`, and then `R_spec -> C*`
   should target this profile rather than redefining the kernel
 -/
@@ -103,12 +103,12 @@ instance premiseProgramHasRelationNamedDecidable
   unfold premiseProgramHasRelationNamed
   infer_instance
 
-/-- Runtime-facing kernel profile.  Pure is intentionally degenerate here:
+/-- Runtime-facing kernel profile.  The two-sort experiment has only closed terms here:
 there is no ambient atomspace or bindings store. -/
-def pureRuntimeSpec : MeTTaRuntimeSpec where
-  dialect := pureDialectProfile
-  stateCarrier := "PureTm 0"
-  resultCarrier := "PureTm 0"
+def twoSortRuntimeSpec : MeTTaRuntimeSpec where
+  dialect := twoSortDialectProfile
+  stateCarrier := "ScopedTerm 0"
+  resultCarrier := "ScopedTerm 0"
   bindingsMode := .none
   branchingMode := .single
   contextMode := .none
@@ -162,17 +162,17 @@ def fullLegacyRuntimeSpec : MeTTaRuntimeSpec where
 
 /-- First-draft runtime inventory. -/
 def runtimeSpecs : List MeTTaRuntimeSpec :=
-  [pureRuntimeSpec, heRuntimeSpec, pettaRuntimeSpec, fullLegacyRuntimeSpec]
+  [twoSortRuntimeSpec, heRuntimeSpec, pettaRuntimeSpec, fullLegacyRuntimeSpec]
 
 /-- Lookup by dialect name. -/
 def findRuntimeSpec (name : String) : Option MeTTaRuntimeSpec :=
   runtimeSpecs.find? (fun s => s.dialect.name == name)
 
-@[simp] theorem pureRuntimeSpec_dialect :
-    pureRuntimeSpec.dialect = pureDialectProfile := rfl
+@[simp] theorem twoSortRuntimeSpec_dialect :
+    twoSortRuntimeSpec.dialect = twoSortDialectProfile := rfl
 
-@[simp] theorem pureRuntimeSpec_bindings :
-    pureRuntimeSpec.bindingsMode = .none := rfl
+@[simp] theorem twoSortRuntimeSpec_bindings :
+    twoSortRuntimeSpec.bindingsMode = .none := rfl
 
 @[simp] theorem heRuntimeSpec_dialect :
     heRuntimeSpec.dialect = heDialectProfile := rfl
@@ -217,7 +217,7 @@ theorem heRuntimeSpec_state_context_fact :
     heRuntimeSpec.contextMode = .explicitStateAndSpace ∧
     languageHasTypeNamed Mettapedia.Languages.MeTTa.HE.LanguageDef.mettaHE "State" ∧
     languageHasTypeNamed Mettapedia.Languages.MeTTa.HE.LanguageDef.mettaHE "Space" := by
-  native_decide
+  decide +kernel
 
 /-- HE's result carrier is concretely a list of `(Atom × Bindings)` pairs, so
 bindings and explicit alternatives are part of the formal semantic interface. -/

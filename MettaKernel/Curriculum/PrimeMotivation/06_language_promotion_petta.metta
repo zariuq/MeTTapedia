@@ -11,12 +11,12 @@
 ; safe structural transport is proved once, and the nonexistent Prime-to-Zero
 ; route is uninhabited rather than represented by another runtime case.  Lean
 ; anchors:
-;   Mettapedia.Languages.MeTTa.Prime.DataTranslationKernel.variables_are_fixed
-;   Mettapedia.Languages.MeTTa.Prime.DataTranslationKernel.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.DataTranslationKernel.variables_are_fixed
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.DataTranslationKernel.
 ;     constructor_translation_is_nontrivial
-;   Mettapedia.Languages.MeTTa.Prime.InternalDataTransport.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.InternalDataTransport.
 ;     transport_commutes_with_opening
-;   Mettapedia.Languages.MeTTa.Prime.LanguageOperationSyntax.
+;   Mettapedia.Languages.MeTTa.PrimeCandidates.LanguageOperationSyntax.
 ;     no_reverse_gslt_operation_has_syntax
 
 (= (promote (Var $name)) (Some (Var $name)))
