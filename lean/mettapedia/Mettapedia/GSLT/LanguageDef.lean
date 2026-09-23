@@ -41,6 +41,7 @@ import Mettapedia.GSLT.LanguageDef.FixedHeadBucketCompilation
 import Mettapedia.GSLT.LanguageDef.FlatVariableHeadCompilation
 import Mettapedia.GSLT.LanguageDef.GroundLinearHeadCompilation
 import Mettapedia.GSLT.LanguageDef.GroundDenseHeadCompilation
+import Mettapedia.GSLT.LanguageDef.CompiledMatchProgram
 import Mettapedia.GSLT.LanguageDef.ConstructorGuidedUnificationCompilation
 import Mettapedia.GSLT.LanguageDef.FiniteGroundFactIndexCompilation
 import Mettapedia.GSLT.LanguageDef.GroundSubtermCacheCompilation
@@ -75,6 +76,7 @@ import Mettapedia.GSLT.LanguageDef.CompiledPlanDelayedBindingObservation
 import Mettapedia.GSLT.LanguageDef.CompiledAnswerEffectProgram
 import Mettapedia.GSLT.LanguageDef.CompiledAnswerEffectControl
 import Mettapedia.GSLT.LanguageDef.CompiledRecursiveAnswerProducer
+import Mettapedia.GSLT.LanguageDef.CompiledContinuationAnswerProducer
 import Mettapedia.GSLT.LanguageDef.DelayedObservationAnswerEffectCompilation
 import Mettapedia.GSLT.LanguageDef.FlatTermViewCompilation
 import Mettapedia.GSLT.LanguageDef.FlatTermExistenceCompilation
@@ -215,6 +217,10 @@ and proves that residual argument-only comparison is exact.
 with the generated finite-variable inventory.  It resolves every variable to
 a bounded slot and proves direct recursive matching equal to the independent
 association-list matcher, including repeated-variable equality and rejection.
+`CompiledMatchProgram` flattens that matcher into a register program whose
+first occurrence of a variable binds and whose later occurrences compare, a
+choice made when the program is emitted, and proves the program's run equal
+to the dense matcher and hence to the association-list matcher.
 `FiniteGroundFactIndexCompilation` applies the same rigid-root theorem to
 catalog-authorized finite ground providers.  It preserves exact row order and
 multiplicity, while an open query falls back to the complete source bag.

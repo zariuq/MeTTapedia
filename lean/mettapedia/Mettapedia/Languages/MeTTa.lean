@@ -136,6 +136,11 @@ import Mettapedia.Languages.MeTTa.SubstitutionAlgebra
 import Mettapedia.Languages.MeTTa.MetavariableFrame
 import Mettapedia.Languages.MeTTa.MetavariableFrameStore
 import Mettapedia.Languages.MeTTa.MetavariableFrameStoreEscape
+import Mettapedia.Languages.MeTTa.FreshFrameOccursCheck
+import Mettapedia.Languages.MeTTa.AnswerProducerHandoff
+import Mettapedia.Languages.MeTTa.SpecializerRelevance
+import Mettapedia.Languages.MeTTa.UndeclaredOperandType
+import Mettapedia.Languages.MeTTa.GroundClosureSharing
 import Mettapedia.Languages.MeTTa.BindingVersions
 import Mettapedia.Data.List.OrderedOccurrenceCursor
 import Mettapedia.Languages.MeTTa.SearchStateStack
