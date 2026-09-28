@@ -7,7 +7,7 @@ substitutions.
 their first-hit assignment (one pass — normal substitutions carry no
 assigned variable inside a stored value), unresolved variables are preserved
 syntactically as themselves, and expressions instantiate pointwise.  The
-unresolved-preservation clause is a constructor, not a lemma: the relation
+unresolved-preservation rule is a constructor, not a lemma: the relation
 cannot present an unconstrained variable as anything but itself, which is
 the presentation law the escape counterexample demanded.
 

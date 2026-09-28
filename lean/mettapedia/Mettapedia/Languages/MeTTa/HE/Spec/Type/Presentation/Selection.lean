@@ -457,7 +457,7 @@ theorem chosenCandidates_pairwiseSeparated
             simpa [equation] using member)
       · exact inductionHypothesis separated.2
 
-/-- Pairwise-separated atoms give the head-versus-tail freshness clause used
+/-- Pairwise-separated atoms give the head-versus-tail freshness premise used
 by the finite global-permutation constructor. -/
 theorem atomVarsFreshFromAtoms_of_pairwiseSeparated
     {head : Atom} {tail : List Atom}

@@ -49,7 +49,7 @@ def rewriteDeclToLanguageRewrite?
   | .base lhs rhs => do
       let left ← mettaASTToPattern? lhs
       let right ← mettaASTToPattern? rhs
-      return Mettapedia.OSLF.MeTTaIL.Syntax.RewriteRule.mk
+      return Mettapedia.OSLF.MeTTaIL.Syntax.RewriteRule.mk (bindings := none)
         rd.name [] [] left right
   | .ctx _ _ => none
 
@@ -136,11 +136,11 @@ def addTwoOneAfterInnerPattern : LDPattern :=
   .apply "S" [addOneOneAfterRootPattern]
 
 def addZRule : LDRewriteRule :=
-  RewriteRule.mk "add-z" [] [] (.apply "add" [addZeroPattern, .fvar "n"])
+  RewriteRule.mk (bindings := none) "add-z" [] [] (.apply "add" [addZeroPattern, .fvar "n"])
     (.fvar "n")
 
 def addSRule : LDRewriteRule :=
-  RewriteRule.mk "add-s" [] []
+  RewriteRule.mk (bindings := none) "add-s" [] []
     (.apply "add" [.apply "S" [.fvar "m"], .fvar "n"])
     (.apply "S" [.apply "add" [.fvar "m", .fvar "n"]])
 
@@ -172,22 +172,22 @@ def revRevList0AfterInnerNilPattern : LDPattern :=
   revCallPattern revList0AfterInnerPattern
 
 def revAppendNilRule : LDRewriteRule :=
-  RewriteRule.mk "append-nil" [] []
+  RewriteRule.mk (bindings := none) "append-nil" [] []
     (.apply "listAppend" [nilValuePattern, .fvar "ys"]) (.fvar "ys")
 
 def revAppendConsRule : LDRewriteRule :=
-  RewriteRule.mk "append-cons" [] []
+  RewriteRule.mk (bindings := none) "append-cons" [] []
     (.apply "listAppend"
       [consValuePattern (.fvar "x") (.fvar "xs"), .fvar "ys"])
     (consValuePattern (.fvar "x")
       (appendCallPattern (.fvar "xs") (.fvar "ys")))
 
 def revNilRule : LDRewriteRule :=
-  RewriteRule.mk "rev-nil" [] [] (revCallPattern nilValuePattern)
+  RewriteRule.mk (bindings := none) "rev-nil" [] [] (revCallPattern nilValuePattern)
     nilValuePattern
 
 def revConsRule : LDRewriteRule :=
-  RewriteRule.mk "rev-cons" [] []
+  RewriteRule.mk (bindings := none) "rev-cons" [] []
     (revCallPattern (consValuePattern (.fvar "x") (.fvar "xs")))
     (appendCallPattern (revCallPattern (.fvar "xs"))
       (consValuePattern (.fvar "x") nilValuePattern))
@@ -273,7 +273,11 @@ theorem addDeclsLanguageDef_reduces_add_z_one :
     simp [Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
   · unfold addZRule addOnePattern addZeroPattern
     simp [applyBindingsForRule,
-      Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
+      Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped,
+      Mettapedia.OSLF.MeTTaIL.Match.captureDepth,
+      Mettapedia.OSLF.MeTTaIL.Match.captureDepthList,
+      Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero]
 
 theorem addDeclsLanguageDef_not_reduces_add_z_one_to_zero :
     ¬ Mettapedia.OSLF.Framework.TypeSynthesis.langReduces addDeclsLanguageDef
@@ -294,7 +298,11 @@ theorem addDeclsLanguageDef_not_reduces_add_z_one_to_zero :
         subst bs0
         cases hprem
         simp [addZRule, addZeroPattern, applyBindingsForRule,
-          Mettapedia.OSLF.MeTTaIL.Match.applyBindings] at hq
+          Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
+          Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped,
+          Mettapedia.OSLF.MeTTaIL.Match.captureDepth,
+          Mettapedia.OSLF.MeTTaIL.Match.captureDepthList,
+          Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero] at hq
       · simp [addSRule, addZOnePattern, addOnePattern, addZeroPattern,
           Mettapedia.OSLF.MeTTaIL.Match.matchPattern,
           Mettapedia.OSLF.MeTTaIL.Match.matchArgs,
@@ -330,7 +338,11 @@ theorem addDeclsLanguageDef_reduces_add_one_one_root :
     simp [Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
   · unfold addSRule addOneOneAfterRootPattern addZOnePattern addOnePattern addZeroPattern
     simp [applyBindingsForRule,
-      Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
+      Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped,
+      Mettapedia.OSLF.MeTTaIL.Match.captureDepth,
+      Mettapedia.OSLF.MeTTaIL.Match.captureDepthList,
+      Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero]
 
 theorem addDeclsLanguageDef_reduces_add_two_one_root :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces addDeclsLanguageDef
@@ -352,7 +364,11 @@ theorem addDeclsLanguageDef_reduces_add_two_one_root :
   · unfold addSRule addTwoOneAfterRootPattern addOneOnePattern addOnePattern
       addZeroPattern
     simp [applyBindingsForRule,
-      Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
+      Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped,
+      Mettapedia.OSLF.MeTTaIL.Match.captureDepth,
+      Mettapedia.OSLF.MeTTaIL.Match.captureDepthList,
+      Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero]
 
 theorem revDeclsLanguageDef_reduces_rev_nil :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces revDeclsLanguageDef
@@ -372,7 +388,8 @@ theorem revDeclsLanguageDef_reduces_rev_nil :
     simp [Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
   · unfold revNilRule nilValuePattern
     simp [applyBindingsForRule,
-      Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
+      Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped]
 
 theorem revDeclsLanguageDef_reduces_append_nil_list0 :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces revDeclsLanguageDef
@@ -396,7 +413,11 @@ theorem revDeclsLanguageDef_reduces_append_nil_list0 :
   · unfold revAppendNilRule list0Pattern consValuePattern nilValuePattern
       addZeroPattern
     simp [applyBindingsForRule,
-      Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
+      Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped,
+      Mettapedia.OSLF.MeTTaIL.Match.captureDepth,
+      Mettapedia.OSLF.MeTTaIL.Match.captureDepthList,
+      Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero]
 
 theorem revDeclsLanguageDef_reduces_rev_list0_root :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces revDeclsLanguageDef
@@ -420,7 +441,11 @@ theorem revDeclsLanguageDef_reduces_rev_list0_root :
       revCallPattern list0Pattern consValuePattern nilValuePattern
       addZeroPattern
     simp [applyBindingsForRule,
-      Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
+      Mettapedia.OSLF.MeTTaIL.Match.applyRuleBindings,
+      Mettapedia.OSLF.MeTTaIL.Match.applyBindingsScoped,
+      Mettapedia.OSLF.MeTTaIL.Match.captureDepth,
+      Mettapedia.OSLF.MeTTaIL.Match.captureDepthList,
+      Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero]
 
 theorem addDeclsReachabilitySig_extends_extracted :
     addDeclsReachabilitySig.take (languageDefToLFSig addDeclsLanguageDef).length =
@@ -783,7 +808,7 @@ structure AddOneOneCoherenceSquare where
       addDeclsKernelReachabilityDeclNames.contains
         "MeTTaAdd:reduces-apply-second" = true
 
-def add_one_one_coherence_square :
+theorem add_one_one_coherence_square :
     AddOneOneCoherenceSquare := by
   refine
     { sourceVerdict := ?_
@@ -832,7 +857,7 @@ structure AddTwoOneCoherenceSquare where
       addDeclsKernelReachabilityDeclNames.contains
         "MeTTaAdd:reduces-apply-second" = true
 
-def add_two_one_coherence_square :
+theorem add_two_one_coherence_square :
     AddTwoOneCoherenceSquare := by
   refine
     { sourceVerdict := ?_
@@ -898,7 +923,7 @@ structure RevInvolutionHostingBridge where
           (Mettapedia.GSLT.LanguageDef.MIEvalEncoding.gRev
             Mettapedia.GSLT.LanguageDef.MIEvalEncoding.gList012))
 
-def rev_involution_hosting_bridge :
+theorem rev_involution_hosting_bridge :
     RevInvolutionHostingBridge := by
   refine
     { encodedRules := ?_
@@ -1028,7 +1053,7 @@ structure RevList0HostedKernelBridge where
           Mettapedia.GSLT.LanguageDef.MIEvalEncoding.revDecls 20
           revRevList0Source)
 
-def rev_list0_hosted_kernel_bridge : RevList0HostedKernelBridge := by
+theorem rev_list0_hosted_kernel_bridge : RevList0HostedKernelBridge := by
   refine
     { sourceTermMaps := ?_
       sourceVerdict := ?_

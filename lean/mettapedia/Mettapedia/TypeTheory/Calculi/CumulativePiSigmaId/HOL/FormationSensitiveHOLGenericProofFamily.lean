@@ -437,7 +437,8 @@ theorem implication_elim (source : LogicalSignature Base Const)
     (implication_conversion source proofName p q)
   simpa only [implicationFamily, inst0_rename_wk] using Typing.appElim converted ha
 
-private theorem instantiate_shifted_body {n : Nat} (body : Tower.Tm (n + 1)) :
+/-- Instantiating a weakened binder body at the newest variable restores it. -/
+theorem instantiate_shifted_body {n : Nat} (body : Tower.Tm (n + 1)) :
     inst0 (.var 0) (Presentation.rename (liftRen wk) body) = body := by
   unfold inst0
   rw [subst_rename]

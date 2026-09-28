@@ -4,7 +4,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfLexicalInhabitation
 /-!
 # Authored lexical-matcher inhabitation in contextual execution
 
-The actual eleven source clauses execute using the existing Pattern relation.
+The actual eleven source rules execute using the existing Pattern relation.
 Integer premises run the already defined actual-source provider observation;
 ground structural disequality only echoes an unequal input pair. Neither
 primitive computes a matcher answer.
@@ -26,7 +26,8 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT (Rewrite decodeList)
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfReferenceSourceAdmission (graphSource)
 open PlainBnfReferenceCollectionSourceExecution (scalars matcher)
 open PlainBnfStructuredDenotation (LexicalMatcher)
@@ -314,6 +315,7 @@ private theorem points_nil (fuel : Nat) :
       [result (answer false)] := by
   simp [rewriteAt, rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     selectedInteger, applyRuleUsing, matcherCall, call, result, matcher, scalars, answer,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
 
@@ -322,6 +324,7 @@ private theorem points_cons (fuel : Nat) (head : Nat) (tail : List Nat) :
       [result (answer true)] := by
   simp [rewriteAt, rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     selectedInteger, applyRuleUsing, matcherCall, call, result, matcher, scalars, answer,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
 
@@ -330,6 +333,7 @@ private theorem exclusion_nil (fuel : Nat) :
       [result (answer true)] := by
   simp [rewriteAt, rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     selectedInteger, applyRuleUsing, matcherCall, call, result, matcher, scalars, answer,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
 
@@ -350,10 +354,12 @@ private theorem tail_nil (fuel : Nat) (left : Nat) :
   · have later : ¬ 1114111 ≤ left := by omega
     simp [before, later, result, answer, encode, encodeList,
       matchRelationArgs, matchRelationArgument, matchPattern, matchArgs, mergeBindings, List.foldlM,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       Bindings.lookup, applyBindings]
   · have later : 1114111 ≤ left := by omega
     simp [before, later, result, answer, encode, encodeList,
       matchRelationArgs, matchRelationArgument, matchPattern, matchArgs, mergeBindings, List.foldlM,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       Bindings.lookup, applyBindings]
 
 @[local simp] private theorem repr_eq_zero (value : Nat) : value.repr = "0" ↔ value = 0 :=
@@ -380,6 +386,7 @@ private theorem tail_cons (fuel : Nat) (left right : Nat) (tail : List Nat) (ans
   rw [rewriteAt]
   simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     selectedInteger, applyRuleUsing, tailCall, call, scalars,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   simp [gapCall, call, scalar, encode, encodeList] at recursive
@@ -396,6 +403,7 @@ private theorem gap_hole (fuel : Nat) (tail : List Nat) (answers : List SExpr)
   rw [rewriteAt]
   simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     selectedInteger, applyRuleUsing, gapCall, call, scalar,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing,
     applyBindings, engineBasePremises, premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
@@ -415,6 +423,7 @@ private theorem gap_ordinary (fuel : Nat) (left right : Nat) (tail : List Nat)
   have reversedHole : ¬ (55295 = left ∧ 57344 = right) := by omega
   simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     selectedInteger, applyRuleUsing, gapCall, call, scalar,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing,
     applyBindings, engineBasePremises, premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
@@ -507,6 +516,7 @@ private theorem exclusion_zero (fuel : Nat) (tail : List Nat) (answers : List SE
   rw [rewriteAt]
   simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     selectedInteger, applyRuleUsing, matcherCall, call, matcher, scalars,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing,
     applyBindings, engineBasePremises, premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
@@ -522,6 +532,7 @@ private theorem exclusion_nonzero (fuel : Nat) (head : Nat) (tail : List Nat) (n
   have other : 0 ≠ head := Ne.symm nonzero
   simp [rewriteAt, rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     selectedInteger, applyRuleUsing, matcherCall, call, matcher, scalars, result, answer,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing,
     applyBindings, engineBasePremises, premiseStepWithEnv, relationQueryStep, builtinRelationTuples,
@@ -694,7 +705,7 @@ theorem excluding_all_scalars_cannot_return_yes :
   rw [matcher_decoded_step_iff]
   simp [matcherMeaning, PlainBnfLexicalInhabitation.full_exclusion_gap_check_is_false]
 
-/-- A positive source result is not scalar validity: the points-cons clause
+/-- A positive source result is not scalar validity: the points-cons rule
 does not inspect its elements. -/
 theorem invalid_positive_list_needs_separate_admission :
     rewriteAt (engineBasePremises relations) language 1 (matcherCall (.points [55296])) = [result (answer true)] ∧

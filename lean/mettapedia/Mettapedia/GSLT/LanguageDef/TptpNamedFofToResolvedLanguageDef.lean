@@ -447,6 +447,7 @@ local macro "certify_resolver_row" : tactic =>
   `(tactic|
     simp [RewriteValidationCertificate.check,
       RewriteValidationCertificate.contextTypesCheck,
+      RewriteValidationCertificate.premiseTypesCheck,
       RewriteValidationCertificate.patternDeclaredCheck,
       RewriteValidationCertificate.premisesDeclaredCheck,
       RewriteValidationCertificate.allPatternsScopedCheck,
@@ -468,7 +469,8 @@ local macro "certify_resolver_row" : tactic =>
       LanguageDef.premisePatterns, LanguageDef.patternFvarNames,
       LanguageDef.patternBinderNames, LanguageDef.premiseFvarNames,
       LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames, TypeExpr.baseNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
       Pattern.constructorRefs, Pattern.constructorRefsList,
       Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, Pattern.zipHead, Pattern.mapHead,

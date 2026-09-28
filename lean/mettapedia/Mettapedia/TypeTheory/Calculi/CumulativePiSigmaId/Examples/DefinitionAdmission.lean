@@ -4,7 +4,7 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.DeclarationComputati
 /-!
 # Formation and unfolding controls for definition admission
 
-A raw identity clause can be typed over an undeclared domain: raw typing
+A raw identity equation can be typed over an undeclared domain: raw typing
 does not assert context or type formation. Declaration formation rejects that
 package. A transparent universe alias supplies the positive control, and its
 actual unfolding preserves a displayed type above its declaration universe.

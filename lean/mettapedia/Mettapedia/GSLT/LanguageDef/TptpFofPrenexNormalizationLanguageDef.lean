@@ -698,6 +698,7 @@ local macro "certify_authored_row" : tactic =>
   `(tactic|
     simp [RewriteValidationCertificate.check,
       RewriteValidationCertificate.contextTypesCheck,
+      RewriteValidationCertificate.premiseTypesCheck,
       RewriteValidationCertificate.patternDeclaredCheck,
       RewriteValidationCertificate.premisesDeclaredCheck,
       RewriteValidationCertificate.allPatternsScopedCheck,
@@ -749,13 +750,15 @@ local macro "certify_authored_row" : tactic =>
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, LanguageDef.premiseFvarNames,
       LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames, TypeExpr.baseNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
       Pattern.zipHead, Pattern.mapHead, Pattern.evalHead])
 
 local macro "certify_source_row" : tactic =>
   `(tactic|
     simp [RewriteValidationCertificate.check,
       RewriteValidationCertificate.contextTypesCheck,
+      RewriteValidationCertificate.premiseTypesCheck,
       RewriteValidationCertificate.patternDeclaredCheck,
       RewriteValidationCertificate.premisesDeclaredCheck,
       RewriteValidationCertificate.allPatternsScopedCheck,
@@ -799,7 +802,8 @@ local macro "certify_source_row" : tactic =>
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, LanguageDef.premiseFvarNames,
       LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames, TypeExpr.baseNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
       Pattern.zipHead, Pattern.mapHead, Pattern.evalHead])
 
 private theorem constructorLabels_nodup :

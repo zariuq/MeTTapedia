@@ -101,6 +101,7 @@ theorem wellTyped_of_decode?_eq_some {rewrite : RewriteRule}
   cases premise with
   | freshness condition => simp [decode?] at decoded
   | congruence left right => simp [decode?] at decoded
+  | scopedStep step => simp [decode?] at decoded
   | forAll collection parameter body => simp [decode?] at decoded
   | relationQuery relation arguments =>
       cases typed : arguments.mapM (argumentType? rewrite) with
@@ -119,6 +120,7 @@ theorem encode_of_decode?_eq_some {rewrite : RewriteRule}
   cases premise with
   | freshness condition => simp [decode?] at decoded
   | congruence left right => simp [decode?] at decoded
+  | scopedStep step => simp [decode?] at decoded
   | forAll collection parameter body => simp [decode?] at decoded
   | relationQuery relation arguments =>
       cases typed : arguments.mapM (argumentType? rewrite) with

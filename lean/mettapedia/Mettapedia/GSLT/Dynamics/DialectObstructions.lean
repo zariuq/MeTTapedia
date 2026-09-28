@@ -11,31 +11,31 @@ mechanism or a richer operational model.
 
 ## The blocker ledger
 
-Proved in this model (clause-answer semantics):
+Proved in this model (equation-answer semantics):
 
 1. **Answer order quotient** (`order_lost_in_bag`,
    `order_not_recoverable`): two
-   programs with permuted clause order have EQUAL answer bags but UNEQUAL
+   programs with permuted equation order have EQUAL answer bags but UNEQUAL
    answer lists, so no function of the bag recovers the list.  This is not a
    translation blocker when the specified observation is
    `AnswerBagEquivalent`; tests must ignore only outer answer permutation while
    retaining multiplicity and nested structure.  Ordered source operators are
    handled explicitly rather than inferred from an unordered bag.
 2. **Committed choice** (`commit_backtrack_divergence`, `chain_exact`):
-   pure, finite commit-to-first-contributing-clause differs observably from
-   try-all-clauses.  In this denotational fragment it is macro-expressible: the
-   `chain` translation moves clause order into pure clause guards.  This does
+   pure, finite commit-to-first-contributing-equation differs observably from
+   try-all-equations.  In this denotational fragment it is macro-expressible: the
+   `chain` translation moves equation order into pure equation guards.  This does
    not model general PeTTa `cut`, effects in discarded alternatives, or
    divergence while testing an earlier alternative.
 3. **Order dissolution on the committed fragment** (`chain_perm_rigid`):
-   the chain image is PERMUTATION-RIGID — any reordering of its clauses
+   the chain image is PERMUTATION-RIGID — any reordering of its equations
    yields the same answer list, because order now lives in guards, which
-   travel with the clauses.  So for committed programs the bag-level target
+   travel with the equations.  So for committed programs the bag-level target
    observation already determines the full ordered answer: obstruction 1
    vanishes exactly where obstruction 2's repair has been applied.
 4. **Demand (first-k answers)** (`first_answer_local`, `collapse_not_local`):
-   the first answer is PREFIX-LOCAL — computable from the clause prefix up to
-   the first live clause, independent of everything after — while the total
+   the first answer is PREFIX-LOCAL — computable from the equation prefix up to
+   the first live equation, independent of everything after — while the total
    bag is NOT local: extending the finite program changes it.  This theorem
    establishes extensional non-locality only; an unbounded-cost or divergence
    result requires a coinductive/operational search model.  CeTTa
@@ -54,8 +54,8 @@ the census rows from the live translator's gap ledger):
 8. Effect traces (`println`, `add-atom` order) — unlike ordinary answer order,
    these remain ordered observations unless a source component explicitly
    declares a weaker trace equivalence.
-9. Space introspection / self-modification — the clause list is fixed here;
-   programs that observe or grow their own clause set need the store model.
+9. Space introspection / self-modification — the equation list is fixed here;
+   programs that observe or grow their own equation set need the store model.
 
 Rows 5–9 are the frontier a LeaTTa-grade operational model would formalize;
 claiming them here would overreach the denotational model, so they are
@@ -68,30 +68,30 @@ variable {Goal Sub Ans : Type}
 
 /-- Unfolding lemma: answers of a cons are the head's contribution followed by
 the rest's answers. -/
-theorem pettaAnswers_cons (c : Clause Goal Sub Ans)
-    (cs : List (Clause Goal Sub Ans)) (g : Goal) :
+theorem pettaAnswers_cons (c : Equation Goal Sub Ans)
+    (cs : List (Equation Goal Sub Ans)) (g : Goal) :
     pettaAnswers (c :: cs) g = contrib c g ++ pettaAnswers cs g := by
   simp [pettaAnswers]
 
 /-! ## Boundary 1: answer order does not survive the bag quotient -/
 
-/-- A clause that matches everything and emits the single answer `a` —
+/-- An equation that matches everything and emits the single answer `a` —
 the minimal specimen for order arguments. -/
-def constClause (a : ℕ) : Clause Unit Unit ℕ where
+def constEquation (a : ℕ) : Equation Unit Unit ℕ where
   sel _ := [()]
   run _ := [a]
 
 theorem pettaAnswers_constPair (a b : ℕ) :
-    pettaAnswers [constClause a, constClause b] () = [a, b] := by
-  simp [pettaAnswers, contrib, constClause]
+    pettaAnswers [constEquation a, constEquation b] () = [a, b] := by
+  simp [pettaAnswers, contrib, constEquation]
 
 /-- Two programs with EQUAL answer bags and UNEQUAL answer lists: the bag
-quotient provably forgets clause order. -/
+quotient provably forgets equation order. -/
 theorem order_lost_in_bag :
-    ∃ cs₁ cs₂ : List (Clause Unit Unit ℕ),
+    ∃ cs₁ cs₂ : List (Equation Unit Unit ℕ),
       (pettaAnswers cs₁ () : Multiset ℕ) = (pettaAnswers cs₂ () : Multiset ℕ)
         ∧ pettaAnswers cs₁ () ≠ pettaAnswers cs₂ () := by
-  refine ⟨[constClause 0, constClause 1], [constClause 1, constClause 0], ?_, ?_⟩
+  refine ⟨[constEquation 0, constEquation 1], [constEquation 1, constEquation 0], ?_, ?_⟩
   · rw [pettaAnswers_constPair, pettaAnswers_constPair]
     decide
   · rw [pettaAnswers_constPair, pettaAnswers_constPair]
@@ -103,7 +103,7 @@ ordinary completed answers as bags; operators that observe search order need
 their own explicit target mechanism. -/
 theorem order_not_recoverable :
     ¬ ∃ recover : Multiset ℕ → List ℕ,
-        ∀ cs : List (Clause Unit Unit ℕ),
+        ∀ cs : List (Equation Unit Unit ℕ),
           recover (pettaAnswers cs ()) = pettaAnswers cs () := by
   rintro ⟨f, hf⟩
   obtain ⟨cs₁, cs₂, hbag, hlist⟩ := order_lost_in_bag
@@ -115,10 +115,10 @@ theorem order_not_recoverable :
 /-! ## Obstruction 4: first-answer is prefix-local, the total bag is not -/
 
 /-- The first answer depends only on the program prefix up to the first live
-clause: everything after `c` is irrelevant once `c` contributes.  This is why
+equation: everything after `c` is irrelevant once `c` contributes.  This is why
 demand-1 evaluation may stop early. -/
-theorem first_answer_local (c : Clause Goal Sub Ans)
-    (rest rest' : List (Clause Goal Sub Ans)) (g : Goal)
+theorem first_answer_local (c : Equation Goal Sub Ans)
+    (rest rest' : List (Equation Goal Sub Ans)) (g : Goal)
     (h : contrib c g ≠ []) :
     (pettaAnswers (c :: rest) g).head? = (pettaAnswers (c :: rest') g).head? := by
   cases hc : contrib c g with
@@ -129,71 +129,71 @@ theorem first_answer_local (c : Clause Goal Sub Ans)
 different bags.  This finite theorem does not by itself establish an
 operational cost or divergence result. -/
 theorem collapse_not_local :
-    ∃ (c : Clause Unit Unit ℕ) (rest rest' : List (Clause Unit Unit ℕ)),
+    ∃ (c : Equation Unit Unit ℕ) (rest rest' : List (Equation Unit Unit ℕ)),
       contrib c () ≠ [] ∧
         (pettaAnswers (c :: rest) () : Multiset ℕ)
           ≠ (pettaAnswers (c :: rest') () : Multiset ℕ) := by
-  refine ⟨constClause 0, [], [constClause 1], ?_, ?_⟩
-  · simp [contrib, constClause]
-  · have h₀ : pettaAnswers [constClause 0] () = [0] := by
-      simp [pettaAnswers, contrib, constClause]
+  refine ⟨constEquation 0, [], [constEquation 1], ?_, ?_⟩
+  · simp [contrib, constEquation]
+  · have h₀ : pettaAnswers [constEquation 0] () = [0] := by
+      simp [pettaAnswers, contrib, constEquation]
     rw [pettaAnswers_constPair, h₀]
     decide
 
-/-! ## Boundary 2: pure clause-local committed choice -/
+/-! ## Boundary 2: pure equation-local committed choice -/
 
-/-- Committed-choice semantics: the first clause whose contribution is
-nonempty wins outright; later clauses are never consulted. -/
-def commitAnswers : List (Clause Goal Sub Ans) → Goal → List Ans
+/-- Committed-choice semantics: the first equation whose contribution is
+nonempty wins outright; later equations are never consulted. -/
+def commitAnswers : List (Equation Goal Sub Ans) → Goal → List Ans
   | [], _ => []
   | c :: rest, g =>
       if (contrib c g).isEmpty then commitAnswers rest g else contrib c g
 
-/-- Commitment observably differs from backtracking-all-clauses. -/
+/-- Commitment observably differs from backtracking-all-equations. -/
 theorem commit_backtrack_divergence :
-    ∃ cs : List (Clause Unit Unit ℕ),
+    ∃ cs : List (Equation Unit Unit ℕ),
       commitAnswers cs () ≠ pettaAnswers cs () := by
-  refine ⟨[constClause 0, constClause 1], ?_⟩
+  refine ⟨[constEquation 0, constEquation 1], ?_⟩
   rw [pettaAnswers_constPair]
-  simp [commitAnswers, contrib, constClause]
+  simp [commitAnswers, contrib, constEquation]
 
-/-- All clauses in `pre` are dead on `g` (Boolean, so guards stay
+/-- All equations in `pre` are dead on `g` (Boolean, so guards stay
 computable). -/
-def emptyAll (pre : List (Clause Goal Sub Ans)) (g : Goal) : Bool :=
+def emptyAll (pre : List (Equation Goal Sub Ans)) (g : Goal) : Bool :=
   pre.all fun c => (contrib c g).isEmpty
 
-/-- One translated clause: the head is total, and the guard — "every earlier
-clause is dead" — carries the commitment.  Clause ORDER is compiled into
-clause CONDITIONS; the earlier-clause prefix travels inside the clause. -/
-def guardHead (pre : List (Clause Goal Sub Ans)) (c : Clause Goal Sub Ans) :
-    Clause Goal Goal Ans where
+/-- One translated equation: the head is total, and the guard — "every earlier
+equation is dead" — carries the commitment.  Equation ORDER is compiled into
+equation CONDITIONS; the earlier-equation prefix travels inside the equation. -/
+def guardHead (pre : List (Equation Goal Sub Ans)) (c : Equation Goal Sub Ans) :
+    Equation Goal Goal Ans where
   sel g := if emptyAll pre g then [g] else []
   run g := contrib c g
 
-/-- What a translated clause contributes: its source's contribution when the
+/-- What a translated equation contributes: its source's contribution when the
 earlier prefix is dead, nothing otherwise. -/
-theorem contrib_guardHead (pre : List (Clause Goal Sub Ans))
-    (c : Clause Goal Sub Ans) (g : Goal) :
+theorem contrib_guardHead (pre : List (Equation Goal Sub Ans))
+    (c : Equation Goal Sub Ans) (g : Goal) :
     contrib (guardHead pre c) g =
       if emptyAll pre g then contrib c g else [] := by
   by_cases h : emptyAll pre g <;> simp [contrib, guardHead, h]
 
 /-- The chain translation of a committed program. -/
-def chainAux : List (Clause Goal Sub Ans) → List (Clause Goal Sub Ans) →
-    List (Clause Goal Goal Ans)
+def chainAux : List (Equation Goal Sub Ans) → List (Equation Goal Sub Ans) →
+    List (Equation Goal Goal Ans)
   | _, [] => []
   | pre, c :: rest => guardHead pre c :: chainAux (pre ++ [c]) rest
 
-def chain (cs : List (Clause Goal Sub Ans)) : List (Clause Goal Goal Ans) :=
+def chain (cs : List (Equation Goal Sub Ans)) : List (Equation Goal Goal Ans) :=
   chainAux [] cs
 
-theorem emptyAll_append (pre : List (Clause Goal Sub Ans))
-    (c : Clause Goal Sub Ans) (g : Goal) :
+theorem emptyAll_append (pre : List (Equation Goal Sub Ans))
+    (c : Equation Goal Sub Ans) (g : Goal) :
     emptyAll (pre ++ [c]) g = (emptyAll pre g && (contrib c g).isEmpty) := by
   simp [emptyAll]
 
-theorem chainAux_spec (cs : List (Clause Goal Sub Ans))
-    (pre : List (Clause Goal Sub Ans)) (g : Goal) :
+theorem chainAux_spec (cs : List (Equation Goal Sub Ans))
+    (pre : List (Equation Goal Sub Ans)) (g : Goal) :
     pettaAnswers (chainAux pre cs) g =
       if emptyAll pre g then commitAnswers cs g else [] := by
   induction cs generalizing pre with
@@ -207,23 +207,23 @@ theorem chainAux_spec (cs : List (Clause Goal Sub Ans))
       · simp [contrib_guardHead, hpre, hc, commitAnswers]
     · simp [contrib_guardHead, hpre]
 
-/-- **The pure clause-local commitment pass is exact in this model**: the
+/-- **The pure equation-local commitment pass is exact in this model**: the
 chain image, run under ordinary backtracking semantics, produces exactly the
 committed source's answers.  General `cut` is outside this theorem. -/
-theorem chain_exact (cs : List (Clause Goal Sub Ans)) (g : Goal) :
+theorem chain_exact (cs : List (Equation Goal Sub Ans)) (g : Goal) :
     pettaAnswers (chain cs) g = commitAnswers cs g := by
   have h := chainAux_spec cs [] g
   simpa [chain, emptyAll] using h
 
 /-! ## Obstruction 3 dissolved: the chain image is permutation-rigid -/
 
-/-- At most one clause of `l` is live on `g`. -/
-def AtMostOneLive (l : List (Clause Goal Sub Ans)) (g : Goal) : Prop :=
+/-- At most one equation of `l` is live on `g`. -/
+def AtMostOneLive (l : List (Equation Goal Sub Ans)) (g : Goal) : Prop :=
   ∀ c₁ ∈ l, ∀ c₂ ∈ l, contrib c₁ g ≠ [] → contrib c₂ g ≠ [] → c₁ = c₂
 
-/-- With at most one live clause, the ordered answer list is invariant under
-permutation — order-sensitivity needs at least two live clauses to observe. -/
-theorem perm_pettaAnswers_of_atMostOneLive {l₁ l₂ : List (Clause Goal Sub Ans)}
+/-- With at most one live equation, the ordered answer list is invariant under
+permutation — order-sensitivity needs at least two live equations to observe. -/
+theorem perm_pettaAnswers_of_atMostOneLive {l₁ l₂ : List (Equation Goal Sub Ans)}
     (g : Goal) (hp : l₁.Perm l₂) (h : AtMostOneLive l₁ g) :
     pettaAnswers l₁ g = pettaAnswers l₂ g := by
   induction hp with
@@ -244,11 +244,11 @@ theorem perm_pettaAnswers_of_atMostOneLive {l₁ l₂ : List (Clause Goal Sub An
       h c₁ (p₁.mem_iff.mpr h₁) c₂ (p₁.mem_iff.mpr hc₂) hn₁ hn₂
     rw [ih₁ h, ih₂ h₂]
 
-/-- If some earlier clause is live, every chain clause downstream is dead —
+/-- If some earlier equation is live, every chain equation downstream is dead —
 the guards see the live prefix and refuse. -/
-theorem chainAux_dead_of_not_emptyAll {pre : List (Clause Goal Sub Ans)}
+theorem chainAux_dead_of_not_emptyAll {pre : List (Equation Goal Sub Ans)}
     {g : Goal} (h : emptyAll pre g = false)
-    (cs : List (Clause Goal Sub Ans)) :
+    (cs : List (Equation Goal Sub Ans)) :
     ∀ c' ∈ chainAux pre cs, contrib c' g = [] := by
   induction cs generalizing pre with
   | nil => simp [chainAux]
@@ -259,10 +259,10 @@ theorem chainAux_dead_of_not_emptyAll {pre : List (Clause Goal Sub Ans)}
     · rw [contrib_guardHead, if_neg (by simp [h])]
     · exact ih (by rw [emptyAll_append, h, Bool.false_and]) c' hc'
 
-/-- The chain image always has at most one live clause: commitment makes the
-translated program semantically deterministic at the clause level. -/
-theorem chainAux_atMostOneLive (cs : List (Clause Goal Sub Ans))
-    (pre : List (Clause Goal Sub Ans)) (g : Goal) :
+/-- The chain image always has at most one live equation: commitment makes the
+translated program semantically deterministic at the equation level. -/
+theorem chainAux_atMostOneLive (cs : List (Equation Goal Sub Ans))
+    (pre : List (Equation Goal Sub Ans)) (g : Goal) :
     AtMostOneLive (chainAux pre cs) g := by
   induction cs generalizing pre with
   | nil => intro c₁ h₁; simp [chainAux] at h₁
@@ -291,8 +291,8 @@ theorem chainAux_atMostOneLive (cs : List (Clause Goal Sub Ans))
 /-- **Order dissolves on the committed fragment**: ANY permutation of the
 chain image yields the committed source's answers — the image is
 order-invariant, so a bag-level target observation already determines it. -/
-theorem chain_perm_rigid (cs : List (Clause Goal Sub Ans))
-    {l' : List (Clause Goal Goal Ans)} (g : Goal)
+theorem chain_perm_rigid (cs : List (Equation Goal Sub Ans))
+    {l' : List (Equation Goal Goal Ans)} (g : Goal)
     (hp : (chain cs).Perm l') :
     pettaAnswers l' g = commitAnswers cs g := by
   rw [← perm_pettaAnswers_of_atMostOneLive g hp (chainAux_atMostOneLive cs [] g),
@@ -301,8 +301,8 @@ theorem chain_perm_rigid (cs : List (Clause Goal Sub Ans))
 /-- **Bounded-selection license in this fragment**: on committed images,
 demanding the first answer is order-free because every permutation has the
 same sole live contribution. -/
-theorem commit_first_order_free (cs : List (Clause Goal Sub Ans))
-    {l' : List (Clause Goal Goal Ans)} (g : Goal)
+theorem commit_first_order_free (cs : List (Equation Goal Sub Ans))
+    {l' : List (Equation Goal Goal Ans)} (g : Goal)
     (hp : (chain cs).Perm l') :
     (pettaAnswers l' g).head? = (commitAnswers cs g).head? := by
   rw [chain_perm_rigid cs g hp]

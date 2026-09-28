@@ -542,6 +542,7 @@ local macro "certify_naming_row" : tactic =>
   `(tactic|
     (simp [RewriteValidationCertificate.check,
       RewriteValidationCertificate.contextTypesCheck,
+      RewriteValidationCertificate.premiseTypesCheck,
       RewriteValidationCertificate.patternDeclaredCheck,
       RewriteValidationCertificate.premisesDeclaredCheck,
       RewriteValidationCertificate.allPatternsScopedCheck,
@@ -598,7 +599,8 @@ local macro "certify_naming_row" : tactic =>
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, LanguageDef.premiseFvarNames,
       LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames, TypeExpr.baseNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
       Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
       plainName_not_constructor, constructorLabelNamespaced] <;>
       decide +kernel))
@@ -649,6 +651,8 @@ private theorem rewrite07_checked :
 private theorem check_of_component_checks (rewrite : RewriteRule)
     (contextTypes :
       RewriteValidationCertificate.contextTypesCheck language rewrite = true)
+    (premiseTypes :
+      RewriteValidationCertificate.premiseTypesCheck language rewrite = true)
     (leftDeclared :
       RewriteValidationCertificate.patternDeclaredCheck language
         rewrite.left = true)
@@ -672,7 +676,7 @@ private theorem check_of_component_checks (rewrite : RewriteRule)
     (rightBound :
       RewriteValidationCertificate.rightBoundCheck rewrite = true) :
     RewriteValidationCertificate.check language rewrite = true := by
-  simp [RewriteValidationCertificate.check, contextTypes, leftDeclared,
+  simp [RewriteValidationCertificate.check, contextTypes, premiseTypes, leftDeclared,
     rightDeclared, premisesDeclared, allPatternsScoped,
     fvarsAvoidConstructors, bindersAvoidConstructors,
     contextAvoidsConstructors, rightBound]
@@ -774,14 +778,14 @@ private theorem or_rightBound :
 private theorem rewrite08_checked :
     RewriteValidationCertificate.check language connectiveNameRewrites[0] = true := by
   simpa [connectiveNameRewrites, andRule] using
-    check_of_component_checks andRule and_contextTypes and_leftDeclared
+    check_of_component_checks andRule and_contextTypes (by certify_naming_row) and_leftDeclared
       and_rightDeclared and_premisesDeclared and_allPatternsScoped
       and_fvarsAvoidConstructors and_bindersAvoidConstructors
       and_contextAvoidsConstructors and_rightBound
 private theorem rewrite09_checked :
     RewriteValidationCertificate.check language connectiveNameRewrites[1] = true := by
   simpa [connectiveNameRewrites, orRule] using
-    check_of_component_checks orRule or_contextTypes or_leftDeclared
+    check_of_component_checks orRule or_contextTypes (by certify_naming_row) or_leftDeclared
       or_rightDeclared or_premisesDeclared or_allPatternsScoped
       or_fvarsAvoidConstructors or_bindersAvoidConstructors
       or_contextAvoidsConstructors or_rightBound

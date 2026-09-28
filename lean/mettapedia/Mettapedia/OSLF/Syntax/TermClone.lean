@@ -20,7 +20,7 @@ index, which is the same information arranged so that the sort is a parameter
 rather than a projection.  The translation between the two is definitional in
 one direction and structural in the other, and it is arranged here so that no
 transport appears anywhere: the recursion peels the context and the `Fin`
-together, so each clause's sort equation holds by reduction.
+together, so each case's sort equation holds by reduction.
 -/
 
 namespace Mettapedia.OSLF.Binding
@@ -57,7 +57,7 @@ theorem varIdx_varOfIdx : ∀ (Γ : Ctx S) (i : Fin Γ.length), varIdx (varOfIdx
 
 /-! ## Simultaneous substitution from a positional environment
 
-Defined by peeling the context and the position together, so that every clause's
+Defined by peeling the context and the position together, so that every case's
 sort equation holds by reduction and no transport is needed. -/
 
 /-- Read a positional environment as a substitution. -/
@@ -102,7 +102,7 @@ theorem substVar_bind : ∀ {Γ Δ Θ : Ctx S}
 /-- **Terms of a binding signature are a multisorted clone.**  Its operations at
 a context are the terms of that context, its variables are the positional
 projections, and its simultaneous substitution is substitution.  The three laws
-are `bind_id`, `bind_comp` and the variable clause of `bind`. -/
+are `bind_id`, `bind_comp` and the variable case of `bind`. -/
 def termClone (S : Signature) : MultiSortedClone S.Srt where
   Hom Γ s := Term S Γ s
   project i := Term.var (varOfIdx _ i)

@@ -9,7 +9,7 @@ import Mettapedia.GSLT.Parsing.GeneratedPeTTaDepthMonotonicity
 
 The independent observation is the ordered sequence of Unicode and adjacent
 ordering diagnostics. Execution refers to the complete generated fixture and
-its original recursive clauses. Worker equations, result binding, and append
+its original recursive equations. Worker equations, result binding, and append
 execute in the existing finite ground model; none is replaced by a provider
 returning the observation. This selected model is not native-runtime adequacy.
 
@@ -49,7 +49,7 @@ def diagnostics : List Int → SExpr → List SExpr
       unicodeDiagnostics first origin ++ orderDiagnostics first next origin ++
         diagnostics (next :: rest) origin
 
-/-- Empty input has no worker clause; it must not become a successful verdict. -/
+/-- Empty input has no worker equation; it must not become a successful verdict. -/
 def answers (values : List Int) (origin : SExpr) : List SExpr :=
   if values.isEmpty then [] else [PlainBnfGeneratedScalarListSyntax.result (PlainBnfGeneratedDiagnosticsAppendExecution.diagnostics (diagnostics values origin))]
 

@@ -10,7 +10,7 @@ and `quote` forms on the existing S-expression carrier.
 
 The selected input/output modes are explicit source contracts, not inferred
 NativeTypes. The finite artifact correspondence below checks this branch
-against independently generated clauses. It does not prove the native mode
+against independently generated equations. It does not prove the native mode
 analysis, arbitrary C emission, byte reading, or PeTTa execution.
 -/
 
@@ -101,16 +101,16 @@ def body? (premises : List SExpr) (result : SExpr) : Option SExpr :=
 
 /-- This is the ordinary-head/functional-mode emission branch, not a claim
 that arbitrary source patterns can occur in PeTTa evaluation-position heads. -/
-def clause? (source : Rewrite) : Option SExpr := do
+def generatedEquation? (source : Rewrite) : Option SExpr := do
   let head ← workerCall? source.head
   let result ← resultTuple? source.head
   let body ← body? source.body result
   return .list [.atom "=", head, body]
 
-def clauses? : List Rewrite → Option (List SExpr)
+def generatedEquations? : List Rewrite → Option (List SExpr)
   | [] => some []
   | row :: rows => do
-      return (← clause? row) :: (← clauses? rows)
+      return (← generatedEquation? row) :: (← generatedEquations? rows)
 
 @[simp] theorem sourceTerm_atom (token : String) :
     sourceTerm? (.atom token) = some (.atom (variableToken token)) := rfl
@@ -137,55 +137,55 @@ theorem lets_append (left right : List SExpr) (continuation : SExpr) :
       simp only [List.cons_append, lets?, ih]
       cases rest : lets? right continuation <;> rfl
 
-theorem clauses_append (left right : List Rewrite) :
-    clauses? (left ++ right) =
-      (do return (← clauses? left) ++ (← clauses? right)) := by
+theorem generatedEquations_append (left right : List Rewrite) :
+    generatedEquations? (left ++ right) =
+      (do return (← generatedEquations? left) ++ (← generatedEquations? right)) := by
   induction left with
-  | nil => simp [clauses?]
+  | nil => simp [generatedEquations?]
   | cons row rows ih =>
-      cases first : clause? row <;> simp [clauses?, first, ih]
-      cases rest : clauses? rows <;> cases last : clauses? right <;> simp
+      cases first : generatedEquation? row <;> simp [generatedEquations?, first, ih]
+      cases rest : generatedEquations? rows <;> cases last : generatedEquations? right <;> simp
 
 /-- Syntax emission preserves repeated source occurrences, even when their
 generated equations are equal. Semideterminism is a separate obligation. -/
-theorem repeated_clause {row : Rewrite} {generated : SExpr}
-    (emitted : clause? row = some generated) :
-    clauses? [row, row] = some [generated, generated] := by
-  simp [clauses?, emitted]
+theorem repeated_generatedEquation {row : Rewrite} {generated : SExpr}
+    (emitted : generatedEquation? row = some generated) :
+    generatedEquations? [row, row] = some [generated, generated] := by
+  simp [generatedEquations?, emitted]
 
-theorem clauses_length {rows : List Rewrite} {generated : List SExpr}
-    (emitted : clauses? rows = some generated) : generated.length = rows.length := by
+theorem generatedEquations_length {rows : List Rewrite} {generated : List SExpr}
+    (emitted : generatedEquations? rows = some generated) : generated.length = rows.length := by
   induction rows generalizing generated with
-  | nil => simpa [clauses?] using emitted.symm
+  | nil => simpa [generatedEquations?] using emitted.symm
   | cons row rows ih =>
-      cases first : clause? row with
-      | none => simp [clauses?, first] at emitted
+      cases first : generatedEquation? row with
+      | none => simp [generatedEquations?, first] at emitted
       | some head =>
-          cases rest : clauses? rows with
-          | none => simp [clauses?, first, rest] at emitted
+          cases rest : generatedEquations? rows with
+          | none => simp [generatedEquations?, first, rest] at emitted
           | some tail =>
               have same : head :: tail = generated := by
-                simpa [clauses?, first, rest] using emitted
+                simpa [generatedEquations?, first, rest] using emitted
               subst generated
               simp [ih rest]
 
-theorem clauses_getElem? {rows : List Rewrite} {generated : List SExpr}
-    (emitted : clauses? rows = some generated) (index : Nat) :
-    generated[index]? = rows[index]?.bind clause? := by
+theorem generatedEquations_getElem? {rows : List Rewrite} {generated : List SExpr}
+    (emitted : generatedEquations? rows = some generated) (index : Nat) :
+    generated[index]? = rows[index]?.bind generatedEquation? := by
   induction rows generalizing generated index with
   | nil =>
-      have same : generated = [] := by simpa [clauses?] using emitted.symm
+      have same : generated = [] := by simpa [generatedEquations?] using emitted.symm
       subst generated
       simp
   | cons row rows ih =>
-      cases first : clause? row with
-      | none => simp [clauses?, first] at emitted
+      cases first : generatedEquation? row with
+      | none => simp [generatedEquations?, first] at emitted
       | some head =>
-          cases rest : clauses? rows with
-          | none => simp [clauses?, first, rest] at emitted
+          cases rest : generatedEquations? rows with
+          | none => simp [generatedEquations?, first, rest] at emitted
           | some tail =>
               have same : head :: tail = generated := by
-                simpa [clauses?, first, rest] using emitted
+                simpa [generatedEquations?, first, rest] using emitted
               subst generated
               cases index with
               | zero => simpa using first.symm
@@ -274,43 +274,43 @@ theorem selected_source_family_complete :
 
 /-- Exact finite correspondence to independently emitted syntax. This is not
 an equality between two names for the same construction. -/
-theorem generated_worker_clauses :
-    clauses? selectedSourceRows = some (generatedWorkers.map Prod.snd) := by
+theorem generated_worker_equations :
+    generatedEquations? selectedSourceRows = some (generatedWorkers.map Prod.snd) := by
   rfl
 
 theorem generated_worker_count : generatedWorkers.length = 23 := by rfl
 
 theorem generated_worker_at (index : Nat) :
     (generatedWorkers.map Prod.snd)[index]? =
-      selectedSourceRows[index]?.bind clause? :=
-  clauses_getElem? generated_worker_clauses index
+      selectedSourceRows[index]?.bind generatedEquation? :=
+  generatedEquations_getElem? generated_worker_equations index
 
 theorem generated_with_occurrence_identity :
-    clauses? (selectedSourceOccurrences.map Prod.snd) =
+    generatedEquations? (selectedSourceOccurrences.map Prod.snd) =
       some (generatedWorkers.map Prod.snd) := by
   rw [selected_occurrence_rows]
-  exact generated_worker_clauses
+  exact generated_worker_equations
 
 /-- Dropping an equation cannot pass the exact finite correspondence check. -/
 theorem missing_worker_detected :
-    clauses? selectedSourceRows ≠ some ((generatedWorkers.drop 1).map Prod.snd) := by
+    generatedEquations? selectedSourceRows ≠ some ((generatedWorkers.drop 1).map Prod.snd) := by
   intro missing
-  have same := Option.some.inj (generated_worker_clauses.symm.trans missing)
+  have same := Option.some.inj (generated_worker_equations.symm.trans missing)
   have lengths := congrArg List.length same
   simp [generated_worker_count] at lengths
 
 /-- Nor can an additional equal equation occurrence be hidden by set equality. -/
 theorem extra_worker_detected (extra : SExpr) :
-    clauses? selectedSourceRows ≠ some (generatedWorkers.map Prod.snd ++ [extra]) := by
+    generatedEquations? selectedSourceRows ≠ some (generatedWorkers.map Prod.snd ++ [extra]) := by
   intro added
-  have same := Option.some.inj (generated_worker_clauses.symm.trans added)
+  have same := Option.some.inj (generated_worker_equations.symm.trans added)
   have lengths := congrArg List.length same
   simp at lengths
 
 /-- A source edit introducing an unsupported premise is rejected by the
 fold, rather than accepted because the old generated artifact still exists. -/
 theorem unknown_premise_refused (row : Rewrite) :
-    clause? {row with body := [.list [.atom "OutsideCollectorFamily"]]} = none := by
+    generatedEquation? {row with body := [.list [.atom "OutsideCollectorFamily"]]} = none := by
   change (do
     let head ← workerCall? row.head
     let result ← resultTuple? row.head
@@ -329,10 +329,10 @@ example : workerCall? (.list [.atom "BNFGraphTrieLookupV1", .atom "missing-argum
 example : premise? (.list [.atom "unknown", .atom "x"]) (.atom "next") = none := by
   decide
 
-#print axioms generated_worker_clauses
+#print axioms generated_worker_equations
 #print axioms selected_source_family_complete
 #print axioms generated_with_occurrence_identity
-#print axioms clauses_getElem?
+#print axioms generatedEquations_getElem?
 #print axioms lets_append
 #print axioms missing_worker_detected
 #print axioms extra_worker_detected

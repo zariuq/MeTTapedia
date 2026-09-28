@@ -7,7 +7,7 @@ import Mettapedia.GSLT.LanguageDef.CompiledAnswerEffectProgram
 This annotated syntax separates source variables and structural constructors
 from evaluated calls. Sequencing and binding expressions expose the output of
 their body. A conditional or a variable-privacy boundary exposes one fresh
-result hole; its internal output is not lifted into the enclosing clause head.
+result hole; its internal output is not lifted into the enclosing equation head.
 
 The compiler below allocates occurrence holes independently of a direct source
 shape interpretation. Reconstruction holds for every final shared variable

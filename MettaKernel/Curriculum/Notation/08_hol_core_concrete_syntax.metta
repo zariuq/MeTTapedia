@@ -295,7 +295,7 @@
    (let $A0 (hol-lowerTy $A)
      (let $t0 (hol-lowerTerm $t)
        (if (== $A0 (Con nat)) (App (Con rfl) $t0) (Err unsupported-eq-type)))))
-(= (hol-lowerProof-in $tbl (HBad $e)) (Err $e))
+(= (hol-lowerProof-in $tbl (HBad $e)) (Bad $e))
 (= (hol-lowerProof-in $tbl (Err $e)) (Err $e))
 (= (hol-lowerProofT-in $tbl $toks)
    (let $p (hol-prsProofT $toks)

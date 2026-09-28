@@ -163,6 +163,7 @@ theorem Certificate.extend
     Certificate target rewrite := by
   refine {
     contextTypes := ?_
+    premiseTypes := ?_
     leftDeclared := ?_
     rightDeclared := ?_
     premisesDeclared := ?_
@@ -175,6 +176,10 @@ theorem Certificate.extend
     rw [extension.typeNames]
     exact List.mem_append_left _
       (certificate.contextTypes entry entryMembership name nameMembership)
+  · intro type typeMembership name nameMembership
+    rw [extension.typeNames]
+    exact List.mem_append_left _
+      (certificate.premiseTypes type typeMembership name nameMembership)
   · intro reference referenceMembership
     rw [extension.signatures]
     exact List.mem_append_left _
@@ -231,6 +236,7 @@ theorem Certificate.embed
     Certificate target rewrite := by
   refine {
     contextTypes := ?_
+    premiseTypes := ?_
     leftDeclared := ?_
     rightDeclared := ?_
     premisesDeclared := ?_
@@ -242,6 +248,9 @@ theorem Certificate.embed
   · intro entry entryMembership name nameMembership
     exact embedding.typeNames name
       (certificate.contextTypes entry entryMembership name nameMembership)
+  · intro type typeMembership name nameMembership
+    exact embedding.typeNames name
+      (certificate.premiseTypes type typeMembership name nameMembership)
   · intro reference referenceMembership
     exact embedding.signatures reference
       (certificate.leftDeclared reference referenceMembership)

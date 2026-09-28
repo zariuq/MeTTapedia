@@ -119,6 +119,8 @@ We package this as a bundled structure containing a category with
 all the required instances, plus a subobject fibration.
 -/
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- A category equipped with cartesian closed structure, finite limits, and
 object-indexed Frame data. All structures are supplied, not derived here.
 Dependent comprehension and dependent products are not consequences of this

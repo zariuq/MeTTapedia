@@ -458,7 +458,7 @@ theorem rhoParCong_no_substitutionPresentation :
 
 /-- The structural matcher for `ParCong` selects one parallel component and
 binds the remainder; no collection-wide semantic switch participates. -/
-private theorem rhoParCong_match_shape
+theorem rhoParCong_match_shape
     {source : Pattern} {bindings : Bindings}
     (matched : bindings ∈ matchPatternForRuleUsing rhoReflectionProfile rhoParCongRewrite source) :
     ∃ (elements : List Pattern) (termRest : Option String)

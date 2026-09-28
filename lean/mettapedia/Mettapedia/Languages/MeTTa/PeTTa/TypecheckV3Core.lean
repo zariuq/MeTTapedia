@@ -1317,7 +1317,7 @@ that distinction structural, preserves list/Boolean selector facts through
 control flow, and keeps empty-result cardinality separate from result type.
 -/
 
-/-- Positive boundary facts used by total clause selection. -/
+/-- Positive boundary facts used by total equation selection. -/
 structure BoundaryFacts where
   properList : Bool := false
   boolean : Bool := false
@@ -1411,7 +1411,7 @@ def aliasEvidence (evidence : RuntimeEvidence) : RuntimeEvidence := evidence
 /-! ### Pattern admission
 
 Patterns consume types contravariantly: they describe the subset of a
-scrutinee that can reach a clause and introduce local assumptions for the
+scrutinee that can reach an equation and introduce local assumptions for the
 variables they bind.  Provider lookup has already resolved a constructor to
 its result and field types before it enters this calculus. -/
 
@@ -1515,14 +1515,14 @@ example :
     PatternEnv.lookup, mayOverlap?]
 
 /-- Negative match witness: a literal disjoint from its domain makes the
-clause unreachable rather than making the whole program ill-typed. -/
+equation unreachable rather than making the whole program ill-typed. -/
 example :
     ∃ conflict,
       bindPattern (.literal (.prim .str)) (.prim .num) [] =
         .empty conflict := by
   simp [bindPattern, admitPatternOverlap, mayOverlap?, consistent?]
 
-/-- Negative match witness: incompatible repeated occurrences make the clause
+/-- Negative match witness: incompatible repeated occurrences make the equation
 unreachable; exhaustiveness is a separate relation-level judgment. -/
 example :
     ∃ conflict,
@@ -1533,10 +1533,10 @@ example :
 
 /-! ### Relation-level coverage
 
-Coverage is decided once a whole mutually visible clause group is available.
+Coverage is decided once a whole mutually visible equation group is available.
 It remains success-typing asymmetric: an open pattern column proves nothing,
 while a fully keyed column may refute totality only by producing a concrete
-inhabiting key that no clause covers. -/
+inhabiting key that no equation covers. -/
 
 /-- The top-level value shape observed by one pattern column.  The numeric tag
 is provider-resolved constructor identity; arity distinguishes constructors
@@ -1555,7 +1555,7 @@ def collectPatternKeys : List (Option PatternKey) → Option (List PatternKey)
   | some key :: rest => (collectPatternKeys rest).map (key :: ·)
 
 /-- Find a definitely inhabiting candidate shape absent from all observed
-clause keys.  The provider supplies candidates: a closed finite domain may
+equation keys.  The provider supplies candidates: a closed finite domain may
 supply all constructors, while an infinite primitive supplies one fresh
 literal witness. -/
 def findMissingKey (candidates observed : List PatternKey) :
@@ -1575,7 +1575,7 @@ def findMissingKey (candidates observed : List PatternKey) :
         some ⟨key, by simp, h⟩
 
 /-- A negative totality decision carries both evidence boundaries: every
-clause in the selected column had a key, and the provider supplied a concrete
+equation in the selected column had a key, and the provider supplied a concrete
 inhabiting key not among them. -/
 structure CoverageConflict
     (candidates : List PatternKey) (column : List (Option PatternKey)) where

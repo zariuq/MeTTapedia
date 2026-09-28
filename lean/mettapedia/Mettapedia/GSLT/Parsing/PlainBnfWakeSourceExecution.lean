@@ -313,7 +313,7 @@ theorem enqueue_unique (coordinate : HeapItem → Fin size) (origin : Option Ran
   exact checked.2
 
 /-- Wake's mark check supplies the freshness premise that the scheduling
-clauses alone cannot establish. The coordinate/name hypotheses are explicit;
+rules alone cannot establish. The coordinate/name hypotheses are explicit;
 they are not inferred from arbitrary caller-supplied heaps. -/
 theorem wake_invariants (ready : Expression → Bool) (coordinate : HeapItem → Fin size)
     (nameAt : Fin size → List Nat) (origin : Option Rank) (input : List Item) (queues : Queues)
@@ -497,7 +497,7 @@ theorem stale_mark_can_suppress (ready : Expression → Bool) (item : Item) (pay
   subst other
   simp [PlainBnfGraphNameTrie.lookup_insertFirst]
 
-section AuthoredClauses
+section AuthoredRules
 
 open Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT (Rewrite decodeList)
 open Mettapedia.OSLF.MeTTaIL.Syntax (Premise RewriteRule)
@@ -557,7 +557,7 @@ theorem translated_calls_are_not_providers :
       | .congruence _ _ => true
       | _ => false)) = true := rfl
 
-end AuthoredClauses
+end AuthoredRules
 
 #print axioms enqueue_executes
 #print axioms selected_names_nodup

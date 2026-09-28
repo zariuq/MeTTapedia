@@ -81,10 +81,9 @@ theorem generic_non_infer_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded,
+    · simp [decoded,
         DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
-        matchArgs]
+        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
   · apply generic_lifted_record_rule_empty_of_decode_mismatch host
       DerivationCheckMachineLanguageDef.inputRelevanceFaultTransition record
       rest nodes nextId root serviceState
@@ -107,10 +106,9 @@ theorem generic_non_infer_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded,
+    · simp [decoded,
         DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
-        matchArgs]
+        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
   · apply generic_lifted_record_rule_empty_of_decode_mismatch host
       DerivationCheckMachineLanguageDef.inputDecisionFaultTransition record
       rest nodes nextId root serviceState
@@ -133,10 +131,9 @@ theorem generic_non_infer_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded,
+    · simp [decoded,
         DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
-        matchArgs]
+        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
   · apply generic_lifted_record_rule_empty_of_decode_mismatch host
       DerivationCheckMachineLanguageDef.inputAcceptTransition record rest
       nodes nextId root serviceState
@@ -159,10 +156,9 @@ theorem generic_non_infer_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded,
+    · simp [decoded,
         DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
-        matchArgs]
+        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
   · apply generic_lifted_record_rule_empty_of_decode_mismatch host
       DerivationCheckMachineLanguageDef.dropFaultTransition record rest nodes
       nextId root serviceState
@@ -184,10 +180,9 @@ theorem generic_non_infer_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded,
+    · simp [decoded,
         DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
-        matchArgs]
+        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
   · apply generic_lifted_record_rule_empty_of_decode_mismatch host
       DerivationCheckMachineLanguageDef.dropAcceptTransition record rest nodes
       nextId root serviceState
@@ -209,10 +204,9 @@ theorem generic_non_infer_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded,
+    · simp [decoded,
         DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
-        matchArgs]
+        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
 
 #print axioms generic_non_infer_lifted_rule_empty
 

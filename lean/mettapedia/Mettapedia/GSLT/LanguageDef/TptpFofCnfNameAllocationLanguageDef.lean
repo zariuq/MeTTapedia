@@ -349,6 +349,7 @@ local macro "certify_name_allocation_row" : tactic =>
   `(tactic|
     (simp [RewriteValidationCertificate.check,
       RewriteValidationCertificate.contextTypesCheck,
+      RewriteValidationCertificate.premiseTypesCheck,
       RewriteValidationCertificate.patternDeclaredCheck,
       RewriteValidationCertificate.premisesDeclaredCheck,
       RewriteValidationCertificate.allPatternsScopedCheck,
@@ -371,7 +372,8 @@ local macro "certify_name_allocation_row" : tactic =>
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, LanguageDef.premiseFvarNames,
       LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames, TypeExpr.baseNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
       Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
       plainName_not_constructor, constructorLabelNamespaced] <;>
       decide +kernel))
@@ -389,6 +391,8 @@ theorem rewrite_names_nodup : (language.rewrites.map (·.name)).Nodup := by
 private theorem check_of_component_checks (rewrite : RewriteRule)
     (contextTypes :
       RewriteValidationCertificate.contextTypesCheck language rewrite = true)
+    (premiseTypes :
+      RewriteValidationCertificate.premiseTypesCheck language rewrite = true)
     (leftDeclared :
       RewriteValidationCertificate.patternDeclaredCheck language
         rewrite.left = true)
@@ -412,7 +416,7 @@ private theorem check_of_component_checks (rewrite : RewriteRule)
     (rightBound :
       RewriteValidationCertificate.rightBoundCheck rewrite = true) :
     RewriteValidationCertificate.check language rewrite = true := by
-  simp [RewriteValidationCertificate.check, contextTypes, leftDeclared,
+  simp [RewriteValidationCertificate.check, contextTypes, premiseTypes, leftDeclared,
     rightDeclared, premisesDeclared, allPatternsScoped,
     fvarsAvoidConstructors, bindersAvoidConstructors,
     contextAvoidsConstructors, rightBound]
@@ -453,7 +457,7 @@ private theorem start_rightBound :
 
 private theorem start_checked :
     RewriteValidationCertificate.check language startRule = true := by
-  exact check_of_component_checks startRule start_contextTypes
+  exact check_of_component_checks startRule start_contextTypes (by certify_name_allocation_row)
     start_leftDeclared start_rightDeclared start_premisesDeclared
     start_allPatternsScoped start_fvarsAvoidConstructors
     start_bindersAvoidConstructors start_contextAvoidsConstructors
@@ -499,7 +503,7 @@ private theorem cons_rightBound :
 
 private theorem cons_checked :
     RewriteValidationCertificate.check language consRule = true := by
-  exact check_of_component_checks consRule cons_contextTypes cons_leftDeclared
+  exact check_of_component_checks consRule cons_contextTypes (by certify_name_allocation_row) cons_leftDeclared
     cons_rightDeclared cons_premisesDeclared cons_allPatternsScoped
     cons_fvarsAvoidConstructors cons_bindersAvoidConstructors
     cons_contextAvoidsConstructors cons_rightBound

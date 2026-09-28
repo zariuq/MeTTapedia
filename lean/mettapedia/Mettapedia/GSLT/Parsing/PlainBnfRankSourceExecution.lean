@@ -22,7 +22,8 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT (Rewrite decodeList)
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfSourceRank (Rank value successor compareRank)
 
 def mode? : String → Option (Nat × Nat)
@@ -168,6 +169,7 @@ theorem tie_answers (base : BasePremiseEvaluator) (fuel : Nat) (comparison tie :
       [result (order (if comparison = .eq then tie else comparison))] := by
   cases comparison <;> cases tie <;>
     simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       tieCall, call, result, rank, order, pattern, patternList,
       SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -175,6 +177,7 @@ theorem tie_answers (base : BasePremiseEvaluator) (fuel : Nat) (comparison tie :
 private theorem next_zero (base : BasePremiseEvaluator) (fuel : Nat) :
     rewriteAt base language (fuel + 1) (nextCall .zero) = [result (rank (.one .zero))] := by
   simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     nextCall, call, result, rank, order, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -182,6 +185,7 @@ private theorem next_zero (base : BasePremiseEvaluator) (fuel : Nat) :
 private theorem next_one (base : BasePremiseEvaluator) (fuel : Nat) (rest : Rank) :
     rewriteAt base language (fuel + 1) (nextCall (.one rest)) = [result (rank (.two rest))] := by
   simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     nextCall, call, result, rank, order, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -193,6 +197,7 @@ private theorem next_two (base : BasePremiseEvaluator) (fuel : Nat) (rest : Rank
       answers.map (fun answer => result (.list [.atom "BNFDiscoveryRankOneV1", answer])) := by
   rw [rewriteAt]
   simp [rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     nextCall, call, rank, order, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing,
@@ -233,6 +238,7 @@ private theorem compare_zero (base : BasePremiseEvaluator) (fuel : Nat) (right :
       [result (order (compareRank .zero right))] := by
   cases right <;>
     simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       compareCall, call, result, rank, order, compareRank, pattern, patternList,
       SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -242,6 +248,7 @@ private theorem compare_right_zero (base : BasePremiseEvaluator) (fuel : Nat) (l
       [result (order (compareRank left .zero))] := by
   cases left <;>
     simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       compareCall, call, result, rank, order, compareRank, pattern, patternList,
       SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -256,6 +263,7 @@ private theorem compare_same (base : BasePremiseEvaluator) (fuel : Nat)
   rw [rewriteAt]
   cases one <;>
     simp [rules_exact, observedRules, observed, applyRuleUsing, digit,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       compareCall, call, rank, order, pattern, patternList,
       SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing,
@@ -292,6 +300,7 @@ private theorem compare_mixed_some (base : BasePremiseEvaluator) (fuel : Nat)
   rw [rewriteAt]
   cases one <;>
     simp [rules_exact, observedRules, observed, applyRuleUsing, digit,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       compareCall, call, rank, order, pattern, patternList,
       SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing,
@@ -310,7 +319,7 @@ private theorem compare_mixed_some (base : BasePremiseEvaluator) (fuel : Nat)
     simp [result, encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM]
 
 /-- Depth of common positive prefixes. Every compared tail is smaller;
-the tie clause shares the recursive layer rather than consuming a new one. -/
+the tie rule shares the recursive layer rather than consuming a new one. -/
 def compareHeight : Rank → Rank → Nat
   | .zero, _ | _, .zero => 0
   | .one left, .one right | .one left, .two right
@@ -465,14 +474,15 @@ theorem missing_output_mode_refused :
 theorem unknown_call_refused :
     splitCall? (.list [.atom "NotARankOperation", rank .zero, rank .zero]) = none := rfl
 
-/-- Duplicating an actual clause adds an answer occurrence. Source occurrence
+/-- Duplicating an actual rule adds an answer occurrence. Source occurrence
 preservation is therefore stronger than equality of distinct answer values. -/
-theorem duplicated_source_clause_retains_two_answers (base : BasePremiseEvaluator) (fuel : Nat) :
+theorem duplicated_source_rule_retains_two_answers (base : BasePremiseEvaluator) (fuel : Nat) :
     let duplicated := { language with rewrites := language.rewrites.take 1 ++ language.rewrites }
     rewriteAt base duplicated (fuel + 1) (nextCall .zero) =
       [result (rank (.one .zero)), result (rank (.one .zero))] := by
   dsimp
   simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     nextCall, call, result, rank, order, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]

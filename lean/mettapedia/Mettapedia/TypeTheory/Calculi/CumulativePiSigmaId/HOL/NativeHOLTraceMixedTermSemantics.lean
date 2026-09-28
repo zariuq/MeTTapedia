@@ -7,9 +7,10 @@ import Mettapedia.Logic.HOL.Embedding.ZFSetTraceProofDecoding
 A native proof term may apply a proof to an object-level predicate, so neither
 an object-only interpretation nor a lambda-only fragment is closed under the
 actual compiler output.  This judgment combines the independently established
-HOL object denotation with generic dependent trace products.  The only leaf
+HOL object denotation with generic dependent trace products and set-coded
+dependent sums. The only leaf
 beyond variables is a fully denoted HOL object term; proof abstractions and
-applications remain ordinary native syntax.
+applications, pairs and projections remain ordinary native syntax.
 
 The judgment is natural under displayed native renaming.  Proof fibres are
 the canonical separated truth codes, with implication and universal decoding
@@ -62,6 +63,31 @@ inductive Denotes (a : ZFSet.{u}) : {n : Nat} → (context : Context.{u} n) →
       Denotes a context (.app function argument)
         (fun environment => codomain ⟨environment, argumentValue environment⟩)
         (ZFSetTraceContextual.app functionValue argumentValue)
+  | pair {n : Nat} {context : Context.{u} n}
+      {domain : SetFamily context.Environment}
+      {codomain : SetFamily (Extension domain)} {first second : Tower.Tm n}
+      {firstValue : Section domain}
+      {secondValue : Section (fun environment => codomain ⟨environment, firstValue environment⟩)} :
+      Denotes a context first domain firstValue →
+      Denotes a context second
+        (fun environment => codomain ⟨environment, firstValue environment⟩) secondValue →
+      Denotes a context (.pair first second)
+        (ZFSetContextualInterpretation.sigmaFamily domain codomain)
+        (ZFSetContextualInterpretation.pair firstValue secondValue)
+  | first {n : Nat} {context : Context.{u} n}
+      {domain : SetFamily context.Environment}
+      {codomain : SetFamily (Extension domain)} {term : Tower.Tm n}
+      {value : Section (ZFSetContextualInterpretation.sigmaFamily domain codomain)} :
+      Denotes a context term (ZFSetContextualInterpretation.sigmaFamily domain codomain) value →
+      Denotes a context (.fst term) domain (ZFSetContextualInterpretation.fst value)
+  | second {n : Nat} {context : Context.{u} n}
+      {domain : SetFamily context.Environment}
+      {codomain : SetFamily (Extension domain)} {term : Tower.Tm n}
+      {value : Section (ZFSetContextualInterpretation.sigmaFamily domain codomain)} :
+      Denotes a context term (ZFSetContextualInterpretation.sigmaFamily domain codomain) value →
+      Denotes a context (.snd term)
+        (fun environment => codomain ⟨environment, ZFSetContextualInterpretation.fst value environment⟩)
+        (ZFSetContextualInterpretation.snd value)
 
 theorem Denotes.cast_family {a : ZFSet.{u}} {n : Nat}
     {context : Context.{u} n} {term : Tower.Tm n}
@@ -78,6 +104,17 @@ theorem Denotes.change_value {a : ZFSet.{u}} {n : Nat}
     Denotes a context term family second := by
   cases equal
   exact meaning
+
+/-- Transport both the family and its section, retaining the section itself. -/
+theorem Denotes.change_family_value {a : ZFSet.{u}} {n : Nat}
+    {context : Context.{u} n} {term : Tower.Tm n}
+    {first second : SetFamily context.Environment}
+    {firstValue : Section first} {secondValue : Section second}
+    (meaning : Denotes a context term first firstValue)
+    (familyEqual : first = second) (valueEqual : HEq firstValue secondValue) :
+    Denotes a context term second secondValue := by
+  cases familyEqual
+  exact meaning.change_value (eq_of_heq valueEqual)
 
 /-- Heterogeneous denotation commutes with displayed de Bruijn renaming. -/
 theorem Denotes.rename {a : ZFSet.{u}} {n : Nat} {source : Context.{u} n}
@@ -108,6 +145,19 @@ theorem Denotes.rename {a : ZFSet.{u}} {n : Nat} {source : Context.{u} n}
             (morphism.reindexSection functionValue) :=
         functionMoved.cast_family (by rfl)
       exact Denotes.application functionForApplication argumentMoved
+  | @pair n context domain codomain first second firstValue secondValue
+      firstMeaning secondMeaning firstInduction secondInduction =>
+      exact Denotes.pair (domain := morphism.reindexFamily domain)
+        (codomain := codomain ∘ (morphism.lift domain).environment)
+        (firstInduction displayed) (secondInduction displayed)
+  | @first n context domain codomain term value pairMeaning inductionHypothesis =>
+      exact Denotes.first (domain := morphism.reindexFamily domain)
+        (codomain := codomain ∘ (morphism.lift domain).environment)
+        (inductionHypothesis displayed)
+  | @second n context domain codomain term value pairMeaning inductionHypothesis =>
+      exact Denotes.second (domain := morphism.reindexFamily domain)
+        (codomain := codomain ∘ (morphism.lift domain).environment)
+        (inductionHypothesis displayed)
 
 theorem Denotes.weaken {a : ZFSet.{u}} {n : Nat} {context : Context.{u} n}
     {term : Tower.Tm n} {family : SetFamily context.Environment}
@@ -191,6 +241,7 @@ end Controls
 
 #print axioms Denotes.cast_family
 #print axioms Denotes.change_value
+#print axioms Denotes.change_family_value
 #print axioms Denotes.rename
 #print axioms Denotes.weaken
 #print axioms proofFamily_truth

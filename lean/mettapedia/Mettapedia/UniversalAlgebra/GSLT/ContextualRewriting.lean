@@ -16,6 +16,7 @@ set_option autoImplicit false
 
 namespace Mettapedia.UniversalAlgebra
 
+open Mettapedia.Logic (Derives)
 
 universe u
 

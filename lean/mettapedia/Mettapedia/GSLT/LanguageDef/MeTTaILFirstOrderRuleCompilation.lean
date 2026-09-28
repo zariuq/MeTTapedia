@@ -363,7 +363,7 @@ def compilePremise? : Premise -> Option PremisePlan
   | .relationQuery relation arguments => do
       let names <- compileArgumentNames? arguments
       pure { relation, arguments := names }
-  | .freshness _ | .congruence _ _ | .forAll _ _ _ => none
+  | .freshness _ | .congruence _ _ | .scopedStep _ | .forAll _ _ _ => none
 
 /-- Compile a complete authored premise row without dropping or reordering an
 occurrence. -/
@@ -411,6 +411,7 @@ theorem erase_of_compilePremise?
   cases source with
   | freshness condition => simp [compilePremise?] at accepted
   | congruence left right => simp [compilePremise?] at accepted
+  | scopedStep step => simp [compilePremise?] at accepted
   | forAll collection parameter body => simp [compilePremise?] at accepted
   | relationQuery relation arguments =>
       simp only [compilePremise?, Option.bind_eq_bind] at accepted
@@ -505,8 +506,9 @@ structure RulePlan where
   right : PatternPlan
 deriving Repr
 
-/-- Compile one complete rewrite row. -/
+/-- Compile one rewrite row of the unannotated first-order fragment. -/
 def compileRule? (source : RewriteRule) : Option RulePlan := do
+  guard source.bindings.isNone
   let left <- compilePattern? source.left
   let premises <- compilePremises? source.premises
   let right <- compilePattern? source.right
@@ -516,6 +518,13 @@ def compileRule? (source : RewriteRule) : Option RulePlan := do
       premises
       left
       right }
+
+/-- The first-order compiler declines scoped binding declarations, which
+require the contextual rule interpreter rather than this plan format. -/
+theorem compileRule?_annotated_none (source : RewriteRule)
+    (spec : RuleBindingSpec) (h : source.bindings = some spec) :
+    compileRule? source = none := by
+  simp [compileRule?, h]
 
 /-- Reconstruct the complete authored rewrite row represented by a plan. -/
 def RulePlan.erase (plan : RulePlan) : RewriteRule :=
@@ -530,7 +539,12 @@ theorem erase_of_compileRule?
     (source : RewriteRule) (compiled : RulePlan)
     (accepted : compileRule? source = some compiled) :
     compiled.erase = source := by
+  have hbindings : source.bindings = none := by
+    cases h : source.bindings with
+    | none => rfl
+    | some spec => simp [compileRule?, h] at accepted
   unfold compileRule? at accepted
+  simp only [hbindings] at accepted
   cases leftCompiled : compilePattern? source.left with
   | none => simp [leftCompiled] at accepted
   | some left =>
@@ -549,6 +563,7 @@ theorem erase_of_compileRule?
                 erasePremisePlans_of_compilePremises? _ premises
                   premisesCompiled,
                 erase_of_compilePattern? _ right rightCompiled]
+              exact hbindings.symm
 
 mutual
   /-- The admitted fragment has no binder former, so an erased plan is

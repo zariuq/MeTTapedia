@@ -3,7 +3,7 @@ import Mettapedia.GSLT.Parsing.HornIntegerProvider
 /-!
 # Selected mainline ground-expression semantics for integer providers
 
-The operational clauses below follow the inspected SWI-PeTTa source at
+The operational rules below follow the inspected SWI-PeTTa source at
 `ae66fa8e41dcd5539d614706bd4e5cfb34f9608d`: integer/atomic leaves and
 left-to-right arguments in `src/translator.pl`, lazy three-argument `if`
 (173-185), quotation (320), and `+`, `<`, `>=`, `empty` in `src/metta.pl`

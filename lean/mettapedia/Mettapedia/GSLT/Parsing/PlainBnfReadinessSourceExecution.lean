@@ -4,8 +4,8 @@ import Mettapedia.GSLT.Parsing.PlainBnfNullableSourceExecution
 /-!
 # Authored discovery readiness
 
-The two discovery dispatch clauses execute the actual productive and nullable
-families. Their shared name-index and lexical-lookup clauses occur once. The
+The two discovery dispatch rules execute the actual productive and nullable
+families. Their shared name-index and lexical-lookup rules occur once. The
 combined language is an ordered composition of translated source occurrences,
 not a provider returning a precomputed readiness answer. Exact bounded answer
 lists are the observation; physical generated/native agreement is separate.
@@ -20,7 +20,8 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT (Rewrite decodeList)
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfStructuredDenotation (Expression LexicalDeclaration)
 open PlainBnfTrieSourceExecution (call result)
 open PlainBnfKnownNamesSourceExecution (known Valid)
@@ -123,6 +124,9 @@ private theorem premise_mono (small large : List String) (included : small ⊆ l
     premiseClosed large premise = true := by
   cases premise with
   | congruence source target => exact headedBy_mono small large included source closed
+  | scopedStep step =>
+    simp only [premiseClosed, Bool.or_eq_true] at closed ⊢
+    exact closed.imp id (headedBy_mono small large included step.source)
   | _ => rfl
 
 theorem family_closed : language.rewrites.all
@@ -237,6 +241,7 @@ theorem productive_answers (fuel : Nat) (input : Expression) (index : NameIndex)
     have extension := productive_extension fuel (PlainBnfProductiveSourceExecution.expressionCall input index history lexicals) (by rfl)
     rw [← extension] at recursive
     simp [rules_exact, observedRules, applyRuleUsing, productiveCall, readyCall, call,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
     simp only [PlainBnfProductiveSourceExecution.expressionCall, call, encode, encodeList] at recursive
@@ -257,6 +262,7 @@ theorem nullable_answers (fuel : Nat) (input : Expression) (index : NameIndex)
     have extension := nullable_extension fuel (PlainBnfNullableSourceExecution.expressionCall input index history lexicals) (by rfl)
     rw [← extension] at recursive
     simp [rules_exact, observedRules, applyRuleUsing, nullableCall, readyCall, call,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
     simp only [PlainBnfNullableSourceExecution.expressionCall, call, encode, encodeList] at recursive

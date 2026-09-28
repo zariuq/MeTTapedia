@@ -1,5 +1,6 @@
 import Mettapedia.Logic.HOL.ImpredicativeConnectives
 import Mettapedia.Logic.HOL.ProofSyntaxStructural
+import Mettapedia.Logic.HOL.ProofSyntaxModulo
 
 /-!
 # The retained implication, quantification and equality proof fragment
@@ -80,5 +81,18 @@ def IsCoreProof {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {φ : Formula Con
     IsCoreProof (proof.rename ρ) ↔ IsCoreProof proof := by
   induction proof generalizing Ξ with
   | _ => simp_all only [ProofSyntax.rename, isCoreProof_castIndices, IsCoreProof, isCore_rename]
+
+/-- The same support for proofs modulo definitional conversion: the premises
+introduced and the terms instantiated are core. A retyping step inspects no
+term. -/
+def IsCoreProofModulo {equations : List (DefiningEquation Const)} {Γ : Ctx Base}
+    {Δ : List (Formula Const Γ)} {φ : Formula Const Γ} :
+    ProofSyntaxModulo equations Δ φ → Prop
+  | .hyp _ => True
+  | @ProofSyntaxModulo.impI _ _ _ _ _ premise _ body => IsCore premise ∧ IsCoreProofModulo body
+  | .impE function argument => IsCoreProofModulo function ∧ IsCoreProofModulo argument
+  | .allI body => IsCoreProofModulo body
+  | .allE term function => IsCore term ∧ IsCoreProofModulo function
+  | .convert _ proof => IsCoreProofModulo proof
 
 end Mettapedia.Logic.HOL.ImpredicativeConnectives

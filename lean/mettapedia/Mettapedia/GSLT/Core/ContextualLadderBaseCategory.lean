@@ -29,6 +29,8 @@ universe u v w w'
 
 /-! ## A category presented by contexts and substitutions -/
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- The context/substitution part common to `Ucwf`, `Scwf`, and `Cwf`. -/
 structure ContextualBase : Type (max (u + 1) (v + 1)) where
   Ctx : Type u

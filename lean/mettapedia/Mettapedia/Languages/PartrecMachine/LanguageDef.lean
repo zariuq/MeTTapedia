@@ -23,13 +23,13 @@ Sorts and constructors mirror Mathlib's types one for one:
 * `Cfg` — `Halt` and `Ret` as in Mathlib, and `Normal c k v`, the pending
   `stepNormal c k v` that Mathlib evaluates eagerly and this language reduces.
 
-Every rewrite is premise-free and first order, one per clause of `stepNormal` and
+Every rewrite is premise-free and first order, one per case of `stepNormal` and
 `stepRet`.  Where Mathlib inspects `List.headI` or `List.tail`, the empty-list and
 cons cases are separate rules, since `headI [] = 0`.
 
 What this module establishes is structural: the definition validates, needs no
 relation modes, and every rule is sorted at `Cfg` in its declared variable
-context.  The reference controls pin one clause's behaviour against the engine.
+context.  The reference controls pin one case's behaviour against the engine.
 That reduction agrees with Mathlib's machine on every configuration is the
 subject of the adequacy module, not of this one.
 -/
@@ -108,7 +108,7 @@ def terms : List GrammarRule := [
       syntaxPattern := [.nonTerminal "c", .nonTerminal "k", .nonTerminal "v"] }
 ]
 
-/-- Rewrites: one per clause of `stepNormal` and `stepRet`, with the empty-list and
+/-- Rewrites: one per case of `stepNormal` and `stepRet`, with the empty-list and
 cons cases of `List.headI` and `List.tail` as separate rules. -/
 def rewrites : List RewriteRule := [
     { name := "ZeroCode"
@@ -277,8 +277,8 @@ theorem partrecMachine_rules_wellSorted :
 /-! ## Reference controls
 
 `stepNormal succ halt [] = ret halt [1]` in Mathlib, because `headI [] = 0`.  The
-authored language performs that step; a variant without the empty-list clause
-for `succ` is stuck on the same configuration, so the clause is load-bearing. -/
+authored language performs that step; a variant without the empty-list case
+for `succ` is stuck on the same configuration, so the case is load-bearing. -/
 
 /-- The engine with no external relations. -/
 abbrev base : BasePremiseEvaluator := engineBasePremises RelationEnv.empty
@@ -296,7 +296,7 @@ def succOnEmptyTarget : Pattern :=
 theorem succ_on_empty_steps : Step base partrecMachine succOnEmptySource succOnEmptyTarget :=
   exists_mem_rewriteAt_iff_step.mp ⟨1, by decide +kernel⟩
 
-/-- The machine with the empty-list clause for `succ` removed. -/
+/-- The machine with the empty-list case for `succ` removed. -/
 def withoutSuccOnEmpty : LanguageDef :=
   partrecMachine.restrictRewrites fun rule => rule.name != "SuccOnEmpty"
 

@@ -413,6 +413,7 @@ local macro "certify_skolem_term_row" : tactic =>
   `(tactic|
     simp [RewriteValidationCertificate.check,
       RewriteValidationCertificate.contextTypesCheck,
+      RewriteValidationCertificate.premiseTypesCheck,
       RewriteValidationCertificate.patternDeclaredCheck,
       RewriteValidationCertificate.premisesDeclaredCheck,
       RewriteValidationCertificate.allPatternsScopedCheck,
@@ -440,7 +441,8 @@ local macro "certify_skolem_term_row" : tactic =>
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, LanguageDef.premiseFvarNames,
       LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames, TypeExpr.baseNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
       Pattern.zipHead, Pattern.mapHead, Pattern.evalHead])
 
 private theorem constructorLabels_nodup :
@@ -545,9 +547,9 @@ private theorem rewrite14_checked :
           translateTermsConsRule = true := by
     certify_skolem_term_row
   simp only [RewriteValidationCertificate.check, Bool.and_eq_true]
-  exact ⟨contextTypes, leftDeclared, rightDeclared, premisesDeclared,
-    allPatternsScoped, fvarsAvoidConstructors, bindersAvoidConstructors,
-    contextAvoidsConstructors, rightBound⟩
+  exact ⟨contextTypes, (by certify_skolem_term_row), leftDeclared, rightDeclared,
+    premisesDeclared, allPatternsScoped, fvarsAvoidConstructors,
+    bindersAvoidConstructors, contextAvoidsConstructors, rightBound⟩
 
 private theorem every_rewrite_checked (rewrite : RewriteRule)
     (membership : rewrite ∈ rewrites) :

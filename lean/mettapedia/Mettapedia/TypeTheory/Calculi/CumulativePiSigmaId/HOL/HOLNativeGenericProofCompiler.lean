@@ -263,6 +263,54 @@ def Operations.logicalOnly (signature : LogicalSignature Base Const)
     (Operations.logicalOnly signature proofName fresh).raw =
       (RawOperations.logicalOnly : RawOperations Base) := rfl
 
+/-- The logical fragment at any rules package receiving the proof family, such
+as a program that adds assumed facts and further declarations.  Every equality
+operation is rejected, so each law holds whatever the target. -/
+def Operations.logicalOnlyAt (signature : LogicalSignature Base Const)
+    (proofName : DeclName)
+    (fresh : signature.rules.constantType proofName = none)
+    (target : Rules Tower.Head)
+    (proofMorphism :
+      (FormationSensitiveHOLGenericProofFamily.rules signature proofName).Morphism
+        target (fun head => head)) :
+    Operations signature proofName where
+  fresh := fresh
+  target := target
+  proofMorphism := proofMorphism
+  raw := RawOperations.logicalOnly
+  reflexivity_typed := by
+    intro _ _ _ _ _ out success
+    change none = some out at success
+    contradiction
+  symmetry_typed := by
+    intro _ _ _ _ _ _ out success
+    change none = some out at success
+    contradiction
+  transitivity_typed := by
+    intro _ _ _ _ _ _ _ _ out success
+    change none = some out at success
+    contradiction
+  propositionExtensionality_typed := by
+    intro _ _ _ _ _ _ out success
+    change none = some out at success
+    contradiction
+  propositionForward_typed := by
+    intro _ _ _ _ _ out success
+    change none = some out at success
+    contradiction
+  functionCongruence_typed := by
+    intro _ _ _ _ _ _ _ _ out success
+    change none = some out at success
+    contradiction
+  argumentCongruence_typed := by
+    intro _ _ _ _ _ _ _ _ out success
+    change none = some out at success
+    contradiction
+  functionExtensionality_typed := by
+    intro _ _ _ _ _ _ _ out success
+    change none = some out at success
+    contradiction
+
 /-- A lawful algebra receives the original HOL presentation by the composite
 of the source inclusion and its proof-family morphism. -/
 theorem Operations.sourceMorphism {signature : LogicalSignature Base Const}

@@ -5,6 +5,7 @@ import Mettapedia.Logic.ProofSearch
 import Mettapedia.Logic.Function.EventualStability
 import Mettapedia.Machines.DeterministicTail
 import Mettapedia.Machines.FinitePullProducer
+import Mettapedia.Machines.RememberedSetTrace
 import Mettapedia.Data.List.OrderedOccurrenceCursor
 import Mettapedia.Logic.Unification.BinaryPatternViews
 import Mettapedia.GSLT.Core.OrderedQueryCompilation
@@ -878,5 +879,7 @@ import Mettapedia.GSLT.Life.ReplicationFixedPoint
 import Mettapedia.GSLT.LanguageDef.HOLKernelProfiles
 import Mettapedia.Algebra.FootprintQuantale
 import Mettapedia.OSLF.Framework.GrammarDerives
+import Mettapedia.GSLT.Parsing.CanonicalMorphism
+import Mettapedia.GSLT.Parsing.CanonicalGrammarLowering
 import Mettapedia.Languages.Metamath.ExprDerive
 import Mettapedia.Languages.Metamath.Flatten

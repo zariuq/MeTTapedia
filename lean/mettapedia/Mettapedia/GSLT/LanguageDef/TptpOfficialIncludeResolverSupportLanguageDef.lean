@@ -491,6 +491,10 @@ private def contextSubsetCheck (rewrite : RewriteRule) : Bool :=
   rewrite.typeContext.all fun entry =>
     entry.2.baseNames.all fun name => decide (name ∈ requiredTypes)
 
+private def premiseTypesSubsetCheck (rewrite : RewriteRule) : Bool :=
+  (rewrite.premises.flatMap LanguageDef.premiseStepTypeExprs).all fun type =>
+    type.baseNames.all fun name => decide (name ∈ requiredTypes)
+
 private def patternSubsetCheck (pattern : Pattern) : Bool :=
   pattern.constructorRefs.all fun signature =>
     decide (signature ∈ requiredSignatures)
@@ -521,6 +525,7 @@ private def contextNamesPlainCheck (rewrite : RewriteRule) : Bool :=
 
 private def subsetCheck (rewrite : RewriteRule) : Bool :=
   contextSubsetCheck rewrite &&
+    (premiseTypesSubsetCheck rewrite &&
     (patternSubsetCheck rewrite.left &&
       (patternSubsetCheck rewrite.right &&
         (premisesSubsetCheck rewrite &&
@@ -528,17 +533,18 @@ private def subsetCheck (rewrite : RewriteRule) : Bool :=
             (fvarsPlainCheck rewrite &&
               (bindersPlainCheck rewrite &&
                 (contextNamesPlainCheck rewrite &&
-                  RewriteValidationCertificate.rightBoundCheck rewrite)))))))
+                  RewriteValidationCertificate.rightBoundCheck rewrite))))))))
 
 private theorem certificate_of_subsetCheck {rewrite : RewriteRule}
     (checked : subsetCheck rewrite = true) :
     RewriteValidationCertificate.Certificate language rewrite := by
   simp only [subsetCheck, Bool.and_eq_true] at checked
   rcases checked with
-    ⟨contextChecked, leftChecked, rightChecked, premisesChecked,
+    ⟨contextChecked, premiseTypesChecked, leftChecked, rightChecked, premisesChecked,
       scopedChecked, fvarsChecked, bindersChecked, contextNamesChecked,
       rightBoundedChecked⟩
   simp only [contextSubsetCheck] at contextChecked
+  simp only [premiseTypesSubsetCheck] at premiseTypesChecked
   simp only [patternSubsetCheck] at leftChecked rightChecked
   simp only [premisesSubsetCheck] at premisesChecked
   simp only [fvarsPlainCheck] at fvarsChecked
@@ -546,6 +552,7 @@ private theorem certificate_of_subsetCheck {rewrite : RewriteRule}
   simp only [contextNamesPlainCheck] at contextNamesChecked
   refine {
     contextTypes := ?_
+    premiseTypes := ?_
     leftDeclared := ?_
     rightDeclared := ?_
     premisesDeclared := ?_
@@ -558,6 +565,11 @@ private theorem certificate_of_subsetCheck {rewrite : RewriteRule}
     apply requiredType_declared
     exact decide_eq_true_eq.mp (List.all_eq_true.mp
       (List.all_eq_true.mp contextChecked entry entryMembership)
+      name nameMembership)
+  · intro type typeMembership name nameMembership
+    apply requiredType_declared
+    exact decide_eq_true_eq.mp (List.all_eq_true.mp
+      (List.all_eq_true.mp premiseTypesChecked type typeMembership)
       name nameMembership)
   · intro signature signatureMembership
     apply requiredSignature_declared
@@ -587,7 +599,7 @@ private theorem certificate_of_subsetCheck {rewrite : RewriteRule}
 
 private theorem support_rewrites_checked :
     supportRewrites.all subsetCheck = true := by
-  simp [supportRewrites, subsetCheck, contextSubsetCheck,
+  simp [supportRewrites, subsetCheck, contextSubsetCheck, premiseTypesSubsetCheck,
     patternSubsetCheck, premisesSubsetCheck, fvarsPlainCheck,
     bindersPlainCheck, contextNamesPlainCheck,
     RewriteValidationCertificate.allPatternsScopedCheck,
@@ -607,7 +619,8 @@ private theorem support_rewrites_checked :
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, LanguageDef.premiseFvarNames,
     LanguageDef.premiseForAllParams,
-    LanguageDef.premiseProducedFvarNames, TypeExpr.baseNames]
+    LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames]
 
 private theorem support_rewrite_certificate (rewrite : RewriteRule)
     (membership : rewrite ∈ supportRewrites) :
@@ -681,7 +694,7 @@ theorem rewrite_schema_names_unreserved (rewrite : RewriteRule)
       List.all_eq_true.mp support_rewrites_checked rewrite supportMember
     simp only [subsetCheck, Bool.and_eq_true] at checked
     rcases checked with
-      ⟨_contextChecked, _leftChecked, _rightChecked, _premisesChecked,
+      ⟨_contextChecked, _premiseTypesChecked, _leftChecked, _rightChecked, _premisesChecked,
         _scopedChecked, fvarsChecked, bindersChecked, contextNamesChecked,
         _rightBoundedChecked⟩
     simp only [fvarsPlainCheck] at fvarsChecked

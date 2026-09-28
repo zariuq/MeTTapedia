@@ -89,6 +89,8 @@ def coreToSpecPremise : CPremise → SPremise
 def specToCorePremise : SPremise → Except String CPremise
   | .freshness fc => .ok (.freshness (specToCoreFreshness fc))
   | .congruence a b => .ok (.congruence (specToCorePattern a) (specToCorePattern b))
+  | .scopedStep _ =>
+      throw "Cannot lower a scoped step premise to PeTTa core; core has no scoped premise form."
   | .relationQuery rel args => .ok (.relationQuery rel (args.map specToCorePattern))
   | .forAll collection _ _ =>
       throw s!"Cannot lower forAll premise over collection `{collection}` to PeTTa core; core has no quantified premise form."

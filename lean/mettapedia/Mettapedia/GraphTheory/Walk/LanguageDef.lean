@@ -107,7 +107,7 @@ def mapVertex (source target : String) : Premise :=
 /-- Endpoint-compatible walks enter the append scanner with an empty
 continuation.  Repeated metavariables enforce equality of the middle vertex. -/
 def appendStartRule : RewriteRule :=
-  RewriteRule.mk "AppendStart"
+  RewriteRule.mk (bindings := none) "AppendStart"
     (context ["Start", "Middle", "Target"]
       [("Left", "WalkNode"), ("Right", "WalkNode")]) []
     (.apply "AppendRequest"
@@ -121,7 +121,7 @@ def appendStartRule : RewriteRule :=
 /-- Consume one edge of the left walk and push its reverse into the
 continuation.  The adjacency premise is part of the executable rule. -/
 def appendScanConsRule : RewriteRule :=
-  RewriteRule.mk "AppendScanCons"
+  RewriteRule.mk (bindings := none) "AppendScanCons"
     (context ["Current", "Next", "Middle", "Target"]
       [("Tail", "WalkNode"), ("Right", "Walk"), ("Frames", "Frames")])
     [sourceAdjacent "Current" "Next"]
@@ -139,7 +139,7 @@ def appendScanConsRule : RewriteRule :=
 
 /-- A nil node is accepted only when its two recorded endpoints coincide. -/
 def appendScanNilRule : RewriteRule :=
-  RewriteRule.mk "AppendScanNil"
+  RewriteRule.mk (bindings := none) "AppendScanNil"
     (context ["Middle", "Target"]
       [("Right", "WalkNode"), ("Frames", "Frames")]) []
     (.apply "AppendScan"
@@ -154,7 +154,7 @@ def appendScanNilRule : RewriteRule :=
 /-- Pop one reversed source edge and prepend its symmetric edge to the
 result. -/
 def appendRebuildConsRule : RewriteRule :=
-  RewriteRule.mk "AppendRebuildCons"
+  RewriteRule.mk (bindings := none) "AppendRebuildCons"
     (context ["Current", "Previous", "Target"]
       [("Rest", "Frames"), ("Result", "WalkNode")])
     [sourceAdjacent "Previous" "Current"]
@@ -174,7 +174,7 @@ def appendRebuildConsRule : RewriteRule :=
             [.fvar "Current", .fvar "Target", .fvar "Result"]]]])
 
 def appendRebuildNilRule : RewriteRule :=
-  RewriteRule.mk "AppendRebuildNil"
+  RewriteRule.mk (bindings := none) "AppendRebuildNil"
     (context ["Start", "Target"] [("Result", "WalkNode")]) []
     (.apply "AppendRebuild"
       [.fvar "Start", .fvar "Target", .apply "FramesNil" [.fvar "Start"],
@@ -183,7 +183,7 @@ def appendRebuildNilRule : RewriteRule :=
       [.apply "WalkValue" [.fvar "Start", .fvar "Target", .fvar "Result"]])
 
 def reverseStartRule : RewriteRule :=
-  RewriteRule.mk "ReverseStart"
+  RewriteRule.mk (bindings := none) "ReverseStart"
     (context ["Start", "Target"] [("Node", "WalkNode")]) []
     (.apply "ReverseRequest"
       [.apply "WalkValue" [.fvar "Start", .fvar "Target", .fvar "Node"]])
@@ -194,7 +194,7 @@ def reverseStartRule : RewriteRule :=
 
 /-- Reverse one edge by using symmetry of the source graph explicitly. -/
 def reverseScanConsRule : RewriteRule :=
-  RewriteRule.mk "ReverseScanCons"
+  RewriteRule.mk (bindings := none) "ReverseScanCons"
     (context ["Current", "Next", "Target", "Origin"]
       [("Tail", "WalkNode"), ("Accumulator", "WalkNode")])
     [sourceAdjacent "Next" "Current"]
@@ -215,7 +215,7 @@ def reverseScanConsRule : RewriteRule :=
             [.fvar "Current", .fvar "Origin", .fvar "Accumulator"]]]])
 
 def reverseScanNilRule : RewriteRule :=
-  RewriteRule.mk "ReverseScanNil"
+  RewriteRule.mk (bindings := none) "ReverseScanNil"
     (context ["Target", "Origin"] [("Accumulator", "WalkNode")]) []
     (.apply "ReverseScan"
       [.fvar "Target", .fvar "Target", .fvar "Origin",
@@ -228,7 +228,7 @@ def reverseScanNilRule : RewriteRule :=
 
 /-- Mapping begins by obtaining the image of the initial vertex. -/
 def mapStartRule : RewriteRule :=
-  RewriteRule.mk "MapStart"
+  RewriteRule.mk (bindings := none) "MapStart"
     (context ["SourceStart", "SourceTarget", "MappedStart"]
       [("Node", "WalkNode")])
     [mapVertex "SourceStart" "MappedStart"]
@@ -243,7 +243,7 @@ def mapStartRule : RewriteRule :=
 /-- Map one source edge.  The rule obtains the image of the next vertex and
 checks the resulting edge in the target graph before advancing. -/
 def mapScanConsRule : RewriteRule :=
-  RewriteRule.mk "MapScanCons"
+  RewriteRule.mk (bindings := none) "MapScanCons"
     (context
       ["SourceCurrent", "SourceNext", "SourceTarget", "MappedOrigin",
         "MappedCurrent", "MappedNext"]
@@ -266,7 +266,7 @@ def mapScanConsRule : RewriteRule :=
         [.fvar "MappedNext", .fvar "MappedCurrent", .fvar "Frames"]])
 
 def mapScanNilRule : RewriteRule :=
-  RewriteRule.mk "MapScanNil"
+  RewriteRule.mk (bindings := none) "MapScanNil"
     (context ["SourceTarget", "MappedOrigin", "MappedTarget"]
       [("Frames", "Frames")]) []
     (.apply "MapScan"
@@ -280,7 +280,7 @@ def mapScanNilRule : RewriteRule :=
          .apply "WalkNil" [.fvar "MappedTarget"]]])
 
 def mapRebuildConsRule : RewriteRule :=
-  RewriteRule.mk "MapRebuildCons"
+  RewriteRule.mk (bindings := none) "MapRebuildCons"
     (context ["Current", "Previous", "Target"]
       [("Rest", "Frames"), ("Result", "WalkNode")])
     [targetAdjacent "Previous" "Current"]
@@ -300,7 +300,7 @@ def mapRebuildConsRule : RewriteRule :=
             [.fvar "Current", .fvar "Target", .fvar "Result"]]]])
 
 def mapRebuildNilRule : RewriteRule :=
-  RewriteRule.mk "MapRebuildNil"
+  RewriteRule.mk (bindings := none) "MapRebuildNil"
     (context ["Start", "Target"] [("Result", "WalkNode")]) []
     (.apply "MapRebuild"
       [.fvar "Start", .fvar "Target", .apply "FramesNil" [.fvar "Start"],

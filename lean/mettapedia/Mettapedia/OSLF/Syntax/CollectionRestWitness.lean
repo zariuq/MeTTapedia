@@ -230,7 +230,7 @@ def varIdx : {Γ : Ctx minSig} → {s : Srt} → Var Γ s → Nat
   | _, _, .zero => 0
   | _, _, .succ w => varIdx w + 1
 
-/-- Erasure, one clause per sort.  The only clause that cannot arise is a
+/-- Erasure, one case per sort.  The only case that cannot arise is a
 variable at the sequence sort, and the theorem below says why. -/
 def eraseT : {Γ : Ctx minSig} → {s : Srt} → Term minSig Γ s → EraseTy s
   | _, Srt.el, .var v => Pattern.bvar (varIdx v)
@@ -243,8 +243,8 @@ def eraseT : {Γ : Ctx minSig} → {s : Srt} → Term minSig Γ s → EraseTy s
   | _, _, .op .consOp (.cons hd (.cons tl .nil)) =>
       (eraseT hd :: (eraseT tl).1, (eraseT tl).2)
 
-/-- **The unreachable clause is unreachable.**  Contexts hold elements, so no
-variable ever has the sequence sort, and the clause above is justified rather
+/-- **The unreachable case is unreachable.**  Contexts hold elements, so no
+variable ever has the sequence sort, and the case above is justified rather
 than arbitrary. -/
 theorem no_seq_var : ∀ (n : Nat), Var (List.replicate n Srt.el) Srt.seq → False
   | 0, v => nomatch v

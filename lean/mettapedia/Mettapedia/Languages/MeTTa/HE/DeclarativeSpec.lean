@@ -77,9 +77,9 @@ namespace Mettapedia.Languages.MeTTa.HE.DeclarativeSpec
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 open Mettapedia.Languages.MeTTa.HE
 
-/-! ## Clause-Form Definitions
+/-! ## Rule-Form Definitions
 
-Named clause forms for each constructor, matching the PeTTa DeclarativeSpec style.
+Named rule forms for each constructor, matching the PeTTa DeclarativeSpec style.
 These are thin wrappers providing a named, auditable interface.
 
 ### Spec: Evaluate atom (metta) — lines 104-136
@@ -103,20 +103,20 @@ else:
 ```
 -/
 
-/-- Clause: Empty or Error atoms pass through unchanged (spec line 117). -/
+/-- Branch: Empty or Error atoms pass through unchanged (spec line 117). -/
 def emptyOrErrorPassthrough (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings) : Prop :=
   isEmptyOrError atom = true ∧
   EvalAtom space dispatch atom type_ b (atom, b)
 
-/-- Clause: Type matches metatype, or metatype is Variable (spec line 119). -/
+/-- Branch: Type matches metatype, or metatype is Variable (spec line 119). -/
 def typePassthrough (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings) : Prop :=
   isEmptyOrError atom = false ∧
   (type_ = Atom.atomType ∨ type_ = getMetaType atom ∨ getMetaType atom = Atom.variableType) ∧
   EvalAtom space dispatch atom type_ b (atom, b)
 
-/-- Clause: Symbol/Grounded/unit → typeCast (spec line 123). -/
+/-- Branch: Symbol/Grounded/unit → typeCast (spec line 123). -/
 def typeCastBranch (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings) (r : ResultPair) (fuel : Nat) : Prop :=
   isEmptyOrError atom = false ∧
@@ -124,7 +124,7 @@ def typeCastBranch (space : Space) (dispatch : GroundedDispatch)
   r ∈ typeCast atom type_ space b fuel ∧
   EvalAtom space dispatch atom type_ b r
 
-/-- Clause: Expression → interpret, non-error result (spec line 129).
+/-- Branch: Expression → interpret, non-error result (spec line 129).
     Note: the spec filters on `Error` only (not Empty) for success/error split.
     `Empty` is a success result in the metta function. -/
 def interpretSuccessBranch (space : Space) (dispatch : GroundedDispatch)
@@ -167,14 +167,14 @@ else:
 ```
 -/
 
-/-- Clause: Error passthrough in mettaCall (spec line 359). -/
+/-- Branch: Error passthrough in mettaCall (spec line 359). -/
 def mettaCallErrorPassthrough (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings) : Prop :=
   isErrorAtom atom = true ∧
   MettaCall space dispatch atom type_ b (atom, b)
 
-/-- Clause: Equation match (spec lines 376-382). -/
-def equationMatchClause (space : Space) (dispatch : GroundedDispatch)
+/-- Branch: Equation match (spec lines 376-382). -/
+def equationMatchBranch (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings) (rhs : Atom)
     (queryBindings merged : Bindings) (result : ResultPair) (fuel : Nat) : Prop :=
   isErrorAtom atom = false ∧
@@ -184,8 +184,8 @@ def equationMatchClause (space : Space) (dispatch : GroundedDispatch)
   EvalAtom space dispatch (merged.applyFull rhs fuel) type_ merged result ∧
   MettaCall space dispatch atom type_ b result
 
-/-- Clause: No equations match (spec lines 383-384). -/
-def noMatchClause (space : Space) (dispatch : GroundedDispatch)
+/-- Branch: No equations match (spec lines 383-384). -/
+def noMatchBranch (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings) (fuel : Nat) : Prop :=
   isErrorAtom atom = false ∧
   queryEquations space atom fuel = [] ∧
@@ -213,9 +213,9 @@ Note: `add-atom`, `remove-atom`, and `match` are NOT minimal instructions.
 They are higher-level MeTTa built-ins handled by the interpreter layer.
 -/
 
-/-- Active clause: `cons-atom` constructs an expression from its head and
+/-- Active rule: `cons-atom` constructs an expression from its head and
 tail. -/
-def consAtomClause (services : Spec.Eval.Minimal.Services)
+def consAtomRule (services : Spec.Eval.Minimal.Services)
     (dispatch : Spec.Eval.GroundedDispatch) (live : List Atom) (s : Space)
     (typing : Spec.Eval.EvalTypeService)
     (enumeration : Spec.Eval.Minimal.EvalEnumeration dispatch live typing)
@@ -224,8 +224,8 @@ def consAtomClause (services : Spec.Eval.Minimal.Services)
     (.expression [.symbol "cons-atom", hd, .expression tl]) ib
     (.expression (hd :: tl), ib)
 
-/-- Active clause: `decons-atom` splits an expression into head and tail. -/
-def deconsAtomClause (services : Spec.Eval.Minimal.Services)
+/-- Active rule: `decons-atom` splits an expression into head and tail. -/
+def deconsAtomRule (services : Spec.Eval.Minimal.Services)
     (dispatch : Spec.Eval.GroundedDispatch) (live : List Atom) (s : Space)
     (typing : Spec.Eval.EvalTypeService)
     (enumeration : Spec.Eval.Minimal.EvalEnumeration dispatch live typing)
@@ -234,7 +234,7 @@ def deconsAtomClause (services : Spec.Eval.Minimal.Services)
     (.expression [.symbol "decons-atom", .expression (hd :: tl)]) ib
     (.expression [hd, .expression tl], ib)
 
-/-! ## Clause Introduction Theorems -/
+/-! ## Rule-Form Introduction Theorems -/
 
 theorem emptyOrErrorPassthrough_intro (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings)
@@ -255,20 +255,20 @@ theorem mettaCallErrorPassthrough_intro (space : Space) (dispatch : GroundedDisp
     mettaCallErrorPassthrough space dispatch atom type_ b :=
   ⟨h, .error_passthrough _ _ _ h⟩
 
-theorem consAtomClause_intro (services : Spec.Eval.Minimal.Services)
+theorem consAtomRule_intro (services : Spec.Eval.Minimal.Services)
     (dispatch : Spec.Eval.GroundedDispatch) (live : List Atom) (s : Space)
     (typing : Spec.Eval.EvalTypeService)
     (enumeration : Spec.Eval.Minimal.EvalEnumeration dispatch live typing)
     (hd : Atom) (tl : List Atom) (ib : Bindings) :
-    consAtomClause services dispatch live s typing enumeration hd tl ib :=
+    consAtomRule services dispatch live s typing enumeration hd tl ib :=
   .consAtom _ _ _ _
 
-theorem deconsAtomClause_intro (services : Spec.Eval.Minimal.Services)
+theorem deconsAtomRule_intro (services : Spec.Eval.Minimal.Services)
     (dispatch : Spec.Eval.GroundedDispatch) (live : List Atom) (s : Space)
     (typing : Spec.Eval.EvalTypeService)
     (enumeration : Spec.Eval.Minimal.EvalEnumeration dispatch live typing)
     (hd : Atom) (tl : List Atom) (ib : Bindings) :
-    deconsAtomClause services dispatch live s typing enumeration hd tl ib :=
+    deconsAtomRule services dispatch live s typing enumeration hd tl ib :=
   .deconsAtom _ _ _ _
 
 /-! ## Positive Examples
@@ -459,10 +459,10 @@ theorem cons_decons_roundtrip (services : Spec.Eval.Minimal.Services)
       (.expression (hd :: tl), ib) :=
   .consAtom s hd tl ib
 
-/-! ## Operator-to-Clause Audit Index
+/-! ## Operator-to-Rule Audit Index
 
 ### EvalAtom constructors (spec lines 104-136)
-| Constructor         | Spec Line | Clause Def                  |
+| Constructor         | Spec Line | Rule Def                    |
 |--------------------|-----------|-----------------------------|
 | `empty_or_error`    | 117       | `emptyOrErrorPassthrough`   |
 | `type_pass`         | 119       | `typePassthrough`           |

@@ -1502,8 +1502,8 @@ def runFaultApp_constantOccurrence
       (runFaultApp signature judgment failure) :=
   .appFunction (.appFunction (.appFunction .here))
 
-noncomputable def runOkIotaClause :
-    IotaClause outcomeRules rawRunSignature
+noncomputable def runOkIotaRule :
+    IotaRule outcomeRules rawRunSignature
       proofRelevantRunComputation
       (runConstructors.map ConstructorSpec.name)
       runEliminatorSpec.name where
@@ -1517,8 +1517,8 @@ noncomputable def runOkIotaClause :
     .appArgument
       (runOkApp_constantOccurrence (.var 5) (.var 1) (.var 0))
 
-noncomputable def runFaultIotaClause :
-    IotaClause outcomeRules rawRunSignature
+noncomputable def runFaultIotaRule :
+    IotaRule outcomeRules rawRunSignature
       proofRelevantRunComputation
       (runConstructors.map ConstructorSpec.name)
       runEliminatorSpec.name where
@@ -1532,12 +1532,12 @@ noncomputable def runFaultIotaClause :
     .appArgument
       (runFaultApp_constantOccurrence (.var 5) (.var 1) (.var 0))
 
-noncomputable def runIotaClauses :
-    List (IotaClause outcomeRules rawRunSignature
+noncomputable def runIotaRules :
+    List (IotaRule outcomeRules rawRunSignature
       proofRelevantRunComputation
       (runConstructors.map ConstructorSpec.name)
       runEliminatorSpec.name) :=
-  [runOkIotaClause, runFaultIotaClause]
+  [runOkIotaRule, runFaultIotaRule]
 
 /-- A formed, strictly-positive intrinsic run family with exact typed
 computation generators.  It is deliberately not promoted to `Authorized`
@@ -1568,14 +1568,14 @@ noncomputable def runCandidate : Candidate outcomeRules where
     simp only [runConstructors, List.mem_cons, List.not_mem_nil,
       or_false] at membership
     rcases membership with rfl | rfl <;> decide
-  iotaClauses := runIotaClauses
+  iotaRules := runIotaRules
   constructorsComputed := by
     intro constructorName membership
     simp [runConstructors, runOkConstructorSpec,
       runFaultConstructorSpec] at membership
     rcases membership with rfl | rfl
-    · simp [runIotaClauses, runOkIotaClause]
-    · simp [runIotaClauses, runFaultIotaClause]
+    · simp [runIotaRules, runOkIotaRule]
+    · simp [runIotaRules, runFaultIotaRule]
 
 /-! ## Axiom audit -/
 

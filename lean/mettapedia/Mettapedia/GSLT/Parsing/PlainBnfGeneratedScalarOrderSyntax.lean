@@ -158,7 +158,7 @@ private def letParts? : SExpr → Option (SExpr × SExpr × SExpr)
   | .list [.atom "let", schema, value, continuation] => some (schema, value, continuation)
   | _ => none
 
-/-- Retrieve the second let from the actual generated cons-clause body. -/
+/-- Retrieve the second let from the actual generated cons-equation body. -/
 def callerParts? (typed : Bool) : Option (SExpr × SExpr × SExpr) := do
   let (_, body) ← equation? (callerRow typed).2
   let (_, _, continuation) ← letParts? body

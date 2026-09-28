@@ -35,7 +35,7 @@ def projectionSyntax : SExpr :=
   metta_sexpr_file% petta "../../../../../../hyperon/cetta-prime-nik-20260811/langdef/bnf/ebnf_derivation_projection_v1.metta"
 
 /-! Selection retains the concrete source occurrence. It is not a search over
-names, and it makes no admission claim about unselected source clauses. -/
+names, and it makes no admission claim about unselected source rules. -/
 def equation? (authored : SExpr) (occurrence : Nat) : Option (SExpr × SExpr) := do
   let row ← Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT.rawRewriteAt? authored occurrence
   match row.head, row.body with
@@ -127,7 +127,7 @@ private theorem repeat_equation : equation? projectionSyntax 42 =
         [.atom "?kind", .atom "?occurrence", .atom "?span", .atom "?input",
           app "EBNF:IterationsCons" [.atom "?body", .atom "?tail"]]) := rfl
 
-/-- The concrete source clause really performs the cons update used by the
+/-- The concrete source rule really performs the cons update used by the
 spine law. Occurrence, source span and whole input extent remain opaque. -/
 theorem repeat_step_source_exact (kind occurrence span input body tail : SExpr) :
     closeEquation? projectionSyntax 42
@@ -157,21 +157,21 @@ private theorem accumulator_rules_exact : accumulator.rewrites = observedRules :
 
 theorem accumulator_empty (tail : List SExpr) :
     rewriteStep accumulator (encode (orderCall [] tail)) = [encode (iterations tail)] := by
-  simp [rewriteStep, accumulator_rules_exact, observedRules, applyRule, orderCall,
+  simp [rewriteStep, accumulator_rules_exact, observedRules, applyRule, applyRuleBindings, orderCall,
     iterations, app, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM, applyBindings]
 
 theorem accumulator_cons (head : SExpr) (rest tail : List SExpr) :
     rewriteStep accumulator (encode (orderCall (head :: rest) tail)) =
       [encode (orderCall rest (sourceOrder head :: tail))] := by
-  simp [rewriteStep, accumulator_rules_exact, observedRules, applyRule, orderCall,
+  simp [rewriteStep, accumulator_rules_exact, observedRules, applyRule, applyRuleBindings, orderCall,
     iterations, sourceOrder, app, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM, applyBindings]
 
 abbrev Step (before after : Pattern) : Prop := after ∈ rewriteStep accumulator before
 
 /-- A selected all-input source path. The final list is stated by ordinary
-reverse/map/append, independently of the executed clauses. -/
+reverse/map/append, independently of the executed rules. -/
 theorem accumulator_path (reverse tail : List SExpr) :
     Relation.ReflTransGen Step (encode (orderCall reverse tail))
       (encode (iterations (reverse.reverse.map sourceOrder ++ tail))) := by
@@ -202,7 +202,7 @@ def ordered : PrefixSpine α → List α
   | .empty => []
   | .extend prior body => ordered prior ++ [body]
 
-/-- The cons accumulator used by the authored repeat-step clause. -/
+/-- The cons accumulator used by the authored repeat-step rule. -/
 def reversed : PrefixSpine α → List α
   | .empty => []
   | .extend prior body => body :: reversed prior
@@ -248,6 +248,8 @@ theorem uncorrected_order_changes_result :
 #print axioms star_source_exact
 #print axioms plus_source_exact
 #print axioms repeat_step_source_exact
+#print axioms accumulator_empty
+#print axioms accumulator_cons
 #print axioms accumulator_path
 #print axioms PrefixSpine.ordered_injective
 #print axioms source_accumulator_preserves_spine

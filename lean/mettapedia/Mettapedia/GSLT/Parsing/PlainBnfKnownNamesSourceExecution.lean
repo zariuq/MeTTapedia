@@ -3,7 +3,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfIndexedCollectorSourceExecution
 /-!
 # Authored discovery known-name history
 
-The original lookup, append, observation and reversal clauses operate on the
+The original lookup, append, observation and reversal rules operate on the
 existing sparse trie and ordinary name history. Lookup returns the stored
 payload; interpreting it as membership requires an explicit index invariant.
 The source-contextual result is not a generated or native-runtime theorem.
@@ -20,7 +20,8 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfGraphNameTrie (Trie lookup insertFirst)
 open PlainBnfCollectorSourceExecution (NameScalarCodec name name_injective)
 open PlainBnfTrieSourceExecution
@@ -198,6 +199,7 @@ theorem result_answers (fuel : Nat) (found : Option SExpr) :
       simp [resultCall, call, encode, encodeList, headedBy, knownNames])]
     cases found <;>
       simp [known_rules_exact, observedRules, observedRule, applyRuleUsing, resultCall, call,
+        applyRuleBindings_of_binderFree, binderFree, binderFreeList,
         value, nameResult, result, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
         encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
         premisesUsing, premiseStepUsing, applyBindings]
@@ -213,12 +215,14 @@ theorem reverse_answers (fuel : Nat) (history : List SExpr) (before : SExpr) :
     cases history with
     | nil =>
       simp [known_rules_exact, observedRules, observedRule, applyRuleUsing, reverseCall, call,
+        applyRuleBindings_of_binderFree, binderFree, binderFreeList,
         names, namesNil, reverseOnto, result, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
         encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
         premisesUsing, premiseStepUsing, applyBindings]
     | cons head tail =>
       have recursive := ih tail (namesCons head before)
       simp [known_rules_exact, observedRules, observedRule, applyRuleUsing, reverseCall, call,
+        applyRuleBindings_of_binderFree, binderFree, binderFreeList,
         names, namesCons, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
         encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
         premisesUsing, premiseStepUsing, applyBindings]
@@ -264,6 +268,7 @@ theorem known_lookup_answers (fuel : Nat) (key : List Scalar) (index : Trie SExp
     have queried := trie_lookup_answers fuel key index
     have wrapped := result_answers fuel (lookup key index)
     simp [known_rules_exact, observedRules, observedRule, applyRuleUsing, knownLookupCall, known,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       call, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
       encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
       premisesUsing, premiseStepUsing, applyBindings]
@@ -290,6 +295,7 @@ theorem append_answers (fuel : Nat) (key : List Scalar) (index : Trie SExpr Scal
       simp [appendCall, call, encode, encodeList, headedBy, knownNames])]
     have inserted := trie_insert_answers fuel key (name key) index
     simp [known_rules_exact, observedRules, observedRule, applyRuleUsing, appendCall, known,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       call, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
       encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
       premisesUsing, premiseStepUsing, applyBindings]
@@ -309,6 +315,7 @@ theorem observe_answers (fuel : Nat) (index : Trie SExpr Scalar) (history : List
       simp [observeCall, call, encode, encodeList, headedBy, knownNames])]
     have reversed := reverse_answers fuel history namesNil
     simp [known_rules_exact, observedRules, observedRule, applyRuleUsing, observeCall, known,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       call, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
       encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
       premisesUsing, premiseStepUsing, applyBindings]

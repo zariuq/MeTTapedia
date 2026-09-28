@@ -224,8 +224,8 @@ theorem consumeAll_boundedCountItem_of_fits
           (Nat.lt_add_of_pos_right (Nat.succ_pos rest.length)) fits
       have tailFits : initial + 1 + rest.length ≤ limit := by
         simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using fits
-      simpa [consumeAll, boundedCountItem, below,
-        ih (initial + 1) tailFits, Nat.add_assoc, Nat.add_comm,
+      simp [consumeAll, boundedCountItem, below,
+        ih (initial + 1) tailFits, Nat.add_comm,
         Nat.add_left_comm]
 
 /-- Successful bounded cardinality pulling agrees with materialized length. -/

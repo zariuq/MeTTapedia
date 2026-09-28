@@ -5,7 +5,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfHeapSourceExecution
 # Authored definition-index construction and lookup
 
 Discovery occurrences 38–39 and 49–51 are executed with the original sparse
-trie clauses. The independent observation is an ordered list fold retaining
+trie rules. The independent observation is an ordered list fold retaining
 the first complete body/span payload for each name. Existing index payloads
 remain opaque. These are source/contextual laws, not generated-runtime or
 whole-admission correspondence.
@@ -22,7 +22,8 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfGraphNameTrie (Trie lookup insertFirst)
 open PlainBnfSourceRank (Rank)
 open PlainBnfCollectorSourceExecution (NameScalarCodec name)
@@ -213,6 +214,7 @@ theorem result_answers (env : RelationEnv) (fuel : Nat) (found : Option SExpr) :
     rw [index_rewriteAt env fuel _ (by rfl)]
     cases found <;>
       simp [index_rules_exact, observedRules, observedRule, applyRuleUsing,
+        applyRuleBindings_of_binderFree, binderFree, binderFreeList,
         resultCall, definitionResult, call, result, value,
         pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
         matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -222,6 +224,7 @@ private theorem index_nil (env : RelationEnv) (fuel : Nat) (index : Trie SExpr S
       [result (trie index)] := by
   rw [index_rewriteAt env fuel _ (by rfl)]
   simp [index_rules_exact, observedRules, observedRule, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     indexCall, rankedDefinitions, PlainBnfEnumerationSourceExecution.rankedDefinitions,
     call, result, pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -253,6 +256,7 @@ private theorem index_following (env : RelationEnv) (fuel : Nat)
       (indexCall (item :: tail) index) = answers.map result := by
   rw [index_rewriteAt env fuel _ (by rfl)]
   simp [index_rules_exact, observedRules, observedRule, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     indexCall, rankedDefinitions, PlainBnfEnumerationSourceExecution.rankedDefinitions,
     PlainBnfEnumerationSourceExecution.rankedDefinition, wireDefinition,
     call, pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
@@ -288,6 +292,7 @@ private theorem lookup_following (env : RelationEnv) (fuel : Nat)
       (definitionLookupCall key index) = answers.map result := by
   rw [index_rewriteAt env fuel _ (by rfl)]
   simp [index_rules_exact, observedRules, observedRule, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     definitionLookupCall, call, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]

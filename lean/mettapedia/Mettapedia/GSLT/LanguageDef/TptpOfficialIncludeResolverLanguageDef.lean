@@ -1227,6 +1227,10 @@ private def contextSubsetCheck (rewrite : RewriteRule) : Bool :=
   rewrite.typeContext.all fun entry =>
     entry.2.baseNames.all fun name => decide (name ∈ requiredTypes)
 
+private def premiseTypesSubsetCheck (rewrite : RewriteRule) : Bool :=
+  (rewrite.premises.flatMap LanguageDef.premiseStepTypeExprs).all fun type =>
+    type.baseNames.all fun name => decide (name ∈ requiredTypes)
+
 private def patternSubsetCheck (pattern : Pattern) : Bool :=
   pattern.constructorRefs.all fun signature =>
     decide (signature ∈ requiredSignatures)
@@ -1257,6 +1261,7 @@ private def contextNamesPlainCheck (rewrite : RewriteRule) : Bool :=
 
 private def subsetCheck (rewrite : RewriteRule) : Bool :=
   contextSubsetCheck rewrite &&
+    (premiseTypesSubsetCheck rewrite &&
     (patternSubsetCheck rewrite.left &&
       (patternSubsetCheck rewrite.right &&
         (premisesSubsetCheck rewrite &&
@@ -1264,17 +1269,18 @@ private def subsetCheck (rewrite : RewriteRule) : Bool :=
             (fvarsPlainCheck rewrite &&
               (bindersPlainCheck rewrite &&
                 (contextNamesPlainCheck rewrite &&
-                  RewriteValidationCertificate.rightBoundCheck rewrite)))))))
+                  RewriteValidationCertificate.rightBoundCheck rewrite))))))))
 
 private theorem certificate_of_subsetCheck {rewrite : RewriteRule}
     (checked : subsetCheck rewrite = true) :
     RewriteValidationCertificate.Certificate language rewrite := by
   simp only [subsetCheck, Bool.and_eq_true] at checked
   rcases checked with
-    ⟨contextChecked, leftChecked, rightChecked, premisesChecked,
+    ⟨contextChecked, premiseTypesChecked, leftChecked, rightChecked, premisesChecked,
       scopedChecked, fvarsChecked, bindersChecked, contextNamesChecked,
       rightBoundedChecked⟩
   simp only [contextSubsetCheck] at contextChecked
+  simp only [premiseTypesSubsetCheck] at premiseTypesChecked
   simp only [patternSubsetCheck] at leftChecked rightChecked
   simp only [premisesSubsetCheck] at premisesChecked
   simp only [fvarsPlainCheck] at fvarsChecked
@@ -1282,6 +1288,7 @@ private theorem certificate_of_subsetCheck {rewrite : RewriteRule}
   simp only [contextNamesPlainCheck] at contextNamesChecked
   refine {
     contextTypes := ?_
+    premiseTypes := ?_
     leftDeclared := ?_
     rightDeclared := ?_
     premisesDeclared := ?_
@@ -1294,6 +1301,11 @@ private theorem certificate_of_subsetCheck {rewrite : RewriteRule}
     apply requiredType_declared
     exact decide_eq_true_eq.mp (List.all_eq_true.mp
       (List.all_eq_true.mp contextChecked entry entryMembership)
+      name nameMembership)
+  · intro type typeMembership name nameMembership
+    apply requiredType_declared
+    exact decide_eq_true_eq.mp (List.all_eq_true.mp
+      (List.all_eq_true.mp premiseTypesChecked type typeMembership)
       name nameMembership)
   · intro signature signatureMembership
     apply requiredSignature_declared
@@ -1325,7 +1337,7 @@ local macro "certify_controller_rows" : tactic =>
   `(tactic|
     simp [controllerRules, rootRules, fuelRules, sourceRules, formulaRules,
       includeDecodeRules, includeLookupRules, mergeRules,
-      subsetCheck, contextSubsetCheck,
+      subsetCheck, contextSubsetCheck, premiseTypesSubsetCheck,
       patternSubsetCheck, premisesSubsetCheck, fvarsPlainCheck,
       bindersPlainCheck, contextNamesPlainCheck, requiredTypes,
       baseRequiredTypes, resolverRequiredTypes, requiredSignatures,
@@ -1352,7 +1364,8 @@ local macro "certify_controller_rows" : tactic =>
       Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, LanguageDef.premiseFvarNames,
       LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames, TypeExpr.baseNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
       Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
       RewriteValidationCertificate.allPatternsScopedCheck,
       RewriteValidationCertificate.rightBoundCheck])
@@ -1493,7 +1506,8 @@ private theorem target_ok_right_bound_checked :
 private theorem include_lookup_rewrite3 :
     subsetCheck targetOkRule = true := by
   simp only [subsetCheck, Bool.and_eq_true]
-  exact ⟨target_ok_context_checked, target_ok_left_checked,
+  exact ⟨target_ok_context_checked, (by unfold targetOkRule; certify_controller_rows),
+    target_ok_left_checked,
     target_ok_right_checked, target_ok_premises_checked,
     target_ok_scoped_checked, target_ok_fvars_checked,
     target_ok_binders_checked, target_ok_context_names_checked,

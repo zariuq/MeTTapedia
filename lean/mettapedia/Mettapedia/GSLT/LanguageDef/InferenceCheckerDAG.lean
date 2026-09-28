@@ -267,6 +267,39 @@ def checkDAGBlocks (definition : ValidatedCalculusLanguageDef)
     (goal : Pattern) (rootId : Nat) (blocks : List (List DAGNode)) : Bool :=
   (expandDAGBlocks? definition goal rootId blocks).isSome
 
+/-- Replaying one retained DAG and root cannot establish a different requested
+goal. The authority and artifact are fixed; a previous acceptance is not used
+as an input to either replay. -/
+theorem checkDAGBlocks_goal_unique
+    {definition : ValidatedCalculusLanguageDef} {firstGoal secondGoal : Pattern}
+    {rootId : Nat} {blocks : List (List DAGNode)}
+    (first : checkDAGBlocks definition firstGoal rootId blocks = true)
+    (second : checkDAGBlocks definition secondGoal rootId blocks = true) :
+    firstGoal = secondGoal := by
+  unfold checkDAGBlocks expandDAGBlocks? at first second
+  cases checked : checkBlocks? definition [] blocks with
+  | none => simp [checked] at first
+  | some entries =>
+      cases found : findEntry? entries rootId with
+      | none => simp [checked, found] at first
+      | some root =>
+          by_cases hfirst : root.goal = firstGoal
+          · by_cases hsecond : root.goal = secondGoal
+            · exact hfirst.symm.trans hsecond
+            · simp [checked, found, hsecond] at second
+          · simp [checked, found, hfirst] at first
+
+/-- An accepted retained article rejects every distinct requested conclusion. -/
+theorem checkDAGBlocks_rejects_other_goal
+    {definition : ValidatedCalculusLanguageDef} {firstGoal secondGoal : Pattern}
+    {rootId : Nat} {blocks : List (List DAGNode)}
+    (accepted : checkDAGBlocks definition firstGoal rootId blocks = true)
+    (different : firstGoal ≠ secondGoal) :
+    checkDAGBlocks definition secondGoal rootId blocks = false := by
+  cases second : checkDAGBlocks definition secondGoal rootId blocks with
+  | false => rfl
+  | true => exact False.elim (different (checkDAGBlocks_goal_unique accepted second))
+
 /-- Successful chronological block checking produces an ordinary raw proof
 accepted by the generic tree checker for the same goal. -/
 theorem checkDAGBlocks_sound
@@ -512,6 +545,37 @@ def checkStreamingDAGBlocks (definition : ValidatedCalculusLanguageDef)
     (blocks : List (List StreamingDAGNode)) : Bool :=
   (expandStreamingDAGBlocks? definition goal rootId blocks).isSome
 
+/-- Checked release schedules do not change the unique conclusion of a retained
+streaming article and root. Both requests still undergo independent replay. -/
+theorem checkStreamingDAGBlocks_goal_unique
+    {definition : ValidatedCalculusLanguageDef} {firstGoal secondGoal : Pattern}
+    {rootId : Nat} {blocks : List (List StreamingDAGNode)}
+    (first : checkStreamingDAGBlocks definition firstGoal rootId blocks = true)
+    (second : checkStreamingDAGBlocks definition secondGoal rootId blocks = true) :
+    firstGoal = secondGoal := by
+  unfold checkStreamingDAGBlocks expandStreamingDAGBlocks? at first second
+  cases checked : checkStreamingBlocks? definition { nextId := 0, entries := [] } blocks with
+  | none => simp [checked] at first
+  | some final =>
+      cases found : findEntry? final.entries rootId with
+      | none => simp [checked, found] at first
+      | some root =>
+          by_cases hfirst : root.goal = firstGoal
+          · by_cases hsecond : root.goal = secondGoal
+            · exact hfirst.symm.trans hsecond
+            · simp [checked, found, hsecond] at second
+          · simp [checked, found, hfirst] at first
+
+theorem checkStreamingDAGBlocks_rejects_other_goal
+    {definition : ValidatedCalculusLanguageDef} {firstGoal secondGoal : Pattern}
+    {rootId : Nat} {blocks : List (List StreamingDAGNode)}
+    (accepted : checkStreamingDAGBlocks definition firstGoal rootId blocks = true)
+    (different : firstGoal ≠ secondGoal) :
+    checkStreamingDAGBlocks definition secondGoal rootId blocks = false := by
+  cases second : checkStreamingDAGBlocks definition secondGoal rootId blocks with
+  | false => rfl
+  | true => exact False.elim (different (checkStreamingDAGBlocks_goal_unique accepted second))
+
 /-- Acceptance by the bounded-live-frontier checker yields an ordinary proof
 accepted by the generic tree checker. -/
 theorem checkStreamingDAGBlocks_sound
@@ -655,6 +719,10 @@ theorem fixture_blocks_accept :
     fixtureNodeC, fixtureNodeA_instantiates, fixtureNodeB_instantiates,
     fixtureNodeC_instantiates]
 
+theorem fixture_retained_blocks_reject_other_goal :
+    checkDAGBlocks fixtureValidated fixtureA 2 fixtureBlocks = false :=
+  checkDAGBlocks_rejects_other_goal fixture_blocks_accept (by decide)
+
 theorem fixture_swapped_children_reject :
     checkDAGBlocks fixtureValidated fixtureC 2
       [[fixtureNodeA, fixtureNodeB],
@@ -696,6 +764,10 @@ theorem fixture_streaming_blocks_accept :
     fixtureNodeA_instantiates, fixtureNodeB_instantiates,
     fixtureNodeC_instantiates]
 
+theorem fixture_retained_streaming_blocks_reject_other_goal :
+    checkStreamingDAGBlocks fixtureValidated fixtureA 2 fixtureStreamingBlocks = false :=
+  checkStreamingDAGBlocks_rejects_other_goal fixture_streaming_blocks_accept (by decide)
+
 /-- Negative boundary: releasing a premise before its final use makes the
 later rule application fail. -/
 theorem fixture_premature_release_reject :
@@ -722,5 +794,10 @@ theorem fixture_released_id_reuse_reject :
     releaseEntries?, eraseEntry, checkNode?, resolveChildren?, findEntry?,
     fixtureNodeA, fixtureNodeB, fixtureNodeC,
     fixtureNodeA_instantiates]
+
+#print axioms checkDAGBlocks_goal_unique
+#print axioms checkDAGBlocks_rejects_other_goal
+#print axioms checkStreamingDAGBlocks_goal_unique
+#print axioms checkStreamingDAGBlocks_rejects_other_goal
 
 end Mettapedia.GSLT.LanguageDef.InferenceCheckerDAG

@@ -38,7 +38,7 @@ theorem integer_order_partition (left right : Int) :
   omega
 
 /-- Exact recursive invariant checked for a positive point class.  The
-recursive clause is deliberately adjacent-order based, matching the portable
+recursive rule is deliberately adjacent-order based, matching the portable
 grammar-data traversal rather than silently sorting or deduplicating it. -/
 def ScalarListWellFormed : List Int → Prop
   | [] => False

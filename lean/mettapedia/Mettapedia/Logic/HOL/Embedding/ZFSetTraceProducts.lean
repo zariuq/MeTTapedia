@@ -95,6 +95,19 @@ theorem traceApp_graph_beta {a x : ZFSet.{u}} (f : ZFSet.{u} → ZFSet.{u})
     exact hz
   · exact fun hz => ⟨f x, pair_mem_graph.mpr ⟨hx, rfl⟩, hz⟩
 
+/-- A traced graph has no result at an input outside its domain. This is the
+boundary complementary to `traceApp_graph_beta`. -/
+theorem traceApp_graph_outside {a x : ZFSet.{u}} (f : ZFSet.{u} → ZFSet.{u})
+    (hx : x ∉ a) : traceApp (traceLam (graph a f)) x = ∅ := by
+  apply ZFSet.ext
+  intro z
+  rw [mem_traceApp, pair_mem_traceLam]
+  constructor
+  · rintro ⟨y, hy, _⟩
+    exact False.elim (hx (pair_mem_graph.mp hy).1)
+  · intro hz
+    simp at hz
+
 theorem traceApp_graphValue {a : ZFSet.{u}} {b : ZFSet.{u} → ZFSet.{u}}
     (f : Elements (piSet a b)) (x : Elements a) :
     traceApp (traceLam f.1) x.1 = (graphValue f x).1 := by
@@ -380,6 +393,14 @@ theorem distinct_domains : (∅ : ZFSet.{u}) ≠ ({∅} : ZFSet.{u}) := by
   rw [← equal] at member
   exact ZFSet.notMem_empty _ member
 
+/-- The beta equation fails for a nonempty argument outside the retained
+domain; the domain admission in the positive law cannot be erased. -/
+theorem outside_domain_beta_fails :
+    traceApp (traceLam (graph (∅ : ZFSet.{u}) (fun x => x))) {∅} ≠
+      ({∅} : ZFSet.{u}) := by
+  rw [traceApp_graph_outside (fun x => x) (ZFSet.notMem_empty _)]
+  exact distinct_domains
+
 /-- Equal untyped traces do not imply equal function domains. -/
 theorem distinct_domains_same_trace :
     traceLam (graph (∅ : ZFSet.{u}) (fun _ => ∅)) =
@@ -400,6 +421,7 @@ end Controls
 
 #print axioms traceLam_graph
 #print axioms traceApp_graph_beta
+#print axioms traceApp_graph_outside
 #print axioms traceLam_injective_fixed_domain
 #print axioms graphTraceEquiv
 #print axioms tracePiEquiv
@@ -413,6 +435,7 @@ end Controls
 #print axioms tracePiSet_eq_unit_iff
 #print axioms Controls.varying_trace_at_empty
 #print axioms Controls.varying_trace_at_power_empty
+#print axioms Controls.outside_domain_beta_fails
 #print axioms Controls.varying_trace_nonempty
 #print axioms Controls.missing_trace_product_empty
 #print axioms Controls.distinct_domains_same_trace

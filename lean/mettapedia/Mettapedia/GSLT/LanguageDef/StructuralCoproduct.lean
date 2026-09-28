@@ -235,6 +235,9 @@ theorem premisePatterns_mapPremise (symbols : LanguageDefSymbolMap)
   | freshness condition => simp [mapPremise, LanguageDef.premisePatterns]
   | congruence left right =>
       simp [mapPremise, LanguageDef.premisePatterns]
+  | scopedStep step =>
+      cases step
+      simp [mapPremise, LanguageDef.premisePatterns]
   | relationQuery relation arguments =>
       simp [mapPremise, LanguageDef.premisePatterns]
   | forAll collection parameter body inductionHypothesis =>
@@ -253,6 +256,32 @@ theorem premisePatterns_mapPremises (symbols : LanguageDefSymbolMap)
   | nil => rfl
   | cons premise premises inductionHypothesis =>
       simp [premisePatterns_mapPremise, inductionHypothesis]
+
+/-- The sorts a premise declares for its scoped steps are mapped with it. -/
+@[simp]
+theorem premiseStepTypeExprs_mapPremise (symbols : LanguageDefSymbolMap)
+    (premise : Premise) :
+    LanguageDef.premiseStepTypeExprs (mapPremise symbols premise) =
+      (LanguageDef.premiseStepTypeExprs premise).map (mapTypeExpr symbols) := by
+  induction premise with
+  | freshness condition => rfl
+  | congruence left right => rfl
+  | scopedStep step => rfl
+  | relationQuery relation arguments => rfl
+  | forAll collection parameter body inductionHypothesis => exact inductionHypothesis
+
+/-- Scoped-step sorts of a mapped premise list are the mapped sorts, in order. -/
+@[simp]
+theorem premiseStepTypeExprs_mapPremises (symbols : LanguageDefSymbolMap)
+    (premises : List Premise) :
+    ((premises.map (mapPremise symbols)).flatMap
+      LanguageDef.premiseStepTypeExprs) =
+      (premises.flatMap LanguageDef.premiseStepTypeExprs).map
+        (mapTypeExpr symbols) := by
+  induction premises with
+  | nil => rfl
+  | cons premise premises inductionHypothesis =>
+      simp [premiseStepTypeExprs_mapPremise, inductionHypothesis]
 
 /-- Clean constructor validation of a left pattern transports into the tagged
 sum whenever constructor-reference traversal commutes with the structural

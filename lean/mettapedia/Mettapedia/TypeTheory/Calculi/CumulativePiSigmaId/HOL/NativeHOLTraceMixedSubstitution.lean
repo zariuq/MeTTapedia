@@ -177,6 +177,19 @@ theorem substitute {a : ZFSet.{u}} {n : Nat} {source : Context.{u} n}
             (morphism.reindexSection functionValue) :=
         functionMoved.cast_family (by rfl)
       exact .application functionForApplication (argumentInduction components)
+  | @pair n context domain codomain first second firstValue secondValue
+      firstMeaning secondMeaning firstInduction secondInduction =>
+      exact .pair (domain := morphism.reindexFamily domain)
+        (codomain := codomain ∘ (morphism.lift domain).environment)
+        (firstInduction components) (secondInduction components)
+  | @first n context domain codomain term value pairMeaning inductionHypothesis =>
+      exact .first (domain := morphism.reindexFamily domain)
+        (codomain := codomain ∘ (morphism.lift domain).environment)
+        (inductionHypothesis components)
+  | @second n context domain codomain term value pairMeaning inductionHypothesis =>
+      exact .second (domain := morphism.reindexFamily domain)
+        (codomain := codomain ∘ (morphism.lift domain).environment)
+        (inductionHypothesis components)
 
 theorem components_identity (a : ZFSet.{u}) {n : Nat} (context : Context.{u} n) :
     Components a context context (Morphism.identity context) ids :=
@@ -230,5 +243,45 @@ theorem beta_square {a : ZFSet.{u}} {n : Nat} {context : Context.{u} n}
     (Denotes.application (.abstraction bodyMeaning) argumentMeaning).change_value
       (ZFSetTraceContextual.app_lam bodyValue argumentValue),
     instantiate bodyMeaning argumentMeaning⟩
+
+/-- First projection computes to the original component with the same set value. -/
+theorem betaSigmaFst_square {a : ZFSet.{u}} {n : Nat} {context : Context.{u} n}
+    {domain : SetFamily context.Environment} {codomain : SetFamily (Extension domain)}
+    {first second : Tower.Tm n} {firstValue : Section domain}
+    {secondValue : Section (fun point => codomain ⟨point, firstValue point⟩)}
+    (firstMeaning : Denotes a context first domain firstValue)
+    (secondMeaning : Denotes a context second
+      (fun point => codomain ⟨point, firstValue point⟩) secondValue)
+    (headEquality : Tower.Head → Tower.Head → Prop) (root : RootComputation Tower.Head) :
+    Step headEquality (.fst (.pair first second)) first root ∧
+      Denotes a context (.fst (.pair first second)) domain firstValue ∧
+      Denotes a context first domain firstValue := by
+  refine ⟨.betaSigmaFst _ _, ?_, firstMeaning⟩
+  exact (Denotes.first (Denotes.pair firstMeaning secondMeaning)).change_value
+    (ZFSetContextualInterpretation.fst_pair firstValue secondValue)
+
+/-- Second projection retains its actual proof/value after aligning the
+dependent index by first-projection computation. -/
+theorem betaSigmaSnd_square {a : ZFSet.{u}} {n : Nat} {context : Context.{u} n}
+    {domain : SetFamily context.Environment} {codomain : SetFamily (Extension domain)}
+    {first second : Tower.Tm n} {firstValue : Section domain}
+    {secondValue : Section (fun point => codomain ⟨point, firstValue point⟩)}
+    (firstMeaning : Denotes a context first domain firstValue)
+    (secondMeaning : Denotes a context second
+      (fun point => codomain ⟨point, firstValue point⟩) secondValue)
+    (headEquality : Tower.Head → Tower.Head → Prop) (root : RootComputation Tower.Head) :
+    Step headEquality (.snd (.pair first second)) second root ∧
+      Denotes a context (.snd (.pair first second))
+        (fun point => codomain ⟨point, firstValue point⟩) secondValue ∧
+      Denotes a context second
+        (fun point => codomain ⟨point, firstValue point⟩) secondValue := by
+  refine ⟨.betaSigmaSnd _ _, ?_, secondMeaning⟩
+  exact (Denotes.second (Denotes.pair firstMeaning secondMeaning)).change_family_value
+    (by rw [ZFSetContextualInterpretation.fst_pair])
+    (ZFSetContextualInterpretation.snd_pair firstValue secondValue)
+
+#print axioms substitute
+#print axioms betaSigmaFst_square
+#print axioms betaSigmaSnd_square
 
 end Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.NativeHOLTraceMixedSubstitution

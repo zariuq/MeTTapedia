@@ -2,9 +2,9 @@ import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.Languages.MeTTa.PeTTa.Answers
 
 /-!
-# Body-closure fusion: executing a clause body under its environment
+# Body-closure fusion: executing an equation body under its environment
 
-When a clause fires, the direct implementation builds a fully substituted copy
+When an equation fires, the direct implementation builds a fully substituted copy
 of the body and hands that copy to the evaluator.  The copy is consumed
 immediately and discarded, so every call pays to materialise structure that no
 observation ever inspects.

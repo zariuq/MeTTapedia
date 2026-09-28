@@ -766,9 +766,7 @@ theorem decode_query_empty_of_mismatch
     (recordDecoded :
       decodeDecision host record = decoded actualInstruction)
     (mismatch :
-      matchPattern
-        (applyBindings bindings (decoded expectedInstruction))
-        (decoded actualInstruction) = []) :
+      matchPattern (decoded expectedInstruction) (decoded actualInstruction) = []) :
     premiseStepWithEnv (relationEnv host) language bindings
       (query "DWMDecodeRecord" [v "record", decoded expectedInstruction]) =
         [] := by
@@ -792,11 +790,13 @@ theorem decode_query_empty_of_mismatch
     have decisionArgumentEmpty :
         matchRelationArgument bindings (decoded expectedInstruction)
           (decoded actualInstruction) = [] := by
+      /- A structural schema is matched in its original form; only a
+         top-level metavariable consults the bindings. -/
       rw [show
         matchRelationArgument bindings (decoded expectedInstruction)
             (decoded actualInstruction) =
-          matchPattern (applyBindings bindings (decoded expectedInstruction))
-            (decoded actualInstruction) by rfl]
+          matchPattern (decoded expectedInstruction) (decoded actualInstruction) by
+        simp only [decoded, DerivationWordMachineLanguageDef.a, matchRelationArgument]]
       exact mismatch
     simp only [matchRelationArgs, recordArgumentExact, List.flatMap_singleton]
     simp [mergeBindings, decisionArgumentEmpty]
@@ -839,9 +839,7 @@ theorem applyRuleUsing_empty_of_decode_mismatch
       bindings ∈
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
           language rule term →
-      matchPattern
-        (applyBindings bindings (decoded expectedInstruction))
-        (decoded actualInstruction) = []) :
+      matchPattern (decoded expectedInstruction) (decoded actualInstruction) = []) :
     applyRuleUsing (engineBasePremises (relationEnv host)) language
       (fun _ => []) rule term = [] := by
   unfold applyRuleUsing
@@ -900,11 +898,7 @@ theorem generic_record_rule_empty_of_decode_mismatch
     (recordDecoded :
       decodeDecision host record = decoded actualInstruction)
     (mismatchAtStart :
-      matchPattern
-        (applyBindings
-          (inputStartBindings record rest nodes nextId root serviceState)
-          (decoded expectedInstruction))
-        (decoded actualInstruction) = []) :
+      matchPattern (decoded expectedInstruction) (decoded actualInstruction) = []) :
     applyRuleUsing (engineBasePremises (relationEnv host)) language
       (fun _ => []) rule
       (run (recordsCons record rest) nodes nextId root serviceState) = [] := by
@@ -940,11 +934,7 @@ theorem generic_lifted_record_rule_empty_of_decode_mismatch
     (recordDecoded :
       decodeDecision host record = decoded actualInstruction)
     (mismatchAtStart :
-      matchPattern
-        (applyBindings
-          (inputStartBindings record rest nodes nextId root serviceState)
-          (decoded expectedInstruction))
-        (decoded actualInstruction) = []) :
+      matchPattern (decoded expectedInstruction) (decoded actualInstruction) = []) :
     applyRuleUsing (engineBasePremises (relationEnv host)) language
       (fun _ => []) (liftRewrite sourceRule)
       (run (recordsCons record rest) nodes nextId root serviceState) = [] := by
@@ -1499,8 +1489,8 @@ theorem generic_non_input_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
+    · simp [decoded, DerivationWordMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.a, v, matchPattern,
         matchArgs]
   · apply generic_lifted_record_rule_empty_of_decode_mismatch host
       DerivationCheckMachineLanguageDef.inferRelevanceFaultTransition record
@@ -1525,8 +1515,8 @@ theorem generic_non_input_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
+    · simp [decoded, DerivationWordMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.a, v, matchPattern,
         matchArgs]
   · apply generic_lifted_record_rule_empty_of_decode_mismatch host
       DerivationCheckMachineLanguageDef.inferParentFaultTransition record rest
@@ -1551,8 +1541,8 @@ theorem generic_non_input_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
+    · simp [decoded, DerivationWordMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.a, v, matchPattern,
         matchArgs]
   · apply generic_lifted_record_rule_empty_of_decode_mismatch host
       DerivationCheckMachineLanguageDef.inferRuleFaultTransition record rest
@@ -1577,8 +1567,8 @@ theorem generic_non_input_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
+    · simp [decoded, DerivationWordMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.a, v, matchPattern,
         matchArgs]
   · apply generic_lifted_record_rule_empty_of_decode_mismatch host
       DerivationCheckMachineLanguageDef.inferAcceptTransition record rest nodes
@@ -1603,8 +1593,8 @@ theorem generic_non_input_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
+    · simp [decoded, DerivationWordMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.a, v, matchPattern,
         matchArgs]
   · apply generic_lifted_record_rule_empty_of_decode_mismatch host
       DerivationCheckMachineLanguageDef.dropFaultTransition record rest nodes
@@ -1627,8 +1617,8 @@ theorem generic_non_input_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
+    · simp [decoded, DerivationWordMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.a, v, matchPattern,
         matchArgs]
   · apply generic_lifted_record_rule_empty_of_decode_mismatch host
       DerivationCheckMachineLanguageDef.dropAcceptTransition record rest nodes
@@ -1651,8 +1641,8 @@ theorem generic_non_input_lifted_rule_empty
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded, DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
+    · simp [decoded, DerivationWordMachineLanguageDef.a,
+        DerivationCheckMachineLanguageDef.a, v, matchPattern,
         matchArgs]
 
 #print axioms generic_non_input_lifted_rule_empty

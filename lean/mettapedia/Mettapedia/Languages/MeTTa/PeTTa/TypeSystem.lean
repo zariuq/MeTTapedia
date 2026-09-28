@@ -248,16 +248,31 @@ theorem typeOf_mono_addAtom {s : PeTTaSpace} {p t : Pattern} (newFact : Pattern)
 
 /-! ## Typing of PeTTaEval Results -/
 
-/-- **Type preservation for `var`**: free variables evaluate to themselves
-    and thus preserve their type (trivially). -/
+/-! Preservation below is stated **along a specific evaluation rule**, and the
+statements mention the answer list that rule produces.  General preservation —
+`PeTTaEval s p as → MeTTaType s p t → ∀ q ∈ as, MeTTaType s q t` for arbitrary
+`p` — is *not* proved here: it would need the `ruleApp` case, where the answer
+is the rule's right-hand side under a substitution and nothing yet relates its
+type to the left-hand side's. -/
+
+/-- **Preservation along the `var` rule.**  `PeTTaEval.var` sends a free
+variable to the single answer `[x]`, so every answer it produces carries the
+variable's type. -/
 theorem typePreserved_var (s : PeTTaSpace) (x : String) (t : Pattern)
     (ht : MeTTaType s (.fvar x) t) :
-    MeTTaType s (.fvar x) t := ht
+    ∀ q ∈ ([Pattern.fvar x] : Answers), MeTTaType s q t := by
+  intro q hq
+  rcases List.mem_singleton.mp hq with rfl
+  exact ht
 
-/-- **Type preservation for `ground`**: ground atoms evaluate to themselves. -/
+/-- **Preservation along the `ground` rule.**  `PeTTaEval.ground` sends a
+nullary application to the single answer `[c]`. -/
 theorem typePreserved_ground (s : PeTTaSpace) (c : String) (t : Pattern)
     (ht : MeTTaType s (.apply c []) t) :
-    MeTTaType s (.apply c []) t := ht
+    ∀ q ∈ ([Pattern.apply c []] : Answers), MeTTaType s q t := by
+  intro q hq
+  rcases List.mem_singleton.mp hq with rfl
+  exact ht
 
 /-- Every evaluated pattern has `%Undefined%` as a type (trivially by `undefinedIsTop`).
     This shows the type system is always satisfiable — no term is type-less. -/

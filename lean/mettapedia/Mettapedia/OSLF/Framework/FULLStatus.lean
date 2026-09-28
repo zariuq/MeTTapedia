@@ -1779,8 +1779,6 @@ These checks tie tracker statements to concrete constants in the codebase.
 #print axioms Mettapedia.TypeTheory.Models.RevisionedFamilies.CheckedOpenScopeExecution.ExecutedAnswer.proofRelevantEvent_site
 #print axioms Mettapedia.TypeTheory.Models.RevisionedFamilies.CheckedOpenScopeExecution.ExecutedAnswer.authoredRuleSelected
 #print axioms Mettapedia.TypeTheory.Models.RevisionedFamilies.CheckedOpenScopeExecution.consumeTerm
-#print axioms Mettapedia.Languages.MeTTa.CoreProfile.twoSortProfile_stratified
-#print axioms Mettapedia.Languages.MeTTa.RuntimeSpec.heRuntimeSpec_state_context_fact
 #print axioms Mettapedia.TypeTheory.Models.RevisionedFamilies.ComputedOpenAnswerFamily.observableReceipt_intrinsicEquiv
 #print axioms Mettapedia.TypeTheory.Models.RevisionedFamilies.ComputedOpenAnswerFamily.intrinsicReceipt_empty_of_unsupported
 #check Mettapedia.OSLF.Framework.WMCalculusCombinedNamedFirstOrder.checkedClosedMatch_reifiesIntrinsicInstance

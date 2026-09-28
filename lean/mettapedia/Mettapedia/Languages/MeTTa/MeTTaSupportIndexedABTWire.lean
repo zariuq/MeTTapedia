@@ -486,16 +486,16 @@ theorem checkCandidateRowV1_eq_true_iff
       rcases resolved with ⟨candidate, ordinal⟩
       constructor
       · intro checked
-        have clauses :
+        have conjuncts :
             row.worldToken = world.token ∧
               row.queryPattern = queryPattern ∧
               candidate = row.candidate := by
           simpa [checkCandidateRowV1, resolution, and_assoc] using checked
         exact ⟨{
-          token_eq := clauses.1
-          query_eq := clauses.2.1
+          token_eq := conjuncts.1
+          query_eq := conjuncts.2.1
           ordinal := ordinal
-          resolved := by simpa [clauses.2.2] using resolution
+          resolved := by simpa [conjuncts.2.2] using resolution
         }⟩
       · rintro ⟨refinement⟩
         have pairEquality :

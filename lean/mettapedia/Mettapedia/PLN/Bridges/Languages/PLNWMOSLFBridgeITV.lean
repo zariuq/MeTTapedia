@@ -472,7 +472,8 @@ theorem language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
             (wmPatternValuation
               (State := State) (Srt := Srt) (Query := Query) W₂ queryOfAtom₂ a0
                 (m.mapTerm (pick u)))) := by
-    simpa [Mettapedia.OSLF.Formula.sem, wmPatternValuation] using hAtom
+    simpa [Mettapedia.OSLF.Formula.sem, Mettapedia.OSLF.Formula.semEnv, wmPatternValuation]
+      using hAtom
   change tau ≤ coord
     (wmITVAtomSemQSigma
       (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx₂)

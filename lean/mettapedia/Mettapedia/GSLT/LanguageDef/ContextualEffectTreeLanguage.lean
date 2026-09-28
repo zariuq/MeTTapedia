@@ -297,6 +297,7 @@ local macro "validate_effect_tree_rule" : tactic =>
       LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
       LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
       LanguageDef.premiseProducedFvarNames, LanguageDef.premiseForAllParams,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped,
       Pattern.constructorRefs, Pattern.constructorRefsList, Pattern.freeFvarNames,
       Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
       LanguageDef.typeNames]

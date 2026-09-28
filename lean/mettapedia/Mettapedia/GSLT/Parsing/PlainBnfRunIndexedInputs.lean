@@ -2,9 +2,9 @@ import Mettapedia.GSLT.Parsing.PlainBnfRunSourceExecution
 import Mettapedia.GSLT.Parsing.PlainBnfControllerPublicationFrontier
 
 /-!
-# Indexed source inputs through the actual Run/Closure clauses
+# Indexed source inputs through the actual Run/Closure rules
 
-Actual reverse-index execution discharges the publication clause's dependent
+Actual reverse-index execution discharges the publication rule's dependent
 bucket premise. Actual enumeration supplies the closure's complete ordered
 candidate input. These are compositions of proved source executions, not
 whole-loop convergence or generated/native correctness theorems.

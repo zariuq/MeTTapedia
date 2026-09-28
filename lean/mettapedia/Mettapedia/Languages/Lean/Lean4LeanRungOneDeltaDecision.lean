@@ -428,9 +428,9 @@ def coreRawStepDecisionOfCatalog
   decideStep := catalogHeadDecideStep catalog universeParameters
   correct := by
     intro source target
-    rw [catalogHeadDecideStep_correct]
-    exact (nonempty_catalogHeadEvent_iff_coreRawHeadEvent catalog
-      universeParameters source target)
+    exact (catalogHeadDecideStep_correct catalog universeParameters source target).trans
+      (nonempty_catalogHeadEvent_iff_coreRawHeadEvent catalog
+        universeParameters source target)
 
 /-- Exact finite endpoint enumeration for the existing raw Lean GSLT. -/
 def coreRawSuccessorEnumerationOfCatalog
@@ -459,9 +459,10 @@ theorem coreRawStepDecisionOfCatalog_accepts_iff_ntt
       (gsltOSLF (coreRawHeadGSLT environment universeParameters)).satisfies
         source
         (exactCoreRawHeadTargetType environment universeParameters target).pred := by
-  rw [(coreRawStepDecisionOfCatalog catalog universeParameters).correct,
-    satisfies_exactCoreRawHeadTargetType_iff_event]
-  rfl
+  exact ((coreRawStepDecisionOfCatalog catalog universeParameters).correct
+    source target).trans
+      (satisfies_exactCoreRawHeadTargetType_iff_event environment
+        universeParameters source target).symm
 
 /-! ## Controls -/
 

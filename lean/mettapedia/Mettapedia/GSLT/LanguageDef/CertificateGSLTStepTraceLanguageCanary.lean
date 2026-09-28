@@ -195,7 +195,10 @@ theorem ab_langReduces : langReduces genLanguage termA termB := by
   · simp [genLanguage]
   · simp [genLanguage, rewriteAB, termA, matchPattern, matchArgs]
   · exact .nil []
-  · simp [genLanguage, rewriteAB, termB, applyBindings]
+  · change applyRuleBindings rewriteAB [] = termB
+    rw [applyRuleBindings_eq_applyBindings _ _
+      (ruleDepthAligned_of_binderFree _ (by decide) (by decide))]
+    simp [rewriteAB, termB, applyBindings]
 
 /-- The compiled faithfulness counterexample: the language has no step
 `f a → f b`, because MeTTaIL grants no representation-wide congruence.  A

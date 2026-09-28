@@ -328,6 +328,10 @@ theorem pln_step_implies_mork_fireSourceRule
       · exact .relationQuery (.relationQuery .nil)
       · exact .relationQuery .nil)
     plnPremise_all_fvar_lhs plnPremise_all_rhs_translatable
+    (by
+      intro rule ruleMember
+      simp [plnPremiseLanguageDef] at ruleMember
+      rcases ruleMember with rfl | rfl | rfl <;> decide)
     plnPremise_all_premises_translatable hground s hp_in hchain
 
 /-- PLN guarded ext bridge: if the authored language takes a step using a rule
@@ -362,6 +366,10 @@ theorem pln_guarded_step_implies_mork_fireSourceRule
       · exact .relationQuery (.relationQuery (.freshness (.freshness .nil)))
       · exact .relationQuery (.relationQuery .nil))
     plnGuardedPremise_all_fvar_lhs plnGuardedPremise_all_rhs_translatable
+    (by
+      intro rule ruleMember
+      simp [plnGuardedPremiseLanguageDef] at ruleMember
+      rcases ruleMember with rfl | rfl | rfl <;> decide)
     plnGuardedPremise_all_premises_ext_translatable hground s hp_in hchain
 
 /-! ## Canary -/

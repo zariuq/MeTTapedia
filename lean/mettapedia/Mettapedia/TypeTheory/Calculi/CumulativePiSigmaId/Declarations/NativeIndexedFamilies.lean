@@ -2747,8 +2747,8 @@ def consApp_constantOccurrence (element head tail : Tower.Tm n) :
     ConstantOccurrence consName (consApp element head tail) :=
   .appFunction (.appFunction (.appFunction .here))
 
-def nilIotaClause :
-    IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+def nilIotaRule :
+    IotaRule Tower.rules rawSignature proofRelevantIotaComputation
       (listConstructors.map ConstructorSpec.name) listEliminatorSpec.name where
   constructorName := nilName
   constructorDeclared := by
@@ -2758,8 +2758,8 @@ def nilIotaClause :
   eliminatorHead := .app eliminateAtParameters_applicationHead
   constructorOccurrence := .appArgument (nilApp_constantOccurrence (.var 3))
 
-noncomputable def consIotaClause :
-    IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+noncomputable def consIotaRule :
+    IotaRule Tower.rules rawSignature proofRelevantIotaComputation
       (listConstructors.map ConstructorSpec.name) listEliminatorSpec.name where
   constructorName := consName
   constructorDeclared := by
@@ -2770,10 +2770,10 @@ noncomputable def consIotaClause :
   constructorOccurrence :=
     .appArgument (consApp_constantOccurrence (.var 5) (.var 1) (.var 0))
 
-noncomputable def listIotaClauses :
-    List (IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+noncomputable def listIotaRules :
+    List (IotaRule Tower.rules rawSignature proofRelevantIotaComputation
       (listConstructors.map ConstructorSpec.name) listEliminatorSpec.name) :=
-  [nilIotaClause, consIotaClause]
+  [nilIotaRule, consIotaRule]
 
 /-- the cumulative Π/Σ/Id profile's native List is a formed, strictly-positive declaration candidate.
 The signature also carries `J`; accordingly these two schemas are explicitly
@@ -2805,12 +2805,12 @@ noncomputable def listCandidate : Candidate Tower.rules where
     simp only [listConstructors, List.mem_cons, List.not_mem_nil, or_false]
       at membership
     rcases membership with rfl | rfl <;> decide
-  iotaClauses := listIotaClauses
+  iotaRules := listIotaRules
   constructorsComputed := by
     intro constructorName membership
     simp [listConstructors, nilConstructorSpec, consConstructorSpec] at membership
     rcases membership with rfl | rfl <;>
-      simp [listIotaClauses, nilIotaClause, consIotaClause]
+      simp [listIotaRules, nilIotaRule, consIotaRule]
 
 /-- Native negative control: an occurrence of `List` in a function domain is
 not strictly positive, even though its index is family-free. -/

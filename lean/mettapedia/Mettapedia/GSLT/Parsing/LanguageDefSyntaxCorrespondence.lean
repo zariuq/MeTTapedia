@@ -148,6 +148,23 @@ private theorem RulesCompile.rule_member
 
 /-! ## A distinct generated-IR derivation judgment -/
 
+/-- Each generated constructor carries the exact, sorted source-item layout.
+This exposes the structural compilation evidence to grammar-indexed algebras;
+clients do not reconstruct a signature by inspecting example parse trees. -/
+theorem compileRules_member_items
+    {binding : Binding} {language : LanguageDef}
+    {rules : List CompiledRule}
+    (compiled : compileRules? binding language = some rules)
+    {rule : CompiledRule} (member : rule ∈ rules) :
+    ItemsCompile binding rule.source rule.source.syntaxPattern rule.atoms := by
+  obtain ⟨source, _, ruleCompiled⟩ :=
+    (rulesCompile_of_compileRules binding language rules compiled).rule_member member
+  have same := compileRule_source binding source rule ruleCompiled
+  have atoms := compileRule_atoms binding source rule ruleCompiled
+  subst source
+  exact itemsCompile_of_mapM binding rule.source rule.source.syntaxPattern rule.atoms
+    (by simpa [compileItems?] using atoms)
+
 mutual
   /-- Token-level derivation of the generated structural-rule IR. -/
   inductive CompiledDerives (rules : List CompiledRule) :
@@ -254,7 +271,7 @@ mutual
 end
 
 mutual
-  private def reflectDerivation
+  private theorem reflectDerivation
       {language : LanguageDef} {rules : List CompiledRule}
       (sourceRules : rules.map (fun rule => rule.source) = language.terms)
       {sort : String} {tokens : List String} {tree : Pattern}
@@ -268,7 +285,7 @@ mutual
             exact List.mem_map.mpr ⟨rule, member, rfl⟩)
           sort sortEq tokens children (reflectItems sourceRules items)
 
-  private def reflectItems
+  private theorem reflectItems
       {language : LanguageDef} {rules : List CompiledRule}
       (sourceRules : rules.map (fun rule => rule.source) = language.terms)
       {rule : GrammarRule} {items : List SyntaxItem}

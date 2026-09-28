@@ -1,5 +1,6 @@
 import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelRuntimeBridge
 import Mettapedia.Languages.MeTTa.HE.HELanguageDef
+import Mettapedia.Languages.MeTTa.HE.CoreFragment
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
 
@@ -130,7 +131,8 @@ def wmConsequenceRuleOn_of_rule
     · rw [hprem]
       exact .nil
     · simp [hprem, Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
-    · simpa [mettaHE] using hq
+    · simpa [mettaHE, applyRuleBindings_eq_applyBindings r bs
+        (Mettapedia.Languages.MeTTa.HE.CoreFragment.mettaHE_depthAligned r hr)] using hq
 
 end HEJudgmentWMInterface
 

@@ -7,7 +7,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfGeneratedScalarListExecution
 # Connected selected Integer NativeType refinement
 
 Authenticated source occurrence judgments supply the provider occurrence bound.
-The actual two complementary scalar clauses transport that bound to the
+The actual two complementary scalar rules transport that bound to the
 generated scalar worker, where the actual scalar-list result binder consumes
 it. Source and target inventories remain the existing authenticated/proved
 inventories; no provider returns a computed scalar diagnostic.
@@ -95,18 +95,18 @@ theorem authenticated_provider_occurrences
   exact (GeneratedPeTTaNativeTypeBinding.native_completion_binding _ _ _ typed).2
     _ _ execution |>.2.1
 
-private theorem clause_length (index : Fin 2) (left right : Int) (origin : SExpr)
+private theorem rule_length (index : Fin 2) (left right : Int) (origin : SExpr)
     (bound : ∀ answers, PlainBnfScalarOrderSource.providerAnswers?
       (binaryQuery (selectedInfo index 0).relation left right) = some answers →
         answers.length ≤ 1)
     (answers : List SExpr)
-    (completed : PlainBnfScalarOrderSource.clauseAnswers? (PlainBnfScalarOrderSource.scalarRow index) left right origin = some answers) :
+    (completed : PlainBnfScalarOrderSource.ruleAnswers? (PlainBnfScalarOrderSource.scalarRow index) left right origin = some answers) :
     answers.length ≤ 1 := by
-  have shape : PlainBnfScalarOrderSource.clauseAnswers? (PlainBnfScalarOrderSource.scalarRow index) left right origin =
+  have shape : PlainBnfScalarOrderSource.ruleAnswers? (PlainBnfScalarOrderSource.scalarRow index) left right origin =
       (PlainBnfScalarOrderSource.providerAnswers? (binaryQuery (selectedInfo index 0).relation left right)).map
         (fun values => values.map (fun _ => if index.val = 0 then
           SExpr.atom "BNFDiagnosticsNilV1" else PlainBnfGeneratedScalarOrderExecution.diagnostic left right origin)) := by
-    unfold PlainBnfScalarOrderSource.clauseAnswers?
+    unfold PlainBnfScalarOrderSource.ruleAnswers?
     rw [PlainBnfScalarOrderSource.scalarRow_head, PlainBnfScalarOrderSource.scalarRow_body]
     fin_cases index <;>
       simp [SourceSExprPatternInstantiation.instantiate?,
@@ -117,9 +117,9 @@ private theorem clause_length (index : Fin 2) (left right : Int) (origin : SExpr
   obtain ⟨values, evaluated, rfl⟩ := Option.map_eq_some_iff.mp completed
   simpa using bound values evaluated
 
-/-- Two individually semideterministic clauses are not generally
+/-- Two individually semideterministic rules are not generally
 semideterministic together. Here the actual guards are complementary, so only
-one clause can contribute; its occurrence bound comes from the NativeType. -/
+one rule can contribute; its occurrence bound comes from the NativeType. -/
 theorem authenticated_scalar_occurrences
     {rawSources : List SExpr} {packet : IntegerProviderNativeTypeCodec.Packet} {sources : List Source}
     (decoded : IntegerProviderNativeTypeCodec.decodeSource? rawSources = some sources)
@@ -131,26 +131,26 @@ theorem authenticated_scalar_occurrences
     (left right : Int) (origin : SExpr) (answers : List SExpr)
     (completed : PlainBnfScalarOrderSource.sourceAnswers? left right origin = some answers) :
     answers.length ≤ 1 := by
-  have bound (index : Fin 2) := clause_length index left right origin
+  have bound (index : Fin 2) := rule_length index left right origin
     (fun values evaluated => authenticated_provider_occurrences decoded accepted index
       (occurrences index) (member index) (selected index) left right values evaluated)
   unfold PlainBnfScalarOrderSource.sourceAnswers? at completed
   rw [PlainBnfScalarOrderSource.scalarRows_exact] at completed
   by_cases increasing : left < right
-  · have inactive : PlainBnfScalarOrderSource.clauseAnswers? (PlainBnfScalarOrderSource.scalarRow 1) left right origin = some [] := by
-      rw [PlainBnfScalarOrderSource.second_clause_answers]
+  · have inactive : PlainBnfScalarOrderSource.ruleAnswers? (PlainBnfScalarOrderSource.scalarRow 1) left right origin = some [] := by
+      rw [PlainBnfScalarOrderSource.second_rule_answers]
       simp [show ¬ right ≤ left by omega]
     simp only [List.mapM_cons, List.mapM_nil, inactive] at completed
-    cases active : PlainBnfScalarOrderSource.clauseAnswers? (PlainBnfScalarOrderSource.scalarRow 0) left right origin with
+    cases active : PlainBnfScalarOrderSource.ruleAnswers? (PlainBnfScalarOrderSource.scalarRow 0) left right origin with
     | none => simp [active] at completed
     | some values =>
         have same : values = answers := by simpa [active] using completed
         exact same ▸ bound 0 values active
-  · have inactive : PlainBnfScalarOrderSource.clauseAnswers? (PlainBnfScalarOrderSource.scalarRow 0) left right origin = some [] := by
-      rw [PlainBnfScalarOrderSource.first_clause_answers]
+  · have inactive : PlainBnfScalarOrderSource.ruleAnswers? (PlainBnfScalarOrderSource.scalarRow 0) left right origin = some [] := by
+      rw [PlainBnfScalarOrderSource.first_rule_answers]
       simp [increasing]
     simp only [List.mapM_cons, List.mapM_nil, inactive] at completed
-    cases active : PlainBnfScalarOrderSource.clauseAnswers? (PlainBnfScalarOrderSource.scalarRow 1) left right origin with
+    cases active : PlainBnfScalarOrderSource.ruleAnswers? (PlainBnfScalarOrderSource.scalarRow 1) left right origin with
     | none => simp [active] at completed
     | some values =>
         have same : values = answers := by simpa [active] using completed
@@ -543,15 +543,15 @@ theorem wrong_polarity_not_authentic :
   simp [BinaryTypeInfo.Authentic, selected, selectedInfo, binaryShape,
     SourceIntegerProvider.sourceVariableToken]
 
-/-- Duplicating a successful source clause duplicates occurrences. The
+/-- Duplicating a successful source rule duplicates occurrences. The
 authenticated provider license alone cannot license an enlarged scalar family. -/
-theorem duplicate_scalar_clause_not_licensed (origin : SExpr) :
+theorem duplicate_scalar_rule_not_licensed (origin : SExpr) :
     (do let answers ← [PlainBnfScalarOrderSource.scalarRow 0,
           PlainBnfScalarOrderSource.scalarRow 0].mapM
-          (fun row => PlainBnfScalarOrderSource.clauseAnswers? row (-2) (-1) origin)
+          (fun row => PlainBnfScalarOrderSource.ruleAnswers? row (-2) (-1) origin)
         pure answers.flatten : Option (List SExpr)) =
       some [.atom "BNFDiagnosticsNilV1", .atom "BNFDiagnosticsNilV1"] :=
-  PlainBnfScalarOrderSource.repeated_clause_not_semidet (-2) (-1) origin (by decide)
+  PlainBnfScalarOrderSource.repeated_rule_not_semidet (-2) (-1) origin (by decide)
 
 #print axioms authenticated_provider_occurrences
 #print axioms authenticated_scalar_occurrences
@@ -566,6 +566,6 @@ theorem duplicate_scalar_clause_not_licensed (origin : SExpr) :
 #print axioms authenticated_scalar_list_caller_let
 #print axioms successful_continuation_control
 #print axioms wrong_polarity_not_authentic
-#print axioms duplicate_scalar_clause_not_licensed
+#print axioms duplicate_scalar_rule_not_licensed
 
 end Mettapedia.GSLT.Parsing.PlainBnfSelectedNativeTypeRefinement

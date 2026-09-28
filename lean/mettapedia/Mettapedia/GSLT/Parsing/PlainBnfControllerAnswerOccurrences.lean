@@ -3,7 +3,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfControllerInvariant
 /-!
 # Finite-depth answer occurrences of the actual discovery controller
 
-The existing contextual evaluator executes the original Run clauses. Every
+The existing contextual evaluator executes the original Run rules. Every
 invariant state returns at most one answer occurrence at any finite depth.
 The proof follows the exact done, rollover, and publication answer lists;
 it neither deduplicates equal values nor assumes termination or a final answer.
@@ -112,7 +112,7 @@ theorem run_cannot_repeat_answer (productive : Bool) (admitted : PlainBnfSemanti
   rw [duplicated] at bounded
   simp at bounded
 
-/-- The real done clause supplies a positive singleton, not merely an upper bound. -/
+/-- The real done rule supplies a positive singleton, not merely an upper bound. -/
 theorem done_one_occurrence (productive : Bool) (fuel : Nat) (reverse : NameIndex)
     (lexicals : List PlainBnfStructuredDenotation.LexicalDeclaration)
     (index : NameIndex) (history : List SExpr) (scheduled : NameIndex) :

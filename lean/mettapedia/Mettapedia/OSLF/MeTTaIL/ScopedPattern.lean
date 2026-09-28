@@ -1,4 +1,5 @@
 import Mettapedia.OSLF.MeTTaIL.Syntax
+import Mettapedia.OSLF.MeTTaIL.Substitution
 
 /-!
 # Quote-aware scope checking for locally nameless patterns
@@ -230,6 +231,103 @@ theorem binderSafeAt_mono
       rw [binderSafeListAt_eq_true_iff] at safe ⊢
       intro member membership
       exact inductionHypothesis member membership (safe member membership) scope
+
+open Mettapedia.OSLF.MeTTaIL.Substitution (liftBVars)
+
+/-- Moving a scoped pattern beneath fresh binders respects sealed quotes:
+inside a literal quote, the code is already closed to the outer context. -/
+theorem binderSafeAt_liftBVars
+    (quoteConstructor : String)
+    {pattern : Pattern} {cutoff depth shift : Nat}
+    (safe : binderSafeAt quoteConstructor depth pattern = true)
+    (within : cutoff ≤ depth) :
+    binderSafeAt quoteConstructor (depth + shift)
+      (liftBVars cutoff shift pattern) = true := by
+  induction pattern using Pattern.inductionOn generalizing cutoff depth with
+  | hbvar index =>
+      simp only [binderSafeAt, decide_eq_true_eq] at safe
+      simp only [liftBVars]
+      split <;> simp only [binderSafeAt, decide_eq_true_eq] <;> omega
+  | hfvar _ =>
+      rfl
+  | happly constructor arguments ih =>
+      cases arguments with
+      | nil =>
+          rfl
+      | cons first rest =>
+          cases rest with
+          | nil =>
+              by_cases quote : constructor = quoteConstructor
+              · subst constructor
+                have firstSafe : binderSafeAt quoteConstructor 0 first = true := by
+                  simpa [binderSafeAt] using safe
+                have firstScoped :=
+                  Mettapedia.OSLF.MeTTaIL.ScopedPattern.isWellScopedAt_of_binderSafeAt
+                    quoteConstructor firstSafe
+                have unchanged :=
+                  Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_eq_self_of_isWellScopedAt
+                    (cutoff := cutoff) (shift := shift)
+                    (Mettapedia.OSLF.MeTTaIL.ScopedPattern.isWellScopedAt_mono
+                      firstScoped (Nat.zero_le cutoff))
+                simpa [liftBVars,
+                  Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList,
+                  binderSafeAt, unchanged] using firstSafe
+              · have firstSafe : binderSafeAt quoteConstructor depth first = true := by
+                  simpa [binderSafeAt, quote,
+                    Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeListAt] using safe
+                have result := ih first (by simp) firstSafe within
+                simpa [liftBVars,
+                  Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList,
+                  binderSafeAt, quote,
+                  Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeListAt] using result
+          | cons second remainder =>
+              rw [show binderSafeAt quoteConstructor depth
+                    (.apply constructor (first :: second :: remainder)) =
+                    Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeListAt
+                      quoteConstructor depth (first :: second :: remainder) by rfl] at safe
+              simp only [liftBVars,
+                Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map]
+              rw [show binderSafeAt quoteConstructor (depth + shift)
+                    (.apply constructor
+                      (List.map (liftBVars cutoff shift)
+                        (first :: second :: remainder))) =
+                    Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeListAt
+                      quoteConstructor (depth + shift)
+                        (List.map (liftBVars cutoff shift)
+                          (first :: second :: remainder)) by rfl]
+              rw [Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeListAt_eq_true_iff]
+                at safe ⊢
+              intro member membership
+              obtain ⟨original, originalMem, rfl⟩ := List.mem_map.mp membership
+              exact ih original (by simp_all) (safe original originalMem) within
+  | hlambda binder body ih =>
+      simp only [binderSafeAt] at safe
+      simp only [liftBVars, binderSafeAt]
+      simpa only [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        ih safe (Nat.add_le_add_right within 1)
+  | hmultiLambda arity binders body ih =>
+      simp only [binderSafeAt] at safe
+      simp only [liftBVars, binderSafeAt]
+      simpa only [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        ih safe (Nat.add_le_add_right within arity)
+  | hsubst body replacement ihBody ihReplacement =>
+      simp only [binderSafeAt, Bool.and_eq_true] at safe ⊢
+      simp only [liftBVars, binderSafeAt, Bool.and_eq_true]
+      exact ⟨by
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+          ihBody safe.1 (Nat.add_le_add_right within 1),
+        ihReplacement safe.2 within⟩
+  | hcollection collection elements rest ih =>
+      simp only [binderSafeAt] at safe ⊢
+      rw [Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeListAt_eq_true_iff]
+        at safe
+      simp only [liftBVars,
+        Mettapedia.OSLF.MeTTaIL.Substitution.liftBVarsList_eq_map,
+        binderSafeAt]
+      rw [Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeListAt_eq_true_iff]
+      intro member membership
+      obtain ⟨original, originalMem, rfl⟩ := List.mem_map.mp membership
+      exact ih original originalMem (safe original originalMem) within
 
 /-! ## Positive and negative controls -/
 

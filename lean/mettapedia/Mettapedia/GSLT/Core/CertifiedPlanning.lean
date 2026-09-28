@@ -140,7 +140,7 @@ theorem sourceAgreement {Base : Type uBase}
 
 /-- Two adequate realizations with the same source observation admit a
 canonical semantic comparison. -/
-def ofSourceAgreement {Base : Type uBase}
+theorem ofSourceAgreement {Base : Type uBase}
     {Source : Base → Type uSource}
     {LeftArtifact : Base → Type uArtifactLeft}
     {RightArtifact : Base → Type uArtifactRight}
@@ -156,7 +156,7 @@ def ofSourceAgreement {Base : Type uBase}
     exact agreement base source
 
 /-- Identity 2-cell. -/
-def refl {Base : Type uBase}
+theorem refl {Base : Type uBase}
     {Source : Base → Type uSource}
     {Artifact : Base → Type uArtifactLeft}
     {Observation : Base → Type uObservation}
@@ -165,7 +165,7 @@ def refl {Base : Type uBase}
   compiled := by intros; rfl
 
 /-- Reverse a semantic comparison. -/
-def symm {Base : Type uBase}
+theorem symm {Base : Type uBase}
     {Source : Base → Type uSource}
     {LeftArtifact : Base → Type uArtifactLeft}
     {RightArtifact : Base → Type uArtifactRight}
@@ -176,7 +176,7 @@ def symm {Base : Type uBase}
   compiled := fun base source => (cell.compiled base source).symm
 
 /-- Vertical composition of semantic comparisons. -/
-def trans {Base : Type uBase}
+theorem trans {Base : Type uBase}
     {Source : Base → Type uSource}
     {LeftArtifact : Base → Type uArtifactLeft}
     {MiddleArtifact : Base → Type uArtifactMiddle}
@@ -191,7 +191,7 @@ def trans {Base : Type uBase}
     (first.compiled base source).trans (second.compiled base source)
 
 /-- Precomposition by the same certified stage preserves a 2-cell. -/
-def precompose {Base : Type uBase}
+theorem precompose {Base : Type uBase}
     {PrefixSource : Base → Type uPrefix}
     {Source : Base → Type uSource}
     {LeftArtifact : Base → Type uArtifactLeft}
@@ -211,7 +211,7 @@ def precompose {Base : Type uBase}
 
 /-- Postcomposition by separately certified lowering stages preserves a
 2-cell when each shared boundary names the same observation. -/
-def postcompose {Base : Type uBase}
+theorem postcompose {Base : Type uBase}
     {Source : Base → Type uSource}
     {LeftArtifact : Base → Type uArtifactLeft}
     {RightArtifact : Base → Type uArtifactRight}
@@ -243,7 +243,7 @@ def postcompose {Base : Type uBase}
 
 /-- Whiskering by an observation quotient preserves route agreement while
 making the information loss explicit. -/
-def mapObservation {Base : Type uBase}
+theorem mapObservation {Base : Type uBase}
     {Source : Base → Type uSource}
     {LeftArtifact : Base → Type uArtifactLeft}
     {RightArtifact : Base → Type uArtifactRight}
@@ -261,7 +261,7 @@ def mapObservation {Base : Type uBase}
 
 /-- A hybrid backend selected from two adequate realizations remains joined to
 the left route by a semantic 2-cell. -/
-def selectToLeft {Base : Type uBase}
+theorem selectToLeft {Base : Type uBase}
     {Source : Base → Type uSource}
     {LeftArtifact : Base → Type uArtifactLeft}
     {RightArtifact : Base → Type uArtifactRight}
@@ -276,7 +276,7 @@ def selectToLeft {Base : Type uBase}
 
 /-- The same hybrid selection remains joined to the right route.  Thus
 backend choice is a two-dimensional comparison, not a new semantic root. -/
-def selectToRight {Base : Type uBase}
+theorem selectToRight {Base : Type uBase}
     {Source : Base → Type uSource}
     {LeftArtifact : Base → Type uArtifactLeft}
     {RightArtifact : Base → Type uArtifactRight}
@@ -672,7 +672,7 @@ theorem withFallback_compile_fallback {Base : Type uBase}
 
 /-- The total fallback assembly is semantically joined to its reference
 backend for every request, including requests admitted by the fast path. -/
-def withFallbackToReferenceCell {Base : Type uBase}
+theorem withFallbackToReferenceCell {Base : Type uBase}
     {Source : Base → Type uSource}
     {FastArtifact : Base → Type uArtifactLeft}
     {FallbackArtifact : Base → Type uArtifactRight}

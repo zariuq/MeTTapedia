@@ -6,7 +6,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfReadinessEnvironment
 /-!
 # Authored nullable-expression execution
 
-The selected seventeen graph-source clauses execute over the existing
+The selected seventeen graph-source rules execute over the existing
 source-spanned String expression carrier, known-name trie/history, and lexical
 lookup. Known-name lookup has priority over lexical lookup. Boolean totality
 uses the explicit known-index validity invariant; arbitrary stored payloads
@@ -25,7 +25,8 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfStructuredDenotation (SourceSpan Element Alternative Expression LexicalDeclaration)
 open PlainBnfGraphNameTrie (Trie)
 open PlainBnfTrieSourceExecution (scalarRelations call result observedRule result_injective)
@@ -193,6 +194,10 @@ private theorem premiseClosed_mono (small large : List String) (included : small
   cases premise with
   | congruence source _ =>
     exact PlainBnfReadinessEnvironment.headedBy_mono small large included source closed
+  | scopedStep step =>
+    simp only [premiseClosed, Bool.or_eq_true] at closed ⊢
+    exact closed.imp id
+      (PlainBnfReadinessEnvironment.headedBy_mono small large included step.source)
   | _ => rfl
 
 theorem family_closed : language.rewrites.all
@@ -416,6 +421,7 @@ theorem after_lexical_answers (fuel : Nat) (found : Option LexicalDeclaration) :
     cases found <;>
       simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
         applyRuleUsing, afterLexicalCall, lookupResult, call, answer, result,
+        applyRuleBindings_of_binderFree, binderFree, binderFreeList,
         pattern, patternList, SourceIntegerProvider.sourceVariableToken,
         encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
         premisesUsing, premiseStepUsing, applyBindings]
@@ -427,6 +433,7 @@ private theorem after_lookup_present (fuel : Nat) (key : String) (lexicals : Lis
     simp [afterLookupCall, call, encode, encodeList, headedBy, nullableHeads])]
   simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     applyRuleUsing, afterLookupCall, nameResult, call, answer, result,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -444,6 +451,7 @@ private theorem after_lookup_missing (fuel : Nat) (key : String) (lexicals : Lis
     PlainBnfKnownNamesSourceExecution.mode?, PlainBnfCollectorSourceExecution.mode?,
     PlainBnfReferenceCollectionSourceExecution.mode?,
     applyRuleUsing, afterLookupCall, nameResult, call,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -483,6 +491,7 @@ private theorem literal_answers (fuel : Nat) (value : String) (location : Source
     subst value
     simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
       applyRuleUsing, elementCall, element, text, PlainBnfCollectorSourceExecution.name,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       call, answer, result, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
       encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
       premisesUsing, premiseStepUsing, applyBindings]
@@ -493,6 +502,7 @@ private theorem literal_answers (fuel : Nat) (value : String) (location : Source
       simp at chars
     simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
       applyRuleUsing, elementCall, element, text, chars, PlainBnfCollectorSourceExecution.name,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       call, answer, result, nonempty, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
       encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
       premisesUsing, premiseStepUsing, applyBindings]
@@ -512,6 +522,7 @@ private theorem reference_answers (fuel : Nat) (key : String) (location : Source
   simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     PlainBnfKnownNamesSourceExecution.mode?,
     applyRuleUsing, elementCall, element, call, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
   simp only [call, encode, encodeList] at queried
@@ -564,6 +575,7 @@ theorem elements_pair_answers (fuel : Nat) (index : Trie SExpr Nat) (history : L
       | nil =>
         simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
           applyRuleUsing, elementsCall, elements, elementsHeight, elementsMeaning, call, answer, result,
+          applyRuleBindings_of_binderFree, binderFree, binderFreeList,
           pattern, patternList, SourceIntegerProvider.sourceVariableToken,
           encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
           premisesUsing, premiseStepUsing, applyBindings]
@@ -572,6 +584,7 @@ theorem elements_pair_answers (fuel : Nat) (index : Trie SExpr Nat) (history : L
         have following := ih.2 (elementMeaning history head) tail
         simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
           applyRuleUsing, elementsCall, elements, call,
+          applyRuleBindings_of_binderFree, binderFree, binderFreeList,
           pattern, patternList, SourceIntegerProvider.sourceVariableToken,
           encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
           premisesUsing, premiseStepUsing, applyBindings]
@@ -593,6 +606,7 @@ theorem elements_pair_answers (fuel : Nat) (index : Trie SExpr Nat) (history : L
       | false =>
         simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
           applyRuleUsing, afterElementsCall, afterElementsHeight, call, answer, result,
+          applyRuleBindings_of_binderFree, binderFree, binderFreeList,
           pattern, patternList, SourceIntegerProvider.sourceVariableToken,
           encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
           premisesUsing, premiseStepUsing, applyBindings]
@@ -600,6 +614,7 @@ theorem elements_pair_answers (fuel : Nat) (index : Trie SExpr Nat) (history : L
         have recursive := ih.1 input
         simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
           applyRuleUsing, afterElementsCall, call, answer,
+          applyRuleBindings_of_binderFree, binderFree, binderFreeList,
           pattern, patternList, SourceIntegerProvider.sourceVariableToken,
           encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
           premisesUsing, premiseStepUsing, applyBindings]
@@ -628,6 +643,7 @@ theorem alternative_answers (fuel : Nat) (input : Alternative) (index : Trie SEx
     have recursive := elements_answers fuel input.elements index history lexicals valid
     simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
       applyRuleUsing, alternativeCall, alternative, call,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       pattern, patternList, SourceIntegerProvider.sourceVariableToken,
       encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
       premisesUsing, premiseStepUsing, applyBindings]
@@ -660,6 +676,7 @@ theorem alternatives_pair_answers (fuel : Nat) (index : Trie SExpr Nat) (history
       | nil =>
         simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
           applyRuleUsing, alternativesCall, alternatives, alternativesHeight, alternativesMeaning, call, answer, result,
+          applyRuleBindings_of_binderFree, binderFree, binderFreeList,
           pattern, patternList, SourceIntegerProvider.sourceVariableToken,
           encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
           premisesUsing, premiseStepUsing, applyBindings]
@@ -668,6 +685,7 @@ theorem alternatives_pair_answers (fuel : Nat) (index : Trie SExpr Nat) (history
         have following := ih.2 (alternativeMeaning history head) tail
         simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
           applyRuleUsing, alternativesCall, alternatives, call,
+          applyRuleBindings_of_binderFree, binderFree, binderFreeList,
           pattern, patternList, SourceIntegerProvider.sourceVariableToken,
           encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
           premisesUsing, premiseStepUsing, applyBindings]
@@ -690,6 +708,7 @@ theorem alternatives_pair_answers (fuel : Nat) (index : Trie SExpr Nat) (history
         have recursive := ih.1 input
         simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
           applyRuleUsing, afterAlternativesCall, call, answer,
+          applyRuleBindings_of_binderFree, binderFree, binderFreeList,
           pattern, patternList, SourceIntegerProvider.sourceVariableToken,
           encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
           premisesUsing, premiseStepUsing, applyBindings]
@@ -700,6 +719,7 @@ theorem alternatives_pair_answers (fuel : Nat) (index : Trie SExpr Nat) (history
       | true =>
         simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
           applyRuleUsing, afterAlternativesCall, afterAlternativesHeight, call, answer, result,
+          applyRuleBindings_of_binderFree, binderFree, binderFreeList,
           pattern, patternList, SourceIntegerProvider.sourceVariableToken,
           encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
           premisesUsing, premiseStepUsing, applyBindings]
@@ -724,6 +744,7 @@ theorem expression_answers (fuel : Nat) (input : Expression) (index : Trie SExpr
     have recursive := alternatives_answers fuel input.alternatives index history lexicals valid
     simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
       applyRuleUsing, expressionCall, expression, call,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       pattern, patternList, SourceIntegerProvider.sourceVariableToken,
       encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
       premisesUsing, premiseStepUsing, applyBindings]
@@ -852,6 +873,7 @@ theorem alternatives_short_circuit (fuel : Nat) (tail nullable lexicals : SExpr)
   rw [nullable_rewriteAt fuel _ (by simp [call, encode, encodeList, headedBy, nullableHeads])]
   simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     applyRuleUsing, call, answer, result, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
 
@@ -862,10 +884,11 @@ theorem elements_short_circuit (fuel : Nat) (tail nullable lexicals : SExpr) :
   rw [nullable_rewriteAt fuel _ (by simp [call, encode, encodeList, headedBy, nullableHeads])]
   simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
     applyRuleUsing, call, answer, result, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
 
-/-- The found clause repeats the queried name in the returned payload. A
+/-- The found rule repeats the queried name in the returned payload. A
 different payload matches neither found nor missing: it is not a negative
 answer, and it is not repaired into the query. -/
 theorem wrong_found_payload_answers (fuel : Nat) (key : String) (payload : SExpr)

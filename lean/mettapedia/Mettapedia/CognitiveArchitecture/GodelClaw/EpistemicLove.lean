@@ -5,7 +5,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNNegation
 /-!
 # GodelClaw: Epistemic Universal Loving Care
 
-Connects the abstract `UniversalLovingCare` axiom in `Core.lean` to its
+Connects the core-value parameter of `Core.lean` to its
 concrete formal definition from the Formal-Ethics-Ontology (SUO-KIF) and
 its Lean formalization in `Foet.PGCVsUniversalLovingCare`.
 
@@ -93,17 +93,17 @@ def EpistemicUniversalLove {World Agent Process : Type*}
 
 /-! ## Connection to CoreValueDeclaration
 
-The abstract `Core.lean` declares `axiom UniversalLovingCare : Prop`.
-Here we show that if a `LoveSig` exists and the agent satisfies
-`EpistemicUniversalLove` at some world, that provides a concrete
+`Core.lean` leaves the core value a parameter.  Here we discharge it: if a
+`LoveSig` exists and the agent satisfies `EpistemicUniversalLove` at some
+world, that is a concrete proposition, held, and therefore a
 `CoreValueDeclaration`. -/
 
 /-- Given a love signature and a world where the agent has epistemic
 universal love, construct the core value declaration.
 
-This is the bridge: the abstract axiom `UniversalLovingCare` corresponds
-to `EpistemicUniversalLove sig oruzi w` for a specific signature, agent,
-and world. -/
+This is the concrete core value: `EpistemicUniversalLove sig oruzi w` for a
+specific signature, agent and world.  It is what `Core.oruzisCore` takes as its
+parameter, so nothing opaque is left standing between them. -/
 def epistemicLoveAsCore {World Agent Process : Type*}
     (sig : LoveSig World Agent Process)
     (oruzi : Agent) (w : World)

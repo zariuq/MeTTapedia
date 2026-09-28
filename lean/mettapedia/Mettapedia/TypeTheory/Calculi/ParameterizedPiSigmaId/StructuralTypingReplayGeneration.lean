@@ -164,10 +164,54 @@ theorem Code.principal_pair {n : Nat} {context : Ctx Head n} {first second type 
   exact ⟨_, _, level, formation, firstCode, secondCode, rfl, rfl, accepted.1.1.1,
     accepted.1.1.2, accepted.1.2, accepted.2⟩
 
+/-- The identity former checks both endpoint certificates at the carrier
+written in its subject, not at independently selected heterogeneous types. -/
+theorem Code.principal_identity {n : Nat} {context : Ctx Head n} {A left right type : Tm Head n}
+    (code : Code Head ConversionCode n) (principal : code.isPrincipal = true)
+    (accepted : check R conversionCheck context (.id A left right) type code = true) :
+    ∃ level formation leftCode rightCode,
+      type = .head level ∧ code = .idForm level formation leftCode rightCode ∧
+      R.isUniverse level ∧ check R conversionCheck context A (.head level) formation = true ∧
+      check R conversionCheck context left A leftCode = true ∧
+      check R conversionCheck context right A rightCode = true := by
+  cases code <;> simp only [isPrincipal, Bool.false_eq_true] at principal
+  all_goals try { simp [check] at accepted }
+  rename_i level formation leftCode rightCode
+  cases type <;> simp only [check, Bool.false_eq_true, Bool.and_eq_true, decide_eq_true_eq] at accepted
+  exact ⟨level, formation, leftCode, rightCode, congrArg Tm.head accepted.2, rfl,
+    accepted.1.1.1.1, accepted.1.1.1.2, accepted.1.1.2, accepted.1.2⟩
+
+/-- Existing principal-view computation extracts the exact identity formation
+and preserves every result wrapper. This includes cumulative chains and does
+not reconstruct certificates from the erased subject. -/
+theorem Code.identity_generation {n : Nat} {context : Ctx Head n}
+    {A left right displayed : Tm Head n} (code : Code Head ConversionCode n)
+    (accepted : check R conversionCheck context (.id A left right) displayed code = true) :
+    ∃ level formation leftCode rightCode tail,
+      code.principalView displayed =
+        some ⟨.head level, .idForm level formation leftCode rightCode, tail⟩ ∧
+      tail.fill (.idForm level formation leftCode rightCode) = code ∧
+      R.isUniverse level ∧ check R conversionCheck context A (.head level) formation = true ∧
+      check R conversionCheck context left A leftCode = true ∧
+      check R conversionCheck context right A rightCode = true := by
+  obtain ⟨view, computed, checked, _⟩ := code.principalView_checked R conversionCheck accepted
+  obtain ⟨reconstructed, principal⟩ := code.principalView_reconstruct computed
+  obtain ⟨level, formation, leftCode, rightCode, atType, atCode, isUniverse,
+    formationChecked, leftChecked, rightChecked⟩ :=
+    view.code.principal_identity R conversionCheck principal checked
+  refine ⟨level, formation, leftCode, rightCode, view.tail, ?_, ?_,
+    isUniverse, formationChecked, leftChecked, rightChecked⟩
+  · cases view
+    simp_all
+  · rw [← atCode]
+    exact reconstructed
+
 #print axioms Code.principalView_reconstruct
 #print axioms Code.principalView_checked
 #print axioms Code.principal_lambda
 #print axioms Code.principal_pair
+#print axioms Code.principal_identity
+#print axioms Code.identity_generation
 
 end StructuralTypingReplay
 end Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation

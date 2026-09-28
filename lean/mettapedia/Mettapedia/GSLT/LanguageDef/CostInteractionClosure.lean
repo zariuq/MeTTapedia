@@ -1789,13 +1789,15 @@ theorem costBaseEquationDecl_validate (source : CIGSLT)
   unfold LanguageDef.validateEquation
   simp only [List.append_eq_nil_iff]
   refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
-  · apply List.flatMap_eq_nil_iff.mpr
-    intro entry entryMembership
-    exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
-      source.costWholeLanguage.typeNames
-      s!"equation {(costBaseEquationDecl equation).name}" entry.2
-      (source.costBaseEquationDecl_typeContext_baseName_mem equation
-        equationMembership entry entryMembership)
+  · constructor
+    · apply List.flatMap_eq_nil_iff.mpr
+      intro entry entryMembership
+      exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
+        source.costWholeLanguage.typeNames
+        s!"equation {(costBaseEquationDecl equation).name}" entry.2
+        (source.costBaseEquationDecl_typeContext_baseName_mem equation
+          equationMembership entry entryMembership)
+    · simp [costBaseEquationDecl_premises, premisesEmpty]
   · exact leftTyped.validatePatternConstructors_eq_nil labelsNodup
       (s!"equation {(costBaseEquationDecl equation).name}" ++ " lhs")
   · exact rightTyped.validatePatternConstructors_eq_nil labelsNodup
@@ -1828,14 +1830,16 @@ theorem costWrappedEquationDecl_validate (source : CIGSLT)
   unfold LanguageDef.validateEquation
   simp only [List.append_eq_nil_iff]
   refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
-  · apply List.flatMap_eq_nil_iff.mpr
-    intro entry entryMembership
-    exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
-      source.costWholeLanguage.typeNames
-      s!"equation {(costWrappedEquationDecl source.theory equation).name}"
-      entry.2
-      (source.costWrappedEquationDecl_typeContext_baseName_mem equation
-        equationMembership entry entryMembership)
+  · constructor
+    · apply List.flatMap_eq_nil_iff.mpr
+      intro entry entryMembership
+      exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
+        source.costWholeLanguage.typeNames
+        s!"equation {(costWrappedEquationDecl source.theory equation).name}"
+        entry.2
+        (source.costWrappedEquationDecl_typeContext_baseName_mem equation
+          equationMembership entry entryMembership)
+    · simp [costWrappedEquationDecl_premises, premisesEmpty]
   · exact leftTyped.validatePatternConstructors_eq_nil labelsNodup
       (s!"equation {(costWrappedEquationDecl source.theory equation).name}" ++
         " lhs")
@@ -1913,12 +1917,14 @@ theorem costWholeRedexRewrite_validate (source : CIGSLT) :
   unfold LanguageDef.validateRewrite
   simp only [costWholeRedexRewrite, List.append_eq_nil_iff]
   refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
-  · apply List.flatMap_eq_nil_iff.mpr
-    intro entry membership
-    exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
-      source.costWholeLanguage.typeNames
-      s!"rewrite {source.costWholeRedexRewrite.name}" entry.2
-      (source.costWholeRedexTypeContext_baseName_mem entry membership)
+  · constructor
+    · apply List.flatMap_eq_nil_iff.mpr
+      intro entry membership
+      exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
+        source.costWholeLanguage.typeNames
+        s!"rewrite {source.costWholeRedexRewrite.name}" entry.2
+        (source.costWholeRedexTypeContext_baseName_mem entry membership)
+    · rfl
   · simpa [costWholeLanguage_terms, costWholeRedexRewriteName] using
       source.costWholeRedexSource_hasType.validatePatternConstructors_eq_nil
         labelsNodup

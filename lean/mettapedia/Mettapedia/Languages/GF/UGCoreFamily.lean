@@ -197,8 +197,9 @@ private theorem english_langReduces_UseN (p : Pattern) :
       Mettapedia.OSLF.MeTTaIL.Match.matchArgs,
       Mettapedia.OSLF.MeTTaIL.Match.mergeBindings]
   · simp [bindings, useNElimRewrite, applyPremisesWithEnv]
-  · simp [bindings, englishGFLanguageDef, gfLegacySemanticLanguageDef,
-      useNElimRewrite, Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+      applyRuleBindings_eq_applyBindings _ _ (by decide)]
+    simp [bindings, useNElimRewrite, Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
 
 theorem english_useNHouse_dia_is_house :
     sem (langReduces englishGFLanguageDef) (gfAtomSem_isName "house")
@@ -206,7 +207,7 @@ theorem english_useNHouse_dia_is_house :
   refine ⟨.fvar "house", ?_, ?_⟩
   · simpa [gfAbstractToPattern, FunctionSig.UseN] using
       (english_langReduces_UseN (.fvar "house"))
-  · simp [gfAtomSem_isName, sem]
+  · simp [gfAtomSem_isName, semEnv]
 
 theorem english_bareHouse_not_dia_is_house :
     ¬ sem (langReduces englishGFLanguageDef) (gfAtomSem_isName "house")
@@ -279,12 +280,12 @@ theorem activeClause_pattern_ne_passiveClause_pattern :
 theorem passiveClause_passiveAtom_true :
     sem (langReduces englishGFLanguageDef) passiveClauseAtomSem
       (.atom "is_passive_clause") (gfAbstractToPattern passiveClauseTree) := by
-  simp [sem, passiveClauseAtomSem]
+  simp [sem, semEnv, passiveClauseAtomSem]
 
 theorem activeClause_passiveAtom_false :
     ¬ sem (langReduces englishGFLanguageDef) passiveClauseAtomSem
       (.atom "is_passive_clause") (gfAbstractToPattern activeClauseTree) := by
-  simp [sem, passiveClauseAtomSem, activeClauseTree, passiveClauseTree,
+  simp [sem, semEnv, passiveClauseAtomSem, activeClauseTree, passiveClauseTree,
     activeSubjCatTree, activeObjDogTree, FunctionSig.PredVP, FunctionSig.DetCN,
     FunctionSig.UseN, FunctionSig.ComplSlash, FunctionSig.SlashV2a,
     FunctionSig.PassV2]

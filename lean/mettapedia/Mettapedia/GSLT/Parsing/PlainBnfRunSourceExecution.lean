@@ -4,7 +4,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfReverseReferencesSourceExecution
 import Mettapedia.GSLT.Parsing.PlainBnfRunSourceFamily
 
 /-!
-# Authored discovery Run and Closure clause execution
+# Authored discovery Run and Closure rule execution
 
 The observations here unfold the existing controller calls. They do not
 introduce a second Run evaluator or assert whole-loop termination. Publishing
@@ -22,7 +22,8 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfGraphNameTrie (Trie lookup insertFirst)
 open PlainBnfCollectorSourceExecution (name)
 open PlainBnfSourceRank (Rank)
@@ -131,6 +132,14 @@ private theorem premises_mono (base : BasePremiseEvaluator) (language : Language
             (by simpa only [premiseStepUsing, List.mem_flatMap, List.mem_filterMap] using headMember)
           simp only [premiseStepUsing, List.mem_flatMap, List.mem_filterMap]
           exact ⟨candidate, more _ produced, matched, bound, merged⟩
+      | scopedStep step =>
+          by_cases empty : step.binders.isEmpty = true
+          · obtain ⟨candidate, produced, matched, bound, merged⟩ :=
+              (by simpa only [premiseStepUsing, empty, ↓reduceIte, List.mem_flatMap,
+                List.mem_filterMap] using headMember)
+            simp only [premiseStepUsing, empty, ↓reduceIte, List.mem_flatMap, List.mem_filterMap]
+            exact ⟨candidate, more _ produced, matched, bound, merged⟩
+          · simp [premiseStepUsing, empty] at headMember
       | _ => exact headMember
 
 private theorem rule_mono (base : BasePremiseEvaluator) (language : LanguageDef)
@@ -178,6 +187,13 @@ private theorem rhs_shape (rule : RewriteRule) (member : rule ∈ rules) :
   simp only [observedRules, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl | rfl | rfl <;> exact ⟨_, rfl⟩
 
+private theorem rules_binderFree (rule : RewriteRule) (member : rule ∈ rules) :
+    binderFree rule.left = true ∧ binderFree rule.right = true := by
+  rw [rules_exact] at member
+  simp only [observedRules, List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl | rfl | rfl <;>
+    exact ⟨binderFree_pattern _, binderFree_pattern _⟩
+
 /-- This shape follows from the four actual rule RHSs, not from assumed
 correctness of any recursive Run answer or a source-data decoder. -/
 theorem answers_are_result_tuples (fuel : Nat) (source : Pattern)
@@ -193,7 +209,9 @@ theorem answers_are_result_tuples (fuel : Nat) (source : Pattern)
       simp only [applyRuleUsing, List.mem_flatMap, List.mem_map] at returned
       obtain ⟨initial, _, final, _, rfl⟩ := returned
       obtain ⟨body, shape⟩ := rhs_shape rule present
-      rw [applyBindingsForRule_eq_syntactic, shape, applyBindings]
+      obtain ⟨leftFree, rightFree⟩ := rules_binderFree rule present
+      rw [applyBindingsForRule_eq_syntactic,
+        applyRuleBindings_of_binderFree rule final leftFree rightFree, shape, applyBindings]
       exact ⟨_, rfl⟩
 
 theorem run_done_answers (productive : Bool) (fuel : Nat) (reverse : NameIndex)
@@ -208,6 +226,7 @@ theorem run_done_answers (productive : Bool) (fuel : Nat) (reverse : NameIndex)
       rw [PlainBnfRunSourceFamily.run_rewriteAt fuel _ (run_head _ _ _ _ _ _)]
       simp [rules_exact, observedRules, PlainBnfTrieSourceExecution.observedRule,
         applyRuleUsing, runCall, encodeQueues, PlainBnfScheduleSourceExecution.queues,
+        applyRuleBindings_of_binderFree, binderFree, binderFreeList,
         PlainBnfHeapSourceExecution.heap, call, result, pattern, patternList,
         SourceIntegerProvider.sourceVariableToken, encode, encodeList,
         matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -239,6 +258,7 @@ theorem run_rollover_answers (productive : Bool) (fuel : Nat) (reverse : NameInd
   rw [PlainBnfRunSourceFamily.run_rewriteAt fuel _ (run_head _ _ _ _ _ _)]
   simp [rules_exact, observedRules, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, runCall, encodeQueues, PlainBnfScheduleSourceExecution.queues,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     PlainBnfHeapSourceExecution.heap, call, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM]
@@ -291,6 +311,7 @@ theorem closure_answers (productive : Bool) (fuel : Nat) (ranked : List Item) (r
   rw [PlainBnfRunSourceFamily.run_rewriteAt fuel _ (closure_head _ _ _ _)]
   simp [rules_exact, observedRules, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, closureCall, call, pattern, patternList,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM]
   rw [premisesUsing]
@@ -539,7 +560,7 @@ private theorem publish_tail_result (fuel : Nat) (dependents : List Item) :
         (publishedQueues productive item dependents history lexicals children following scheduled)) := by
   simp only [applyBindingsForRule_eq_syntactic]
   simp only [publishPremise, publishRule_exact, observedRules, PlainBnfTrieSourceExecution.observedRule,
-    List.getElem_cons_succ, List.getElem_cons_zero]
+    List.getElem_cons_succ, List.getElem_cons_zero, applyRuleBindings_of_binderFree, binderFree_pattern]
   simp [pattern, patternList, SourceIntegerProvider.sourceVariableToken]
   rw [final_result_binding]
   · simp [afterWakeBindings, afterDependentsBindings, afterLookupBindings, afterAppendBindings,
@@ -556,7 +577,7 @@ private theorem publish_tail_result (fuel : Nat) (dependents : List Item) :
 
 end PublicationBindings
 
-/-- Exact finite unfolding of the authored publication clause. The five
+/-- Exact finite unfolding of the authored publication rule. The five
 prerequisites really execute before the unchanged recursive Run call. -/
 theorem run_publish_answers (productive : Bool) (fuel : Nat) (item : Item) (dependents : List Item)
     (reverse index : NameIndex) (history : List SExpr) (lexicals : List LexicalDeclaration)
@@ -660,7 +681,7 @@ theorem run_done_cannot_drop_occurrence (productive : Bool) (reverse : NameIndex
   simp only [List.length_cons] at lengths
   omega
 
-/-- The actual publication clause requires a sibling-free current root.
+/-- The actual publication rule requires a sibling-free current root.
 This malformed shape is stuck, not silently normalized by the theorem. -/
 theorem run_sibling_root_answers (productive : Bool) (fuel : Nat) (reverse index : NameIndex)
     (history : List SExpr) (lexicals : List LexicalDeclaration) (item : Item)

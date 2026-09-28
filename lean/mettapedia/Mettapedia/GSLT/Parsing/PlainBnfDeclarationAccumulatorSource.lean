@@ -7,7 +7,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfDeclarationReflection
 The source inventory and provider hypotheses are discharged by the source
 quotation client. These theorems connect its existing declaration operations
 to the independently proved accumulator result. They do not claim that new
-accumulator GSLT clauses or a native lowering have been authored or generated.
+accumulator GSLT rules or a native lowering have been authored or generated.
 -/
 
 namespace Mettapedia.GSLT.Parsing.PlainBnfDeclarationAccumulatorSource

@@ -121,7 +121,7 @@
 (= (cic-nat-max $i $j)
    (case $j
      (((Con z) $i)
-      ($j0
+      ($jNonZero
         (case $i
           (((Con z) $j)
            ((App (Con s) $i0)
@@ -241,6 +241,9 @@
 
 (= (cic-prop-id-bad-source)
    (DKCICProof
+     (cic-stage1-required-obligations)
+     (cic-bad-id-term-source (DKConst prop))
+     (cic-id-type-source (DKConst prop))))
 
 !(assertEqual (dk-type0) (DKApp (DKConst type) (DKConst z)))
 !(assertEqual (dk-lower (dk-type0)) (App (Con type) (Con z)))

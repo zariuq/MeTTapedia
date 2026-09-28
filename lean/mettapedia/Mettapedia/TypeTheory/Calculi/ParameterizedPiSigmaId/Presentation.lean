@@ -33,6 +33,19 @@ inductive Tm (Head : Type) : Nat → Type where
   | refl : Tm Head n → Tm Head n
   deriving DecidableEq, Repr
 
+/-- The free outer-context indices of a scoped term. Under a binder, index
+zero is bound and each outer index is seen at its successor. This is a
+syntactic dependency set, independent of a particular interpretation. -/
+def Tm.freeVariables : {n : Nat} → Tm Head n → Set (Fin n)
+  | _, .var i => {i}
+  | _, .const _ | _, .head _ => ∅
+  | _, .pi A B | _, .sigma A B =>
+      A.freeVariables ∪ {i | Fin.succ i ∈ B.freeVariables}
+  | _, .id A x y => A.freeVariables ∪ x.freeVariables ∪ y.freeVariables
+  | _, .lam body => {i | Fin.succ i ∈ body.freeVariables}
+  | _, .app f a | _, .pair f a => f.freeVariables ∪ a.freeVariables
+  | _, .fst p | _, .snd p | _, .refl p => p.freeVariables
+
 /-- Functorial action on the universe-head parameter. -/
 def Tm.mapHead (f : Head₁ → Head₂) : Tm Head₁ n → Tm Head₂ n
   | .var i => .var i

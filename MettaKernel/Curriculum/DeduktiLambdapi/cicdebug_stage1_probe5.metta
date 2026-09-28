@@ -121,7 +121,7 @@
 (= (cic-nat-max $i $j)
    (case $j
      (((Con z) $i)
-      ($j0
+      ($jNonZero
         (case $i
           (((Con z) $j)
            ((App (Con s) $i0)

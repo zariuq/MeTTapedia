@@ -12,7 +12,7 @@ representation participates in inference or completion.
 
 The four recognized binary shapes have two distinct source input variables,
 integer comparison, optional exact successor, quoted input echo and completed
-failure. A judgment concerns one occurrence, not whole-program clause
+failure. A judgment concerns one occurrence, not whole-program rule
 uniqueness, arbitrary caller binding, machine integer bounds or full PeTTa.
 -/
 

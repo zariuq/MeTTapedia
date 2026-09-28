@@ -1583,8 +1583,8 @@ def natEliminateAtParameters_applicationHead :
     ApplicationHead natEliminateName natEliminateAtParameters :=
   .app (.app (.app .const))
 
-def zeroIotaClause :
-    IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+def zeroIotaRule :
+    IotaRule Tower.rules rawSignature proofRelevantIotaComputation
       (natConstructors.map ConstructorSpec.name) natEliminatorSpec.name where
   constructorName := zeroName
   constructorDeclared := by
@@ -1594,8 +1594,8 @@ def zeroIotaClause :
   eliminatorHead := .app natEliminateAtParameters_applicationHead
   constructorOccurrence := .appArgument .here
 
-noncomputable def succIotaClause :
-    IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+noncomputable def succIotaRule :
+    IotaRule Tower.rules rawSignature proofRelevantIotaComputation
       (natConstructors.map ConstructorSpec.name) natEliminatorSpec.name where
   constructorName := succName
   constructorDeclared := by
@@ -1606,10 +1606,10 @@ noncomputable def succIotaClause :
     exact .app (natEliminateAtParameters_applicationHead.rename wk)
   constructorOccurrence := .appArgument (.appFunction .here)
 
-noncomputable def natIotaClauses :
-    List (IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+noncomputable def natIotaRules :
+    List (IotaRule Tower.rules rawSignature proofRelevantIotaComputation
       (natConstructors.map ConstructorSpec.name) natEliminatorSpec.name) :=
-  [zeroIotaClause, succIotaClause]
+  [zeroIotaRule, succIotaRule]
 
 noncomputable def natCandidate : Candidate Tower.rules where
   signature := rawSignature
@@ -1637,13 +1637,13 @@ noncomputable def natCandidate : Candidate Tower.rules where
     simp only [natConstructors, List.mem_cons, List.not_mem_nil, or_false]
       at membership
     rcases membership with rfl | rfl <;> decide
-  iotaClauses := natIotaClauses
+  iotaRules := natIotaRules
   constructorsComputed := by
     intro constructorName membership
     simp [natConstructors, zeroConstructorSpec, succConstructorSpec]
       at membership
     rcases membership with rfl | rfl <;>
-      simp [natIotaClauses, zeroIotaClause, succIotaClause]
+      simp [natIotaRules, zeroIotaRule, succIotaRule]
 
 def vnilConstructorSpec :
     ConstructorSpec rawSignature vecName 2 where
@@ -1697,8 +1697,8 @@ def vconsApp_constantOccurrence
     ConstantOccurrence vconsName (vconsApp element length head tail) :=
   .appFunction (.appFunction (.appFunction (.appFunction .here)))
 
-def vnilIotaClause :
-    IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+def vnilIotaRule :
+    IotaRule Tower.rules rawSignature proofRelevantIotaComputation
       (vecConstructors.map ConstructorSpec.name) vecEliminatorSpec.name where
   constructorName := vnilName
   constructorDeclared := by
@@ -1709,8 +1709,8 @@ def vnilIotaClause :
   constructorOccurrence :=
     .appArgument (vnilApp_constantOccurrence (.var 3))
 
-noncomputable def vconsIotaClause :
-    IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+noncomputable def vconsIotaRule :
+    IotaRule Tower.rules rawSignature proofRelevantIotaComputation
       (vecConstructors.map ConstructorSpec.name) vecEliminatorSpec.name where
   constructorName := vconsName
   constructorDeclared := by
@@ -1724,10 +1724,10 @@ noncomputable def vconsIotaClause :
     .appArgument
       (vconsApp_constantOccurrence (.var 6) (.var 2) (.var 1) (.var 0))
 
-noncomputable def vecIotaClauses :
-    List (IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+noncomputable def vecIotaRules :
+    List (IotaRule Tower.rules rawSignature proofRelevantIotaComputation
       (vecConstructors.map ConstructorSpec.name) vecEliminatorSpec.name) :=
-  [vnilIotaClause, vconsIotaClause]
+  [vnilIotaRule, vconsIotaRule]
 
 noncomputable def vecCandidate : Candidate Tower.rules where
   signature := rawSignature
@@ -1755,13 +1755,13 @@ noncomputable def vecCandidate : Candidate Tower.rules where
     simp only [vecConstructors, List.mem_cons, List.not_mem_nil, or_false]
       at membership
     rcases membership with rfl | rfl <;> decide
-  iotaClauses := vecIotaClauses
+  iotaRules := vecIotaRules
   constructorsComputed := by
     intro constructorName membership
     simp [vecConstructors, vnilConstructorSpec, vconsConstructorSpec]
       at membership
     rcases membership with rfl | rfl <;>
-      simp [vecIotaClauses, vnilIotaClause, vconsIotaClause]
+      simp [vecIotaRules, vnilIotaRule, vconsIotaRule]
 
 /-! ## Negative controls -/
 

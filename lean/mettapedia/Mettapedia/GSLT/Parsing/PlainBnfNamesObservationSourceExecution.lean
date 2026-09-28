@@ -4,7 +4,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfControllerReferenceHistory
 /-!
 # Ordered names observation in the actual controller source family
 
-The three discovery clauses at source positions 2–4 already have exact
+The three discovery rules at source positions 2–4 already have exact
 execution proofs in KnownNamesSourceExecution. This module reuses those
 proofs and the existing conservative extension into the controller family.
 It connects the stored reversed history to the forward reference-event names,

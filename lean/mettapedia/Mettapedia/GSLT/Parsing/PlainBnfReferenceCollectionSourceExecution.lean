@@ -5,7 +5,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfStructuredDenotation
 /-!
 # Authored ordered grammar-reference collection
 
-Actual append, lexical lookup, and reference-collection clauses execute in
+Actual append, lexical lookup, and reference-collection rules execute in
 the existing contextual relation. The input carrier is the existing
 source-spanned plain-BNF structure. The result intentionally projects names,
 retaining their order and multiplicity while excluding lexical declarations.
@@ -27,7 +27,8 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT
   (Rewrite Source Operator decodeList decodeOperator decodeRewrite atomToken?)
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfStructuredDenotation (SourceSpan Element Alternative Expression LexicalMatcher LexicalDeclaration)
 open PlainBnfTrieSourceExecution (call result scalarRelations)
 open PlainBnfIndexedCollectorSourceExecution
@@ -362,6 +363,7 @@ private theorem append_nil (base : BasePremiseEvaluator) (fuel : Nat) (right : L
     rewriteAt base appendLanguage (fuel + 1) (appendCall [] right) = [result (names right)] := by
   simp [rewriteAt, append_language_rules, appendObserved, observed,
     lowerPremise?, splitCall?, mode?, applyRuleUsing, appendCall, call, result, names,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
 
@@ -374,6 +376,7 @@ private theorem append_cons (base : BasePremiseEvaluator) (fuel : Nat)
   rw [rewriteAt]
   simp [append_language_rules, appendObserved, observed,
     lowerPremise?, splitCall?, mode?, applyRuleUsing, appendCall, call, names,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing,
     applyBindings]
@@ -408,6 +411,7 @@ private theorem lookup_nil (fuel : Nat) (key : String) :
       [result (lookupResult none)] := by
   simp [rewriteAt, lookup_language_rules, lookupObserved, observed,
     lowerPremise?, splitCall?, mode?, applyRuleUsing, lookupCall, call, result,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     declarations, lookupResult,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -417,6 +421,7 @@ private theorem lookup_found (fuel : Nat) (head : LexicalDeclaration) (tail : Li
       (lookupCall head.referenceName (head :: tail)) = [result (lookupResult (some head))] := by
   simp [rewriteAt, lookup_language_rules, lookupObserved, observed,
     lowerPremise?, splitCall?, mode?, applyRuleUsing, lookupCall, call, result,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     declarations, declaration, lookupResult,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing,
@@ -433,6 +438,7 @@ private theorem lookup_other (fuel : Nat) (key : String) (head : LexicalDeclarat
   rw [rewriteAt]
   simp [lookup_language_rules, lookupObserved, observed,
     lowerPremise?, splitCall?, mode?, applyRuleUsing, lookupCall, call,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     declarations, declaration,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing,
@@ -513,6 +519,7 @@ private theorem after_answers (fuel : Nat) (key : String) (found : Option Lexica
   cases found <;>
     simp [collection_rules_exact, collectionObserved, observed, lowerPremise?, splitCall?, mode?,
       applyRuleUsing, afterCall, call, result, lookupResult, afterNames, names,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
 
@@ -524,6 +531,7 @@ private theorem literal_answers (fuel : Nat) (value : String) (location : Source
     simp [elementCall, call, encode, encodeList, headedBy, collectionHeads])]
   simp [collection_rules_exact, collectionObserved, observed, lowerPremise?, splitCall?, mode?,
     applyRuleUsing, elementCall, call, result, element, names,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
 
@@ -552,6 +560,7 @@ private theorem reference_some (fuel : Nat) (key : String) (location : SourceSpa
     simp [elementCall, call, encode, encodeList, headedBy, collectionHeads])]
   simp [collection_rules_exact, collectionObserved, observed, lowerPremise?, splitCall?, mode?,
     applyRuleUsing, elementCall, call, element,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   simp only [lookupCall, call, result, encode, encodeList] at looked
@@ -610,6 +619,7 @@ private theorem elements_nil (fuel : Nat) (lexicals : List LexicalDeclaration) :
     simp [elementsCall, call, encode, encodeList, headedBy, collectionHeads])]
   simp [collection_rules_exact, collectionObserved, observed, lowerPremise?, splitCall?, mode?,
     applyRuleUsing, elementsCall, call, result, elements, names,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
 
@@ -627,6 +637,7 @@ private theorem elements_cons (fuel : Nat) (head : Element) (tail : List Element
     simp [elementsCall, call, encode, encodeList, headedBy, collectionHeads])]
   simp [collection_rules_exact, collectionObserved, observed, lowerPremise?, splitCall?, mode?,
     applyRuleUsing, elementsCall, call, elements,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   simp only [elementCall, call, encode, encodeList] at first
@@ -688,6 +699,7 @@ private theorem alternatives_nil (fuel : Nat) (lexicals : List LexicalDeclaratio
     simp [alternativesCall, call, encode, encodeList, headedBy, collectionHeads])]
   simp [collection_rules_exact, collectionObserved, observed, lowerPremise?, splitCall?, mode?,
     applyRuleUsing, alternativesCall, call, result, alternatives, names,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
 
@@ -705,6 +717,7 @@ private theorem alternatives_cons (fuel : Nat) (head : Alternative) (tail : List
     simp [alternativesCall, call, encode, encodeList, headedBy, collectionHeads])]
   simp [collection_rules_exact, collectionObserved, observed, lowerPremise?, splitCall?, mode?,
     applyRuleUsing, alternativesCall, call, alternatives, alternative,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   simp only [elementsCall, call, encode, encodeList] at first
@@ -761,6 +774,7 @@ private theorem expression_step (fuel : Nat) (value : Expression) (lexicals : Li
     simp [expressionCall, call, encode, encodeList, headedBy, collectionHeads])]
   simp [collection_rules_exact, collectionObserved, observed, lowerPremise?, splitCall?, mode?,
     applyRuleUsing, expressionCall, call, expression,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   simp only [alternativesCall, call, encode, encodeList] at recursive

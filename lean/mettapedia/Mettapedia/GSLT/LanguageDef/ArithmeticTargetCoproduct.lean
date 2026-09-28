@@ -105,9 +105,9 @@ private theorem mappedExternalRewrite_validate_of
   unfold LanguageDef.validateRewrite at sourceClean ⊢
   simp only [List.append_eq_nil_iff] at sourceClean ⊢
   rcases sourceClean with
-    ⟨⟨⟨⟨sourceTypesClean, sourceLeftClean⟩, sourceRightClean⟩,
-      sourcePremisesClean⟩, sourceWildcardClean⟩
-  refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, wildcardClean⟩
+    ⟨⟨⟨⟨⟨sourceTypesClean, sourcePremiseTypesClean⟩, sourceLeftClean⟩,
+      sourceRightClean⟩, sourcePremisesClean⟩, sourceWildcardClean⟩
+  refine ⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, wildcardClean⟩
   · rw [List.flatMap_eq_nil_iff]
     intro mappedEntry mappedMembership
     obtain ⟨entry, entryMembership, rfl⟩ := List.mem_map.mp mappedMembership
@@ -130,6 +130,33 @@ private theorem mappedExternalRewrite_validate_of
       ExternalCallMachine.externalCallLanguage.typeNames
       s!"rewrite {rewrite.name}" entry.2
       ((List.flatMap_eq_nil_iff.mp sourceTypesClean) entry entryMembership)
+      sourceNameMembership
+  · rw [List.flatMap_eq_nil_iff]
+    intro mappedType mappedTypeMembership
+    change mappedType ∈ (rewrite.premises.map (mapPremise externalSymbols)).flatMap
+      LanguageDef.premiseStepTypeExprs at mappedTypeMembership
+    rw [premiseStepTypeExprs_mapPremises] at mappedTypeMembership
+    obtain ⟨sourceType, sourceTypeMembership, rfl⟩ :=
+      List.mem_map.mp mappedTypeMembership
+    apply LanguageDef.validateTypeExpr_eq_nil_of_baseNames
+    intro mappedName mappedNameMembership
+    rw [mapTypeExpr_baseNames] at mappedNameMembership
+    obtain ⟨sourceName, sourceNameMembership, rfl⟩ :=
+      List.mem_map.mp mappedNameMembership
+    rw [show combinedLanguage.typeNames =
+        ExternalCallMachine.externalCallLanguage.typeNames.map
+            externalSymbols.sort ++
+          RadixDigitLanguageDef.language.typeNames.map radixSymbols.sort from
+      rawCoproduct_typeNames "ArithmeticTargetMachines" externalSymbols
+        radixSymbols ExternalCallMachine.externalCallLanguage
+        RadixDigitLanguageDef.language]
+    apply List.mem_append_left
+    apply List.mem_map.mpr
+    refine ⟨sourceName, ?_, rfl⟩
+    apply LanguageDef.baseName_mem_of_validateTypeExpr_eq_nil
+      ExternalCallMachine.externalCallLanguage.typeNames s!"rewrite {rewrite.name} premise" sourceType
+      ((List.flatMap_eq_nil_iff.mp sourcePremiseTypesClean) sourceType
+        sourceTypeMembership)
       sourceNameMembership
   · exact validatePatternConstructors_left_eq_nil
       "ArithmeticTargetMachines" s!"rewrite {rewrite.name} lhs"
@@ -191,9 +218,9 @@ private theorem mappedRadixRewrite_validate_of
   unfold LanguageDef.validateRewrite at sourceClean ⊢
   simp only [List.append_eq_nil_iff] at sourceClean ⊢
   rcases sourceClean with
-    ⟨⟨⟨⟨sourceTypesClean, sourceLeftClean⟩, sourceRightClean⟩,
-      sourcePremisesClean⟩, sourceWildcardClean⟩
-  refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, wildcardClean⟩
+    ⟨⟨⟨⟨⟨sourceTypesClean, sourcePremiseTypesClean⟩, sourceLeftClean⟩,
+      sourceRightClean⟩, sourcePremisesClean⟩, sourceWildcardClean⟩
+  refine ⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, wildcardClean⟩
   · rw [List.flatMap_eq_nil_iff]
     intro mappedEntry mappedMembership
     obtain ⟨entry, entryMembership, rfl⟩ := List.mem_map.mp mappedMembership
@@ -215,6 +242,33 @@ private theorem mappedRadixRewrite_validate_of
     apply LanguageDef.baseName_mem_of_validateTypeExpr_eq_nil
       RadixDigitLanguageDef.language.typeNames s!"rewrite {rewrite.name}"
       entry.2 ((List.flatMap_eq_nil_iff.mp sourceTypesClean) entry entryMembership)
+      sourceNameMembership
+  · rw [List.flatMap_eq_nil_iff]
+    intro mappedType mappedTypeMembership
+    change mappedType ∈ (rewrite.premises.map (mapPremise radixSymbols)).flatMap
+      LanguageDef.premiseStepTypeExprs at mappedTypeMembership
+    rw [premiseStepTypeExprs_mapPremises] at mappedTypeMembership
+    obtain ⟨sourceType, sourceTypeMembership, rfl⟩ :=
+      List.mem_map.mp mappedTypeMembership
+    apply LanguageDef.validateTypeExpr_eq_nil_of_baseNames
+    intro mappedName mappedNameMembership
+    rw [mapTypeExpr_baseNames] at mappedNameMembership
+    obtain ⟨sourceName, sourceNameMembership, rfl⟩ :=
+      List.mem_map.mp mappedNameMembership
+    rw [show combinedLanguage.typeNames =
+        ExternalCallMachine.externalCallLanguage.typeNames.map
+            externalSymbols.sort ++
+          RadixDigitLanguageDef.language.typeNames.map radixSymbols.sort from
+      rawCoproduct_typeNames "ArithmeticTargetMachines" externalSymbols
+        radixSymbols ExternalCallMachine.externalCallLanguage
+        RadixDigitLanguageDef.language]
+    apply List.mem_append_right
+    apply List.mem_map.mpr
+    refine ⟨sourceName, ?_, rfl⟩
+    apply LanguageDef.baseName_mem_of_validateTypeExpr_eq_nil
+      RadixDigitLanguageDef.language.typeNames s!"rewrite {rewrite.name} premise" sourceType
+      ((List.flatMap_eq_nil_iff.mp sourcePremiseTypesClean) sourceType
+        sourceTypeMembership)
       sourceNameMembership
   · exact validatePatternConstructors_right_eq_nil
       "ArithmeticTargetMachines" s!"rewrite {rewrite.name} lhs"
@@ -299,7 +353,7 @@ private theorem mappedExternalRewrites_validate :
         LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
         LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
         LanguageDef.premiseFvarNames,
-        LanguageDef.premiseProducedFvarNames,
+        LanguageDef.premiseProducedFvarNames, LanguageDef.premiseLocallyScoped,
         LanguageDef.premiseForAllParams, Pattern.constructorRefs,
         Pattern.constructorRefsList, Pattern.freeFvarNames,
         Pattern.isWellScoped, Pattern.isWellScopedAt,
@@ -347,7 +401,7 @@ private theorem mappedRadixRewrites_validate :
         LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
         LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
         LanguageDef.premiseFvarNames,
-        LanguageDef.premiseProducedFvarNames,
+        LanguageDef.premiseProducedFvarNames, LanguageDef.premiseLocallyScoped,
         LanguageDef.premiseForAllParams, Pattern.constructorRefs,
         Pattern.constructorRefsList, Pattern.freeFvarNames,
         Pattern.isWellScoped, Pattern.isWellScopedAt,
@@ -431,7 +485,7 @@ private theorem radixRewritesRooted :
       RadixDigitLanguageDef.faultTransition,
       RadixDigitLanguageDef.run, RadixDigitLanguageDef.a]
 
-def compatibility :
+theorem compatibility :
     Compatibility "ArithmeticTargetMachines" externalSymbols radixSymbols
       externalValidated radixValidated where
   leftSymbolsInjective := {

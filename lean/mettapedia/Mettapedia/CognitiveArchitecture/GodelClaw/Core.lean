@@ -34,15 +34,23 @@ structure CoreValueDeclaration where
   /-- The agent asserts this value is held. -/
   held : value
 
-/-- Oruži's specific core value: universal loving care.
-"Realize the known desires of all beings when possible, while avoiding
-preventable harm." — from Formal-Ethics-Ontology (SUO-KIF). -/
-axiom UniversalLovingCare : Prop
+/-- Declaring a core value: supply the proposition and a proof that it is held.
 
-/-- The declaration that universal loving care is Oruži's core value. -/
-noncomputable def oruzisCore (hlc : UniversalLovingCare) : CoreValueDeclaration where
-  value := UniversalLovingCare
-  held := hlc
+This replaces an earlier `axiom UniversalLovingCare : Prop`.  That constant was
+opaque, so it asserted nothing, and no theorem could relate it to any concrete
+value — in particular the correspondence its documentation claimed, to
+`EpistemicLove.EpistemicUniversalLove`, was unprovable by construction while
+`epistemicLoveAsCore` quietly built a different declaration.  Taking the
+proposition as a parameter loses nothing and leaves the development
+axiom-free.
+
+"Realize the known desires of all beings when possible, while avoiding
+preventable harm." — from Formal-Ethics-Ontology (SUO-KIF) — is the intended
+reading of the parameter, and `EpistemicLove.epistemicLoveAsCore` supplies a
+concrete proposition that discharges it. -/
+def oruzisCore (value : Prop) (held : value) : CoreValueDeclaration where
+  value := value
+  held := held
 
 /-! ## Seed Identity -/
 

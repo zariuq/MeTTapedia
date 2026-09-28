@@ -8251,7 +8251,7 @@ theorem end_to_end_temporal_hypercube_event_threshold_bundle_of_interval
         (State := State) (Srt := EventCalcSort) (Query := PatternEventQueryFamily)
         W₂ queryOfAtom a0 (pick u)))
     simpa [hEq] using hTau u
-  simpa [Mettapedia.OSLF.Formula.sem,
+  simpa [Mettapedia.OSLF.Formula.sem, Mettapedia.OSLF.Formula.semEnv,
     PLNWMOSLFBridgeITVTyped.thresholdAtomSemOfWMITVQSigma,
     PLNWMOSLFBridgeITVTyped.wmITVAtomSemQSigma] using hTauW₂
 

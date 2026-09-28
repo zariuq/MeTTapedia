@@ -86,6 +86,12 @@ def liftPremise : Premise → Premise
       .freshness { condition with term := liftPattern condition.term }
   | .congruence left right =>
       .congruence (liftPattern left) (liftPattern right)
+  | .scopedStep step =>
+      .scopedStep { step with
+        binders := step.binders.map liftTypeExpr
+        resultType := liftTypeExpr step.resultType
+        source := liftPattern step.source
+        target := liftPattern step.target }
   | .relationQuery relation arguments =>
       .relationQuery relation (arguments.map liftPattern)
   | .forAll collection parameter body =>
@@ -299,6 +305,7 @@ private theorem liftPremise_supported (premise : Premise) :
   | congruence left right =>
       simp only [liftPremise, CanonicalWire.premiseSupported]
       rw [liftPattern_supported left, liftPattern_supported right]
+  | scopedStep => rfl
   | relationQuery relation arguments =>
       simp only [liftPremise, CanonicalWire.premiseSupported]
       apply patternListSupported_map_of_pointwise
@@ -577,7 +584,8 @@ private theorem rewrites_validate :
       LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
       LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
       LanguageDef.premiseFvarNames,
-      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseProducedFvarNames, LanguageDef.premiseStepTypeExprs,
+      LanguageDef.premiseLocallyScoped,
       LanguageDef.premiseForAllParams, Pattern.constructorRefs,
       Pattern.constructorRefsList, Pattern.freeFvarNames,
       Pattern.isWellScoped, Pattern.isWellScopedAt,

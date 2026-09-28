@@ -142,6 +142,12 @@ def mapPremise (symbols : LanguageDefSymbolMap) : Premise → Premise
       .freshness { condition with term := mapPattern symbols condition.term }
   | .congruence left right =>
       .congruence (mapPattern symbols left) (mapPattern symbols right)
+  | .scopedStep step =>
+      .scopedStep { step with
+        binders := step.binders.map (mapTypeExpr symbols)
+        resultType := mapTypeExpr symbols step.resultType
+        source := mapPattern symbols step.source
+        target := mapPattern symbols step.target }
   | .relationQuery relation arguments =>
       .relationQuery (symbols.relation relation)
         (arguments.map (mapPattern symbols))
@@ -153,22 +159,39 @@ def mapTypeContext (symbols : LanguageDefSymbolMap)
     (context : List (String × TypeExpr)) : List (String × TypeExpr) :=
   context.map fun entry => (entry.1, mapTypeExpr symbols entry.2)
 
+/-- A rule occurrence keeps its site and address while its supplied object
+terms follow the constructor map. -/
+def mapMetavariableOccurrence (symbols : LanguageDefSymbolMap)
+    (occurrence : MetavariableOccurrence) : MetavariableOccurrence :=
+  { occurrence with arguments := occurrence.arguments.map (mapPattern symbols) }
+
+/-- Structural action on the authored dependency and occurrence contract. -/
+def mapRuleBindingSpec (symbols : LanguageDefSymbolMap)
+    (spec : RuleBindingSpec) : RuleBindingSpec :=
+  { dependencies := spec.dependencies.map fun entry =>
+      (entry.1, entry.2.map (mapTypeExpr symbols))
+    occurrences := spec.occurrences.map (mapMetavariableOccurrence symbols) }
+
 /-- Map a declared bidirectional equation. -/
 def mapEquation (symbols : LanguageDefSymbolMap) (equation : Equation) : Equation :=
-  { name := symbols.equation equation.name
+  { equation with
+    name := symbols.equation equation.name
     typeContext := mapTypeContext symbols equation.typeContext
     premises := equation.premises.map (mapPremise symbols)
     left := mapPattern symbols equation.left
-    right := mapPattern symbols equation.right }
+    right := mapPattern symbols equation.right
+    bindings := equation.bindings.map (mapRuleBindingSpec symbols) }
 
 /-- Map a declared directional rewrite schema. -/
 def mapRewriteRule (symbols : LanguageDefSymbolMap)
     (rewrite : RewriteRule) : RewriteRule :=
-  { name := symbols.rewrite rewrite.name
+  { rewrite with
+    name := symbols.rewrite rewrite.name
     typeContext := mapTypeContext symbols rewrite.typeContext
     premises := rewrite.premises.map (mapPremise symbols)
     left := mapPattern symbols rewrite.left
-    right := mapPattern symbols rewrite.right }
+    right := mapPattern symbols rewrite.right
+    bindings := rewrite.bindings.map (mapRuleBindingSpec symbols) }
 
 /-! ## Identity and composition laws for the induced action -/
 
@@ -397,6 +420,16 @@ end CIGSLT
   | congruence left right =>
       simp only [mapPremise]
       rw [mapPattern_id, mapPattern_id]
+  | scopedStep step =>
+      cases step with
+      | mk binders resultType source target =>
+          have hbinders : binders.map (mapTypeExpr LanguageDefSymbolMap.id) =
+              binders := by
+            simpa only [List.map_id] using
+              (List.map_congr_left (l := binders)
+                (f := mapTypeExpr LanguageDefSymbolMap.id) (g := id)
+                (fun type _ => mapTypeExpr_id type))
+          simp [mapPremise, hbinders, mapTypeExpr_id, mapPattern_id]
   | relationQuery relation arguments =>
       simp only [mapPremise]
       congr 1
@@ -417,6 +450,10 @@ end CIGSLT
   | congruence left right =>
       simp only [mapPremise]
       rw [mapPattern_comp, mapPattern_comp]
+  | scopedStep step =>
+      cases step with
+      | mk binders resultType source target =>
+          simp [mapPremise, mapTypeExpr_comp, mapPattern_comp]
   | relationQuery relation arguments =>
       simp only [mapPremise]
       congr 1
@@ -442,47 +479,148 @@ end CIGSLT
   rcases entry with ⟨name, type⟩
   simp only [mapTypeExpr_comp]
 
+@[simp] theorem mapMetavariableOccurrence_id
+    (occurrence : MetavariableOccurrence) :
+    mapMetavariableOccurrence LanguageDefSymbolMap.id occurrence = occurrence := by
+  cases occurrence
+  simp [mapMetavariableOccurrence]
+
+@[simp] theorem mapMetavariableOccurrence_comp
+    (first second : LanguageDefSymbolMap)
+    (occurrence : MetavariableOccurrence) :
+    mapMetavariableOccurrence (first.comp second) occurrence =
+      mapMetavariableOccurrence second (mapMetavariableOccurrence first occurrence) := by
+  cases occurrence
+  simp [mapMetavariableOccurrence, List.map_map]
+
+@[simp] theorem mapRuleBindingSpec_id (spec : RuleBindingSpec) :
+    mapRuleBindingSpec LanguageDefSymbolMap.id spec = spec := by
+  cases spec
+  simp only [mapRuleBindingSpec, RuleBindingSpec.mk.injEq]
+  constructor
+  · apply list_map_eq_self_of_mem
+    intro entry _
+    rcases entry with ⟨name, types⟩
+    exact congrArg (name, ·) (list_map_eq_self_of_mem _ _
+      (fun type _ => mapTypeExpr_id type))
+  · exact list_map_eq_self_of_mem _ _
+      (fun occurrence _ => mapMetavariableOccurrence_id occurrence)
+
+@[simp] theorem mapRuleBindingSpec_comp
+    (first second : LanguageDefSymbolMap) (spec : RuleBindingSpec) :
+    mapRuleBindingSpec (first.comp second) spec =
+      mapRuleBindingSpec second (mapRuleBindingSpec first spec) := by
+  cases spec
+  simp only [mapRuleBindingSpec, RuleBindingSpec.mk.injEq]
+  constructor
+  · apply list_map_comp_of_mem
+    intro entry _
+    rcases entry with ⟨name, types⟩
+    exact congrArg (name, ·) (list_map_comp_of_mem _ _ _ _
+      (fun type _ => mapTypeExpr_comp first second type))
+  · exact list_map_comp_of_mem _ _ _ _
+      (fun occurrence _ => mapMetavariableOccurrence_comp first second occurrence)
+
+/-- A square on sorts and object patterns induces the same square on a
+rule's dependency contexts and occurrence substitutions. -/
+theorem mapRuleBindingSpec_square
+    (upper left lower right : LanguageDefSymbolMap)
+    (types : ∀ type,
+      mapTypeExpr upper (mapTypeExpr left type) =
+        mapTypeExpr right (mapTypeExpr lower type))
+    (patterns : ∀ pattern,
+      mapPattern upper (mapPattern left pattern) =
+        mapPattern right (mapPattern lower pattern))
+    (spec : RuleBindingSpec) :
+    mapRuleBindingSpec upper (mapRuleBindingSpec left spec) =
+      mapRuleBindingSpec right (mapRuleBindingSpec lower spec) := by
+  rcases spec with ⟨dependencies, occurrences⟩
+  simp only [mapRuleBindingSpec, RuleBindingSpec.mk.injEq, List.map_map]
+  constructor
+  · apply List.map_congr_left
+    intro entry _
+    rcases entry with ⟨name, dependencyTypes⟩
+    exact congrArg (name, ·) (by
+      simpa only [List.map_map, Function.comp_def] using
+        (List.map_congr_left (fun type _ => types type) :
+          dependencyTypes.map (fun type =>
+            mapTypeExpr upper (mapTypeExpr left type)) =
+          dependencyTypes.map (fun type =>
+            mapTypeExpr right (mapTypeExpr lower type))))
+  · apply List.map_congr_left
+    intro occurrence _
+    rcases occurrence with ⟨name, site, path, arguments⟩
+    change MetavariableOccurrence.mk name site path
+        ((arguments.map (mapPattern left)).map (mapPattern upper)) =
+      MetavariableOccurrence.mk name site path
+        ((arguments.map (mapPattern lower)).map (mapPattern right))
+    congr 1
+    simpa only [List.map_map, Function.comp_def] using
+      (List.map_congr_left (fun pattern _ => patterns pattern) :
+        arguments.map (fun pattern => mapPattern upper (mapPattern left pattern)) =
+        arguments.map (fun pattern => mapPattern right (mapPattern lower pattern)))
+
 @[simp] theorem mapEquation_id (equation : Equation) :
     mapEquation LanguageDefSymbolMap.id equation = equation := by
-  cases equation
+  rcases equation with ⟨name, typeContext, premises, left, right, bindings⟩
   simp only [mapEquation]
   rw [mapTypeContext_id]
   rw [list_map_eq_self_of_mem _ _ fun premise _ => mapPremise_id premise]
   rw [mapPattern_id, mapPattern_id]
-  rfl
+  cases bindings with
+  | none => rfl
+  | some spec =>
+      simp only [Option.map_some]
+      rw [mapRuleBindingSpec_id]
+      rfl
 
 @[simp] theorem mapEquation_comp (first second : LanguageDefSymbolMap)
     (equation : Equation) :
     mapEquation (first.comp second) equation =
       mapEquation second (mapEquation first equation) := by
-  cases equation
+  rcases equation with ⟨name, typeContext, premises, left, right, bindings⟩
   simp only [mapEquation]
   rw [mapTypeContext_comp]
   rw [list_map_comp_of_mem _ _ _ _ fun premise _ =>
     mapPremise_comp first second premise]
   rw [mapPattern_comp, mapPattern_comp]
-  rfl
+  cases bindings with
+  | none => rfl
+  | some spec =>
+      simp only [Option.map_some]
+      rw [mapRuleBindingSpec_comp]
+      rfl
 
 @[simp] theorem mapRewriteRule_id (rewrite : RewriteRule) :
     mapRewriteRule LanguageDefSymbolMap.id rewrite = rewrite := by
-  cases rewrite
+  rcases rewrite with ⟨name, typeContext, premises, left, right, bindings⟩
   simp only [mapRewriteRule]
   rw [mapTypeContext_id]
   rw [list_map_eq_self_of_mem _ _ fun premise _ => mapPremise_id premise]
   rw [mapPattern_id, mapPattern_id]
-  rfl
+  cases bindings with
+  | none => rfl
+  | some spec =>
+      simp only [Option.map_some]
+      rw [mapRuleBindingSpec_id]
+      rfl
 
 @[simp] theorem mapRewriteRule_comp (first second : LanguageDefSymbolMap)
     (rewrite : RewriteRule) :
     mapRewriteRule (first.comp second) rewrite =
       mapRewriteRule second (mapRewriteRule first rewrite) := by
-  cases rewrite
+  rcases rewrite with ⟨name, typeContext, premises, left, right, bindings⟩
   simp only [mapRewriteRule]
   rw [mapTypeContext_comp]
   rw [list_map_comp_of_mem _ _ _ _ fun premise _ =>
     mapPremise_comp first second premise]
   rw [mapPattern_comp, mapPattern_comp]
-  rfl
+  cases bindings with
+  | none => rfl
+  | some spec =>
+      simp only [Option.map_some]
+      rw [mapRuleBindingSpec_comp]
+      rfl
 
 /-! ## Signature and structural morphisms -/
 

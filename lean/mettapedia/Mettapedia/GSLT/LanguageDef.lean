@@ -67,6 +67,8 @@ import Mettapedia.GSLT.LanguageDef.CompiledPlanOptimizationPipeline
 import Mettapedia.GSLT.LanguageDef.CompiledPlanOpenActivationViewCompilation
 import Mettapedia.GSLT.LanguageDef.CompiledOpenMatcherPlan
 import Mettapedia.GSLT.LanguageDef.MatchDecisionContract
+import Mettapedia.GSLT.LanguageDef.KeyedEquationSelection
+import Mettapedia.GSLT.LanguageDef.ContextStackEvaluation
 import Mettapedia.GSLT.LanguageDef.MatchDecisionCodeTree
 import Mettapedia.GSLT.LanguageDef.MatchDecisionPrefixObservationCompilation
 import Mettapedia.GSLT.LanguageDef.CandidateSupersetVerificationAlgebra

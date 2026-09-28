@@ -14,6 +14,7 @@ import Mettapedia.GSLT.Core.ContextualPseudoCwfBicategory
 import Mettapedia.GSLT.Core.ContextualPseudoCwfBasePseudofunctor
 import Mettapedia.GSLT.Core.ContextualProfileInclusions
 import Mettapedia.GSLT.Core.BranchingTemporal
+import Mettapedia.GSLT.Causality.ResourceFrontier
 import Mettapedia.GSLT.Core.TickAutomatonLaneRecurrence
 import Mettapedia.GSLT.Core.SearchControlProperties
 import Mettapedia.GSLT.Core.OpenTotalityObservation

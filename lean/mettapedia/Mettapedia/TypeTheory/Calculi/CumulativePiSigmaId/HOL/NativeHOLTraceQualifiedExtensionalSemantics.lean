@@ -62,6 +62,31 @@ inductive Denotes (a : ZFSet.{u}) : {n : Nat} → (context : Context.{u} n) →
       Denotes a context (.app function argument)
         (fun environment => codomain ⟨environment, argumentValue environment⟩)
         (ZFSetTraceContextual.app functionValue argumentValue)
+  | pair {n : Nat} {context : Context.{u} n}
+      {domain : SetFamily context.Environment}
+      {codomain : SetFamily (Extension domain)} {first second : Tower.Tm n}
+      {firstValue : Section domain}
+      {secondValue : Section (fun environment => codomain ⟨environment, firstValue environment⟩)} :
+      Denotes a context first domain firstValue →
+      Denotes a context second
+        (fun environment => codomain ⟨environment, firstValue environment⟩) secondValue →
+      Denotes a context (.pair first second)
+        (ZFSetContextualInterpretation.sigmaFamily domain codomain)
+        (ZFSetContextualInterpretation.pair firstValue secondValue)
+  | first {n : Nat} {context : Context.{u} n}
+      {domain : SetFamily context.Environment}
+      {codomain : SetFamily (Extension domain)} {term : Tower.Tm n}
+      {value : Section (ZFSetContextualInterpretation.sigmaFamily domain codomain)} :
+      Denotes a context term (ZFSetContextualInterpretation.sigmaFamily domain codomain) value →
+      Denotes a context (.fst term) domain (ZFSetContextualInterpretation.fst value)
+  | second {n : Nat} {context : Context.{u} n}
+      {domain : SetFamily context.Environment}
+      {codomain : SetFamily (Extension domain)} {term : Tower.Tm n}
+      {value : Section (ZFSetContextualInterpretation.sigmaFamily domain codomain)} :
+      Denotes a context term (ZFSetContextualInterpretation.sigmaFamily domain codomain) value →
+      Denotes a context (.snd term)
+        (fun environment => codomain ⟨environment, ZFSetContextualInterpretation.fst value environment⟩)
+        (ZFSetContextualInterpretation.snd value)
   | propositionExtensionality {n : Nat} {context : Context.{u} n}
       {leftTerm rightTerm forwardTerm backwardTerm : Tower.Tm n}
       {left right : context.Environment → Value a .prop}
@@ -122,6 +147,27 @@ theorem Denotes.change_value {a : ZFSet.{u}} {n : Nat}
   cases equal
   exact meaning
 
+/-- Projecting a dependent pair retains the second section itself. -/
+theorem Denotes.second_pair {a : ZFSet.{u}} {n : Nat} {context : Context.{u} n}
+    {domain : SetFamily context.Environment} {codomain : SetFamily (Extension domain)}
+    {first second : Tower.Tm n} {firstValue : Section domain}
+    {secondValue : Section (fun point => codomain ⟨point, firstValue point⟩)}
+    (firstMeaning : Denotes a context first domain firstValue)
+    (secondMeaning : Denotes a context second
+      (fun point => codomain ⟨point, firstValue point⟩) secondValue) :
+    Denotes a context (.snd (.pair first second))
+      (fun point => codomain ⟨point, firstValue point⟩) secondValue := by
+  have meaning := Denotes.second (domain := domain) (codomain := codomain)
+    (Denotes.pair firstMeaning secondMeaning)
+  have familyEqual : (fun point => codomain
+      ⟨point, ZFSetContextualInterpretation.fst
+        (ZFSetContextualInterpretation.pair firstValue secondValue) point⟩) =
+      (fun point => codomain ⟨point, firstValue point⟩) := by
+    rw [ZFSetContextualInterpretation.fst_pair]
+  exact (meaning.cast_family familyEqual).change_value
+    (eq_of_heq ((castSection_heq familyEqual _).trans
+      (ZFSetContextualInterpretation.snd_pair firstValue secondValue)))
+
 /-- Qualified denotation commutes with displayed renaming.  The extensional
 sections are re-created at the new environment and then identified by proof
 fibre separation. -/
@@ -135,6 +181,19 @@ theorem Denotes.rename {a : ZFSet.{u}} {n : Nat} {source : Context.{u} n}
       (morphism.reindexFamily family) (morphism.reindexSection value) := by
   induction meaning generalizing m with
   | mixed meaning => exact .mixed (meaning.rename displayed)
+  | @pair n context domain codomain first second firstValue secondValue
+      firstMeaning secondMeaning firstInduction secondInduction =>
+      exact Denotes.pair (domain := morphism.reindexFamily domain)
+        (codomain := codomain ∘ (morphism.lift domain).environment)
+        (firstInduction displayed) (secondInduction displayed)
+  | @first n context domain codomain term value pairMeaning inductionHypothesis =>
+      exact Denotes.first (domain := morphism.reindexFamily domain)
+        (codomain := codomain ∘ (morphism.lift domain).environment)
+        (inductionHypothesis displayed)
+  | @second n context domain codomain term value pairMeaning inductionHypothesis =>
+      exact Denotes.second (domain := morphism.reindexFamily domain)
+        (codomain := codomain ∘ (morphism.lift domain).environment)
+        (inductionHypothesis displayed)
   | @abstraction n context domain codomain body bodyValue bodyMeaning ih =>
       exact .abstraction (ih (displayed.lift domain))
   | @application n context domain codomain function argument functionValue argumentValue
@@ -600,6 +659,7 @@ theorem functionExtensionality_denotes {a : ZFSet.{u}} {n : Nat}
     leftMeaning rightMeaning pointwiseTermMeaning⟩
 
 #print axioms Denotes.rename
+#print axioms Denotes.second_pair
 #print axioms Denotes.weaken
 #print axioms ProofDenotes.ofMixed
 #print axioms ProofDenotes.weaken

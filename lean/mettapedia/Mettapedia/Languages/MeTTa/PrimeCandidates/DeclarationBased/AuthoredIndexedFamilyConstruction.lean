@@ -64,7 +64,7 @@ structure TypedNativePresentation (presented : PresentedCandidate) where
 
 /-- Both endpoint typings of one schema position in the complete authored
 source.  The index ranges over the source presentation, rather than over one
-family candidate's local iota-clause list: a declaration world may contain
+family candidate's local iota-rule list: a declaration world may contain
 several mutually available native families. -/
 structure TypedAuthoredSchema (presented : PresentedCandidate)
     (schema : EquationSchema) where
@@ -736,20 +736,20 @@ noncomputable def vecTypedNativePresentation :
   vecTypedSchemaInventory.toTypedNativePresentation vecReceiptNaturality
 
 /-- Negative control for the abstraction boundary: neither family's local
-iota-clause registry exhausts the shared authored source.  A source-wide
+iota-rule registry exhausts the shared authored source.  A source-wide
 inventory is therefore not interchangeable with a family-local registry. -/
-theorem local_iota_clause_lists_do_not_exhaust_shared_source :
-    natCandidate.iotaClauses.length ≠
+theorem local_iota_rule_lists_do_not_exhaust_shared_source :
+    natCandidate.iotaRules.length ≠
         (equationSchemas
           (elaborate natPresentedCandidate.source)).length ∧
-      vecCandidate.iotaClauses.length ≠
+      vecCandidate.iotaRules.length ≠
         (equationSchemas
           (elaborate vecPresentedCandidate.source)).length := by
   constructor
   · rw [nat_presented_source_equation_schemas]
-    simp [natCandidate, natIotaClauses, schemas]
+    simp [natCandidate, natIotaRules, schemas]
   · rw [vec_presented_source_equation_schemas]
-    simp [vecCandidate, vecIotaClauses, schemas]
+    simp [vecCandidate, vecIotaRules, schemas]
 
 def natZeroSchemaIndex : Fin
     (equationSchemas (elaborate natPresentedCandidate.source)).length :=
@@ -770,7 +770,7 @@ noncomputable def canonicalNatZeroNativeStep :=
   natTypedNativePresentation.canonicalNativeStep natZeroSchemaIndex
 
 /-- Positive cross-family control: the source-wide Nat view constructs the
-Vec-nil computation even though Vec-nil is absent from Nat's local iota-clause
+Vec-nil computation even though Vec-nil is absent from Nat's local iota-rule
 list. -/
 noncomputable def canonicalVecNilThroughNatViewNativeStep :=
   natTypedNativePresentation.canonicalNativeStep
@@ -820,7 +820,7 @@ end NativeNatVec
 #print axioms NativeNatVec.vecTypedSchemaInventory
 #print axioms NativeNatVec.natTypedNativePresentation
 #print axioms NativeNatVec.vecTypedNativePresentation
-#print axioms NativeNatVec.local_iota_clause_lists_do_not_exhaust_shared_source
+#print axioms NativeNatVec.local_iota_rule_lists_do_not_exhaust_shared_source
 #print axioms NativeNatVec.canonicalNatZeroNativeStep
 #print axioms NativeNatVec.canonicalVecNilThroughNatViewNativeStep
 #print axioms NativeNatVec.canonicalVecNilNativeStep

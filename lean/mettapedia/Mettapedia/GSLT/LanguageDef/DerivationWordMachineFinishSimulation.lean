@@ -91,10 +91,9 @@ theorem input_lifted_rule_empty_on_finish_record
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded,
+    · simp [decoded,
         DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
-        matchArgs]
+        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
 
 #print axioms input_lifted_rule_empty_on_finish_record
 
@@ -143,10 +142,9 @@ theorem infer_lifted_rule_empty_on_finish_record
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded,
+    · simp [decoded,
         DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
-        matchArgs]
+        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
 
 #print axioms infer_lifted_rule_empty_on_finish_record
 
@@ -188,10 +186,9 @@ theorem drop_lifted_rule_empty_on_finish_record
         DerivationCheckMachineLanguageDef.v, run, recordsCons, v,
         DerivationWordMachineLanguageDef.a]
     · exact recordDecoded
-    · simp [inputStartBindings, decoded,
+    · simp [decoded,
         DerivationWordMachineLanguageDef.a,
-        DerivationCheckMachineLanguageDef.a, v, applyBindings, matchPattern,
-        matchArgs]
+        DerivationCheckMachineLanguageDef.a, v, matchPattern, matchArgs]
 
 #print axioms drop_lifted_rule_empty_on_finish_record
 

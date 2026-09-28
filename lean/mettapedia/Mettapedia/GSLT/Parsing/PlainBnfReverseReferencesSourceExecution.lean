@@ -22,7 +22,8 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfGraphNameTrie (Trie)
 open PlainBnfCollectorSourceExecution (NameScalarCodec name)
 open PlainBnfTrieSourceExecution
@@ -251,6 +252,7 @@ theorem dependents_answers (env : RelationEnv) (fuel : Nat) (found : Option SExp
     rw [reference_rewriteAt env fuel _ (by rfl)]
     cases found <;>
       simp [reference_rules_exact, observedRules, observedRule, applyRuleUsing,
+        applyRuleBindings_of_binderFree, binderFree, binderFreeList,
         dependentsCall, dependents, emptyBucket, call, result, value,
         pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
         matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -261,6 +263,7 @@ private theorem add_nil (env : RelationEnv) (fuel : Nat) (node : SExpr)
       [result (trie index)] := by
   rw [reference_rewriteAt env fuel _ (by rfl)]
   simp [reference_rules_exact, observedRules, observedRule, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     addCall, names, call, result, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -320,6 +323,7 @@ private theorem add_following (env : RelationEnv) (fuel : Nat)
       (addCall (key :: tail) node index) = answers.map result := by
   rw [reference_rewriteAt env fuel _ (by rfl)]
   simp [reference_rules_exact, observedRules, observedRule, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     addCall, names, call, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]

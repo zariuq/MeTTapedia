@@ -5,6 +5,7 @@ import Mettapedia.GraphTheory.Walk.NativeTypeTheory
 import Mettapedia.GraphTheory.Walk.ProofTheory
 import Mettapedia.GraphTheory.Walk.NativeTypeExamples
 import Mettapedia.GraphTheory.Walk.ModeCellProofThinnessBoundary
+import Mettapedia.GraphTheory.Walk.ObserverLicences
 
 /-! Operational graph-walk LanguageDefs, generated native types, and their
 Mathlib/proof-theoretic correspondence. -/

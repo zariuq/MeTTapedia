@@ -21,7 +21,8 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfSourceRank (Rank)
 open PlainBnfReverseIndexSourceExecution (Item key node nodes)
 open PlainBnfWakeSourceExecution (Queues heapItem enqueue wake encodeQueues)
@@ -172,7 +173,7 @@ theorem queues_injective : Function.Injective encodeQueues := by
 theorem result_queues_injective : Function.Injective (fun queues => result (encodeQueues queues)) :=
   result_injective.comp queues_injective
 
-section ClauseEvaluation
+section RuleEvaluation
 
 variable (language : LanguageDef)
 
@@ -185,6 +186,7 @@ private theorem nil_rows (fuel : Nat) (productive : Bool) (origin : Option Rank)
       [result (encodeQueues queues)] := by
   simp [rules_exact, observedRules, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, wakeCall, nodes, call, result, pattern, patternList,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
 
@@ -201,6 +203,7 @@ private theorem found_rows (fuel : Nat) (payload : SExpr) (productive : Bool)
       answers.map result := by
   simp [rules_exact, observedRules, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, afterScheduledCall, PlainBnfTrieSourceExecution.value, call, pattern, patternList,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   simp only [wakeCall, call, encode, encodeList] at recursive
@@ -222,6 +225,7 @@ private theorem unready_rows (fuel : Nat) (productive : Bool) (item : Item)
       answers.map result := by
   simp [rules_exact, observedRules, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, afterReadyCall, answer, call, pattern, patternList,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   simp only [wakeCall, call, encode, encodeList] at recursive
@@ -384,7 +388,8 @@ private theorem cons_lookup_rows (fuel : Nat) (productive : Bool) (item : Item)
   simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil]
   simp [consRule_exact, observedRules, PlainBnfTrieSourceExecution.observedRule,
     consBindings, pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode,
-    mergeBindings, premisesUsing, premiseStepUsing, applyBindings, PlainBnfReverseIndexSourceExecution.text_wire]
+    mergeBindings, premisesUsing, premiseStepUsing, applyBindings, PlainBnfReverseIndexSourceExecution.text_wire,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList]
   simp only [PlainBnfTrieSourceExecution.lookupCall, call, result, encode, encodeList] at first
   rw [first]
   simp [matchPattern, matchArgs, mergeBindings, List.foldlM]
@@ -432,7 +437,8 @@ private theorem missing_ready_rows (fuel : Nat) (productive : Bool) (item : Item
   simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil]
   simp [missingRule_exact, observedRules, PlainBnfTrieSourceExecution.observedRule,
     missingBindings, pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode,
-    mergeBindings, premisesUsing, premiseStepUsing, applyBindings]
+    mergeBindings, premisesUsing, premiseStepUsing, applyBindings,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList]
   simp only [readyCall, PlainBnfReadinessSourceExecution.readyCall, call, result, encode, encodeList] at first
   rw [first]
   simp [matchPattern, matchArgs, mergeBindings, List.foldlM]
@@ -477,6 +483,7 @@ private theorem ready_schedule_rows (fuel : Nat) (productive : Bool) (item : Ite
         (afterReadyCall true productive item rest origin index history lexicals queues)) = answers.map result := by
   simp [rules_exact, observedRules, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, afterReadyCall, answer, call, pattern, patternList,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   simp only [scheduleCall, PlainBnfScheduleSourceExecution.scheduleCall,
@@ -493,7 +500,7 @@ private theorem ready_schedule_rows (fuel : Nat) (productive : Bool) (item : Ite
     List.foldlM, mergeBindings]
   simp [← List.map_eq_flatMap, result, encode, encodeList]
 
-end ClauseEvaluation
+end RuleEvaluation
 
 open PlainBnfWakeSourceFamily (language)
 open PlainBnfIndexedCollectorSourceExecution (headedBy)

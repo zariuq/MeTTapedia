@@ -189,12 +189,12 @@ theorem exch_unexch (c : S.Srt) {Γ : Ctx S} :
           | zero =>
               rw [hcase] at h
               simp only [exch, weakenVar]
-              simp only [exch, weakenVar] at h
+              simp only [exch] at h
               exact congrArg Var.succ h
           | succ w =>
               rw [hcase] at h
               simp only [exch, liftRen]
-              simp only [exch, liftRen] at h
+              simp only [exch] at h
               exact congrArg Var.succ h
 
 /-- The exchange therefore has a partial inverse, so renaming along it is
@@ -722,5 +722,37 @@ theorem underBinder_not_shallow : ¬ Shallow (toTerm underBinder) := by
 end DeepHole
 
 end LinCtx
+
+/-- Composing a structurally linear outer context with the occurrence context
+of a rewrite preserves the contextual firing. This is the general law needed
+for congruence rules such as rho's parallel closure. -/
+theorem step_under_linear_context {M : List (MetaArity S)}
+    (rule : PositionedRewrite (withMetas S M))
+    {s : S.Srt} (outer : LinCtx S rule.sort [] s)
+    {source target : Term S [] rule.sort}
+    (fires : Step rule source target) :
+    Step rule (inst (LinCtx.toTerm outer) source)
+      (inst (LinCtx.toTerm outer) target) := by
+  obtain ⟨inner, redex, reduct, linear, root, sourceEq, targetEq⟩ := fires
+  obtain ⟨innerLinear, innerEq⟩ :=
+    LinCtx.exists_linCtx_of_holeCount inner linear
+  refine ⟨LinCtx.toTerm (LinCtx.comp outer innerLinear), redex, reduct,
+    LinCtx.holeCount_toTerm _, root, ?_, ?_⟩
+  · rw [LinCtx.toTerm_comp, innerEq]
+    have composition := congrFun (ContextCat.act_comp
+      (S := S) (Γ := [])
+      (a := ⟨rule.sort⟩) (b := ⟨rule.sort⟩) (c := ⟨s⟩)
+      (f := inner) (g := LinCtx.toTerm outer)) redex
+    change inst (ContextCat.comp (LinCtx.toTerm outer) inner) redex =
+      inst (LinCtx.toTerm outer) (inst inner redex) at composition
+    rw [composition, sourceEq]
+  · rw [LinCtx.toTerm_comp, innerEq]
+    have composition := congrFun (ContextCat.act_comp
+      (S := S) (Γ := [])
+      (a := ⟨rule.sort⟩) (b := ⟨rule.sort⟩) (c := ⟨s⟩)
+      (f := inner) (g := LinCtx.toTerm outer)) reduct
+    change inst (ContextCat.comp (LinCtx.toTerm outer) inner) reduct =
+      inst (LinCtx.toTerm outer) (inst inner reduct) at composition
+    rw [composition, targetEq]
 
 end Mettapedia.OSLF.Binding

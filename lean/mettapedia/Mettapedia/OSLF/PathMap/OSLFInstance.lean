@@ -370,6 +370,8 @@ private lemma premiseStep_preserves_find (relEnv : RelationEnv) (lang : Language
     subst this; exact h_find
   | congruence _ _ =>
     simp [premiseStepWithEnv] at h_bs
+  | scopedStep _ =>
+    simp [premiseStepWithEnv] at h_bs
   | relationQuery rel args =>
     obtain ⟨bPrem, hmerge⟩ := premiseStepWithEnv_relationQuery_mem h_bs
     exact mergeBindings_find_preserved key val h_find hmerge

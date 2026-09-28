@@ -111,6 +111,19 @@ theorem stepAt_mapLanguageDef
             · rw [← mergeBindings_mapBindings symbols constructorInjective,
                 merged]
               rfl
+        | scopedRoot empty recursive matched merged =>
+            rename_i premiseBindings step candidate
+            refine PremiseAt.scopedRoot
+              (premiseBindings := mapBindings symbols premiseBindings)
+              (candidate := mapPattern symbols candidate)
+              (by simp [empty]) ?_ ?_ ?_
+            · rw [applyBindings_mapPattern]
+              exact inductionHypothesis recursive
+            · rw [matchPattern_equivariance symbols constructorInjective]
+              exact List.mem_map_of_mem matched
+            · rw [← mergeBindings_mapBindings symbols constructorInjective,
+                merged]
+              rfl
       have premisesMap :
           ∀ {initial final : Bindings} {premises : List Premise},
             PremisesAt base language fuel initial premises final →
@@ -197,6 +210,8 @@ theorem stepAt_of_rewrites_mem
         | forAll member => exact .forAll (baseMono _ _ _ member)
         | congruence recursive matched merged =>
             exact .congruence (inductionHypothesis recursive) matched merged
+        | scopedRoot empty recursive matched merged =>
+            exact .scopedRoot empty (inductionHypothesis recursive) matched merged
       have premisesMono :
           ∀ {initial final : Bindings} {premises : List Premise},
             PremisesAt base language fuel initial premises final →
@@ -326,7 +341,7 @@ private theorem matchRelationArgument_not_fvar
     (seed : Bindings) (argument value : Pattern)
     (notFvar : ∀ name, argument ≠ .fvar name) :
     matchRelationArgument seed argument value =
-      matchPattern (applyBindings seed argument) value := by
+      matchPattern argument value := by
   cases argument <;> first
     | rfl
     | exact absurd rfl (notFvar _)
@@ -359,7 +374,6 @@ private theorem matchRelationArgument_equivariance
       matchRelationArgument_not_fvar (mapBindings symbols seed)
         (mapPattern symbols argument) (mapPattern symbols value)
         (fun name equal => notFvar name (mapPattern_eq_fvar equal)),
-      applyBindings_mapPattern,
       matchPattern_equivariance symbols constructorInjective]
 
 private theorem matchRelationArgs_equivariance
@@ -466,6 +480,8 @@ theorem engineBasePremises_empty_maps_results
   cases premise with
   | congruence left right =>
       simp [engineBasePremises] at member
+  | scopedStep step =>
+      simp [engineBasePremises, premiseStepWithEnv] at member
   | forAll collection parameter body =>
       simp [engineBasePremises, premiseStepWithEnv] at member
   | freshness condition =>

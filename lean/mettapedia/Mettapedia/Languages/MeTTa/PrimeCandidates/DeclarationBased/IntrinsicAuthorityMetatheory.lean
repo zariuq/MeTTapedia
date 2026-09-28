@@ -281,8 +281,8 @@ def emptyConstructors :
     List (ConstructorSpec rawEmptySignature emptyName 0) :=
   []
 
-noncomputable def emptyIotaClauses :
-    List (IotaClause receiptRules rawEmptySignature
+noncomputable def emptyIotaRules :
+    List (IotaRule receiptRules rawEmptySignature
       proofRelevantEmptyComputation
       (emptyConstructors.map ConstructorSpec.name)
       emptyEliminatorSpec.name) :=
@@ -306,7 +306,7 @@ noncomputable def emptyCandidate : Candidate receiptRules where
   eliminator := emptyEliminatorSpec
   eliminatorNotFamily := by decide
   eliminatorNotConstructor := by simp [emptyConstructors]
-  iotaClauses := emptyIotaClauses
+  iotaRules := emptyIotaRules
   constructorsComputed := by simp [emptyConstructors]
 
 /-- Positive control: from an assumed empty inhabitant, the native eliminator

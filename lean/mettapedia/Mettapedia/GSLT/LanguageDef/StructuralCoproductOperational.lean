@@ -91,6 +91,21 @@ private theorem premiseStepUsing_equivariance
       simpa only [Function.comp_apply] using
         filterMap_merge_mapBindings symbols constructorInjective
           bindings (matchPattern targetPattern candidate)
+  | scopedStep step =>
+      -- A scoped step with no local binders executes as congruence; with
+      -- binders it contributes nothing. Renaming symbols keeps the binder list.
+      by_cases empty : step.binders.isEmpty = true
+      · simp only [mapPremise, premiseStepUsing, List.isEmpty_map, empty,
+          ↓reduceIte, applyBindings_mapPattern, recursiveCommutes,
+          List.flatMap_map]
+        rw [List.map_flatMap]
+        apply List.flatMap_congr
+        intro candidate candidateMembership
+        rw [matchPattern_equivariance symbols constructorInjective]
+        simpa only [Function.comp_apply] using
+          filterMap_merge_mapBindings symbols constructorInjective
+            bindings (matchPattern step.target candidate)
+      · simp [mapPremise, premiseStepUsing, List.isEmpty_map, empty]
 
 private theorem premisesUsing_equivariance
     (symbols : LanguageDefSymbolMap)

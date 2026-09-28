@@ -94,3 +94,5 @@ theorem twoSortProfile_intensional :
   rfl
 
 end Mettapedia.Languages.MeTTa.CoreProfile
+
+#print axioms Mettapedia.Languages.MeTTa.CoreProfile.twoSortProfile_stratified

@@ -249,13 +249,15 @@ private theorem matchRule_congF_inversion {source : Pattern}
 
 private theorem applyRule_ab :
     applyBindingsForRule stepLanguage rewriteAB [] = termB := by
-  rw [applyBindingsForRule_eq_syntactic]
+  rw [applyBindingsForRule_eq_syntactic, applyRuleBindings_eq_applyBindings _ _
+    (ruleDepthAligned_of_binderFree _ (by decide) (by decide))]
   simp [rewriteAB, termB, applyBindings]
 
 private theorem applyRule_congF (first second : Pattern) :
     applyBindingsForRule stepLanguage congruenceF
         [("q", second), ("p", first)] = termF second := by
-  rw [applyBindingsForRule_eq_syntactic]
+  rw [applyBindingsForRule_eq_syntactic, applyRuleBindings_eq_applyBindings _ _
+    (ruleDepthAligned_of_binderFree _ (by decide) (by decide))]
   simp [congruenceF, termF, applyBindings, List.find?]
 
 /-- The authored ground step is a declarative reduction. -/

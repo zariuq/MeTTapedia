@@ -4,7 +4,7 @@ import Mettapedia.Languages.MeTTa.HE.Types
 # specification-grounded HE match and merge specification
 
 This file formalizes the mutually recursive `match_atoms`, `merge_bindings`,
-`add_var_binding`, and `add_var_equality` clauses from the published HE MeTTa
+`add_var_binding`, and `add_var_equality` cases from the published HE MeTTa
 specification.  It is deliberately independent of both executable matchers:
 none of the relations below mentions HE's `matchAtoms` / `mergeBindings` or
 LeaTTa's matcher / merge functions.
@@ -227,7 +227,7 @@ inductive MatchRel (p : Parameters) : Atom → Atom → Bindings → Prop where
       MatchRel p left (.grounded grounded) out
   /-- Published grounded/grounded fallback: if neither side supplies a custom
   matcher, the match succeeds with empty bindings.  This intentionally records
-  the spec clause rather than replacing it by an implementation equality test. -/
+  the spec case rather than replacing it by an implementation equality test. -/
   | groundedFallback {left right : GroundedValue}
       (hleft : ¬p.hasCustomMatcher left)
       (hright : ¬p.hasCustomMatcher right)
@@ -389,7 +389,7 @@ example : MatchRel noCustomSemantic (.var "x") (.var "y")
   .varVar "x" "y" (semanticLoopFree_of_assignments_nil rfl)
 
 /-- Positive spec fallback: two grounded values without custom matchers match
-even when their payloads differ.  This is the clause on which the published
+even when their payloads differ.  This is the case on which the published
 text and the implementation-oriented model currently disagree. -/
 example : MatchRel noCustomSemantic
     (.grounded (.int 1)) (.grounded (.int 2)) Bindings.empty :=
@@ -427,7 +427,7 @@ theorem symbol_mismatch_not_match
   cases hmatch with
   | symSym => exact hne rfl
 
-/-- Negative: the var/var clause cannot masquerade as an oriented assignment. -/
+/-- Negative: the var/var case cannot masquerade as an oriented assignment. -/
 theorem varVar_assignment_not_match (left right : String) :
     ¬MatchRel noCustomSemantic (.var left) (.var right)
       (Bindings.empty.assign left (.var right)) := by

@@ -165,6 +165,52 @@ mutual
           (OpenConstructionArguments.weaken tail)
 end
 
+/-! Adding an unused input to a typed route preserves its observation. -/
+
+mutual
+  theorem evaluateLifted_weaken {context : List algebra.Kind}
+      {output added : algebra.Kind}
+      (route : OpenConstructionRoute algebra context output)
+      (extra : algebra.Object added)
+      (environment : FamilyList algebra.Object context) :
+      evaluateLifted algebra (.cons extra environment)
+          (weaken algebra route) =
+        evaluateLifted algebra environment route := by
+    cases route with
+    | input position => cases position <;> rfl
+    | source _ => rfl
+    | apply operation arguments =>
+        simp only [weaken, evaluateLifted]
+        exact congrArg (fun value : algebra.Object output =>
+          (ULift.up value : ULift.{uKind} (algebra.Object output)))
+          (congrArg (algebra.interpretOperation operation)
+            (OpenConstructionArguments.evaluate_weaken arguments extra environment))
+
+  theorem OpenConstructionArguments.evaluate_weaken
+      {context inputs : List algebra.Kind} {added : algebra.Kind}
+      (arguments : OpenConstructionArguments algebra context inputs)
+      (extra : algebra.Object added)
+      (environment : FamilyList algebra.Object context) :
+      OpenConstructionArguments.evaluate algebra (.cons extra environment)
+          (OpenConstructionArguments.weaken algebra arguments) =
+        OpenConstructionArguments.evaluate algebra environment arguments := by
+    cases arguments with
+    | nil => rfl
+    | cons head tail =>
+        simp only [OpenConstructionArguments.weaken,
+          OpenConstructionArguments.evaluate]
+        rw [evaluateLifted_weaken head extra environment,
+          OpenConstructionArguments.evaluate_weaken tail extra environment]
+end
+
+theorem evaluate_weaken {context : List algebra.Kind} {output added : algebra.Kind}
+    (route : OpenConstructionRoute algebra context output)
+    (extra : algebra.Object added)
+    (environment : FamilyList algebra.Object context) :
+    evaluate algebra (.cons extra environment) (weaken algebra route) =
+      evaluate algebra environment route :=
+  congrArg ULift.down (evaluateLifted_weaken algebra route extra environment)
+
 /-- A typed simultaneous substitution from one variable context to another. -/
 abbrev ConstructionSubstitution
     (fromVariables toVariables : List algebra.Kind) :=

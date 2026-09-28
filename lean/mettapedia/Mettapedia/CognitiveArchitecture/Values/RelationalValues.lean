@@ -202,29 +202,29 @@ theorem trust_asymptotic (current : UnitValue) :
     (trustUpdate current .positive).val ≤ 1 :=
   (trustUpdate current .positive).property.2
 
-/-! ## Comparison with OpenPsi/MicroPsi -/
+/-! ## Comparison with OpenPsi/MicroPsi — what is owed
 
-/-- OpenPsi affiliation is scalar, not relational -/
-def openPsiAffiliationIsScalar : Prop :=
-  -- OpenPsi affiliation: single number for "social need level"
-  -- Doesn't track WHO you're affiliated with
-  True
+Three declarations were removed from this section: `openPsiAffiliationIsScalar`
+and `microPsiAffiliationIsScalar`, each defined as `Prop := True`, and
+`no_relational_support`, which proved their conjunction by `trivial`.  Read
+together they asserted that two published architectures lack individual-specific
+relationships, while proving `True ∧ True` — that is, nothing.
 
-/-- MicroPsi affiliation is also scalar -/
-def microPsiAffiliationIsScalar : Prop :=
-  -- MicroPsi affiliation: same scalar approach
-  True
+The claim is not unprovable in principle, and there is a worked template for it
+in this very development: `CognitiveArchitecture.Bridges.ModelExpressiveness`
+proves a genuine expressiveness loss by exhibiting two distinct `PADVec` values
+that `padToModulators` identifies.  The corresponding statement here would
+model each architecture's affiliation representation and exhibit two
+relationships — different partners, same scalar — that its representation
+cannot tell apart.  That is real work and it has not been done. -/
 
-/-- Neither model supports individual-specific relationships -/
-theorem no_relational_support :
-    openPsiAffiliationIsScalar ∧ microPsiAffiliationIsScalar := by
-  constructor <;> trivial
-
-/-- Relational values missing from both models -/
-def missingRelationalValues : List RelationalValueType :=
+/-- The relational value types this module represents individually, as opposed
+to through a single scalar. -/
+def relationalValueTypes : List RelationalValueType :=
   [.trust, .loyalty, .gratitude, .forgiveness, .love, .friendship]
 
-/-- All relational values are missing (6 total) -/
-theorem all_relational_missing : missingRelationalValues.length = 6 := by rfl
+/-- There are six of them.  This counts the list above; it makes no claim about
+any other architecture. -/
+theorem relationalValueTypes_count : relationalValueTypes.length = 6 := by rfl
 
 end Mettapedia.CognitiveArchitecture.Values.Relational

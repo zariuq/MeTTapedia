@@ -1,10 +1,10 @@
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Examples.Telescopes
 
 /-!
-# Dependent application and identity-evidence clauses
+# Dependent application and identity-evidence equations
 
 These programs use the same dependent telescope abstraction and simultaneous
-substitution as ordinary clause admission. Application accepts separately
+substitution as ordinary equation admission. Application accepts separately
 leveled types and a function argument; identity evidence has a value-indexed
 result. The execution laws retain the actual substituted function or witness.
 
@@ -16,7 +16,7 @@ open Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId
 open Mettapedia.TypeTheory.UniverseLevel
 
 namespace Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation
-namespace DependentClausePrograms
+namespace DependentEquationPrograms
 
 open TelescopeAbstraction
 
@@ -244,5 +244,5 @@ theorem reflexivity_result_is_not_a_sort (argument : Tower.Tm n) (level : LevelE
 #print axioms family_instance_typed
 #print axioms family_executes
 
-end DependentClausePrograms
+end DependentEquationPrograms
 end Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation

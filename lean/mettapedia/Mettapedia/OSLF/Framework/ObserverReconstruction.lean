@@ -461,6 +461,7 @@ reach the bindings in ordinary use.  What must not reach them is `Args⟨c⟩`. 
 /-- A premise is a congruence premise. -/
 def IsCongruence : Premise → Prop
   | .congruence _ _ => True
+  | .scopedStep _ => True
   | _ => False
 
 /-- A binding list does not mention a label. -/
@@ -503,6 +504,8 @@ theorem premisesAt_avoids {base : BasePremiseEvaluator} {lang : LanguageDef}
       | relationQuery member => exact confined _ _ _ _ member initialAvoids headClean
       | forAll member => exact confined _ _ _ _ member initialAvoids headClean
       | congruence _ _ _ =>
+          exact absurd trivial (noCongruence _ (List.mem_cons_self ..))
+      | scopedRoot _ _ _ _ =>
           exact absurd trivial (noCongruence _ (List.mem_cons_self ..))
 
 /-- **So an authored rule builds no argument bundle**, premises and all, so long
@@ -564,6 +567,7 @@ theorem evaluatorAvoids_of_env {env : RelationEnv} {forbidden : String}
   intro lang bindings premise result member bindingsAvoid premiseAvoid
   cases premise with
   | congruence _ _ => simp [engineBasePremises] at member
+  | scopedStep _ => simp [engineBasePremises, premiseStepWithEnv] at member
   | forAll _ _ _ => simp [engineBasePremises, premiseStepWithEnv] at member
   | freshness condition =>
       simp only [engineBasePremises, premiseStepWithEnv] at member
@@ -660,6 +664,17 @@ theorem premiseAt_avoids {base : BasePremiseEvaluator} {lang : LanguageDef}
   | _, _, _, _, .forAll member, clean, initialAvoids =>
       confined _ _ _ _ member initialAvoids clean
   | _, _, _, _, .congruence stepEvidence matchEvidence merged, clean, initialAvoids => by
+      have candidateAvoids := stepAt_avoids confined rules stepEvidence
+        (fun occurs => by
+          rcases List.mem_append.mp (labels_applyBindings _ _ occurs) with inSource | inBindings
+          · exact clean (List.mem_append_left _ inSource)
+          · exact initialAvoids inBindings)
+      intro occurs
+      rcases List.mem_append.mp
+        (bindingLabels_mergeBindings _ _ merged occurs) with inInitial | inPremise
+      · exact initialAvoids inInitial
+      · exact candidateAvoids (bindingLabels_matchPattern matchEvidence inPremise)
+  | _, _, _, _, .scopedRoot _ stepEvidence matchEvidence merged, clean, initialAvoids => by
       have candidateAvoids := stepAt_avoids confined rules stepEvidence
         (fun occurs => by
           rcases List.mem_append.mp (labels_applyBindings _ _ occurs) with inSource | inBindings

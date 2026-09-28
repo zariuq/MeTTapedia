@@ -151,6 +151,7 @@ theorem mettaCalc_validate_eq_nil : mettaCalc.validate = [] := by
     LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
     LanguageDef.premiseProducedFvarNames, LanguageDef.premisePatterns,
     LanguageDef.premiseFvarNames, LanguageDef.premiseForAllParams,
+    LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped,
     Pattern.constructorRefs, Pattern.constructorRefsList,
     Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt]

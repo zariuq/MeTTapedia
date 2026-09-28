@@ -409,7 +409,7 @@ instance pushforwardLift_isStronglyCocartesian
     infer_instance
   universal_property' := by
     intro targetObject tailRoute candidate candidateLift
-    letI : (projection diagram).IsHomLift
+    let : (projection diagram).IsHomLift
         (CategoryTheory.CategoryStruct.comp route tailRoute) candidate :=
       candidateLift
     have baseEq :

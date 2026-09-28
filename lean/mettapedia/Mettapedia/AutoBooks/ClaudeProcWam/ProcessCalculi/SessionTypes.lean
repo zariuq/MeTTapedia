@@ -285,17 +285,28 @@ inductive WellTyped : SessionContext → Proc → Prop where
   | fwd (c d : Channel) (s : SessionType) :
       WellTyped [(c, s), (d, s.dual)] (.fwd c d)
 
-/-! ## Type Safety Properties -/
+/-! ## Type safety: what is owed, and why it cannot yet be stated
 
-/-- Well-typed processes are deadlock-free (statement only) -/
-theorem WellTyped.deadlock_free (Γ : SessionContext) (p : Proc)
-    (_hwt : WellTyped Γ p) : True := by  -- Would state actual property
-  trivial
+Two declarations were removed here, `WellTyped.deadlock_free` and
+`WellTyped.preservation`.  Both concluded `True`, proved by `trivial`; the
+second did not even mention its own `p'`.  Named for the two central results of
+session-type metatheory, they asserted nothing, and their presence made the
+metatheory look settled.
 
-/-- Session fidelity: types are preserved through reduction -/
-theorem WellTyped.preservation (Γ : SessionContext) (p _p' : Proc)
-    (_hwt : WellTyped Γ p) : True := by  -- Would state actual property
-  trivial
+Neither can currently be *stated* in this file, and the reason is specific:
+`Proc` has no reduction relation.  `Reduce` in `PiCalculus` is a relation on
+`Process`, and `CPReduce` in `PropositionsAsSessions` is a relation on
+`CPProc`; neither applies to the `Proc` syntax typed by `WellTyped` above.
+
+So the obligations, in order:
+
+1. a reduction relation `Proc → Proc → Prop` for this syntax;
+2. **subject reduction**: `WellTyped Γ p → Reduce p q → WellTyped Γ q`;
+3. a notion of stuck process, and **deadlock freedom**: a well-typed process
+   at a closed context is either terminated or can reduce.
+
+Step 1 is a prerequisite for the other two and is not a formality — the whole
+content of (2) is which reductions the relation admits. -/
 
 /-! ## Examples -/
 

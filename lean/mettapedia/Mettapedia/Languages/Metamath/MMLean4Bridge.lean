@@ -1,6 +1,6 @@
 import Metamath.DeclarativeSpec
 import Metamath.Verify
-import Metamath.KernelClean
+import Metamath.KernelCorrectness
 import Metamath.RunEmission
 import Metamath.Spec.Operational
 
@@ -65,25 +65,25 @@ abbrev toOperationalDatabaseTotal := Metamath.Kernel.toDatabaseTotal
 abbrev proofCheckerNormalAcceptance_iff_specProvable_inParsedDB :=
   Metamath.Kernel.proofChecker_normal_acceptance_iff_specProvable_in_parsedDB
 
-/-- Execution chronology emitted by one concrete single-pass invocation. -/
+/-- Execution evidence emitted by one concrete single-pass invocation. -/
 abbrev SinglePassEmission := Metamath.RunEmission.SinglePassEmission
-abbrev ExecutionChronology := Metamath.RunEmission.ExecutionChronology
+abbrev ExecutionInsertionHistory := Metamath.RunEmission.ExecutionInsertionHistory
 
-/-- Every successful prefix-certified run has one execution chronology. -/
-abbrev checkSinglePassExecutionChronologyExactlyOne :=
-  Metamath.RunEmission.checkSinglePass_execution_chronology_exactly_one
+/-- Every successful sound run has its uniquely emitted insertion history. -/
+abbrev checkExecutionInsertionHistoryExactlyOne :=
+  Metamath.RunEmission.check_execution_insertionHistory_exactly_one
 
 /-- Every stored theorem is derivable from the run's axiom events. -/
-abbrev checkSinglePassEveryTheoremProvableFromRunAxiomEvents :=
-  Metamath.RunEmission.checkSinglePass_every_theorem_provable_from_run_axiom_events
+abbrev checkEveryTheoremProvableFromRunAxiomEvents :=
+  Metamath.RunEmission.check_every_theorem_provable_from_run_axiom_events
 
-/-- Sound-default specialization of the execution-chronology theorem. -/
-abbrev checkSinglePassSoundDefaultExecutionChronology :=
-  Metamath.RunEmission.checkSinglePass_soundDefault_execution_chronology
+/-- Sound-mode specialization of the insertion-history theorem. -/
+abbrev checkSoundExecutionInsertionHistory :=
+  Metamath.RunEmission.check_sound_execution_insertionHistory
 
-/-- Knife-mode specialization of the execution-chronology theorem. -/
-abbrev checkSinglePassKnifeExecutionChronology :=
-  Metamath.RunEmission.checkSinglePass_knife_execution_chronology
+/-- Knife-mode specialization of the insertion-history theorem. -/
+abbrev checkKnifeExecutionInsertionHistory :=
+  Metamath.RunEmission.check_knife_execution_insertionHistory
 
 /-- Explicit carrier table for the new Metamath bridge.
 This is intentionally small and type-directed: it tells us which verified

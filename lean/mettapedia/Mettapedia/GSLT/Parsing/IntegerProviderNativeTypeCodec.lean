@@ -190,7 +190,7 @@ theorem authenticated_source_exact {rawSources : List SExpr} {packet : Packet}
   | some program => exact (show _ ∧ _ by simpa [Authentic, elaborated] using authentic).1
 
 /-- Every exported occurrence retains the established OSLF completion type.
-This theorem does not assert whole-program clause uniqueness or native bounds. -/
+This theorem does not assert whole-program rule uniqueness or native bounds. -/
 theorem inferred_info_echo {sources : List Source} {info : BinaryTypeInfo}
     (member : info ∈ inferredInfos sources) :
     ∃ names, inputNamesAt? sources info.occurrence = some names ∧

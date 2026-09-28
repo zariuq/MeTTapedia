@@ -277,6 +277,7 @@ theorem renderPremise?_isSome_eq_supported (premise : Premise) :
       cases result : arguments.mapM renderPattern? <;>
         simp [renderPremise?, premiseSupported, result] at rendered ⊢ <;>
         simp_all
+  | scopedStep => rfl
   | forAll => rfl
 
 theorem renderTypeBinding?_isSome_eq_supported

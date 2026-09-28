@@ -3,7 +3,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfReferenceSourceAdmission
 import Mettapedia.GSLT.Parsing.PlainBnfStructuredEnumeration
 
 /-!
-# Ordered graph diagnostics from the authored source clauses
+# Ordered graph diagnostics from the authored source rules
 
 Graph occurrences 20–23 and 60–63 traverse original definition occurrences.
 The existing known-name trie supplies lookup: a missing key produces exactly
@@ -26,7 +26,8 @@ open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfStructuredDiscoveryGraph (Definition Definitions)
 open PlainBnfStructuredDenotation (SourceSpan)
 open PlainBnfStructuredEnumeration (wireDefinition)
@@ -210,6 +211,7 @@ local macro "diagnostics_reduce" : tactic =>
       simp [headedBy, relationHeads, diagnosticsCall, afterCall, call, encode, encodeList])]
     simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
       applyRuleUsing, diagnosticsCall, afterCall, relation, afterRelation, tag,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       definition, definitions, PlainBnfEnumerationSourceExecution.definition,
       PlainBnfEnumerationSourceExecution.definitions, PlainBnfCollectorSourceExecution.definitions,
       wireDefinition, nameResult, call, pattern, patternList,
@@ -450,7 +452,7 @@ theorem diagnostics_decoded_step_iff (productive : Bool) (values : Definitions) 
     (diagnostics_injective productive).eq_iff]
 
 /-- The history interpretation requires the real index invariant. Its proof
-does not replace execution of the existing name lookup clauses. -/
+does not replace execution of the existing name lookup rules. -/
 theorem missing_eq_history_filter (values : Definitions) (index : NameIndex) (history : List SExpr)
     (valid : Valid index history) :
     missing values index = (values.filter fun value => decide (text value.name ∉ history)).map

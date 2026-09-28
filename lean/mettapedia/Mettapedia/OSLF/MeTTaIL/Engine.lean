@@ -115,9 +115,12 @@ def builtinRelationTuples (_lang : LanguageDef) (rel : String) (args : List Patt
   | _, _ => []
 
 /-- Match one relation argument without confusing variables inside an already
-bound value with rule metavariables.  An unbound top-level metavariable is an
+bound value with rule metavariables. An unbound top-level metavariable is an
 output position and may acquire a binding; a bound one is an exact value.
-Other argument schemas retain ordinary structural matching. -/
+Structural schemas are matched in their original form. The enclosing
+`matchRelationArgs` merge checks any names already present in `bindings`;
+substituting those values into the schema before matching would turn free
+variables inside the values into new metavariables. -/
 def matchRelationArgument (bindings : Bindings) (argument value : Pattern) :
     List Bindings :=
   match argument with
@@ -125,7 +128,7 @@ def matchRelationArgument (bindings : Bindings) (argument value : Pattern) :
       match bindings.lookup name with
       | some existing => if existing = value then [[]] else []
       | none => [[(name, value)]]
-  | _ => matchPattern (applyBindings bindings argument) value
+  | _ => matchPattern argument value
 
 /-- Match a relation row while threading bindings introduced by earlier
 arguments.  The result contains only the extension relative to `seed`, so the
@@ -169,6 +172,8 @@ def premiseStepWithEnv (relEnv : RelationEnv) (lang : LanguageDef) (bindings : B
             []
       | none => []
   | .congruence _ _ =>
+      []
+  | .scopedStep _ =>
       []
   | .relationQuery rel args =>
       relationQueryStep relEnv lang bindings rel args
@@ -311,6 +316,8 @@ theorem premiseStepWithEnv_mono {lang₁ lang₂ : LanguageDef}
   | .freshness _ => exact hbs
   | .congruence _ _ =>
       simp [premiseStepWithEnv] at hbs
+  | .scopedStep _ =>
+      simp [premiseStepWithEnv] at hbs
   | .relationQuery rel args =>
       simp only [premiseStepWithEnv] at hbs ⊢
       exact relationQueryStep_mono relEnv bindings rel args bs hbs
@@ -383,6 +390,7 @@ theorem premiseStepWithEnv_mono_relEnv {lang : LanguageDef}
   match prem with
   | .freshness _ => exact hbs
   | .congruence _ _ => exact hbs
+  | .scopedStep _ => exact hbs
   | .relationQuery rel args =>
       simp only [premiseStepWithEnv] at hbs ⊢
       exact relationQueryStep_mono_relEnv hle bindings rel args bs hbs

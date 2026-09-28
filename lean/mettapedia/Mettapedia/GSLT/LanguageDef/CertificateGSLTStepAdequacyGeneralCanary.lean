@@ -151,7 +151,8 @@ private theorem mk_langReduces :
   · rw [matchPatternForRule_eq_syntactic]
     simp [mkRule, termUnit, matchPattern, matchArgs]
   · exact .nil []
-  · rw [applyBindingsForRule_eq_syntactic]
+  · rw [applyBindingsForRule_eq_syntactic,
+      applyRuleBindings_eq_applyBindings _ _ (by decide)]
     simp [mkRule, termThunkIdentity, applyBindings]
 
 private theorem merge_pq :
@@ -206,7 +207,8 @@ private theorem pair_langReduces :
       simpa [applyBindings, List.find?] using mkEvidence
     · simp [matchPattern]
     · exact merge_pq'
-  · rw [applyBindingsForRule_eq_syntactic]
+  · rw [applyBindingsForRule_eq_syntactic,
+      applyRuleBindings_eq_applyBindings _ _ (by decide)]
     simp [pairCongRule, termPair, applyBindings, List.find?]
 
 /-! ## Certificates through the general theorem -/
@@ -263,7 +265,8 @@ theorem no_unit_to_pair_certificate :
         subst matchMember
         cases premisesEvidence with
         | nil =>
-            rw [applyBindingsForRule_eq_syntactic] at applyEq
+            rw [applyBindingsForRule_eq_syntactic,
+              applyRuleBindings_eq_applyBindings _ _ (by decide)] at applyEq
             simp [mkRule, termThunkIdentity, termPair, termUnit,
               applyBindings] at applyEq
       · rw [matchPatternForRule_eq_syntactic] at matchMember
@@ -371,7 +374,8 @@ theorem orphan_no_step : ¬ langReduces orphanLanguage termUnit termUnit := by
       subst matchMember
       cases premisesEvidence with
       | nil =>
-          rw [applyBindingsForRule_eq_syntactic] at applyEq
+          rw [applyBindingsForRule_eq_syntactic,
+            applyRuleBindings_eq_applyBindings _ _ (by decide)] at applyEq
           simp [orphanRule, termUnit, applyBindings] at applyEq
 
 /-- **Modedness is necessary**: an unmoded rule is gate-rejected, and its
@@ -481,7 +485,8 @@ theorem subst_no_raw_step :
       subst matchMember
       cases premisesEvidence with
       | nil =>
-          rw [applyBindingsForRule_eq_syntactic] at applyEq
+          rw [applyBindingsForRule_eq_syntactic,
+            applyRuleBindings_eq_applyBindings _ _ (by decide)] at applyEq
           simp [substRule, substTarget, termUnit, applyBindings,
             instantiateBVar, instantiateBVarAt, liftBVars] at applyEq
 
@@ -572,7 +577,8 @@ theorem bag_swap_step :
       List.foldlM, List.find?, List.zipIdx, List.eraseIdx, termUnit,
       termThunkIdentity]
   · exact .nil _
-  · rw [applyBindingsForRule_eq_syntactic]
+  · rw [applyBindingsForRule_eq_syntactic,
+      applyRuleBindings_eq_applyBindings _ _ (by decide)]
     simp [bagRule, termPair, applyBindings, List.find?]
 
 private theorem argumentsValidAt_two_inversion

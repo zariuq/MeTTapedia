@@ -4,7 +4,7 @@ import Mettapedia.GSLT.Parsing.HornIntegerProvider
 # Occurrence-indexed Horn execution with source-authenticated providers
 
 States are the existing ordered lists of fuel-indexed ground obligations.
-Clause actions select a source occurrence and ground substitution. Provider
+Rule actions select a source occurrence and ground substitution. Provider
 actions select both an empty-body capability declaration and an authored
 equation occurrence, whose independently interpreted answer must be exactly
 the outstanding query. Neither an unrelated answer nor an empty answer can
@@ -332,14 +332,14 @@ theorem Path.append_suffix {program : Program} {actions : List Action}
 /-! ## Independent local models and backward reflection
 
 The meaning predicate is supplied independently of execution. The two local
-soundness conditions inspect actual clause instances and authenticated provider
+soundness conditions inspect actual rule instances and authenticated provider
 answers. They do not assume anything about whole paths or replay acceptance.
 -/
 
 def StateHolds (Meaning : GroundAtom → Prop) (state : State) : Prop :=
   ∀ obligation ∈ state, Meaning obligation.2
 
-def ClauseSound (program : Program) (Meaning : GroundAtom → Prop) : Prop :=
+def RuleSound (program : Program) (Meaning : GroundAtom → Prop) : Prop :=
   ∀ (occurrence : Nat) (rule : Rule) (substitution : Substitution)
     (goal : GroundAtom) (premises : List GroundAtom),
     program[occurrence]? = some rule →
@@ -375,44 +375,44 @@ def ProviderSound (program : Program) (Meaning : GroundAtom → Prop) : Prop :=
   simp [StateHolds, goalsAt]
 
 theorem Step.reflect_meaning {program : Program} {Meaning : GroundAtom → Prop}
-    (clauses : ClauseSound program Meaning) (providers : ProviderSound program Meaning)
+    (rules : RuleSound program Meaning) (providers : ProviderSound program Meaning)
     {action : Action} {source target : State} (step : Step program action source target)
     (holds : StateHolds Meaning target) : StateHolds Meaning source := by
   cases step with
   | rule selected valid head body =>
     obtain ⟨premises, rest⟩ := (stateHolds_append _ _ _).mp holds
     exact (stateHolds_cons _ _ _).mpr
-      ⟨clauses _ _ _ _ _ selected valid head body ((stateHolds_goalsAt _ _ _).mp premises),
+      ⟨rules _ _ _ _ _ selected valid head body ((stateHolds_goalsAt _ _ _).mp premises),
         rest⟩
   | provider selected capability equation answer =>
     exact (stateHolds_cons _ _ _).mpr
       ⟨providers _ _ _ _ _ selected capability equation answer, holds⟩
 
 theorem Path.reflect_meaning {program : Program} {Meaning : GroundAtom → Prop}
-    (clauses : ClauseSound program Meaning) (providers : ProviderSound program Meaning)
+    (rules : RuleSound program Meaning) (providers : ProviderSound program Meaning)
     {actions : List Action} {source target : State} (path : Path program actions source target)
     (holds : StateHolds Meaning target) : StateHolds Meaning source := by
   induction path with
   | nil => exact holds
-  | cons first _ ih => exact first.reflect_meaning clauses providers (ih holds)
+  | cons first _ ih => exact first.reflect_meaning rules providers (ih holds)
 
 theorem Path.terminal_soundness {program : Program} {Meaning : GroundAtom → Prop}
-    (clauses : ClauseSound program Meaning) (providers : ProviderSound program Meaning)
+    (rules : RuleSound program Meaning) (providers : ProviderSound program Meaning)
     {actions : List Action} {source : State} (path : Path program actions source []) :
     StateHolds Meaning source :=
-  path.reflect_meaning clauses providers (stateHolds_nil Meaning)
+  path.reflect_meaning rules providers (stateHolds_nil Meaning)
 
 theorem Path.goal_soundness {program : Program} {Meaning : GroundAtom → Prop}
-    (clauses : ClauseSound program Meaning) (providers : ProviderSound program Meaning)
+    (rules : RuleSound program Meaning) (providers : ProviderSound program Meaning)
     {actions : List Action} {fuel : Nat} {goal : GroundAtom}
     (path : Path program actions [(fuel, goal)] []) : Meaning goal :=
-  path.terminal_soundness clauses providers (fuel, goal) (by simp)
+  path.terminal_soundness rules providers (fuel, goal) (by simp)
 
 theorem terminal_replay_soundness {program : Program} {Meaning : GroundAtom → Prop}
-    (clauses : ClauseSound program Meaning) (providers : ProviderSound program Meaning)
+    (rules : RuleSound program Meaning) (providers : ProviderSound program Meaning)
     {actions : List Action} {source : State}
     (produced : replayPath? program actions source = some []) : StateHolds Meaning source :=
-  (replayPath?_sound _ _ _ _ produced).terminal_soundness clauses providers
+  (replayPath?_sound _ _ _ _ produced).terminal_soundness rules providers
 
 theorem no_step_from_empty (program : Program) (action : Action) (target : State) :
     ¬ Step program action [] target := by intro step; cases step
@@ -428,7 +428,7 @@ private def demoQuery : GroundAtom :=
 
 private def demoGoal : GroundAtom := ⟨"accepted", .nil⟩
 
-private def demoClause : Rule :=
+private def demoRule : Rule :=
   ⟨"client", ⟨"accepted", .nil⟩,
     [⟨"less", .cons (.integer 0) (.cons (.integer 1) .nil)⟩]⟩
 
@@ -451,7 +451,7 @@ private def demoResidual : GroundTerm :=
       (.cons (.app "metta-nullary" (.cons (.atom "empty") .nil)) .nil)))
 
 private def demoProgram : Program :=
-  [demoClause, demoCapability, demoEquation, demoClause]
+  [demoRule, demoCapability, demoEquation, demoRule]
 
 private theorem demoProviderResult :
     runAt? demoProgram 2 (providerCall demoQuery) = some [queryTerm demoQuery] := by
@@ -469,13 +469,13 @@ private theorem demoProviderStep :
   have capability : checkCapability demoCapability demoQuery = true := by decide
   simp [replayStep?, selected, capability, demoProviderResult]
 
-theorem clause_then_provider_executes :
+theorem rule_then_provider_executes :
     replayPath? demoProgram [.rule 0 [], .provider 1 2] [(2, demoGoal)] = some [] := by
   simp [replayPath?, demoRuleStep, demoProviderStep]
 
-theorem clause_then_provider_has_semantic_path :
+theorem rule_then_provider_has_semantic_path :
     Path demoProgram [.rule 0 [], .provider 1 2] [(2, demoGoal)] [] :=
-  replayPath?_sound _ _ _ _ clause_then_provider_executes
+  replayPath?_sound _ _ _ _ rule_then_provider_executes
 
 theorem wrong_capability_occurrence_is_refused :
     replayStep? demoProgram (.provider 0 2) [(1, demoQuery)] = none := by decide
@@ -542,11 +542,11 @@ theorem duplicate_source_occurrences_give_distinct_paths :
     ([Action.rule 0 [], .provider 1 2] ≠ [.rule 3 [], .provider 1 2]) ∧
       Path demoProgram [.rule 0 [], .provider 1 2] [(2, demoGoal)] [] ∧
       Path demoProgram [.rule 3 [], .provider 1 2] [(2, demoGoal)] [] := by
-  refine ⟨by decide, clause_then_provider_has_semantic_path, ?_⟩
+  refine ⟨by decide, rule_then_provider_has_semantic_path, ?_⟩
   apply replayPath?_sound
   simp [replayPath?, duplicate_source_occurrences_remain_distinct.2.2, demoProviderStep]
 
-theorem clause_preserves_duplicate_premises (goal : GroundAtom) (fuel : Nat) (rest : State) :
+theorem rule_preserves_duplicate_premises (goal : GroundAtom) (fuel : Nat) (rest : State) :
     goalsAt fuel [goal, goal] ++ rest = (fuel, goal) :: (fuel, goal) :: rest := rfl
 
 /-! ## Independent vocabulary model controls
@@ -570,7 +570,7 @@ private theorem instantiateAtom_preserves_relation {substitution : Substitution}
       simpa [instantiateAtom, values] using instantiated
     exact (congrArg GroundAtom.relation equal).symm
 
-private theorem demoClausesSound : ClauseSound demoProgram demoVocabulary := by
+private theorem demoRulesSound : RuleSound demoProgram demoVocabulary := by
   intro occurrence rule substitution goal premises selected _ head _ _
   have member : rule ∈ demoProgram := List.mem_of_getElem? selected
   have relation := instantiateAtom_preserves_relation head
@@ -584,24 +584,24 @@ private theorem demoProvidersSound : ProviderSound demoProgram demoVocabulary :=
   simp [demoProgram] at member
   rcases member with rfl | rfl | rfl | rfl
   · have relation := congrArg Atom.relation capability.2.1
-    simp [demoClause] at relation
+    simp [demoRule] at relation
   · have arguments := congrArg Atom.arguments capability.2.1
     simp [demoCapability] at arguments
     simp [demoVocabulary, ← arguments.1]
   · have relation := congrArg Atom.relation capability.2.1
     simp [demoEquation] at relation
   · have relation := congrArg Atom.relation capability.2.1
-    simp [demoClause] at relation
+    simp [demoRule] at relation
 
 theorem terminal_path_preserves_independent_vocabulary :
     StateHolds demoVocabulary [(2, demoGoal)] :=
-  clause_then_provider_has_semantic_path.terminal_soundness demoClausesSound demoProvidersSound
+  rule_then_provider_has_semantic_path.terminal_soundness demoRulesSound demoProvidersSound
 
 private def forbiddenFact : Rule := ⟨"forbidden-fact", ⟨"forbidden", .nil⟩, []⟩
 
 theorem executable_fact_can_violate_independent_meaning :
     replayStep? [forbiddenFact] (.rule 0 []) [(1, ⟨"forbidden", .nil⟩)] = some [] ∧
-      ¬ ClauseSound [forbiddenFact] demoVocabulary := by
+      ¬ RuleSound [forbiddenFact] demoVocabulary := by
   refine ⟨by decide, ?_⟩
   intro sound
   have forbidden := sound 0 forbiddenFact [] ⟨"forbidden", .nil⟩ []

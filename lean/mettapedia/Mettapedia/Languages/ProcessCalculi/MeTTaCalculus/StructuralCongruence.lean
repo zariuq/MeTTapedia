@@ -8,7 +8,7 @@ parallel-bag algebra and the inactive process law.
 
 ## Source attribution
 
-Aligned with the structural `equiv` clauses in:
+Aligned with the structural `equiv` equations in:
 
 - `/home/zar/claude/hyperon/rho4u/metta-calculus/metta-calculus.core.tex`
 

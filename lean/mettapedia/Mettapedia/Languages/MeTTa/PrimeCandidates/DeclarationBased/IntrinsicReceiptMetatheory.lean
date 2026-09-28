@@ -2343,8 +2343,8 @@ def receiptMakeApp_constantOccurrence
             (.appFunction
               (.appFunction .here))))))
 
-noncomputable def receiptMakeIotaClause :
-    IotaClause runRules rawReceiptSignature
+noncomputable def receiptMakeIotaRule :
+    IotaRule runRules rawReceiptSignature
       proofRelevantReceiptComputation
       (receiptConstructors.map ConstructorSpec.name)
       receiptEliminatorSpec.name where
@@ -2361,12 +2361,12 @@ noncomputable def receiptMakeIotaClause :
         (.var 8) (.var 5) (.var 4) (.var 3)
         (.var 2) (.var 1) (.var 0))
 
-noncomputable def receiptIotaClauses :
-    List (IotaClause runRules rawReceiptSignature
+noncomputable def receiptIotaRules :
+    List (IotaRule runRules rawReceiptSignature
       proofRelevantReceiptComputation
       (receiptConstructors.map ConstructorSpec.name)
       receiptEliminatorSpec.name) :=
-  [receiptMakeIotaClause]
+  [receiptMakeIotaRule]
 
 /-- A formed, strictly-positive intrinsic receipt family whose key, requested
 budget, and judgment remain visible as indices and whose constructor records
@@ -2401,12 +2401,12 @@ noncomputable def receiptCandidate : Candidate runRules where
       or_false] at membership
     rcases membership with rfl
     decide
-  iotaClauses := receiptIotaClauses
+  iotaRules := receiptIotaRules
   constructorsComputed := by
     intro constructorName membership
     simp [receiptConstructors, receiptMakeConstructorSpec] at membership
     rcases membership with rfl
-    simp [receiptIotaClauses, receiptMakeIotaClause]
+    simp [receiptIotaRules, receiptMakeIotaRule]
 
 /-! ## Axiom audit -/
 

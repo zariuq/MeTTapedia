@@ -8,7 +8,7 @@ import Mathlib.Data.List.Basic
 The abstract machine compares an append-based FIFO with a two-list FIFO,
 including the exact pending sequence and visited order at every bounded prefix.
 Duplicate edges are not erased. The source checks select the concrete enqueue,
-rotation and accumulator clauses from the live authored presentation.
+rotation and accumulator rules from the live authored presentation.
 
 These are queue refinement and source-instantiation theorems, not a theorem
 about the entire generated PeTTa evaluator or its resource behavior.
@@ -113,7 +113,7 @@ open PlainBnfReferenceSourceAdmission (graphSource)
 open SourceSExprPatternInstantiation (Env instantiate? instantiateList?)
 open scoped Mettapedia.OSLF.MeTTaIL.MeTTaSyntaxQuotation
 
-def clause? (occurrence : Nat) (env : Env) : Option (SExpr × List SExpr) := do
+def instantiatedRule? (occurrence : Nat) (env : Env) : Option (SExpr × List SExpr) := do
   let row ← graphSource.rewrites[occurrence]?
   return (← instantiate? env row.head, ← instantiateList? env row.body)
 
@@ -133,16 +133,16 @@ private theorem reverse_cons_shape : graphSource.rewrites[96]? = some
       [metta_sexpr% petta "(BNFReachableReverseV1 ?rest (BNFNamesConsV1 ?head ?tail) ?result)"]⟩ := rfl
 
 theorem reverse_nil_source (tail : List SExpr) :
-    clause? 95 [("?tail", names tail)] =
+    instantiatedRule? 95 [("?tail", names tail)] =
       some (app "BNFReachableReverseV1" [names [], names tail, names tail], []) := by
-  simp [clause?, reverse_nil_shape, instantiate?, instantiateList?, names, app,
+  simp [instantiatedRule?, reverse_nil_shape, instantiate?, instantiateList?, names, app,
     SourceIntegerProvider.sourceVariableToken]
 
 theorem reverse_cons_source (head : SExpr) (rest tail : List SExpr) (result : SExpr) :
-    clause? 96 [("?head", head), ("?rest", names rest), ("?tail", names tail), ("?result", result)] =
+    instantiatedRule? 96 [("?head", head), ("?rest", names rest), ("?tail", names tail), ("?result", result)] =
       some (app "BNFReachableReverseV1" [names (head :: rest), names tail, result],
         [app "BNFReachableReverseV1" [names rest, names (head :: tail), result]]) := by
-  simp [clause?, reverse_cons_shape, instantiate?, instantiateList?, names, app,
+  simp [instantiatedRule?, reverse_cons_shape, instantiate?, instantiateList?, names, app,
     SourceIntegerProvider.sourceVariableToken]
 
 /-- The source really enqueues references onto the reverse back, and carries

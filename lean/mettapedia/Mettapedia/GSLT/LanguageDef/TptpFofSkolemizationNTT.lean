@@ -475,7 +475,7 @@ def generatedInferenceWire : String :=
 pin as source identity; the artifact-boundary checker independently recomputes
 the digest before admitting the paired object and inference projections. -/
 def generatedObjectLanguageSha256 : String :=
-  "5e05cc091a360fe69e1f168a0cd3ed533240c7914398626bdbd2ab3b0c3b27f5"
+  "cefefaa10c75632e225b6dee9b35e249c51a513a1c66e5fa087af29ca9b67444"
 
 /-- Exact revision identity for the separately compiled generated calculus. -/
 def generatedSourceIdentity : CheckedSource.SourceIdentity where

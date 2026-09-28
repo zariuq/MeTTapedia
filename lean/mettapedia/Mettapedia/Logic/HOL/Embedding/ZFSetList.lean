@@ -246,7 +246,7 @@ theorem eliminateGraph_cons {a : ZFSet.{u}}
       (step x xs (eliminate (fun ys => Elements (motive ys)) zero step xs)).1 := by
   rw [eliminateGraph_apply, eliminate_cons]
 
-/-- The dependent computation clauses determine every value, since every
+/-- The dependent computation rules determine every value, since every
 member of the list code has a finite constructor presentation. -/
 theorem eliminate_unique {a : ZFSet.{u}}
     (motive : Elements (listCode a) → Sort v) (zero : motive (nil a))

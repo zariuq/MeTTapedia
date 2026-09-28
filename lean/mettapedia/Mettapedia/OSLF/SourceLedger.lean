@@ -24,8 +24,10 @@ separately: whether the *source* proves what it states.  A statement the source
 asserts without proof is not thereby a gap in this development, and it must not
 be turned into an axiom, a premise or a placeholder in order to look closed.
 
-All five chapters are inventoried below. The recorded definition, remark,
-proposition, theorem and corollary counts stay in `chapterObligationCount`.
+Chapters six, seven and sixteen to twenty are inventoried below. The recorded
+definition, remark, proposition, theorem and corollary counts stay in
+`chapterObligationCount`; claims a chapter makes in prose are entered as section
+rows beside them.
 Conditions 20.1 (redex RPOs) and 20.2 (context congruence) are additional source
 preconditions, not rows in that denominator, and require their own certification.
 -/
@@ -85,7 +87,7 @@ deriving Repr
 /-- Recorded counts of definitions, remarks, propositions, theorems and
 corollaries at the source revision. Numbered source conditions are not included. -/
 def chapterObligationCount : List (Nat × Nat) :=
-  [(16, 9), (17, 5), (18, 11), (19, 7), (20, 28)]
+  [(6, 0), (7, 5), (16, 9), (17, 5), (18, 11), (19, 7), (20, 28)]
 
 /-- Publication revision supplying the draft-26 obligation numbering. -/
 def sourceRevision : String := "1f7bd34b11e65d707dde4b3638d08a181e1b8028"
@@ -93,12 +95,364 @@ def sourceRevision : String := "1f7bd34b11e65d707dde4b3638d08a181e1b8028"
 /-- The compiled source carrying these chapter and section numbers. -/
 def sourceDocument : String := "FindingMind/draft26/finding_mind.pdf"
 
-/-- The denominator: sixty numbered obligations across chapters sixteen to
-twenty. -/
+/-- The denominator: sixty-five numbered obligations across chapters six,
+seven and sixteen to twenty. -/
 def totalObligations : Nat :=
   (chapterObligationCount.map (·.2)).foldl (· + ·) 0
 
-theorem totalObligations_eq : totalObligations = 60 := by decide
+theorem totalObligations_eq : totalObligations = 65 := by decide
+
+/-! ## Chapter 6
+
+The chapter numbers no environment. It fixes the running example and previews
+the three definitions of the following chapters, and both are entered as
+section rows.
+-/
+
+/-- Chapter 6's rows. -/
+def chapter6 : List Obligation :=
+  [ { chapter := 6, citation := "Section 6.2, the three definitions in advance"
+      statement :=
+        "A GSLT is any rewrite theory; an interactive GSLT names the site at "
+        ++ "which two things meet and separates the base rule from the context "
+        ++ "rules; a continued interactive GSLT presents that site as a meterable "
+        ++ "cut. A Turing machine is a GSLT and is not interactive; a lambda "
+        ++ "calculus is interactive with an asymmetric site; rho is interactive "
+        ++ "with a symmetric one."
+      sourceProves := false
+      construction := "", provedTheorem := "", instanceWitness := ""
+      negativeControl := ""
+      audited := true
+      standing := .openHere }
+  , { chapter := 6, citation := "Section 6.3, the rho calculus"
+      statement :=
+        "Processes are 0, for(y <- x) P, x!(Q), P | Q and *x, and names are @P, "
+        ++ "with y bound in for(y <- x) P. Structural equivalence is the least "
+        ++ "equivalence containing alpha-equivalence and making (P, |, 0) a "
+        ++ "commutative monoid. The single reduction rule is "
+        ++ "for(y <- x) P | x!(Q) --> P{@Q/y}."
+      sourceProves := false
+      construction := "Syntax/RhoPayloadPresentation.lean: the input binds the "
+        ++ "received process p, the received name is quo p and its drop is p, so "
+        ++ "COMM is ordinary substitution; the equations are the commutative "
+        ++ "monoid on par and the name law of Section 7.11. "
+        ++ "Syntax/RhoPayloadTranslation.lean: tName/tProc from the authored "
+        ++ "patterns, resolving @*n as a whole name before a literal quote"
+      provedTheorem := "Syntax/RhoPayloadTranslation.lean: "
+        ++ "translate_semanticSubst (executor substitution is exact environment "
+        ++ "extension), translate_bind (environments are substitutions up to the "
+        ++ "name law), translate_semanticCommSubst (P{@Q/y} translates to the "
+        ++ "continuation instantiated at Q, up to the name law)"
+      instanceWitness := "Syntax/RhoPayloadExecutorComparison.lean: "
+        ++ "control_received_name -- for(x <- @0){x!(0)} receiving @0!(0) sends "
+        ++ "on @{@0!(0)}, the instantiated continuation"
+      negativeControl := "Syntax/RhoPayloadExecutorComparison.lean: "
+        ++ "control_literal_closed -- a literal quote naming an enclosing bound "
+        ++ "index is outside the translated fragment; control_free_quoteDrop -- "
+        ++ "@*x for a free x is untouched by communication"
+      audited := true
+      standing := .provedHere }
+  ]
+
+/-! ## Chapter 7
+
+Definition 7.1 and four remarks are numbered. The claims of Sections 7.4 to
+7.6 and the four worked presentations of Sections 7.8 to 7.11 are entered as
+section rows.
+-/
+
+/-- Chapter 7's rows. -/
+def chapter7 : List Obligation :=
+  [ { chapter := 7, citation := "Definition 7.1"
+      statement :=
+        "A graph-structured lambda theory is a triple G = (Sigma, E, R) of a "
+        ++ "signature Sigma that is in general a lambda theory, so that terms may "
+        ++ "contain variables; a set E of equations imposing a structural "
+        ++ "congruence; and a set R of rewrite rules."
+      sourceProves := false
+      construction := "Syntax/BindingSignature.lean: Signature with binding "
+        ++ "arities, EqAxiom over contextual metavariables; "
+        ++ "Syntax/IntrinsicScopedConditionalPolynomial.lean: Rule, a positioned "
+        ++ "conclusion with ordered binder-local premises"
+      provedTheorem := "Syntax/IntrinsicScopedConditionalSubstitutionModels.lean: "
+        ++ "SubstitutionOperationalModel.presentedIsInitial -- the equation "
+        ++ "quotient with its free firing trees and their substitution action is "
+        ++ "initial among models of the signature, equations, binders, rules and "
+        ++ "substitution"
+      instanceWitness := "Syntax/IntrinsicLambdaFourRulePresentation.lean: "
+        ++ "initial; Syntax/RhoPayloadPresentation.lean: strictInitial, "
+        ++ "bookInitial"
+      negativeControl := "Syntax/IntrinsicScopedConditionalSubstitutionModels.lean: "
+        ++ "no_rules_no_reduction -- a presentation without rules has no firing "
+        ++ "tree, even after substitution"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 7, citation := "Remark 7.1"
+      statement :=
+        "The theory written G = (Sigma, E, R) in this part is written "
+        ++ "S = (T, E, R) in later parts; nothing turns on the difference."
+      sourceProves := false
+      construction := "One presentation structure serves both spellings: "
+        ++ "Syntax/BindingSignature.lean Signature and EqAxiom, and "
+        ++ "Syntax/IntrinsicScopedConditionalPolynomial.lean Rule"
+      provedTheorem := "", instanceWitness := "", negativeControl := ""
+      audited := true
+      standing := .respectedHere }
+  , { chapter := 7, citation := "Section 7.4, lambda theories and not Lawvere theories"
+      statement :=
+        "A Lawvere theory absorbs variables into arities and cannot present a "
+        ++ "binder; lambda theories generate term languages with variables, and in "
+        ++ "how the variables get used they are cartesian closed categories, which "
+        ++ "is why the classifying form carries a chosen cartesian closed "
+        ++ "structure."
+      sourceProves := false
+      construction := "Syntax/LawvereContextBoundary.lean for the context "
+        ++ "category of a signature; Syntax/BoundTermExponential.lean and "
+        ++ "Syntax/IntrinsicScopedConditionalPresheaf.lean for binder bodies as "
+        ++ "exponentials by representables in the presheaf category. The closed "
+        ++ "structure lives in the presheaf category, not in the context category"
+      provedTheorem := "Syntax/BoundTermExponential.lean: boundTermHomEquiv; "
+        ++ "Syntax/IntrinsicScopedConditionalPresheaf.lean: binderBodiesIso and "
+        ++ "monoidalClosed"
+      instanceWitness := "Syntax/IntrinsicLambdaFourRulePresentation.lean: the "
+        ++ "LamCong premise is a child judgment under its own binder "
+        ++ "(lamCongChild)"
+      negativeControl := "Syntax/LawvereContextBoundary.lean: notCartesianClosed "
+        ++ "and noRepresentingExponential -- the context category has variables "
+        ++ "but no exponentials"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 7, citation := "Section 7.5, adjoined and not enriched"
+      statement :=
+        "The rewrites are adjoined to the theory as a graph: sources and targets "
+        ++ "are given and the source and target maps satisfy the minimal requisite "
+        ++ "equations, so that rewrite events can be quantified over."
+      sourceProves := false
+      construction := "Syntax/IntrinsicScopedConditionalSubstitution.lean: "
+        ++ "firing trees indexed by their endpoints, with substTree acting on "
+        ++ "them; Syntax/IntrinsicScopedConditionalPresheaf.lean: events, source, "
+        ++ "target and graph"
+      provedTheorem := "Syntax/IntrinsicScopedConditionalSubstitution.lean: "
+        ++ "substTree_identity and substTree_comp; "
+        ++ "Syntax/IntrinsicScopedConditionalSubstitutionModels.lean: "
+        ++ "reduces_substitute and reduces_map -- source and target commute with "
+        ++ "substitution and with every model map"
+      instanceWitness := "Syntax/RhoPayloadPresentation.lean: steps_comm and "
+        ++ "steps_parCong, rho firing trees between equation classes"
+      negativeControl := "Syntax/FreePresheafEventImage.lean: "
+        ++ "duplicated_endpoint_map_not_injective; "
+        ++ "Syntax/LambdaEventImageMultiplicity.lean: "
+        ++ "firstCopy_not_event_surjective -- distinct events may share endpoints, "
+        ++ "so events are not a subobject of pairs of terms"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 7, citation := "Remark 7.2"
+      statement :=
+        "Lambda theory captures term languages with variables; graph-structured "
+        ++ "captures the rewrite rules; a GSLT is a term language with variables "
+        ++ "together with an adjoined graph of rewrites over it."
+      sourceProves := false
+      construction := "The Definition 7.1 and Section 7.5 rows"
+      provedTheorem := "", instanceWitness := "", negativeControl := ""
+      audited := true
+      standing := .respectedHere }
+  , { chapter := 7, citation := "Remark 7.3"
+      statement :=
+        "Because the graph structure is adjoined, the rewrites block of a "
+        ++ "specification is more algebraic structure over the same signature as "
+        ++ "the terms block."
+      sourceProves := false
+      construction := "Syntax/IntrinsicScopedConditionalPolynomial.lean: a Rule "
+        ++ "is written over withMetas of the same signature as the terms"
+      provedTheorem := "", instanceWitness := "", negativeControl := ""
+      audited := true
+      standing := .respectedHere }
+  , { chapter := 7, citation := "Section 7.6, the classifying structure"
+      statement :=
+        "The classifying theory of a presentation is a category with finite limits "
+        ++ "and a chosen cartesian closed structure, its subobject fibration, a "
+        ++ "distinguished object Pr of programs and a distinguished subobject of "
+        ++ "one-step reduction of Pr x Pr, with entailments generating the base "
+        ++ "rewrites and their closure under the term formers; the source calls "
+        ++ "that subobject the adjoined graph seen semantically."
+      sourceProves := false
+      construction := "Syntax/IntrinsicScopedConditionalPresheaf.lean: "
+        ++ "presheaves on the context category of the binding clone, with states, "
+        ++ "programs, events, graph and the reduction subfunctor. The corrected "
+        ++ "interface keeps the graph of individual firings distinct from its "
+        ++ "endpoint-image reduction subobject. Syntax/CategoricalEventObservations.lean "
+        ++ "proves the image is the least justified predicate when images exist; "
+        ++ "finite limits alone do not supply images, and the cartesian closure "
+        ++ "here is that of the presheaf category"
+      provedTheorem := "Syntax/IntrinsicScopedConditionalPresheaf.lean: "
+        ++ "hasFiniteLimits, monoidalClosed, programsIso, mem_reduction_iff -- "
+        ++ "membership in the reduction subfunctor is the reduction of "
+        ++ "Syntax/IntrinsicScopedConditionalSubstitutionModels.lean, the least "
+        ++ "rule-closed relation (reduces_least), stable under substitution "
+        ++ "(reduces_substitute); Syntax/CategoricalEventObservations.lean: "
+        ++ "imageAdjunction; Syntax/PresentationEventModalComparison.lean: "
+        ++ "diamond_iff_endpoint_image"
+      instanceWitness := "Syntax/IntrinsicLambdaFourRulePresentation.lean: "
+        ++ "sourceStep_iff_reduces"
+      negativeControl := "Syntax/LambdaEventImageMultiplicity.lean: "
+        ++ "image_equality_without_event_surjectivity -- equal reduction images "
+        ++ "need not come from equal event graphs"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 7, citation := "Section 7.6, the classifying property"
+      statement :=
+        "The structure of the previous row is the classifying theory of the "
+        ++ "presentation: models of the presentation in a category with finite "
+        ++ "limits, a chosen cartesian closed structure and a reduction subobject "
+        ++ "correspond to structure-preserving functors out of it."
+      sourceProves := false
+      construction := "Syntax/IntrinsicScopedConditionalSubstitutionModels.lean: "
+        ++ "SubstitutionOperationalModel.presentedIsInitial is initiality among "
+        ++ "algebraic models with a substitution action, not the universal "
+        ++ "property of the semantic category among finitely complete cartesian "
+        ++ "closed categories with a reduction subobject. "
+        ++ "Syntax/IntrinsicScopedConditionalFiniteContextSemantics.lean: "
+        ++ "authoredRuleClassification proves the finite-product classifier "
+        ++ "for rule algebras over each fixed binding-equation model, including "
+        ++ "interpretation maps and ordered binder-local premise positions. "
+        ++ "Syntax/IndexedRuleFiniteListSkeleton.lean: listEquivalence "
+        ++ "represents every finite operational context in a small category "
+        ++ "without changing typed free-tree substitutions. "
+        ++ "Syntax/IntrinsicScopedConditionalRelativeLexClassification.lean: "
+        ++ "authoredRuleLexSetClassification extends that fixed-model rule "
+        ++ "classifier to the existing relative finite-limit presentation "
+        ++ "in sets, including model maps. The finite-list presentation also "
+        ++ "admits the existing relative lex equivalence in every small "
+        ++ "finitely complete target. "
+        ++ "Syntax/IntrinsicScopedConditionalFiniteContextChange.lean: "
+        ++ "pushFunctor transports the actual finite event-context category "
+        ++ "along a binding-model map; mapTerm_bind proves compatibility "
+        ++ "with simultaneous event substitution while retaining ordered "
+        ++ "premise positions. Its identity and two-stage composition laws "
+        ++ "are proved on trees, substitutions and functors. "
+        ++ "Syntax/IntrinsicScopedConditionalTotalContext.lean: "
+        ++ "authoredOperationalFibers coherently reindexes finite event "
+        ++ "contexts along the contravariant equation-model presheaf. "
+        ++ "Syntax/IntrinsicScopedConditionalClassifierContext.lean: "
+        ++ "ClassifierContext corrects the variance to place authored "
+        ++ "program and firing-tree substitutions in their intended "
+        ++ "direction. homEquiv decomposes every arrow into exactly those "
+        ++ "two components; baseProjection recovers the equation-context "
+        ++ "category, programSection is fully faithful, fiberFunctor is "
+        ++ "faithful, and constructor retains each ordered binder-local "
+        ++ "premise as a firing arrow. "
+        ++ "Syntax/IntrinsicScopedConditionalClassifierSetSemantics.lean: "
+        ++ "Valuation interprets program assignments and individually "
+        ++ "retained event variables in an independent operational model; "
+        ++ "eventContextFiberEquiv and singletonEventEquiv recover the "
+        ++ "ordered witness family and a single witness over a fixed "
+        ++ "program assignment; interpretTree_bind, fiberSemantics, "
+        ++ "transport_factor, transport_id, and "
+        ++ "transport_comp_program establish the fixed-context event fold, "
+        ++ "identity of combined semantic transport, and program-assignment "
+        ++ "composition. Full combined composition is still open. "
+        ++ "The combined binding-equation-rule classifier, its closed and "
+        ++ "finite-limit structure, and the qualified reduction observation "
+        ++ "remain open. The source states the classifying property without "
+        ++ "proving these compatibility laws"
+      provedTheorem := "", instanceWitness := "", negativeControl := ""
+      audited := true
+      standing := .openHere }
+  , { chapter := 7, citation := "Section 7.8, rung one: JSON"
+      statement :=
+        "With no equations and no rewrites, a presentation is a multi-sorted "
+        ++ "signature whose terms are the inhabitants of an algebraic data type; "
+        ++ "the Json presentation is one."
+      sourceProves := false
+      construction := "Syntax/Chapter7AlgebraicOperationalInstances.lean: the "
+        ++ "Json presentation through the common construction"
+      provedTheorem := "Syntax/Chapter7AlgebraicOperationalInstances.lean: "
+        ++ "jsonInitial"
+      instanceWitness := "Syntax/Chapter7AlgebraicOperationalInstances.lean: "
+        ++ "jsonInitial"
+      negativeControl := "Syntax/Chapter7AlgebraicOperationalInstances.lean: "
+        ++ "jsonNoFiring and jsonExecutorEmpty -- no firing and no executor step"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 7, citation := "Section 7.9, rung two: Monoid"
+      statement :=
+        "With equations, terms are quotiented by a congruence and the presentation "
+        ++ "is a finitely presentable algebra; the Monoid presentation with "
+        ++ "associativity and both unit laws is one."
+      sourceProves := false
+      construction := "Syntax/Chapter7AlgebraicOperationalInstances.lean: the "
+        ++ "Monoid presentation through the common construction"
+      provedTheorem := "Syntax/Chapter7AlgebraicOperationalInstances.lean: "
+        ++ "monoidInitial"
+      instanceWitness := "Syntax/Chapter7AlgebraicOperationalInstances.lean: "
+        ++ "monoidInitial"
+      negativeControl := "Syntax/Chapter7AlgebraicOperationalInstances.lean: "
+        ++ "monoidNoFiring and monoidExecutorEmpty"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 7, citation := "Section 7.10, rung three: Lambda"
+      statement :=
+        "With rewrites, the presentation describes a language with behaviour; the "
+        ++ "Lambda presentation with Beta, AppCongL, AppCongR and LamCong is the "
+        ++ "lambda calculus with one base rule and three congruence rules."
+      sourceProves := false
+      construction := "Syntax/IntrinsicLambdaFourRulePresentation.lean: one "
+        ++ "intrinsic rule list for the four rules over arbitrary bodies and "
+        ++ "arguments"
+      provedTheorem := "Syntax/IntrinsicLambdaFourRulePresentation.lean: "
+        ++ "sourceStep_iff_reduces and initial"
+      instanceWitness := "Syntax/IntrinsicLambdaFourRulePresentation.lean: "
+        ++ "authoredBeta_matches_intrinsic and the three congruence comparisons"
+      negativeControl := "Syntax/IntrinsicLambdaFourRulePresentation.lean: "
+        ++ "variable_has_no_intrinsic_firing"
+      audited := true
+      standing := .provedHere }
+  , { chapter := 7, citation := "Remark 7.4"
+      statement :=
+        "A reader arriving at rung three from rung one crosses from data to "
+        ++ "computation without changing tools."
+      sourceProves := false
+      construction := "The Section 7.8 to 7.11 rows use one construction"
+      provedTheorem := "", instanceWitness := "", negativeControl := ""
+      audited := true
+      standing := .respectedHere }
+  , { chapter := 7, citation := "Section 7.11, the rho calculus"
+      statement :=
+        "The RhoCalc presentation has sorts Proc and Name, terms PZero, PDrop, "
+        ++ "POutput, PInput binding a name, PPar over a hash bag and NQuote, the "
+        ++ "equation QuoteDrop, and the rewrites Comm, Drop and ParCong."
+      sourceProves := false
+      construction := "Syntax/RhoPayloadPresentation.lean: the payload "
+        ++ "presentation, strict profile [comm, parCong] and book profile "
+        ++ "[comm, parCong, drop]; Syntax/RhoPayloadTranslation.lean and "
+        ++ "Syntax/RhoPayloadExecutorComparison.lean: the translation from the "
+        ++ "authored patterns and the comparison with the authored executor"
+      provedTheorem := "Syntax/RhoPayloadExecutorComparison.lean: "
+        ++ "rhoStep_simulation and rhoStepWithDrop_simulation -- each executor "
+        ++ "step of a well-sorted translated process is one step between equation "
+        ++ "classes; strict_reflection and book_reflection -- each such step is "
+        ++ "an executor step from a structurally congruent rearrangement; "
+        ++ "closed_admitted_translates -- every admitted closed process translates; "
+        ++ "Syntax/RhoPayloadConstruction.lean: lift_constructs_name -- a context "
+        ++ "with a name hole is reached from sending code and receiving its name "
+        ++ "in one COMM, the hole filled by the quotation of the code as filled "
+        ++ "when sent; output_inert -- code in flight has no step; "
+        ++ "quote_injective -- quotation identifies codes only through a single "
+        ++ "drop; self_code_through_drop -- under the name law the drop *@0 has "
+        ++ "the name @0 that it contains"
+      instanceWitness := "Syntax/RhoPayloadExecutorComparison.lean: "
+        ++ "control_received_name, control_bound_quoteDrop, control_received_drop, "
+        ++ "control_nested; Syntax/RhoPayloadConstruction.lean: birth_first_step, "
+        ++ "birth_second_step and birth_presented -- the birth of Chapter 21 with its "
+        ++ "offspring code sent as a process rather than as a quotation in a process "
+        ++ "position, two executor steps and two presented steps"
+      negativeControl := "Syntax/RhoPayloadPresentation.lean: drop_inert_strict "
+        ++ "and drop_runs_book; Syntax/RhoPayloadExecutorComparison.lean: "
+        ++ "control_free_drop, control_literal_closed and "
+        ++ "bound_quoteDrop_translated_not_admitted"
+      audited := true
+      standing := .provedHere }
+  ]
 
 /-! ## Chapter 19
 
@@ -1064,9 +1418,9 @@ def chapter20 : List Obligation :=
       standing := .constructedHere }
   ]
 
-/-- The ledger: chapters sixteen to twenty of the pinned source. -/
+/-- The ledger: chapters six, seven and sixteen to twenty of the pinned source. -/
 def ledger : List Obligation :=
-  chapter16 ++ chapter17 ++ chapter18 ++ chapter19 ++ chapter20
+  chapter6 ++ chapter7 ++ chapter16 ++ chapter17 ++ chapter18 ++ chapter19 ++ chapter20
 
 /-! ## The discipline the ledger enforces -/
 
@@ -1090,7 +1444,7 @@ theorem ledger_integrity : ledger.all rowIntegrity = true := by decide
 /-- Rows entered so far, against the denominator. -/
 def entered : Nat := ledger.length
 
-theorem entered_eq : entered = 65 := by decide
+theorem entered_eq : entered = 80 := by decide
 
 /-- Chapter 19's numbered obligations are one proposition and six remarks; the
 remaining rows are the algorithm's own steps, which the chapter states in prose
@@ -1126,13 +1480,24 @@ def algorithmRowCitations : List String :=
   ["Section 19.4, M-FORM", "Section 19.4, M-INTRO", "Section 19.4, M-STEP",
    "Section 19.4, M-ELIM", "Section 19.6, sort slots and the equational center"]
 
-/-- Non-algorithm rows meet the recorded sixty-row denominator. This arithmetic
-does not certify exhaustive source coverage, including the separate conditions. -/
+/-- The prose claims of chapters six and seven, entered as section rows. -/
+def sectionRowCitations : List String :=
+  ["Section 6.2, the three definitions in advance", "Section 6.3, the rho calculus",
+   "Section 7.4, lambda theories and not Lawvere theories",
+   "Section 7.5, adjoined and not enriched",
+   "Section 7.6, the classifying structure", "Section 7.6, the classifying property",
+   "Section 7.8, rung one: JSON", "Section 7.9, rung two: Monoid",
+   "Section 7.10, rung three: Lambda", "Section 7.11, the rho calculus"]
+
+/-- Numbered rows meet the recorded sixty-five-row denominator. This
+arithmetic does not certify exhaustive source coverage, including the separate
+conditions. -/
 theorem numbered_entered :
     (ledger.filter
-      (fun row => !algorithmRowCitations.contains row.citation)).length
+      (fun row => !algorithmRowCitations.contains row.citation
+        && !sectionRowCitations.contains row.citation)).length
         = totalObligations
-      ∧ totalObligations = 60 := by
+      ∧ totalObligations = 65 := by
   refine ⟨by decide, by decide⟩
 
 /-- How many rows carry each standing. -/
@@ -1141,9 +1506,9 @@ def countBy (st : Standing) : Nat :=
 
 /-- Exact counts of recorded standings, not a semantic completion certificate. -/
 theorem standing_tally :
-    countBy .provedHere = 2 ∧ countBy .constructedHere = 33
-      ∧ countBy .refutedHere = 0 ∧ countBy .respectedHere = 15
-      ∧ countBy .openHere = 15 := by
+    countBy .provedHere = 11 ∧ countBy .constructedHere = 33
+      ∧ countBy .refutedHere = 0 ∧ countBy .respectedHere = 19
+      ∧ countBy .openHere = 17 := by
   refine ⟨by decide, by decide, by decide, by decide, by decide⟩
 
 /-- The tally accounts for every row. -/
@@ -1172,7 +1537,7 @@ def openUnaudited : Nat :=
 /-- Counts of recorded audit flags. Flags do not establish exhaustive absence
 of coverage or discharge the source obligations. -/
 theorem audit_coverage :
-    auditedCount = 65 ∧ openAudited = 15 ∧ openUnaudited = 0
+    auditedCount = 80 ∧ openAudited = 17 ∧ openUnaudited = 0
       ∧ openAudited + openUnaudited = countBy .openHere := by
   refine ⟨by decide, by decide, by decide, by decide⟩
 

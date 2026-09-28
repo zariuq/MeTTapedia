@@ -3,7 +3,7 @@ import Mettapedia.GSLT.Parsing.GeneratedPeTTaIntegerProviderDispatch
 import Mettapedia.GSLT.Parsing.PlainBnfScalarOrderSource
 
 /-!
-# Executing the two actual scalar-order diagnostic clauses
+# Executing the two actual scalar-order diagnostic equations
 
 Both raw and NativeType-selected workers are read from the full generated
 definition inventory. Their provider calls execute original Integer bodies;
@@ -190,7 +190,7 @@ theorem provider_call_in_body (targetProgram : List (Nat × SExpr))
     rfl
   all_goals simp_all [reserved]
 
-def clauseResult (i : Fin 2) (left right : Int) (origin : SExpr) : SExpr :=
+def equationResult (i : Fin 2) (left right : Int) (origin : SExpr) : SExpr :=
   result (if i.val = 0 then .atom "BNFDiagnosticsNilV1" else diagnostic left right origin)
 
 theorem ignored_guard (targetProgram : List (Nat × SExpr))
@@ -213,7 +213,7 @@ theorem body_result (targetProgram : List (Nat × SExpr))
     (inventory : ScalarInventory targetProgram) (depth : Nat) (typed : Bool) (i : Fin 2)
     (left right : Int) (origin : SExpr) :
     eval (depth + 4) targetProgram dataHeads (localEnv left right origin) (body typed i) =
-      .complete (if truth i left right then [clauseResult i left right origin] else []) := by
+      .complete (if truth i left right then [equationResult i left right origin] else []) := by
   have provider := (provider_call_in_body targetProgram depth i left right origin).trans
     (provider_result targetProgram inventory depth i left right)
   rcases (show i = 0 ∨ i = 1 from by omega) with rfl | rfl
@@ -222,7 +222,7 @@ theorem body_result (targetProgram : List (Nat × SExpr))
     apply quote_exact
     simp [GeneratedPeTTaTemplateInstantiation.instantiateList_cons,
       GeneratedPeTTaTemplateInstantiation.instantiate_atom, variableToken,
-      clauseResult, result, tag]
+      equationResult, result, tag]
   · rw [second_body]
     apply ignored_guard targetProgram (depth + 3) _ _ _ _ [_] (truth 1 left right) provider rfl
     apply quote_exact
@@ -234,7 +234,7 @@ theorem body_result (targetProgram : List (Nat × SExpr))
       ordinaryAtom "BNFDiagnosticsConsV1" (by simp [variableToken]),
       ordinaryAtom "BNFNonIncreasingLexicalScalarsV1" (by simp [variableToken]),
       ordinaryAtom "BNFDiagnosticsNilV1" (by simp [variableToken]), local_left, local_right, local_origin,
-      clauseResult, result, diagnostic]
+      equationResult, result, diagnostic]
 
 def answer (left right : Int) (origin : SExpr) : SExpr :=
   result (if left < right then .atom "BNFDiagnosticsNilV1" else diagnostic left right origin)
@@ -251,9 +251,9 @@ theorem run_exact_in (targetProgram : List (Nat × SExpr))
   simp only [collect, body_result targetProgram inventory]
   by_cases increasing : left < right
   · have notReverse : ¬left ≥ right := by omega
-    simp [truth, increasing, notReverse, clauseResult, answer]
+    simp [truth, increasing, notReverse, equationResult, answer]
   · have reverse : left ≥ right := by omega
-    simp [truth, increasing, reverse, clauseResult, answer]
+    simp [truth, increasing, reverse, equationResult, answer]
 
 theorem run_exact (depth : Nat) (typed : Bool) (left right : Int) (origin : SExpr) :
     run (depth + 4) program dataHeads (call typed left right origin) =
@@ -326,7 +326,7 @@ theorem answer_source_meaning (left right : Int) (origin : SExpr) :
   unfold answer PlainBnfScalarOrderSource.diagnostic diagnostic
   split <;> rfl
 
-/-- Independent source-clause execution and actual generated body execution
+/-- Independent source-rule execution and actual generated body execution
 agree on their whole finite ordered answer lists, including the result tag. -/
 theorem source_execution_agreement (depth : Nat) (typed : Bool)
     (left right : Int) (origin : SExpr) :

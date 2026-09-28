@@ -328,6 +328,7 @@ local macro "certify_skolemization_row" : tactic =>
   `(tactic|
     simp [RewriteValidationCertificate.check,
       RewriteValidationCertificate.contextTypesCheck,
+      RewriteValidationCertificate.premiseTypesCheck,
       RewriteValidationCertificate.patternDeclaredCheck,
       RewriteValidationCertificate.premisesDeclaredCheck,
       RewriteValidationCertificate.allPatternsScopedCheck,
@@ -409,7 +410,8 @@ local macro "certify_skolemization_row" : tactic =>
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, LanguageDef.premiseFvarNames,
       LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames, TypeExpr.baseNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
       Pattern.zipHead, Pattern.mapHead, Pattern.evalHead])
 
 private theorem constructorLabels_nodup :
@@ -465,7 +467,7 @@ private theorem rewrite06_rightBound_checked :
 private theorem rewrite06_checked :
     RewriteValidationCertificate.check language rewrites[6] = true := by
   simp only [RewriteValidationCertificate.check, Bool.and_eq_true]
-  exact ⟨rewrite06_contextTypes_checked, rewrite06_leftDeclared_checked,
+  exact ⟨rewrite06_contextTypes_checked, (by certify_skolemization_row), rewrite06_leftDeclared_checked,
     rewrite06_rightDeclared_checked, rewrite06_premisesDeclared_checked,
     rewrite06_scoped_checked, rewrite06_fvars_checked,
     rewrite06_binders_checked, rewrite06_contextNames_checked,
@@ -501,7 +503,7 @@ private theorem rewrite07_rightBound_checked :
 private theorem rewrite07_checked :
     RewriteValidationCertificate.check language rewrites[7] = true := by
   simp only [RewriteValidationCertificate.check, Bool.and_eq_true]
-  exact ⟨rewrite07_contextTypes_checked, rewrite07_leftDeclared_checked,
+  exact ⟨rewrite07_contextTypes_checked, (by certify_skolemization_row), rewrite07_leftDeclared_checked,
     rewrite07_rightDeclared_checked, rewrite07_premisesDeclared_checked,
     rewrite07_scoped_checked, rewrite07_fvars_checked,
     rewrite07_binders_checked, rewrite07_contextNames_checked,
@@ -537,7 +539,7 @@ private theorem rewrite08_rightBound_checked :
 private theorem rewrite08_checked :
     RewriteValidationCertificate.check language rewrites[8] = true := by
   simp only [RewriteValidationCertificate.check, Bool.and_eq_true]
-  exact ⟨rewrite08_contextTypes_checked, rewrite08_leftDeclared_checked,
+  exact ⟨rewrite08_contextTypes_checked, (by certify_skolemization_row), rewrite08_leftDeclared_checked,
     rewrite08_rightDeclared_checked, rewrite08_premisesDeclared_checked,
     rewrite08_scoped_checked, rewrite08_fvars_checked,
     rewrite08_binders_checked, rewrite08_contextNames_checked,

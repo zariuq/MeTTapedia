@@ -612,6 +612,7 @@ local macro "certify_formula_row" : tactic =>
   `(tactic|
     (simp [RewriteValidationCertificate.check,
       RewriteValidationCertificate.contextTypesCheck,
+      RewriteValidationCertificate.premiseTypesCheck,
       RewriteValidationCertificate.patternDeclaredCheck,
       RewriteValidationCertificate.premisesDeclaredCheck,
       RewriteValidationCertificate.allPatternsScopedCheck,
@@ -639,7 +640,8 @@ local macro "certify_formula_row" : tactic =>
       LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
       LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
       LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames, TypeExpr.baseNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
       plainName_not_constructor, constructorLabelNamespaced] <;>
       decide +kernel))
 

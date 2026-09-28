@@ -4,8 +4,8 @@ import Mettapedia.GSLT.Parsing.PlainBnfDeclarationReflection
 # Source occurrence observations for declaration-list operations
 
 These results concern the existing occurrence-labelled Horn source paths. The
-observation forgets substitution certificates but retains clause occurrences
-and both provider coordinates. Clause inversion separately constrains the
+observation forgets substitution certificates but retains rule occurrences
+and both provider coordinates. Rule inversion separately constrains the
 ground premises and results. This is not an answer-enumeration semantics for
 native PeTTa or C.
 -/
@@ -53,7 +53,7 @@ def appendDefinitionInput (before : List (Definition GroundTerm GroundTerm Groun
   ⟨"BNFAppendDefinitionV1", GroundTerms.ofList
     [encodeDefinitions before, encodeDefinition definition, output]⟩
 
-private theorem append_definition_clause {program : Program} {offset occurrence : Nat}
+private theorem append_definition_rule {program : Program} {offset occurrence : Nat}
     (source : HasDeclarationRules program offset) (only : OnlyDeclarationRules program offset)
     {rule : Rule} {substitution : Substitution} {premises : List GroundAtom}
     (before : List (Definition GroundTerm GroundTerm GroundTerm)) (definition : Definition GroundTerm
@@ -146,7 +146,7 @@ theorem append_definition_path_exact {program : Program} {offset : Nat}
       cases first with
       | rule selected _ head body =>
         obtain ⟨occurrenceEq, premisesEq, outputEq⟩ :=
-          append_definition_clause source only [] definition output selected head body
+          append_definition_rule source only [] definition output selected head body
         subst_vars
         have actionsEq := (path_from_empty (by simpa [goalsAt] using rest)).1
         simp [occurrenceTrace, occurrenceOf, actionsEq]
@@ -159,7 +159,7 @@ theorem append_definition_path_exact {program : Program} {offset : Nat}
       cases step with
       | rule selected _ head body =>
         obtain ⟨occurrenceEq, restOutput, premisesEq, outputEq⟩ :=
-          append_definition_clause source only (first :: tail) definition output selected head body
+          append_definition_rule source only (first :: tail) definition output selected head body
         subst_vars
         have recurse := ih restOutput (by simpa [goalsAt] using rest)
         constructor
@@ -176,7 +176,7 @@ def appendDiagnosticsInput (left right : List (Diagnostic GroundTerm GroundTerm)
   ⟨"BNFAppendDiagnosticsV1", GroundTerms.ofList
     [encodeDiagnostics left, encodeDiagnostics right, output]⟩
 
-private theorem append_diagnostics_clause {program : Program} {offset occurrence : Nat}
+private theorem append_diagnostics_rule {program : Program} {offset occurrence : Nat}
     (source : HasDeclarationRules program offset) (only : OnlyDeclarationRules program offset)
     {rule : Rule} {substitution : Substitution} {premises : List GroundAtom}
     (left right : List (Diagnostic GroundTerm GroundTerm)) (output : GroundTerm)
@@ -239,7 +239,7 @@ private theorem append_diagnostics_clause {program : Program} {offset occurrence
       · simpa [firstEq, GroundTerms.ofList] using outputEq.symm
 
 /-- Repeated equal diagnostics remain repeated positions in the output, and
-every successful source path uses the same ordered clause occurrences. -/
+every successful source path uses the same ordered rule occurrences. -/
 theorem append_diagnostics_path_exact {program : Program} {offset : Nat}
     (source : HasDeclarationRules program offset) (only : OnlyDeclarationRules program offset)
     (noProviders : NoDeclarationProviders program)
@@ -256,7 +256,7 @@ theorem append_diagnostics_path_exact {program : Program} {offset : Nat}
       cases first with
       | rule selected _ head body =>
         obtain ⟨occurrenceEq, premisesEq, outputEq⟩ :=
-          append_diagnostics_clause source only [] right output selected head body
+          append_diagnostics_rule source only [] right output selected head body
         subst_vars
         have actionsEq := (path_from_empty (by simpa [goalsAt] using rest)).1
         simp [occurrenceTrace, occurrenceOf, actionsEq]
@@ -269,7 +269,7 @@ theorem append_diagnostics_path_exact {program : Program} {offset : Nat}
       cases step with
       | rule selected _ head body =>
         obtain ⟨occurrenceEq, restOutput, premisesEq, outputEq⟩ :=
-          append_diagnostics_clause source only (first :: tail) right output selected head body
+          append_diagnostics_rule source only (first :: tail) right output selected head body
         subst_vars
         have recurse := ih restOutput (by simpa [goalsAt] using rest)
         constructor
@@ -298,7 +298,7 @@ theorem append_definition_two_paths_agree {program : Program} {offset : Nat}
   have right := append_definition_path_exact source only noProviders before definition secondOutput second
   exact ⟨left.1.trans right.1.symm, left.2.trans right.2.symm⟩
 
-/-- A second equal source clause creates a genuinely different source path;
+/-- A second equal source rule creates a genuinely different source path;
 answer-value equality does not license erasing the extra answer occurrence. -/
 theorem duplicate_append_source_paths (definition : Definition GroundTerm GroundTerm GroundTerm) :
     ∃ first second : List Action,
@@ -318,7 +318,7 @@ theorem duplicate_append_source_paths (definition : Definition GroundTerm Ground
   · simp [occurrenceTrace, occurrenceOf]
 
 /-- Erasing unused certificate bindings is necessary even for one fact. This
-does not erase a source clause or provider coordinate. -/
+does not erase a source rule or provider coordinate. -/
 theorem unused_bindings_change_actions_not_occurrences (definition : Definition GroundTerm GroundTerm
     GroundTerm) :
     ∃ first second : List Action,

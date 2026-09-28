@@ -5,7 +5,7 @@ import Mathlib.Logic.Function.Iterate
 /-!
 # Authored definition enumeration
 
-The original enumeration clauses and their rank dependencies are translated
+The original enumeration rules and their rank dependencies are translated
 from admitted structured source. Existing contextual execution is compared
 with independent list indices, preserving opaque declaration payloads and
 answer occurrences. This is not heap, scheduler, or generated-runtime adequacy.
@@ -22,7 +22,8 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT (Rewrite decodeList)
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfSourceRank (Rank value successor)
 open PlainBnfRankSourceExecution (rank call result nextCall nextHeight)
 open PlainBnfIndexedCollectorSourceExecution
@@ -171,7 +172,7 @@ def enumerationCall (input : List Definition) (start : Rank) : Pattern :=
   call "BNFDiscoveryRankDefinitionsV1" [definitions input, rank start]
 
 /-- The reference assigns coordinates by ordinary list indices. It is not
-used to construct any executable source clause. -/
+used to construct any executable source rule. -/
 def enumerate (input : List Definition) (start : Rank) : List (Rank × Definition) :=
   input.zipIdx.map fun (item, position) => ((successor^[position]) start, item)
 
@@ -203,6 +204,7 @@ private theorem enumeration_nil (env : RelationEnv) (fuel : Nat) (start : Rank) 
       [result (rankedDefinitions [])] := by
   rw [enumeration_rewriteAt env fuel _ (by rfl)]
   simp [enumeration_rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     enumerationCall, definitions, PlainBnfCollectorSourceExecution.definitions,
     call, result, rankedDefinitions, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
@@ -220,6 +222,7 @@ private theorem enumeration_cons (env : RelationEnv) (fuel : Nat)
         rankedDefinition (start, head), after])) := by
   rw [enumeration_rewriteAt env fuel _ (by rfl)]
   simp [enumeration_rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     enumerationCall, definitions, definition, PlainBnfCollectorSourceExecution.definitions,
     call, pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]

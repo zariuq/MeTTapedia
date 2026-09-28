@@ -315,3 +315,5 @@ binding-threaded, LP, and artifact layers, but no single dedicated base-runtime
 hook analogous to HE's `groundedCallResult`. -/
 
 end Mettapedia.Languages.MeTTa.RuntimeSpec
+
+#print axioms Mettapedia.Languages.MeTTa.RuntimeSpec.heRuntimeSpec_state_context_fact

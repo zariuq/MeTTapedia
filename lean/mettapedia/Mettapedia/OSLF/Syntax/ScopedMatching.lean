@@ -175,7 +175,6 @@ def smatchAtT : {Γ : Ctx S} → (β : Ctx S) → {s : S.Srt} →
   | _, _, _, _, .op (.inl _) _, .var _ => none
 termination_by _ _ _ _ pattern _ => 2 * termSize pattern
 decreasing_by
-  all_goals simp_wf
   all_goals simp only [termSize]
   all_goals omega
 
@@ -193,7 +192,6 @@ def smatchAtA : {Γ : Ctx S} → (β : Ctx S) →
       | some next => smatchAtA β next tail targetTail
 termination_by _ _ _ _ pattern _ => 2 * argsSize pattern + 1
 decreasing_by
-  all_goals simp_wf
   all_goals simp only [termSize_castTermCtx, argsSize]
   all_goals first | omega | have := termSize_pos head; omega
 end
@@ -347,7 +345,6 @@ theorem smatchAtT_mono : ∀ {Γ : Ctx S} (β : Ctx S) {s : S.Srt}
       cases hm
 termination_by _ _ _ _ _ p _ _ => 2 * termSize p
 decreasing_by
-  all_goals simp_wf
   all_goals simp only [termSize]
   all_goals omega
 
@@ -367,7 +364,6 @@ theorem smatchAtA_mono : ∀ {Γ : Ctx S} (β : Ctx S)
             (smatchAtA_mono β next acc' tail targetTail hm)
 termination_by _ _ _ _ _ p _ _ => 2 * argsSize p + 1
 decreasing_by
-  all_goals simp_wf
   all_goals simp only [termSize_castTermCtx, argsSize]
   all_goals first | omega | have := termSize_pos head; omega
 end
@@ -454,7 +450,6 @@ theorem smatchAtT_sound : ∀ {Γ : Ctx S} (β : Ctx S) {s : S.Srt}
       cases hm
 termination_by _ _ _ _ _ p _ _ _ _ _ => 2 * termSize p
 decreasing_by
-  all_goals simp_wf
   all_goals simp only [termSize]
   all_goals omega
 
@@ -481,7 +476,6 @@ theorem smatchAtA_sound : ∀ {Γ : Ctx S} (β : Ctx S)
             smatchAtA_sound β next acc' tail targetTail hm sigma body he]
 termination_by _ _ _ _ _ p _ _ _ _ _ => 2 * argsSize p + 1
 decreasing_by
-  all_goals simp_wf
   all_goals simp only [termSize_castTermCtx, argsSize]
   all_goals first | omega | have := termSize_pos head; omega
 end
@@ -594,7 +588,6 @@ def MatchingSupportedT : {Γ : Ctx S} → (β : Ctx S) → {s : S.Srt} →
           recognizeVariableArguments projected = some selected
 termination_by _ _ _ pattern => 2 * termSize pattern
 decreasing_by
-  all_goals simp_wf
   all_goals simp only [termSize]
   all_goals omega
 
@@ -609,7 +602,6 @@ def MatchingSupportedA : {Γ : Ctx S} → (β : Ctx S) →
       MatchingSupportedA β tail
 termination_by _ _ _ pattern => 2 * argsSize pattern + 1
 decreasing_by
-  all_goals simp_wf
   all_goals simp only [termSize_castTermCtx, argsSize]
   all_goals first | omega | have := termSize_pos head; omega
 end
@@ -703,7 +695,6 @@ theorem smatchAtT_complete : ∀ {Γ : Ctx S} (β : Ctx S) {s : S.Srt}
       simpa only [↓reduceDIte] using found
 termination_by _ _ _ _ pattern _ _ _ _ _ _ => 2 * termSize pattern
 decreasing_by
-  all_goals simp_wf
   all_goals simp only [termSize]
   all_goals omega
 
@@ -737,7 +728,6 @@ theorem smatchAtA_complete : ∀ {Γ : Ctx S} (β : Ctx S)
       exact tailMatch
 termination_by _ _ _ _ pattern _ _ _ _ _ _ => 2 * argsSize pattern + 1
 decreasing_by
-  all_goals simp_wf
   all_goals simp only [termSize_castTermCtx, argsSize]
   all_goals first | omega | have := termSize_pos head; omega
 end

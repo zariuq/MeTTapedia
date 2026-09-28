@@ -43,6 +43,7 @@ theorem premise_output_passes_pattern_validation :
     LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
     LanguageDef.premiseProducedFvarNames, LanguageDef.premisePatterns,
     LanguageDef.premiseFvarNames, LanguageDef.premiseForAllParams,
+    LanguageDef.premiseLocallyScoped,
     Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt]
 

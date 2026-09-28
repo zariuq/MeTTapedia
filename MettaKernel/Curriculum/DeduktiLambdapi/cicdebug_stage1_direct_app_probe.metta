@@ -121,7 +121,7 @@
 (= (cic-nat-max $i $j)
    (case $j
      (((Con z) $i)
-      ($j0
+      ($jNonZero
         (case $i
           (((Con z) $j)
            ((App (Con s) $i0)
@@ -138,7 +138,7 @@
 (= (cic-stage1-nf (Lam $A $b)) (Lam (cic-stage1-nf $A) (cic-stage1-nf $b)))
 (= (cic-stage1-nf (Bad $e)) (Bad $e))
 (= (cic-stage1-nf (App $f $a))
-   (cic-stage1-nf-app (cic-stage1-nf $f) (cic-stage1-nf $a))))
+   (cic-stage1-nf-app (cic-stage1-nf $f) (cic-stage1-nf $a)))
 
 (= (cic-stage1-nf-app $f $a)
    (case $f

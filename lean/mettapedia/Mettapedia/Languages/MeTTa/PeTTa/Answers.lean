@@ -10,7 +10,7 @@ multiple values simultaneously (like Prolog's nondeterminism, or MeTTa's
 ## Design
 
 - `Answers := List Pattern` — the nondeterministic result of evaluating a
-  PeTTa expression. Order is deterministic (clause order, depth-first).
+  PeTTa expression. Order is deterministic (equation order, depth-first).
 - `superpose alts` — inject a list of alternatives as answers.
 - `collapse f alts` — flatMap: apply `f` to each alternative and collect
   all results (models Prolog's `findall/3` or MeTTa's `collapse`).
@@ -40,7 +40,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 /-! ## Answer Type -/
 
 /-- The nondeterministic result of evaluating a PeTTa expression.
-    An ordered list of alternative values (deterministic order: clause order × depth-first). -/
+    An ordered list of alternative values (deterministic order: equation order × depth-first). -/
 abbrev Answers := List Pattern
 
 /-! ## Basic Constructors -/

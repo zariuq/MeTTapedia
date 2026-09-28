@@ -24,6 +24,9 @@ variable {Head : Type} {ConversionCode : Nat → Type}
 variable (renameConversion : {n m : Nat} → Ren n m → ConversionCode n → ConversionCode m)
 variable (substituteConversion : {n m : Nat} → Sub Head n m → ConversionCode n → ConversionCode m)
 
+def noConversionSubstitute {n m : Nat} (_σ : Sub Head n m) (code : NoConversion n) : NoConversion m :=
+  nomatch code
+
 def liftVariableCodes {n m : Nat} (codes : Fin n → Code Head ConversionCode m) :
     Fin (n + 1) → Code Head ConversionCode (m + 1) :=
   Fin.cases .var (fun index => (codes index).rename renameConversion wk)

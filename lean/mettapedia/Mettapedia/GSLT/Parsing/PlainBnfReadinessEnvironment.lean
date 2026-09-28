@@ -33,6 +33,7 @@ theorem base_transport (allowed : List String) (left right : RelationEnv)
     engineBasePremises left lang bindings premise = engineBasePremises right lang bindings premise := by
   cases premise with
   | congruence _ _ => rfl
+  | scopedStep _ => rfl
   | freshness _ => rfl
   | forAll _ _ _ => rfl
   | relationQuery relation arguments =>
@@ -55,6 +56,7 @@ private theorem premises_transport (allowed : List String) (left right : Relatio
         premiseStepUsing (engineBasePremises right) lang executeRight bindings premise := by
       cases premise with
       | congruence source target => simp only [premiseStepUsing, recursive]
+      | scopedStep step => simp only [premiseStepUsing, recursive]
       | freshness condition =>
         exact base_transport allowed left right agree lang bindings (.freshness condition)
           (licensed _ (by simp))

@@ -83,9 +83,9 @@ def orderedFamilies : List CompileTransitionFamily :=
 theorem orderedFamilies_nodup : orderedFamilies.Nodup := by
   decide
 
-/-- Executable equality for complete rewrite rows.  All five fields are
-compared: name, metavariable context, ordered premises, left pattern, and right
-pattern.  This is local to source authentication; it does not change the
+/-- Executable equality for complete rewrite rows. The name, metavariable
+context, ordered premises, left pattern, right pattern, and binding declaration
+are compared. This is local to source authentication; it does not change the
 global `RewriteRule` API. -/
 def rewriteRuleDecidableEq : DecidableEq RewriteRule := fun left right => by
   cases left

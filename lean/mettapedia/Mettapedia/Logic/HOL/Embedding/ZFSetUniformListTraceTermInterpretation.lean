@@ -1,4 +1,5 @@
 import Mettapedia.Logic.HOL.Embedding.ZFSetUniformListTraceTypeInterpretation
+import Mettapedia.Logic.HOL.ImpredicativeConnectives
 
 /-!
 # Uniform-list HOL terms in the trace representation
@@ -242,6 +243,16 @@ def emptyValuation {a : ZFSet.{u}} : Valuation a [] :=
 #print axioms decodeValuation_extend
 #print axioms renameVal_lift
 #print axioms interpret_rename
+/-- Derived-connective expansion preserves the actual set-coded trace value,
+including at function types, not only the truth of closed formulas. -/
+theorem interpret_expand {a : ZFSet.{u}} {Γ : Ctx BaseSort} {A : Ty BaseSort}
+    (term : Term Symbol Γ A) (ρ : Valuation a Γ) :
+    interpret (ImpredicativeConnectives.expand term) ρ = interpret term ρ := by
+  apply (decode a A).injective
+  rw [term_agreement, term_agreement]
+  exact ImpredicativeConnectives.denote_expand (ZFSetUniformListModel.model a) term _
+
 #print axioms term_agreement
+#print axioms interpret_expand
 
 end Mettapedia.Logic.HOL.Embedding.ZFSetUniformListTraceTermInterpretation

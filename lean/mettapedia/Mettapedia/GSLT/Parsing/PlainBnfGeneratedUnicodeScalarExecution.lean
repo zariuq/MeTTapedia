@@ -233,7 +233,7 @@ def diagnostic (scalar : Int) (origin : SExpr) : SExpr :=
 
 def result (payload : SExpr) : SExpr := .list [.atom tag, payload]
 
-def clauseResult (negative : Bool) (scalar : Int) (origin : SExpr) : SExpr :=
+def equationResult (negative : Bool) (scalar : Int) (origin : SExpr) : SExpr :=
   result (if negative then diagnostic scalar origin else .atom "BNFDiagnosticsNilV1")
 
 def quotedTemplate (negative : Bool) : SExpr :=
@@ -328,9 +328,9 @@ theorem provider_call_in_body (depth : Nat) (negative : Bool) (scalar : Int) (or
 
 private theorem quoted_closed (negative : Bool) (scalar : Int) (origin : SExpr) :
     instantiate? (localEnv scalar origin) (quotedTemplate negative) =
-      some (clauseResult negative scalar origin) := by
+      some (equationResult negative scalar origin) := by
   cases negative <;>
-    simp only [quotedTemplate, clauseResult, Bool.false_eq_true, ↓reduceIte, result, diagnostic,
+    simp only [quotedTemplate, equationResult, Bool.false_eq_true, ↓reduceIte, result, diagnostic,
       GeneratedPeTTaTemplateInstantiation.instantiate_list,
       GeneratedPeTTaTemplateInstantiation.instantiateList_cons,
       GeneratedPeTTaTemplateInstantiation.instantiateList_nil, local_scalar, local_origin] <;>
@@ -338,7 +338,7 @@ private theorem quoted_closed (negative : Bool) (scalar : Int) (origin : SExpr) 
 
 theorem body_result (depth : Nat) (typed : Bool) (i : Fin 2) (scalar : Int) (origin : SExpr) :
     eval (depth + 7) program dataHeads (localEnv scalar origin) (body typed i) =
-      .complete (if truth (i.val == 1) scalar then [clauseResult (i.val == 1) scalar origin] else []) := by
+      .complete (if truth (i.val == 1) scalar then [equationResult (i.val == 1) scalar origin] else []) := by
   rw [body_shape]
   have guard : eval (depth + 6) program dataHeads (localEnv scalar origin)
       (.list [.atom (providerSymbol (i.val == 1)), queryTemplate (i.val == 1)]) =
@@ -346,7 +346,7 @@ theorem body_result (depth : Nat) (typed : Bool) (i : Fin 2) (scalar : Int) (ori
     rw [provider_call_in_body, provider_run_exact]
   have quoted : eval (depth + 6) program dataHeads (localEnv scalar origin)
       (.list [.atom "quote", quotedTemplate (i.val == 1)]) =
-        .complete [clauseResult (i.val == 1) scalar origin] :=
+        .complete [equationResult (i.val == 1) scalar origin] :=
     quote_exact (depth + 5) program dataHeads (localEnv scalar origin) _ _
       (quoted_closed (i.val == 1) scalar origin)
   rw [let_complete (depth + 6) program dataHeads (localEnv scalar origin) _ _ _ _ rfl guard]
@@ -357,13 +357,13 @@ theorem body_result (depth : Nat) (typed : Bool) (i : Fin 2) (scalar : Int) (ori
 def answer (scalar : Int) (origin : SExpr) : SExpr :=
   result (if isUnicodeScalarInt scalar then .atom "BNFDiagnosticsNilV1" else diagnostic scalar origin)
 
-/-- Both real clauses execute; exactly one returns its diagnostic. The result
+/-- Both real equations execute; exactly one returns its diagnostic. The result
 is an ordered singleton, not merely an extensional membership statement. -/
 theorem run_exact (depth : Nat) (typed : Bool) (scalar : Int) (origin : SExpr) :
     run (depth + 7) program dataHeads (call typed scalar origin) = .complete [answer scalar origin] := by
   rw [call_bodies]
   simp only [collect, body_result]
-  cases valid : isUnicodeScalarInt scalar <;> simp [truth, valid, clauseResult, answer]
+  cases valid : isUnicodeScalarInt scalar <;> simp [truth, valid, equationResult, answer]
 
 theorem completed_iff (depth : Nat) (typed : Bool) (scalar : Int) (origin : SExpr)
     (answers : List SExpr) :

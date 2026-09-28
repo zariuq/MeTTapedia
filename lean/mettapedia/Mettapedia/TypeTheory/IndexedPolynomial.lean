@@ -27,6 +27,8 @@ namespace Mettapedia.TypeTheory
 
 universe u v w uBase uIndex uShape uPosition uNewBase uSource uTarget
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- A context-indexed dependent polynomial.  Recursive occurrences are exactly
 the positions, and every position records the index of its recursive child. -/
 structure IndexedPolynomial (Base : Type uBase) (Index : Base → Type uIndex) where
@@ -548,7 +550,7 @@ noncomputable def eliminate {A : Type u}
     (head : A) (tail : ListP A) :
     eliminate motive nilCase consCase (cons head tail) =
       consCase head tail (eliminate motive nilCase consCase tail) := by
-  simp only [eliminate, cons, Fix.eliminate_roll, motiveAtCons_canonical]
+  simp only [eliminate, cons, Fix.eliminate_roll]
   rfl
 
 /-- Functorial action of lists, obtained from the native eliminator. -/
@@ -1051,7 +1053,7 @@ noncomputable def eliminate {A : Type u}
     (length : Nat) (head : A) (tail : VectorP A length) :
     eliminate motive nilCase consCase (length + 1) (cons head tail) =
       consCase length head tail (eliminate motive nilCase consCase length tail) := by
-  simp only [eliminate, cons, Fix.eliminate_roll, motiveAtCons_canonical]
+  simp only [eliminate, cons, Fix.eliminate_roll]
   rfl
 
 /-- Forget the length index while retaining every element. -/
@@ -1142,7 +1144,7 @@ def refl {A : Type u} (point : A) : Identity A point point :=
 
 /-- Every empty recursive-child assignment gives the same reflexivity
 constructor. -/
-def roll_eq_refl {A : Type u} (point : A)
+theorem roll_eq_refl {A : Type u} (point : A)
     (children :
       (position : (polynomial A).Position (base := One.star)
         (Shape.refl point)) →
@@ -1217,7 +1219,7 @@ noncomputable def j {A : Type u}
   rfl
 
 /-- Polynomial identity reflects to ordinary equality. -/
-noncomputable def toEq {A : Type u} {left right : A} :
+theorem toEq {A : Type u} {left right : A} :
     Identity A left right → left = right :=
   j (fun left right _ => left = right) (fun _ => rfl)
 

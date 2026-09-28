@@ -3,7 +3,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfHeapSourceExecution
 /-!
 # Authored discovery scheduling
 
-Seven original scheduling clauses compose the existing authored rank, heap
+Seven original scheduling rules compose the existing authored rank, heap
 merge and sparse-trie insertion languages. The independent observation keeps
 both actual heap partitions and the persistent first-binding trie. This is a
 selected source/contextual execution connection, not a generated runtime,
@@ -21,7 +21,8 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT (Rewrite decodeList)
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfSourceRank (Rank compareRank)
 open PlainBnfRankSourceExecution (rank order call result compareCall compareHeight)
 open PlainBnfHeapSourceExecution (Item heap rankedDefinition itemLE mergeCall mergeHeight)
@@ -341,6 +342,7 @@ private theorem side_step (fuel : Nat) (toCurrent : Bool) (priority : Rank) (key
   cases toCurrent <;>
     simp [rules_exact, observedRules, observed, PlainBnfTrieSourceExecution.observedRule,
       applyRuleUsing, sideCall, sideSymbol, call, node, queues, rankedDefinition,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   all_goals
@@ -393,6 +395,7 @@ private theorem at_step (fuel : Nat) (comparison : Ordering) (priority : Rank) (
   cases comparison <;>
     simp [rules_exact, observedRules, observed, PlainBnfTrieSourceExecution.observedRule,
       applyRuleUsing, atCall, call, order, Ordering.isGT,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   all_goals
@@ -440,6 +443,7 @@ private theorem initial_step (fuel : Nat) (priority : Rank) (key : List Scalar)
   have recursive := side_answers fuel true priority key expression span current following scheduled
   simp [rules_exact, observedRules, observed, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, scheduleCall, position, call, node, rankedDefinition,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   simp only [sideCall, sideSymbol, ↓reduceIte, call, node, rankedDefinition, encode, encodeList] at recursive
@@ -461,6 +465,7 @@ private theorem after_step (fuel : Nat) (origin priority : Rank) (key : List Sca
     current following scheduled
   simp [rules_exact, observedRules, observed, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, scheduleCall, position, call, node, rankedDefinition,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
   simp only [compareCall, call, result, encode, encodeList] at compared
@@ -529,7 +534,7 @@ theorem queues_eq_iff (current following current' following' : Heap Item)
     rfl
 
 /-- The exact source transition, decoded into the two original heaps and trie.
-No freshness premise is imposed or inferred by these scheduling clauses. -/
+No freshness premise is imposed or inferred by these scheduling rules. -/
 theorem schedule_decoded_step_iff (origin : Option Rank) (priority : Rank) (key : List Scalar)
     (expression span : SExpr) (current following current' following' : Heap Item)
     (scheduled scheduled' : Trie SExpr Scalar) :

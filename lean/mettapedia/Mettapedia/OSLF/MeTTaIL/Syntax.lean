@@ -630,6 +630,20 @@ private def jsonStrSyntax (s : String) : String :=
 private def jsonNatSyntax (n : Nat) : String :=
   toString n
 
+/-- JSON encoding of the complete sort expression used by scoped premises. -/
+def TypeExpr.renderJson : TypeExpr → String
+  | .base name => "{\"kind\":\"base\",\"name\":" ++ jsonStrSyntax name ++ "}"
+  | .arrow domain codomain =>
+      "{\"kind\":\"arrow\",\"domain\":" ++ domain.renderJson
+        ++ ",\"codomain\":" ++ codomain.renderJson ++ "}"
+  | .multiBinder body =>
+      "{\"kind\":\"multi_binder\",\"body\":" ++ body.renderJson ++ "}"
+  | .collection kind element =>
+      "{\"kind\":\"collection\",\"collection_kind\":"
+        ++ jsonStrSyntax (match kind with
+          | .vec => "vec" | .hashBag => "hash_bag" | .hashSet => "hash_set")
+        ++ ",\"element\":" ++ element.renderJson ++ "}"
+
 mutual
   partial def Pattern.renderJson : Pattern → String
     | .bvar n => "{\"kind\":\"bvar\",\"index\":" ++ jsonNatSyntax n ++ "}"
@@ -693,7 +707,7 @@ both Pattern and List Pattern simultaneously.
 -/
 
 /-- Custom induction principle for Pattern that handles nested List Pattern. -/
-def Pattern.inductionOn {motive : Pattern → Prop}
+theorem Pattern.inductionOn {motive : Pattern → Prop}
     (p : Pattern)
     (hbvar : ∀ n, motive (.bvar n))
     (hfvar : ∀ x, motive (.fvar x))
@@ -739,10 +753,36 @@ structure FreshnessCondition where
   term : Pattern
 deriving Repr, DecidableEq
 
+/-- A step premise with its own local binders and a common endpoint sort.
+The endpoints live in the local binders followed by the ambient rule context.
+Typing and well-scopedness are checked when the premise is admitted. -/
+structure ScopedStepPremise where
+  binders : List TypeExpr
+  resultType : TypeExpr
+  source : Pattern
+  target : Pattern
+deriving Repr, DecidableEq
+
+/-- A root premise is the case with no premise-local binders. -/
+def ScopedStepPremise.root (resultType : TypeExpr)
+    (source target : Pattern) : ScopedStepPremise where
+  binders := []
+  resultType := resultType
+  source := source
+  target := target
+
+def ScopedStepPremise.renderJson (premise : ScopedStepPremise) : String :=
+  "{\"kind\":\"scoped_step\",\"binders\":["
+    ++ String.intercalate "," (premise.binders.map TypeExpr.renderJson)
+    ++ "],\"result_type\":" ++ premise.resultType.renderJson
+    ++ ",\"source\":" ++ premise.source.renderJson
+    ++ ",\"target\":" ++ premise.target.renderJson ++ "}"
+
 /-- Premises for rules -/
 inductive Premise where
   | freshness : FreshnessCondition → Premise
   | congruence : Pattern → Pattern → Premise
+  | scopedStep : ScopedStepPremise → Premise
   | relationQuery : String → List Pattern → Premise
   | forAll : String → String → Premise → Premise
 deriving Repr, DecidableEq
@@ -754,6 +794,7 @@ def Premise.renderJson : Premise → String
   | .congruence lhs rhs =>
       "{\"kind\":\"congruence\",\"lhs\":" ++ lhs.renderJson
         ++ ",\"rhs\":" ++ rhs.renderJson ++ "}"
+  | .scopedStep premise => premise.renderJson
   | .relationQuery rel args =>
       "{\"kind\":\"relation_query\",\"relation\":" ++ jsonStrSyntax rel
         ++ ",\"args\":[" ++ String.intercalate "," (args.map Pattern.renderJson) ++ "]}"
@@ -764,6 +805,38 @@ def Premise.renderJson : Premise → String
 
 /-! ## Equations -/
 
+/-- A pattern within an authored conditional rule. A quantified premise has
+one body; `quantifiers` selects that many enclosing `forAll` bodies. The
+argument is the relation argument, the freshness subject (zero), or the
+source/target of a congruence (zero/one). -/
+inductive RulePatternSite where
+  | left
+  | right
+  | premise (index quantifiers argument : Nat)
+deriving Repr, DecidableEq
+
+/-- An explicit occurrence substitution for a rule metavariable. Child paths
+use ordered constructor/collection indices, zero for a binder body, and
+zero/one for an explicit substitution's body/replacement. A collection rest
+has the child index immediately after its explicit elements. Arguments are
+object terms in the occurrence's context, in declared dependency order. -/
+structure MetavariableOccurrence where
+  name : String
+  site : RulePatternSite
+  path : List Nat
+  arguments : List Pattern
+deriving Repr, DecidableEq
+
+/-- Rule-local dependency contexts. The result types remain in the rule's
+existing `typeContext`; these entries add only the sorts of permitted bound
+dependencies. Ambient object variables are separate from these dependencies.
+An omitted occurrence substitution is inferable only for an empty dependency
+context. Constructor binders still come from the original grammar. -/
+structure RuleBindingSpec where
+  dependencies : List (String × List TypeExpr)
+  occurrences : List MetavariableOccurrence := []
+deriving Repr, DecidableEq
+
 /-- An equation defines bidirectional equality -/
 structure Equation where
   name : String
@@ -771,6 +844,7 @@ structure Equation where
   premises : List Premise
   left : Pattern
   right : Pattern
+  bindings : Option RuleBindingSpec := none
 deriving Repr
 
 /-! ## Rewrite Rules -/
@@ -782,6 +856,7 @@ structure RewriteRule where
   premises : List Premise
   left : Pattern
   right : Pattern
+  bindings : Option RuleBindingSpec := none
 deriving Repr
 
 /-! ## Declarative reflective substitution -/
@@ -1421,6 +1496,7 @@ namespace Premise
 def relationRefs : Premise → List String
   | .freshness _ => []
   | .congruence _ _ => []
+  | .scopedStep _ => []
   | .relationQuery rel _ => [rel]
   | .forAll _ _ body => relationRefs body
 
@@ -1429,6 +1505,7 @@ bodies. -/
 def relationCalls : Premise → List (String × Nat)
   | .freshness _ => []
   | .congruence _ _ => []
+  | .scopedStep _ => []
   | .relationQuery relation args => [(relation, args.length)]
   | .forAll _ _ body => relationCalls body
 
@@ -1865,14 +1942,36 @@ def patternBinderNames : Pattern → List String
 def premisePatterns : Premise → List Pattern
   | .freshness fc => [fc.term]
   | .congruence l r => [l, r]
+  | .scopedStep step => [step.source, step.target]
   | .relationQuery _ args => args
   | .forAll _ _ p => premisePatterns p
+
+/-- Check each premise in its own local binder context. Quantified collection
+parameters are named schema variables and do not add de Bruijn binders. -/
+def premiseLocallyScoped : Premise → Bool
+  | .freshness fc => fc.term.isWellScoped
+  | .congruence source target =>
+      source.isWellScoped && target.isWellScoped
+  | .scopedStep step =>
+      step.source.isWellScopedAt step.binders.length &&
+        step.target.isWellScopedAt step.binders.length
+  | .relationQuery _ args => args.all Pattern.isWellScoped
+  | .forAll _ _ body => premiseLocallyScoped body
+
+/-- All explicit sorts contributed by scoped step premises, including those
+inside collection quantification. -/
+def premiseStepTypeExprs : Premise → List TypeExpr
+  | .freshness _ | .congruence _ _ | .relationQuery _ _ => []
+  | .scopedStep step => step.resultType :: step.binders
+  | .forAll _ _ body => premiseStepTypeExprs body
 
 /-- Free fvars in a premise, respecting the local parameter of `forAll`. -/
 def premiseFvarNames (bound : List String) : Premise → List String
   | .freshness fc => patternFvarNames bound fc.term
   | .congruence left right =>
       patternFvarNames bound left ++ patternFvarNames bound right
+  | .scopedStep step =>
+      patternFvarNames bound step.source ++ patternFvarNames bound step.target
   | .relationQuery _ args => args.flatMap (patternFvarNames bound)
   | .forAll _ param body => premiseFvarNames (param :: bound) body
 
@@ -1883,6 +1982,7 @@ target, and relation queries match their argument patterns against rows. -/
 def premiseProducedFvarNames (bound : List String) : Premise → List String
   | .freshness _ => []
   | .congruence _ target => patternFvarNames bound target
+  | .scopedStep step => patternFvarNames bound step.target
   | .relationQuery _ args => args.flatMap (patternFvarNames bound)
   | .forAll _ _ _ => []
 
@@ -1904,7 +2004,8 @@ def validateRulePatterns
     (left right : Pattern) : List ValidationError :=
   let premPats := premises.flatMap premisePatterns
   let scopeErrors :=
-    if ([left, right] ++ premPats).all Pattern.isWellScoped then
+    if left.isWellScoped && right.isWellScoped &&
+        premises.all premiseLocallyScoped then
       []
     else
       [mkValidationError ctx "rule contains an out-of-scope de Bruijn index"]
@@ -1952,6 +2053,8 @@ def validateEquation (lang : LanguageDef) (equation : Equation) :
   let ctx := s!"equation {equation.name}"
   let ctxTypeErrs := equation.typeContext.flatMap fun (_, type) =>
     validateTypeExpr knownTypes ctx type
+  let premiseTypeErrs := (equation.premises.flatMap premiseStepTypeExprs).flatMap
+    (validateTypeExpr knownTypes (ctx ++ " premise"))
   let lhsCtorErrs :=
     validatePatternConstructors (ctx ++ " lhs") lang.terms equation.left
   let rhsCtorErrs :=
@@ -1961,7 +2064,7 @@ def validateEquation (lang : LanguageDef) (equation : Equation) :
   let wildcardErrs :=
     validateRulePatterns ctx knownConstructors equation.typeContext
       equation.premises equation.left equation.right
-  ctxTypeErrs ++ lhsCtorErrs ++ rhsCtorErrs ++
+  ctxTypeErrs ++ premiseTypeErrs ++ lhsCtorErrs ++ rhsCtorErrs ++
     premiseCtorErrs ++ wildcardErrs
 
 /-- Validation errors contributed by one rewrite rule in a language.  This is
@@ -1974,6 +2077,8 @@ def validateRewrite (lang : LanguageDef) (rewrite : RewriteRule) :
   let ctx := s!"rewrite {rewrite.name}"
   let ctxTypeErrs := rewrite.typeContext.flatMap fun (_, type) =>
     validateTypeExpr knownTypes ctx type
+  let premiseTypeErrs := (rewrite.premises.flatMap premiseStepTypeExprs).flatMap
+    (validateTypeExpr knownTypes (ctx ++ " premise"))
   let lhsCtorErrs :=
     validatePatternConstructors (ctx ++ " lhs") lang.terms rewrite.left
   let rhsCtorErrs :=
@@ -1983,7 +2088,7 @@ def validateRewrite (lang : LanguageDef) (rewrite : RewriteRule) :
   let wildcardErrs :=
     validateRulePatterns ctx knownConstructors rewrite.typeContext
       rewrite.premises rewrite.left rewrite.right
-  ctxTypeErrs ++ lhsCtorErrs ++ rhsCtorErrs ++
+  ctxTypeErrs ++ premiseTypeErrs ++ lhsCtorErrs ++ rhsCtorErrs ++
     premiseCtorErrs ++ wildcardErrs
 
 private def reflectiveConstructorErrors
@@ -3108,6 +3213,10 @@ private def checkPremiseFlow
             let sourceErrors := availabilityErrors ctx "congruence source"
               state.termAvail source.freeFvarNames
             (state.addBindings target.freeFvarNames, sourceErrors)
+        | .scopedStep step =>
+            let sourceErrors := availabilityErrors ctx "step source"
+              state.termAvail step.source.freeFvarNames
+            (state.addBindings step.target.freeFvarNames, sourceErrors)
         | .relationQuery relation args =>
             match modes.lookup? relation args.length with
             | none =>
@@ -3143,6 +3252,54 @@ private def directedRuleFlowErrors
   premiseErrors ++ availabilityErrors ctx "right-hand side"
     finalState.termAvail right.freeFvarNames
 
+private theorem availabilityErrors_eq_nil_of_subset
+    (ctx role : String) (available required : List String)
+    (subset : ∀ name, name ∈ required → name ∈ available) :
+    availabilityErrors ctx role available required = [] := by
+  unfold availabilityErrors missingNames
+  apply List.map_eq_nil_iff.mpr
+  apply List.filter_eq_nil_iff.mpr
+  intro name member
+  have requiredMember := List.mem_eraseDups.mp member
+  simp [subset name requiredMember]
+
+/-- An input-only binary relation premise needs only the variables already
+present in the redex. It adds no output bindings, so the contractum must also
+use only redex variables. This is the local flow law for a declared guard. -/
+private theorem directedRuleFlowErrors_binaryInputGuard
+    (modes : RelationModeTable) (ctx relation : String)
+    (first second left right : Pattern)
+    (mode : modes.lookup? relation 2 = some [.input, .input])
+    (firstBound : ∀ name, name ∈ first.freeFvarNames →
+      name ∈ left.freeFvarNames)
+    (secondBound : ∀ name, name ∈ second.freeFvarNames →
+      name ∈ left.freeFvarNames)
+    (rightBound : ∀ name, name ∈ right.freeFvarNames →
+      name ∈ left.freeFvarNames) :
+    directedRuleFlowErrors modes ctx
+      [.relationQuery relation [first, second]] left right = [] := by
+  have firstAvailable : ∀ name, name ∈ first.freeFvarNames →
+      name ∈ left.freeFvarNames.eraseDups := by
+    intro name member
+    exact List.mem_eraseDups.mpr (firstBound name member)
+  have secondAvailable : ∀ name, name ∈ second.freeFvarNames →
+      name ∈ left.freeFvarNames.eraseDups := by
+    intro name member
+    exact List.mem_eraseDups.mpr (secondBound name member)
+  have rightAvailable : ∀ name, name ∈ right.freeFvarNames →
+      name ∈ left.freeFvarNames.eraseDups := by
+    intro name member
+    exact List.mem_eraseDups.mpr (rightBound name member)
+  simp [directedRuleFlowErrors, checkPremiseFlow, mode,
+    FlowState.addBindings]
+  constructor
+  · exact availabilityErrors_eq_nil_of_subset _ _ _ _ firstAvailable
+  constructor
+  · exact availabilityErrors_eq_nil_of_subset _ _ _ _ secondAvailable
+  · apply availabilityErrors_eq_nil_of_subset
+    intro name member
+    exact List.mem_eraseDups.mpr (rightAvailable name member)
+
 /-- Ordered binding-flow errors for a selected execution profile. Rewrites
 are checked left-to-right; equations are checked in both orientations. -/
 def executionFlowErrors (lang : LanguageDef) (modes : RelationModeTable) :
@@ -3155,6 +3312,33 @@ def executionFlowErrors (lang : LanguageDef) (modes : RelationModeTable) :
       equation.premises equation.left equation.right ++
     directedRuleFlowErrors modes s!"equation {equation.name} (reverse)"
       equation.premises equation.right equation.left)
+
+/-- Adding a binary input-only guard preserves execution-flow admission when
+its arguments and contractum use only variables bound by the redex. The old
+equations and rules retain exactly their previous flow checks. -/
+theorem executionFlowErrors_append_binaryInputGuard
+    (lang : LanguageDef) (modes : RelationModeTable)
+    (rule : RewriteRule) (relation : String) (first second : Pattern)
+    (oldFlow : lang.executionFlowErrors modes = [])
+    (premises : rule.premises = [.relationQuery relation [first, second]])
+    (mode : modes.lookup? relation 2 = some [.input, .input])
+    (firstBound : ∀ name, name ∈ first.freeFvarNames →
+      name ∈ rule.left.freeFvarNames)
+    (secondBound : ∀ name, name ∈ second.freeFvarNames →
+      name ∈ rule.left.freeFvarNames)
+    (rightBound : ∀ name, name ∈ rule.right.freeFvarNames →
+      name ∈ rule.left.freeFvarNames) :
+    ({ lang with rewrites := lang.rewrites ++ [rule] }).executionFlowErrors
+      modes = [] := by
+  have guardFlow := directedRuleFlowErrors_binaryInputGuard modes
+    s!"rewrite {rule.name}" relation first second rule.left rule.right
+    mode firstBound secondBound rightBound
+  rw [← premises] at guardFlow
+  unfold executionFlowErrors at oldFlow ⊢
+  simp only [List.flatMap_append, List.flatMap_cons, List.flatMap_nil,
+    List.append_nil]
+  rw [guardFlow]
+  simpa only [List.append_nil, List.append_assoc] using oldFlow
 
 /-- A premise-free rewrite presentation passes ordered-flow admission when
 every contractum variable already occurs in its redex.  This exposes the
@@ -3275,6 +3459,22 @@ def executionAdmissionErrors (lang : LanguageDef) (modes : RelationModeTable)
     List ValidationError :=
   lang.validate ++ relationModeErrors lang modes signatures ++
     lang.executionFlowErrors modes
+
+/-- A single declared execution mode is admitted when its name and arity
+agree with its unique declared relation signature and the structural and
+ordered-flow gates pass. -/
+theorem executionAdmissionErrors_eq_nil_of_single_mode
+    (lang : LanguageDef) (mode : RelationModeDecl)
+    (signature : LogicRelationDecl)
+    (name : mode.relation = signature.name)
+    (arity : mode.args.length = signature.argTypes.length)
+    (valid : lang.validate = [])
+    (flow : lang.executionFlowErrors [mode] = []) :
+    lang.executionAdmissionErrors [mode] [signature] = [] := by
+  unfold executionAdmissionErrors
+  rw [valid, flow]
+  simp [relationModeErrors, duplicateErrors, duplicateErrorsAux,
+    name, arity]
 
 /-- With no external relation modes, structural validity and ordered-flow
 validity are the complete admission obligations. -/
@@ -3433,6 +3633,7 @@ theorem rhoCalc_validate_eq_nil : rhoCalc.validate = [] := by
     LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
     LanguageDef.premiseProducedFvarNames, LanguageDef.premisePatterns,
     LanguageDef.premiseFvarNames, LanguageDef.premiseForAllParams,
+    LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped,
     Pattern.constructorRefs, Pattern.constructorRefsList,
     Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt]
@@ -3470,6 +3671,18 @@ theorem rhoCalc_executionAdmissionErrors_eq_nil :
     LanguageDef.FlowState.addBindings, rhoCalc, rhoCommRewrite,
     rhoParCongRewrite, LanguageDef.duplicateErrors,
     LanguageDef.duplicateErrorsAux, Pattern.freeFvarNames]
+
+/-- The strict rho core has no relation-query premises, so its ordered-flow
+check passes under every supplied mode table. This lets independently
+declared guarded rules extend the same authored core. -/
+theorem rhoCalc_executionFlowErrors_any_modes
+    (modes : RelationModeTable) :
+    rhoCalc.executionFlowErrors modes = [] := by
+  simp [LanguageDef.executionFlowErrors,
+    LanguageDef.directedRuleFlowErrors, LanguageDef.checkPremiseFlow,
+    LanguageDef.availabilityErrors, LanguageDef.missingNames,
+    LanguageDef.FlowState.addBindings, rhoCalc, rhoCommRewrite,
+    rhoParCongRewrite, Pattern.freeFvarNames]
 
 /-! ## Nullary-constructor resolution in authored patterns
 
@@ -3517,6 +3730,10 @@ def Premise.resolveNullary (ls bound : List String) : Premise → Premise
       .freshness { fc with term := fc.term.resolveNullary ls bound }
   | .congruence l r =>
       .congruence (l.resolveNullary ls bound) (r.resolveNullary ls bound)
+  | .scopedStep step =>
+      .scopedStep { step with
+        source := step.source.resolveNullary ls bound
+        target := step.target.resolveNullary ls bound }
   | .relationQuery rel args =>
       .relationQuery rel (Pattern.resolveNullaryList ls bound args)
   | .forAll collection param p =>
@@ -3550,6 +3767,8 @@ def Premise.nullaryClean (ls bound : List String) : Premise → Bool
   | .freshness fc => fc.term.nullaryClean ls bound
   | .congruence left right =>
       left.nullaryClean ls bound && right.nullaryClean ls bound
+  | .scopedStep step =>
+      step.source.nullaryClean ls bound && step.target.nullaryClean ls bound
   | .relationQuery _ args => Pattern.nullaryCleanList ls bound args
   | .forAll _ param body => Premise.nullaryClean ls (param :: bound) body
 
@@ -3630,6 +3849,7 @@ def LanguageDef.nullaryFvarCollisions (lang : LanguageDef) : List String :=
   let rec premiseNames (bound : List String) : Premise → List String
     | .freshness fc => patNames bound fc.term
     | .congruence left right => patNames bound left ++ patNames bound right
+    | .scopedStep step => patNames bound step.source ++ patNames bound step.target
     | .relationQuery _ args => args.flatMap (patNames bound)
     | .forAll _ param body => premiseNames (param :: bound) body
   ((lang.rewrites.flatMap (fun r =>
@@ -3737,6 +3957,13 @@ theorem Premise.resolveNullary_eq_self_of_clean
       simp [Premise.resolveNullary,
         Pattern.resolveNullary_eq_self_of_clean ls bound left hclean.1,
         Pattern.resolveNullary_eq_self_of_clean ls bound right hclean.2]
+  | scopedStep step =>
+      simp only [Premise.nullaryClean, Bool.and_eq_true] at hclean
+      cases step with
+      | mk binders resultType source target =>
+          simp [Premise.resolveNullary,
+            Pattern.resolveNullary_eq_self_of_clean ls bound source hclean.1,
+            Pattern.resolveNullary_eq_self_of_clean ls bound target hclean.2]
   | relationQuery relation args =>
       simp only [Premise.nullaryClean] at hclean
       simp [Premise.resolveNullary,
@@ -3820,6 +4047,10 @@ theorem Premise.resolveNullary_idem (ls bound : List String) (premise : Premise)
       simp [Premise.resolveNullary, Pattern.resolveNullary_idem]
   | congruence left right =>
       simp [Premise.resolveNullary, Pattern.resolveNullary_idem]
+  | scopedStep step =>
+      cases step with
+      | mk binders resultType source target =>
+          simp [Premise.resolveNullary, Pattern.resolveNullary_idem]
   | relationQuery relation args =>
       simp [Premise.resolveNullary, Pattern.resolveNullaryList_idem]
   | forAll collection param body ih =>
@@ -3935,58 +4166,58 @@ private def wildToy (rw : RewriteRule) : LanguageDef :=
     rewrites := [rw] }
 
 -- (f) free pattern variable colliding with an arity-1 label F = silent wildcard
-#guard decide ((wildToy (RewriteRule.mk "r" [] []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" [] []
     (.apply "K" []) (.fvar "F"))).validate ≠ [])
 -- unknown nullary applications are not implicitly accepted as data
-#guard decide ((wildToy (RewriteRule.mk "r" [] []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" [] []
     (.apply "Ghost" []) (.apply "K" []))).validate ≠ [])
 -- declared constructors must be used at their exact grammar arity
-#guard decide ((wildToy (RewriteRule.mk "r" [] []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" [] []
     (.apply "F" []) (.apply "K" []))).validate ≠ [])
 -- locally nameless schemas cannot contain an out-of-scope de Bruijn index
-#guard decide ((wildToy (RewriteRule.mk "r" [] []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" [] []
     (.bvar 0) (.apply "K" []))).validate ≠ [])
 -- constructor validation traverses premise patterns as well as endpoints
-#guard decide ((wildToy (RewriteRule.mk "r" []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" []
     [.freshness { varName := "x", term := .apply "Ghost" [] }]
     (.apply "F" [.fvar "x"]) (.fvar "x"))).validate ≠ [])
-#guard decide ((wildToy (RewriteRule.mk "r" []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" []
     [.congruence (.apply "F" []) (.fvar "x")]
     (.apply "K" []) (.fvar "x"))).validate ≠ [])
 -- (b) binder shadowing a declared label
-#guard decide ((wildToy (RewriteRule.mk "r" [] []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" [] []
     (.lambda (some "K") (.bvar 0)) (.apply "K" []))).validate ≠ [])
 -- (b-forAll) the second field is the scoped parameter and must be checked
-#guard decide ((wildToy (RewriteRule.mk "r" []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" []
     [.forAll "items" "K" (.congruence (.fvar "K") (.fvar "K"))]
     (.apply "K" []) (.apply "K" []))).validate ≠ [])
 -- (d) typeContext colliding with a declared label
-#guard decide ((wildToy (RewriteRule.mk "r" [("K", .base "T")] []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" [("K", .base "T")] []
     (.apply "K" []) (.apply "K" []))).validate ≠ [])
 -- (dangling) RHS variable bound nowhere
-#guard decide ((wildToy (RewriteRule.mk "r" [] []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" [] []
     (.apply "K" []) (.fvar "ghost"))).validate ≠ [])
 -- freshness checks do not manufacture bindings for variables in their terms
-#guard decide ((wildToy (RewriteRule.mk "r" []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" []
     [.freshness { varName := "v", term := .fvar "ghost" }]
     (.apply "K" []) (.fvar "ghost"))).validate ≠ [])
 -- a `forAll` parameter is local to its body and cannot escape to the RHS
-#guard decide ((wildToy (RewriteRule.mk "r" []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" []
     [.forAll "items" "x" (.congruence (.fvar "x") (.fvar "x"))]
     (.apply "K" []) (.fvar "x"))).validate ≠ [])
 -- congruence target matching may introduce a binding used by the RHS
-#guard decide ((wildToy (RewriteRule.mk "r" []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" []
     [.congruence (.fvar "x") (.fvar "y")]
     (.apply "F" [.fvar "x"]) (.fvar "y"))).validate = [])
 -- and a fully-clean rule validates
-#guard decide ((wildToy (RewriteRule.mk "r" [] []
+#guard decide ((wildToy (RewriteRule.mk (bindings := none) "r" [] []
     (.apply "F" [.fvar "x"]) (.fvar "x"))).validate = [])
 
 private def ioRelationModes : RelationModeTable :=
   [{ relation := "rel", args := [.input, .output] }]
 
 private def modeCheckedFlowToy : LanguageDef :=
-  wildToy (RewriteRule.mk "flow" []
+  wildToy (RewriteRule.mk (bindings := none) "flow" []
       [.relationQuery "rel" [.fvar "source", .fvar "target"]]
       (.apply "F" [.fvar "source"]) (.fvar "target"))
 
@@ -3995,7 +4226,7 @@ private def ioRelationSignatures : List LogicRelationDecl :=
 
 private def wrongRelationArityToy : LanguageDef :=
   { modeCheckedFlowToy with
-    rewrites := [RewriteRule.mk "flow" []
+    rewrites := [RewriteRule.mk (bindings := none) "flow" []
       [.relationQuery "rel" [.fvar "source"]]
       (.apply "F" [.fvar "source"]) (.fvar "source")] }
 
@@ -4014,14 +4245,14 @@ private def wrongRelationArityToy : LanguageDef :=
       ioRelationSignatures).isEmpty
 
 private def duplicateRuleNameToy : LanguageDef :=
-  let rule := RewriteRule.mk "duplicate" [] []
+  let rule := RewriteRule.mk (bindings := none) "duplicate" [] []
     (.apply "F" [.fvar "x"]) (.fvar "x")
   { wildToy rule with rewrites := [rule, rule] }
 
 #guard !duplicateRuleNameToy.validate.isEmpty
 
 -- Freshness subjects and collection rests must be actual matcher bindings.
-#guard (wildToy (RewriteRule.mk "flow" []
+#guard (wildToy (RewriteRule.mk (bindings := none) "flow" []
     [.freshness
       { varName := "x"
         term := .collection .hashBag [] (some "rest") }]
@@ -4030,7 +4261,7 @@ private def duplicateRuleNameToy : LanguageDef :=
     (.collection .hashBag [] (some "rest")))).executionFlowErrors [] |>.isEmpty
 
 -- Lambda display names are metadata ignored by matching, not binding evidence.
-#guard !((wildToy (RewriteRule.mk "flow" []
+#guard !((wildToy (RewriteRule.mk (bindings := none) "flow" []
     [.freshness
       { varName := "x"
         term := .collection .hashBag [] (some "rest") }]
@@ -4039,38 +4270,38 @@ private def duplicateRuleNameToy : LanguageDef :=
     (.collection .hashBag [] (some "rest")))).executionFlowErrors []).isEmpty
 
 -- Congruence consumes its source and produces bindings from its target.
-#guard (wildToy (RewriteRule.mk "flow" []
+#guard (wildToy (RewriteRule.mk (bindings := none) "flow" []
     [.congruence (.fvar "source") (.fvar "target")]
     (.apply "F" [.fvar "source"]) (.fvar "target"))).executionFlowErrors [] |>.isEmpty
 
 -- A mode-declared relation can produce a value that a later freshness check
 -- and the RHS consume.
-#guard (wildToy (RewriteRule.mk "flow" []
+#guard (wildToy (RewriteRule.mk (bindings := none) "flow" []
     [.relationQuery "rel" [.fvar "source", .fvar "target"],
      .freshness { varName := "target", term := .fvar "source" }]
     (.apply "F" [.fvar "source"]) (.fvar "target"))).executionFlowErrors
       ioRelationModes |>.isEmpty
 
 -- Freshness consumes no bindings and cannot use names that are wholly absent.
-#guard !((wildToy (RewriteRule.mk "flow" []
+#guard !((wildToy (RewriteRule.mk (bindings := none) "flow" []
     [.freshness { varName := "ghost", term := .fvar "missing" }]
     (.apply "K" []) (.apply "K" []))).executionFlowErrors []).isEmpty
 
 -- Premise order matters: a later relation output cannot justify an earlier
 -- freshness check.
-#guard !((wildToy (RewriteRule.mk "flow" []
+#guard !((wildToy (RewriteRule.mk (bindings := none) "flow" []
     [.freshness { varName := "target", term := .fvar "source" },
      .relationQuery "rel" [.fvar "source", .fvar "target"]]
     (.apply "F" [.fvar "source"]) (.fvar "target"))).executionFlowErrors
       ioRelationModes).isEmpty
 
 -- A congruence source must already be available.
-#guard !((wildToy (RewriteRule.mk "flow" []
+#guard !((wildToy (RewriteRule.mk (bindings := none) "flow" []
     [.congruence (.fvar "source") (.fvar "target")]
     (.apply "K" []) (.fvar "target"))).executionFlowErrors []).isEmpty
 
 -- `forAll` remains an explicit unsupported capability in this flow profile.
-#guard !((wildToy (RewriteRule.mk "flow" []
+#guard !((wildToy (RewriteRule.mk (bindings := none) "flow" []
     [.forAll "items" "x" (.congruence (.fvar "x") (.fvar "x"))]
     (.apply "K" []) (.apply "K" []))).executionFlowErrors []).isEmpty
 
@@ -4083,7 +4314,7 @@ private def asymmetricFlowEquation : Equation :=
 
 -- Equation admission checks both orientations; this mode assignment supports
 -- the forward direction but not the reverse one.
-#guard !(({ wildToy (RewriteRule.mk "noop" [] []
+#guard !(({ wildToy (RewriteRule.mk (bindings := none) "noop" [] []
       (.apply "K" []) (.apply "K" [])) with
     rewrites := []
     equations := [asymmetricFlowEquation] }).executionFlowErrors
@@ -4091,9 +4322,9 @@ private def asymmetricFlowEquation : Equation :=
 
 -- The wrapper is fail-closed but intentionally claims only structural and
 -- ordered-flow admission, not source adequacy.
-#guard ((wildToy (RewriteRule.mk "r" [] []
+#guard ((wildToy (RewriteRule.mk (bindings := none) "r" [] []
     (.apply "F" [.fvar "x"]) (.fvar "x"))).admitExecutionFlow? []).isSome
-#guard ((wildToy (RewriteRule.mk "r" [] []
+#guard ((wildToy (RewriteRule.mk (bindings := none) "r" [] []
     (.apply "K" []) (.fvar "ghost"))).admitExecutionFlow? []).isNone
 
 example : binderToy.resolveNullaryPatterns.resolveNullaryPatterns =

@@ -1,6 +1,5 @@
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.FormationSensitiveNativeRelatorQualification
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.PolarizedNeedMatchedIndexService
-import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.PolarizedNeedNativeProofService
 
 /-!
 # Opaque wire data with the existing native List, J and relator rules
@@ -239,10 +238,6 @@ theorem matched_operation_formed (operation : PolarizedNeedMatchedIndex.Operatio
     ScopedComputation.OperationFormation rules PolarizedNeedMatchedIndex.signature operation :=
   operation_formation (PolarizedNeedMatchedIndex.operation_formed operation)
 
-theorem nativeProof_operation_formed :
-    ScopedComputation.OperationFormation rules PolarizedNeedNativeProofService.signature () :=
-  operation_formation PolarizedNeedNativeProofService.operation_formed
-
 /-- This proof accepts arguments admitted by the combined package. It does
 not assume that every new argument was already admitted by the wire package. -/
 theorem matched_primitive_sound (context : Tower.Ctx n) :
@@ -252,18 +247,6 @@ theorem matched_primitive_sound (context : Tower.Ctx n) :
   cases operation <;>
     simp only [PolarizedNeedMatchedIndex.primitive, Produced.value.injEq] at produced <;>
     cases produced <;> exact encode_typed context _
-
-theorem nativeProof_primitive_sound
-    (environment : Mettapedia.Languages.Megalodon.MathdataKernel.Environment)
-    (current : PolarizedNeedNativeProofWire.Scope)
-    (expected : PolarizedNeedNativeProofWire.Request) (context : Tower.Ctx n) :
-    PrimitiveSoundness rules PolarizedNeedNativeProofService.signature context
-      (PolarizedNeedNativeProofService.primitive environment current expected) := by
-  intro operation argument value _ _ produced
-  cases operation
-  simp only [PolarizedNeedNativeProofService.primitive, Produced.value.injEq] at produced
-  cases produced
-  exact encode_typed context _
 
 theorem matched_consume_argument_typed {context : Tower.Ctx n}
     (expected : PolarizedNeedMatchedIndex.Request) {reply : Tower.Tm n}
@@ -287,17 +270,6 @@ theorem matched_source_typed {v k : Nat} {Effect : Type} (context : Tower.Ctx n)
     (.returns (.native ⟨.sort Tower.zero, Tower.IsUniverse.sort _, dataType_formed context⟩))
   · exact .call (matched_operation_formed .select) (encode_typed context _)
   · exact .call (matched_operation_formed .consume) (matched_consume_argument_typed expected (.var 0))
-
-theorem nativeProof_source_typed {v k : Nat} {Effect : Type} (context : Tower.Ctx n)
-    (values : Fin v → VTy Tower.Head n) (needs : Fin k → CTy Tower.Head n)
-    (input : NativeWireData.Wire) :
-    ComputationTyping rules PolarizedNeedNativeProofService.signature context values needs
-      (PolarizedNeedNativeProofService.source (Effect := Effect) input)
-      (.returns (.native NativeWireData.dataType)) := by
-  have formed : ComputationFormation rules context (.returns (.native NativeWireData.dataType)) :=
-    .returns (.native ⟨.sort Tower.zero, .sort _, dataType_formed context⟩)
-  exact .letNeed formed formed
-    (.call nativeProof_operation_formed (encode_typed context input)) (.forceNeed 0)
 
 /-! ## Genuine mixed native terms and substituted J schemas -/
 
@@ -508,9 +480,7 @@ theorem wire_alone_rejects_J {context : Tower.Ctx n} (type : Tower.Tm n) :
   cases lookup
 
 #print axioms matched_primitive_sound
-#print axioms nativeProof_primitive_sound
 #print axioms matched_source_typed
-#print axioms nativeProof_source_typed
 #print axioms singleton_judgment
 #print axioms identity_schema_substitute
 #print axioms identity_schema_root

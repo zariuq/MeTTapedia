@@ -1,26 +1,57 @@
 /-
-# Universal Hyperprior: LSC Computability Layer
+# Universal Hyperprior: the computable layer
 
-Connection to Hutter's Lower Semicomputable (LSC) framework.
+Connection to Hutter's lower-semicomputable (LSC) framework.
 
-This file establishes:
-1. The Universal Hyperprior mixture is LSC
-2. M₂ (Solomonoff prior) dominates UHP
-3. Regret bounds relative to the universal mixture
+## What this file establishes
 
-## Three-Layer Architecture - Layer 3
+One thing, and it is a construction rather than an assumption:
+`DyadicEvidence` is genuinely countable, so it carries a real `Primcodable`
+instance. That is the type over which any LSC statement about this development
+can be made.
 
-1. **Semantic** (`UniversalHyperprior.lean`): Pure ℝ mathematics ✓
-2. **Dyadic** (`DyadicRealization.lean`): Computable approximations ✓
-3. **LSC** (THIS FILE): Connection to Hutter's universal AI framework
+## What this file does NOT establish, and why
 
+Nothing about lower semicomputability of the hyperprior is proved here, and the
+statements that used to appear were not merely unproved:
+
+* An earlier version carried `instance : Primcodable NormalGammaEvidence`,
+  discharged by `sorry`, so that LSC statements over real-valued evidence would
+  typecheck. That instance is **false**, not open. `NormalGammaEvidence` stores
+  `sum sumSq : ℝ`, and `⟨1, r, r^2, _, _⟩` satisfies its Cauchy–Schwarz field
+  for every real `r`, so the type has at least the cardinality of the
+  continuum, while `Primcodable` extends `Encodable` and asserts an injection
+  into `ℕ`. Everything downstream of it was therefore derivable from a
+  contradiction. It has been removed.
+
+* Two declarations named `M₂_dominates_UHP` and `uhp_regret_bound` carried
+  `sorry` in their *statements* — as the right-hand side of an inequality and
+  as the body of an existential — so they asserted nothing while reading as
+  theorems. Their intended statements are also category errors:
+  `SolomonoffBridge.M₂` is a semimeasure on `Word α` for `α` a `Fintype`
+  alphabet, whereas the hyperprior's evidence space is infinite and is not an
+  alphabet. They have been removed rather than restated, because the correct
+  statement is a different theorem about a different object.
+
+## The real obligation, recorded
+
+To connect this development to Hutter's framework one needs, in order:
+
+1. a computable dyadic approximation
+   `DyadicEvidence → ℕ → ℕ` to `logMarginalLikelihood`, monotone increasing and
+   convergent — i.e. a genuine witness for `LowerSemicomputable`, not a
+   `sorry`-bodied definition;
+2. lower semicomputability of the mixture, from (1) and closure properties;
+3. a dominance statement relating the mixture to a universal LSC mixture **over
+   the same space**, which requires an enumeration theorem for semimeasures on
+   a countable non-alphabet domain.
+
+None of the three is available here, and none is claimed.
 -/
 
 import Mettapedia.UniversalAI.UniversalHyperprior
 import Mettapedia.UniversalAI.UniversalHyperprior.DyadicRealization
 import Mettapedia.Computability.HutterComputability
-import Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.HutterEnumeration
-import Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.SolomonoffBridge
 
 namespace Mettapedia.UniversalAI.UniversalHyperprior.LSC
 
@@ -29,158 +60,47 @@ open Mettapedia.UniversalAI.UniversalHyperprior
 open Mettapedia.UniversalAI.UniversalHyperprior.Dyadic
 open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceNormalGamma
 
-/-! ## Primcodable Instance for BinaryEvidence
+/-! ## Dyadic evidence is countable
 
-To apply Hutter's computability framework, we need evidence to be Primcodable.
+This is the honest replacement for the removed instance.  `DyadicEvidence` is
+five integers, so the encoding is a construction and not an assumption. -/
 
-We encode `NormalGammaEvidence` as a tuple of naturals by representing
-reals via dyadic approximations.
--/
+/-- `DyadicEvidence` is exactly a tuple of integers. -/
+def dyadicEvidenceEquiv : DyadicEvidence ≃ ℕ × ℤ × ℕ × ℕ × ℕ where
+  toFun ev := (ev.n, ev.mean_num, ev.mean_denom_pow, ev.var_num, ev.var_denom_pow)
+  invFun p := ⟨p.1, p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2⟩
+  left_inv := by intro ev; cases ev; rfl
+  right_inv := by intro p; rfl
 
--- TODO: This requires defining how to encode ℝ values via dyadic sequences
--- For now, we axiomatize this as an instance to allow the theorems to typecheck
+/-- **Dyadic evidence is primitively codable**, by an explicit equivalence with
+a tuple of integers.  Compare the removed `Primcodable NormalGammaEvidence`,
+which was false. -/
+instance : Primcodable DyadicEvidence :=
+  Primcodable.ofEquiv _ dyadicEvidenceEquiv
 
-instance : Primcodable NormalGammaEvidence := sorry
+/-! ## Controls -/
 
-/-! ## LSC Witness for Log Marginal Likelihood
+namespace ComputabilityControls
 
-We construct an explicit computable function that witnesses the fact that
-`logMarginalLikelihood` is lower semicomputable.
+/-- The encoding really is a bijection, so the instance rests on a
+construction. -/
+theorem dyadicEvidenceEquiv_roundTrip (ev : DyadicEvidence) :
+    dyadicEvidenceEquiv.symm (dyadicEvidenceEquiv ev) = ev :=
+  dyadicEvidenceEquiv.left_inv ev
 
-The witness uses the dyadic layer to compute approximations at increasing
-precision.
--/
+/-- **And the real-valued evidence type is not countable**, which is why the
+removed instance was false rather than open: distinct reals give distinct
+evidence values. -/
+theorem normalGammaEvidence_injects_real :
+    Function.Injective (fun r : ℝ =>
+      (⟨1, r, r ^ 2, by positivity, by push_cast; ring_nf; exact le_refl _⟩ :
+        NormalGammaEvidence)) := by
+  intro a b hab
+  exact congrArg NormalGammaEvidence.sum hab
 
-/-- Dyadic approximation of log marginal likelihood at precision n -/
-noncomputable def lsc_witness_logML_helper (ctx : NormalNormalContext)
-    (ev : NormalGammaEvidence) (n : ℕ) : ℕ :=
-  sorry  -- TODO: Convert ctx and ev to dyadic at precision n,
-         -- compute dyadicLogMarginalLikelihood,
-         -- floor and shift to return ℕ
-
-/-- The log marginal likelihood is lower semicomputable -/
-theorem lsc_logMarginalLikelihood (σ_sq : ℝ) (hσ : 0 < σ_sq) (k : ℤ) :
-    LowerSemicomputable
-      (fun ev : NormalGammaEvidence =>
-        logMarginalLikelihood (contextAtK k σ_sq hσ) ev) := by
-  unfold LowerSemicomputable
-  use lsc_witness_logML_helper (contextAtK k σ_sq hσ)
-  constructor
-  · sorry  -- TODO: Prove Computable₂ (decidability from dyadic ops)
-  constructor
-  · sorry  -- TODO: Prove monotone increasing (dyadic approx from below)
-  · sorry  -- TODO: Prove convergence to logMarginalLikelihood
-
-/-! ## Universal Hyperprior as Semimeasure
-
-To connect to M₂, we need to view the Universal Hyperprior as a semimeasure
-on the evidence space.
-
-This requires:
-1. Mapping evidence to [0, 1] via marginal likelihoods
-2. Proving the superadditivity property
-3. Showing it's LSC
--/
-
-/-- The Universal Hyperprior viewed as a semimeasure on evidence -/
-noncomputable def universalHyperpriorSemimeasure (σ_sq : ℝ) (hσ : 0 < σ_sq) :
-    NormalGammaEvidence → ENNReal :=
-  fun ev => ENNReal.ofReal (Real.exp (logMixtureMarginalLikelihood σ_sq hσ ev))
-
-/-- UHP semimeasure is LSC -/
-theorem lsc_universalHyperprior (σ_sq : ℝ) (hσ : 0 < σ_sq) :
-    LowerSemicomputable
-      (fun ev : NormalGammaEvidence =>
-        (universalHyperpriorSemimeasure σ_sq hσ ev).toReal) := by
-  sorry  -- TODO: Prove using lsc_logMarginalLikelihood and LSC closure properties
-
-/-! ## M₂ Dominance
-
-The universal mixture M₂ (Solomonoff prior) dominates the Universal Hyperprior.
-
-This follows from the enumeration theorem: every LSC semimeasure appears in
-M₂'s mixture with some weight.
-
-**Key Insight**: UHP is NOT universal - it's ONE specific LSC expert family.
-M₂ is truly universal over ALL LSC semimeasures.
--/
-
-/-- M₂ dominates UHP with some constant c > 0 -/
-theorem M₂_dominates_UHP (σ_sq : ℝ) (hσ : 0 < σ_sq) :
-    ∃ c : ENNReal, c ≠ 0 ∧
-      ∀ ev : NormalGammaEvidence,
-        c * universalHyperpriorSemimeasure σ_sq hσ ev ≤ sorry := by
-          -- M₂ (α := NormalGammaEvidence) ev := by
-  sorry  -- TODO: Apply enumeration theorem from SolomonoffBridge
-        -- Need to show UHP is LSC, then get its code from enumeration,
-        -- then c = encodeWeight (code UHP)
-
-/-! ## Regret Bound
-
-The regret of using M₂ instead of UHP is at most O(|code|) where code is the
-complexity of describing the UHP procedure.
-
-This formalizes: "UHP is a good practical prior, but M₂ is theoretically
-superior by at most a constant factor."
--/
-
-/-- Regret bound: M₂ is at most O(1) better than UHP -/
-theorem uhp_regret_bound (σ_sq : ℝ) (hσ : 0 < σ_sq) (n : ℕ) :
-    ∃ c : ENNReal, c ≠ 0 ∧
-      sorry := by
-        -- relEntropy
-        --   (universalHyperpriorSemimeasure σ_sq hσ)
-        --   (M₂ (α := NormalGammaEvidence))
-        --   n ≤
-        -- Real.log (1 / c.toReal) := by
-  sorry  -- TODO: Apply relEntropy_le_log_inv_of_LSC from HutterEnumeration.lean
-
-/-! ## Countability and Hutter's Framework
-
-The Universal Hyperprior family {τ₀² = 2^k : k ∈ ℤ} is:
-- Countable (indexed by ℤ)
-- Each component is computable (dyadic τ₀²)
-- The mixture weights are computable
-- Therefore UHP is LSC
-
-This is fully within Hutter's framework. The dyadic grid is not a restriction -
-it's exactly the realization mechanism for LSC.
--/
-
-theorem uhp_countable : Countable {ctx : NormalNormalContext | ∃ k : ℤ, ctx.τ₀_sq = 2^k} := by
-  sorry  -- TODO: Show bijection with ℤ
-
-/-- The weight function is lower semicomputable -/
-theorem uhp_weights_lsc : LowerSemicomputable (weight : ℤ → ℝ) := by
-  sorry  -- TODO: Show weight k = 2^{-(|k|+1)} / (3/2) is LSC via dyadic approximation
-
-/-! ## Summary: Three-Layer Connection
-
-1. **Semantic Layer**: Pure ℝ mathematics
-   - Theorems: dominance, mixture_shrinks_toward_prior, etc.
-   - Status: Mostly proven (4 sorries remain)
-
-2. **Dyadic Layer**: Computable approximations
-   - Types: DyadicContext, DyadicEvidence, DyadicValue
-   - Operations: Decidable ℤ, ℕ arithmetic
-   - Convergence: Proven to converge to Semantic layer
-
-3. **LSC Layer** (THIS FILE): Theoretical completeness
-   - Shows UHP is Lower Semicomputable
-   - Connects to M₂ (universal mixture)
-   - Proves regret bounds
-
-The architecture is:
-```
-Semantic (ℝ) ← toReal ← Dyadic (ℤ/ℕ) ← witness ← LSC codes
-     ↓                      ↓                      ↓
-  Theorems          Computation              M₂ dominance
-```
-
-All three layers are necessary:
-- Semantic: Mathematical correctness
-- Dyadic: Practical implementation
-- LSC: Theoretical completeness
--/
+end ComputabilityControls
 
 end Mettapedia.UniversalAI.UniversalHyperprior.LSC
+
+#print axioms Mettapedia.UniversalAI.UniversalHyperprior.LSC.dyadicEvidenceEquiv
+#print axioms Mettapedia.UniversalAI.UniversalHyperprior.LSC.ComputabilityControls.normalGammaEvidence_injects_real

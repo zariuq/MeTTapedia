@@ -171,23 +171,23 @@ theorem pureDecl_iff_pettaEval (s : PeTTaSpace) (p : Pattern) (answers : Answers
     PureDecl s p answers ↔ PeTTaEval s p answers :=
   ⟨PureDecl.toPeTTaEval, PureDecl.ofPeTTaEval⟩
 
-/-! ## Full Declarative Core Clauses (`MeTTaEval`) -/
+/-! ## Full Declarative Core Rules (`MeTTaEval`) -/
 
 namespace FullDeclClause
 
-/-- Clause form: symbol pass-through (`metta(Symbol, ty, space, bs)`). -/
+/-- Rule form: symbol pass-through (`metta(Symbol, ty, space, bs)`). -/
 def symbolPassThrough (s : PeTTaSpace) (c : String) (ty : Pattern) (bs : Bindings) : Prop :=
   MeTTaEval s (.apply c []) ty bs [(.apply c [], bs)]
 
-/-- Clause form: variable pass-through. -/
+/-- Rule form: variable pass-through. -/
 def varPassThrough (s : PeTTaSpace) (x : String) (ty : Pattern) (bs : Bindings) : Prop :=
   MeTTaEval s (.fvar x) ty bs [(.fvar x, bs)]
 
-/-- Clause form: error pass-through. -/
+/-- Rule form: error pass-through. -/
 def errorPassThrough (s : PeTTaSpace) (atom msg ty : Pattern) (bs : Bindings) : Prop :=
   MeTTaEval s (mkError atom msg) ty bs [(mkError atom msg, bs)]
 
-/-- Clause form: rule application with binding threading. -/
+/-- Rule form: rule application with binding threading. -/
 def ruleApp (s : PeTTaSpace) (r : RewriteRule) (bsm : Bindings)
     (p q ty : Pattern) (input : Bindings) : Prop :=
   r ∈ s.rules ∧
@@ -196,16 +196,16 @@ def ruleApp (s : PeTTaSpace) (r : RewriteRule) (bsm : Bindings)
   applyBindings bsm r.right = q ∧
   MeTTaEval s p ty input [(q, bsm ++ input)]
 
-/-- Clause form: `(match &self pat tmpl)`. -/
+/-- Rule form: `(match &self pat tmpl)`. -/
 def spaceQuery (s : PeTTaSpace) (pat tmpl ty : Pattern) (bs : Bindings) (res : EvalResult) : Prop :=
   res = (s.spaceMatch pat tmpl).map (·, bs) ∧
   MeTTaEval s (.apply "match" [.apply "&self" [], pat, tmpl]) ty bs res
 
-/-- Clause form: `superpose`. -/
+/-- Rule form: `superpose`. -/
 def superpose (s : PeTTaSpace) (alts : List Pattern) (ty : Pattern) (bs : Bindings) : Prop :=
   MeTTaEval s (.apply "superpose" [.collection .vec alts none]) ty bs (alts.map (·, bs))
 
-/-- Clause form: `collapse`. -/
+/-- Rule form: `collapse`. -/
 def collapse (s : PeTTaSpace) (p ty : Pattern) (bs : Bindings) (inner : EvalResult) : Prop :=
   MeTTaEval s p ty bs inner ∧
   MeTTaEval s (.apply "collapse" [p]) ty bs [(.collection .vec (inner.map Prod.fst) none, bs)]
@@ -249,7 +249,7 @@ theorem collapse_intro (s : PeTTaSpace) (p ty : Pattern) (bs : Bindings) (inner 
   refine ⟨h, ?_⟩
   exact MeTTaEval.collapse p ty bs inner h
 
-/-- Declarative clause packaging for `collapse (match &self pat tmpl)`.
+/-- Declarative rule packaging for `collapse (match &self pat tmpl)`.
 
 This is the clean composition theorem for the first nested certified query
 family: the inner `match &self` query is certified already, and `collapse`
@@ -267,33 +267,33 @@ theorem collapse_spaceQuery_intro
 
 end FullDeclClause
 
-/-! ## Declarative Control Clauses (`if`/`let`/`case`) -/
+/-! ## Declarative Control Rules (`if`/`let`/`case`) -/
 
 namespace ControlDeclClause
 
-/-- Clause form: `(if True then else)` selects `then` when `ifTrueRule` is present. -/
+/-- Rule form: `(if True then else)` selects `then` when `ifTrueRule` is present. -/
 def ifTrueBranch (s : PeTTaSpace) (thenB elseB : Pattern) : Prop :=
   ifTrueRule ∈ s.rules ∧
   PeTTaEval s (.apply "if" [.apply "True" [], thenB, elseB]) [thenB]
 
-/-- Clause form: `(if False then else)` selects `else` when `ifFalseRule` is present. -/
+/-- Rule form: `(if False then else)` selects `else` when `ifFalseRule` is present. -/
 def ifFalseBranch (s : PeTTaSpace) (thenB elseB : Pattern) : Prop :=
   ifFalseRule ∈ s.rules ∧
   PeTTaEval s (.apply "if" [.apply "False" [], thenB, elseB]) [elseB]
 
-/-- Clause form: `(let var val body)` rewrites to `(chain val var body)` when `letRule` is present. -/
+/-- Rule form: `(let var val body)` rewrites to `(chain val var body)` when `letRule` is present. -/
 def letToChain (s : PeTTaSpace) (varP valP bodyP : Pattern) : Prop :=
   letRule ∈ s.rules ∧
   PeTTaEval s (.apply "let" [varP, valP, bodyP]) [.apply "chain" [valP, varP, bodyP]]
 
-/-- Clause form: case-success one-step reduction through `unify`. -/
+/-- Rule form: case-success one-step reduction through `unify`. -/
 def caseSuccessStep (s : PeTTaSpace) (cond pat branch : Pattern) (bs : Bindings) : Prop :=
   bs ∈ matchPattern pat cond ∧
   MeTTaStep s
     (.apply "unify" [cond, pat, branch, .apply "empty" []])
     (applyBindings bs branch)
 
-/-- Clause form: case-failure one-step reduction through `unify`. -/
+/-- Rule form: case-failure one-step reduction through `unify`. -/
 def caseFailureStep (s : PeTTaSpace) (cond pat thenB elseB : Pattern) : Prop :=
   matchPattern pat cond = [] ∧
   MeTTaStep s (.apply "unify" [cond, pat, thenB, elseB]) elseB
@@ -325,16 +325,16 @@ theorem caseFailureStep_intro (s : PeTTaSpace) (cond pat thenB elseB : Pattern)
 
 end ControlDeclClause
 
-/-! ## Declarative Let* Clauses -/
+/-! ## Declarative Let* Rules -/
 
 namespace LetStarDeclClause
 
-/-- Clause form: `(let* () body)` base case reduces to `body`. -/
+/-- Rule form: `(let* () body)` base case reduces to `body`. -/
 def base (s : PeTTaSpace) (bodyP : Pattern) : Prop :=
   letStarBaseRule ∈ s.rules ∧
   PeTTaEval s (.apply "let*" [.collection .vec [] none, bodyP]) [bodyP]
 
-/-- Clause form: recursive `let*` step reducing to nested `let`. -/
+/-- Rule form: recursive `let*` step reducing to nested `let`. -/
 def recStep (s : PeTTaSpace) (varP valP bodyP restP : Pattern) : Prop :=
   letStarRecRule ∈ s.rules ∧
   [("var", varP), ("val", valP), ("rest", restP), ("body", bodyP)] ∈
@@ -363,7 +363,7 @@ theorem recStep_intro (s : PeTTaSpace) (varP valP bodyP restP : Pattern)
 
 end LetStarDeclClause
 
-/-! ## Predicate-Control Declarative Clauses (`translatePredicate`/`catch`/`progn`) -/
+/-! ## Predicate-Control Declarative Rules (`translatePredicate`/`catch`/`progn`) -/
 
 namespace PredicateControlDeclClause
 
@@ -486,7 +486,7 @@ theorem prognStateful_intro (s₀ s₁ s₂ : EvalState) (e₁ e₂ : Pattern) (
 
 end PredicateControlDeclClause
 
-/-! ## Higher-Order Control Clauses (`forall`/`foldall`) -/
+/-! ## Higher-Order Control Rules (`forall`/`foldall`) -/
 
 namespace HigherOrderDeclClause
 
@@ -510,10 +510,10 @@ theorem foldallFallback_intro (cond init body : Pattern) :
 
 end HigherOrderDeclClause
 
-/-! ## Operator-to-Clause Index (Audit Table) -/
+/-! ## Operator-to-Rule Index (Audit Table) -/
 
-/-- Compact index mapping core heads to declarative clause anchors in this file. -/
-def operatorClauseIndex : List (String × String) :=
+/-- Compact index mapping core heads to declarative rule anchors in this file. -/
+def operatorRuleIndex : List (String × String) :=
   [ ("if", "ControlDeclClause.ifTrueBranch / ifFalseBranch")
   , ("let", "ControlDeclClause.letToChain")
   , ("let*", "LetStarDeclClause.base / recStep")
@@ -526,17 +526,17 @@ def operatorClauseIndex : List (String × String) :=
   , ("prog1", "CoreDecl.prog1")
   ]
 
-theorem operatorClauseIndex_has_if :
-    ("if", "ControlDeclClause.ifTrueBranch / ifFalseBranch") ∈ operatorClauseIndex := by
+theorem operatorRuleIndex_has_if :
+    ("if", "ControlDeclClause.ifTrueBranch / ifFalseBranch") ∈ operatorRuleIndex := by
   decide
 
-theorem operatorClauseIndex_has_translatePredicate :
+theorem operatorRuleIndex_has_translatePredicate :
     ("translatePredicate", "PredicateControlDeclClause.PredicateControlEval.translatePredicateQuery")
-      ∈ operatorClauseIndex := by
+      ∈ operatorRuleIndex := by
   decide
 
-theorem operatorClauseIndex_has_letStar :
-    ("let*", "LetStarDeclClause.base / recStep") ∈ operatorClauseIndex := by
+theorem operatorRuleIndex_has_letStar :
+    ("let*", "LetStarDeclClause.base / recStep") ∈ operatorRuleIndex := by
   decide
 
 /-! ## Focused Positive / Negative Anchors -/

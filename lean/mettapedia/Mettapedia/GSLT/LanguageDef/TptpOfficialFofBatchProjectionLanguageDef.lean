@@ -542,7 +542,8 @@ local macro "projection_row_simp" : tactic =>
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, LanguageDef.premiseFvarNames,
       LanguageDef.premiseForAllParams,
-      LanguageDef.premiseProducedFvarNames, TypeExpr.baseNames,
+      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, TypeExpr.baseNames,
       Pattern.zipHead, Pattern.mapHead, Pattern.evalHead] <;>
       first
       | exact required_projection_type_declared _ (by decide)
@@ -554,6 +555,13 @@ private theorem projection_contextTypes (entry : RolePolicyEntry)
     (_entryMembership : entry ∈ rolePolicy) (withRefinement : Bool) :
     ∀ contextEntry ∈ (mkProjectionRule entry withRefinement).typeContext,
       ∀ name ∈ contextEntry.2.baseNames, name ∈ language.typeNames := by
+  cases withRefinement <;> projection_row_simp
+
+private theorem projection_premiseTypes (entry : RolePolicyEntry)
+    (_entryMembership : entry ∈ rolePolicy) (withRefinement : Bool) :
+    ∀ type ∈ (mkProjectionRule entry withRefinement).premises.flatMap
+        LanguageDef.premiseStepTypeExprs,
+      ∀ name ∈ type.baseNames, name ∈ language.typeNames := by
   cases withRefinement <;> projection_row_simp
 
 private theorem projection_leftDeclared (entry : RolePolicyEntry)
@@ -580,10 +588,10 @@ private theorem projection_premisesDeclared (entry : RolePolicyEntry)
 
 private theorem projection_allPatternsScoped (entry : RolePolicyEntry)
     (_entryMembership : entry ∈ rolePolicy) (withRefinement : Bool) :
-    ([(mkProjectionRule entry withRefinement).left,
-        (mkProjectionRule entry withRefinement).right] ++
-      (mkProjectionRule entry withRefinement).premises.flatMap
-        LanguageDef.premisePatterns).all Pattern.isWellScoped = true := by
+    ((mkProjectionRule entry withRefinement).left.isWellScoped &&
+      (mkProjectionRule entry withRefinement).right.isWellScoped &&
+      (mkProjectionRule entry withRefinement).premises.all
+        LanguageDef.premiseLocallyScoped) = true := by
   rcases entry with ⟨code, polarity⟩
   cases polarity <;> cases withRefinement <;> projection_row_simp
 
@@ -637,6 +645,7 @@ private theorem projection_rule_certificate (entry : RolePolicyEntry)
     RewriteValidationCertificate.Certificate language
       (mkProjectionRule entry withRefinement) where
   contextTypes := projection_contextTypes entry entryMembership withRefinement
+  premiseTypes := projection_premiseTypes entry entryMembership withRefinement
   leftDeclared := projection_leftDeclared entry entryMembership withRefinement
   rightDeclared := projection_rightDeclared entry entryMembership withRefinement
   premisesDeclared :=

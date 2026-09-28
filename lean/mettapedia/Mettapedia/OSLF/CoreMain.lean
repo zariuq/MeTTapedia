@@ -341,7 +341,7 @@ abbrev coreMain_ntt_strict_parity_remaining_count :=
 
 /-- Exact unresolved count in the strict source-obligation inventory. -/
 theorem coreMain_ntt_strict_parity_remaining_count_eq :
-    coreMain_ntt_strict_parity_remaining_count = 5 := by
+    coreMain_ntt_strict_parity_remaining_count = 4 := by
   exact Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_eq
 
 /-- CoreMain-facing canonical Native Type translation endpoint for Π/Ω

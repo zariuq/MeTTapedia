@@ -37,13 +37,13 @@ structure StepCover (source target : GSLT)
 namespace StepCover
 
 /-- Identity covers every one-step transition exactly. -/
-def id (system : GSLT) : StepCover system system id where
+theorem id (system : GSLT) : StepCover system system id where
   mapStep := fun step => step
   liftStep := fun {_sourceTerm targetTerm} step =>
     ⟨targetTerm, step, rfl⟩
 
 /-- Locally covered embeddings compose while retaining both lifted stages. -/
-def comp {first middle last : GSLT}
+theorem comp {first middle last : GSLT}
     {earlierMap : first.Term → middle.Term}
     {laterMap : middle.Term → last.Term}
     (earlier : StepCover first middle earlierMap)

@@ -55,7 +55,9 @@ private theorem wmCoreLangReduces_evidenceAdd (pw₁ pw₂ pq : Pattern) :
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleEvidenceAdd, pExtract, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleEvidenceAdd, applyPremisesWithEnv]
-  · simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+      applyRuleBindings_eq_applyBindings _ _ (by decide)]
+    simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
 
 private theorem wmCoreLangReduces_revisionComm (pw₁ pw₂ : Pattern) :
     langReduces wmCoreLanguageDef
@@ -70,7 +72,9 @@ private theorem wmCoreLangReduces_revisionComm (pw₁ pw₂ : Pattern) :
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleRevisionComm, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleRevisionComm, applyPremisesWithEnv]
-  · simp [bs, ruleRevisionComm, pRevise, applyBindings]
+  · rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic,
+      applyRuleBindings_eq_applyBindings _ _ (by decide)]
+    simp [bs, ruleRevisionComm, pRevise, applyBindings]
 
 /-! ## WM Calculus Encoding of Maple Court Terms
 

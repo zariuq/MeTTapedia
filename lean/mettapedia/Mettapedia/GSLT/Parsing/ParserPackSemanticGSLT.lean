@@ -139,6 +139,38 @@ structure SemanticCompilation
 
 namespace SemanticCompilation
 
+/-- Acceptance at mapped query/answer endpoints of this generated semantic
+compiler. Keeping this interface abstract avoids expanding a whole grammar
+merely to state a concrete client's theorem. -/
+def Accepts
+    {literalScalars? : String → Option (List Nat)}
+    {profile : ParserProfileLayer} {rules : List CompiledRule}
+    (compilation : SemanticCompilation literalScalars? profile rules)
+    (input : List Nat) (tree : CST) : Prop :=
+  compilation.target.theory.Step
+    (compilation.compiler.mapTerm (.query input))
+    (compilation.compiler.mapTerm (.answer input tree))
+
+/-- Semantic compilation preserves and reflects every whole-source result,
+using its exact proof-fibre map rather than a separate acceptance check. -/
+theorem accepts_iff_source
+    {literalScalars? : String → Option (List Nat)}
+    {profile : ParserProfileLayer} {rules : List CompiledRule}
+    (compilation : SemanticCompilation literalScalars? profile rules)
+    (input : List Nat) (tree : CST) :
+    compilation.Accepts input tree ↔
+      Nonempty (SourcePlanRootDerives literalScalars? profile rules input tree) := by
+  constructor
+  · intro step
+    obtain ⟨evidence⟩ := compilation.target.steps.witness step
+    have source := (compilation.compiler.evidenceEquiv
+      (.query input) (.answer input tree)).symm evidence
+    cases source with
+    | accepted derivation => exact ⟨derivation⟩
+  · rintro ⟨derivation⟩
+    exact compilation.target.steps.erase
+      (compilation.compiler.mapEvidence (.accepted derivation))
+
 /-- The source endpoint of a semantic parser compilation. -/
 abbrev source
     {literalScalars? : String -> Option (List Nat)}

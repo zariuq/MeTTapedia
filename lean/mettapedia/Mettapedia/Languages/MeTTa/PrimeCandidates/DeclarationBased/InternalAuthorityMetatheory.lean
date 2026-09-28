@@ -2514,8 +2514,8 @@ def incompleteApp_constantOccurrence
       (incompleteApp signature judgment witness) :=
   .appFunction (.appFunction (.appFunction .here))
 
-noncomputable def establishedIotaClause :
-    IotaClause Tower.rules rawOutcomeSignature
+noncomputable def establishedIotaRule :
+    IotaRule Tower.rules rawOutcomeSignature
       proofRelevantOutcomeComputation
       (outcomeConstructors.map ConstructorSpec.name)
       outcomeEliminatorSpec.name where
@@ -2529,8 +2529,8 @@ noncomputable def establishedIotaClause :
     .appArgument
       (establishedApp_constantOccurrence (.var 7) (.var 1) (.var 0))
 
-noncomputable def refutedIotaClause :
-    IotaClause Tower.rules rawOutcomeSignature
+noncomputable def refutedIotaRule :
+    IotaRule Tower.rules rawOutcomeSignature
       proofRelevantOutcomeComputation
       (outcomeConstructors.map ConstructorSpec.name)
       outcomeEliminatorSpec.name where
@@ -2545,8 +2545,8 @@ noncomputable def refutedIotaClause :
     .appArgument
       (refutedApp_constantOccurrence (.var 7) (.var 1) (.var 0))
 
-noncomputable def outsideFragmentIotaClause :
-    IotaClause Tower.rules rawOutcomeSignature
+noncomputable def outsideFragmentIotaRule :
+    IotaRule Tower.rules rawOutcomeSignature
       proofRelevantOutcomeComputation
       (outcomeConstructors.map ConstructorSpec.name)
       outcomeEliminatorSpec.name where
@@ -2561,8 +2561,8 @@ noncomputable def outsideFragmentIotaClause :
     .appArgument
       (outsideFragmentApp_constantOccurrence (.var 7) (.var 1) (.var 0))
 
-noncomputable def incompleteIotaClause :
-    IotaClause Tower.rules rawOutcomeSignature
+noncomputable def incompleteIotaRule :
+    IotaRule Tower.rules rawOutcomeSignature
       proofRelevantOutcomeComputation
       (outcomeConstructors.map ConstructorSpec.name)
       outcomeEliminatorSpec.name where
@@ -2578,13 +2578,13 @@ noncomputable def incompleteIotaClause :
     .appArgument
       (incompleteApp_constantOccurrence (.var 7) (.var 1) (.var 0))
 
-noncomputable def outcomeIotaClauses :
-    List (IotaClause Tower.rules rawOutcomeSignature
+noncomputable def outcomeIotaRules :
+    List (IotaRule Tower.rules rawOutcomeSignature
       proofRelevantOutcomeComputation
       (outcomeConstructors.map ConstructorSpec.name)
       outcomeEliminatorSpec.name) :=
-  [establishedIotaClause, refutedIotaClause,
-    outsideFragmentIotaClause, incompleteIotaClause]
+  [establishedIotaRule, refutedIotaRule,
+    outsideFragmentIotaRule, incompleteIotaRule]
 
 /-- A fully formed, strictly-positive intrinsic `Outcome` declaration with
 four exact typed computation generators.  Raw preservation is deliberately
@@ -2617,16 +2617,16 @@ noncomputable def outcomeCandidate : Candidate Tower.rules where
     simp only [outcomeConstructors, List.mem_cons, List.not_mem_nil,
       or_false] at membership
     rcases membership with rfl | rfl | rfl | rfl <;> decide
-  iotaClauses := outcomeIotaClauses
+  iotaRules := outcomeIotaRules
   constructorsComputed := by
     intro constructorName membership
     simp [outcomeConstructors, establishedConstructorSpec,
       refutedConstructorSpec, outsideFragmentConstructorSpec,
       incompleteConstructorSpec] at membership
     rcases membership with rfl | rfl | rfl | rfl <;>
-      simp [outcomeIotaClauses, establishedIotaClause,
-        refutedIotaClause, outsideFragmentIotaClause,
-        incompleteIotaClause]
+      simp [outcomeIotaRules, establishedIotaRule,
+        refutedIotaRule, outsideFragmentIotaRule,
+        incompleteIotaRule]
 
 
 end Intrinsic

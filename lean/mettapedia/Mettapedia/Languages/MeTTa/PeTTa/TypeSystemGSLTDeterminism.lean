@@ -7,7 +7,7 @@ import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 Companion to `TypeSystemGSLT.lean`: the determinism/effect half of PeTTa's
 `typecheck-v2` branch (reference revision `e038e4d`, repository
 `trueagi-io/PeTTa`) as one `CalculusLanguageDef` — mode atoms, the analysis-verdict
-lattice, effect join, overload aggregation, clause-head overlap,
+lattice, effect join, overload aggregation, equation-head overlap,
 closed-domain exhaustiveness, and the syntax-directed body walker.  The
 generic V2 checker contains no branch for this fixture; every acceptance
 and rejection below is decided by the definition data alone.
@@ -44,7 +44,7 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferenceExtension
 open Mettapedia.GSLT.LanguageDef
 
-/-- Single carrier sort: modes, verdicts, clause heads, and bodies live in
+/-- Single carrier sort: modes, verdicts, equation heads, and bodies live in
 one abstract term algebra, exactly as the reference manipulates them as
 untyped Prolog terms. -/
 private def termType : TypeDecl := TypeDecl.plain "DtTerm"
@@ -76,7 +76,7 @@ private def verMayFail : Pattern := .apply "VerMayFail" []
 private def verNondet : Pattern := .apply "VerNondet" []
 private def verUnknown : Pattern := .apply "VerUnknown" []
 
-/-! ## Clause-head skeletons (overlap and exhaustiveness carriers) -/
+/-! ## Equation-head skeletons (overlap and exhaustiveness carriers) -/
 
 /-- A variable argument position. -/
 private def hVarHead : Pattern := .apply "HVarHead" []
@@ -120,8 +120,8 @@ private def modeVerdict (m v : Pattern) : Pattern :=
   .apply "ModeVerdict" [m, v]
 private def bodyVerdict (b v : Pattern) : Pattern :=
   .apply "BodyVerdict" [b, v]
-private def clauseSetMode (v m : Pattern) : Pattern :=
-  .apply "ClauseSetMode" [v, m]
+private def equationSetMode (v m : Pattern) : Pattern :=
+  .apply "EquationSetMode" [v, m]
 private def arrowAdmits (d v : Pattern) : Pattern :=
   .apply "ArrowAdmits" [d, v]
 private def overlapHeads (a b : Pattern) : Pattern :=
@@ -405,30 +405,30 @@ private def bodyCall : RuleSchema :=
     premises := [modeVerdict (.fvar "m") (.fvar "v")]
     conclusion := bodyVerdict (bCall (.fvar "m")) (.fvar "v") }
 
-/-! ## Clause-set certification (`det_proofs.pl:990-1010`): worst body
+/-! ## Equation-set certification (`det_proofs.pl:990-1010`): worst body
 verdict; `may_fail` certifies semidet; `ok` certifies det.  `unknown`
 certifies nothing — no rule, matching the reference's refusal to assume
 det for what it cannot analyze. -/
 
-private def clauseSetOkDet : RuleSchema :=
-  { id := ruleId "clause-set-ok-det"
+private def equationSetOkDet : RuleSchema :=
+  { id := ruleId "equation-set-ok-det"
     metavariables := []
     premises := []
-    conclusion := clauseSetMode verOk mDet }
+    conclusion := equationSetMode verOk mDet }
 
-private def clauseSetMayFailSemidet : RuleSchema :=
-  { id := ruleId "clause-set-may-fail-semidet"
+private def equationSetMayFailSemidet : RuleSchema :=
+  { id := ruleId "equation-set-may-fail-semidet"
     metavariables := []
     premises := []
-    conclusion := clauseSetMode verMayFail mSemidet }
+    conclusion := equationSetMode verMayFail mSemidet }
 
-private def clauseSetNondet : RuleSchema :=
-  { id := ruleId "clause-set-nondet"
+private def equationSetNondet : RuleSchema :=
+  { id := ruleId "equation-set-nondet"
     metavariables := []
     premises := []
-    conclusion := clauseSetMode verNondet mNondet }
+    conclusion := equationSetMode verNondet mNondet }
 
-/-- The acceptance capstone: a declared arrow admits a clause-set verdict
+/-- The acceptance capstone: a declared arrow admits an equation-set verdict
 iff the certified mode is at or below the declaration in the commitment
 order (`det_validate.pl:220-260`: bodies worse than the arrow allows are
 rejected). -/
@@ -436,11 +436,11 @@ private def arrowAdmitsRule : RuleSchema :=
   { id := ruleId "arrow-admits"
     metavariables := [("d", 0), ("v", 0), ("m", 0)]
     premises :=
-      [ clauseSetMode (.fvar "v") (.fvar "m"),
+      [ equationSetMode (.fvar "v") (.fvar "m"),
         modeLe (.fvar "m") (.fvar "d") ]
     conclusion := arrowAdmits (.fvar "d") (.fvar "v") }
 
-/-! ## Clause-head overlap (`det_validate.pl:245`, enforced at 220):
+/-! ## Equation-head overlap (`det_validate.pl:245`, enforced at 220):
 unifiable-on-copies — a syntactic-unifiability test, not a normal-form
 disjointness approximation.  Violation under commitment is
 `overlapping_deterministic_clauses`. -/
@@ -543,7 +543,7 @@ private abbrev definition : CalculusLanguageDef :=
         { head := "VerdictJoin", arity := 3 },
         { head := "ModeVerdict", arity := 2 },
         { head := "BodyVerdict", arity := 2 },
-        { head := "ClauseSetMode", arity := 2 },
+        { head := "EquationSetMode", arity := 2 },
         { head := "ArrowAdmits", arity := 2 },
         { head := "OverlapHeads", arity := 2 },
         { head := "Covers", arity := 2 },
@@ -564,7 +564,7 @@ private abbrev definition : CalculusLanguageDef :=
         bodyCollapse, bodySuperpose, bodyEval,
         bodyOnceOk, bodyOnceMayFail, bodyOnceNondet, bodyOnceUnknown,
         bodySeq, bodyCall,
-        clauseSetOkDet, clauseSetMayFailSemidet, clauseSetNondet,
+        equationSetOkDet, equationSetMayFailSemidet, equationSetNondet,
         arrowAdmitsRule,
         overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
         coversHereVar, coversHereMatch, coversThere,
@@ -610,13 +610,13 @@ theorem definition_valid : definition.isValid = true := by
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     modeLe, committed, effectJoin, modeInstance, overloadAgg,
     conflictingDecls, verdictLe, verdictJoin, modeVerdict, bodyVerdict,
-    clauseSetMode, arrowAdmits, overlapHeads, covers, exhaustiveBool,
+    equationSetMode, arrowAdmits, overlapHeads, covers, exhaustiveBool,
     mPlain, mDet, mSemidet, mNondet, mUnspecified, mEffectVar, verOk,
     verMayFail, verNondet, verUnknown, hVarHead, hTrue, hFalse, hPair,
     bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall, dCons, ruleId]
@@ -659,8 +659,8 @@ theorem mode_le_det_nondet :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -668,7 +668,7 @@ theorem mode_le_det_nondet :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -699,8 +699,8 @@ theorem effect_join_det_semidet :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -708,7 +708,7 @@ theorem effect_join_det_semidet :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -736,8 +736,8 @@ theorem effect_join_unspecified_absorbs :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -745,7 +745,7 @@ theorem effect_join_unspecified_absorbs :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -773,8 +773,8 @@ theorem effect_var_instantiates_to_det :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -782,7 +782,7 @@ theorem effect_var_instantiates_to_det :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -811,8 +811,8 @@ theorem overload_det_semidet_weakens :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -820,7 +820,7 @@ theorem overload_det_semidet_weakens :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -852,8 +852,8 @@ theorem conflicting_declarations_det_nondet :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -861,7 +861,7 @@ theorem conflicting_declarations_det_nondet :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -908,8 +908,8 @@ theorem body_composition_superpose_nondet :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -917,7 +917,7 @@ theorem body_composition_superpose_nondet :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -947,8 +947,8 @@ theorem once_caps_nondet_to_may_fail :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -956,7 +956,7 @@ theorem once_caps_nondet_to_may_fail :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -964,8 +964,8 @@ theorem once_caps_nondet_to_may_fail :
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList]
 
-private def clauseSetDetProof : RawProof :=
-  .node { ruleId := ruleId "clause-set-ok-det", arguments := [] } []
+private def equationSetDetProof : RawProof :=
+  .node { ruleId := ruleId "equation-set-ok-det", arguments := [] } []
 
 private def detReflLeProof : RawProof :=
   .node { ruleId := ruleId "mode-le-refl", arguments := [mDet] } []
@@ -974,15 +974,15 @@ private def detAdmitsProof : RawProof :=
   .node
     { ruleId := ruleId "arrow-admits"
       arguments := [mDet, verOk, mDet] }
-    [clauseSetDetProof, detReflLeProof]
+    [equationSetDetProof, detReflLeProof]
 
-/-- An `ok` clause set certifies det and satisfies a `-[det]->`
+/-- An `ok` equation set certifies det and satisfies a `-[det]->`
 declaration (`det_proofs.pl:990-1010`). -/
 theorem det_body_admits_det_arrow :
     checkRaw checked (arrowAdmits mDet verOk)
       detAdmitsProof = true := by
   simp [checkRaw, checkRawChildren, checked, definition,
-    detAdmitsProof, clauseSetDetProof, detReflLeProof, modeLeRefl,
+    detAdmitsProof, equationSetDetProof, detReflLeProof, modeLeRefl,
     modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet, committedDet,
     committedSemidet, effectJoinUnspecLeft, effectJoinUnspecRight,
     effectJoinLeft, effectJoinRight, modeInstanceVar, modeInstanceRefl,
@@ -993,8 +993,8 @@ theorem det_body_admits_det_arrow :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1002,7 +1002,7 @@ theorem det_body_admits_det_arrow :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1010,8 +1010,8 @@ theorem det_body_admits_det_arrow :
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList]
 
-private def clauseSetNondetProof : RawProof :=
-  .node { ruleId := ruleId "clause-set-nondet", arguments := [] } []
+private def equationSetNondetProof : RawProof :=
+  .node { ruleId := ruleId "equation-set-nondet", arguments := [] } []
 
 private def nondetReflLeProof : RawProof :=
   .node { ruleId := ruleId "mode-le-refl", arguments := [mNondet] } []
@@ -1020,15 +1020,15 @@ private def nondetAdmitsProof : RawProof :=
   .node
     { ruleId := ruleId "arrow-admits"
       arguments := [mNondet, verNondet, mNondet] }
-    [clauseSetNondetProof, nondetReflLeProof]
+    [equationSetNondetProof, nondetReflLeProof]
 
-/-- A nondeterministic clause set is admissible under a `-[nondet]->`
+/-- A nondeterministic equation set is admissible under a `-[nondet]->`
 declaration: weakening is downgraded, never rejected. -/
 theorem nondet_arrow_admits_nondet_body :
     checkRaw checked (arrowAdmits mNondet verNondet)
       nondetAdmitsProof = true := by
   simp [checkRaw, checkRawChildren, checked, definition,
-    nondetAdmitsProof, clauseSetNondetProof, nondetReflLeProof,
+    nondetAdmitsProof, equationSetNondetProof, nondetReflLeProof,
     modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet,
     committedDet, committedSemidet, effectJoinUnspecLeft,
     effectJoinUnspecRight, effectJoinLeft, effectJoinRight,
@@ -1040,8 +1040,8 @@ theorem nondet_arrow_admits_nondet_body :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1049,7 +1049,7 @@ theorem nondet_arrow_admits_nondet_body :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1077,8 +1077,8 @@ theorem variable_head_overlaps :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1086,7 +1086,7 @@ theorem variable_head_overlaps :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1135,8 +1135,8 @@ theorem exhaustive_bool_with_both_keys :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1144,7 +1144,7 @@ theorem exhaustive_bool_with_both_keys :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall, dNil,
@@ -1160,9 +1160,9 @@ private def nondetIntoDetCandidate : RawProof :=
   .node
     { ruleId := ruleId "arrow-admits"
       arguments := [mDet, verNondet, mNondet] }
-    [clauseSetNondetProof, nondetReflLeProof]
+    [equationSetNondetProof, nondetReflLeProof]
 
-/-- The canonical candidate for admitting a nondeterministic clause set
+/-- The canonical candidate for admitting a nondeterministic equation set
 into a `-[det]->` declaration is rejected: it supplies a refl derivation,
 which concludes the wrong inequality, and no rule of this presentation
 concludes `ModeLe MNondet MDet` (rejection class
@@ -1174,7 +1174,7 @@ theorem det_arrow_rejects_nondet_body :
     checkRaw checked (arrowAdmits mDet verNondet)
       nondetIntoDetCandidate = false := by
   simp [checkRaw, checkRawChildren, checked, definition,
-    nondetIntoDetCandidate, clauseSetNondetProof, nondetReflLeProof,
+    nondetIntoDetCandidate, equationSetNondetProof, nondetReflLeProof,
     modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet,
     committedDet, committedSemidet, effectJoinUnspecLeft,
     effectJoinUnspecRight, effectJoinLeft, effectJoinRight,
@@ -1186,8 +1186,8 @@ theorem det_arrow_rejects_nondet_body :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1195,7 +1195,7 @@ theorem det_arrow_rejects_nondet_body :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1226,8 +1226,8 @@ theorem overload_refl_rejects_det_nondet :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1235,7 +1235,7 @@ theorem overload_refl_rejects_det_nondet :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1264,8 +1264,8 @@ theorem distinct_literal_heads_equal_candidate_rejects :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1273,7 +1273,7 @@ theorem distinct_literal_heads_equal_candidate_rejects :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1301,8 +1301,8 @@ theorem distinct_literal_heads_var_candidate_rejects :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1310,7 +1310,7 @@ theorem distinct_literal_heads_var_candidate_rejects :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1323,7 +1323,7 @@ private def missingKeyCandidate : RawProof :=
     { ruleId := ruleId "covers-here-match"
       arguments := [hFalse, dNil] } []
 
-/-- The match candidate for covering the `HFalse` key from a clause list
+/-- The match candidate for covering the `HFalse` key from an equation list
 matching only `HTrue` is rejected: it matches the wrong key.  On the
 closed Bool domain a failed coverage derivation is exactly the reference's
 `det_nonexhaustive` error (`det_analysis.pl:618-676`), and the judgment is
@@ -1343,8 +1343,8 @@ theorem missing_false_key_match_candidate_rejects :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1352,7 +1352,7 @@ theorem missing_false_key_match_candidate_rejects :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall, dNil,
@@ -1383,8 +1383,8 @@ theorem once_ok_candidate_rejects_nondet_body :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1392,7 +1392,7 @@ theorem once_ok_candidate_rejects_nondet_body :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1661,8 +1661,8 @@ theorem mode_le_witness_table (a b : Multiplicity) :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1670,7 +1670,7 @@ theorem mode_le_witness_table (a b : Multiplicity) :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1760,8 +1760,8 @@ theorem effect_join_realizes_multiplicity_join (a b : Multiplicity) :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1769,7 +1769,7 @@ theorem effect_join_realizes_multiplicity_join (a b : Multiplicity) :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1837,8 +1837,8 @@ theorem verdict_le_witness_table (a b : Multiplicity) :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1846,7 +1846,7 @@ theorem verdict_le_witness_table (a b : Multiplicity) :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1948,7 +1948,7 @@ the sixteen cells and on neither cell that mixes `nondeterministic` with
 `unknown`: the verdict order is the chain `ok < may_fail` with *two*
 incomparable tops, so it is not a join semilattice and the four-verdict
 carrier is not a multiplicity structure.  The three verdicts that
-`ClauseSetMode` certifies — `ok`, `may_fail`, `nondeterministic` — are a
+`EquationSetMode` certifies — `ok`, `may_fail`, `nondeterministic` — are a
 chain, and that is the sublattice arrow admission actually uses. -/
 theorem verdict_join_realizes_multiplicity_join_off_the_two_tops
     (a b : Multiplicity) :
@@ -1971,8 +1971,8 @@ theorem verdict_join_realizes_multiplicity_join_off_the_two_tops
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -1980,7 +1980,7 @@ theorem verdict_join_realizes_multiplicity_join_off_the_two_tops
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -1990,27 +1990,27 @@ theorem verdict_join_realizes_multiplicity_join_off_the_two_tops
 
 /-! ### Arrow admission and the cut shape -/
 
-private def clauseSetWitness : Multiplicity → RawProof
+private def equationSetWitness : Multiplicity → RawProof
   | .exactlyOnce =>
-      .node { ruleId := ruleId "clause-set-ok-det", arguments := [] } []
+      .node { ruleId := ruleId "equation-set-ok-det", arguments := [] } []
   | .atMostOnce =>
-      .node { ruleId := ruleId "clause-set-may-fail-semidet"
+      .node { ruleId := ruleId "equation-set-may-fail-semidet"
               arguments := [] } []
   | .unrestricted =>
-      .node { ruleId := ruleId "clause-set-nondet", arguments := [] } []
+      .node { ruleId := ruleId "equation-set-nondet", arguments := [] } []
   | .undeclared =>
-      .node { ruleId := ruleId "clause-set-ok-det", arguments := [] } []
+      .node { ruleId := ruleId "equation-set-ok-det", arguments := [] } []
 
-/-- The canonical `ArrowAdmits` witness: certify the clause set at the
+/-- The canonical `ArrowAdmits` witness: certify the equation set at the
 grade its verdict carries, then weaken to the declaration. -/
 private def arrowAdmitsWitness (d v : Multiplicity) : RawProof :=
   .node
     { ruleId := ruleId "arrow-admits"
       arguments := [modePattern d, verdictPattern v, modePattern v] }
-    [clauseSetWitness v, modeLeWitness v d]
+    [equationSetWitness v, modeLeWitness v d]
 
 /-- Admission, cell by cell: the canonical witness checks exactly when the
-body's verdict is one `ClauseSetMode` certifies at all and its grade sits
+body's verdict is one `EquationSetMode` certifies at all and its grade sits
 at or below the declaration.  `unknown` occupies the `undeclared` row and
 certifies nothing, matching the reference's refusal to assume `det` for
 what it cannot analyze (`det_validate.pl:220-260`,
@@ -2022,7 +2022,7 @@ theorem arrow_admits_witness_table (d v : Multiplicity) :
       (arrowAdmitsWitness d v) = (v.declared && v.le d) := by
   cases d <;> cases v <;>
   simp [Multiplicity.declared, Multiplicity.le, modePattern, verdictPattern,
-    modeLeWitness, clauseSetWitness, arrowAdmitsWitness,
+    modeLeWitness, equationSetWitness, arrowAdmitsWitness,
     checkRaw, checkRawChildren, checked, definition,
     modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet,
     committedDet, committedSemidet, effectJoinUnspecLeft,
@@ -2035,8 +2035,8 @@ theorem arrow_admits_witness_table (d v : Multiplicity) :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -2044,7 +2044,7 @@ theorem arrow_admits_witness_table (d v : Multiplicity) :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -2076,7 +2076,7 @@ theorem arrow_admits_composes_with_verdict_join (d v₁ v₂ : Multiplicity)
   cases d <;> cases v₁ <;> cases v₂ <;> revert h₁ h₂ <;> decide
 
 /-- A measured instance of the cut: a `-[semidet]->` declaration admits an
-`ok` clause set and a `may_fail` clause set, hence the `may_fail` join. -/
+`ok` equation set and a `may_fail` equation set, hence the `may_fail` join. -/
 theorem semidet_arrow_admits_join_of_ok_and_may_fail :
     checkRaw checked (verdictJoin verOk verMayFail verMayFail)
         (verdictJoinWitness .exactlyOnce .atMostOnce) = true ∧
@@ -2156,8 +2156,8 @@ theorem plain_and_effect_var_are_outside_the_join_carrier :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -2165,7 +2165,7 @@ theorem plain_and_effect_var_are_outside_the_join_carrier :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,
@@ -2197,8 +2197,8 @@ theorem order_gaps_at_unspecified_and_at_the_two_tops :
     verdictJoinLeft, verdictJoinRight, modeVerdictDet, modeVerdictSemidet,
     modeVerdictNondet, modeVerdictPlain, bodyCollapse, bodySuperpose,
     bodyEval, bodyOnceOk, bodyOnceMayFail, bodyOnceNondet,
-    bodyOnceUnknown, bodySeq, bodyCall, clauseSetOkDet,
-    clauseSetMayFailSemidet, clauseSetNondet, arrowAdmitsRule,
+    bodyOnceUnknown, bodySeq, bodyCall, equationSetOkDet,
+    equationSetMayFailSemidet, equationSetNondet, arrowAdmitsRule,
     overlapVarLeft, overlapVarRight, overlapEqual, overlapPair,
     coversHereVar, coversHereMatch, coversThere, exhaustiveBoolRule,
     instantiateRule?, CalculusLanguageDef.lookupRule?, argumentsValidAt,
@@ -2206,7 +2206,7 @@ theorem order_gaps_at_unspecified_and_at_the_two_tops :
     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
     lookupArgumentAt?, modeLe, committed, effectJoin, modeInstance,
     overloadAgg, conflictingDecls, verdictLe, verdictJoin, modeVerdict,
-    bodyVerdict, clauseSetMode, arrowAdmits, overlapHeads, covers,
+    bodyVerdict, equationSetMode, arrowAdmits, overlapHeads, covers,
     exhaustiveBool, mPlain, mDet, mSemidet, mNondet, mUnspecified,
     mEffectVar, verOk, verMayFail, verNondet, verUnknown, hVarHead, hTrue,
     hFalse, hPair, bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall,

@@ -4,7 +4,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfWakeSourceExecution
 /-!
 # The authored Wake source family
 
-This ordered composition shares the actual trie clauses once. Readiness and
+This ordered composition shares the actual trie rules once. Readiness and
 scheduling remain recursive source calls. Filtering by disjoint relation heads
 recovers each complete component, with exact bounded answer-list preservation.
 No readiness or scheduling answer is supplied by the primitive environment.
@@ -125,6 +125,9 @@ private theorem premise_mono (small large : List String) (included : small ⊆ l
     premiseClosed large premise = true := by
   cases premise with
   | congruence source target => exact headedBy_mono small large included source closed
+  | scopedStep step =>
+    simp only [premiseClosed, Bool.or_eq_true] at closed ⊢
+    exact closed.imp id (headedBy_mono small large included step.source)
   | _ => rfl
 
 theorem family_closed : language.rewrites.all

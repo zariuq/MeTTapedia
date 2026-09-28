@@ -16,7 +16,7 @@ Nor does it claim that a `metta-equation` Horn fact already realizes the
 downstream evaluator equation emitted by a target compiler; that projection
 requires its own operational correspondence theorem.
 
-In particular, this is clause-only execution: an
+In particular, this is rule-only execution: an
 `oslf-external-relation-decl-v1` fact does not answer queries to the declared
 relation. The authored PeTTa providers require target-equation evaluation,
 which this Horn GSLT does not supply. `HornCertificateBoundary` checks this
@@ -47,7 +47,7 @@ theorem elaborateTheory?_of_program {sources : List Source}
   simp [elaborateTheory?, accepted]
 
 /-- Once a source composition elaborates, its bounded Horn certificate
-successes are exactly the terminal executions of the clause-only GSLT. This
+successes are exactly the terminal executions of the rule-only GSLT. This
 does not assert execution of declared external relations or target equations. -/
 theorem source_program_operational_correspondence {sources : List Source}
     {program : Program}

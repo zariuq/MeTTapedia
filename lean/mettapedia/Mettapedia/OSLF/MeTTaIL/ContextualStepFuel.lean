@@ -25,6 +25,13 @@ theorem premiseStepUsing_mono_reduction
     simp only [premiseStepUsing, List.mem_flatMap, List.mem_filterMap] at member ⊢
     obtain ⟨candidate, step, matched, matchMember, merged⟩ := member
     exact ⟨candidate, inclusion _ step, matched, matchMember, merged⟩
+  | scopedStep premise =>
+    by_cases empty : premise.binders.isEmpty = true
+    · simp only [premiseStepUsing, empty, ↓reduceIte,
+        List.mem_flatMap, List.mem_filterMap] at member ⊢
+      obtain ⟨candidate, step, matched, matchMember, merged⟩ := member
+      exact ⟨candidate, inclusion _ step, matched, matchMember, merged⟩
+    · simp [premiseStepUsing, empty] at member
   | freshness _ => exact member
   | relationQuery _ _ => exact member
   | forAll _ _ _ => exact member

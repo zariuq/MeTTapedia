@@ -1957,8 +1957,8 @@ def chainApp_constantOccurrence
             (.appFunction
               (.appFunction .here))))))
 
-noncomputable def primitiveIotaClause :
-    IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+noncomputable def primitiveIotaRule :
+    IotaRule Tower.rules rawSignature proofRelevantIotaComputation
       (hypothesisConstructors.map ConstructorSpec.name)
       hypothesisEliminatorSpec.name where
   constructorName := primitiveName
@@ -1973,8 +1973,8 @@ noncomputable def primitiveIotaClause :
       (primitiveApp_constantOccurrence (.var 7) (.var 6) (.var 2)
         (.var 1) (.var 0))
 
-noncomputable def chainIotaClause :
-    IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+noncomputable def chainIotaRule :
+    IotaRule Tower.rules rawSignature proofRelevantIotaComputation
       (hypothesisConstructors.map ConstructorSpec.name)
       hypothesisEliminatorSpec.name where
   constructorName := chainName
@@ -1989,12 +1989,12 @@ noncomputable def chainIotaClause :
       (chainApp_constantOccurrence (.var 9) (.var 8) (.var 4) (.var 3)
         (.var 2) (.var 1) (.var 0))
 
-noncomputable def hypothesisIotaClauses :
+noncomputable def hypothesisIotaRules :
     List
-      (IotaClause Tower.rules rawSignature proofRelevantIotaComputation
+      (IotaRule Tower.rules rawSignature proofRelevantIotaComputation
         (hypothesisConstructors.map ConstructorSpec.name)
         hypothesisEliminatorSpec.name) :=
-  [primitiveIotaClause, chainIotaClause]
+  [primitiveIotaRule, chainIotaRule]
 
 noncomputable def hypothesisCandidate : Candidate Tower.rules where
   signature := rawSignature
@@ -2022,13 +2022,13 @@ noncomputable def hypothesisCandidate : Candidate Tower.rules where
     simp only [hypothesisConstructors, List.mem_cons, List.not_mem_nil,
       or_false] at membership
     rcases membership with rfl | rfl <;> decide
-  iotaClauses := hypothesisIotaClauses
+  iotaRules := hypothesisIotaRules
   constructorsComputed := by
     intro constructorName membership
     simp [hypothesisConstructors, primitiveConstructorSpec,
       chainConstructorSpec] at membership
     rcases membership with rfl | rfl <;>
-      simp [hypothesisIotaClauses, primitiveIotaClause, chainIotaClause]
+      simp [hypothesisIotaRules, primitiveIotaRule, chainIotaRule]
 
 theorem hypothesisCandidate_has_exact_shape :
     hypothesisCandidate.familyParameterCount = 2 ∧

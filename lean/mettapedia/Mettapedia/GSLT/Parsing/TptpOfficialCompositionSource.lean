@@ -14,7 +14,7 @@ syntax rules before token wrappers, lexical rules, and fixed support rules.
 This module gives that boundary a direct typed semantics.  It proves exact
 selection and reflection, order preservation across concatenated source
 segments, duplicate preservation, and recovery of the retained source.  The
-last section quotes the live authored presentations and checks the clauses
+last section quotes the live authored presentations and checks the rules
 which perform the row partition and preserve the original document.  Regex
 and grammar-expression lowering remain payload transformations here; their
 individual constructors are not reimplemented as a second parser.

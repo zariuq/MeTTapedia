@@ -132,6 +132,7 @@ scoped syntax ident "#" "..." ident : langDefPremise
 scoped syntax ident "#" langDefRestVar : langDefPremise
 scoped syntax ident "#" langDefPattern : langDefPremise
 scoped syntax langDefPattern "~>" langDefPattern : langDefPremise
+scoped syntax "scopedStep(" "[" langDefTypeExpr,* "]" "," langDefTypeExpr "," langDefPattern "," langDefPattern ")" : langDefPremise
 scoped syntax ident "(" langDefPattern,* ")" : langDefPremise
 scoped syntax ident ".*map(" "|" ident "|" langDefPremise ")" : langDefPremise
 scoped syntax "forAll(" ident "," ident "," langDefPremise ")" : langDefPremise
@@ -699,6 +700,18 @@ private partial def expandPremiseInfo (stx0 : TSyntax `langDefPremise) : MacroM 
       let rhsTerm := rhs'.term
       let term ← `(Premise.congruence $lhsTerm $rhsTerm)
       pure ⟨term, s!"{lhs'.sourceText} ~> {rhs'.sourceText}"⟩
+  | `(langDefPremise| scopedStep([$binders:langDefTypeExpr,*], $resultType:langDefTypeExpr, $lhs:langDefPattern, $rhs:langDefPattern)) => do
+      let binders' ← binders.getElems.toList.mapM fun binder => expandTypeExpr ⟨binder⟩
+      let binderTerms ← mkTermList binders'
+      let resultType' ← expandTypeExpr resultType
+      let lhs' ← expandPatternInfo lhs
+      let rhs' ← expandPatternInfo rhs
+      let term ← `(Premise.scopedStep {
+        binders := $binderTerms
+        resultType := $resultType'
+        source := Pattern.eraseBinderMetadata $(lhs'.term)
+        target := Pattern.eraseBinderMetadata $(rhs'.term) })
+      pure ⟨term, s!"scopedStep([{String.intercalate ", " (binders.getElems.toList.map (·.raw.reprint.getD ""))}], {resultType.raw.reprint.getD ""}, {lhs'.sourceText}, {rhs'.sourceText})"⟩
   | `(langDefPremise| $rel:ident($args:langDefPattern,*)) => do
       let args' ← args.getElems.toList.mapM expandPatternInfo
       let argsTerm ← mkTermList (args'.map (·.term))
@@ -783,7 +796,7 @@ private def mkEquationTerm
     (nm : Syntax)
     (ctxTerm premisesTerm lhsTerm rhsTerm : TSyntax `term) :
     MacroM (TSyntax `term) :=
-  `(Equation.mk $(mkStrTerm nm.getId.toString)
+  `(Equation.mk (bindings := none) $(mkStrTerm nm.getId.toString)
       $ctxTerm
       $premisesTerm
       $lhsTerm
@@ -793,7 +806,7 @@ private def mkRewriteTerm
     (nm : Syntax)
     (ctxTerm premisesTerm lhsTerm rhsTerm : TSyntax `term) :
     MacroM (TSyntax `term) :=
-  `(RewriteRule.mk $(mkStrTerm nm.getId.toString)
+  `(RewriteRule.mk (bindings := none) $(mkStrTerm nm.getId.toString)
       $ctxTerm
       $premisesTerm
       $lhsTerm
@@ -918,7 +931,7 @@ def rwRule
     (typeContext : List (String × TypeExpr))
     (premises : List Premise)
     (left right : Pattern) : RewriteRule :=
-  RewriteRule.mk ruleName typeContext premises left right
+  RewriteRule.mk (bindings := none) ruleName typeContext premises left right
 
 def mkLang
     (langName : String)

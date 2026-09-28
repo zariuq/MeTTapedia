@@ -76,7 +76,11 @@
 (= (nf $sig (Pi  $A $B)) (Pi  (nf $sig $A) (nf $sig $B)))
 (= (nf $sig (Lam $A $b)) (Lam (nf $sig $A) (nf $sig $b)))
 (= (nf $sig (Bad $e)) (Bad $e))
-(= (nf $sig (App $f $a)) (nf-app $sig (nf $sig $f) (nf $sig $a)))
+(= (nf $sig (App $f $a))
+   (case (nf $sig $f)
+     (($normal-f
+       (case (nf $sig $a)
+         (($normal-a (nf-app $sig $normal-f $normal-a))))))))
 (= (nf-app $sig $f $a) (unify $f (Lam $A $b) (nf $sig (subst 0 $a $b)) (App $f $a)))
 
 (= (conv $sig $x $y)

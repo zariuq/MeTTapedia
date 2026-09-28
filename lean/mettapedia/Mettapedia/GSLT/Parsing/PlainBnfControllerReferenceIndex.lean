@@ -118,7 +118,7 @@ theorem existing_payload_survives (definitions : Definitions)
   rfl
 
 /-- Terminal source execution returns both folds verbatim. This only states
-the terminal clause, not that an arbitrary event list is a valid source run. -/
+the terminal rule, not that an arbitrary event list is a valid source run. -/
 theorem terminal_replay_packet_iff (productive : Bool) (definitions : Definitions)
     (events : List (Event definitions.length)) (index : NameIndex) (history : List SExpr)
     (reverse : NameIndex) (lexicals : List PlainBnfStructuredDenotation.LexicalDeclaration)

@@ -1,10 +1,10 @@
 import Mettapedia.GSLT.Parsing.PlainBnfDeclarationRealization
 
 /-!
-# Reverse meaning of authored declaration clauses
+# Reverse meaning of authored declaration rules
 
 The meaning below is an independent, typed-input specification over arbitrary
-ground output packets. Clause and provider soundness use the existing Horn
+ground output packets. Rule and provider soundness use the existing Horn
 operational semantics; they are not defined by replay acceptance.
 -/
 
@@ -137,13 +137,13 @@ def DeclarationMeaning (goal : GroundAtom) : Prop :=
   | "different" => DifferentMeaning goal.arguments
   | _ => True
 
-def InstantiatedClauseSound (index : Fin 13) : Prop :=
+def InstantiatedRuleSound (index : Fin 13) : Prop :=
   ∀ assignment : Nat → GroundTerm,
     (∀ premise ∈ (declarationRules[index.val]).body.map (totalAtom assignment),
       DeclarationMeaning premise) →
     DeclarationMeaning (totalAtom assignment (declarationRules[index.val]).head)
 
-theorem lookup_missing_clause_sound : InstantiatedClauseSound 0 := by
+theorem lookup_missing_rule_sound : InstantiatedRuleSound 0 := by
   intro assignment _
   change LookupMeaning (.cons (assignment 0) (.cons (.atom "BNFDefinitionsNilV1")
     (.cons (.atom "BNFDefinitionMissingV1") .nil)))
@@ -155,7 +155,7 @@ theorem lookup_missing_clause_sound : InstantiatedClauseSound 0 := by
       simp_all [lookup, encodeLookupResult]
   | cons head tail => simp [GroundTerms.ofList, encodeDefinitions] at equal
 
-theorem lookup_found_clause_sound : InstantiatedClauseSound 1 := by
+theorem lookup_found_rule_sound : InstantiatedRuleSound 1 := by
   intro assignment _
   change LookupMeaning (.cons (assignment 0)
     (.cons (.app "BNFDefinitionsConsV1" (.cons (.app "BNFDefinitionV1"
@@ -174,7 +174,7 @@ theorem lookup_found_clause_sound : InstantiatedClauseSound 1 := by
           rcases equal with ⟨rfl, ⟨⟨headEqual, rfl, rfl⟩, tailEqual⟩, rfl⟩
           simp [encodeLookupResult, lookup, headEqual, GroundTerms.ofList]
 
-theorem lookup_tail_clause_sound : InstantiatedClauseSound 2 := by
+theorem lookup_tail_rule_sound : InstantiatedRuleSound 2 := by
   intro a premises
   have difference : DifferentMeaning (GroundTerms.ofList [a 0, a 1]) :=
     premises ⟨"different", GroundTerms.ofList [a 0, a 1]⟩ (by
@@ -201,7 +201,7 @@ theorem lookup_tail_clause_sound : InstantiatedClauseSound 2 := by
           have result := recurse (a 0) tail (a 5) (by rw [tailEqual]) nameCanonical tailCanonical
           simpa [lookup, unequal] using result
 
-theorem append_definition_nil_clause_sound : InstantiatedClauseSound 3 := by
+theorem append_definition_nil_rule_sound : InstantiatedRuleSound 3 := by
   intro a _
   change AppendDefinitionMeaning (GroundTerms.ofList [.atom "BNFDefinitionsNilV1", a 0,
     .app "BNFDefinitionsConsV1" (GroundTerms.ofList [a 0, .atom "BNFDefinitionsNilV1"])])
@@ -214,7 +214,7 @@ theorem append_definition_nil_clause_sound : InstantiatedClauseSound 3 := by
       simp [encodeDefinitions, encoded, GroundTerms.ofList]
   | cons => simp [GroundTerms.ofList, encodeDefinitions] at equal
 
-theorem append_definition_cons_clause_sound : InstantiatedClauseSound 4 := by
+theorem append_definition_cons_rule_sound : InstantiatedRuleSound 4 := by
   intro a premises
   have recurse : AppendDefinitionMeaning (GroundTerms.ofList [a 1, a 2, a 3]) :=
     premises ⟨"BNFAppendDefinitionV1", GroundTerms.ofList [a 1, a 2, a 3]⟩ (by
@@ -232,7 +232,7 @@ theorem append_definition_cons_clause_sound : InstantiatedClauseSound 4 := by
       have result := recurse tail definition (a 3) (by rw [tailEqual, definitionEqual])
       simp [encodeDefinitions, headEqual, result, GroundTerms.ofList]
 
-theorem append_diagnostics_nil_clause_sound : InstantiatedClauseSound 5 := by
+theorem append_diagnostics_nil_rule_sound : InstantiatedRuleSound 5 := by
   intro a _
   change AppendDiagnosticsMeaning (GroundTerms.ofList [.atom "BNFDiagnosticsNilV1", a 0, a 0])
   intro left right output equal
@@ -244,7 +244,7 @@ theorem append_diagnostics_nil_clause_sound : InstantiatedClauseSound 5 := by
       simpa using encoded
   | cons => simp [GroundTerms.ofList, encodeDiagnostics] at equal
 
-theorem append_diagnostics_cons_clause_sound : InstantiatedClauseSound 6 := by
+theorem append_diagnostics_cons_rule_sound : InstantiatedRuleSound 6 := by
   intro a premises
   have recurse : AppendDiagnosticsMeaning (GroundTerms.ofList [a 1, a 2, a 3]) :=
     premises ⟨"BNFAppendDiagnosticsV1", GroundTerms.ofList [a 1, a 2, a 3]⟩ (by
@@ -262,7 +262,7 @@ theorem append_diagnostics_cons_clause_sound : InstantiatedClauseSound 6 := by
       have result := recurse tail right (a 3) (by rw [tailEqual, rightEqual])
       simp [encodeDiagnostics, headEqual, result, GroundTerms.ofList]
 
-theorem definition_step_fresh_clause_sound : InstantiatedClauseSound 7 := by
+theorem definition_step_fresh_rule_sound : InstantiatedRuleSound 7 := by
   intro a premises
   have append : AppendDefinitionMeaning (GroundTerms.ofList [a 3,
     .app "BNFDefinitionV1" (GroundTerms.ofList [a 0, a 2, a 1]), a 4]) :=
@@ -281,7 +281,7 @@ theorem definition_step_fresh_clause_sound : InstantiatedClauseSound 7 := by
       have result := append before ⟨a 0, a 2, a 1⟩ (a 4) (by rw [beforeEqual]; rfl)
       exact ⟨result, rfl⟩
 
-theorem definition_step_duplicate_clause_sound : InstantiatedClauseSound 8 := by
+theorem definition_step_duplicate_rule_sound : InstantiatedRuleSound 8 := by
   intro a _
   change DefinitionStepMeaning (GroundTerms.ofList
     [a 0, a 1, a 2, .app "BNFDefinitionFoundV1" (GroundTerms.ofList [a 3, a 4]),
@@ -297,7 +297,7 @@ theorem definition_step_duplicate_clause_sound : InstantiatedClauseSound 8 := by
       rcases equal with ⟨rfl, rfl, rfl, ⟨rfl, rfl⟩, beforeEqual, rfl, rfl⟩
       exact ⟨beforeEqual, rfl⟩
 
-theorem collect_nil_clause_sound : InstantiatedClauseSound 9 := by
+theorem collect_nil_rule_sound : InstantiatedRuleSound 9 := by
   intro a _
   change CollectMeaning (GroundTerms.ofList
     [.app "metta-nullary" (.cons (.atom "bnf-v1:entries-nil") .nil),
@@ -311,7 +311,7 @@ theorem collect_nil_clause_sound : InstantiatedClauseSound 9 := by
       exact ⟨beforeEqual, rfl⟩
   | cons => simp [GroundTerms.ofList, encodeEntries] at equal
 
-theorem collect_comment_clause_sound : InstantiatedClauseSound 10 := by
+theorem collect_comment_rule_sound : InstantiatedRuleSound 10 := by
   intro a premises
   have recurse : CollectMeaning (GroundTerms.ofList [a 2, a 3, a 4, a 5]) :=
     premises ⟨"BNFCollectDefinitionsV1", GroundTerms.ofList [a 2, a 3, a 4, a 5]⟩
@@ -333,7 +333,7 @@ theorem collect_comment_clause_sound : InstantiatedClauseSound 10 := by
           exact recurse tail before (a 4) (a 5) (by rw [tailEqual, beforeEqual])
             (fun entry member => canonical entry (by simp [member])) canonicalBefore
 
-theorem collect_blank_clause_sound : InstantiatedClauseSound 11 := by
+theorem collect_blank_rule_sound : InstantiatedRuleSound 11 := by
   intro a premises
   have recurse : CollectMeaning (GroundTerms.ofList [a 1, a 2, a 3, a 4]) :=
     premises ⟨"BNFCollectDefinitionsV1", GroundTerms.ofList [a 1, a 2, a 3, a 4]⟩
@@ -355,7 +355,7 @@ theorem collect_blank_clause_sound : InstantiatedClauseSound 11 := by
           exact recurse tail before (a 3) (a 4) (by rw [tailEqual, beforeEqual])
             (fun entry member => canonical entry (by simp [member])) canonicalBefore
 
-theorem collect_rule_clause_sound : InstantiatedClauseSound 12 := by
+theorem collect_rule_rule_sound : InstantiatedRuleSound 12 := by
   intro a premises
   have find : LookupMeaning (GroundTerms.ofList [a 0, a 4, a 7]) :=
     premises ⟨"BNFDefinitionLookupV1", GroundTerms.ofList [a 0, a 4, a 7]⟩
@@ -403,25 +403,25 @@ theorem collect_rule_clause_sound : InstantiatedClauseSound 12 := by
             (by rw [stepped.2, recursed.2])
           exact ⟨recursed.1, appended⟩
 
-theorem all_declaration_clauses_sound (index : Fin 13) : InstantiatedClauseSound index := by
+theorem all_declaration_rules_sound (index : Fin 13) : InstantiatedRuleSound index := by
   rcases index with ⟨index, bound⟩
   have cases : index = 0 ∨ index = 1 ∨ index = 2 ∨ index = 3 ∨ index = 4 ∨ index = 5 ∨
       index = 6 ∨ index = 7 ∨ index = 8 ∨ index = 9 ∨ index = 10 ∨ index = 11 ∨ index = 12 := by
     omega
   rcases cases with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  · exact lookup_missing_clause_sound
-  · exact lookup_found_clause_sound
-  · exact lookup_tail_clause_sound
-  · exact append_definition_nil_clause_sound
-  · exact append_definition_cons_clause_sound
-  · exact append_diagnostics_nil_clause_sound
-  · exact append_diagnostics_cons_clause_sound
-  · exact definition_step_fresh_clause_sound
-  · exact definition_step_duplicate_clause_sound
-  · exact collect_nil_clause_sound
-  · exact collect_comment_clause_sound
-  · exact collect_blank_clause_sound
-  · exact collect_rule_clause_sound
+  · exact lookup_missing_rule_sound
+  · exact lookup_found_rule_sound
+  · exact lookup_tail_rule_sound
+  · exact append_definition_nil_rule_sound
+  · exact append_definition_cons_rule_sound
+  · exact append_diagnostics_nil_rule_sound
+  · exact append_diagnostics_cons_rule_sound
+  · exact definition_step_fresh_rule_sound
+  · exact definition_step_duplicate_rule_sound
+  · exact collect_nil_rule_sound
+  · exact collect_comment_rule_sound
+  · exact collect_blank_rule_sound
+  · exact collect_rule_rule_sound
 
 def NoDifferentRules (program : Program) : Prop :=
   ∀ (occurrence : Nat) (rule : Rule), program[occurrence]? = some rule → rule.head.relation ≠ "different"
@@ -439,9 +439,9 @@ def DifferentProviderSound (program : Program) : Prop :=
     AnswersEval residual [queryTerm goal] → goal.relation = "different" →
     DifferentMeaning goal.arguments
 
-theorem declaration_clauses_sound {program : Program} {offset : Nat}
+theorem declaration_rules_sound {program : Program} {offset : Nat}
     (source : HasDeclarationRules program offset) (only : OnlyDeclarationRules program offset)
-    (noDifferent : NoDifferentRules program) : ClauseSound program DeclarationMeaning := by
+    (noDifferent : NoDifferentRules program) : RuleSound program DeclarationMeaning := by
   intro occurrence rule substitution goal premises selected _ head body children
   have totalHead := instantiateAtom_total head
   have totalBody := instantiateAtoms_total body
@@ -458,7 +458,7 @@ theorem declaration_clauses_sound {program : Program} {offset : Nat}
         simp [declarationRules, index.isLt])))
     rw [ruleEq] at totalHead totalBody
     rw [← totalHead]
-    apply all_declaration_clauses_sound index (assignmentOf substitution)
+    apply all_declaration_rules_sound index (assignmentOf substitution)
     intro premise member
     exact children premise (by simpa [totalBody] using member)
   · have notDifferent : goal.relation ≠ "different" := by
@@ -500,7 +500,7 @@ theorem collect_path_reflects_outputs {program : Program} {offset fuel : Nat}
       [encodeEntries entries, encodeDefinitions before, after, diagnostics]⟩)] []) :
     after = encodeDefinitions (collect entries before).1 ∧
     diagnostics = encodeDiagnostics (collect entries before).2 := by
-  have meaning := path.terminal_soundness (declaration_clauses_sound source only noDifferent)
+  have meaning := path.terminal_soundness (declaration_rules_sound source only noDifferent)
     (declaration_providers_sound noDeclarations different)
   have result : CollectMeaning (GroundTerms.ofList
       [encodeEntries entries, encodeDefinitions before, after, diagnostics]) :=
@@ -519,7 +519,7 @@ theorem lookup_path_reflects_output {program : Program} {offset fuel : Nat}
     (path : Path program actions [(fuel, ⟨"BNFDefinitionLookupV1", GroundTerms.ofList
       [name, encodeDefinitions definitions, output]⟩)] []) :
     output = encodeLookupResult (lookup name definitions) := by
-  have meaning := path.goal_soundness (declaration_clauses_sound source only noDifferent)
+  have meaning := path.goal_soundness (declaration_rules_sound source only noDifferent)
     (declaration_providers_sound noDeclarations different)
   exact meaning name definitions output rfl canonicalName canonicalDefinitions
 
@@ -533,7 +533,7 @@ theorem append_definition_path_reflects_output {program : Program} {offset fuel 
     (path : Path program actions [(fuel, ⟨"BNFAppendDefinitionV1", GroundTerms.ofList
       [encodeDefinitions before, encodeDefinition definition, output]⟩)] []) :
     output = encodeDefinitions (before ++ [definition]) := by
-  have meaning := path.goal_soundness (declaration_clauses_sound source only noDifferent)
+  have meaning := path.goal_soundness (declaration_rules_sound source only noDifferent)
     (declaration_providers_sound noDeclarations different)
   exact meaning before definition output rfl
 
@@ -546,7 +546,7 @@ theorem append_diagnostics_path_reflects_output {program : Program} {offset fuel
     (path : Path program actions [(fuel, ⟨"BNFAppendDiagnosticsV1", GroundTerms.ofList
       [encodeDiagnostics left, encodeDiagnostics right, output]⟩)] []) :
     output = encodeDiagnostics (left ++ right) := by
-  have meaning := path.goal_soundness (declaration_clauses_sound source only noDifferent)
+  have meaning := path.goal_soundness (declaration_rules_sound source only noDifferent)
     (declaration_providers_sound noDeclarations different)
   exact meaning left right output rfl
 

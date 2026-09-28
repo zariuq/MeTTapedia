@@ -23,7 +23,8 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfGraphNameTrie (Trie)
 open PlainBnfCollectorSourceExecution (NameScalarCodec name)
 open PlainBnfTrieSourceExecution
@@ -139,6 +140,7 @@ private theorem put_empty_rewriteAt (fuel : Nat) (key : List Scalar) (payload : 
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, putCall, call, trie,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings, emptyMap]
@@ -156,6 +158,7 @@ private theorem put_value_rewriteAt (fuel : Nat) (old : Option SExpr) (payload :
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, putCall, call, trie, name, value, result,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -171,6 +174,7 @@ private theorem put_cons_rewriteAt (fuel : Nat) (head : Scalar) (tail : List Sca
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, putCall, call, trie, name,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -191,6 +195,7 @@ private theorem edge_put_nil_rewriteAt (fuel : Nat) (head : Scalar) (tail : List
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, edgePutCall, call, edges, scalar,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -212,6 +217,7 @@ private theorem edge_put_same_rewriteAt (fuel : Nat) (head : Scalar) (tail : Lis
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, edgePutCall, call, edges, scalar,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings, engineBasePremises,
@@ -235,6 +241,7 @@ private theorem edge_put_other_rewriteAt (fuel : Nat) (head stored : Scalar)
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, edgePutCall, call, edges, scalar,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings, engineBasePremises,
@@ -538,6 +545,7 @@ theorem duplicate_matching_occurrence_is_observable (payload : SExpr) :
   rw [rewriteAt]
   simp [duplicateValueLanguage, source_rules_exact, observedRules, observedRule,
     applyRuleUsing, putCall, call, trie, name, value, result,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]

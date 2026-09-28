@@ -591,8 +591,7 @@ private theorem rewrites_validate :
   all_goals
     dsimp only [LanguageDef.validateRewrite, language, definition,
       ExtendedLanguageDef.toLanguageDef, ExtendedLanguageDef.addLayer, queryRewrite, evaluationRewrite]
-    simp [queryRewrite,
-      evaluationRewrite, queryRequestPattern, queryAnswerPattern,
+    simp [queryRequestPattern, queryAnswerPattern,
       evaluationRequestPattern, evaluationAnswerPattern, metavariable,
       atomType, spaceType, processType, alternativesType,
       equationConstructor, queryRequestConstructor, queryAnswerConstructor,
@@ -601,7 +600,8 @@ private theorem rewrites_validate :
       LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
       LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
       LanguageDef.premiseFvarNames,
-      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseProducedFvarNames, LanguageDef.premiseStepTypeExprs,
+      LanguageDef.premiseLocallyScoped,
       LanguageDef.premiseForAllParams, Pattern.constructorRefs,
       Pattern.constructorRefsList, Pattern.freeFvarNames,
       Pattern.isWellScoped, Pattern.isWellScopedAt,

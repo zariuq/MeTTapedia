@@ -545,443 +545,443 @@ Extracted verbatim from `metamathCore.rewrites` (post-`resolveNullaryPatterns`);
 /-- Rewrite 0: `BeginLower`. -/
 private def r0 : RewriteRule :=
   ⟨"BeginLower", [], [], (.apply "Lower" [(.fvar "db")]),
-   (.apply "LowerDb" [(.fvar "db"), (.apply "KDone" [])])⟩
+   (.apply "LowerDb" [(.fvar "db"), (.apply "KDone" [])]), none⟩
 /-- Rewrite 1: `LowerDbOne`. -/
 private def r1 : RewriteRule :=
   ⟨"LowerDbOne", [], [], (.apply "LowerDb" [(.apply "DbOne" [(.fvar "stmt")]), (.fvar "kont")]),
-   (.apply "LowerStmt" [(.fvar "stmt"), (.apply "KDbLast" [(.fvar "kont")])])⟩
+   (.apply "LowerStmt" [(.fvar "stmt"), (.apply "KDbLast" [(.fvar "kont")])]), none⟩
 /-- Rewrite 2: `LowerDbMore`. -/
 private def r2 : RewriteRule :=
   ⟨"LowerDbMore", [], [], (.apply "LowerDb" [(.apply "DbMore" [(.fvar "stmt"), (.fvar "rest")]), (.fvar "kont")]),
-   (.apply "LowerStmt" [(.fvar "stmt"), (.apply "KDbMore" [(.fvar "rest"), (.fvar "kont")])])⟩
+   (.apply "LowerStmt" [(.fvar "stmt"), (.apply "KDbMore" [(.fvar "rest"), (.fvar "kont")])]), none⟩
 /-- Rewrite 3: `LowerBlock`. -/
 private def r3 : RewriteRule :=
   ⟨"LowerBlock", [], [], (.apply "LowerStmt" [(.apply "Block" [(.fvar "body")]), (.fvar "kont")]),
-   (.apply "LowerDb" [(.fvar "body"), (.apply "KWrapBlock" [(.fvar "kont")])])⟩
+   (.apply "LowerDb" [(.fvar "body"), (.apply "KWrapBlock" [(.fvar "kont")])]), none⟩
 /-- Rewrite 4: `LowerBlockEmpty`. -/
 private def r4 : RewriteRule :=
   ⟨"LowerBlockEmpty", [], [], (.apply "LowerStmt" [(.apply "BlockEmpty" []), (.fvar "kont")]),
-   (.apply "ReturnStmt" [(.apply "FrontBlockEmpty" []), (.fvar "kont")])⟩
+   (.apply "ReturnStmt" [(.apply "FrontBlockEmpty" []), (.fvar "kont")]), none⟩
 /-- Rewrite 5: `LowerConstDecl`. -/
 private def r5 : RewriteRule :=
   ⟨"LowerConstDecl", [], [], (.apply "LowerStmt" [(.apply "ConstDecl" [(.fvar "syms")]), (.fvar "kont")]),
-   (.apply "ReturnStmt" [(.apply "FrontConstDecl" [(.fvar "syms")]), (.fvar "kont")])⟩
+   (.apply "ReturnStmt" [(.apply "FrontConstDecl" [(.fvar "syms")]), (.fvar "kont")]), none⟩
 /-- Rewrite 6: `LowerVarDecl`. -/
 private def r6 : RewriteRule :=
   ⟨"LowerVarDecl", [], [], (.apply "LowerStmt" [(.apply "VarDecl" [(.fvar "syms")]), (.fvar "kont")]),
-   (.apply "ReturnStmt" [(.apply "FrontVarDecl" [(.fvar "syms")]), (.fvar "kont")])⟩
+   (.apply "ReturnStmt" [(.apply "FrontVarDecl" [(.fvar "syms")]), (.fvar "kont")]), none⟩
 /-- Rewrite 7: `LowerDjDecl`. -/
 private def r7 : RewriteRule :=
   ⟨"LowerDjDecl", [], [], (.apply "LowerStmt" [(.apply "DjDecl" [(.fvar "syms")]), (.fvar "kont")]),
-   (.apply "ReturnStmt" [(.apply "FrontDjDecl" [(.fvar "syms")]), (.fvar "kont")])⟩
+   (.apply "ReturnStmt" [(.apply "FrontDjDecl" [(.fvar "syms")]), (.fvar "kont")]), none⟩
 /-- Rewrite 8: `LowerIncludeDecl`. -/
 private def r8 : RewriteRule :=
   ⟨"LowerIncludeDecl", [], [], (.apply "LowerStmt" [(.apply "IncludeDecl" [(.fvar "path")]), (.fvar "kont")]),
-   (.apply "ReturnStmt" [(.apply "FrontIncludeDecl" [(.fvar "path")]), (.fvar "kont")])⟩
+   (.apply "ReturnStmt" [(.apply "FrontIncludeDecl" [(.fvar "path")]), (.fvar "kont")]), none⟩
 /-- Rewrite 9: `LowerFloatDecl`. -/
 private def r9 : RewriteRule :=
   ⟨"LowerFloatDecl", [], [], (.apply "LowerStmt" [(.apply "FloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")]),
-   (.apply "ReturnStmt" [(.apply "FrontFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")])⟩
+   (.apply "ReturnStmt" [(.apply "FrontFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")]), none⟩
 /-- Rewrite 10: `LowerEssHyp`. -/
 private def r10 : RewriteRule :=
   ⟨"LowerEssHyp", [], [], (.apply "LowerStmt" [(.apply "EssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")]),
-   (.apply "ReturnStmt" [(.apply "FrontEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])⟩
+   (.apply "ReturnStmt" [(.apply "FrontEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")]), none⟩
 /-- Rewrite 11: `LowerAxiom`. -/
 private def r11 : RewriteRule :=
   ⟨"LowerAxiom", [], [], (.apply "LowerStmt" [(.apply "Axiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")]),
-   (.apply "ReturnStmt" [(.apply "FrontAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])⟩
+   (.apply "ReturnStmt" [(.apply "FrontAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")]), none⟩
 /-- Rewrite 12: `LowerProvable`. -/
 private def r12 : RewriteRule :=
   ⟨"LowerProvable", [], [], (.apply "LowerStmt" [(.apply "Provable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")]),
-   (.apply "ReturnStmt" [(.apply "FrontProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")])⟩
+   (.apply "ReturnStmt" [(.apply "FrontProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")]), none⟩
 /-- Rewrite 13: `ReturnDbDone`. -/
 private def r13 : RewriteRule :=
   ⟨"ReturnDbDone", [], [], (.apply "ReturnDb" [(.fvar "db"), (.apply "KDone" [])]),
-   (.apply "LowerDone" [(.fvar "db")])⟩
+   (.apply "LowerDone" [(.fvar "db")]), none⟩
 /-- Rewrite 14: `ReturnStmtDbLast`. -/
 private def r14 : RewriteRule :=
   ⟨"ReturnStmtDbLast", [], [], (.apply "ReturnStmt" [(.fvar "stmt"), (.apply "KDbLast" [(.fvar "kont")])]),
-   (.apply "ReturnDb" [(.apply "FrontDbOne" [(.fvar "stmt")]), (.fvar "kont")])⟩
+   (.apply "ReturnDb" [(.apply "FrontDbOne" [(.fvar "stmt")]), (.fvar "kont")]), none⟩
 /-- Rewrite 15: `ReturnStmtDbMore`. -/
 private def r15 : RewriteRule :=
   ⟨"ReturnStmtDbMore", [], [], (.apply "ReturnStmt" [(.fvar "stmt"), (.apply "KDbMore" [(.fvar "rest"), (.fvar "kont")])]),
-   (.apply "LowerDb" [(.fvar "rest"), (.apply "KDbCons" [(.fvar "stmt"), (.fvar "kont")])])⟩
+   (.apply "LowerDb" [(.fvar "rest"), (.apply "KDbCons" [(.fvar "stmt"), (.fvar "kont")])]), none⟩
 /-- Rewrite 16: `ReturnDbCons`. -/
 private def r16 : RewriteRule :=
   ⟨"ReturnDbCons", [], [], (.apply "ReturnDb" [(.fvar "db"), (.apply "KDbCons" [(.fvar "stmt"), (.fvar "kont")])]),
-   (.apply "ReturnDb" [(.apply "FrontDbMore" [(.fvar "stmt"), (.fvar "db")]), (.fvar "kont")])⟩
+   (.apply "ReturnDb" [(.apply "FrontDbMore" [(.fvar "stmt"), (.fvar "db")]), (.fvar "kont")]), none⟩
 /-- Rewrite 17: `ReturnDbWrapBlock`. -/
 private def r17 : RewriteRule :=
   ⟨"ReturnDbWrapBlock", [], [], (.apply "ReturnDb" [(.fvar "body"), (.apply "KWrapBlock" [(.fvar "kont")])]),
-   (.apply "ReturnStmt" [(.apply "FrontBlock" [(.fvar "body")]), (.fvar "kont")])⟩
+   (.apply "ReturnStmt" [(.apply "FrontBlock" [(.fvar "body")]), (.fvar "kont")]), none⟩
 /-- Rewrite 18: `BeginLoadEnv`. -/
 private def r18 : RewriteRule :=
   ⟨"BeginLoadEnv", [], [], (.apply "LoadEnv" [(.fvar "db")]),
-   (.apply "LoadEnvDb" [(.fvar "db"), (.apply "EnvKDone" [])])⟩
+   (.apply "LoadEnvDb" [(.fvar "db"), (.apply "EnvKDone" [])]), none⟩
 /-- Rewrite 19: `LoadEnvDbOne`. -/
 private def r19 : RewriteRule :=
   ⟨"LoadEnvDbOne", [], [], (.apply "LoadEnvDb" [(.apply "FrontDbOne" [(.fvar "stmt")]), (.fvar "kont")]),
-   (.apply "LoadEnvStmt" [(.fvar "stmt"), (.apply "EnvKDbLast" [(.fvar "kont")])])⟩
+   (.apply "LoadEnvStmt" [(.fvar "stmt"), (.apply "EnvKDbLast" [(.fvar "kont")])]), none⟩
 /-- Rewrite 20: `LoadEnvDbMore`. -/
 private def r20 : RewriteRule :=
   ⟨"LoadEnvDbMore", [], [], (.apply "LoadEnvDb" [(.apply "FrontDbMore" [(.fvar "stmt"), (.fvar "rest")]), (.fvar "kont")]),
-   (.apply "LoadEnvStmt" [(.fvar "stmt"), (.apply "EnvKDbMore" [(.fvar "rest"), (.fvar "kont")])])⟩
+   (.apply "LoadEnvStmt" [(.fvar "stmt"), (.apply "EnvKDbMore" [(.fvar "rest"), (.fvar "kont")])]), none⟩
 /-- Rewrite 21: `LoadEnvFrontBlock`. -/
 private def r21 : RewriteRule :=
   ⟨"LoadEnvFrontBlock", [], [], (.apply "LoadEnvStmt" [(.apply "FrontBlock" [(.fvar "body")]), (.fvar "kont")]),
-   (.apply "LoadEnvDb" [(.fvar "body"), (.apply "EnvKWrapBlock" [(.fvar "kont")])])⟩
+   (.apply "LoadEnvDb" [(.fvar "body"), (.apply "EnvKWrapBlock" [(.fvar "kont")])]), none⟩
 /-- Rewrite 22: `LoadEnvFrontBlockEmpty`. -/
 private def r22 : RewriteRule :=
   ⟨"LoadEnvFrontBlockEmpty", [], [], (.apply "LoadEnvStmt" [(.apply "FrontBlockEmpty" []), (.fvar "kont")]),
-   (.apply "ReturnEnvStmt" [(.apply "FrontEntryBlockEmpty" []), (.fvar "kont")])⟩
+   (.apply "ReturnEnvStmt" [(.apply "FrontEntryBlockEmpty" []), (.fvar "kont")]), none⟩
 /-- Rewrite 23: `LoadEnvFrontConstDecl`. -/
 private def r23 : RewriteRule :=
   ⟨"LoadEnvFrontConstDecl", [], [], (.apply "LoadEnvStmt" [(.apply "FrontConstDecl" [(.fvar "syms")]), (.fvar "kont")]),
-   (.apply "ReturnEnvStmt" [(.apply "FrontEntryConstDecl" [(.fvar "syms")]), (.fvar "kont")])⟩
+   (.apply "ReturnEnvStmt" [(.apply "FrontEntryConstDecl" [(.fvar "syms")]), (.fvar "kont")]), none⟩
 /-- Rewrite 24: `LoadEnvFrontVarDecl`. -/
 private def r24 : RewriteRule :=
   ⟨"LoadEnvFrontVarDecl", [], [], (.apply "LoadEnvStmt" [(.apply "FrontVarDecl" [(.fvar "syms")]), (.fvar "kont")]),
-   (.apply "ReturnEnvStmt" [(.apply "FrontEntryVarDecl" [(.fvar "syms")]), (.fvar "kont")])⟩
+   (.apply "ReturnEnvStmt" [(.apply "FrontEntryVarDecl" [(.fvar "syms")]), (.fvar "kont")]), none⟩
 /-- Rewrite 25: `LoadEnvFrontDjDecl`. -/
 private def r25 : RewriteRule :=
   ⟨"LoadEnvFrontDjDecl", [], [], (.apply "LoadEnvStmt" [(.apply "FrontDjDecl" [(.fvar "syms")]), (.fvar "kont")]),
-   (.apply "ReturnEnvStmt" [(.apply "FrontEntryDjDecl" [(.fvar "syms")]), (.fvar "kont")])⟩
+   (.apply "ReturnEnvStmt" [(.apply "FrontEntryDjDecl" [(.fvar "syms")]), (.fvar "kont")]), none⟩
 /-- Rewrite 26: `LoadEnvFrontIncludeDecl`. -/
 private def r26 : RewriteRule :=
   ⟨"LoadEnvFrontIncludeDecl", [], [], (.apply "LoadEnvStmt" [(.apply "FrontIncludeDecl" [(.fvar "path")]), (.fvar "kont")]),
-   (.apply "ReturnEnvStmt" [(.apply "FrontEntryIncludeDecl" [(.fvar "path")]), (.fvar "kont")])⟩
+   (.apply "ReturnEnvStmt" [(.apply "FrontEntryIncludeDecl" [(.fvar "path")]), (.fvar "kont")]), none⟩
 /-- Rewrite 27: `LoadEnvFrontFloatDecl`. -/
 private def r27 : RewriteRule :=
   ⟨"LoadEnvFrontFloatDecl", [], [], (.apply "LoadEnvStmt" [(.apply "FrontFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")]),
-   (.apply "ReturnEnvStmt" [(.apply "FrontEntryFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")])⟩
+   (.apply "ReturnEnvStmt" [(.apply "FrontEntryFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")]), none⟩
 /-- Rewrite 28: `LoadEnvFrontEssHyp`. -/
 private def r28 : RewriteRule :=
   ⟨"LoadEnvFrontEssHyp", [], [], (.apply "LoadEnvStmt" [(.apply "FrontEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")]),
-   (.apply "ReturnEnvStmt" [(.apply "FrontEntryEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])⟩
+   (.apply "ReturnEnvStmt" [(.apply "FrontEntryEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")]), none⟩
 /-- Rewrite 29: `LoadEnvFrontAxiom`. -/
 private def r29 : RewriteRule :=
   ⟨"LoadEnvFrontAxiom", [], [], (.apply "LoadEnvStmt" [(.apply "FrontAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")]),
-   (.apply "ReturnEnvStmt" [(.apply "FrontEntryAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])⟩
+   (.apply "ReturnEnvStmt" [(.apply "FrontEntryAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")]), none⟩
 /-- Rewrite 30: `LoadEnvFrontProvable`. -/
 private def r30 : RewriteRule :=
   ⟨"LoadEnvFrontProvable", [], [], (.apply "LoadEnvStmt" [(.apply "FrontProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")]),
-   (.apply "ReturnEnvStmt" [(.apply "FrontEntryProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")])⟩
+   (.apply "ReturnEnvStmt" [(.apply "FrontEntryProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")]), none⟩
 /-- Rewrite 31: `ReturnEnvDbDone`. -/
 private def r31 : RewriteRule :=
   ⟨"ReturnEnvDbDone", [], [], (.apply "ReturnEnvDb" [(.fvar "entries"), (.apply "EnvKDone" [])]),
-   (.apply "LoadEnvDone" [(.apply "FrontEnvNode" [(.fvar "entries")])])⟩
+   (.apply "LoadEnvDone" [(.apply "FrontEnvNode" [(.fvar "entries")])]), none⟩
 /-- Rewrite 32: `ReturnEnvStmtDbLast`. -/
 private def r32 : RewriteRule :=
   ⟨"ReturnEnvStmtDbLast", [], [], (.apply "ReturnEnvStmt" [(.fvar "entry"), (.apply "EnvKDbLast" [(.fvar "kont")])]),
-   (.apply "ReturnEnvDb" [(.apply "FrontEntriesOne" [(.fvar "entry")]), (.fvar "kont")])⟩
+   (.apply "ReturnEnvDb" [(.apply "FrontEntriesOne" [(.fvar "entry")]), (.fvar "kont")]), none⟩
 /-- Rewrite 33: `ReturnEnvStmtDbMore`. -/
 private def r33 : RewriteRule :=
   ⟨"ReturnEnvStmtDbMore", [], [], (.apply "ReturnEnvStmt" [(.fvar "entry"), (.apply "EnvKDbMore" [(.fvar "rest"), (.fvar "kont")])]),
-   (.apply "LoadEnvDb" [(.fvar "rest"), (.apply "EnvKDbCons" [(.fvar "entry"), (.fvar "kont")])])⟩
+   (.apply "LoadEnvDb" [(.fvar "rest"), (.apply "EnvKDbCons" [(.fvar "entry"), (.fvar "kont")])]), none⟩
 /-- Rewrite 34: `ReturnEnvDbCons`. -/
 private def r34 : RewriteRule :=
   ⟨"ReturnEnvDbCons", [], [], (.apply "ReturnEnvDb" [(.fvar "entries"), (.apply "EnvKDbCons" [(.fvar "entry"), (.fvar "kont")])]),
-   (.apply "ReturnEnvDb" [(.apply "FrontEntriesMore" [(.fvar "entry"), (.fvar "entries")]), (.fvar "kont")])⟩
+   (.apply "ReturnEnvDb" [(.apply "FrontEntriesMore" [(.fvar "entry"), (.fvar "entries")]), (.fvar "kont")]), none⟩
 /-- Rewrite 35: `ReturnEnvDbWrapBlock`. -/
 private def r35 : RewriteRule :=
   ⟨"ReturnEnvDbWrapBlock", [], [], (.apply "ReturnEnvDb" [(.fvar "entries"), (.apply "EnvKWrapBlock" [(.fvar "kont")])]),
-   (.apply "ReturnEnvStmt" [(.apply "FrontEntryBlock" [(.apply "FrontEnvNode" [(.fvar "entries")])]), (.fvar "kont")])⟩
+   (.apply "ReturnEnvStmt" [(.apply "FrontEntryBlock" [(.apply "FrontEnvNode" [(.fvar "entries")])]), (.fvar "kont")]), none⟩
 /-- Rewrite 36: `BeginLinearize`. -/
 private def r36 : RewriteRule :=
   ⟨"BeginLinearize", [], [], (.apply "Linearize" [(.apply "FrontEnvNode" [(.fvar "entries")])]),
-   (.apply "LinearizeEntries" [(.fvar "entries"), (.apply "LinKDone" [])])⟩
+   (.apply "LinearizeEntries" [(.fvar "entries"), (.apply "LinKDone" [])]), none⟩
 /-- Rewrite 37: `LinearizeEntriesOne`. -/
 private def r37 : RewriteRule :=
   ⟨"LinearizeEntriesOne", [], [], (.apply "LinearizeEntries" [(.apply "FrontEntriesOne" [(.fvar "entry")]), (.fvar "kont")]),
-   (.apply "LinearizeEntry" [(.fvar "entry"), (.fvar "kont")])⟩
+   (.apply "LinearizeEntry" [(.fvar "entry"), (.fvar "kont")]), none⟩
 /-- Rewrite 38: `LinearizeEntriesMore`. -/
 private def r38 : RewriteRule :=
   ⟨"LinearizeEntriesMore", [], [], (.apply "LinearizeEntries" [(.apply "FrontEntriesMore" [(.fvar "entry"), (.fvar "tail")]), (.fvar "kont")]),
-   (.apply "LinearizeEntry" [(.fvar "entry"), (.apply "LinKEntriesMore" [(.fvar "tail"), (.fvar "kont")])])⟩
+   (.apply "LinearizeEntry" [(.fvar "entry"), (.apply "LinKEntriesMore" [(.fvar "tail"), (.fvar "kont")])]), none⟩
 /-- Rewrite 39: `LinearizeFrontEntryBlock`. -/
 private def r39 : RewriteRule :=
   ⟨"LinearizeFrontEntryBlock", [], [], (.apply "LinearizeEntry" [(.apply "FrontEntryBlock" [(.apply "FrontEnvNode" [(.fvar "entries")])]), (.fvar "kont")]),
-   (.apply "LinearizeEntries" [(.fvar "entries"), (.apply "LinKWrapBlock" [(.fvar "kont")])])⟩
+   (.apply "LinearizeEntries" [(.fvar "entries"), (.apply "LinKWrapBlock" [(.fvar "kont")])]), none⟩
 /-- Rewrite 40: `LinearizeFrontEntryBlockEmpty`. -/
 private def r40 : RewriteRule :=
   ⟨"LinearizeFrontEntryBlockEmpty", [], [], (.apply "LinearizeEntry" [(.apply "FrontEntryBlockEmpty" []), (.fvar "kont")]),
-   (.apply "ReturnCore" [(.apply "CoreProgCat" [(.apply "CoreProgOne" [(.apply "CoreEnterScope" [])]), (.apply "CoreProgOne" [(.apply "CoreExitScope" [])])]), (.fvar "kont")])⟩
+   (.apply "ReturnCore" [(.apply "CoreProgCat" [(.apply "CoreProgOne" [(.apply "CoreEnterScope" [])]), (.apply "CoreProgOne" [(.apply "CoreExitScope" [])])]), (.fvar "kont")]), none⟩
 /-- Rewrite 41: `LinearizeFrontEntryConstDecl`. -/
 private def r41 : RewriteRule :=
   ⟨"LinearizeFrontEntryConstDecl", [], [], (.apply "LinearizeEntry" [(.apply "FrontEntryConstDecl" [(.fvar "syms")]), (.fvar "kont")]),
-   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreConstDecl" [(.fvar "syms")])]), (.fvar "kont")])⟩
+   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreConstDecl" [(.fvar "syms")])]), (.fvar "kont")]), none⟩
 /-- Rewrite 42: `LinearizeFrontEntryVarDecl`. -/
 private def r42 : RewriteRule :=
   ⟨"LinearizeFrontEntryVarDecl", [], [], (.apply "LinearizeEntry" [(.apply "FrontEntryVarDecl" [(.fvar "syms")]), (.fvar "kont")]),
-   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreVarDecl" [(.fvar "syms")])]), (.fvar "kont")])⟩
+   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreVarDecl" [(.fvar "syms")])]), (.fvar "kont")]), none⟩
 /-- Rewrite 43: `LinearizeFrontEntryDjDecl`. -/
 private def r43 : RewriteRule :=
   ⟨"LinearizeFrontEntryDjDecl", [], [], (.apply "LinearizeEntry" [(.apply "FrontEntryDjDecl" [(.fvar "syms")]), (.fvar "kont")]),
-   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreDjDecl" [(.fvar "syms")])]), (.fvar "kont")])⟩
+   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreDjDecl" [(.fvar "syms")])]), (.fvar "kont")]), none⟩
 /-- Rewrite 44: `LinearizeFrontEntryIncludeDecl`. -/
 private def r44 : RewriteRule :=
   ⟨"LinearizeFrontEntryIncludeDecl", [], [], (.apply "LinearizeEntry" [(.apply "FrontEntryIncludeDecl" [(.fvar "path")]), (.fvar "kont")]),
-   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreIncludeDecl" [(.fvar "path")])]), (.fvar "kont")])⟩
+   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreIncludeDecl" [(.fvar "path")])]), (.fvar "kont")]), none⟩
 /-- Rewrite 45: `LinearizeFrontEntryFloatDecl`. -/
 private def r45 : RewriteRule :=
   ⟨"LinearizeFrontEntryFloatDecl", [], [], (.apply "LinearizeEntry" [(.apply "FrontEntryFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")]),
-   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")])]), (.fvar "kont")])⟩
+   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")])]), (.fvar "kont")]), none⟩
 /-- Rewrite 46: `LinearizeFrontEntryEssHyp`. -/
 private def r46 : RewriteRule :=
   ⟨"LinearizeFrontEntryEssHyp", [], [], (.apply "LinearizeEntry" [(.apply "FrontEntryEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")]),
-   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreEssHyp" [(.fvar "label"), (.fvar "math")])]), (.fvar "kont")])⟩
+   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreEssHyp" [(.fvar "label"), (.fvar "math")])]), (.fvar "kont")]), none⟩
 /-- Rewrite 47: `LinearizeFrontEntryAxiom`. -/
 private def r47 : RewriteRule :=
   ⟨"LinearizeFrontEntryAxiom", [], [], (.apply "LinearizeEntry" [(.apply "FrontEntryAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")]),
-   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreAxiom" [(.fvar "label"), (.fvar "math")])]), (.fvar "kont")])⟩
+   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreAxiom" [(.fvar "label"), (.fvar "math")])]), (.fvar "kont")]), none⟩
 /-- Rewrite 48: `LinearizeFrontEntryProvable`. -/
 private def r48 : RewriteRule :=
   ⟨"LinearizeFrontEntryProvable", [], [], (.apply "LinearizeEntry" [(.apply "FrontEntryProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")]),
-   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")])]), (.fvar "kont")])⟩
+   (.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")])]), (.fvar "kont")]), none⟩
 /-- Rewrite 49: `ReturnCoreDone`. -/
 private def r49 : RewriteRule :=
   ⟨"ReturnCoreDone", [], [], (.apply "ReturnCore" [(.fvar "prog"), (.apply "LinKDone" [])]),
-   (.apply "LinearizeDone" [(.fvar "prog")])⟩
+   (.apply "LinearizeDone" [(.fvar "prog")]), none⟩
 /-- Rewrite 50: `ReturnCoreEntriesMore`. -/
 private def r50 : RewriteRule :=
   ⟨"ReturnCoreEntriesMore", [], [], (.apply "ReturnCore" [(.fvar "prog"), (.apply "LinKEntriesMore" [(.fvar "tail"), (.fvar "kont")])]),
-   (.apply "LinearizeEntries" [(.fvar "tail"), (.apply "LinKCat" [(.fvar "prog"), (.fvar "kont")])])⟩
+   (.apply "LinearizeEntries" [(.fvar "tail"), (.apply "LinKCat" [(.fvar "prog"), (.fvar "kont")])]), none⟩
 /-- Rewrite 51: `ReturnCoreCat`. -/
 private def r51 : RewriteRule :=
   ⟨"ReturnCoreCat", [], [], (.apply "ReturnCore" [(.fvar "tailProg"), (.apply "LinKCat" [(.fvar "headProg"), (.fvar "kont")])]),
-   (.apply "ReturnCore" [(.apply "CoreProgCat" [(.fvar "headProg"), (.fvar "tailProg")]), (.fvar "kont")])⟩
+   (.apply "ReturnCore" [(.apply "CoreProgCat" [(.fvar "headProg"), (.fvar "tailProg")]), (.fvar "kont")]), none⟩
 /-- Rewrite 52: `ReturnCoreWrapBlock`. -/
 private def r52 : RewriteRule :=
   ⟨"ReturnCoreWrapBlock", [], [], (.apply "ReturnCore" [(.fvar "bodyProg"), (.apply "LinKWrapBlock" [(.fvar "kont")])]),
-   (.apply "ReturnCore" [(.apply "CoreProgCat" [(.apply "CoreProgOne" [(.apply "CoreEnterScope" [])]), (.apply "CoreProgCat" [(.fvar "bodyProg"), (.apply "CoreProgOne" [(.apply "CoreExitScope" [])])])]), (.fvar "kont")])⟩
+   (.apply "ReturnCore" [(.apply "CoreProgCat" [(.apply "CoreProgOne" [(.apply "CoreEnterScope" [])]), (.apply "CoreProgCat" [(.fvar "bodyProg"), (.apply "CoreProgOne" [(.apply "CoreExitScope" [])])])]), (.fvar "kont")]), none⟩
 /-- Rewrite 53: `BeginCompile`. -/
 private def r53 : RewriteRule :=
   ⟨"BeginCompile", [], [], (.apply "Compile" [(.fvar "db")]),
-   (.apply "CompileAfterLower" [(.apply "Lower" [(.fvar "db")])])⟩
+   (.apply "CompileAfterLower" [(.apply "Lower" [(.fvar "db")])]), none⟩
 /-- Rewrite 54: `CompileLowerBegin`. -/
 private def r54 : RewriteRule :=
   ⟨"CompileLowerBegin", [], [], (.apply "CompileAfterLower" [(.apply "Lower" [(.fvar "db")])]),
-   (.apply "CompileAfterLower" [(.apply "LowerDb" [(.fvar "db"), (.apply "KDone" [])])])⟩
+   (.apply "CompileAfterLower" [(.apply "LowerDb" [(.fvar "db"), (.apply "KDone" [])])]), none⟩
 /-- Rewrite 55: `CompileLowerDbOne`. -/
 private def r55 : RewriteRule :=
   ⟨"CompileLowerDbOne", [], [], (.apply "CompileAfterLower" [(.apply "LowerDb" [(.apply "DbOne" [(.fvar "cdb1_stmt")]), (.fvar "cdb1_kont")])]),
-   (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.fvar "cdb1_stmt"), (.apply "KDbLast" [(.fvar "cdb1_kont")])])])⟩
+   (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.fvar "cdb1_stmt"), (.apply "KDbLast" [(.fvar "cdb1_kont")])])]), none⟩
 /-- Rewrite 56: `CompileLowerDbMore`. -/
 private def r56 : RewriteRule :=
   ⟨"CompileLowerDbMore", [], [], (.apply "CompileAfterLower" [(.apply "LowerDb" [(.apply "DbMore" [(.fvar "stmt"), (.fvar "rest")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.fvar "stmt"), (.apply "KDbMore" [(.fvar "rest"), (.fvar "kont")])])])⟩
+   (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.fvar "stmt"), (.apply "KDbMore" [(.fvar "rest"), (.fvar "kont")])])]), none⟩
 /-- Rewrite 57: `CompileLowerBlock`. -/
 private def r57 : RewriteRule :=
   ⟨"CompileLowerBlock", [], [], (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.apply "Block" [(.fvar "body")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLower" [(.apply "LowerDb" [(.fvar "body"), (.apply "KWrapBlock" [(.fvar "kont")])])])⟩
+   (.apply "CompileAfterLower" [(.apply "LowerDb" [(.fvar "body"), (.apply "KWrapBlock" [(.fvar "kont")])])]), none⟩
 /-- Rewrite 58: `CompileLowerBlockEmpty`. -/
 private def r58 : RewriteRule :=
   ⟨"CompileLowerBlockEmpty", [], [], (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.apply "BlockEmpty" []), (.fvar "kont")])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontBlockEmpty" []), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontBlockEmpty" []), (.fvar "kont")])]), none⟩
 /-- Rewrite 59: `CompileLowerConstDecl`. -/
 private def r59 : RewriteRule :=
   ⟨"CompileLowerConstDecl", [], [], (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.apply "ConstDecl" [(.fvar "syms")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontConstDecl" [(.fvar "syms")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontConstDecl" [(.fvar "syms")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 60: `CompileLowerVarDecl`. -/
 private def r60 : RewriteRule :=
   ⟨"CompileLowerVarDecl", [], [], (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.apply "VarDecl" [(.fvar "syms")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontVarDecl" [(.fvar "syms")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontVarDecl" [(.fvar "syms")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 61: `CompileLowerDjDecl`. -/
 private def r61 : RewriteRule :=
   ⟨"CompileLowerDjDecl", [], [], (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.apply "DjDecl" [(.fvar "syms")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontDjDecl" [(.fvar "syms")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontDjDecl" [(.fvar "syms")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 62: `CompileLowerIncludeDecl`. -/
 private def r62 : RewriteRule :=
   ⟨"CompileLowerIncludeDecl", [], [], (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.apply "IncludeDecl" [(.fvar "path")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontIncludeDecl" [(.fvar "path")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontIncludeDecl" [(.fvar "path")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 63: `CompileLowerFloatDecl`. -/
 private def r63 : RewriteRule :=
   ⟨"CompileLowerFloatDecl", [], [], (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.apply "FloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 64: `CompileLowerEssHyp`. -/
 private def r64 : RewriteRule :=
   ⟨"CompileLowerEssHyp", [], [], (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.apply "EssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 65: `CompileLowerAxiom`. -/
 private def r65 : RewriteRule :=
   ⟨"CompileLowerAxiom", [], [], (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.apply "Axiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 66: `CompileLowerProvable`. -/
 private def r66 : RewriteRule :=
   ⟨"CompileLowerProvable", [], [], (.apply "CompileAfterLower" [(.apply "LowerStmt" [(.apply "Provable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 67: `CompileReturnDbDone`. -/
 private def r67 : RewriteRule :=
   ⟨"CompileReturnDbDone", [], [], (.apply "CompileAfterLower" [(.apply "ReturnDb" [(.fvar "db"), (.apply "KDone" [])])]),
-   (.apply "CompileAfterLower" [(.apply "LowerDone" [(.fvar "db")])])⟩
+   (.apply "CompileAfterLower" [(.apply "LowerDone" [(.fvar "db")])]), none⟩
 /-- Rewrite 68: `CompileReturnStmtDbLast`. -/
 private def r68 : RewriteRule :=
   ⟨"CompileReturnStmtDbLast", [], [], (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.fvar "stmt"), (.apply "KDbLast" [(.fvar "kont")])])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnDb" [(.apply "FrontDbOne" [(.fvar "stmt")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnDb" [(.apply "FrontDbOne" [(.fvar "stmt")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 69: `CompileReturnStmtDbMore`. -/
 private def r69 : RewriteRule :=
   ⟨"CompileReturnStmtDbMore", [], [], (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.fvar "stmt"), (.apply "KDbMore" [(.fvar "rest"), (.fvar "kont")])])]),
-   (.apply "CompileAfterLower" [(.apply "LowerDb" [(.fvar "rest"), (.apply "KDbCons" [(.fvar "stmt"), (.fvar "kont")])])])⟩
+   (.apply "CompileAfterLower" [(.apply "LowerDb" [(.fvar "rest"), (.apply "KDbCons" [(.fvar "stmt"), (.fvar "kont")])])]), none⟩
 /-- Rewrite 70: `CompileReturnDbCons`. -/
 private def r70 : RewriteRule :=
   ⟨"CompileReturnDbCons", [], [], (.apply "CompileAfterLower" [(.apply "ReturnDb" [(.fvar "db"), (.apply "KDbCons" [(.fvar "stmt"), (.fvar "kont")])])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnDb" [(.apply "FrontDbMore" [(.fvar "stmt"), (.fvar "db")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnDb" [(.apply "FrontDbMore" [(.fvar "stmt"), (.fvar "db")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 71: `CompileReturnDbWrapBlock`. -/
 private def r71 : RewriteRule :=
   ⟨"CompileReturnDbWrapBlock", [], [], (.apply "CompileAfterLower" [(.apply "ReturnDb" [(.fvar "body"), (.apply "KWrapBlock" [(.fvar "kont")])])]),
-   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontBlock" [(.fvar "body")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLower" [(.apply "ReturnStmt" [(.apply "FrontBlock" [(.fvar "body")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 72: `CompileLowerDone`. -/
 private def r72 : RewriteRule :=
   ⟨"CompileLowerDone", [], [], (.apply "CompileAfterLower" [(.apply "LowerDone" [(.fvar "fdb")])]),
-   (.apply "CompileAfterEnv" [(.apply "LoadEnv" [(.fvar "fdb")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "LoadEnv" [(.fvar "fdb")])]), none⟩
 /-- Rewrite 73: `CompileEnvBegin`. -/
 private def r73 : RewriteRule :=
   ⟨"CompileEnvBegin", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnv" [(.fvar "db")])]),
-   (.apply "CompileAfterEnv" [(.apply "LoadEnvDb" [(.fvar "db"), (.apply "EnvKDone" [])])])⟩
+   (.apply "CompileAfterEnv" [(.apply "LoadEnvDb" [(.fvar "db"), (.apply "EnvKDone" [])])]), none⟩
 /-- Rewrite 74: `CompileLoadEnvDbOne`. -/
 private def r74 : RewriteRule :=
   ⟨"CompileLoadEnvDbOne", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvDb" [(.apply "FrontDbOne" [(.fvar "stmt")]), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.fvar "stmt"), (.apply "EnvKDbLast" [(.fvar "kont")])])])⟩
+   (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.fvar "stmt"), (.apply "EnvKDbLast" [(.fvar "kont")])])]), none⟩
 /-- Rewrite 75: `CompileLoadEnvDbMore`. -/
 private def r75 : RewriteRule :=
   ⟨"CompileLoadEnvDbMore", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvDb" [(.apply "FrontDbMore" [(.fvar "stmt"), (.fvar "rest")]), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.fvar "stmt"), (.apply "EnvKDbMore" [(.fvar "rest"), (.fvar "kont")])])])⟩
+   (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.fvar "stmt"), (.apply "EnvKDbMore" [(.fvar "rest"), (.fvar "kont")])])]), none⟩
 /-- Rewrite 76: `CompileLoadEnvFrontBlock`. -/
 private def r76 : RewriteRule :=
   ⟨"CompileLoadEnvFrontBlock", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.apply "FrontBlock" [(.fvar "body")]), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "LoadEnvDb" [(.fvar "body"), (.apply "EnvKWrapBlock" [(.fvar "kont")])])])⟩
+   (.apply "CompileAfterEnv" [(.apply "LoadEnvDb" [(.fvar "body"), (.apply "EnvKWrapBlock" [(.fvar "kont")])])]), none⟩
 /-- Rewrite 77: `CompileLoadEnvFrontBlockEmpty`. -/
 private def r77 : RewriteRule :=
   ⟨"CompileLoadEnvFrontBlockEmpty", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.apply "FrontBlockEmpty" []), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryBlockEmpty" []), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryBlockEmpty" []), (.fvar "kont")])]), none⟩
 /-- Rewrite 78: `CompileLoadEnvFrontConstDecl`. -/
 private def r78 : RewriteRule :=
   ⟨"CompileLoadEnvFrontConstDecl", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.apply "FrontConstDecl" [(.fvar "syms")]), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryConstDecl" [(.fvar "syms")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryConstDecl" [(.fvar "syms")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 79: `CompileLoadEnvFrontVarDecl`. -/
 private def r79 : RewriteRule :=
   ⟨"CompileLoadEnvFrontVarDecl", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.apply "FrontVarDecl" [(.fvar "syms")]), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryVarDecl" [(.fvar "syms")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryVarDecl" [(.fvar "syms")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 80: `CompileLoadEnvFrontDjDecl`. -/
 private def r80 : RewriteRule :=
   ⟨"CompileLoadEnvFrontDjDecl", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.apply "FrontDjDecl" [(.fvar "syms")]), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryDjDecl" [(.fvar "syms")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryDjDecl" [(.fvar "syms")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 81: `CompileLoadEnvFrontIncludeDecl`. -/
 private def r81 : RewriteRule :=
   ⟨"CompileLoadEnvFrontIncludeDecl", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.apply "FrontIncludeDecl" [(.fvar "path")]), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryIncludeDecl" [(.fvar "path")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryIncludeDecl" [(.fvar "path")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 82: `CompileLoadEnvFrontFloatDecl`. -/
 private def r82 : RewriteRule :=
   ⟨"CompileLoadEnvFrontFloatDecl", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.apply "FrontFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 83: `CompileLoadEnvFrontEssHyp`. -/
 private def r83 : RewriteRule :=
   ⟨"CompileLoadEnvFrontEssHyp", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.apply "FrontEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 84: `CompileLoadEnvFrontAxiom`. -/
 private def r84 : RewriteRule :=
   ⟨"CompileLoadEnvFrontAxiom", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.apply "FrontAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 85: `CompileLoadEnvFrontProvable`. -/
 private def r85 : RewriteRule :=
   ⟨"CompileLoadEnvFrontProvable", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvStmt" [(.apply "FrontProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 86: `CompileReturnEnvDbDone`. -/
 private def r86 : RewriteRule :=
   ⟨"CompileReturnEnvDbDone", [], [], (.apply "CompileAfterEnv" [(.apply "ReturnEnvDb" [(.fvar "entries"), (.apply "EnvKDone" [])])]),
-   (.apply "CompileAfterEnv" [(.apply "LoadEnvDone" [(.apply "FrontEnvNode" [(.fvar "entries")])])])⟩
+   (.apply "CompileAfterEnv" [(.apply "LoadEnvDone" [(.apply "FrontEnvNode" [(.fvar "entries")])])]), none⟩
 /-- Rewrite 87: `CompileReturnEnvStmtDbLast`. -/
 private def r87 : RewriteRule :=
   ⟨"CompileReturnEnvStmtDbLast", [], [], (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.fvar "entry"), (.apply "EnvKDbLast" [(.fvar "kont")])])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvDb" [(.apply "FrontEntriesOne" [(.fvar "entry")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvDb" [(.apply "FrontEntriesOne" [(.fvar "entry")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 88: `CompileReturnEnvStmtDbMore`. -/
 private def r88 : RewriteRule :=
   ⟨"CompileReturnEnvStmtDbMore", [], [], (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.fvar "entry"), (.apply "EnvKDbMore" [(.fvar "rest"), (.fvar "kont")])])]),
-   (.apply "CompileAfterEnv" [(.apply "LoadEnvDb" [(.fvar "rest"), (.apply "EnvKDbCons" [(.fvar "entry"), (.fvar "kont")])])])⟩
+   (.apply "CompileAfterEnv" [(.apply "LoadEnvDb" [(.fvar "rest"), (.apply "EnvKDbCons" [(.fvar "entry"), (.fvar "kont")])])]), none⟩
 /-- Rewrite 89: `CompileReturnEnvDbCons`. -/
 private def r89 : RewriteRule :=
   ⟨"CompileReturnEnvDbCons", [], [], (.apply "CompileAfterEnv" [(.apply "ReturnEnvDb" [(.fvar "entries"), (.apply "EnvKDbCons" [(.fvar "entry"), (.fvar "kont")])])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvDb" [(.apply "FrontEntriesMore" [(.fvar "entry"), (.fvar "entries")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvDb" [(.apply "FrontEntriesMore" [(.fvar "entry"), (.fvar "entries")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 90: `CompileReturnEnvDbWrapBlock`. -/
 private def r90 : RewriteRule :=
   ⟨"CompileReturnEnvDbWrapBlock", [], [], (.apply "CompileAfterEnv" [(.apply "ReturnEnvDb" [(.fvar "entries"), (.apply "EnvKWrapBlock" [(.fvar "kont")])])]),
-   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryBlock" [(.apply "FrontEnvNode" [(.fvar "entries")])]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterEnv" [(.apply "ReturnEnvStmt" [(.apply "FrontEntryBlock" [(.apply "FrontEnvNode" [(.fvar "entries")])]), (.fvar "kont")])]), none⟩
 /-- Rewrite 91: `CompileEnvDone`. -/
 private def r91 : RewriteRule :=
   ⟨"CompileEnvDone", [], [], (.apply "CompileAfterEnv" [(.apply "LoadEnvDone" [(.fvar "env")])]),
-   (.apply "CompileAfterLinearize" [(.apply "Linearize" [(.fvar "env")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "Linearize" [(.fvar "env")])]), none⟩
 /-- Rewrite 92: `CompileLinearizeBegin`. -/
 private def r92 : RewriteRule :=
   ⟨"CompileLinearizeBegin", [], [], (.apply "CompileAfterLinearize" [(.apply "Linearize" [(.apply "FrontEnvNode" [(.fvar "entries")])])]),
-   (.apply "CompileAfterLinearize" [(.apply "LinearizeEntries" [(.fvar "entries"), (.apply "LinKDone" [])])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "LinearizeEntries" [(.fvar "entries"), (.apply "LinKDone" [])])]), none⟩
 /-- Rewrite 93: `CompileLinearizeEntriesOne`. -/
 private def r93 : RewriteRule :=
   ⟨"CompileLinearizeEntriesOne", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntries" [(.apply "FrontEntriesOne" [(.fvar "entry")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.fvar "entry"), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.fvar "entry"), (.fvar "kont")])]), none⟩
 /-- Rewrite 94: `CompileLinearizeEntriesMore`. -/
 private def r94 : RewriteRule :=
   ⟨"CompileLinearizeEntriesMore", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntries" [(.apply "FrontEntriesMore" [(.fvar "entry"), (.fvar "tail")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.fvar "entry"), (.apply "LinKEntriesMore" [(.fvar "tail"), (.fvar "kont")])])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.fvar "entry"), (.apply "LinKEntriesMore" [(.fvar "tail"), (.fvar "kont")])])]), none⟩
 /-- Rewrite 95: `CompileLinearizeFrontEntryBlock`. -/
 private def r95 : RewriteRule :=
   ⟨"CompileLinearizeFrontEntryBlock", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.apply "FrontEntryBlock" [(.apply "FrontEnvNode" [(.fvar "entries")])]), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "LinearizeEntries" [(.fvar "entries"), (.apply "LinKWrapBlock" [(.fvar "kont")])])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "LinearizeEntries" [(.fvar "entries"), (.apply "LinKWrapBlock" [(.fvar "kont")])])]), none⟩
 /-- Rewrite 96: `CompileLinearizeFrontEntryBlockEmpty`. -/
 private def r96 : RewriteRule :=
   ⟨"CompileLinearizeFrontEntryBlockEmpty", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.apply "FrontEntryBlockEmpty" []), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgCat" [(.apply "CoreProgOne" [(.apply "CoreEnterScope" [])]), (.apply "CoreProgOne" [(.apply "CoreExitScope" [])])]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgCat" [(.apply "CoreProgOne" [(.apply "CoreEnterScope" [])]), (.apply "CoreProgOne" [(.apply "CoreExitScope" [])])]), (.fvar "kont")])]), none⟩
 /-- Rewrite 97: `CompileLinearizeFrontEntryConstDecl`. -/
 private def r97 : RewriteRule :=
   ⟨"CompileLinearizeFrontEntryConstDecl", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.apply "FrontEntryConstDecl" [(.fvar "syms")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreConstDecl" [(.fvar "syms")])]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreConstDecl" [(.fvar "syms")])]), (.fvar "kont")])]), none⟩
 /-- Rewrite 98: `CompileLinearizeFrontEntryVarDecl`. -/
 private def r98 : RewriteRule :=
   ⟨"CompileLinearizeFrontEntryVarDecl", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.apply "FrontEntryVarDecl" [(.fvar "syms")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreVarDecl" [(.fvar "syms")])]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreVarDecl" [(.fvar "syms")])]), (.fvar "kont")])]), none⟩
 /-- Rewrite 99: `CompileLinearizeFrontEntryDjDecl`. -/
 private def r99 : RewriteRule :=
   ⟨"CompileLinearizeFrontEntryDjDecl", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.apply "FrontEntryDjDecl" [(.fvar "syms")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreDjDecl" [(.fvar "syms")])]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreDjDecl" [(.fvar "syms")])]), (.fvar "kont")])]), none⟩
 /-- Rewrite 100: `CompileLinearizeFrontEntryIncludeDecl`. -/
 private def r100 : RewriteRule :=
   ⟨"CompileLinearizeFrontEntryIncludeDecl", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.apply "FrontEntryIncludeDecl" [(.fvar "path")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreIncludeDecl" [(.fvar "path")])]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreIncludeDecl" [(.fvar "path")])]), (.fvar "kont")])]), none⟩
 /-- Rewrite 101: `CompileLinearizeFrontEntryFloatDecl`. -/
 private def r101 : RewriteRule :=
   ⟨"CompileLinearizeFrontEntryFloatDecl", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.apply "FrontEntryFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")])]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreFloatDecl" [(.fvar "label"), (.fvar "typecode"), (.fvar "var")])]), (.fvar "kont")])]), none⟩
 /-- Rewrite 102: `CompileLinearizeFrontEntryEssHyp`. -/
 private def r102 : RewriteRule :=
   ⟨"CompileLinearizeFrontEntryEssHyp", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.apply "FrontEntryEssHyp" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreEssHyp" [(.fvar "label"), (.fvar "math")])]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreEssHyp" [(.fvar "label"), (.fvar "math")])]), (.fvar "kont")])]), none⟩
 /-- Rewrite 103: `CompileLinearizeFrontEntryAxiom`. -/
 private def r103 : RewriteRule :=
   ⟨"CompileLinearizeFrontEntryAxiom", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.apply "FrontEntryAxiom" [(.fvar "label"), (.fvar "math")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreAxiom" [(.fvar "label"), (.fvar "math")])]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreAxiom" [(.fvar "label"), (.fvar "math")])]), (.fvar "kont")])]), none⟩
 /-- Rewrite 104: `CompileLinearizeFrontEntryProvable`. -/
 private def r104 : RewriteRule :=
   ⟨"CompileLinearizeFrontEntryProvable", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeEntry" [(.apply "FrontEntryProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")]), (.fvar "kont")])]),
-   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")])]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgOne" [(.apply "CoreProvable" [(.fvar "label"), (.fvar "math"), (.fvar "proof")])]), (.fvar "kont")])]), none⟩
 /-- Rewrite 105: `CompileReturnCoreDone`. -/
 private def r105 : RewriteRule :=
   ⟨"CompileReturnCoreDone", [], [], (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.fvar "prog"), (.apply "LinKDone" [])])]),
-   (.apply "CompileAfterLinearize" [(.apply "LinearizeDone" [(.fvar "prog")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "LinearizeDone" [(.fvar "prog")])]), none⟩
 /-- Rewrite 106: `CompileReturnCoreEntriesMore`. -/
 private def r106 : RewriteRule :=
   ⟨"CompileReturnCoreEntriesMore", [], [], (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.fvar "prog"), (.apply "LinKEntriesMore" [(.fvar "tail"), (.fvar "kont")])])]),
-   (.apply "CompileAfterLinearize" [(.apply "LinearizeEntries" [(.fvar "tail"), (.apply "LinKCat" [(.fvar "prog"), (.fvar "kont")])])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "LinearizeEntries" [(.fvar "tail"), (.apply "LinKCat" [(.fvar "prog"), (.fvar "kont")])])]), none⟩
 /-- Rewrite 107: `CompileReturnCoreCat`. -/
 private def r107 : RewriteRule :=
   ⟨"CompileReturnCoreCat", [], [], (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.fvar "tailProg"), (.apply "LinKCat" [(.fvar "headProg"), (.fvar "kont")])])]),
-   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgCat" [(.fvar "headProg"), (.fvar "tailProg")]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgCat" [(.fvar "headProg"), (.fvar "tailProg")]), (.fvar "kont")])]), none⟩
 /-- Rewrite 108: `CompileReturnCoreWrapBlock`. -/
 private def r108 : RewriteRule :=
   ⟨"CompileReturnCoreWrapBlock", [], [], (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.fvar "bodyProg"), (.apply "LinKWrapBlock" [(.fvar "kont")])])]),
-   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgCat" [(.apply "CoreProgOne" [(.apply "CoreEnterScope" [])]), (.apply "CoreProgCat" [(.fvar "bodyProg"), (.apply "CoreProgOne" [(.apply "CoreExitScope" [])])])]), (.fvar "kont")])])⟩
+   (.apply "CompileAfterLinearize" [(.apply "ReturnCore" [(.apply "CoreProgCat" [(.apply "CoreProgOne" [(.apply "CoreEnterScope" [])]), (.apply "CoreProgCat" [(.fvar "bodyProg"), (.apply "CoreProgOne" [(.apply "CoreExitScope" [])])])]), (.fvar "kont")])]), none⟩
 /-- Rewrite 109: `CompileLinearizeDone`. -/
 private def r109 : RewriteRule :=
   ⟨"CompileLinearizeDone", [], [], (.apply "CompileAfterLinearize" [(.apply "LinearizeDone" [(.fvar "prog")])]),
-   (.apply "CompileDone" [(.fvar "prog")])⟩
+   (.apply "CompileDone" [(.fvar "prog")]), none⟩
 
 /-- The rewrite list of `metamathCore`, as named literals (checked by `rfl`). -/
 private def mmRules : List RewriteRule := [

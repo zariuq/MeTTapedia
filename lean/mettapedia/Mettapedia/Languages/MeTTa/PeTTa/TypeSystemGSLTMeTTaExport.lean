@@ -11,7 +11,7 @@ Script (`lake env lean --run <this file> <executable.metta> <audit.metta>
 [<language-definition.metta>]`) emitting projections of the admitted PeTTa
 typecheck-v2 GSLT root:
 
-- the EXECUTABLE artifact — the relational clause program the sealed
+- the EXECUTABLE artifact — the relational equation program the sealed
   checker space loads (`lib/petta/lib_typecheck_petta_generated_v0.metta`
   in the CeTTa tree); and
 - the AUDIT file — the inference language as data plus the receipt-checked
@@ -46,7 +46,7 @@ private def fuelLiteral : String := Nat.fold 64 (fun _ _ acc => s!"(FS {acc})") 
 /-- Environment bindings: the LexD-analog section.  `EnvDeclared` and
 `EnvDeclaredList` read the USER space's `(: subject type)` atoms through
 the ordinary `match` form (the machine resolves `&self` to the user space
-during sealed-clause evaluation) and reify through the generated reifier.
+during sealed-equation evaluation) and reify through the generated reifier.
 Logic-free by construction: a `match`, a walker call, a unification. -/
 private def envBindings : String :=
   "(= (EnvDeclared $n $rd)\n" ++
@@ -64,8 +64,8 @@ private def envBindings : String :=
   "               (DCons (Decl $n $rd) $rrest)))))))\n"
 
 /-- The reifier, generated from the root's interface tables as DETERMINISTIC
-single-clause dispatchers (clause choice enumerates every matching clause,
-so a fallback clause may never overlap a table clause: each relation is
+single-equation dispatchers (equation choice enumerates every matching equation,
+so a fallback equation may never overlap a table equation: each relation is
 one `if`-chain).  Base names from `syntaxBaseTypeTable`, arrows from
 `syntaxModeTable`, variadic union/list walkers, `TNominal` symbol
 fallback, `TCtor` constructor-shape fallback. -/
@@ -180,7 +180,7 @@ def finiteHornDefinition? : Option String :=
     guardDefinition
 
 /-- Fail-closed totality, structural side: every core rule satisfies
-exactly the conditions under which `renderClause?` renders.  A rule
+exactly the conditions under which `renderEquation?` renders.  A rule
 drifting outside the fragment fails the build here; the exporter's
 runtime Option handling remains the last-resort refusal. -/
 theorem guard_rules_all_projectable :

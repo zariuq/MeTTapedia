@@ -20,7 +20,7 @@ It is stated for an arbitrary renaming rather than for weakening alone, because
 the recursion under a binder needs the lifted renaming and lifting a weakening is
 not a weakening.  What the caller supplies is a *partial inverse* to the
 renaming, and the construction that lifts one past a binder prefix is given here
-so no clause of the recursion carries a context equation.
+so no case of the recursion carries a context equation.
 -/
 
 namespace Mettapedia.OSLF.Binding
@@ -265,7 +265,7 @@ theorem renameArgs_injective {Γ Δ : Ctx S} {rho : Ren S Γ Δ} (St : Strengthe
 The recursion under a binder passes from a partial inverse to its own lift, so
 the statement is made for an arbitrary partial inverse and the induction is
 self-similar; stating it for weakening alone would force a binder prefix to be
-concatenated at every step, and every clause would carry a context equation. -/
+concatenated at every step, and every case would carry a context equation. -/
 
 /-- A variable the lifted inverse does not recognise is a free one the original
 does not recognise. -/

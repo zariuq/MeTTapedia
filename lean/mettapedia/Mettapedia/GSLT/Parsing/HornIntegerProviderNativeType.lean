@@ -10,7 +10,7 @@ predicate observes complete answer lists, including empty completion and
 duplicate answer occurrences. No expected result is installed as an evaluator.
 
 These are source types of one selected equation occurrence. They do not justify
-selecting that occurrence from several matching native clauses, changing an
+selecting that occurrence from several matching native rules, changing an
 open caller's bindings, or realizing unbounded integers in a fixed-width target.
 Those are separate premises of the eventual lowering theorem.
 -/
@@ -30,7 +30,7 @@ structure Request where
   deriving DecidableEq, Repr
 
 /-- Source programs are read-only state. Requests retain the exact selected
-source occurrence rather than silently replacing clause enumeration. -/
+source occurrence rather than silently replacing rule enumeration. -/
 def source : RelationalAnswerSource Program Request GroundTerm where
   Evaluates program request final answers :=
     final = program ∧ ∃ residual,
@@ -212,7 +212,7 @@ theorem binary_echo_native_type {program : Program} {occurrence : Nat}
 
 /-- Executable information exported by the selected type inference. The input
 domain is two integers, not merely two closed terms. This does not assert a
-native integer bound or that only one installed clause matches the call. -/
+native integer bound or that only one installed rule matches the call. -/
 structure BinaryTypeInfo where
   occurrence : Nat
   relation : String
@@ -257,7 +257,7 @@ def inferBinaryTypeAt (program : Program) (occurrence : Nat) :
   | _ => none
 
 /-- Enumerate occurrences, including equal-looking duplicates. This is not
-the whole-program cardinality judgment needed to discard a second clause. -/
+the whole-program cardinality judgment needed to discard a second rule. -/
 def inferBinaryTypes (program : Program) : List (BinaryJudgment program) :=
   (List.range program.length).filterMap (inferBinaryTypeAt program)
 

@@ -188,6 +188,8 @@ A lambda-theory with full change-of-base structure includes:
 3. The Beck-Chevalley condition
 -/
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- A lambda-theory with full fibration structure.
 
     This extends LambdaTheoryWithEquality with:

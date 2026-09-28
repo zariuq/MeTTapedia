@@ -201,7 +201,7 @@ private theorem stepStar_single
     StepStar rules source target :=
   Relation.ReflTransGen.tail Relation.ReflTransGen.refl step
 
-private theorem stepStar_map
+theorem stepStar_map
     {rules : Rules Head} (transform : Tm Head n → Tm Head m)
     (preserves : ∀ {source target : Tm Head n},
       Step rules.headEq source target rules.computation →
@@ -215,14 +215,14 @@ private theorem stepStar_map
       exact Relation.ReflTransGen.tail inductionHypothesis
         (preserves finalStep)
 
-private theorem stepStar_rename
+theorem stepStar_rename
     {rules : Rules Head} (renameMap : Ren n m)
     {source target : Tm Head n} (steps : StepStar rules source target) :
     StepStar rules (rename renameMap source) (rename renameMap target) :=
   stepStar_map (rename renameMap)
     (fun step => step.renameTerms renameMap) steps
 
-private theorem stepStar_pi
+theorem stepStar_pi
     {rules : Rules Head}
     {domain domain' : Tm Head n}
     {codomain codomain' : Tm Head (n + 1)}
@@ -523,8 +523,22 @@ theorem churchRosserOfCompleteDevelopment
       realizes := presentation.realization }
     complete.diamond
 
+/-- A rule package whose root steps are exactly the instances of a schema
+family is presented by that family: soundness and coverage are the two
+directions of the equivalence. -/
+def SchemaFamily.presentation (schema : SchemaFamily Head) (rules : Rules Head)
+    (exact : ∀ {n : Nat} {left right : Tm Head n},
+      rules.computation.step left right ↔ SchemaStep schema left right) :
+    SchemaPresentation rules where
+  schema := schema
+  sound rule substitution := exact.mpr (SchemaStep.instantiate rule substitution)
+  cover step := by
+    cases exact.mp step with
+    | instantiate rule substitution => exact ⟨_, _, _, substitution, rule, rfl, rfl⟩
+
 /-! ## Axiom audit -/
 
+#print axioms SchemaFamily.presentation
 #print axioms par_refl
 #print axioms parSub_refl
 #print axioms SchemaPresentation.step_to_par

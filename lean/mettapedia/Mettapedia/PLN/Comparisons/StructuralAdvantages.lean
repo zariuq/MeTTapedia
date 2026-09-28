@@ -3,10 +3,15 @@ import Mettapedia.PLN.RuleFamilies.QuantaleSemantics.PBit
 import Mettapedia.PLN.RuleFamilies.QuantaleSemantics.CDLogic
 
 /-!
-# Structural Advantages of PLN over ProbLog and MLN
+# Structural properties of PLN's evidence algebra
 
-This file establishes key structural differences between PLN and competing
-probabilistic logic frameworks (ProbLog, Markov Logic Networks).
+This file establishes structural properties **of PLN's `BinaryEvidence`**.
+
+Both comparands *are* formalized elsewhere in this development — Markov Logic
+in `Mettapedia.Logic.MarkovLogicAbstract` / `MarkovLogicCountable` /
+`MarkovLogicInfiniteWorldModel`, and ProbLog in
+`Mettapedia.Logic.BDD.FirstOrderProbMeTTaBridge` — but this file imports
+neither, and no statement here quantifies over them.  See "Scope".
 
 ## Key Results
 
@@ -26,6 +31,24 @@ PLN uses BinaryEvidence = (pos, neg : ℝ≥0∞):
 - Two-dimensional representation
 - (0, 0) = ignorance (NEITHER), (1, 1) = contradiction (BOTH)
 - Quantale algebraic structure
+
+## Scope, and the comparison that is still owed
+
+Every theorem below is about `BinaryEvidence`, and each is a positive
+structural fact.  None is a comparison.
+
+The comparative reading — that a single real number cannot separate ignorance
+from balanced evidence, and carries no lattice, frame or monoidal structure of
+this kind — is **not proved anywhere in this development**.  That is a real
+gap rather than a missing import: the MLN and ProbLog semantics are formalized,
+but no *negative* structural theorem about them exists.
+
+The obligation is concrete and within reach, because both formalized semantics
+deliver a single `ENNReal` per query:
+`CountableMLNSemantics.queryMass` and the ProbLog BDD semantics.  A genuine
+comparison would prove that a one-dimensional query value cannot distinguish
+the `(0,0)` and `(1,1)` corners that `pln_corners_distinct` separates here.
+Until that is written, the asymmetry is motivation, not a result.
 
 ## References
 
@@ -99,41 +122,32 @@ theorem pln_evidence_total_distinguishes :
 
 /-! ## Quantale/Frame Structure -/
 
-/-- PLN BinaryEvidence forms a complete lattice (information ordering).
-
-    ProbLog: probabilities are just real numbers, no lattice structure
-    MLN: weights are real numbers, no lattice structure
-    PLN: BinaryEvidence forms a complete lattice under information ordering
--/
+/-- **`BinaryEvidence` carries a complete lattice** — the information
+ordering.  (A single real number carries no such structure; that contrast is
+motivation, not a theorem here.) -/
 theorem pln_has_complete_lattice_structure :
-    ∃ _ : CompleteLattice BinaryEvidence, True := ⟨inferInstance, trivial⟩
+    Nonempty (CompleteLattice BinaryEvidence) := ⟨inferInstance⟩
 
-/-- PLN BinaryEvidence forms a Frame (complete Heyting algebra).
-
-    This gives PLN intuitionistic implication for reasoning about evidence.
-    ProbLog/MLN have no such structure.
--/
+/-- **`BinaryEvidence` carries a frame** (complete Heyting algebra), which is
+what supplies an intuitionistic implication on evidence. -/
 theorem pln_has_frame_structure :
-    ∃ _ : Order.Frame BinaryEvidence, True := ⟨inferInstance, trivial⟩
+    Nonempty (Order.Frame BinaryEvidence) := ⟨inferInstance⟩
 
-/-- PLN has monoidal structure via tensor product.
-
-    Tensor combines evidence multiplicatively (for dependent evidence).
-    ProbLog: only has probability multiplication (no monoidal structure)
-    MLN: only has weight addition (no monoidal structure as formalized)
--/
+/-- **`BinaryEvidence` carries a commutative monoid** — the tensor, which
+combines dependent evidence multiplicatively. -/
 theorem pln_has_tensor_monoid :
-    ∃ _ : CommMonoid BinaryEvidence, True := ⟨inferInstance, trivial⟩
+    Nonempty (CommMonoid BinaryEvidence) := ⟨inferInstance⟩
 
-/-- PLN has additive structure via hplus for independent evidence -/
+/-- **`BinaryEvidence` carries an addition** — `hplus`, for independent
+evidence. -/
 theorem pln_has_hplus :
-    ∃ _ : Add BinaryEvidence, True := ⟨inferInstance, trivial⟩
+    Nonempty (Add BinaryEvidence) := ⟨inferInstance⟩
 
 /-- Combined: PLN has quantale-like algebraic structure -/
 theorem pln_quantale_structure :
-    (∃ _ : CommMonoid BinaryEvidence, True) ∧
-    (∃ _ : CompleteLattice BinaryEvidence, True) ∧
-    (∃ _ : Order.Frame BinaryEvidence, True) :=
+    Nonempty (CommMonoid BinaryEvidence) ∧
+    Nonempty (CompleteLattice BinaryEvidence) ∧
+    Nonempty (Order.Frame BinaryEvidence) :=
   ⟨pln_has_tensor_monoid, pln_has_complete_lattice_structure, pln_has_frame_structure⟩
 
 /-! ## Information Preservation -/
@@ -165,30 +179,121 @@ theorem pln_same_strength_different_evidence :
   have hp := congrArg BinaryEvidence.pos h
   norm_num at hp
 
+/-! ## The negative structural theorem
+
+The comparison this file is named for needs a statement of the form "a
+one-dimensional readout cannot do X".  Here it is.
+
+`toStrength` is PLN's *strength* view, `e.pos / e.total`.  A framework whose
+query value is a single number determined by the odds — which is what a
+probability is — sees evidence only through this view.  The theorem below says
+exactly what such a framework loses, and the witnesses are as small as they
+can be: **one failure versus two failures**.  Both have strength `0`.  Their
+totals are `1` and `2`.
+
+Note what is *not* claimed.  Cardinality is no obstruction: `ℝ` and `ℝ × ℝ`
+are equinumerous, so there is no counting argument here.  The obstruction is
+that the readout factors through a map that is not injective, and the theorem
+is stated for an arbitrary readout with exactly that hypothesis — so it covers
+every framework whose query value depends only on the odds, however that value
+is computed. -/
+
+/-- Two evidence states with the same strength: no positive support, one
+observation against, versus no positive support and two against. -/
+def oneFailure : BinaryEvidence := ⟨0, 1⟩
+
+/-- The same, with a second observation. -/
+def twoFailures : BinaryEvidence := ⟨0, 2⟩
+
+private theorem one_ne_two_ennreal : (1 : ℝ≥0∞) ≠ 2 := by norm_num
+
+theorem oneFailure_strength : BinaryEvidence.toStrength oneFailure = 0 := by
+  rw [BinaryEvidence.toStrength]
+  simp [oneFailure, BinaryEvidence.total]
+
+theorem twoFailures_strength : BinaryEvidence.toStrength twoFailures = 0 := by
+  rw [BinaryEvidence.toStrength]
+  simp [twoFailures, BinaryEvidence.total]
+
+/-- **Strength is not injective.**  This is the whole content of the negative
+result: the one-dimensional view identifies evidence states. -/
+theorem toStrength_not_injective : ¬ Function.Injective BinaryEvidence.toStrength := by
+  intro hinj
+  have h : oneFailure = twoFailures :=
+    hinj (by rw [oneFailure_strength, twoFailures_strength])
+  have hn : (oneFailure).neg = (twoFailures).neg := congrArg BinaryEvidence.neg h
+  simp only [oneFailure, twoFailures] at hn
+  exact absurd hn one_ne_two_ennreal
+
+/-- **And the two states are genuinely different**, by the quantity a strength
+readout discards: total evidence, which is what confidence is computed from. -/
+theorem total_separates : oneFailure.total ≠ twoFailures.total := by
+  simp only [BinaryEvidence.total, oneFailure, twoFailures, zero_add]
+  exact one_ne_two_ennreal
+
+/-- **A one-dimensional readout cannot recover total evidence.**
+
+For *any* target type and *any* readout that depends only on strength, the two
+states above receive the same value while having different totals.  A framework
+reporting a single odds-determined number per query therefore cannot express
+the difference between one observation and two. -/
+theorem strengthOnly_readout_loses_total {α : Type*} (f : BinaryEvidence → α)
+    (hf : ∀ e₁ e₂ : BinaryEvidence,
+      BinaryEvidence.toStrength e₁ = BinaryEvidence.toStrength e₂ → f e₁ = f e₂) :
+    ∃ e₁ e₂ : BinaryEvidence, e₁.total ≠ e₂.total ∧ f e₁ = f e₂ :=
+  ⟨oneFailure, twoFailures, total_separates,
+    hf _ _ (by rw [oneFailure_strength, twoFailures_strength])⟩
+
+/-! ### Controls -/
+
+/-- Strength is not *constant* either, so the theorem above is about a genuine
+loss of information and not about a degenerate view. -/
+theorem toStrength_not_constant :
+    BinaryEvidence.toStrength ⟨1, 0⟩ ≠ BinaryEvidence.toStrength ⟨0, 1⟩ := by
+  have h1 : BinaryEvidence.toStrength ⟨1, 0⟩ = 1 := by
+    rw [BinaryEvidence.toStrength]
+    simp [BinaryEvidence.total]
+  have h2 : BinaryEvidence.toStrength ⟨0, 1⟩ = 0 := by
+    rw [BinaryEvidence.toStrength]
+    simp [BinaryEvidence.total]
+  rw [h1, h2]
+  exact one_ne_zero
+
+/-- The pair `(pos, neg)` does separate them, so the information is present in
+PLN's representation and absent only from the readout. -/
+theorem evidence_separates : oneFailure ≠ twoFailures := by
+  intro h
+  have hn : (oneFailure).neg = (twoFailures).neg := congrArg BinaryEvidence.neg h
+  simp only [oneFailure, twoFailures] at hn
+  exact absurd hn one_ne_two_ennreal
+
 /-! ## Comparison Summary -/
 
-/-- Structural comparison table (formalized as propositions)
+/-- **What is proved of `BinaryEvidence`**, collected.  Each conjunct below
+corresponds to one line, and each line is discharged by a theorem in this file.
 
-    | Feature                  | PLN    | ProbLog | MLN  |
-    |--------------------------|--------|---------|------|
-    | Paraconsistency          | ✓      | ✗       | ✗    |
-    | Epistemic distinction    | ✓      | ✗       | ✗    |
-    | Complete lattice         | ✓      | ✗       | ✗    |
-    | Frame (Heyting algebra)  | ✓      | ✗       | ✗    |
-    | Monoidal (tensor)        | ✓      | ✗       | ✗    |
-    | Confidence tracking      | ✓      | ✗       | ✗    |
--/
+    | Property                 | proved here |
+    |--------------------------|-------------|
+    | Paraconsistency          | ✓           |
+    | Epistemic distinction    | ✓           |
+    | Complete lattice         | ✓           |
+    | Frame (Heyting algebra)  | ✓           |
+    | Monoidal (tensor)        | ✓           |
+    | Confidence tracking      | ✓           |
+
+There is deliberately no ProbLog or MLN column: neither is formalized in this
+development, so a `✗` there would be an assertion rather than a result. -/
 theorem pln_advantages_summary :
     -- Paraconsistency: can represent contradiction
     (∃ e : BinaryEvidence, isBoth e) ∧
     -- Epistemic: distinguishes ignorance from balance
     (pNeither ≠ pBoth) ∧
     -- Complete lattice structure
-    (∃ _ : CompleteLattice BinaryEvidence, True) ∧
+    Nonempty (CompleteLattice BinaryEvidence) ∧
     -- Frame structure
-    (∃ _ : Order.Frame BinaryEvidence, True) ∧
+    Nonempty (Order.Frame BinaryEvidence) ∧
     -- Monoidal structure (tensor for combining dependent evidence)
-    (∃ _ : CommMonoid BinaryEvidence, True) ∧
+    Nonempty (CommMonoid BinaryEvidence) ∧
     -- Information preservation (same strength, different evidence)
     (∃ e₁ e₂ : BinaryEvidence, e₁.total ≠ e₂.total ∧
        e₁.pos * e₂.total = e₂.pos * e₁.total) := by

@@ -2248,8 +2248,8 @@ def consRelApp_constantOccurrence
                 (.appFunction
                   (.appFunction .here))))))))
 
-def nilIotaClause :
-    IotaClause Tower.rules rawSignature combinedProofRelevantIotaComputation
+def nilIotaRule :
+    IotaRule Tower.rules rawSignature combinedProofRelevantIotaComputation
       (mapRelConstructors.map ConstructorSpec.name)
       mapRelEliminatorSpec.name where
   constructorName := nilRelName
@@ -2261,8 +2261,8 @@ def nilIotaClause :
   constructorOccurrence :=
     .appArgument (nilRelApp_constantOccurrence (.var 5) (.var 4) (.var 3))
 
-noncomputable def consIotaClause :
-    IotaClause Tower.rules rawSignature combinedProofRelevantIotaComputation
+noncomputable def consIotaRule :
+    IotaRule Tower.rules rawSignature combinedProofRelevantIotaComputation
       (mapRelConstructors.map ConstructorSpec.name)
       mapRelEliminatorSpec.name where
   constructorName := consRelName
@@ -2276,12 +2276,12 @@ noncomputable def consIotaClause :
       (consRelApp_constantOccurrence (.var 11) (.var 10) (.var 9)
         (.var 5) (.var 4) (.var 3) (.var 2) (.var 1) (.var 0))
 
-noncomputable def mapRelIotaClauses :
+noncomputable def mapRelIotaRules :
     List
-      (IotaClause Tower.rules rawSignature combinedProofRelevantIotaComputation
+      (IotaRule Tower.rules rawSignature combinedProofRelevantIotaComputation
         (mapRelConstructors.map ConstructorSpec.name)
         mapRelEliminatorSpec.name) :=
-  [nilIotaClause, consIotaClause]
+  [nilIotaRule, consIotaRule]
 
 noncomputable def mapRelCandidate : Candidate Tower.rules where
   signature := rawSignature
@@ -2309,13 +2309,13 @@ noncomputable def mapRelCandidate : Candidate Tower.rules where
     simp only [mapRelConstructors, List.mem_cons, List.not_mem_nil, or_false]
       at membership
     rcases membership with rfl | rfl <;> decide
-  iotaClauses := mapRelIotaClauses
+  iotaRules := mapRelIotaRules
   constructorsComputed := by
     intro constructorName membership
     simp [mapRelConstructors, nilRelConstructorSpec, consRelConstructorSpec]
       at membership
     rcases membership with rfl | rfl <;>
-      simp [mapRelIotaClauses, nilIotaClause, consIotaClause]
+      simp [mapRelIotaRules, nilIotaRule, consIotaRule]
 
 /-! ## Positive and negative controls -/
 

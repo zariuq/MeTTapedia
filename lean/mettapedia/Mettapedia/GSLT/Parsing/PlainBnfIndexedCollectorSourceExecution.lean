@@ -20,7 +20,8 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open SourceSExprPatternCodec (encode encodeList encode_injective)
-open SourceSExprPatternInstantiation (pattern patternList applyBindings_encode)
+open SourceSExprPatternInstantiation (pattern patternList applyBindings_encode
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open scoped Mettapedia.OSLF.MeTTaIL.MeTTaSyntaxQuotation
 
 def collectorRules : List RewriteRule :=
@@ -148,6 +149,7 @@ private theorem base_language_independent (env : RelationEnv) (left right : Lang
 /-- A syntactic closure test on existing premises, not an execution model. -/
 def premiseClosed (names : List String) : Premise → Bool
   | .congruence source _ => headedBy names source
+  | .scopedStep step => !step.binders.isEmpty || headedBy names step.source
   | _ => true
 
 private theorem premises_congr (names : List String) (env : RelationEnv)
@@ -167,6 +169,13 @@ private theorem premises_congr (names : List String) (env : RelationEnv)
         simp only [premiseStepUsing]
         rw [recursive _ (headedBy_applyBindings names bindings source
           (closed (.congruence source target) (by simp))) ]
+      | scopedStep step =>
+        by_cases empty : step.binders.isEmpty = true
+        · have headed : headedBy names step.source = true := by
+            simpa [premiseClosed, empty] using closed (.scopedStep step) (by simp)
+          simp only [premiseStepUsing, empty, ↓reduceIte]
+          rw [recursive _ (headedBy_applyBindings names bindings step.source headed)]
+        · simp [premiseStepUsing, empty]
       | freshness condition => exact base_language_independent env left right bindings (.freshness condition)
       | relationQuery relation arguments =>
         exact base_language_independent env left right bindings (.relationQuery relation arguments)
@@ -484,6 +493,7 @@ private theorem entry_rewriteAt (fuel : Nat) (input : List (Entry Scalar))
   rw [collector_rewriteAt fuel _ (by simp [collectCall, call, encode, encodeList, headedBy, collectorNames])]
   simp [collector_rules_exact, observedCollector, observation, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, collectCall, call, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
   simp [loopCall, call, encode, encodeList, encodeIndex, indexTrie, PlainBnfTrieSourceExecution.trie,
@@ -502,6 +512,7 @@ private theorem comment_rewriteAt (fuel : Nat) (text span : SExpr) (tail : List 
   rw [collector_rewriteAt fuel _ (by simp [loopCall, call, encode, encodeList, headedBy, collectorNames])]
   simp [collector_rules_exact, observedCollector, observation, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, loopCall, entries, PlainBnfCollectorSourceExecution.entry, call,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -520,6 +531,7 @@ private theorem blank_rewriteAt (fuel : Nat) (span : SExpr) (tail : List (Entry 
   rw [collector_rewriteAt fuel _ (by simp [loopCall, call, encode, encodeList, headedBy, collectorNames])]
   simp [collector_rules_exact, observedCollector, observation, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, loopCall, entries, PlainBnfCollectorSourceExecution.entry, call,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -539,6 +551,7 @@ private theorem nil_rewriteAt (fuel : Nat) (index : (Index Scalar)) (reversed : 
   rw [collector_rewriteAt fuel _ (by simp [loopCall, call, encode, encodeList, headedBy, collectorNames])]
   simp [collector_rules_exact, observedCollector, observation, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, loopCall, entries, call, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
   simp [PlainBnfCollectorSourceExecution.reverseCall, definitions, encode, encodeList] at recursive
@@ -559,6 +572,7 @@ private theorem rule_rewriteAt (fuel : Nat) (item : (Definition Scalar)) (tail :
   rw [collector_rewriteAt fuel _ (by simp [loopCall, call, encode, encodeList, headedBy, collectorNames])]
   simp [collector_rules_exact, observedCollector, observation, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, loopCall, entries, PlainBnfCollectorSourceExecution.entry, call,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -600,6 +614,7 @@ private theorem fresh_rewriteAt (fuel : Nat) (item : (Definition Scalar)) (tail 
   rw [collector_rewriteAt fuel _ (by simp [afterCall, call, encode, encodeList, headedBy, collectorNames])]
   simp [collector_rules_exact, observedCollector, observation, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, afterCall, definition, value, call,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -643,6 +658,7 @@ private theorem duplicate_rewriteAt (fuel : Nat) (item : (Definition Scalar)) (t
   rw [collector_rewriteAt fuel _ (by simp [afterCall, call, encode, encodeList, headedBy, collectorNames])]
   simp [collector_rules_exact, observedCollector, observation, PlainBnfTrieSourceExecution.observedRule,
     applyRuleUsing, afterCall, definition, value, payload, call,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]

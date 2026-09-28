@@ -4,7 +4,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfGraphSemantics
 /-!
 # Authored productive-expression execution
 
-The sixteen actual graph-source clauses retain ordered, short-circuit
+The sixteen actual graph-source rules retain ordered, short-circuit
 evaluation. Known names use the existing sparse trie and its history invariant;
 otherwise the first lexical declaration supplies the actual matcher call.
 Inputs are the existing String/Unicode-Nat structured expression carrier.
@@ -20,7 +20,8 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT (Rewrite decodeList)
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfStructuredDenotation (SourceSpan Element Alternative Expression LexicalMatcher LexicalDeclaration)
 open PlainBnfTrieSourceExecution (call result)
 open PlainBnfReferenceSourceAdmission (graphSource)
@@ -342,6 +343,7 @@ local macro "productive_reduce" : tactic =>
         alternativesAfterCall, expressionCall, call, encode, encodeList])]
     simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
       applyRuleUsing, afterLexicalCall, afterLookupCall, elementCall, elementsCall,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       elementsAfterCall, alternativeCall, alternativesCall, alternativesAfterCall, expressionCall,
       call, lookupResult, PlainBnfKnownNamesSourceExecution.nameResult,
       element, elements, alternative, alternatives, expression, declaration, text,
@@ -872,6 +874,9 @@ private theorem premise_mono (small large : List String) (included : small ⊆ l
     premiseClosed large premise = true := by
   cases premise with
   | congruence source target => exact headedBy_mono small large included source closed
+  | scopedStep step =>
+    simp only [premiseClosed, Bool.or_eq_true] at closed ⊢
+    exact closed.imp id (headedBy_mono small large included step.source)
   | _ => rfl
 
 theorem productive_closed : rules.all (fun rule => rule.premises.all (premiseClosed wholeHeads)) = true := by

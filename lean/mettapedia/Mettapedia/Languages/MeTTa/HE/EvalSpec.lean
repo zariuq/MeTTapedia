@@ -5,7 +5,7 @@ import Mettapedia.Languages.MeTTa.HE.TypeCheck
 
 Mutual inductive relations for the 6 core evaluation functions of the
 Hyperon Experimental MeTTa interpreter. Each constructor is a universally
-quantified proposition mapping directly to a clause in the official spec.
+quantified proposition mapping directly to a case of the official spec.
 
 ## Source of Truth
 - `https://trueagi-io.github.io/hyperon-experimental/metta/`

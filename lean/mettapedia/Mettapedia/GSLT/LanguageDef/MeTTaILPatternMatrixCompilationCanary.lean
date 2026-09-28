@@ -54,17 +54,17 @@ private def terms : List GrammarRule :=
   ]
 
 private def specificRule : RewriteRule :=
-  RewriteRule.mk "SpecificRule" [] []
+  RewriteRule.mk (bindings := none) "SpecificRule" [] []
     (.apply "Pair" [.apply "Left" [], .fvar "X"])
     (.apply "Specific" [.fvar "X"])
 
 private def repeatedRule : RewriteRule :=
-  RewriteRule.mk "RepeatedRule" [] []
+  RewriteRule.mk (bindings := none) "RepeatedRule" [] []
     (.apply "Pair" [.fvar "X", .fvar "X"])
     (.apply "Same" [.fvar "X"])
 
 private def fallbackRule : RewriteRule :=
-  RewriteRule.mk "FallbackRule" [] []
+  RewriteRule.mk (bindings := none) "FallbackRule" [] []
     (.apply "Pair" [.fvar "X", .fvar "Y"])
     (.apply "Fallback" [.fvar "X", .fvar "Y"])
 

@@ -242,7 +242,7 @@ theorem isGunky_clopens_cantor : IsGunky (Clopens (ℕ → Bool)) := by
       rw [hgdef]
       exact Function.update_of_ne hine _ _
     have hgnotC : g ∉ ({x | x n = f n} : Set (ℕ → Bool)) := by
-      simp only [Set.mem_setOf_eq, hgdef, Function.update_self]
+      simp only [Set.mem_ofPred_eq, hgdef, Function.update_self]
       exact Bool.not_ne_self (f n)
     have hgV : g ∈ ((U ⊓ C : Clopens (ℕ → Bool)) : Set (ℕ → Bool)) := by
       rw [h]; exact hgU

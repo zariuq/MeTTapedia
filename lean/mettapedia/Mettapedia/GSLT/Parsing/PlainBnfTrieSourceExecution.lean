@@ -4,7 +4,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfCollectorSourceAdmission
 /-!
 # Authored sparse-trie source execution
 
-The source clauses are translated into the existing contextual relation. The
+The source rules are translated into the existing contextual relation. The
 only additional primitive is ground structural disequality; it does not compute
 lookup or insertion answers. Payloads remain existing source S-expressions.
 The scalar-parametric codec has proved canonical Nat and Integer instances;
@@ -22,7 +22,8 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open SourceSExprPatternCodec (encode encodeList encode_injective)
-open SourceSExprPatternInstantiation (pattern patternList applyBindings_encode)
+open SourceSExprPatternInstantiation (pattern patternList applyBindings_encode
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfGraphNameTrie (Trie)
 open PlainBnfCollectorSourceExecution (name splitCall? lowerPremise? lowerRule?)
 open PlainBnfCollectorSourceExecution (NameScalarCodec)
@@ -245,7 +246,7 @@ theorem source_rules_count : language.rewrites.length = 14 := by
   rfl
 
 /-- The ordered admitted source family is the input to the executed
-translation. No wrapper or graph-analysis clause is added to this language. -/
+translation. No wrapper or graph-analysis rule is added to this language. -/
 theorem source_family_translation_exact :
     language.rewrites =
       (PlainBnfCollectorSourceAdmission.family PlainBnfCollectorSourceAdmission.indexSource).flatMap
@@ -281,6 +282,7 @@ theorem first_value_rewriteAt (base : BasePremiseEvaluator) (fuel : Nat)
   cases old <;>
     simp [rewriteAt, source_rules_exact, observedRules, observedRule,
       applyRuleUsing, call, result, value, pattern, patternList,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM,
       premisesUsing, applyBindings]
@@ -308,6 +310,7 @@ private theorem lookup_empty_rewriteAt (fuel : Nat) (key : (List Scalar)) :
   cases key <;>
     simp [rewriteAt, source_rules_exact, observedRules, observedRule,
       applyRuleUsing, lookupCall, call, result, trie, value, name, pattern, patternList,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM,
       premisesUsing, applyBindings]
@@ -318,6 +321,7 @@ private theorem lookup_value_rewriteAt (fuel : Nat) (old : Option SExpr)
       [result (value old)] := by
   simp [rewriteAt, source_rules_exact, observedRules, observedRule,
     applyRuleUsing, lookupCall, call, result, trie, value, name, pattern, patternList,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, applyBindings]
@@ -327,6 +331,7 @@ private theorem edge_nil_rewriteAt (fuel : Nat) (head : Scalar) (tail : (List Sc
       [result (value none)] := by
   simp [rewriteAt, source_rules_exact, observedRules, observedRule,
     applyRuleUsing, edgeLookupCall, call, result, edges, value, pattern, patternList,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, applyBindings]
@@ -340,6 +345,7 @@ private theorem lookup_cons_rewriteAt (fuel : Nat) (head : Scalar) (tail : (List
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     List.flatMap_cons, List.flatMap_nil, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     matchPatternForRule_eq_syntactic, lookupCall, call, trie, name,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings,
@@ -360,6 +366,7 @@ private theorem edge_same_rewriteAt (fuel : Nat) (head : Scalar) (tail : (List S
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, edgeLookupCall, call, edges, scalar,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings, engineBasePremises,
@@ -379,6 +386,7 @@ private theorem edge_other_rewriteAt (fuel : Nat) (head stored : Scalar) (differ
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, edgeLookupCall, call, edges, scalar,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings, engineBasePremises,
@@ -479,6 +487,7 @@ private theorem insert_empty_rewriteAt (fuel : Nat) (key : (List Scalar)) (paylo
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, insertCall, call, trie,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings, emptyMap]
@@ -499,6 +508,7 @@ private theorem insert_value_rewriteAt (fuel : Nat) (old : Option SExpr) (payloa
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, insertCall, call, trie, name,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -519,6 +529,7 @@ private theorem insert_cons_rewriteAt (fuel : Nat) (head : Scalar) (tail : (List
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, insertCall, call, trie, name,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -540,6 +551,7 @@ private theorem edge_insert_nil_rewriteAt (fuel : Nat) (head : Scalar) (tail : (
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, edgeInsertCall, call, edges, scalar,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings]
@@ -561,6 +573,7 @@ private theorem edge_insert_same_rewriteAt (fuel : Nat) (head : Scalar) (tail : 
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, edgeInsertCall, call, edges, scalar,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings, engineBasePremises,
@@ -584,6 +597,7 @@ private theorem edge_insert_other_rewriteAt (fuel : Nat) (head stored : Scalar) 
   rw [rewriteAt]
   simp [source_rules_exact, observedRules, observedRule,
     applyRuleUsing, edgeInsertCall, call, edges, scalar,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, premiseStepUsing, applyBindings, engineBasePremises,

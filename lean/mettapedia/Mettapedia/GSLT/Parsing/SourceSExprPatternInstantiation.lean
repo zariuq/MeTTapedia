@@ -158,6 +158,40 @@ mutual
   termination_by sizeOf values
 end
 
+mutual
+  /-- A translated source schema contains no binding former: source variables
+  become free metavariables and every other atom is ground data. -/
+  @[simp] theorem binderFree_pattern (source : SExpr) :
+      binderFree (pattern source) = true := by
+    cases source with
+    | atom token =>
+        by_cases isVariable : sourceVariableToken token
+        · simp [pattern, isVariable, binderFree]
+        · simp [pattern, isVariable, encode, binderFree, binderFreeList]
+    | list sources =>
+        rw [pattern, binderFree]
+        exact binderFreeList_patternList sources
+  termination_by sizeOf source
+
+  @[simp] theorem binderFreeList_patternList (sources : List SExpr) :
+      binderFreeList (patternList sources) = true := by
+    cases sources with
+    | nil => rfl
+    | cons source sources =>
+        rw [patternList, binderFreeList, binderFree_pattern source,
+          binderFreeList_patternList sources]
+        rfl
+  termination_by sizeOf sources
+end
+
+/-- A rule between binder-free patterns fires by plain substitution: its
+right-hand side never leaves depth zero, so no matched value is shifted. -/
+theorem applyRuleBindings_of_binderFree (rule : RewriteRule) (bindings : Bindings)
+    (left : binderFree rule.left = true) (right : binderFree rule.right = true) :
+    applyRuleBindings rule bindings = applyBindings bindings rule.right :=
+  applyRuleBindings_eq_applyBindings rule bindings
+    (ruleDepthAligned_of_binderFree rule left right)
+
 theorem first_binding_retained (first later : SExpr) :
     instantiate? [("?x", first), ("?x", later)] (.atom "?x") = some first := by
   simp [instantiate?, sourceVariableToken]

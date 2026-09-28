@@ -224,7 +224,7 @@ def scan (start : List Nat) (entries lexicals : SExpr) : SExpr :=
     app "ebnf-v1:max" [app "ebnf-v1:width-entries" [entries],
       app "ebnf-v1:width-lexicals" [lexicals]]]
 
-/-- The lower-document clause actually installs this scan beneath prefix,
+/-- The lower-document rule actually installs this scan beneath prefix,
 before the helper traversal starts. The arbitrary payloads are unchanged. -/
 theorem lower_document_uses_scan (start : List Nat) (entries lexicals span : SExpr) :
     closeEquation? loweringSyntax 30
@@ -289,7 +289,7 @@ private theorem lift_path {Codec : SExpr → List Nat → Prop} (f : SExpr → S
   | refl => exact .refl
   | tail _ step ih => exact ih.tail (compatible step)
 
-/-- Positive all-length witness: the actual two text-width clauses terminate
+/-- Positive all-length witness: the actual two text-width rules terminate
 at the independently counted length. This is not a sampled computation. -/
 theorem text_width_path (Codec : SExpr → List Nat → Prop) (word : List Nat) :
     Path Codec (app "ebnf-v1:text-width" [text word]) (unary word.length) := by

@@ -11,7 +11,7 @@ The primitive operation checks supplied evidence. A false result means that
 this evidence was not accepted; it is not a refutation of the typing claim.
 Context and declaration formation remain separate admission obligations.
 Accepted arguments supply the existing context morphism, which transports the
-clause's actual body and displayed type and composes with later substitutions.
+equation's actual body and displayed type and composes with later substitutions.
 -/
 
 set_option autoImplicit false
@@ -102,7 +102,7 @@ theorem checkArguments_sound
       simpa only [consSub_eta] using
         (Presentation.CtxMor.extend earlier newest)
 
-/-- Both checked clause endpoints retain the same instantiated displayed type.
+/-- Both checked equation endpoints retain the same instantiated displayed type.
 The typing of the target instance is derived, not an admission assumption. -/
 theorem checked_endpoints
     {R : Rules Head} {target : Ctx Head m}

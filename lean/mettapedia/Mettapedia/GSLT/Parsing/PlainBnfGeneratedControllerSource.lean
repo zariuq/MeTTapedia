@@ -3,7 +3,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfRunSourceExecution
 import Mettapedia.GSLT.Parsing.GeneratedPeTTaGroundExecution
 
 /-!
-# Authored controller clauses and their actual generated bodies
+# Authored controller rules and their actual generated bodies
 
 The selected syntax fold consumes the original ordered Run/Closure premises
 and explicit selected modes. It reproduces the corresponding equations in the
@@ -67,7 +67,7 @@ def premises? (callerFunctional : Bool) : List SExpr → SExpr → Option SExpr
       let continuation ← premises? callerFunctional tail final
       return letTerm result (selectedValue callerFunctional functional call) continuation
 
-def clause? (source : Rewrite) : Option SExpr := do
+def generatedEquation? (source : Rewrite) : Option SExpr := do
   let (functional, head, result) ← applicationParts? source.head
   let body ← premises? functional source.body (quote result)
   return .list [.atom "=", head, body]
@@ -85,14 +85,14 @@ theorem rows_count : rows.length = 4 := rfl
 
 def row (index : Fin 4) : Nat × SExpr := rows[index.val]'(by rw [rows_count]; exact index.isLt)
 
-theorem source_to_actual_equations : PlainBnfRunSourceFamily.rows.mapM clause? =
+theorem source_to_actual_equations : PlainBnfRunSourceFamily.rows.mapM generatedEquation? =
     some (rows.map Prod.snd) := rfl
 
 theorem occurrence_order : rows.map Prod.fst = [1970, 1974, 1979, 1989] := rfl
 
 theorem duplicate_source_occurrences {source : Rewrite} {target : SExpr}
-    (emitted : clause? source = some target) :
-    [source, source].mapM clause? = some [target, target] := by simp [emitted]
+    (emitted : generatedEquation? source = some target) :
+    [source, source].mapM generatedEquation? = some [target, target] := by simp [emitted]
 
 theorem wrong_arity_refused : applicationParts?
     (.list [.atom "BNFDiscoveryRunV1", .atom "?mode"]) = none := rfl
@@ -391,7 +391,7 @@ theorem run_closure_body (depth : Nat) (mode candidates reverse lexicals : SExpr
     (by rfl) closure_known closure_arity (dispatch_closure _ _ _ _) (row_equation 3)
 
 theorem wake_nil_source_to_actual :
-    ((PlainBnfWakeSourceExecution.rows.take 1).mapM clause?) = some [(wakeRow 0).2] := rfl
+    ((PlainBnfWakeSourceExecution.rows.take 1).mapM generatedEquation?) = some [(wakeRow 0).2] := rfl
 
 theorem wake_result_inert : inertBinder program dataHeads (wakeResult (.atom "$initial")) = true := by
   have absent : equationsFor "gslt:result:BNFDiscoveryWakeV1:1111110" program = [] := by rw [equationsFor_program]; rfl
@@ -490,7 +490,7 @@ theorem closure_empty (depth : Nat) (mode reverse lexicals : SExpr) :
   simp [instantiate_atom, variableToken, closureResult, closureFinal, closureTag]
 
 /-- The same literal name with an extra pair of parentheses does not match
-the atom used by the actual empty-heap clauses. -/
+the atom used by the actual empty-heap equations. -/
 theorem nullary_nil_not_done (mode reverse lexicals known scheduled : SExpr) :
     dispatch [] (runCall mode reverse lexicals known (.list [heapNil]) heapNil scheduled) program = [] := by
   rw [show runCall mode reverse lexicals known (.list [heapNil]) heapNil scheduled =

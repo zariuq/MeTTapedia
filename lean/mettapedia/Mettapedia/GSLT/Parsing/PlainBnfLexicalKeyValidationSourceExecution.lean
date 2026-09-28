@@ -23,7 +23,8 @@ open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfStructuredDenotation (LexicalDeclaration LexicalOrigin)
 open PlainBnfReferenceCollectionSourceExecution (text declarations declaration lookupResult)
 open PlainBnfReferenceSourceAdmission (admissionSource)
@@ -184,12 +185,14 @@ private theorem lookup_nil (field : Key) (fuel : Nat) (query : SExpr) :
   cases field <;>
     simp [rewriteAt, lookup_rules_exact, lookupObserved, observed, sourcePrefix, variableName, lookupRelation,
       lowerPremise?, splitCall?, mode?, applyRuleUsing, lookupCall, call, result,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       declarations, lookupResult, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
       encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
 
 local macro "lookup_found_reduce" : tactic => `(tactic|
     simp [rewriteAt, lookup_rules_exact, lookupObserved, observed, sourcePrefix, variableName, lookupRelation,
       declarationPattern, wireKey, keyWire, keyName, lowerPremise?, splitCall?, mode?, applyRuleUsing,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       lookupCall, call, result, declarations, declaration, lookupResult,
       pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing,
@@ -227,6 +230,7 @@ local macro "lookup_other_reduce" different:ident recursive:ident : tactic => `(
   simp only [wireKey, keyWire, keyName, encode, encodeList] at encodedDifferent
   simp [lookup_rules_exact, lookupObserved, observed, sourcePrefix, variableName, lookupRelation,
       declarationPattern, lowerPremise?, splitCall?, mode?, applyRuleUsing, lookupCall, call,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       declarations, declaration, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
       encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing,
       applyBindings, engineBasePremises, premiseStepWithEnv, relationQueryStep,
@@ -367,6 +371,7 @@ private theorem diagnostic_missing (field : Key) (fuel : Nat) (query currentOrig
   cases field <;>
     simp [rewriteAt, diagnostic_rules_exact, diagnosticObserved, observed, sourcePrefix, variableName,
       diagnosticRelation, diagnosticTag, applyRuleUsing,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       diagnosticCall, call, result, lookupResult, diagnostics, pattern, patternList,
       SourceIntegerProvider.sourceVariableToken, encode, encodeList, matchPattern, matchArgs,
       mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -374,6 +379,7 @@ private theorem diagnostic_missing (field : Key) (fuel : Nat) (query currentOrig
 local macro "diagnostic_found_reduce" : tactic => `(tactic|
     simp [rewriteAt, diagnostic_rules_exact, diagnosticObserved, observed, sourcePrefix, variableName,
       diagnosticRelation, diagnosticTag, lowerPremise?, splitCall?, mode?, applyRuleUsing,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       diagnosticCall, call, result, lookupResult, diagnostics, declaration, origin, pattern, patternList,
       SourceIntegerProvider.sourceVariableToken, encode, encodeList, matchPattern, matchArgs,
       mergeBindings, List.foldlM, premisesUsing, applyBindings])

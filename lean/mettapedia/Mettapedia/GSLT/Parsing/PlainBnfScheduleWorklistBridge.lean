@@ -5,7 +5,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfTwoHeapWorklist
 /-!
 # Authored scheduling preserves the two-heap worklist observation
 
-The selected actual source clauses execute the existing heap merge and trie
+The selected actual source rules execute the existing heap merge and trie
 insertion; the actual child-forest combine supplies removal of the published
 root. Their exact execution results are connected here to the independent
 source-position partition and uniqueness laws. No new queue carrier or
@@ -102,7 +102,7 @@ theorem execution_partition
         · exact Heap.WF.singleton.merge currentWF
 
 /-- Freshness is an explicit premise furnished by Wake's scheduled-name
-test and the name/position correspondence, not by the scheduling clauses. -/
+test and the name/position correspondence, not by the scheduling rules. -/
 theorem execution_unique
     (coordinate : Item → Fin size) (origin : Option Rank) (priority : Rank)
     (key : List Scalar) (expression span : SExpr)

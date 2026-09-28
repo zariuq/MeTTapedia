@@ -275,7 +275,7 @@ def bridge : State → Pattern → Prop
   | .quotable => fun process => generatedScope atomAName atomBName (quote process)
 
 /-- **The signature's polynomial is closed in the hand-written fixed point.**
-One case per branch, and each is the corresponding clause of the hand-written
+One case per branch, and each is the corresponding case of the hand-written
 transformer. -/
 theorem bridge_closed : Closed span signature bridge := by
   rintro index pattern ⟨branch, output, children, shape, childrenLayer⟩

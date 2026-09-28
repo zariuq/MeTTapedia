@@ -5,7 +5,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfValidationFinishSourceExecution
 # Ordered declaration collection, diagnostic append, and finish
 
 This composes the actual indexed collector with the actual diagnostic append
-and validation finish clauses. Acceptance at this boundary requires a nonempty
+and validation finish rules. Acceptance at this boundary requires a nonempty
 unique declaration list and no remaining diagnostics. A `StartSome` value is
 an explicit input here: its resolution and the production of the remaining
 lexical/reference/start diagnostics are not assumed to have been validated.

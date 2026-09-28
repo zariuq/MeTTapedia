@@ -21,7 +21,8 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT (Rewrite decodeList)
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfReferenceSourceAdmission (admissionSource graphSource)
 open PlainBnfTrieSourceExecution (call result result_injective)
 open PlainBnfIndexedCollectorSourceExecution (headedBy premiseClosed)
@@ -152,6 +153,7 @@ def graphRefused (diagnostics : SExpr) : SExpr := .list [.atom "BNFSemanticValid
 theorem append_nil (base : BasePremiseEvaluator) (fuel : Nat) (right : SExpr) :
     rewriteAt base language (fuel + 1) (appendCall nil right) = [result right] := by
   simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     appendCall, call, result, nil, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -163,6 +165,7 @@ private theorem append_cons (base : BasePremiseEvaluator) (fuel : Nat)
       answers.map (fun answer => result (cons head answer)) := by
   rw [rewriteAt]
   simp [rules_exact, observedRules, observed, applyRuleUsing, appendCall, call, cons,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing,
     lowerPremise?, splitCall?, mode?, premiseStepUsing, applyBindings]
@@ -250,6 +253,7 @@ theorem start_found_positive_depth (base : BasePremiseEvaluator) (fuel : Nat)
     (name expression span : SExpr) :
     rewriteAt base language (fuel + 1) (startCall name (.list [.atom "BNFDefinitionFoundV1", expression, span])) = [encode (.list [startSome name span, nil])] := by
   simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     call, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, applyBindings, startCall, startSome, nil]
@@ -271,6 +275,7 @@ theorem start_missing_positive_depth (base : BasePremiseEvaluator) (fuel : Nat)
     (name : SExpr) :
     rewriteAt base language (fuel + 1) (startCall name (.atom "BNFDefinitionMissingV1")) = [encode (.list [startInvalid name, cons (unknownStart name) nil])] := by
   simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     call, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, applyBindings, startCall, startInvalid, cons, unknownStart, nil]
@@ -292,6 +297,7 @@ theorem finish_empty_positive_depth (base : BasePremiseEvaluator) (fuel : Nat)
     (documentSpan start lexicals ds : SExpr) :
     rewriteAt base language (fuel + 1) (finishCall documentSpan start (.atom "BNFDefinitionsNilV1") lexicals ds) = [result (refused (cons (noDefinitions documentSpan) ds))] := by
   simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     call, result, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, applyBindings, finishCall, refused, cons, noDefinitions]
@@ -313,6 +319,7 @@ theorem finish_accepted_positive_depth (base : BasePremiseEvaluator) (fuel : Nat
     (documentSpan name span head tail lexicals : SExpr) :
     rewriteAt base language (fuel + 1) (finishCall documentSpan (startSome name span) (definitionsCons head tail) lexicals nil) = [result (accepted (startSome name span) (definitionsCons head tail) lexicals)] := by
   simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     call, result, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, applyBindings, finishCall, startSome, definitionsCons, nil, accepted]
@@ -334,6 +341,7 @@ theorem finish_refused_positive_depth (base : BasePremiseEvaluator) (fuel : Nat)
     (documentSpan start head tail lexicals first rest : SExpr) :
     rewriteAt base language (fuel + 1) (finishCall documentSpan start (definitionsCons head tail) lexicals (cons first rest)) = [result (refused (cons first rest))] := by
   simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     call, result, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, applyBindings, finishCall, definitionsCons, cons, refused]
@@ -355,6 +363,7 @@ theorem graph_accepted_positive_depth (base : BasePremiseEvaluator) (fuel : Nat)
     (start defs lexicals reachable nullable productive : SExpr) :
     rewriteAt base language (fuel + 1) (graphCall start defs lexicals reachable nullable productive nil) = [result (graphAccepted start defs lexicals reachable nullable productive)] := by
   simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     call, result, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, applyBindings, graphCall, graphAccepted, nil]
@@ -376,6 +385,7 @@ theorem graph_refused_positive_depth (base : BasePremiseEvaluator) (fuel : Nat)
     (start defs lexicals reachable nullable productive first rest : SExpr) :
     rewriteAt base language (fuel + 1) (graphCall start defs lexicals reachable nullable productive (cons first rest)) = [result (graphRefused (cons first rest))] := by
   simp [rewriteAt, rules_exact, observedRules, observed, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     call, result, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM,
     premisesUsing, applyBindings, graphCall, graphRefused, cons]

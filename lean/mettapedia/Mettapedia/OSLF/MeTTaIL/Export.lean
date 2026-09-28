@@ -137,7 +137,7 @@ private theorem args_elem_lt_apply (c : String) (args : List Pattern) (a : Patte
   omega
 
 def renderPattern : Pattern → String
-  | .bvar n => s!"bvar{n}"
+  | .bvar n => s!"#{n}"
   | .fvar x => x
   | .apply c [] => ctorName c
   | .apply c [arg] => s!"({ctorName c} {renderPattern arg})"
@@ -209,11 +209,15 @@ private def renderFreshnessTarget (pat : Pattern) : String :=
   | some rest => s!"...{rest}"
   | none => renderPattern pat
 
+private def renderScopedStep (step : ScopedStepPremise) : String :=
+  s!"scopedStep([{String.intercalate ", " (step.binders.map renderTypeExpr)}], {renderTypeExpr step.resultType}, {renderPattern step.source}, {renderPattern step.target})"
+
 /-- Render a premise, disambiguating overloaded relation names by arity.
     `overloaded` is the set of relation names that appear with multiple arities. -/
 private def renderPremise (overloaded : List String) : Premise → String
   | .freshness fc => s!"{fc.varName} # {renderFreshnessTarget fc.term}"
   | .congruence src tgt => s!"{renderPattern src} ~> {renderPattern tgt}"
+  | .scopedStep step => renderScopedStep step
   | .relationQuery rel args =>
       let name := if overloaded.contains rel then s!"{rel}{args.length}" else rel
       s!"{name}({String.intercalate ", " (args.map renderPattern)})"

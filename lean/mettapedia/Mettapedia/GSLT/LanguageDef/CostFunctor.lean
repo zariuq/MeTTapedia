@@ -789,13 +789,54 @@ theorem mapTypeContext_costWrappedStatic_natural
       targetTheory.presentation.interactingSort.1.name mapsInteracting
       reflectsInteracting]
 
+/-- The cost base-fiber square also preserves every dependency sort and
+explicit occurrence substitution, not only equation endpoints. -/
+theorem mapRuleBindingSpec_costBase_natural
+    (symbols : LanguageDefSymbolMap) (spec : RuleBindingSpec) :
+    mapRuleBindingSpec (costLanguageDefSymbolMap symbols)
+        (mapRuleBindingSpec costBaseStaticSymbols spec) =
+      mapRuleBindingSpec costBaseStaticSymbols
+        (mapRuleBindingSpec symbols spec) := by
+  apply mapRuleBindingSpec_square
+  · intro type
+    simpa only [mapTypeExpr_costBaseStaticSymbols] using
+      mapTypeExpr_costBaseTypeExpr symbols type
+  · intro pattern
+    exact mapPattern_costBaseStatic_natural symbols pattern
+
+/-- The hereditary wrapped square has the same action on binding data under
+the established interacting-sort preservation and reflection hypotheses. -/
+theorem mapRuleBindingSpec_costWrapped_natural
+    (symbols : LanguageDefSymbolMap) (sourceTheory targetTheory : IGSLT)
+    (mapsInteracting :
+      symbols.sort sourceTheory.presentation.interactingSort.1.name =
+        targetTheory.presentation.interactingSort.1.name)
+    (reflectsInteracting : ∀ sourceSort,
+      symbols.sort sourceSort =
+          targetTheory.presentation.interactingSort.1.name →
+        sourceSort = sourceTheory.presentation.interactingSort.1.name)
+    (spec : RuleBindingSpec) :
+    mapRuleBindingSpec (costLanguageDefSymbolMap symbols)
+        (mapRuleBindingSpec (costWrappedStaticSymbols sourceTheory) spec) =
+      mapRuleBindingSpec (costWrappedStaticSymbols targetTheory)
+        (mapRuleBindingSpec symbols spec) := by
+  apply mapRuleBindingSpec_square
+  · intro type
+    simpa only [mapTypeExpr_costWrappedStaticSymbols] using
+      mapTypeExpr_costWrappedTypeExpr symbols
+        sourceTheory.presentation.interactingSort.1.name
+        targetTheory.presentation.interactingSort.1.name
+        mapsInteracting reflectsInteracting type
+  · intro pattern
+    exact mapPattern_costWrappedStatic_natural symbols sourceTheory targetTheory pattern
+
 /-- Premise-free base equation transport is natural in presentation maps. -/
 theorem mapEquation_costBase_natural
     (symbols : LanguageDefSymbolMap) (equation : Equation)
     (premisesEmpty : equation.premises = []) :
     mapEquation (costLanguageDefSymbolMap symbols) (costBaseEquation equation) =
       costBaseEquation (mapEquation symbols equation) := by
-  rcases equation with ⟨name, context, premises, left, right⟩
+  rcases equation with ⟨name, context, premises, left, right, bindings⟩
   simp only at premisesEmpty
   subst premises
   simp only [costBaseEquation, mapEquation, List.map_nil]
@@ -809,6 +850,11 @@ theorem mapEquation_costBase_natural
     mapTypeContext_costBaseStatic_natural,
     mapPattern_costBaseStatic_natural,
     mapPattern_costBaseStatic_natural]
+  cases bindings with
+  | none => rfl
+  | some spec =>
+      simp only [Option.map_some]
+      rw [mapRuleBindingSpec_costBase_natural]
 
 /-- Premise-free hereditary wrapped equation transport is natural when the
 underlying map preserves and reflects the interacting-sort fiber. -/
@@ -825,7 +871,7 @@ theorem mapEquation_costWrapped_natural
     mapEquation (costLanguageDefSymbolMap symbols)
         (costWrappedEquation sourceTheory equation) =
       costWrappedEquation targetTheory (mapEquation symbols equation) := by
-  rcases equation with ⟨name, context, premises, left, right⟩
+  rcases equation with ⟨name, context, premises, left, right, bindings⟩
   simp only at premisesEmpty
   subst premises
   simp only [costWrappedEquation, mapEquation, List.map_nil]
@@ -842,6 +888,12 @@ theorem mapEquation_costWrapped_natural
       mapsInteracting reflectsInteracting,
     mapPattern_costWrappedStatic_natural symbols sourceTheory targetTheory left,
     mapPattern_costWrappedStatic_natural symbols sourceTheory targetTheory right]
+  cases bindings with
+  | none => rfl
+  | some spec =>
+      simp only [Option.map_some]
+      rw [mapRuleBindingSpec_costWrapped_natural symbols sourceTheory targetTheory
+        mapsInteracting reflectsInteracting]
 
 @[simp]
 theorem mapTermParam_costBase (symbols : LanguageDefSymbolMap)

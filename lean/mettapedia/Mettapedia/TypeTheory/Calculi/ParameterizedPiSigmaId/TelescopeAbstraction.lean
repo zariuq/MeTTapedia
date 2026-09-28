@@ -3,7 +3,7 @@ import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedSubstitution
 /-!
 # Dependent telescope abstraction and checked application
 
-Closing a clause must preserve the dependent domains of its actual context.
+Closing an equation must preserve the dependent domains of its actual context.
 Abstracting that context produces a closed term and product type; applying
 the abstraction through a typed context morphism recovers the simultaneous
 substitution, both by typing and by directed beta computation.
@@ -115,7 +115,7 @@ theorem applyClosed_beta (context : Ctx Head n) (sigma : Sub Head n m)
           (subst (liftSub (fun index => sigma index.succ)) term) (sigma 0))
 
 /-- Substituting the target context transports the result through the same
-composite morphism, without a separate clause-specific operation. -/
+composite morphism, without a separate equation-specific operation. -/
 theorem applyClosed_subst (context : Ctx Head n) (sigma : Sub Head n m)
     (tau : Sub Head m k) (function : Tm Head m) :
     subst tau (applyClosed context sigma function) =

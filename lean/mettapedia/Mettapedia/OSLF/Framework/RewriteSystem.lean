@@ -33,6 +33,8 @@ namespace Mettapedia.OSLF.Framework
 
 /-! ## Rewrite Systems -/
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- A rewrite system: the INPUT to the OSLF algorithm.
 
     Per OSLF paper section 3 (Def 1) + section 8.4:

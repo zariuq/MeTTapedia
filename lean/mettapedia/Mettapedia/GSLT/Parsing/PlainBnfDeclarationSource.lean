@@ -174,7 +174,7 @@ private theorem all_realizable {program : Program} (goals : List GroundAtom)
     simpa [goalsAt] using
       (first'.append_suffix (goalsAt (leftFuel + rightFuel) goals)).append rest'
 
-/-- A genuine authored clause instance followed by its ordered source paths. -/
+/-- A genuine authored rule instance followed by its ordered source paths. -/
 theorem Realizable.rule {program : Program} {occurrence : Nat} {sourceRule : Rule}
     {substitution : Substitution} {goal : GroundAtom} {premises : List GroundAtom}
     (selected : program[occurrence]? = some sourceRule)

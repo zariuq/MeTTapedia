@@ -152,6 +152,7 @@ private theorem zeroWithChoice_queryRewrite_row :
     LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
     LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
     LanguageDef.premiseProducedFvarNames, LanguageDef.premiseForAllParams,
+    LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped,
     Pattern.constructorRefs, Pattern.constructorRefsList,
     Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, TypeExpr.baseNames]
@@ -168,6 +169,7 @@ private theorem zeroWithChoice_evaluationRewrite_row :
     LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
     LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
     LanguageDef.premiseProducedFvarNames, LanguageDef.premiseForAllParams,
+    LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped,
     Pattern.constructorRefs, Pattern.constructorRefsList,
     Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, TypeExpr.baseNames]
@@ -230,6 +232,7 @@ private theorem quoteAndChoice_queryRewrite_row :
       LanguageDef.premiseFvarNames,
       LanguageDef.premiseProducedFvarNames,
       LanguageDef.premiseForAllParams, Pattern.freeFvarNames,
+      LanguageDef.premiseLocallyScoped,
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
 
@@ -251,6 +254,7 @@ private theorem quoteAndChoice_evaluationRewrite_row :
       LanguageDef.premiseFvarNames,
       LanguageDef.premiseProducedFvarNames,
       LanguageDef.premiseForAllParams, Pattern.freeFvarNames,
+      LanguageDef.premiseLocallyScoped,
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
 
@@ -332,7 +336,7 @@ private theorem quoteAndChoice_evaluationDemandRewrite_row :
   · rw [quoteAndChoice_constructorLabels_eq]
     simp only [LanguageDef.validateRulePatterns,
       show PrimeCandidates.LanguageDef.evaluationDemandRewrite.premises = [] from rfl,
-      List.flatMap_nil, List.append_nil, List.all_cons, List.all_nil,
+      List.flatMap_nil, List.append_nil, List.all_nil,
       demand_left_fvars, demand_left_binders, demand_left_scope,
       demand_right_fvars, demand_right_binders, demand_right_scope]
     decide +kernel
@@ -354,6 +358,7 @@ private theorem quoteAndChoice_needRewrite_row :
       LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
       LanguageDef.premiseProducedFvarNames,
       LanguageDef.premiseForAllParams, Pattern.freeFvarNames,
+      LanguageDef.premiseLocallyScoped,
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt]
 
@@ -389,7 +394,7 @@ private theorem quoteAndChoice_reflectedDemandRewrite_row :
   · rw [quoteAndChoice_constructorLabels_eq]
     simp only [LanguageDef.validateRulePatterns,
       show PrimeCandidates.LanguageDef.reflectedDemandRewrite.premises = [] from rfl,
-      List.flatMap_nil, List.append_nil, List.all_cons, List.all_nil,
+      List.flatMap_nil, List.append_nil, List.all_nil,
       reflected_left_fvars, reflected_left_binders, reflected_left_scope,
       reflected_right_fvars, reflected_right_binders, reflected_right_scope]
     decide +kernel

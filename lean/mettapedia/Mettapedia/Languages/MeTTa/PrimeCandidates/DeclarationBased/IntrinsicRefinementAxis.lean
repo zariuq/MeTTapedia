@@ -727,8 +727,8 @@ def refinementAxisEliminateAtParameters_applicationHead :
       refinementAxisEliminateAtParameters :=
   .app (.app (.app .const))
 
-def refinementAxisBudgetIotaClause :
-    IotaClause emptyRules rawRefinementAxisSignature
+def refinementAxisBudgetIotaRule :
+    IotaRule emptyRules rawRefinementAxisSignature
       proofRelevantRefinementAxisComputation
       (refinementAxisConstructors.map ConstructorSpec.name)
       refinementAxisEliminatorSpec.name where
@@ -742,8 +742,8 @@ def refinementAxisBudgetIotaClause :
     .app refinementAxisEliminateAtParameters_applicationHead
   constructorOccurrence := .appArgument .here
 
-def refinementAxisAuthorityIotaClause :
-    IotaClause emptyRules rawRefinementAxisSignature
+def refinementAxisAuthorityIotaRule :
+    IotaRule emptyRules rawRefinementAxisSignature
       proofRelevantRefinementAxisComputation
       (refinementAxisConstructors.map ConstructorSpec.name)
       refinementAxisEliminatorSpec.name where
@@ -758,12 +758,12 @@ def refinementAxisAuthorityIotaClause :
     .app refinementAxisEliminateAtParameters_applicationHead
   constructorOccurrence := .appArgument .here
 
-noncomputable def refinementAxisIotaClauses :
-    List (IotaClause emptyRules rawRefinementAxisSignature
+noncomputable def refinementAxisIotaRules :
+    List (IotaRule emptyRules rawRefinementAxisSignature
       proofRelevantRefinementAxisComputation
       (refinementAxisConstructors.map ConstructorSpec.name)
       refinementAxisEliminatorSpec.name) :=
-  [refinementAxisBudgetIotaClause, refinementAxisAuthorityIotaClause]
+  [refinementAxisBudgetIotaRule, refinementAxisAuthorityIotaRule]
 
 noncomputable def refinementAxisCandidate : Candidate emptyRules where
   signature := rawRefinementAxisSignature
@@ -792,16 +792,16 @@ noncomputable def refinementAxisCandidate : Candidate emptyRules where
     simp only [refinementAxisConstructors, List.mem_cons,
       List.not_mem_nil, or_false] at membership
     rcases membership with rfl | rfl <;> decide
-  iotaClauses := refinementAxisIotaClauses
+  iotaRules := refinementAxisIotaRules
   constructorsComputed := by
     intro constructorName membership
     simp [refinementAxisConstructors,
       refinementAxisBudgetConstructorSpec,
       refinementAxisAuthorityConstructorSpec] at membership
     rcases membership with rfl | rfl <;>
-      simp [refinementAxisIotaClauses,
-        refinementAxisBudgetIotaClause,
-        refinementAxisAuthorityIotaClause]
+      simp [refinementAxisIotaRules,
+        refinementAxisBudgetIotaRule,
+        refinementAxisAuthorityIotaRule]
 
 /-! ## Positive and negative controls -/
 

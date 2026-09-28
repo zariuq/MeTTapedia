@@ -46,6 +46,13 @@ def premiseStepUsing
       (recursiveStep source').flatMap fun candidate =>
         (matchPattern target candidate).filterMap fun premiseBindings =>
           mergeBindings bindings premiseBindings
+  | .scopedStep step =>
+      if step.binders.isEmpty then
+        let source' := applyBindings bindings step.source
+        (recursiveStep source').flatMap fun candidate =>
+          (matchPattern step.target candidate).filterMap fun premiseBindings =>
+            mergeBindings bindings premiseBindings
+      else []
   | premise => base lang bindings premise
 
 /-- Evaluate an ordered premise list. -/
@@ -140,6 +147,14 @@ mutual
         premiseBindings ∈ matchPattern target candidate →
         mergeBindings bindings premiseBindings = some result →
         PremiseAt base lang fuel bindings (.congruence source target) result
+    | scopedRoot
+        {bindings premiseBindings result : Bindings}
+        {step : ScopedStepPremise} {candidate : Pattern} :
+        step.binders = [] →
+        StepAt base lang fuel (applyBindings bindings step.source) candidate →
+        premiseBindings ∈ matchPattern step.target candidate →
+        mergeBindings bindings premiseBindings = some result →
+        PremiseAt base lang fuel bindings (.scopedStep step) result
 
   /-- Evidence for an ordered list of premises. -/
   inductive PremisesAt
@@ -217,6 +232,28 @@ private theorem mem_premiseStepUsing_iff
         | congruence recursive matchMember merged =>
             simp only [premiseStepUsing, List.mem_flatMap, List.mem_filterMap]
             exact ⟨_, recursiveExact.mpr recursive, _, matchMember, merged⟩
+  | scopedStep step =>
+      by_cases empty : step.binders = []
+      · constructor
+        · intro member
+          simp only [premiseStepUsing, empty, List.isEmpty_nil,
+            ↓reduceIte, List.mem_flatMap, List.mem_filterMap] at member
+          obtain ⟨candidate, recursiveMember, premiseBindings,
+            matchMember, merged⟩ := member
+          exact .scopedRoot empty (recursiveExact.mp recursiveMember)
+            matchMember merged
+        · intro evidence
+          cases evidence with
+          | scopedRoot empty' recursive matchMember merged =>
+              simp only [premiseStepUsing, empty', List.isEmpty_nil, ↓reduceIte,
+                List.mem_flatMap, List.mem_filterMap]
+              exact ⟨_, recursiveExact.mpr recursive, _, matchMember, merged⟩
+      · constructor
+        · intro member
+          simp [premiseStepUsing, empty] at member
+        · intro evidence
+          cases evidence with
+          | scopedRoot empty' _ _ _ => exact (empty empty').elim
 
 private theorem mem_premisesUsing_iff
     {base : BasePremiseEvaluator} {lang : LanguageDef} {fuel : Nat}
@@ -324,6 +361,8 @@ theorem StepAt.mono_rules
                   (.forAll _ _ _) final member))
         | congruence recursive matched merged =>
             exact .congruence (inductionHypothesis recursive) matched merged
+        | scopedRoot empty recursive matched merged =>
+            exact .scopedRoot empty (inductionHypothesis recursive) matched merged
       have premisesMono :
           ∀ {initial final : Bindings} {premises : List Premise},
             PremisesAt (engineBasePremises relEnv) lang₁ fuel
@@ -397,6 +436,8 @@ theorem StepAt.mono_relEnv
                   (.forAll _ _ _) final member))
         | congruence recursive matched merged =>
             exact .congruence (inductionHypothesis recursive) matched merged
+        | scopedRoot empty recursive matched merged =>
+            exact .scopedRoot empty (inductionHypothesis recursive) matched merged
       have premisesMono :
           ∀ {initial final : Bindings} {premises : List Premise},
             PremisesAt (engineBasePremises relEnv₁) lang fuel
@@ -441,11 +482,18 @@ private theorem flatMap_premisesUsing_engineBase_zero_eq_foldl
   induction premises generalizing seeds with
   | nil => simp [premisesUsing]
   | cons premise premises inductionHypothesis =>
-      cases premise <;>
-        simp only [premisesUsing, premiseStepUsing, engineBasePremises,
-          rewriteAt, List.foldl_cons] <;>
-        rw [← List.flatMap_assoc] <;>
-        exact inductionHypothesis _
+      cases premise with
+      | scopedStep step =>
+          simp [premisesUsing, premiseStepUsing,
+            rewriteAt, premiseStepWithEnv, List.foldl_cons]
+          have hNil : List.flatMap
+              (fun _ : Bindings => ([] : List Bindings)) seeds = [] := by simp
+          simpa [hNil, premiseStepWithEnv] using inductionHypothesis []
+      | _ =>
+          simp only [premisesUsing, premiseStepUsing, engineBasePremises,
+            rewriteAt, List.foldl_cons]
+          rw [← List.flatMap_assoc]
+          exact inductionHypothesis _
 
 /-- At contextual depth zero, recursive congruence is unavailable, so the
 new premise interpreter agrees with the established root-premise evaluator

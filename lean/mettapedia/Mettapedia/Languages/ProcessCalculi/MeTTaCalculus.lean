@@ -5,6 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Reduction
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.SpaceChannelBoundary
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.SpaceInteraction
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.CausalInteraction
+import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.TransactionResources
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.GSLTInteraction
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Adequacy
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.Interoperability

@@ -133,11 +133,41 @@ def specToCorePremise : SpecPremise → Except String CorePremise
       let a' ← specToCorePattern a
       let b' ← specToCorePattern b
       pure (.congruence a' b')
+  | .scopedStep step =>
+      if step.binders.isEmpty then do
+        let source ← specToCorePattern step.source
+        let target ← specToCorePattern step.target
+        pure (.congruence source target)
+      else
+        throw "Cannot lower a step premise with local binders to core Premise; the core premise has no local context."
   | .relationQuery rel args => do
       let args' ← args.mapM specToCorePattern
       pure (.relationQuery rel args')
   | .forAll collection _ _ =>
       throw s!"Cannot lower forAll premise over collection `{collection}` to core Premise; core has no quantified premise form."
+
+/-- Erasing the sort annotation of a zero-binder scoped premise recovers the
+old flat congruence bridge exactly. -/
+theorem specToCorePremise_scopedRoot_eq_congruence
+    (resultType : SpecTypeExpr) (source target : SpecPattern) :
+    specToCorePremise (.scopedStep
+      (Mettapedia.OSLF.MeTTaIL.Syntax.ScopedStepPremise.root
+        resultType source target)) =
+      specToCorePremise (.congruence source target) := by
+  rfl
+
+/-- The flat core cannot represent a reduction premise below a local binder;
+the bridge reports that missing structure rather than dropping the binder. -/
+theorem specToCorePremise_rejects_local_step
+    (resultType binderType : SpecTypeExpr)
+    (source target : SpecPattern) :
+    specToCorePremise (.scopedStep {
+      binders := [binderType]
+      resultType := resultType
+      source := source
+      target := target }) =
+        .error "Cannot lower a step premise with local binders to core Premise; the core premise has no local context." := by
+  rfl
 
 def specToCoreEquation (eqn : SpecEquation) : Except String CoreEquation := do
   let premises ← eqn.premises.mapM specToCorePremise

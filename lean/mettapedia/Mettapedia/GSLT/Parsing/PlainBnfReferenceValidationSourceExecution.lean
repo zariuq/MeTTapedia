@@ -5,7 +5,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfDeclarationAdmission
 /-!
 # Authored reference-resolution diagnostics
 
-The literal/reference and after-lookup clauses are extracted from admission
+The literal/reference and after-lookup rules are extracted from admission
 occurrences 55–60. Their definition and lexical queries execute the existing
 authored source families. An empty-origin constructed definition index supplies
 well-shaped first-definition payloads, rather than treating every arbitrary
@@ -28,7 +28,8 @@ open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfStructuredDenotation (SourceSpan Element LexicalDeclaration)
 open PlainBnfReferenceCollectionSourceExecution
   (text span element declarations lookupCall lookupResult firstDeclaration lookupHeads)
@@ -263,6 +264,7 @@ local macro "resolution_reduce" : tactic =>
       simp [headedBy, relationHeads, elementCall, afterDefinitionCall, afterLexicalCall, call, encode, encodeList])]
     simp [rules_exact, observedRules, observed, lowerPremise?, splitCall?, mode?,
       applyRuleUsing, elementCall, afterDefinitionCall, afterLexicalCall, indexWire,
+      applyRuleBindings_of_binderFree, binderFree, binderFreeList,
       call, element, declarationResult, lookupResult,
       pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
       matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing,

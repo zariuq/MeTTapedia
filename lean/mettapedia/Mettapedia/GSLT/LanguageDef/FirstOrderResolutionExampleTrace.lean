@@ -11,7 +11,7 @@ import Mettapedia.GSLT.LanguageDef.FirstOrderResolutionInput
 
 This inert carrier is the private trace boundary of CeTTa's first-order
 resolution example.  It is a glued extension of the resolution input presentation: the
-nineteen input types and thirty-one input constructors are re-declared here
+nineteen input types and thirty-five input constructors are re-declared here
 verbatim, in the same order and with the same field names, and the proof
 structure is appended after them.  An embedded literal inside a certificate is
 therefore literally a `fo-resolution:` value.  There is deliberately no second
@@ -78,6 +78,11 @@ def language : LanguageDef := {
     ctor "fo-resolution:source-digest" "SourceDigest" [("value", "String")],
     ctor "fo-resolution:occurrence" "OccurrenceId"
       [("source", "SourceDigest"), ("index", "Integer")],
+    ctor "fo-resolution:included-occurrence" "OccurrenceId"
+      [("source", "SourceDigest"), ("index", "Integer"),
+       ("via", "OccurrenceId")],
+    ctor "fo-resolution:clausal-occurrence" "OccurrenceId"
+      [("formula", "OccurrenceId"), ("index", "Integer")],
     ctor "fo-resolution:formula-name-atomic" "FormulaName"
       [("value", "SymbolName")],
     ctor "fo-resolution:formula-name-integer" "FormulaName"
@@ -88,6 +93,8 @@ def language : LanguageDef := {
     ctor "fo-resolution:symbol-quoted" "SymbolKind" [],
     ctor "fo-resolution:symbol-defined" "SymbolKind" [],
     ctor "fo-resolution:symbol-system" "SymbolKind" [],
+    ctor "fo-resolution:symbol-skolem" "SymbolKind" [],
+    ctor "fo-resolution:symbol-definition" "SymbolKind" [],
     ctor "fo-resolution:symbol-name" "SymbolName"
       [("kind", "SymbolKind"), ("value", "String")],
 
@@ -158,7 +165,7 @@ theorem language_validate : language.validate = [] := by
   decide +kernel
 
 theorem language_inventory :
-    language.types.length = 27 ∧ language.terms.length = 42 ∧
+    language.types.length = 27 ∧ language.terms.length = 46 ∧
       language.rewrites.length = 0 := by
   decide
 

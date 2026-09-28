@@ -3,7 +3,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfHeapSourceExecution
 /-!
 # Authored discovery heap combine
 
-The three original combine clauses execute beside their actual rank/merge
+The three original combine rules execute beside their actual rank/merge
 dependencies. The independent result is Batteries' existing pairing-heap
 combine. Complete source answers preserve the whole forest, including every
 sibling and opaque payload occurrence. No generated or native correspondence
@@ -21,7 +21,8 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT (Rewrite decodeList)
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfRankSourceExecution (call result)
 open PlainBnfHeapSourceExecution (Item heap rankedDefinition itemLE mergeCall mergeHeight)
 open PlainBnfIndexedCollectorSourceExecution
@@ -180,6 +181,7 @@ private theorem combine_nil (base : BasePremiseEvaluator) (fuel : Nat) :
   rw [combine_rewriteAt base fuel _ (by rfl)]
   simp [rules_exact, observedRules, observed, PlainBnfHeapSourceExecution.observed,
     PlainBnfTrieSourceExecution.observedRule, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     combineCall, call, result, heap, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -191,6 +193,7 @@ private theorem combine_one (base : BasePremiseEvaluator) (fuel : Nat)
   rw [combine_rewriteAt base fuel _ (by rfl)]
   simp [rules_exact, observedRules, observed, PlainBnfHeapSourceExecution.observed,
     PlainBnfTrieSourceExecution.observedRule, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     combineCall, call, result, heap, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -296,6 +299,7 @@ private theorem pair_complete (base : BasePremiseEvaluator) (fuel : Nat)
   simp [pairRule_exact, observedRules, observed, PlainBnfHeapSourceExecution.observed,
     PlainBnfTrieSourceExecution.observedRule, pairBindings, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, mergeBindings, premisesUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     premiseStepUsing, applyBindings]
   simp only [mergeCall, call, result, heap, encode, encodeList] at first
   rw [first]

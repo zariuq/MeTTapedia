@@ -9,7 +9,7 @@ The selected operational rules below are extracted from the live authored
 lowering and executed by the existing Pattern matcher and substitution.
 
 This proves the name allocator's collision laws for a supplied name-width
-bound, and checks its counter/allocation source clauses. It does not yet prove
+bound, and checks its counter/allocation source rules. It does not yet prove
 that the complete grammar/lexical width scan supplies that bound, nor that the
 whole lowering or C evaluator realizes these laws on every input.
 -/
@@ -197,23 +197,23 @@ private theorem counter_rules_exact : counter.rewrites = observedRules := rfl
 
 theorem counter_empty_source :
     rewriteStep counter (encode (nextCall [])) = [encode (bitsText [true])] := by
-  simp [rewriteStep, counter_rules_exact, observedRules, applyRule, nextCall,
+  simp [rewriteStep, counter_rules_exact, observedRules, applyRule, applyRuleBindings, nextCall,
     bitsText, text, digit, app, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM, applyBindings]
 
 theorem counter_zero_source (tail : List Bool) :
     rewriteStep counter (encode (nextCall (false :: tail))) =
       [encode (bitsText (true :: tail))] := by
-  simp [rewriteStep, counter_rules_exact, observedRules, applyRule, nextCall,
+  simp [rewriteStep, counter_rules_exact, observedRules, applyRule, applyRuleBindings, nextCall,
     bitsText, text, digit, app, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM, applyBindings]
 
-/-- The actual carry clause returns an explicit recursive call in the tail;
+/-- The actual carry rule returns an explicit recursive call in the tail;
 this theorem does not silently normalize that call by a second evaluator. -/
 theorem counter_one_source (tail : List Bool) :
     rewriteStep counter (encode (nextCall (true :: tail))) =
       [encode (app "bnf-v1:text-cons" [.atom "48", nextCall tail])] := by
-  simp [rewriteStep, counter_rules_exact, observedRules, applyRule, nextCall,
+  simp [rewriteStep, counter_rules_exact, observedRules, applyRule, applyRuleBindings, nextCall,
     bitsText, text, digit, app, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
     encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM, applyBindings]
 

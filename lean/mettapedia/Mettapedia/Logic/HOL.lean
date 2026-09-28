@@ -9,6 +9,7 @@ import Mettapedia.Logic.HOL.Embedding.ContextualHenkinSemantics
 import Mettapedia.Logic.HOL.Syntax.Subst
 import Mettapedia.Logic.HOL.Syntax.Closed
 import Mettapedia.Logic.HOL.Syntax.ConstMap
+import Mettapedia.Logic.HOL.DefinitionExtensionSemantics
 import Mettapedia.Logic.HOL.Syntax.TypeSubstitution
 import Mettapedia.Logic.HOL.TypeSubstitutionDerivation
 import Mettapedia.Logic.HOL.TypeSubstitutionSemantics
@@ -24,6 +25,13 @@ import Mettapedia.Logic.HOL.TransitionInvariant
 import Mettapedia.Logic.HOL.DerivationExtensionality
 import Mettapedia.Logic.HOL.ProofSyntax
 import Mettapedia.Logic.HOL.ProofSyntaxStructural
+import Mettapedia.Logic.HOL.ProofSyntaxModulo
+import Mettapedia.Logic.HOL.ProofSyntaxModuloStructural
+import Mettapedia.Logic.HOL.ProofSyntaxModuloKripke
+import Mettapedia.Logic.HOL.ProofSyntaxModuloConservativity
+import Mettapedia.Logic.HOL.ImpredicativeProofModulo
+import Mettapedia.Logic.HOL.PublishedFacts
+import Mettapedia.Logic.HOL.ProofCarryingPipeline
 import Mettapedia.Logic.HOL.UniformListMapFusion
 import Mettapedia.Logic.HOL.Embedding.GroundUnaryEquationalProofSyntax
 import Mettapedia.Logic.HOL.Lindenbaum

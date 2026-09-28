@@ -568,6 +568,7 @@ theorem bindingLabels_matchPattern {pattern term : Pattern} {bindings : Bindings
 def premiseLabels : Premise → List String
   | .freshness condition => labels condition.term
   | .congruence source target => labels source ++ labels target
+  | .scopedStep step => labels step.source ++ labels step.target
   | .relationQuery _ arguments => labelsList arguments
   | .forAll _ _ body => premiseLabels body
 

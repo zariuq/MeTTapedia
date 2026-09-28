@@ -6829,8 +6829,8 @@ def axisNamedFixedUnaryConstructorApp_constantOccurrence
         witness) :=
   .appFunction (.appFunction (.appFunction .here))
 
-noncomputable def axisEstablishedIotaClause :
-    IotaClause refinementAxisRules rawAxisRefinementSignature
+noncomputable def axisEstablishedIotaRule :
+    IotaRule refinementAxisRules rawAxisRefinementSignature
       proofRelevantAxisRefinementComputation
       (axisRefinementConstructors.map ConstructorSpec.name)
       axisRefinementEliminatorSpec.name where
@@ -6857,8 +6857,8 @@ noncomputable def axisEstablishedIotaClause :
       axisNamedBinaryConstructorApp_constantOccurrence axisEstablishedName
         (.var 15) (.var 3) (.var 2) (.var 1) (.var 0)
 
-noncomputable def axisRefutedIotaClause :
-    IotaClause refinementAxisRules rawAxisRefinementSignature
+noncomputable def axisRefutedIotaRule :
+    IotaRule refinementAxisRules rawAxisRefinementSignature
       proofRelevantAxisRefinementComputation
       (axisRefinementConstructors.map ConstructorSpec.name)
       axisRefinementEliminatorSpec.name where
@@ -6885,8 +6885,8 @@ noncomputable def axisRefutedIotaClause :
       axisNamedBinaryConstructorApp_constantOccurrence axisRefutedName
         (.var 15) (.var 3) (.var 2) (.var 1) (.var 0)
 
-noncomputable def axisIncompleteIotaClause :
-    IotaClause refinementAxisRules rawAxisRefinementSignature
+noncomputable def axisIncompleteIotaRule :
+    IotaRule refinementAxisRules rawAxisRefinementSignature
       proofRelevantAxisRefinementComputation
       (axisRefinementConstructors.map ConstructorSpec.name)
       axisRefinementEliminatorSpec.name where
@@ -6913,8 +6913,8 @@ noncomputable def axisIncompleteIotaClause :
       axisNamedBinaryConstructorApp_constantOccurrence axisIncompleteName
         (.var 15) (.var 3) (.var 2) (.var 1) (.var 0)
 
-noncomputable def budgetOutsideIotaClause :
-    IotaClause refinementAxisRules rawAxisRefinementSignature
+noncomputable def budgetOutsideIotaRule :
+    IotaRule refinementAxisRules rawAxisRefinementSignature
       proofRelevantAxisRefinementComputation
       (axisRefinementConstructors.map ConstructorSpec.name)
       axisRefinementEliminatorSpec.name where
@@ -6941,8 +6941,8 @@ noncomputable def budgetOutsideIotaClause :
       axisNamedFixedUnaryConstructorApp_constantOccurrence
         budgetOutsideRefinementName (.var 13) (.var 1) (.var 0)
 
-noncomputable def axisBudgetIncompleteEstablishedIotaClause :
-    IotaClause refinementAxisRules rawAxisRefinementSignature
+noncomputable def axisBudgetIncompleteEstablishedIotaRule :
+    IotaRule refinementAxisRules rawAxisRefinementSignature
       proofRelevantAxisRefinementComputation
       (axisRefinementConstructors.map ConstructorSpec.name)
       axisRefinementEliminatorSpec.name where
@@ -6971,8 +6971,8 @@ noncomputable def axisBudgetIncompleteEstablishedIotaClause :
         budgetIncompleteEstablishedRefinementName
         (.var 14) (.var 2) (.var 1) (.var 0)
 
-noncomputable def axisBudgetIncompleteRefutedIotaClause :
-    IotaClause refinementAxisRules rawAxisRefinementSignature
+noncomputable def axisBudgetIncompleteRefutedIotaRule :
+    IotaRule refinementAxisRules rawAxisRefinementSignature
       proofRelevantAxisRefinementComputation
       (axisRefinementConstructors.map ConstructorSpec.name)
       axisRefinementEliminatorSpec.name where
@@ -7001,8 +7001,8 @@ noncomputable def axisBudgetIncompleteRefutedIotaClause :
         budgetIncompleteRefutedRefinementName
         (.var 14) (.var 2) (.var 1) (.var 0)
 
-noncomputable def authorityOutsideIotaClause :
-    IotaClause refinementAxisRules rawAxisRefinementSignature
+noncomputable def authorityOutsideIotaRule :
+    IotaRule refinementAxisRules rawAxisRefinementSignature
       proofRelevantAxisRefinementComputation
       (axisRefinementConstructors.map ConstructorSpec.name)
       axisRefinementEliminatorSpec.name where
@@ -7031,8 +7031,8 @@ noncomputable def authorityOutsideIotaClause :
         authorityOutsideRefinementName
         (.var 14) (.var 2) (.var 1) (.var 0)
 
-noncomputable def authorityOutsideEstablishedIotaClause :
-    IotaClause refinementAxisRules rawAxisRefinementSignature
+noncomputable def authorityOutsideEstablishedIotaRule :
+    IotaRule refinementAxisRules rawAxisRefinementSignature
       proofRelevantAxisRefinementComputation
       (axisRefinementConstructors.map ConstructorSpec.name)
       axisRefinementEliminatorSpec.name where
@@ -7061,8 +7061,8 @@ noncomputable def authorityOutsideEstablishedIotaClause :
         authorityOutsideEstablishedRefinementName
         (.var 14) (.var 2) (.var 1) (.var 0)
 
-noncomputable def authorityOutsideRefutedIotaClause :
-    IotaClause refinementAxisRules rawAxisRefinementSignature
+noncomputable def authorityOutsideRefutedIotaRule :
+    IotaRule refinementAxisRules rawAxisRefinementSignature
       proofRelevantAxisRefinementComputation
       (axisRefinementConstructors.map ConstructorSpec.name)
       axisRefinementEliminatorSpec.name where
@@ -7091,8 +7091,8 @@ noncomputable def authorityOutsideRefutedIotaClause :
         authorityOutsideRefutedRefinementName
         (.var 14) (.var 2) (.var 1) (.var 0)
 
-noncomputable def authorityOutsideIncompleteIotaClause :
-    IotaClause refinementAxisRules rawAxisRefinementSignature
+noncomputable def authorityOutsideIncompleteIotaRule :
+    IotaRule refinementAxisRules rawAxisRefinementSignature
       proofRelevantAxisRefinementComputation
       (axisRefinementConstructors.map ConstructorSpec.name)
       axisRefinementEliminatorSpec.name where
@@ -7121,18 +7121,18 @@ noncomputable def authorityOutsideIncompleteIotaClause :
         authorityOutsideIncompleteRefinementName
         (.var 14) (.var 2) (.var 1) (.var 0)
 
-noncomputable def axisRefinementIotaClauses :
-    List (IotaClause refinementAxisRules rawAxisRefinementSignature
+noncomputable def axisRefinementIotaRules :
+    List (IotaRule refinementAxisRules rawAxisRefinementSignature
       proofRelevantAxisRefinementComputation
       (axisRefinementConstructors.map ConstructorSpec.name)
       axisRefinementEliminatorSpec.name) :=
-  [axisEstablishedIotaClause, axisRefutedIotaClause,
-    axisIncompleteIotaClause, budgetOutsideIotaClause,
-    axisBudgetIncompleteEstablishedIotaClause,
-    axisBudgetIncompleteRefutedIotaClause, authorityOutsideIotaClause,
-    authorityOutsideEstablishedIotaClause,
-    authorityOutsideRefutedIotaClause,
-    authorityOutsideIncompleteIotaClause]
+  [axisEstablishedIotaRule, axisRefutedIotaRule,
+    axisIncompleteIotaRule, budgetOutsideIotaRule,
+    axisBudgetIncompleteEstablishedIotaRule,
+    axisBudgetIncompleteRefutedIotaRule, authorityOutsideIotaRule,
+    authorityOutsideEstablishedIotaRule,
+    authorityOutsideRefutedIotaRule,
+    authorityOutsideIncompleteIotaRule]
 
 /-- The proof-relevant refinement family has one uniform signature parameter
 and four indices: axis, judgment, source outcome, and target outcome. -/
@@ -7171,7 +7171,7 @@ noncomputable def axisRefinementCandidate : Candidate refinementAxisRules where
       List.not_mem_nil, or_false] at membership
     rcases membership with rfl | rfl | rfl | rfl | rfl | rfl | rfl |
         rfl | rfl | rfl <;> decide
-  iotaClauses := axisRefinementIotaClauses
+  iotaRules := axisRefinementIotaRules
   constructorsComputed := by
     intro constructorName membership
     simp [axisRefinementConstructors, axisEstablishedConstructorSpec,
@@ -7185,14 +7185,14 @@ noncomputable def axisRefinementCandidate : Candidate refinementAxisRules where
       authorityOutsideIncompleteRefinementConstructorSpec] at membership
     rcases membership with rfl | rfl | rfl | rfl | rfl | rfl | rfl |
         rfl | rfl | rfl <;>
-      simp [axisRefinementIotaClauses, axisEstablishedIotaClause,
-        axisRefutedIotaClause, axisIncompleteIotaClause,
-        budgetOutsideIotaClause,
-        axisBudgetIncompleteEstablishedIotaClause,
-        axisBudgetIncompleteRefutedIotaClause, authorityOutsideIotaClause,
-        authorityOutsideEstablishedIotaClause,
-        authorityOutsideRefutedIotaClause,
-        authorityOutsideIncompleteIotaClause]
+      simp [axisRefinementIotaRules, axisEstablishedIotaRule,
+        axisRefutedIotaRule, axisIncompleteIotaRule,
+        budgetOutsideIotaRule,
+        axisBudgetIncompleteEstablishedIotaRule,
+        axisBudgetIncompleteRefutedIotaRule, authorityOutsideIotaRule,
+        authorityOutsideEstablishedIotaRule,
+        authorityOutsideRefutedIotaRule,
+        authorityOutsideIncompleteIotaRule]
 
 /-! ## Structural separation controls -/
 

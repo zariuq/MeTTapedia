@@ -1,5 +1,6 @@
 import Mettapedia.TypeTheory.ContextualTarskiUniverseFamilies
 import Mettapedia.TypeTheory.CwfTarskiUniverse
+import Mettapedia.TypeTheory.ContextualIdentityTypes
 import Mathlib.Logic.Small.Basic
 
 /-!
@@ -119,6 +120,21 @@ structure SigmaClosed (family : TarskiUniverseFamily Level C)
     family.el (sigmaCode domainCode codomainCode) =
       sums.sigma (family.el domainCode) (family.el codomainCode)
 
+/-- Closure under the selected contextual identity operation. The code
+decodes to that operation at the supplied endpoints; reflection and proof
+irrelevance are not assumptions of universe closure. -/
+structure IdClosed (family : TarskiUniverseFamily Level C)
+    (identity : ContextualIdentityTypes.IdentityFormation C) where
+  idCode : ∀ {context : C.Ctx} {level : Level}
+    (typeCode : C.Tm context (family.univ context level))
+    (_left _right : C.Tm context (family.el typeCode)),
+    C.Tm context (family.univ context level)
+  el_idCode : ∀ {context : C.Ctx} {level : Level}
+    (typeCode : C.Tm context (family.univ context level))
+    (left right : C.Tm context (family.el typeCode)),
+    family.el (idCode typeCode left right) =
+      identity.idTy (family.el typeCode) left right
+
 /-- Select one level as an ordinary one-universe structure. -/
 def atLevel (family : TarskiUniverseFamily Level C) (level : Level) :
     TarskiUniverse C where
@@ -184,9 +200,8 @@ def hierarchy : TarskiUniverseFamily Bool semanticCwf where
   univ := fun _context level _point => Code level
   el := decodeFamily
 
-def substitutionStable : hierarchy.SubstitutionStable where
-  univ_sub _ _ := rfl
-  el_sub _ _ := rfl
+theorem substitutionStable : hierarchy.SubstitutionStable := by
+  constructor <;> intros <;> rfl
 
 /-- The sole strict hierarchy edge. -/
 def Below (lower upper : Bool) : Prop := lower = false ∧ upper = true

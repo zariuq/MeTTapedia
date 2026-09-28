@@ -24,6 +24,9 @@ import Mettapedia.Languages.MeTTa.PeTTa.StdLib
 import Mettapedia.Languages.MeTTa.PeTTa.GroundedOracle
 import Mettapedia.Languages.MeTTa.PeTTa.PrologBridge
 import Mettapedia.Languages.MeTTa.PeTTa.TranslateExpr
+import Mettapedia.Languages.MeTTa.PeTTa.ValueOccurrences
+import Mettapedia.Languages.MeTTa.PeTTa.DispatchErrorScope
+import Mettapedia.Languages.MeTTa.PeTTa.RaiseFree
 import Mettapedia.Languages.MeTTa.PeTTa.DeclarativeSpec
 import Mettapedia.Languages.MeTTa.PeTTa.ExecutableBoundary
 import Mettapedia.Languages.MeTTa.PeTTa.SemanticForms

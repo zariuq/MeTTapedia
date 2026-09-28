@@ -91,7 +91,11 @@
 (= (nf $sig (Pi  $A $B)) (Pi  (nf $sig $A) (nf $sig $B)))
 (= (nf $sig (Lam $A $b)) (Lam (nf $sig $A) (nf $sig $b)))
 (= (nf $sig (Bad $e)) (Bad $e))
-(= (nf $sig (App $f $a)) (nf-app $sig (nf $sig $f) (nf $sig $a)))
+(= (nf $sig (App $f $a))
+   (case (nf $sig $f)
+     (($nf-f
+       (case (nf $sig $a)
+         (($nf-a (nf-app $sig $nf-f $nf-a))))))))
 (= (nf-app $sig $f $a) (unify $f (Lam $A $b) (nf $sig (subst 0 $a $b)) (App $f $a)))
 
 (= (conv-nf $x $y)
@@ -111,6 +115,7 @@
 
 (= (infer $sig $ctx (Srt type)) (Srt kind))
 (= (infer $sig $ctx (Srt kind)) (Bad kind-is-topsort))
+(= (infer $sig $ctx (Bad $e)) (Bad $e))
 (= (infer $sig $ctx (Var $i))  (ctx-type $i $ctx))
 (= (infer $sig $ctx (Con $c))  (decl-type-of $sig $c))
 (= (infer $sig $ctx (Def $c))  (decl-type-of $sig $c))

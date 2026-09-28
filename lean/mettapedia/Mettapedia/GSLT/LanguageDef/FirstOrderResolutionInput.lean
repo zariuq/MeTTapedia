@@ -15,6 +15,17 @@ variables.  The projection from source-preserving clause data may erase raw
 annotations and byte spans, but it retains the source digest, occurrence,
 formula name, and role needed to audit every input clause.
 
+An input reached through include directives has an included occurrence: its
+own source digest and index, and the occurrence of the include directive that
+reached it.  The include path is part of the input's identity, so a file
+included twice gives two inputs with separate variable scopes.
+
+A clause obtained by clausifying a formula has a clausal occurrence: the
+formula's occurrence and the clause's position in the formula's clausal form.
+Symbols introduced by clausification have their own kinds, Skolem functions
+and definitional predicates, whose values are their introduction indices, so an
+introduced symbol is never spelled like a source symbol.
+
 Search policy and proof checking are separate GSLTs.  This language supplies
 neither an implicit unifier nor a native arithmetic or ATP oracle.
 -/
@@ -56,6 +67,11 @@ def language : LanguageDef := {
     ctor "fo-resolution:source-digest" "SourceDigest" [("value", "String")],
     ctor "fo-resolution:occurrence" "OccurrenceId"
       [("source", "SourceDigest"), ("index", "Integer")],
+    ctor "fo-resolution:included-occurrence" "OccurrenceId"
+      [("source", "SourceDigest"), ("index", "Integer"),
+       ("via", "OccurrenceId")],
+    ctor "fo-resolution:clausal-occurrence" "OccurrenceId"
+      [("formula", "OccurrenceId"), ("index", "Integer")],
     ctor "fo-resolution:formula-name-atomic" "FormulaName"
       [("value", "SymbolName")],
     ctor "fo-resolution:formula-name-integer" "FormulaName"
@@ -66,6 +82,8 @@ def language : LanguageDef := {
     ctor "fo-resolution:symbol-quoted" "SymbolKind" [],
     ctor "fo-resolution:symbol-defined" "SymbolKind" [],
     ctor "fo-resolution:symbol-system" "SymbolKind" [],
+    ctor "fo-resolution:symbol-skolem" "SymbolKind" [],
+    ctor "fo-resolution:symbol-definition" "SymbolKind" [],
     ctor "fo-resolution:symbol-name" "SymbolName"
       [("kind", "SymbolKind"), ("value", "String")],
 
@@ -113,7 +131,7 @@ theorem language_validate : language.validate = [] := by
   decide +kernel
 
 theorem language_inventory :
-    language.types.length = 19 ∧ language.terms.length = 31 ∧
+    language.types.length = 19 ∧ language.terms.length = 35 ∧
       language.rewrites.length = 0 := by
   decide
 
@@ -176,6 +194,65 @@ theorem occurrence_scopes_are_not_collapsed :
       a "fo-resolution:variable-id" [secondOccurrence, demoName] := by
   decide
 
+private def includedSource : Pattern :=
+  a "fo-resolution:source-digest" [a "fo-resolution:included-digest"]
+private def includedOnce : Pattern :=
+  a "fo-resolution:included-occurrence"
+    [includedSource, a "fo-resolution:first-index", firstOccurrence]
+private def includedTwice : Pattern :=
+  a "fo-resolution:included-occurrence"
+    [includedSource, a "fo-resolution:first-index", secondOccurrence]
+
+/-- One input of an included file, reached through two include directives,
+is two inputs whose variables are distinct. -/
+theorem include_paths_are_not_collapsed :
+    a "fo-resolution:variable-id" [includedOnce, demoName] ≠
+      a "fo-resolution:variable-id" [includedTwice, demoName] := by
+  decide
+
+/-- An included input is not the root-level input with the same digest and
+index. -/
+theorem included_occurrence_is_not_root_occurrence :
+    includedOnce ≠
+      a "fo-resolution:occurrence"
+        [includedSource, a "fo-resolution:first-index"] := by
+  decide
+
+private def firstClausal : Pattern :=
+  a "fo-resolution:clausal-occurrence"
+    [firstOccurrence, a "fo-resolution:first-index"]
+private def secondClausal : Pattern :=
+  a "fo-resolution:clausal-occurrence"
+    [firstOccurrence, a "fo-resolution:second-index"]
+
+/-- Two clauses of one formula's clausal form have distinct variables. -/
+theorem clausal_occurrences_are_not_collapsed :
+    a "fo-resolution:variable-id" [firstClausal, demoName] ≠
+      a "fo-resolution:variable-id" [secondClausal, demoName] := by
+  decide
+
+/-- A clause of a formula's clausal form is not the formula's own
+occurrence. -/
+theorem clausal_occurrence_is_not_formula_occurrence :
+    firstClausal ≠ firstOccurrence := by
+  decide
+
+private def demoValue : Pattern := a "fo-resolution:demo-value"
+
+/-- An introduced Skolem function is never a source symbol with the same
+value. -/
+theorem skolem_symbol_is_not_source_symbol :
+    a "fo-resolution:symbol-name" [a "fo-resolution:symbol-skolem", demoValue] ≠
+      a "fo-resolution:symbol-name" [a "fo-resolution:symbol-lower", demoValue] := by
+  decide
+
+/-- An introduced definitional predicate is never an introduced Skolem
+function with the same value. -/
+theorem definition_symbol_is_not_skolem_symbol :
+    a "fo-resolution:symbol-name" [a "fo-resolution:symbol-definition", demoValue] ≠
+      a "fo-resolution:symbol-name" [a "fo-resolution:symbol-skolem", demoValue] := by
+  decide
+
 theorem wire_isSome :
     (CanonicalWire.renderLanguage? language).isSome := by
   decide +kernel
@@ -195,6 +272,12 @@ def writeWire (path : System.FilePath) : IO Unit :=
 #print axioms theory_no_step
 #print axioms galois
 #print axioms occurrence_scopes_are_not_collapsed
+#print axioms include_paths_are_not_collapsed
+#print axioms included_occurrence_is_not_root_occurrence
+#print axioms clausal_occurrences_are_not_collapsed
+#print axioms clausal_occurrence_is_not_formula_occurrence
+#print axioms skolem_symbol_is_not_source_symbol
+#print axioms definition_symbol_is_not_skolem_symbol
 #print axioms wire_isSome
 
 end Mettapedia.GSLT.LanguageDef.FirstOrderResolutionInput

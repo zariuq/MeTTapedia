@@ -17,7 +17,7 @@ relational roles belongs to the lane classifier. A relational payload is
 opaque to this pass: its own argument evaluation is not head elaboration.
 Logical cons is a separate structural constructor, not an application whose
 symbol happens to be `cons`. Its physical list encoding is outside this file.
-Whole clauses, static output heads, mutable authority, source freshening, and
+Whole equations, static output heads, mutable authority, source freshening, and
 C storage/lifetime refinement are also outside the claim.
 -/
 

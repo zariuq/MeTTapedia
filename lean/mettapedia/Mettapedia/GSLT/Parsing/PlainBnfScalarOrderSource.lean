@@ -4,7 +4,7 @@ import Mathlib.Tactic.FinCases
 import Mathlib.Data.Fintype.Fin
 
 /-!
-# Exact source answers of the selected lexical scalar-order clauses
+# Exact source answers of the selected lexical scalar-order rules
 
 The canonical source reader retrieves the actual two scalar-order rows and
 their actual Integer-provider equations. The finite computation below closes
@@ -145,9 +145,9 @@ def providerAnswers? : SExpr → Option (List SExpr)
       return answers.flatten
   | _ => none
 
-/-- A finite, single-premise source-clause observation. The output is read
+/-- A finite, single-premise source-rule observation. The output is read
 from the instantiated authored head, not supplied by a result provider. -/
-def clauseAnswers? (row : Rewrite) (left right : Int) (origin : SExpr) : Option (List SExpr) := do
+def ruleAnswers? (row : Rewrite) (left right : Int) (origin : SExpr) : Option (List SExpr) := do
   let head ← instantiate? (sourceEnv left right origin) row.head
   let premises ← instantiateList? (sourceEnv left right origin) row.body
   let .list [.atom symbol, first, second, location, output] := head | none
@@ -158,7 +158,7 @@ def clauseAnswers? (row : Rewrite) (left right : Int) (origin : SExpr) : Option 
     return answers.map (fun _ => output)
 
 def sourceAnswers? (left right : Int) (origin : SExpr) : Option (List SExpr) := do
-  let answers ← scalarRows.mapM (fun row => clauseAnswers? row left right origin)
+  let answers ← scalarRows.mapM (fun row => ruleAnswers? row left right origin)
   return answers.flatten
 
 /-- Independent scalar-order diagnostic meaning. It is compared with the
@@ -203,10 +203,10 @@ theorem provider_not_less (left right : Int) :
     SourceIntegerProvider.evalInteger?]
   split <;> rfl
 
-theorem first_clause_answers (left right : Int) (origin : SExpr) :
-    clauseAnswers? (scalarRow 0) left right origin =
+theorem first_rule_answers (left right : Int) (origin : SExpr) :
+    ruleAnswers? (scalarRow 0) left right origin =
       some (if left < right then [.atom "BNFDiagnosticsNilV1"] else []) := by
-  unfold clauseAnswers?
+  unfold ruleAnswers?
   rw [scalarRow_head, scalarRow_body]
   simp only [Fin.val_zero, ↓reduceIte]
   have provider := provider_less left right
@@ -215,12 +215,12 @@ theorem first_clause_answers (left right : Int) (origin : SExpr) :
     relation, provider]
   split <;> rfl
 
-theorem second_clause_answers (left right : Int) (origin : SExpr) :
-    clauseAnswers? (scalarRow 1) left right origin =
+theorem second_rule_answers (left right : Int) (origin : SExpr) :
+    ruleAnswers? (scalarRow 1) left right origin =
       some (if right ≤ left then [.list [.atom "BNFDiagnosticsConsV1",
         .list [.atom "BNFNonIncreasingLexicalScalarsV1", .atom (toString left),
           .atom (toString right), origin], .atom "BNFDiagnosticsNilV1"]] else []) := by
-  unfold clauseAnswers?
+  unfold ruleAnswers?
   rw [scalarRow_head, scalarRow_body]
   simp only [Fin.val_one, Nat.one_ne_zero, ↓reduceIte]
   have provider := provider_not_less left right
@@ -235,7 +235,7 @@ theorem sourceAnswers_eq (left right : Int) (origin : SExpr) :
     sourceAnswers? left right origin = some [diagnostic left right origin] := by
   unfold sourceAnswers?
   rw [scalarRows_exact]
-  simp only [List.mapM_cons, List.mapM_nil, first_clause_answers, second_clause_answers]
+  simp only [List.mapM_cons, List.mapM_nil, first_rule_answers, second_rule_answers]
   by_cases increasing : left < right
   · have notReversed : ¬ right ≤ left := by omega
     simp [increasing, notReversed, diagnostic]
@@ -254,15 +254,15 @@ theorem sourceAnswers_single_occurrence (left right : Int) (origin : SExpr)
   rw [(sourceAnswers_iff left right origin answers).mp completed]
   rfl
 
-/-- Repeating a successful authored clause repeats the result occurrence.
+/-- Repeating a successful authored rule repeats the result occurrence.
 The finite source fold does not deduplicate equal diagnostic packets. -/
-theorem repeated_clause_not_semidet (left right : Int) (origin : SExpr)
+theorem repeated_rule_not_semidet (left right : Int) (origin : SExpr)
     (increasing : left < right) :
     (do let answers ← [scalarRow 0, scalarRow 0].mapM
-          (fun row => clauseAnswers? row left right origin)
+          (fun row => ruleAnswers? row left right origin)
         pure answers.flatten : Option (List SExpr)) =
       some [.atom "BNFDiagnosticsNilV1", .atom "BNFDiagnosticsNilV1"] := by
-  simp [first_clause_answers, increasing]
+  simp [first_rule_answers, increasing]
 
 theorem equal_operands_diagnosed (value : Int) (origin : SExpr) :
     sourceAnswers? value value origin = some [.list [.atom "BNFDiagnosticsConsV1",

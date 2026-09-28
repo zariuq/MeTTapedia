@@ -3,9 +3,9 @@ import Mettapedia.GSLT.Parsing.PlainBnfWakeSourceFamily
 /-!
 # The authored discovery controller source family
 
-The four original Run/Closure clauses are translated from their admitted
+The four original Run/Closure rules are translated from their admitted
 source occurrences. Their recursive dependencies share the original trie
-clauses once. The observations below check that translation; they do not
+rules once. The observations below check that translation; they do not
 provide answers or construct a replacement controller.
 -/
 
@@ -21,7 +21,8 @@ open PlainBnfIndexedCollectorSourceExecution (headedBy premiseClosed)
 open PlainBnfReadinessEnvironment
 open PlainBnfReadinessSourceExecution (finite_disjoint)
 open PlainBnfLexicalMatcherSourceExecution (relations)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open SourceSExprPatternCodec (encode encodeList)
 open scoped Mettapedia.OSLF.MeTTaIL.MeTTaSyntaxQuotation
 
@@ -243,6 +244,9 @@ theorem combine_closed : PlainBnfHeapCombineSourceExecution.language.rewrites.al
       PlainBnfHeapCombineSourceExecution.dependencies_closed rule member) premise present
     cases premise with
     | congruence source target => exact headedBy_mono _ _ (by decide) _ closed
+    | scopedStep step =>
+      simp only [premiseClosed, Bool.or_eq_true] at closed ⊢
+      exact closed.imp id (headedBy_mono _ _ (by decide) step.source)
     | _ => rfl
   · have closed : PlainBnfHeapCombineSourceExecution.combineRules.all
         (fun rule => rule.premises.all (premiseClosed combineHeads)) = true := by
@@ -334,6 +338,7 @@ theorem dependents_answers (fuel : Nat) (found : Option SExpr) :
     cases found <;>
       simp [dependents_exact, observedDependents, PlainBnfTrieSourceExecution.observedRule,
         applyRuleUsing, PlainBnfReverseReferencesSourceExecution.dependentsCall,
+        applyRuleBindings_of_binderFree, binderFree, binderFreeList,
         PlainBnfReverseReferencesSourceExecution.dependents, PlainBnfReverseReferencesSourceExecution.emptyBucket,
         PlainBnfTrieSourceExecution.call, PlainBnfTrieSourceExecution.result, PlainBnfTrieSourceExecution.value,
         pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
@@ -385,6 +390,9 @@ private theorem premise_mono (small large : List String) (included : small ⊆ l
     premiseClosed large premise = true := by
   cases premise with
   | congruence source target => exact headedBy_mono small large included source closed
+  | scopedStep step =>
+    simp only [premiseClosed, Bool.or_eq_true] at closed ⊢
+    exact closed.imp id (headedBy_mono small large included step.source)
   | _ => rfl
 
 theorem family_closed : language.rewrites.all

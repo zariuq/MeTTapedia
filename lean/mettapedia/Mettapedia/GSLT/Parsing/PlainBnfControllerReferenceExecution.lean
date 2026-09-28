@@ -10,7 +10,7 @@ trie and reversed history; the trie is never rebuilt from an extensional set.
 
 Reference fuel counts publications. Rollover consumes no publication fuel;
 its round counter is a proof observation, not an added runtime field. The
-proof unfolds actual source clauses and uses the existing controller
+proof unfolds actual source rules and uses the existing controller
 invariant, with explicit live coordinates and reverse-index execution.
 It does not introduce a second interpreter or establish native correspondence.
 -/
@@ -235,7 +235,7 @@ theorem cascade_order_control :
     runEvents grammar 3 (fun _ => false) 0 0 = [⟨0, 0⟩, ⟨0, 1⟩, ⟨0, 2⟩] ∧
     runEvents grammar 3 (fun _ => false) 0 0 ≠ [⟨0, 0⟩, ⟨0, 2⟩, ⟨0, 1⟩] := by decide
 
-/-- The terminal source clause preserves reference publication order in
+/-- The terminal source rule preserves reference publication order in
 the stored reversed history, including the untouched original suffix. -/
 theorem two_event_terminal_packet (productive : Bool) (definitions : Definitions)
     (first second : Event definitions.length) (index : NameIndex) (history : List SExpr) :

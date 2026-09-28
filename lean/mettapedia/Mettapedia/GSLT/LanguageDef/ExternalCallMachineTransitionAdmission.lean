@@ -135,9 +135,6 @@ theorem match_fetch_call_instruction
     a "external-call:call-binary"
       [external, ifValue, ifLanguageFault, ifEngineFault,
        ifResourceFault]
-  have applied : applyBindings seed instructionSchema = instructionSchema := by
-    simp [seed, instructionSchema, consumedBindings, runMatchBindings,
-      a, v, applyBindings]
   have instructionMatched :
       extension ∈ matchRelationArgument seed instructionSchema instruction := by
     have exactMatch : extension ∈ matchPattern instructionSchema instruction := by
@@ -146,9 +143,7 @@ theorem match_fetch_call_instruction
           match_call_instruction external ifValue ifLanguageFault
             ifEngineFault ifResourceFault]
       simp
-    change extension ∈
-      matchPattern (applyBindings seed instructionSchema) instruction
-    rw [applied]
+    change extension ∈ matchPattern instructionSchema instruction
     exact exactMatch
   have merged : mergeBindings seed extension =
       some (callFetchedBindings program pc store fuel receipt nextFuel
@@ -198,9 +193,6 @@ theorem match_call_external_value
   let extension : Bindings := [("nextStore", nextStore)]
   let outcomeSchema := a "external-call:external-value" [v "nextStore"]
   let outcome := a "external-call:external-value" [nextStore]
-  have applied : applyBindings seed outcomeSchema = outcomeSchema := by
-    simp [seed, outcomeSchema, callFetchedBindings, consumedBindings,
-      runMatchBindings, a, v, applyBindings]
   have outcomeMatched :
       extension ∈ matchRelationArgument seed outcomeSchema outcome := by
     have exactMatch : extension ∈ matchPattern outcomeSchema outcome := by
@@ -208,8 +200,7 @@ theorem match_call_external_value
         simpa [extension, outcomeSchema, outcome] using
           match_external_value nextStore]
       simp
-    change extension ∈ matchPattern (applyBindings seed outcomeSchema) outcome
-    rw [applied]
+    change extension ∈ matchPattern outcomeSchema outcome
     exact exactMatch
   have merged : mergeBindings seed extension =
       some (callValueBindings program pc store fuel receipt nextFuel
@@ -282,9 +273,6 @@ theorem match_fetch_branch_instruction
   let instructionSchema :=
     a "external-call:branch-zero" [v "slot", v "ifZero", v "ifNonzero"]
   let instruction := a "external-call:branch-zero" [slot, ifZero, ifNonzero]
-  have applied : applyBindings seed instructionSchema = instructionSchema := by
-    simp [seed, instructionSchema, consumedBindings, runMatchBindings,
-      a, v, applyBindings]
   have instructionMatched :
       extension ∈ matchRelationArgument seed instructionSchema instruction := by
     have exactMatch : extension ∈ matchPattern instructionSchema instruction := by
@@ -292,9 +280,7 @@ theorem match_fetch_branch_instruction
         simpa [extension, instructionSchema, instruction] using
           match_branch_instruction slot ifZero ifNonzero]
       simp
-    change extension ∈
-      matchPattern (applyBindings seed instructionSchema) instruction
-    rw [applied]
+    change extension ∈ matchPattern instructionSchema instruction
     exact exactMatch
   have merged : mergeBindings seed extension =
       some (branchFetchedBindings program pc store fuel receipt nextFuel
@@ -523,9 +509,6 @@ theorem match_fetch_return_value
   let extension : Bindings := [("slot", slot)]
   let instructionSchema := a "external-call:return-value" [v "slot"]
   let instruction := a "external-call:return-value" [slot]
-  have applied : applyBindings seed instructionSchema = instructionSchema := by
-    simp [seed, instructionSchema, consumedBindings, runMatchBindings,
-      a, v, applyBindings]
   have instructionMatched :
       extension ∈ matchRelationArgument seed instructionSchema instruction := by
     have exactMatch : extension ∈ matchPattern instructionSchema instruction := by
@@ -533,9 +516,7 @@ theorem match_fetch_return_value
         simpa [extension, instructionSchema, instruction] using
           match_return_value slot]
       simp
-    change extension ∈
-      matchPattern (applyBindings seed instructionSchema) instruction
-    rw [applied]
+    change extension ∈ matchPattern instructionSchema instruction
     exact exactMatch
   have merged : mergeBindings seed extension =
       some (returnFetchedBindings program pc store fuel receipt nextFuel slot) := by
@@ -701,8 +682,8 @@ theorem match_fetch_return_declined
   let instruction := a "external-call:return-declined"
   have instructionMatched :
       [] ∈ matchRelationArgument seed instruction instruction := by
-    change [] ∈ matchPattern (applyBindings seed instruction) instruction
-    simp [instruction, a, applyBindings, matchPattern, matchArgs]
+    change [] ∈ matchPattern instruction instruction
+    simp [instruction, a, matchPattern, matchArgs]
   have instructionTail : [] ∈
       matchRelationArgs seed [instruction] [instruction] :=
     matchRelationArgs_single (extended := seed) instructionMatched

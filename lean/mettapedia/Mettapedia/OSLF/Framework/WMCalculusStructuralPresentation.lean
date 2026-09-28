@@ -50,18 +50,18 @@ def combineCommEquation : Equation :=
   ⟨"WM_CombineComm",
     [("e1", .base "BinaryEvidence"), ("e2", .base "BinaryEvidence")],
     [], pCombine (.fvar "e1") (.fvar "e2"),
-    pCombine (.fvar "e2") (.fvar "e1")⟩
+    pCombine (.fvar "e2") (.fvar "e1"), none⟩
 
 def combineAssocEquation : Equation :=
   ⟨"WM_CombineAssoc",
     [("e1", .base "BinaryEvidence"), ("e2", .base "BinaryEvidence"),
       ("e3", .base "BinaryEvidence")], [],
     pCombine (pCombine (.fvar "e1") (.fvar "e2")) (.fvar "e3"),
-    pCombine (.fvar "e1") (pCombine (.fvar "e2") (.fvar "e3"))⟩
+    pCombine (.fvar "e1") (pCombine (.fvar "e2") (.fvar "e3")), none⟩
 
 def combineZeroEquation : Equation :=
   ⟨"WM_CombineZero", [("e", .base "BinaryEvidence")], [],
-    pCombine (.fvar "e") pEvidenceZero, .fvar "e"⟩
+    pCombine (.fvar "e") pEvidenceZero, .fvar "e", none⟩
 
 def structuralEquations : List Equation :=
   [combineCommEquation, combineAssocEquation, combineZeroEquation]

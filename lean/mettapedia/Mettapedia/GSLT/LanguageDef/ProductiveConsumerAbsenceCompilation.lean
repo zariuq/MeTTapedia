@@ -162,10 +162,10 @@ structure Program where
 
 /-- An authored equation whose ordinary named root is the selected relation.
 The constructor exposes actual equation-list membership and LHS syntax. -/
-inductive SourceClause (program : Program) (name : String) (rhs : Atom) : Prop
+inductive SourceEquation (program : Program) (name : String) (rhs : Atom) : Prop
   | declared (arguments : List Atom)
       (present : { lhs := .expression (.symbol name :: arguments), rhs } ∈
-        program.equations) : SourceClause program name rhs
+        program.equations) : SourceEquation program name rhs
 
 def collectRhs (program : Program) (name : String) : List Atom :=
   program.equations.filterMap fun equation =>
@@ -174,12 +174,12 @@ def collectRhs (program : Program) (name : String) : List Atom :=
         if head = name then some equation.rhs else none
     | _ => none
 
-/-- The collector covers each independently described named source clause;
+/-- The collector covers each independently described named source equation;
 this is proved by inspecting its concrete filter, not supplied as a premise. -/
-theorem sourceClause_collected
+theorem sourceEquation_collected
     (program : Program) (name : String) (rhs : Atom)
-    (clause : SourceClause program name rhs) : rhs ∈ collectRhs program name := by
-  cases clause with
+    (equation : SourceEquation program name rhs) : rhs ∈ collectRhs program name := by
+  cases equation with
   | declared arguments present =>
       exact List.mem_filterMap.mpr ⟨_, present, by simp⟩
 
@@ -201,10 +201,10 @@ theorem cachedSeed_possible
 
 def LocalSeed (program : Program) (name : String) : Prop :=
   CachedSeed program name ∨
-    ∃ rhs, SourceClause program name rhs ∧ DynamicOccurrence rhs
+    ∃ rhs, SourceEquation program name rhs ∧ DynamicOccurrence rhs
 
 def SourceEdge (program : Program) (source target : String) : Prop :=
-  ∃ rhs, SourceClause program source rhs ∧ NamedOccurrence target rhs
+  ∃ rhs, SourceEquation program source rhs ∧ NamedOccurrence target rhs
 
 def scanRelation (syntaxFuel : Nat) (program : Program) (name : String) : SyntaxResult :=
   if cachedSeed? program name then .possible
@@ -224,24 +224,24 @@ theorem scanRelation_closed_sound
       scanSyntax_closed_sound syntaxFuel (collectRhs program name) edges syntaxCompleted
     constructor
     · intro seed
-      rcases seed with record | ⟨rhs, clause, occurrence⟩
+      rcases seed with record | ⟨rhs, equation, occurrence⟩
       · exact cached (cachedSeed_possible program name record)
-      · exact noDynamic rhs (sourceClause_collected program name rhs clause) occurrence
+      · exact noDynamic rhs (sourceEquation_collected program name rhs equation) occurrence
     · intro target edge
-      obtain ⟨rhs, clause, occurrence⟩ := edge
-      exact namedCovered rhs (sourceClause_collected program name rhs clause)
+      obtain ⟨rhs, equation, occurrence⟩ := edge
+      exact namedCovered rhs (sourceEquation_collected program name rhs equation)
         target occurrence
 
 /-- Finite productive analysis routes. Every direct or forwarded step names an
 actual RHS syntax occurrence; recursive forwarding alone creates no trace. -/
 inductive ProductiveTrace (program : Program) : String -> Prop
   | direct (name : String) (rhs : Atom)
-      (clause : SourceClause program name rhs)
+      (equation : SourceEquation program name rhs)
       (occurrence : DynamicOccurrence rhs) : ProductiveTrace program name
   | cached (name : String) (seed : CachedSeed program name) :
       ProductiveTrace program name
   | forwarded (name target : String) (rhs : Atom)
-      (clause : SourceClause program name rhs)
+      (equation : SourceEquation program name rhs)
       (occurrence : NamedOccurrence target rhs)
       (continuation : ProductiveTrace program target) : ProductiveTrace program name
 
@@ -353,16 +353,16 @@ theorem productiveTrace_exits_seed_free_closed_region
     (name : String) (trace : ProductiveTrace program name) :
     name ∈ checked -> False := by
   induction trace with
-  | direct name rhs clause occurrence =>
+  | direct name rhs equation occurrence =>
       intro present
-      exact (closed name present).1 (Or.inr ⟨rhs, clause, occurrence⟩)
+      exact (closed name present).1 (Or.inr ⟨rhs, equation, occurrence⟩)
   | cached name seed =>
       intro present
       exact (closed name present).1 (Or.inl seed)
-  | forwarded name target rhs clause occurrence continuation inductionHypothesis =>
+  | forwarded name target rhs equation occurrence continuation inductionHypothesis =>
       intro present
       exact inductionHypothesis
-        ((closed name present).2 target ⟨rhs, clause, occurrence⟩)
+        ((closed name present).2 target ⟨rhs, equation, occurrence⟩)
 
 def analyze (syntaxFuel graphFuel : Nat) (program : Program)
     (name : String) : AnalysisResult :=
@@ -531,7 +531,7 @@ theorem complete_empty_program_has_no_trace :
 end Canaries
 
 #print axioms scanSyntax_closed_sound
-#print axioms sourceClause_collected
+#print axioms sourceEquation_collected
 #print axioms cachedSeed_possible
 #print axioms scanRelation_closed_sound
 #print axioms explore_absent_certificate

@@ -22,7 +22,8 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList)
+open SourceSExprPatternInstantiation (pattern patternList
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open PlainBnfGraphNameTrie (Trie)
 open PlainBnfSourceRank (Rank)
 open PlainBnfTrieSourceExecution (scalarRelations trie call result observedRule trie_injective result_injective)
@@ -269,6 +270,7 @@ private theorem reverse_nil (env : RelationEnv) (fuel : Nat)
       [result (trie index)] := by
   rw [outer_rewriteAt env fuel _ (by rfl)]
   simp [outer_rules_exact, observedRules, observedRule, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     reverseCall, nodes, call, result, pattern, patternList,
     SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, applyBindings]
@@ -323,6 +325,7 @@ private theorem reverse_following (env : RelationEnv) (fuel : Nat) (item : Item)
       (reverseCall (item :: rest) lexicals index) = answers.map result := by
   rw [outer_rewriteAt env fuel _ (by rfl)]
   simp [outer_rules_exact, observedRules, observedRule, applyRuleUsing,
+    applyRuleBindings_of_binderFree, binderFree, binderFreeList,
     reverseCall, nodes, node, PlainBnfHeapSourceExecution.rankedDefinition, bucketCons,
     call, pattern, patternList, SourceIntegerProvider.sourceVariableToken, encode, encodeList,
     matchPattern, matchArgs, mergeBindings, List.foldlM, premisesUsing, premiseStepUsing, applyBindings]
@@ -346,7 +349,7 @@ def reverseHeight : List Item → List LexicalDeclaration → Trie SExpr → Nat
         (max (addHeight (referenceKeys item lexicals) (node item) index)
           (reverseHeight rest lexicals (addDefinition item lexicals index))) + 1
 
-/-- The actual outer clauses and their dependencies return exactly the
+/-- The actual outer rules and their dependencies return exactly the
 ordinary fold's whole trie, once, at sufficient contextual depth. -/
 theorem reverse_answers (fuel : Nat) (input : List Item) (lexicals : List LexicalDeclaration)
     (index : Trie SExpr) :

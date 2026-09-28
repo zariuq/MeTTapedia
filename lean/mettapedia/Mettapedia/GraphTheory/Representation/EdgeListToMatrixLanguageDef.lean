@@ -62,7 +62,7 @@ def terms : List GrammarRule :=
   ]
 
 def writeRule : RewriteRule :=
-  RewriteRule.mk "Write" [] []
+  RewriteRule.mk (bindings := none) "Write" [] []
     (.apply "Active"
       [.apply "EdgesCons"
         [.apply "EdgeValue" [.fvar "Source", .fvar "Target"], .fvar "Rest"],
@@ -73,7 +73,7 @@ def writeRule : RewriteRule :=
         [.fvar "Matrix", .fvar "Source", .fvar "Target"]])
 
 def finishRule : RewriteRule :=
-  RewriteRule.mk "Finish" [] []
+  RewriteRule.mk (bindings := none) "Finish" [] []
     (.apply "Active" [.apply "EdgesNil" [], .fvar "Matrix"])
     (.apply "Done" [.fvar "Matrix"])
 
@@ -237,7 +237,7 @@ theorem rewriteOnce_active_nil {n : Nat} (matrix : MatrixExpr n) :
 theorem rewriteOnce_done {n : Nat} (matrix : MatrixExpr n) :
     rewriteOnce (statePattern (.done matrix)) = [] := by
   simp [OSLF.MeTTaIL.Reflection.ReflectionProfile.empty,
-    matchingPresentationForRule?, substitutionPresentationForRule?, reflectiveRuleForRule?,
+    matchingPresentationForRule?, reflectiveRuleForRule?,
     rewriteOnce, rewriteAt, language_rewrites, writeRule, finishRule,
     statePattern, applyRuleUsing, matchPatternForRule,
     matchPatternForRuleUsing,

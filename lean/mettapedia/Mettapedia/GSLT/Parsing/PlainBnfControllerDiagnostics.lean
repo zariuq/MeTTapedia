@@ -5,7 +5,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfGraphDiagnosticsSourceExecution
 # Productive discovery followed by ordered unproductive diagnostics
 
 The actual productive Closure supplies the valid known packet consumed by
-the actual diagnostic clauses. Exact index and history are derived from
+the actual diagnostic rules. Exact index and history are derived from
 execution, not assumed as a membership oracle. Diagnostics retain original
 declaration order and spans, and their membership is precisely nonproductivity
 in the independently defined grammar least fixed point.

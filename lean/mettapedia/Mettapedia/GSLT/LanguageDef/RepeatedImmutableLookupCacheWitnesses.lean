@@ -65,7 +65,7 @@ example : promote? hornEnvironment
   rfl
 
 private def typedRewrite : RewriteRule :=
-  RewriteRule.mk "typed-successor-identity"
+  RewriteRule.mk (bindings := none) "typed-successor-identity"
     [("x", .base "Natural")]
     []
     (.apply "successor" [.fvar "x"])

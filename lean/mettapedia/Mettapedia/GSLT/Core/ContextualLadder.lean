@@ -35,6 +35,8 @@ universe u v w w'
 
 /-! ## Dependent: the substitution/comprehension core of a CwF -/
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- The substitution/comprehension core of a category with families, stated
 concretely: contexts, substitutions, context-indexed types with a
 substitution action, typed terms, and context comprehension with its β and η
@@ -75,6 +77,8 @@ structure Cwf : Type (max (u + 1) (v + 1) (w + 1) (w' + 1)) where
 
 /-! ## Simply typed: types ignore the context -/
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- The terminal-free core of a simply typed cwf: one fixed set of types, no
 substitution action on them, hence no casts anywhere. -/
 structure Scwf : Type (max (u + 1) (v + 1) (w + 1) (w' + 1)) where
@@ -105,6 +109,8 @@ structure Scwf : Type (max (u + 1) (v + 1) (w + 1) (w' + 1)) where
 
 /-! ## Unityped: one implicit type -/
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- The terminal-free core of a unityped cwf: contexts, substitutions, and
 raw terms — the rewrite layer's shape. -/
 structure Ucwf : Type (max (u + 1) (v + 1) (w' + 1)) where

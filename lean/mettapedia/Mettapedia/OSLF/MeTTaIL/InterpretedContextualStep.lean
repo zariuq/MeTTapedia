@@ -110,6 +110,16 @@ mutual
         mergeBindings bindings premiseBindings = some result →
         PremiseAt interpretation base language fuel bindings
           (.congruence source target) result
+    | scopedRoot
+        {bindings premiseBindings result : Bindings}
+        {step : ScopedStepPremise} {candidate : Pattern} :
+        step.binders = [] →
+        StepAt interpretation base language fuel
+          (applyBindings bindings step.source) candidate →
+        premiseBindings ∈ matchPattern step.target candidate →
+        mergeBindings bindings premiseBindings = some result →
+        PremiseAt interpretation base language fuel bindings
+          (.scopedStep step) result
 
   /-- Evidence for an ordered list of interpreted premises. -/
   inductive PremisesAt
@@ -179,6 +189,28 @@ private theorem mem_premiseStepUsing_iff
             simp only [premiseStepUsing, List.mem_flatMap,
               List.mem_filterMap]
             exact ⟨_, recursiveExact.mpr recursive, _, matchMember, merged⟩
+  | scopedStep step =>
+      by_cases empty : step.binders = []
+      · constructor
+        · intro member
+          simp only [premiseStepUsing, empty, List.isEmpty_nil, ↓reduceIte,
+            List.mem_flatMap, List.mem_filterMap] at member
+          obtain ⟨candidate, recursiveMember, premiseBindings,
+            matchMember, merged⟩ := member
+          exact .scopedRoot empty (recursiveExact.mp recursiveMember)
+            matchMember merged
+        · intro evidence
+          cases evidence with
+          | scopedRoot empty' recursive matchMember merged =>
+              simp only [premiseStepUsing, empty', List.isEmpty_nil, ↓reduceIte,
+                List.mem_flatMap, List.mem_filterMap]
+              exact ⟨_, recursiveExact.mpr recursive, _, matchMember, merged⟩
+      · constructor
+        · intro member
+          simp [premiseStepUsing, empty] at member
+        · intro evidence
+          cases evidence with
+          | scopedRoot empty' _ _ _ => exact (empty empty').elim
 
 private theorem mem_premisesUsing_iff
     {interpretation : RuleInterpretation}

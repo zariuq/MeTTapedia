@@ -370,7 +370,7 @@ noncomputable def presheafSubobjectRepresentableByOmega (C : Type u) [SmallCateg
       funext X
       ext x
       simp only [subfunctorOfChi, preimageSubfunctor, CategoryTheory.Subfunctor.preimage,
-        Set.mem_preimage, Set.mem_setOf_eq, CategoryTheory.NatTrans.comp_app,
+        Set.mem_preimage, Set.mem_ofPred_eq, CategoryTheory.NatTrans.comp_app,
         ConcreteCategory.comp_apply]
     rw [hkey]
     exact subobjectMk_preimageSubfunctor_eq_pullback (C := C) (f := f)

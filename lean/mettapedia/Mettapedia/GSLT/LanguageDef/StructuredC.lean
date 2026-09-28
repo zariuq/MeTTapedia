@@ -519,12 +519,12 @@ private theorem rewrites_validate :
       LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
       LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
       LanguageDef.premiseFvarNames,
-      LanguageDef.premiseProducedFvarNames,
+      LanguageDef.premiseProducedFvarNames, LanguageDef.premiseStepTypeExprs,
+      LanguageDef.premiseLocallyScoped,
       LanguageDef.premiseForAllParams, Pattern.constructorRefs,
       Pattern.constructorRefsList, Pattern.freeFvarNames,
       Pattern.isWellScoped, Pattern.isWellScopedAt,
-      Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain,
-      TypeExpr.baseNames]
+      Pattern.isWellScopedListAt, LanguageDef.typeNames, TypeDecl.plain]
   all_goals
     repeat' apply And.intro
     all_goals

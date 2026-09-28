@@ -2,7 +2,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfGeneratedScalarOrderSyntax
 import Mettapedia.GSLT.Parsing.GeneratedPeTTaGroundExecution
 
 /-!
-# Actual generated scalar-list clauses and their dispatch
+# Actual generated scalar-list equations and their dispatch
 
 Rows and bodies are retrieved from the complete generated fixture. The shape
 equations below expose those bodies for the separate execution proof; they do
@@ -230,7 +230,7 @@ theorem run_cons (depth : Nat) (dataHeads : List String)
     (ordinary typed) (known typed) (arity typed)
     (dispatch_cons typed first next tail origin) (row_equation typed 1)
 
-/-- There is no empty-list clause in this generated worker. This is a
+/-- There is no empty-list equation in this generated worker. This is a
 completed absence of worker answers, not a successful validation verdict. -/
 theorem run_nil (depth : Nat) (dataHeads : List String) (typed : Bool) (origin : SExpr) :
     run depth program dataHeads (call typed nil origin) = .complete [] := by

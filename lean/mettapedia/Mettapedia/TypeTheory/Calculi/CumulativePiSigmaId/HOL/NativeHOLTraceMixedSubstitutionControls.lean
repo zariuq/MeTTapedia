@@ -139,4 +139,46 @@ theorem mixed_closure_does_not_claim_object_closure :
 
 end ObjectBoundary
 
+namespace DependentPairs
+
+open ZFSetContextualInterpretation (Extension)
+
+/-- The second variable ranges over a singleton or a two-element set,
+according to the first variable. This is not a constant product. -/
+noncomputable def context : Context.{u} 2 :=
+  (Context.nil.snoc ZFSetContextualInterpretation.Controls.domain).snoc
+    ZFSetContextualInterpretation.Controls.codomain
+
+noncomputable def codomain : SetFamily (Extension (context.{u}.family 1)) :=
+  fun point => ZFSetDependentProducts.Controls.varying point.2.1
+
+theorem second_projection (a : ZFSet.{u})
+    (headEquality : Tower.Head → Tower.Head → Prop) (root : RootComputation Tower.Head) :
+    Step headEquality (.snd (.pair (.var 1) (.var 0))) (.var (0 : Fin 2)) root ∧
+      Denotes a context (.snd (.pair (.var 1) (.var 0)))
+        (context.family 0) (context.projection 0) ∧
+      Denotes a context (.var 0) (context.family 0) (context.projection 0) :=
+  betaSigmaSnd_square (codomain := codomain)
+    (Denotes.variable context 1) (Denotes.variable context 0) headEquality root
+
+/-- A projection cannot silently select the first field instead of the
+second: the chosen environment makes their set values different. -/
+theorem wrong_component_rejected (a : ZFSet.{u}) :
+    ¬ Denotes a context (.var 1) (context.family 0) (context.projection 0) := by
+  intro meaning
+  let environment : context.Environment :=
+    ⟨⟨PUnit.unit, ZFSetContextualInterpretation.Controls.oneArgument PUnit.unit⟩,
+      ⟨∅, ZFSetDependentProducts.Controls.empty_mem_every_varying_fibre _⟩⟩
+  have equal := mixed_variable_value meaning environment
+  change (∅ : ZFSet.{u}) = ZFSet.powerset ∅ at equal
+  have member : (∅ : ZFSet.{u}) ∈ ZFSet.powerset ∅ :=
+    ZFSet.mem_powerset.mpr (ZFSet.empty_subset _)
+  rw [← equal] at member
+  exact ZFSet.notMem_empty _ member
+
+end DependentPairs
+
+#print axioms DependentPairs.second_projection
+#print axioms DependentPairs.wrong_component_rejected
+
 end Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.NativeHOLTraceMixedSubstitutionControls

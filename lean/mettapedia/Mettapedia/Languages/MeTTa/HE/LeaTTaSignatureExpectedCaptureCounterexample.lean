@@ -75,6 +75,8 @@ private theorem signatureFreshening :
       (.expr [.sym "sigcap-f", .sym "sigcap-a"]) [.sym "sigcap-a"]
       (.var "t") [rawArrow] = [freshArrow] := by
   simp [Metta.Minimal.freshenFunctionTypeCandidates,
+    Metta.Minimal.freshenFunctionTypeCandidatesAvoiding,
+    Metta.Minimal.functionTypeSelectionAvoiding,
     Metta.Minimal.functionTypeSelectionAvoid,
     Metta.Minimal.applicationTypeInferenceScope,
     Metta.Minimal.typeInferenceAvoid,

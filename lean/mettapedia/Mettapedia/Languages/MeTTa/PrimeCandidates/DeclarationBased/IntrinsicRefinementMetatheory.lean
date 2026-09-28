@@ -4271,8 +4271,8 @@ def budgetIncompleteRefutedApp_constantOccurrence
         obstruction) :=
   .appFunction (.appFunction (.appFunction (.appFunction .here)))
 
-noncomputable def budgetEstablishedIotaClause :
-    IotaClause emptyRules rawBudgetRefinementSignature
+noncomputable def budgetEstablishedIotaRule :
+    IotaRule emptyRules rawBudgetRefinementSignature
       proofRelevantBudgetRefinementComputation
       (budgetRefinementConstructors.map ConstructorSpec.name)
       budgetRefinementEliminatorSpec.name where
@@ -4293,8 +4293,8 @@ noncomputable def budgetEstablishedIotaClause :
       (budgetEstablishedApp_constantOccurrence
         (.var 10) (.var 2) (.var 1) (.var 0))
 
-noncomputable def budgetRefutedIotaClause :
-    IotaClause emptyRules rawBudgetRefinementSignature
+noncomputable def budgetRefutedIotaRule :
+    IotaRule emptyRules rawBudgetRefinementSignature
       proofRelevantBudgetRefinementComputation
       (budgetRefinementConstructors.map ConstructorSpec.name)
       budgetRefinementEliminatorSpec.name where
@@ -4315,8 +4315,8 @@ noncomputable def budgetRefutedIotaClause :
       (budgetRefutedApp_constantOccurrence
         (.var 10) (.var 2) (.var 1) (.var 0))
 
-noncomputable def budgetOutsideFragmentIotaClause :
-    IotaClause emptyRules rawBudgetRefinementSignature
+noncomputable def budgetOutsideFragmentIotaRule :
+    IotaRule emptyRules rawBudgetRefinementSignature
       proofRelevantBudgetRefinementComputation
       (budgetRefinementConstructors.map ConstructorSpec.name)
       budgetRefinementEliminatorSpec.name where
@@ -4337,8 +4337,8 @@ noncomputable def budgetOutsideFragmentIotaClause :
       (budgetOutsideFragmentApp_constantOccurrence
         (.var 9) (.var 1) (.var 0))
 
-noncomputable def budgetIncompleteIotaClause :
-    IotaClause emptyRules rawBudgetRefinementSignature
+noncomputable def budgetIncompleteIotaRule :
+    IotaRule emptyRules rawBudgetRefinementSignature
       proofRelevantBudgetRefinementComputation
       (budgetRefinementConstructors.map ConstructorSpec.name)
       budgetRefinementEliminatorSpec.name where
@@ -4359,8 +4359,8 @@ noncomputable def budgetIncompleteIotaClause :
       (budgetIncompleteApp_constantOccurrence
         (.var 10) (.var 2) (.var 1) (.var 0))
 
-noncomputable def budgetIncompleteEstablishedIotaClause :
-    IotaClause emptyRules rawBudgetRefinementSignature
+noncomputable def budgetIncompleteEstablishedIotaRule :
+    IotaRule emptyRules rawBudgetRefinementSignature
       proofRelevantBudgetRefinementComputation
       (budgetRefinementConstructors.map ConstructorSpec.name)
       budgetRefinementEliminatorSpec.name where
@@ -4381,8 +4381,8 @@ noncomputable def budgetIncompleteEstablishedIotaClause :
       (budgetIncompleteEstablishedApp_constantOccurrence
         (.var 10) (.var 2) (.var 1) (.var 0))
 
-noncomputable def budgetIncompleteRefutedIotaClause :
-    IotaClause emptyRules rawBudgetRefinementSignature
+noncomputable def budgetIncompleteRefutedIotaRule :
+    IotaRule emptyRules rawBudgetRefinementSignature
       proofRelevantBudgetRefinementComputation
       (budgetRefinementConstructors.map ConstructorSpec.name)
       budgetRefinementEliminatorSpec.name where
@@ -4403,15 +4403,15 @@ noncomputable def budgetIncompleteRefutedIotaClause :
       (budgetIncompleteRefutedApp_constantOccurrence
         (.var 10) (.var 2) (.var 1) (.var 0))
 
-noncomputable def budgetRefinementIotaClauses :
-    List (IotaClause emptyRules rawBudgetRefinementSignature
+noncomputable def budgetRefinementIotaRules :
+    List (IotaRule emptyRules rawBudgetRefinementSignature
       proofRelevantBudgetRefinementComputation
       (budgetRefinementConstructors.map ConstructorSpec.name)
       budgetRefinementEliminatorSpec.name) :=
-  [budgetEstablishedIotaClause, budgetRefutedIotaClause,
-    budgetOutsideFragmentIotaClause, budgetIncompleteIotaClause,
-    budgetIncompleteEstablishedIotaClause,
-    budgetIncompleteRefutedIotaClause]
+  [budgetEstablishedIotaRule, budgetRefutedIotaRule,
+    budgetOutsideFragmentIotaRule, budgetIncompleteIotaRule,
+    budgetIncompleteEstablishedIotaRule,
+    budgetIncompleteRefutedIotaRule]
 
 /-- A formed, strictly-positive, proof-relevant declaration of the
 fixed-authority budget order.  Its six computation schemas preserve the
@@ -4445,7 +4445,7 @@ noncomputable def budgetRefinementCandidate : Candidate emptyRules where
     simp only [budgetRefinementConstructors, List.mem_cons,
       List.not_mem_nil, or_false] at membership
     rcases membership with rfl | rfl | rfl | rfl | rfl | rfl <;> decide
-  iotaClauses := budgetRefinementIotaClauses
+  iotaRules := budgetRefinementIotaRules
   constructorsComputed := by
     intro constructorName membership
     simp [budgetRefinementConstructors, budgetEstablishedConstructorSpec,
@@ -4454,11 +4454,11 @@ noncomputable def budgetRefinementCandidate : Candidate emptyRules where
       budgetIncompleteEstablishedConstructorSpec,
       budgetIncompleteRefutedConstructorSpec] at membership
     rcases membership with rfl | rfl | rfl | rfl | rfl | rfl <;>
-      simp [budgetRefinementIotaClauses, budgetEstablishedIotaClause,
-        budgetRefutedIotaClause, budgetOutsideFragmentIotaClause,
-        budgetIncompleteIotaClause,
-        budgetIncompleteEstablishedIotaClause,
-        budgetIncompleteRefutedIotaClause]
+      simp [budgetRefinementIotaRules, budgetEstablishedIotaRule,
+        budgetRefutedIotaRule, budgetOutsideFragmentIotaRule,
+        budgetIncompleteIotaRule,
+        budgetIncompleteEstablishedIotaRule,
+        budgetIncompleteRefutedIotaRule]
 
 /-! ### Semantic positive and negative controls -/
 

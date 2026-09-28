@@ -362,7 +362,7 @@ theorem Collect.occurrences_eq {entries : List (Entry Name Expression Span Text)
     left.occurrences = right.occurrences := congrArg Collect.occurrences (left.unique right)
 
 omit [DecidableEq Name] in
-/-- Missing lookup visits every definition and then the empty-list clause.
+/-- Missing lookup visits every definition and then the empty-list rule.
 Provider guard actions are not included in `occurrences`. -/
 theorem Lookup.missing_occurrences_length {name : Name} {definitions : List (Definition Name Expression Span)}
     (derivation : Lookup name definitions .missing) :
@@ -409,26 +409,26 @@ inductive FreshEntries : List (Entry Name Expression Span Text) → List (Defini
       (rest : FreshEntries tail (before ++ [⟨name, expression, span⟩])) :
       FreshEntries (.rule name expression span :: tail) before
 
-/-- The all-fresh source-clause recurrence: lookup and ordered append each
-traverse the current environment; the other fresh-step clauses contribute five.
-This counts source clauses, not allocations, elapsed time, or provider actions. -/
-def freshClauseWork (beforeLength : Nat) : Nat → Nat
+/-- The all-fresh source-rule recurrence: lookup and ordered append each
+traverse the current environment; the other fresh-step rules contribute five.
+This counts source rules, not allocations, elapsed time, or provider actions. -/
+def freshRuleWork (beforeLength : Nat) : Nat → Nat
   | 0 => 1
-  | count + 1 => 2 * beforeLength + 5 + freshClauseWork (beforeLength + 1) count
+  | count + 1 => 2 * beforeLength + 5 + freshRuleWork (beforeLength + 1) count
 
-theorem freshClauseWork_closed (beforeLength count : Nat) :
-    freshClauseWork beforeLength count =
+theorem freshRuleWork_closed (beforeLength count : Nat) :
+    freshRuleWork beforeLength count =
       count * count + 2 * (beforeLength * count) + 4 * count + 1 := by
   induction count generalizing beforeLength with
-  | zero => simp [freshClauseWork]
+  | zero => simp [freshRuleWork]
   | succ count ih =>
-      simp only [freshClauseWork, ih, Nat.add_mul, Nat.mul_add, Nat.mul_one, Nat.one_mul]
+      simp only [freshRuleWork, ih, Nat.add_mul, Nat.mul_add, Nat.mul_one, Nat.one_mul]
       omega
 
 theorem Collect.fresh_occurrences_length {entries : List (Entry Name Expression Span Text)}
     {before after : List (Definition Name Expression Span)} {diagnostics : List (Diagnostic Name Span)}
     (derivation : Collect entries before after diagnostics) (fresh : FreshEntries entries before) :
-    derivation.occurrences.length = freshClauseWork before.length entries.length := by
+    derivation.occurrences.length = freshRuleWork before.length entries.length := by
   induction fresh generalizing after diagnostics with
   | nil before => cases derivation; rfl
   | @rule name expression span tail before freshName freshRest ih =>
@@ -446,17 +446,17 @@ theorem Collect.fresh_occurrences_length {entries : List (Entry Name Expression 
               have appendCount := append.occurrences_length
               simp only [Collect.occurrences, DefinitionStep.occurrences, List.length_cons,
                 List.length_append, lookupCount, insertCount, appendCount, List.length_nil,
-                Nat.zero_add, restCount, freshClauseWork]
+                Nat.zero_add, restCount, freshRuleWork]
               omega
 
-/-- The current all-fresh pass has quadratic source-clause work, independently
+/-- The current all-fresh pass has quadratic source-rule work, independently
 of any materialization overhead introduced by a target evaluator. -/
 theorem Collect.fresh_occurrences_closed {entries : List (Entry Name Expression Span Text)}
     {before after : List (Definition Name Expression Span)} {diagnostics : List (Diagnostic Name Span)}
     (derivation : Collect entries before after diagnostics) (fresh : FreshEntries entries before) :
     derivation.occurrences.length = entries.length * entries.length +
       2 * (before.length * entries.length) + 4 * entries.length + 1 := by
-  rw [derivation.fresh_occurrences_length fresh, freshClauseWork_closed]
+  rw [derivation.fresh_occurrences_length fresh, freshRuleWork_closed]
 
 theorem Collect.fresh_empty_occurrences_closed {entries : List (Entry Name Expression Span Text)}
     {after : List (Definition Name Expression Span)} {diagnostics : List (Diagnostic Name Span)}

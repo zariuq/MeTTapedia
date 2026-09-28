@@ -942,6 +942,8 @@ private theorem validatePatternConstructors_eq_nil_of_signatures
   simp [arityEquality]
 
 private structure RewriteCertificate (rewrite : RewriteRule) : Prop where
+  premiseTypes : ∀ type ∈ rewrite.premises.flatMap LanguageDef.premiseStepTypeExprs,
+    ∀ name ∈ type.baseNames, name ∈ language.typeNames
   contextTypes : ∀ entry ∈ rewrite.typeContext,
     ∀ name ∈ entry.2.baseNames, name ∈ language.typeNames
   leftDeclared : ∀ reference ∈ rewrite.left.constructorRefs,
@@ -953,9 +955,8 @@ private structure RewriteCertificate (rewrite : RewriteRule) : Prop where
     ∀ reference ∈ pattern.constructorRefs,
       reference ∈ constructorSignatures
   allPatternsScoped :
-    ([rewrite.left, rewrite.right] ++
-      rewrite.premises.flatMap LanguageDef.premisePatterns).all
-        Pattern.isWellScoped = true
+    (rewrite.left.isWellScoped && rewrite.right.isWellScoped &&
+      rewrite.premises.all LanguageDef.premiseLocallyScoped) = true
   fvarsAvoidConstructors : ∀ name ∈
       ((LanguageDef.patternFvarNames [] rewrite.left ++
         LanguageDef.patternFvarNames [] rewrite.right ++
@@ -1015,11 +1016,15 @@ private theorem validateRewrite_eq_nil_of_certificate
     LanguageDef.validateRewrite language rewrite = [] := by
   unfold LanguageDef.validateRewrite
   simp only [List.append_eq_nil_iff]
-  refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  refine ⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · apply List.flatMap_eq_nil_iff.mpr
     intro entry entryMembership
     apply LanguageDef.validateTypeExpr_eq_nil_of_baseNames
     exact certificate.contextTypes entry entryMembership
+  · apply List.flatMap_eq_nil_iff.mpr
+    intro type typeMembership
+    apply LanguageDef.validateTypeExpr_eq_nil_of_baseNames
+    exact certificate.premiseTypes type typeMembership
   · exact validatePatternConstructors_eq_nil_of_signatures
       _ rewrite.left certificate.leftDeclared
   · exact validatePatternConstructors_eq_nil_of_signatures
@@ -1032,6 +1037,10 @@ private theorem validateRewrite_eq_nil_of_certificate
       (terms.map fun declaration => declaration.label) _ _ _ _ = []
     rw [terms_constructorLabels_eq]
     exact certificate.patternsClean
+
+private def premiseTypesCheck (rewrite : RewriteRule) : Bool :=
+  (rewrite.premises.flatMap LanguageDef.premiseStepTypeExprs).all fun type =>
+    type.baseNames.all fun name => decide (name ∈ declaredTypeNames)
 
 private def contextTypesCheck (rewrite : RewriteRule) : Bool :=
   rewrite.typeContext.all fun entry =>
@@ -1290,9 +1299,8 @@ private def premisesDeclaredCheck (rewrite : RewriteRule) : Bool :=
     patternDeclaredCheck
 
 private def allPatternsScopedCheck (rewrite : RewriteRule) : Bool :=
-  ([rewrite.left, rewrite.right] ++
-    rewrite.premises.flatMap LanguageDef.premisePatterns).all
-      Pattern.isWellScoped
+  rewrite.left.isWellScoped && rewrite.right.isWellScoped &&
+    rewrite.premises.all LanguageDef.premiseLocallyScoped
 
 private def fvarsAvoidConstructorsCheck (rewrite : RewriteRule) : Bool :=
   ((LanguageDef.patternFvarNames [] rewrite.left ++
@@ -1320,7 +1328,7 @@ private def rightBoundCheck (rewrite : RewriteRule) : Bool :=
     decide (name ∈ supplied)
 
 private def rewriteCertificateCheck (rewrite : RewriteRule) : Bool :=
-  contextTypesCheck rewrite &&
+  premiseTypesCheck rewrite && (contextTypesCheck rewrite &&
     (patternDeclaredCheck rewrite.left &&
       (patternDeclaredCheck rewrite.right &&
         (premisesDeclaredCheck rewrite &&
@@ -1328,16 +1336,17 @@ private def rewriteCertificateCheck (rewrite : RewriteRule) : Bool :=
             (fvarsAvoidConstructorsCheck rewrite &&
               (bindersAvoidConstructorsCheck rewrite &&
                 (contextAvoidsConstructorsCheck rewrite &&
-                  rightBoundCheck rewrite)))))))
+                  rightBoundCheck rewrite))))))))
 
 private theorem rewriteCertificate_of_check
     {rewrite : RewriteRule} (check : rewriteCertificateCheck rewrite = true) :
     RewriteCertificate rewrite := by
   simp only [rewriteCertificateCheck, Bool.and_eq_true] at check
   rcases check with
-    ⟨contextCheck, leftCheck, rightCheck, premisesCheck, scopedCheck,
+    ⟨premiseTypesChecked, contextCheck, leftCheck, rightCheck, premisesCheck, scopedCheck,
       fvarsCheck, bindersCheck, contextNamesCheck, rightBoundedCheck⟩
   refine {
+    premiseTypes := ?_
     contextTypes := ?_
     leftDeclared := ?_
     rightDeclared := ?_
@@ -1347,6 +1356,11 @@ private theorem rewriteCertificate_of_check
     bindersAvoidConstructors := ?_
     contextAvoidsConstructors := ?_
     rightBound := ?_ }
+  · intro type typeMembership name nameMembership
+    rw [language_typeNames_eq]
+    exact decide_eq_true_eq.mp (List.all_eq_true.mp
+      (List.all_eq_true.mp premiseTypesChecked type typeMembership)
+      name nameMembership)
   · intro entry entryMembership name nameMembership
     rw [language_typeNames_eq]
     exact decide_eq_true_eq.mp (List.all_eq_true.mp
@@ -1377,7 +1391,8 @@ private theorem rewriteCertificate_of_check
       (List.all_eq_true.mp rightBoundedCheck name nameMembership)
 
 local macro "certify_transition" rule:Lean.Parser.Tactic.simpLemma : tactic =>
-  `(tactic| simp [rewriteCertificateCheck, contextTypesCheck, patternDeclaredCheck,
+  `(tactic| simp [rewriteCertificateCheck, contextTypesCheck, premiseTypesCheck,
+    LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped, patternDeclaredCheck,
     premisesDeclaredCheck, allPatternsScopedCheck,
     fvarsAvoidConstructorsCheck, bindersAvoidConstructorsCheck,
     contextAvoidsConstructorsCheck, rightBoundCheck, declaredTypeNames,
@@ -1615,6 +1630,7 @@ theorem transition_certificate (rewrite : RewriteRule)
   have checked := List.all_eq_true.mp transitions_certified rewrite membership
   have certificate := rewriteCertificate_of_check checked
   exact {
+    premiseTypes := certificate.premiseTypes
     contextTypes := certificate.contextTypes
     leftDeclared := by
       intro reference referenceMembership

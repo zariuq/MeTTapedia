@@ -28,6 +28,8 @@ private def premiseVars : Premise → List String
       orderedUniq (fc.varName :: freeVars fc.term)
   | .congruence lhs rhs =>
       orderedUniq (freeVars lhs ++ freeVars rhs)
+  | .scopedStep step =>
+      orderedUniq (freeVars step.source ++ freeVars step.target)
   | .relationQuery _ args =>
       orderedUniq (args.flatMap freeVars)
   | .forAll collection param body =>

@@ -23,6 +23,8 @@ universe u v w w'
 
 /-! ## Standard terminal-context extensions -/
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- A full cwf at the structural level used here: the existing dependent
 substitution/comprehension core plus a chosen terminal context. -/
 structure CwfWithTerminal : Type (max (u + 1) (v + 1) (w + 1) (w' + 1)) where
@@ -32,6 +34,8 @@ structure CwfWithTerminal : Type (max (u + 1) (v + 1) (w + 1) (w' + 1)) where
   toEmpty_unique : ∀ (Γ : toCwf.Ctx) (substitution : toCwf.Sub Γ empty),
     substitution = toEmpty Γ
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- A full simply typed cwf: the simple substitution/comprehension core plus
 a chosen terminal context. -/
 structure ScwfWithTerminal : Type (max (u + 1) (v + 1) (w + 1) (w' + 1)) where
@@ -41,6 +45,8 @@ structure ScwfWithTerminal : Type (max (u + 1) (v + 1) (w + 1) (w' + 1)) where
   toEmpty_unique : ∀ (Γ : toScwf.Ctx) (substitution : toScwf.Sub Γ empty),
     substitution = toEmpty Γ
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- A full unityped cwf: the unityped substitution/comprehension core plus a
 chosen terminal context. -/
 structure UcwfWithTerminal : Type (max (u + 1) (v + 1) (w' + 1)) where

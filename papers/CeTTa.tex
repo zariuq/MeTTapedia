@@ -653,6 +653,88 @@ what gets \emph{proven about} in Lean.  \CeTTa{} does not emit
 execution traces or certificates, and a per-run check is never
 presented as a proof.
 
+\subsection{Plain \PeTTa{}: Semantic Decisions}
+\label{sec:petta-decisions}
+
+For plain \PeTTa{}, SWI-\PeTTa{} at a pinned revision is the oracle, and
+comparison is again by result bags.  Where SWI-\PeTTa{} is not consistent
+with itself, \CeTTa{} follows the principle its consistent cases express,
+not each exception.  Every deliberate departure is an executable entry of
+\code{tests/petta/swi\_differences.metta} in the \CeTTa{} repository: the
+query, SWI-\PeTTa{}'s answer, the reason and the date of the decision, with
+\CeTTa{}'s answers pinned and checked on both execution routes.  The file
+records the known departures; finding an unknown one still takes running
+both engines.
+
+\begin{description}
+\item[Special forms reached at run time.] A special form is syntax only
+  where it is written.  Reached at run time---as the value of a variable
+  or expression head, as the application a \code{reduce} dispatches, or as
+  a function passed to another---its arguments are evaluated first, and
+  the application is data unless \PeTTa{} or the program defines a
+  function of that name, which is then applied to the values.  This is
+  SWI-\PeTTa{}'s \code{reduce/2} rule.  Reading such a value as syntax,
+  as \CeTTa{} once did, let a specialization change a program's meaning
+  once it learned which form a variable held.
+\item[Functions named like forms.] A program may define equations under a
+  special form's name.  Where the form is written it keeps its meaning.
+  Reached at run time, the name is the program's function, applied like
+  any other: at the arity of an equation its equations run, with fewer
+  arguments it waits for the rest, and with more it is over-applied.  The
+  form never runs in its place, and a call whose equations all fail
+  fails rather than becoming data.  Both engines agree.  The two roles
+  must stay distinct: a representation that erases the difference
+  between the written form and the function cannot keep both meanings,
+  and specializing a known name never turns a call into binding syntax
+  (\code{PeTTa.BindingForms} and \code{BindingDispatch}, proved in Lean).
+\item[\code{let} and \code{let*} reached at run time,] when the program
+  defines no function of that name, are data, as \code{if}, \code{case}
+  and \code{quote} are in both engines.  The binding form is recognized
+  only where it is written: an application reached at run time is not
+  binding syntax, whatever its head is named.  Evaluating the data later
+  reads it as the syntax it spells, and so runs the binding.
+  SWI-\PeTTa{} registers both names as functions without defining one, so
+  it returns a partial application, which \code{eval} leaves unchanged and
+  which only a \code{let} equation with more parameters, defined later,
+  completes.  Decided 2026-09-26.
+\item[Errors.] In plain \PeTTa{} an error propagates to the nearest
+  \code{catch}, which makes it an \code{(Error \ldots)} value; uncaught, it
+  ends the run.  (Prime carries a fault as an occurrence of the outcome
+  bag instead, never ending the run; see principle B.11 of the Prime
+  specification in the appendix.)  An
+  \code{(Error \ldots)} value that a function returns is ordinary data.  A
+  run-time dispatch recovers an error raised by the body it runs: that
+  path fails, and every other alternative and every answer already given
+  remain.  SWI-\PeTTa{} instead discards the body's remaining
+  alternatives, so its answers depend on the search order.  Errors in
+  argument evaluation, in setting up the dispatch and in over-application
+  are not the body's, and propagate.  Specialization keeps the recovery
+  of a call that was dynamic where it was written; SWI-\PeTTa{}'s
+  specializer drops it (\PeTTa{} issue~223).  For pure, completely explored
+  alternatives the recovery distributes over choice,
+  $\mathit{handle}(P \cup Q) = \mathit{handle}(P) \cup
+  \mathit{handle}(Q)$ on occurrence bags, which is proved in Lean
+  (\code{PeTTa.DispatchErrorScope}); so is the check that lets a
+  specialization call a callee directly when it raises nothing
+  (\code{PeTTa.RaiseFree}).  Decided 2026-09-26.
+\item[Over-application.] An application with more arguments than any
+  equation of its head takes raises a domain error naming the arities the
+  head has, as in SWI-\PeTTa{}: written, dispatched at run time, under
+  \code{reduce}, \code{foldl-atom} or \code{collapse}.  Inside the body a
+  run-time dispatch runs, it is that body's error and the dispatch
+  recovers it.  \CeTTa{} used to return the error as a value and
+  continue, contrary to the rule above.
+\item[\code{eval} and \code{reduce}] never evaluate a computed result
+  again.  \code{eval} evaluates its argument once; \code{reduce}
+  evaluates the arguments of the application written in it and
+  dispatches the head on their values, as SWI-\PeTTa{}'s \code{eval/2}
+  and \code{reduce/2} do.
+\item[Imports invalidate specializations.] A specialized function sees
+  equations imported after it was specialized; SWI-\PeTTa{} keeps the
+  stale specialization.  Decided 2026-09-26, as the meaning of the
+  unspecialized program.
+\end{description}
+
 \subsection{Evaluator Bug Classes the Campaign Exposed}
 \label{sec:bugclasses}
 

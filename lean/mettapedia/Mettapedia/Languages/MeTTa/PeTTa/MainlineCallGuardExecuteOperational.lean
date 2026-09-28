@@ -1544,7 +1544,7 @@ def mergeInto (head : Bindings) (tails : List Bindings) : List Bindings :=
 @[simp] theorem matchRelationArgument_apply (seed : Bindings) (label : String) (args : List Pattern)
     (row : Pattern) :
     matchRelationArgument seed (.apply label args) row =
-      matchPattern (applyBindings seed (.apply label args)) row :=
+      matchPattern (.apply label args) row :=
   rfl
 
 @[simp] theorem applyRule_eq (relEnv : RelationEnv) (lang : LanguageDef) (rule : RewriteRule)

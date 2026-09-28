@@ -60,6 +60,9 @@ structure Certificate (language : LanguageDef)
     (rewrite : RewriteRule) : Prop where
   contextTypes : ∀ entry ∈ rewrite.typeContext,
     ∀ name ∈ entry.2.baseNames, name ∈ language.typeNames
+  premiseTypes : ∀ type ∈
+      rewrite.premises.flatMap LanguageDef.premiseStepTypeExprs,
+    ∀ name ∈ type.baseNames, name ∈ language.typeNames
   leftDeclared : ∀ reference ∈ rewrite.left.constructorRefs,
     reference ∈ constructorSignatures language
   rightDeclared : ∀ reference ∈ rewrite.right.constructorRefs,
@@ -69,9 +72,8 @@ structure Certificate (language : LanguageDef)
     ∀ reference ∈ pattern.constructorRefs,
       reference ∈ constructorSignatures language
   allPatternsScoped :
-    ([rewrite.left, rewrite.right] ++
-      rewrite.premises.flatMap LanguageDef.premisePatterns).all
-        Pattern.isWellScoped = true
+    (rewrite.left.isWellScoped && rewrite.right.isWellScoped &&
+      rewrite.premises.all LanguageDef.premiseLocallyScoped) = true
   fvarsAvoidConstructors : ∀ name ∈
       ((LanguageDef.patternFvarNames [] rewrite.left ++
         LanguageDef.patternFvarNames [] rewrite.right ++
@@ -135,10 +137,15 @@ theorem validateRewrite_eq_nil
   unfold LanguageDef.validateRewrite
   simp only [List.append_eq_nil_iff]
   refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
-  · apply List.flatMap_eq_nil_iff.mpr
-    intro entry entryMembership
-    apply LanguageDef.validateTypeExpr_eq_nil_of_baseNames
-    exact certificate.contextTypes entry entryMembership
+  · constructor
+    · apply List.flatMap_eq_nil_iff.mpr
+      intro entry entryMembership
+      apply LanguageDef.validateTypeExpr_eq_nil_of_baseNames
+      exact certificate.contextTypes entry entryMembership
+    · apply List.flatMap_eq_nil_iff.mpr
+      intro type typeMembership
+      apply LanguageDef.validateTypeExpr_eq_nil_of_baseNames
+      exact certificate.premiseTypes type typeMembership
   · exact validatePatternConstructors_eq_nil_of_signatures language
       labelsNodup _ rewrite.left certificate.leftDeclared
   · exact validatePatternConstructors_eq_nil_of_signatures language
@@ -157,6 +164,11 @@ def contextTypesCheck (language : LanguageDef)
   rewrite.typeContext.all fun entry =>
     entry.2.baseNames.all fun name => decide (name ∈ language.typeNames)
 
+def premiseTypesCheck (language : LanguageDef)
+    (rewrite : RewriteRule) : Bool :=
+  (rewrite.premises.flatMap LanguageDef.premiseStepTypeExprs).all fun type =>
+    type.baseNames.all fun name => decide (name ∈ language.typeNames)
+
 def patternDeclaredCheck (language : LanguageDef)
     (pattern : Pattern) : Bool :=
   pattern.constructorRefs.all fun reference =>
@@ -168,9 +180,8 @@ def premisesDeclaredCheck (language : LanguageDef)
     (patternDeclaredCheck language)
 
 def allPatternsScopedCheck (rewrite : RewriteRule) : Bool :=
-  ([rewrite.left, rewrite.right] ++
-    rewrite.premises.flatMap LanguageDef.premisePatterns).all
-      Pattern.isWellScoped
+  rewrite.left.isWellScoped && rewrite.right.isWellScoped &&
+    rewrite.premises.all LanguageDef.premiseLocallyScoped
 
 def fvarsAvoidConstructorsCheck (language : LanguageDef)
     (rewrite : RewriteRule) : Bool :=
@@ -203,14 +214,15 @@ def rightBoundCheck (rewrite : RewriteRule) : Bool :=
 
 def check (language : LanguageDef) (rewrite : RewriteRule) : Bool :=
   contextTypesCheck language rewrite &&
-    (patternDeclaredCheck language rewrite.left &&
+    (premiseTypesCheck language rewrite &&
+      (patternDeclaredCheck language rewrite.left &&
       (patternDeclaredCheck language rewrite.right &&
         (premisesDeclaredCheck language rewrite &&
           (allPatternsScopedCheck rewrite &&
             (fvarsAvoidConstructorsCheck language rewrite &&
               (bindersAvoidConstructorsCheck language rewrite &&
                 (contextAvoidsConstructorsCheck language rewrite &&
-                  rightBoundCheck rewrite)))))))
+                  rightBoundCheck rewrite))))))))
 
 theorem certificate_of_check
     {language : LanguageDef} {rewrite : RewriteRule}
@@ -218,11 +230,12 @@ theorem certificate_of_check
     Certificate language rewrite := by
   simp only [check, Bool.and_eq_true] at checked
   rcases checked with
-    ⟨contextChecked, leftChecked, rightChecked, premisesChecked,
+    ⟨contextChecked, premiseTypesChecked, leftChecked, rightChecked, premisesChecked,
       scopedChecked, fvarsChecked, bindersChecked, contextNamesChecked,
       rightBoundedChecked⟩
   refine {
     contextTypes := ?_
+    premiseTypes := ?_
     leftDeclared := ?_
     rightDeclared := ?_
     premisesDeclared := ?_
@@ -234,6 +247,10 @@ theorem certificate_of_check
   · intro entry entryMembership name nameMembership
     exact decide_eq_true_eq.mp (List.all_eq_true.mp
       (List.all_eq_true.mp contextChecked entry entryMembership)
+      name nameMembership)
+  · intro type typeMembership name nameMembership
+    exact decide_eq_true_eq.mp (List.all_eq_true.mp
+      (List.all_eq_true.mp premiseTypesChecked type typeMembership)
       name nameMembership)
   · intro reference referenceMembership
     exact decide_eq_true_eq.mp

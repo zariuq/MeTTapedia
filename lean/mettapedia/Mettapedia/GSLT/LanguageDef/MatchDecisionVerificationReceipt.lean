@@ -5,7 +5,7 @@ import Mettapedia.GSLT.LanguageDef.CandidateSupersetVerificationAlgebra
 
 A candidate selector may run a complete structural compatibility predicate on
 every survivor before the canonical matcher.  Repeating that same predicate
-immediately inside the clause loop cannot change the survivor list.  This
+immediately inside the matching loop cannot change the survivor list.  This
 module makes the reuse boundary explicit: the receipt is keyed by both the
 mutable-authority revision and the observed query, and becomes unavailable
 when either coordinate changes.  The revision coordinate may conservatively

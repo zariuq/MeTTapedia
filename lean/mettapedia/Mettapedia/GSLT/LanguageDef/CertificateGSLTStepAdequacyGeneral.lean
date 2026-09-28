@@ -487,6 +487,7 @@ theorem tracePremisesModed_congruence_shape :
             · exact ⟨source, target, rfl⟩
             · exact inductionHypothesis chain premise tailMember
           · cases chain
+      | scopedStep step => simp [tracePremisesModed] at chain
       | freshness condition => simp [tracePremisesModed] at chain
       | relationQuery relation arguments => simp [tracePremisesModed] at chain
       | forAll collection parameter body => simp [tracePremisesModed] at chain
@@ -1892,6 +1893,9 @@ private theorem stepAt_mono_bundle (base : BasePremiseEvaluator)
         | congruence stepEvidence matchEvidence mergeEvidence =>
             exact .congruence (stepPart stepEvidence) matchEvidence
               mergeEvidence
+        | scopedRoot empty stepEvidence matchEvidence mergeEvidence =>
+            exact .scopedRoot empty (stepPart stepEvidence) matchEvidence
+              mergeEvidence
       refine ⟨stepPart, premisePart, ?_⟩
       intro initial final premises evidence
       induction premises generalizing initial with
@@ -1986,6 +1990,7 @@ theorem tracePremisesModed_extends :
       | congruence sourcePattern targetPattern =>
           obtain ⟨-, -, -, rest⟩ := tracePremisesModed_cons_inversion chain
           exact inductionHypothesis rest name (List.mem_append_left _ member)
+      | scopedStep step => simp [tracePremisesModed] at chain
       | freshness condition => simp [tracePremisesModed] at chain
       | relationQuery relation arguments => simp [tracePremisesModed] at chain
       | forAll collection parameter body => simp [tracePremisesModed] at chain
@@ -2373,6 +2378,7 @@ theorem rewritePremiseJudgments_hole :
             tracePremisesModed_cons_inversion chain
           simp [rewritePremiseJudgments_congruence_cons, patternsHoleSkeleton,
             sourceHole, targetHole, inductionHypothesis rest]
+      | scopedStep step => simp [tracePremisesModed] at chain
       | freshness condition => simp [tracePremisesModed] at chain
       | relationQuery relation arguments => simp [tracePremisesModed] at chain
       | forAll collection parameter body => simp [tracePremisesModed] at chain
@@ -2396,6 +2402,11 @@ theorem mem_rewritePremiseJudgments {premises : List Premise}
           · obtain ⟨s, t, premiseMember, patternEq⟩ :=
               inductionHypothesis tailMember
             exact ⟨s, t, List.mem_cons_of_mem _ premiseMember, patternEq⟩
+      | scopedStep step =>
+          obtain ⟨s, t, premiseMember, patternEq⟩ :=
+            inductionHypothesis (by simpa [rewritePremiseJudgments]
+              using member)
+          exact ⟨s, t, List.mem_cons_of_mem _ premiseMember, patternEq⟩
       | freshness condition =>
           obtain ⟨s, t, premiseMember, patternEq⟩ :=
             inductionHypothesis (by simpa [rewritePremiseJudgments]
@@ -2533,6 +2544,9 @@ theorem rewritePremiseJudgments_mem_of_congruence :
         | congruence s t =>
             rw [rewritePremiseJudgments_congruence_cons]
             exact List.mem_cons_of_mem _ (inductionHypothesis tailMember)
+        | scopedStep step =>
+            simpa [rewritePremiseJudgments] using
+              inductionHypothesis tailMember
         | freshness condition =>
             simpa [rewritePremiseJudgments] using
               inductionHypothesis tailMember
@@ -3019,6 +3033,7 @@ theorem tracePremisesModed_premise_occ :
               exact tracePremisesModed_extends restChain name
                 (List.mem_append_right _ nameMember)
           · exact inductionHypothesis restChain tailMember
+      | scopedStep step => simp [tracePremisesModed] at chain
       | freshness condition => simp [tracePremisesModed] at chain
       | relationQuery relation arguments => simp [tracePremisesModed] at chain
       | forAll collection parameter body => simp [tracePremisesModed] at chain

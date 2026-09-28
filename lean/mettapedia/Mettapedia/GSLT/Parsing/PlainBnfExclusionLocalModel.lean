@@ -16,7 +16,7 @@ negative scan indices, and alias-bearing disequality operands are outside
 this observation. On those inputs the predicate imposes no constraint.
 That is not grammar admission or evidence of successful execution. The
 actual source program must separately preserve this predicate for all its
-applicable clause/provider steps before it licenses no-invention.
+applicable rule/provider steps before it licenses no-invention.
 -/
 
 set_option autoImplicit false
@@ -182,7 +182,7 @@ theorem meaning_real_gap_iff (previous next : Nat) (excluded : List Nat) (output
 /-! ## Local implications on arbitrary ground terms
 
 These are equations of the partial observation. They do not declare rules
-or claim that any program contains the corresponding clauses.
+or claim that any program contains the corresponding rules.
 -/
 
 def scalarCons (first rest : GroundTerm) : GroundTerm :=

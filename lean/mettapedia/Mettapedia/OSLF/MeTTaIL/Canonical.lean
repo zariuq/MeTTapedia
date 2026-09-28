@@ -102,6 +102,33 @@ private def renderRuleContext (ctx : List (String × TypeExpr)) (premises : List
   else
     String.intercalate " | " blocks ++ " "
 
+/-- Preserve the authored binding contract in canonical rule identity. -/
+private def renderPatternSite : RulePatternSite → String
+  | .left => "left"
+  | .right => "right"
+  | .premise index quantifiers argument =>
+      s!"premise({index},{quantifiers},{argument})"
+
+private def renderBindingType : TypeExpr → String
+  | .base name => "base(" ++ quote name ++ ")"
+  | .arrow domain codomain =>
+      "arrow(" ++ renderBindingType domain ++ "," ++ renderBindingType codomain ++ ")"
+  | .multiBinder inner => "multi(" ++ renderBindingType inner ++ ")"
+  | .collection kind inner =>
+      "collection(" ++ renderCollType kind ++ "," ++ renderBindingType inner ++ ")"
+
+private def renderRuleBindings : Option RuleBindingSpec → String
+  | none => ""
+  | some spec =>
+      let dependencies := spec.dependencies.map fun (name, types) =>
+        quote name ++ ":[" ++ String.intercalate "," (types.map renderBindingType) ++ "]"
+      let occurrences := spec.occurrences.map fun row =>
+        quote row.name ++ "@" ++ renderPatternSite row.site ++ "[" ++
+          String.intercalate "," (row.path.map toString) ++ "](" ++
+          String.intercalate "," (row.arguments.map Pattern.renderJson) ++ ")"
+      " {bindings:[" ++ String.intercalate "," dependencies ++ "]|[" ++
+        String.intercalate "," occurrences ++ "]}"
+
 /-- Lean-side verbose canonical rendering. Preserves full authored details
     (parameter names, types, syntax patterns, declaration order).
     NOT the same as Rust's zone1_shared_core, which sorts and projects. -/
@@ -122,10 +149,10 @@ def verboseCanonical (lang : LanguageDef) : String :=
       out := out ++ s!"  {term.label} . {ctx}|-{synpat}:{term.category}\n"
     out := out ++ "equations:\n"
     for eqn in lang.equations do
-      out := out ++ s!"  {eqn.name} . {renderRuleContext eqn.typeContext eqn.premises}|-{eqn.left.renderJson}={eqn.right.renderJson}\n"
+      out := out ++ s!"  {eqn.name} . {renderRuleContext eqn.typeContext eqn.premises}|-{eqn.left.renderJson}={eqn.right.renderJson}{renderRuleBindings eqn.bindings}\n"
     out := out ++ "rewrites:\n"
     for rw in lang.rewrites do
-      out := out ++ s!"  {rw.name} . {renderRuleContext rw.typeContext rw.premises}|-{rw.left.renderJson}~>{rw.right.renderJson}\n"
+      out := out ++ s!"  {rw.name} . {renderRuleContext rw.typeContext rw.premises}|-{rw.left.renderJson}~>{rw.right.renderJson}{renderRuleBindings rw.bindings}\n"
     return out
 
 /-- Render a term in Zone-1 shared-core format: label/category/arity/shape only.
@@ -160,12 +187,12 @@ def zone1SharedCore (lang : LanguageDef) : String :=
     let sortedEqs := lang.equations.toArray.qsort (fun a b => a.name < b.name) |>.toList
     out := out ++ "equations:\n"
     for eqn in sortedEqs do
-      out := out ++ s!"  {eqn.name} . {renderRuleContext eqn.typeContext eqn.premises}|-{eqn.left.renderJson}={eqn.right.renderJson}\n"
+      out := out ++ s!"  {eqn.name} . {renderRuleContext eqn.typeContext eqn.premises}|-{eqn.left.renderJson}={eqn.right.renderJson}{renderRuleBindings eqn.bindings}\n"
     -- Rewrites: sorted by name
     let sortedRws := lang.rewrites.toArray.qsort (fun a b => a.name < b.name) |>.toList
     out := out ++ "rewrites:\n"
     for rw in sortedRws do
-      out := out ++ s!"  {rw.name} . {renderRuleContext rw.typeContext rw.premises}|-{rw.left.renderJson}~>{rw.right.renderJson}\n"
+      out := out ++ s!"  {rw.name} . {renderRuleContext rw.typeContext rw.premises}|-{rw.left.renderJson}~>{rw.right.renderJson}{renderRuleBindings rw.bindings}\n"
     return out
 
 private def termPolicy : Option TermEvalPolicy → CanonicalEvalPolicy

@@ -2,7 +2,7 @@ import Mettapedia.GSLT.Parsing.HornCertificateGSLT
 import Mettapedia.GSLT.Parsing.CanonicalSourceHornElaboration
 
 /-!
-# Detecting unseeded relations in clause-only execution
+# Detecting unseeded relations in rule-only execution
 
 A declaration of an external capability is not an implementation of that
 relation. This check exposes the distinction in the existing Horn execution

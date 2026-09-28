@@ -9,7 +9,7 @@ import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.HOL.FormationSensitiveH
 
 A closed typed source term supplies the exact value of a native declaration,
 including unapplied function values. Source abstraction is native abstraction;
-there is no arity expansion into a different clause program. Formation and body
+there is no arity expansion into a different equational program. Formation and body
 typing follow from the existing total HOL representation and earn source-prefix
 admission in the existing dependent judgment system.
 

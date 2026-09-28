@@ -277,6 +277,66 @@ theorem Denotes.substitute {gamma : HOL.Ctx Base} {type : HOL.Ty Base}
           (liftEnvironment environment) liftedComponents)
       simpa only [Presentation.subst, liftEnvironment_extend] using interpreted
 
+/-- Native beta contraction preserves the same signature-generic denotation.
+The reduct is interpreted through the actual native substitution operation;
+its argument may itself be a computation, not merely a variable. -/
+theorem Denotes.beta {gamma : HOL.Ctx Base} {domain codomain : HOL.Ty Base}
+    {body : Tower.Tm (gamma.length + 1)} {argument : Tower.Tm gamma.length}
+    {bodyMeaning : model.Valuation (domain :: gamma) →
+      HOL.Ty.denote model.Carrier codomain}
+    {argumentMeaning : model.Valuation gamma →
+      HOL.Ty.denote model.Carrier domain}
+    (bodyDenotes : Denotes signature model (gamma := domain :: gamma)
+      (type := codomain) body bodyMeaning)
+    (argumentDenotes : Denotes signature model (gamma := gamma)
+      (type := domain) argument argumentMeaning) :
+    Denotes signature model (gamma := gamma) (type := codomain)
+      (.app (.lam body) argument)
+      (fun valuation => bodyMeaning (model.extend valuation (argumentMeaning valuation))) ∧
+    Denotes signature model (gamma := gamma) (type := codomain) (inst0 argument body)
+      (fun valuation => bodyMeaning (model.extend valuation (argumentMeaning valuation))) := by
+  constructor
+  · exact .application (.abstraction bodyDenotes) argumentDenotes
+  · simpa only [inst0, subst0] using
+      (bodyDenotes.substitute (subst0 argument)
+        (fun valuation => model.extend valuation (argumentMeaning valuation))
+        (by
+          intro type index
+          cases index with
+          | vz => simpa only [variableIndex, subst0, Fin.cases_zero,
+                HOL.HenkinModel.extend, HOL.PreModel.extend] using argumentDenotes
+          | vs prior =>
+              simpa only [variableIndex, subst0, Fin.cases_succ,
+                HOL.HenkinModel.extend, HOL.PreModel.extend] using
+                (Denotes.index (signature := signature) (model := model) prior)))
+
+/-- Native eta expansion preserves the denotation of an already denoted
+function. Weakening is explicit: the newly bound variable cannot occur free
+in the function being expanded. -/
+theorem Denotes.eta {gamma : HOL.Ctx Base} {domain codomain : HOL.Ty Base}
+    {function : Tower.Tm gamma.length}
+    {functionMeaning : model.Valuation gamma →
+      HOL.Ty.denote model.Carrier (.arr domain codomain)}
+    (functionDenotes : Denotes signature model function functionMeaning) :
+    Denotes signature model (gamma := gamma) (type := .arr domain codomain)
+      (.lam (.app (Presentation.rename wk function) (.var 0))) functionMeaning := by
+  have weakened : Denotes signature model (gamma := domain :: gamma)
+      (type := .arr domain codomain) (Presentation.rename wk function)
+      (fun valuation => functionMeaning
+        (HOL.Soundness.renameVal model HOL.Rename.weaken valuation)) :=
+    functionDenotes.rename HOL.Rename.weaken wk (fun _ => rfl)
+  have applied := Denotes.application weakened
+    (Denotes.index (signature := signature) (model := model)
+      (HOL.Var.vz : HOL.Var (domain :: gamma) domain))
+  have expanded := Denotes.abstraction applied
+  have etaMeaning :
+      (fun valuation x => functionMeaning valuation x) = functionMeaning := by
+    funext valuation x
+    rfl
+  rw [← etaMeaning]
+  simpa only [HOL.Soundness.renameVal_weaken_extend,
+    HOL.HenkinModel.extend, HOL.PreModel.extend, variableIndex] using expanded
+
 private theorem application_result {n : Nat} {function argument : Option (Tower.Tm n)}
     {result : Tower.Tm n} :
     (do let f ← function; let a ← argument; pure (.app f a)) = some result ↔
@@ -340,6 +400,107 @@ theorem representation_square {gamma : HOL.Ctx Base} {type : HOL.Ty Base}
         (rightInduction rightRepresented)
   | top | bot | and | or | not | ex => cases represented
 
+/-- The source beta redex and its source contractum have the literal native
+representations expected by contraction, and both are denoted in the same
+native judgment by their independently defined source meanings. This uses
+the actual represented argument, which may itself be an application. -/
+theorem represented_beta_square {gamma : HOL.Ctx Base}
+    {domain codomain : HOL.Ty Base}
+    (body : HOL.Term Const (domain :: gamma) codomain)
+    (argument : HOL.Term Const gamma domain)
+    {bodyRaw : Tower.Tm (gamma.length + 1)}
+    {argumentRaw : Tower.Tm gamma.length}
+    (bodyRepresented : represent signature body = some bodyRaw)
+    (argumentRepresented : represent signature argument = some argumentRaw) :
+    represent signature (.app (.lam body) argument) =
+      some (.app (.lam bodyRaw) argumentRaw) ∧
+    represent signature (HOL.instantiate argument body) =
+      some (inst0 argumentRaw bodyRaw) ∧
+    Denotes signature model (.app (.lam bodyRaw) argumentRaw)
+      (fun valuation => model.denote (.app (.lam body) argument) valuation) ∧
+    Denotes signature model (inst0 argumentRaw bodyRaw)
+      (fun valuation => model.denote (HOL.instantiate argument body) valuation) := by
+  have redexRepresented : represent signature (.app (.lam body) argument) =
+      some (.app (.lam bodyRaw) argumentRaw) := by
+    exact represent_app signature (.lam body) argument
+      (represent_lam signature body bodyRepresented) argumentRepresented
+  have reductRepresented : represent signature (HOL.instantiate argument body) =
+      some (inst0 argumentRaw bodyRaw) := by
+    simpa only [bodyRepresented, Option.map_some] using
+      represent_instantiate signature argument body argumentRepresented
+  have bodyDenotes := representation_square (signature := signature) (model := model)
+    body bodyRepresented
+  have argumentDenotes := representation_square (signature := signature) (model := model)
+    argument argumentRepresented
+  have compared := Denotes.beta bodyDenotes argumentDenotes
+  refine ⟨redexRepresented, reductRepresented, ?_, ?_⟩
+  · simpa only [HOL.HenkinModel.denote, HOL.PreModel.denote] using compared.1
+  · simpa only [HOL.Soundness.denote_instantiate_term] using compared.2
+
+/-- A represented HOL eta expansion is the literal native eta expansion, and
+its native denotation is the source function's denotation. The weakening in
+both source and native syntax enforces the eta side condition. -/
+theorem represented_eta_square {gamma : HOL.Ctx Base}
+    {domain codomain : HOL.Ty Base}
+    (function : HOL.Term Const gamma (.arr domain codomain))
+    {functionRaw : Tower.Tm gamma.length}
+    (functionRepresented : represent signature function = some functionRaw) :
+    represent signature
+      (.lam (.app (HOL.weaken (σ := domain) function) (.var .vz))) =
+      some (.lam (.app (Presentation.rename wk functionRaw) (.var 0))) ∧
+    Denotes signature model
+      (.lam (.app (Presentation.rename wk functionRaw) (.var 0)))
+      (fun valuation => model.denote function valuation) ∧
+    Denotes signature model
+      (.lam (.app (Presentation.rename wk functionRaw) (.var 0)))
+      (fun valuation => model.denote
+        (.lam (.app (HOL.weaken (σ := domain) function) (.var .vz))) valuation) ∧
+    ∀ valuation, model.denote
+      (.lam (.app (HOL.weaken (σ := domain) function) (.var .vz))) valuation =
+      model.denote function valuation := by
+  have weakened : represent signature (HOL.weaken (σ := domain) function) =
+      some (Presentation.rename wk functionRaw) := by
+    simpa only [HOL.weaken, functionRepresented, Option.map_some] using
+      represent_rename signature HOL.Rename.weaken wk (fun _ => rfl) function
+  have bound : represent signature
+      (.app (HOL.weaken (σ := domain) function) (.var .vz)) =
+      some (.app (Presentation.rename wk functionRaw) (.var 0)) := by
+    exact represent_app signature _ _ weakened rfl
+  have represented := represent_lam signature
+    (.app (HOL.weaken (σ := domain) function) (.var .vz)) bound
+  refine ⟨represented,
+    (representation_square (signature := signature) (model := model)
+      function functionRepresented).eta,
+    representation_square (signature := signature) (model := model)
+      (.lam (.app (HOL.weaken (σ := domain) function) (.var .vz))) represented, ?_⟩
+  intro valuation
+  funext x
+  change model.denote (HOL.weaken (σ := domain) function)
+    (model.extend valuation x) x = model.denote function valuation x
+  rw [HOL.Soundness.denote_weaken]
+
+/-- A computed, non-variable HOL argument is covered by the beta square. -/
+theorem computed_argument_beta_control (signature : LogicalSignature Base Const)
+    (model : HOL.HenkinModel.{u, v, w} Base Const) (domain : HOL.Ty Base) :
+    Denotes signature model (gamma := [domain]) (type := domain)
+      (inst0 (.app (.lam (.var 0)) (.var 0)) (.var 0))
+      (fun valuation => model.denote
+        (HOL.instantiate
+          (HOL.Term.app (HOL.Term.lam (HOL.Term.var .vz)) (HOL.Term.var .vz))
+          (HOL.Term.var .vz)) valuation) := by
+  exact (represented_beta_square (signature := signature) (model := model)
+    (body := HOL.Term.var (HOL.Var.vz : HOL.Var (domain :: [domain]) domain))
+    (argument := HOL.Term.app
+      (HOL.Term.lam (HOL.Term.var .vz)) (HOL.Term.var .vz))
+    (by rfl) (by rfl)).2.2.2
+
+/-- The signature-generic representation is deliberately partial: this
+source truth constructor is not silently identified with a declared native
+operation. A signature extension must supply and justify that operation. -/
+theorem unsupported_truth_not_represented (signature : LogicalSignature Base Const)
+    (gamma : HOL.Ctx Base) :
+    represent signature (HOL.Term.top (Γ := gamma)) = none := rfl
+
 /-- The same square commutes after a represented source substitution and the
 matching actual native substitution. -/
 theorem representation_substitution_square {gamma delta : HOL.Ctx Base}
@@ -362,7 +523,13 @@ theorem representation_substitution_square {gamma delta : HOL.Ctx Base}
 #print axioms Denotes.admissible
 #print axioms Denotes.rename
 #print axioms Denotes.substitute
+#print axioms Denotes.beta
+#print axioms Denotes.eta
 #print axioms representation_square
+#print axioms represented_beta_square
+#print axioms represented_eta_square
+#print axioms computed_argument_beta_control
+#print axioms unsupported_truth_not_represented
 #print axioms representation_substitution_square
 
 end Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.NativeHOLSignatureDenotation

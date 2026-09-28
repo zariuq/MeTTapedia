@@ -2,6 +2,8 @@ import Mettapedia.Languages.ProcessCalculi.RhoCombinators.Admissibility
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.Basic
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.Blowup
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.CollapsedConstructor
+import Mettapedia.Languages.ProcessCalculi.RhoCombinators.HereditaryCongruence
+import Mettapedia.Languages.ProcessCalculi.RhoCombinators.Characteristic
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.Compositionality
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.CongruenceScope
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.CostNotSaturated
@@ -18,6 +20,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCombinators.MinimalLabel
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.NameGrowth
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.NormalForm
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.ObservationBoundary
+import Mettapedia.Languages.ProcessCalculi.RhoCombinators.OSLFComparison
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.Occupancy
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.OccurrenceClassification
 import Mettapedia.Languages.ProcessCalculi.RhoCombinators.OccurrenceDispatch

@@ -96,6 +96,10 @@ def mapPremiseSchemaNames (mapName : String → String) : Premise → Premise
   | .congruence left right =>
       .congruence (mapPatternSchemaNames mapName left)
         (mapPatternSchemaNames mapName right)
+  | .scopedStep step =>
+      .scopedStep { step with
+        source := mapPatternSchemaNames mapName step.source
+        target := mapPatternSchemaNames mapName step.target }
   | .relationQuery relation arguments =>
       .relationQuery relation (mapPatternListSchemaNames mapName arguments)
   | .forAll collection parameter body =>
@@ -473,6 +477,9 @@ theorem mapPremise_mapPremiseSchemaNames
       cases condition
       simp [mapPremise, mapPremiseSchemaNames]
   | congruence left right =>
+      simp [mapPremise, mapPremiseSchemaNames]
+  | scopedStep step =>
+      cases step
       simp [mapPremise, mapPremiseSchemaNames]
   | relationQuery relation arguments =>
       simp [mapPremise, mapPremiseSchemaNames,

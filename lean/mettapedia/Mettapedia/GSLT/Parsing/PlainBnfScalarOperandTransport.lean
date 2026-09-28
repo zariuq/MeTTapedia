@@ -5,7 +5,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfInputCarrier
 # Actual scalar-call operands across source and generated syntax
 
 The selected source premise and generated callee are projected from the
-original clause and compiled caller, not transcribed as replacement programs.
+original rule and compiled caller, not transcribed as replacement programs.
 Their input substitution is simultaneous and preserves arbitrary origin data.
 The final execution theorem uses the existing finite ground worker model.
 This does not execute the surrounding collection/once wrappers or establish

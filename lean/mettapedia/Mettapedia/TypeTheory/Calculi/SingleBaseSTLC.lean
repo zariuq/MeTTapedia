@@ -1,13 +1,16 @@
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.BoundedConversion
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.BudgetedBatch
+import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.CanonicalCode
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.Conversion
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.ConversionDecision
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.CumulativeEmbedding
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.Cwf
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.CwfMorphism
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.ErasureBoundary
+import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.FilledCode
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.InhabitationBoundary
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.InstitutionBoundary
+import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.IntensionalCode
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.NormalForms
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.Normalization
 import Mettapedia.TypeTheory.Calculi.SingleBaseSTLC.Presentation

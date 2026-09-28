@@ -149,6 +149,23 @@ theorem wmLangReduces_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
   exact contextualStep_mono_rules
     (wmFullVertexRules_subset_of_le h) hred
 
+/-- A full vertex presents an equation-free language: its constructors depend
+only on the overlap and forgetting modes, and none of them is a collection. -/
+theorem wmFullVertexLanguageDef_isEquationFree (w : WMFullVertex) :
+    (wmFullVertexLanguageDef w).isEquationFree = true := by
+  unfold wmFullVertexLanguageDef
+  generalize w.overlap = overlap
+  generalize w.forgetting = forgetting
+  cases overlap <;> cases forgetting <;> rfl
+
+/-- An extended vertex presents an equation-free language. -/
+theorem wmExtVertexLanguageDef_isEquationFree (w : WMExtVertex) :
+    (wmExtVertexLanguageDef w).isEquationFree = true := by
+  unfold wmExtVertexLanguageDef
+  generalize w.overlap = overlap
+  generalize w.forgetting = forgetting
+  cases overlap <;> cases forgetting <;> rfl
+
 /-- Semantic one-step reduction is monotone along the WM full-vertex order. -/
 theorem wmLangSemanticReduces_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
     {p q : Pattern}
@@ -157,7 +174,7 @@ theorem wmLangSemanticReduces_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
   apply langReduces_to_semantic
   apply wmLangReduces_mono_fullVertex h
   exact (langSemanticReduces_iff_langReduces_of_equation_free
-    (lang := wmFullVertexLanguageDef w) (by rfl) p q).mp hred
+    (lang := wmFullVertexLanguageDef w) (wmFullVertexLanguageDef_isEquationFree w) p q).mp hred
 
 /-- Multi-step reduction is monotone along the WM full vertex weakness order. -/
 theorem wmLangReducesStar_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
@@ -186,7 +203,7 @@ theorem wmLangSemanticReduces_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)
   apply langReduces_to_semantic
   apply wmLangReduces_mono_extVertex h
   exact (langSemanticReduces_iff_langReduces_of_equation_free
-    (lang := wmExtVertexLanguageDef w) (by rfl) p q).mp hred
+    (lang := wmExtVertexLanguageDef w) (wmExtVertexLanguageDef_isEquationFree w) p q).mp hred
 
 /-- Multi-step reduction monotonicity for 6-axis vertex. -/
 theorem wmLangReducesStar_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)
@@ -210,7 +227,7 @@ def wmWeaknessForwardMorphism_full {v w : WMFullVertex} (h : v ≤ w) :
     intro left right equivalent
     have equal : left = right :=
       (langGSLT_equiv_iff_eq_of_equation_free
-        (lang := wmFullVertexLanguageDef w) (by rfl) left right).mp equivalent
+        (lang := wmFullVertexLanguageDef w) (wmFullVertexLanguageDef_isEquationFree w) left right).mp equivalent
     subst right
     exact (langGSLT (wmFullVertexLanguageDef v)).equations.refl _
   forward_sim _ q hred :=
@@ -238,7 +255,7 @@ def wmWeaknessForwardMorphism_ext {v w : WMExtVertex} (h : v ≤ w) :
     intro left right equivalent
     have equal : left = right :=
       (langGSLT_equiv_iff_eq_of_equation_free
-        (lang := wmExtVertexLanguageDef w) (by rfl) left right).mp equivalent
+        (lang := wmExtVertexLanguageDef w) (wmExtVertexLanguageDef_isEquationFree w) left right).mp equivalent
     subst right
     exact (langGSLT (wmExtVertexLanguageDef v)).equations.refl _
   forward_sim _ q hred :=

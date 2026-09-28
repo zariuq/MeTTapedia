@@ -1081,7 +1081,8 @@ theorem mettaEvalExpected_succ_functionErrors
   simp only [expectedNotUndefined, Bool.false_eq_true, if_false,
     sourceEquation, sourceNotEmptyOrError, doesNotPass,
     selectedSourceEquation, sourceShape]
-  rw [selectorEquation]
+  rw [Metta.Minimal.executeApplicationPlan]
+  simp only [selectorEquation]
   simp only [Bool.false_eq_true, if_false]
   unfold Metta.Minimal.prioritizeSemanticResults
   simp

@@ -3,7 +3,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfGeneratedScalarCallerExecution
 /-!
 # Selected scalar execution under unrelated equation extensions
 
-Only the actual raw/admitted scalar clauses, their two Integer providers, and
+Only the actual raw/admitted scalar equations, their two Integer providers, and
 the result tag are protected here. Other literal-headed equations may change
 the program's behavior without changing this call. The condition concerns
 ordered source occurrences, not hashes or equality of distinct answer sets.

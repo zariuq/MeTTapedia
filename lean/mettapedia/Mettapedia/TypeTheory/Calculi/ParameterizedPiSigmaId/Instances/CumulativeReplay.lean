@@ -61,6 +61,18 @@ instance (first second result : Tower.Head) : Decidable (Tower.Join first second
               · intro same; subst w; exact .sorts u v
               · intro joined; cases joined; rfl
 
+instance : ∀ h u, Decidable (Tower.rules.headTyping h u) :=
+  fun h u => inferInstanceAs (Decidable (Tower.HeadTyping h u))
+
+instance : ∀ h, Decidable (Tower.rules.isUniverse h) :=
+  fun h => inferInstanceAs (Decidable (Tower.IsUniverse h))
+
+instance : ∀ u v w, Decidable (Tower.rules.join u v w) :=
+  fun u v w => inferInstanceAs (Decidable (Tower.Join u v w))
+
+instance : ∀ u v, Decidable (Tower.rules.cumulative u v) :=
+  fun u v => Tower.instDecidableCumulative u v
+
 /-- Declaration extension inherits these same constructive primitive
 decisions; it neither reinterprets universe rules nor admits conversions. -/
 instance (signature : Declaration.Signature Tower.Head) :

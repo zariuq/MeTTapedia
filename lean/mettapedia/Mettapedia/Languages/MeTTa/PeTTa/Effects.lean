@@ -224,10 +224,11 @@ theorem pettaCmd_shape (s s₁ : EvalState) (p : Pattern) (ans : Answers)
 
 /-! ## get-atoms completeness -/
 
-/-- Every stored atom in the space appears in the `get-atoms` answer set. -/
-theorem getAtomsCmd_complete (s : EvalState) (p : Pattern)
-    (h : p ∈ s.space.storedAtoms) :
-    p ∈ s.space.storedAtoms := h
+-- `getAtomsCmd_complete` was removed.  Its statement was
+-- `(h : p ∈ s.space.storedAtoms) : p ∈ s.space.storedAtoms := h`, which never
+-- mentioned `get-atoms` and so asserted nothing about completeness.  The
+-- genuine result is `getAtomsCmd_answers_eq_storedAtoms` immediately below,
+-- which does mention the command and its answer set.
 
 /-- The `get-atoms` answer set is exactly the stored-atom list. -/
 theorem getAtomsCmd_answers_eq_storedAtoms (s : EvalState) :

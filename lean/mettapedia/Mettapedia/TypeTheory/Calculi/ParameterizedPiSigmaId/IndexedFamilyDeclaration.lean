@@ -532,7 +532,7 @@ def IotaSchema.toDeclaredReceipt
 
 /-- A canonical computation schema connected to both the declared eliminator
 at the application head and the constructor it eliminates. -/
-structure IotaClause (base : Rules Head) (signature : Signature Head)
+structure IotaRule (base : Rules Head) (signature : Signature Head)
     (computation : ProofRelevantRootComputation Head)
     (constructorNames : List DeclName) (eliminatorName : DeclName) where
   constructorName : DeclName
@@ -567,12 +567,12 @@ structure Candidate (base : Rules Head) where
   eliminatorNotFamily : eliminator.name ≠ familyName
   eliminatorNotConstructor :
     ∀ constructor ∈ constructors, constructor.name ≠ eliminator.name
-  iotaClauses : List
-    (IotaClause base signature computation
+  iotaRules : List
+    (IotaRule base signature computation
       (constructors.map ConstructorSpec.name) eliminator.name)
   constructorsComputed :
     ∀ constructorName ∈ constructors.map ConstructorSpec.name,
-      constructorName ∈ iotaClauses.map IotaClause.constructorName
+      constructorName ∈ iotaRules.map IotaRule.constructorName
 
 def Candidate.familyArity {base : Rules Head} (candidate : Candidate base) : Nat :=
   candidate.familyParameterCount + candidate.familyIndexCount

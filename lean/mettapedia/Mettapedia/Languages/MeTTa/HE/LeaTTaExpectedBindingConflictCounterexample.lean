@@ -155,14 +155,24 @@ private theorem conflictVisibleBindings :
     have fixedPoint : ((.sym "B" : Metta.Atom) == .sym "B") = true := by
       rfl
     simp [resolveAtom, instantiated, fixed, notVariable, fixedPoint]
+  have raw : restrictBndRaw ["t"] ([.val "t" (.sym "B")] : Metta.Bindings) =
+      [.val "t" (.sym "B")] := by
+    unfold restrictBndRaw
+    simp only [List.length_cons, List.length_nil, Nat.zero_add, Nat.reduceAdd]
+    simp only [List.filterMap_cons, List.filterMap_nil, List.filter_cons,
+      List.filter_nil]
+    rw [resolved]
+    rfl
+  have merged : Metta.Bindings.merge [] ([.val "t" (.sym "B")] : Metta.Bindings) =
+      [[.val "t" (.sym "B")]] := by
+    simp [Metta.Bindings.merge, Metta.Bindings.mergeOne,
+      Metta.Bindings.addVarBinding, Metta.Bindings.classValues,
+      Metta.Bindings.lookupVal, Metta.Bindings.addValRaw,
+      Metta.Bindings.removeVal]
   rw [selectedApplicationVisibleBindings, scope]
   change restrictBnd ["t"] ([.val "t" (.sym "B")] : Metta.Bindings) = _
   unfold restrictBnd
-  simp only [List.length_cons, List.length_nil, Nat.zero_add, Nat.reduceAdd]
-  simp only [List.filterMap_cons, List.filterMap_nil, List.filter_cons,
-    List.filter_nil]
-  rw [resolved]
-  rfl
+  simp only [raw, merged, List.head?_cons, Option.getD_some]
 
 /-- The runtime half of the same boundary produces no application seed: its
 visible `t = B` presentation is incompatible with incoming `t = A`. -/
@@ -182,7 +192,10 @@ theorem conflicting_selected_application_has_no_seed :
       "t" (.sym "B") = [] :=
     Metta.Bindings.addVarBinding_conflict
       (by intro name equality; cases equality) values (by simp) incompatible
-  rw [selectedApplicationInitialBindings, conflictVisibleBindings]
+  show Metta.Bindings.merge conflictRuntimeIncoming
+      (selectedApplicationVisibleBindings (.expr [.sym "f"]) (.var "t")
+        conflictSelected) = []
+  rw [conflictVisibleBindings]
   simpa [conflictRuntimeIncoming, Metta.Bindings.merge,
     Metta.Bindings.mergeOne] using rejected
 

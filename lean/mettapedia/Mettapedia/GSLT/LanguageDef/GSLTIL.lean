@@ -178,7 +178,9 @@ private theorem rewrites_validate :
       LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
       LanguageDef.premiseFvarNames,
       LanguageDef.premiseProducedFvarNames,
-      LanguageDef.premiseForAllParams, Pattern.constructorRefs,
+      LanguageDef.premiseForAllParams,
+      LanguageDef.premiseStepTypeExprs, LanguageDef.premiseLocallyScoped,
+      Pattern.constructorRefs,
       Pattern.constructorRefsList, Pattern.freeFvarNames,
       Pattern.isWellScoped, Pattern.isWellScopedAt,
       Pattern.isWellScopedListAt, LanguageDef.typeNames]

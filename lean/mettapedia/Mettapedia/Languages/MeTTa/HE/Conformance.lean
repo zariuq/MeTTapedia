@@ -132,7 +132,7 @@ theorem eval_grounded_typecast :
   · show _ ∈ typeCast _ _ _ _ fuel
     decide
 
-/-! ## 2. typeCast clauses (metta.md lines 275-296) — computable `rfl` tests -/
+/-! ## 2. typeCast cases (metta.md lines 275-296) — computable `rfl` tests -/
 
 /-- Atom with matching type annotation. -/
 theorem typeCast_matching_type :
@@ -157,7 +157,7 @@ theorem typeCast_undefined_type :
     typeCast (.symbol "x") Atom.undefinedType space emptyB fuel =
     [(.symbol "x", emptyB)] := rfl
 
-/-! ## 3. matchTypes clauses (metta.md lines 298-314) -/
+/-! ## 3. matchTypes cases (metta.md lines 298-314) -/
 
 theorem matchTypes_undef_left :
     matchTypes Atom.undefinedType (.symbol "Anything") emptyB =
@@ -173,7 +173,7 @@ theorem matchTypes_same :
 theorem matchTypes_different :
     matchTypes (.symbol "Int") (.symbol "Bool") emptyB = [] := rfl
 
-/-! ## 4. matchAtoms clauses (metta.md lines 577-617) -/
+/-! ## 4. matchAtoms cases (metta.md lines 577-617) -/
 
 theorem matchAtoms_same_symbol :
     matchAtoms (.symbol "a") (.symbol "a") fuel = [emptyB] := rfl

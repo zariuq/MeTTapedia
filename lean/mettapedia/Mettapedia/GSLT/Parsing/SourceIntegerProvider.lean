@@ -16,7 +16,7 @@ Independent inductive judgments specify integer arithmetic, comparisons and
 ordered answer lists. The executable functions are proved equivalent to those
 judgments. `none` is unsupported or ill-typed syntax, not completed emptiness.
 
-The selected clauses follow the ground integer/quotation/lazy-conditional
+The selected rules follow the ground integer/quotation/lazy-conditional
 fragment audited in SWI-PeTTa at commit
 `ae66fa8e41dcd5539d614706bd4e5cfb34f9608d`: `translator.pl` integer/atomic leaves,
 left-to-right arguments, three-argument `if` (173-185), quotation (320), and

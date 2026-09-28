@@ -6,7 +6,7 @@ import Mettapedia.OSLF.MeTTaIL.ContextualStep
 /-!
 # Authored declaration-collector execution in the existing contextual relation
 
-The selected clauses are read from the live authored discovery source. Their
+The selected rules are read from the live authored discovery source. Their
 heads and ordered bodies are translated by an explicit checked input/output
 mode into the existing Pattern/RewriteRule carrier. This is a finite selected
 source translation, not a new evaluator or a native compiler correctness claim.
@@ -26,7 +26,8 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.GSLT.LanguageDef.CanonicalSourceGSLT (Rewrite)
 open SourceSExprPatternCodec (encode encodeList)
-open SourceSExprPatternInstantiation (pattern patternList applyBindings_encode)
+open SourceSExprPatternInstantiation (pattern patternList applyBindings_encode
+  applyRuleBindings_of_binderFree binderFree_pattern)
 open scoped Mettapedia.OSLF.MeTTaIL.MeTTaSyntaxQuotation
 
 private def discoverySyntax : SExpr :=
@@ -331,7 +332,8 @@ private theorem rewrite_nil (base : BasePremiseEvaluator) (fuel : Nat) (before :
     matchPatternForRule_eq_syntactic, match_nil, match_cons_nil,
     List.flatMap_nil, premisesUsing,
     applyBindingsForRule_eq_syntactic, List.map_cons, List.map_nil, List.append_nil]
-  simp [pattern, patternList, SourceIntegerProvider.sourceVariableToken, applyBindings,
+  simp [applyRuleBindings_of_binderFree, binderFree, binderFreeList,
+    pattern, patternList, SourceIntegerProvider.sourceVariableToken, applyBindings,
     resultTuple, encode, encodeList]
 
 private theorem recursive_substitution (head : SExpr) (tail before : List SExpr) :
@@ -349,7 +351,7 @@ private theorem match_output (value : SExpr) :
 
 /-- The complete answer list of the existing executable contextual semantics:
 insufficient depth returns no result; sufficient depth returns exactly one
-ordered result. No provider can supply an answer for these clauses. -/
+ordered result. No provider can supply an answer for these rules. -/
 theorem reversal_rewriteAt (base : BasePremiseEvaluator) (fuel : Nat)
     (reversed before : List SExpr) :
     rewriteAt base reversalLanguage fuel (encode (reverseCall reversed before)) =
@@ -366,7 +368,8 @@ theorem reversal_rewriteAt (base : BasePremiseEvaluator) (fuel : Nat)
         matchPatternForRule_eq_syntactic, match_nil_cons, match_cons,
         List.flatMap_nil, List.nil_append,
         premisesUsing, premiseStepUsing, recursive_substitution,
-        applyBindingsForRule_eq_syntactic, List.append_nil]
+        applyBindingsForRule_eq_syntactic, applyRuleBindings_of_binderFree,
+        binderFree_pattern, List.append_nil]
       change List.map
         (fun bindings => applyBindings bindings (pattern (.list [.atom "?after"])))
         (List.flatMap (fun bindings => [bindings])
@@ -520,12 +523,13 @@ theorem collector_nil_step (index : SExpr) (reversed : List SExpr) :
   · simp [resultTuple, pattern, patternList, SourceIntegerProvider.sourceVariableToken,
       encode, encodeList, matchPattern, matchArgs, mergeBindings, List.foldlM]
   · simp [mergeBindings, List.foldlM]
-  · simp [applyBindingsForRule_eq_syntactic, collectorNilRight, collectorNilResult,
+  · simp [applyBindingsForRule_eq_syntactic, applyRuleBindings_of_binderFree,
+      binderFree, binderFreeList, collectorNilRight, collectorNilResult,
       pattern, patternList, SourceIntegerProvider.sourceVariableToken,
       applyBindings, encode, encodeList]
 
 /-- The independent collector's reverseAux observation is now reached by the
-actual nil/reversal clauses. The index is unchanged opaque source data here;
+actual nil/reversal rules. The index is unchanged opaque source data here;
 its trie interpretation belongs to the remaining full-collector connection. -/
 theorem collector_nil_restores_declaration_order (index : SExpr)
     (reversed : List (PlainBnfDeclarationSemantics.Definition

@@ -10,8 +10,9 @@ Paper-aligned formalization of Definition 4.1 from Stay, Meredith & Wells,
 
 ## Main Definitions
 
-* `LambdaTheory` — a lambda theory: CCC + finite limits + subobject fibration
-  + a distinguished `Pr` object + a rewrite relation `⇝ ⊆ Pr × Pr` (Def 4.1)
+* `LambdaTheory` — CCC + finite limits + object-indexed predicate fibers,
+  a distinguished `Pr` object, and a substitution-stable rewrite family.
+  Representing that family by a subobject of `Pr × Pr` requires separate data.
 * `BaseRewrite` — a base rewrite rule `Γ | ∅ ⊢ L(x̄) ⇝ R(x̄)` (§4.1 ⇝_B)
 * `RewriteOp` — a congruence rule `Γ | (∧ pᵢ ⇝ qᵢ) ⊢ f(p̄) ⇝ f(q̄)` (§4.1 ⇝_O)
 * `RelyCtx` — a rely context Δ of assumed reductions (§5.2)
@@ -39,21 +40,23 @@ open Mettapedia.GSLT.Core
         `p : Pr, q : Pr ⊢ (p ⇝ q) prop`;
     - A specified family of entailments (base rewrites + rewrite operations).
 
-    We represent the rewrite subobject as a family `rewriteRel`:
-    for each context Γ, a relation on morphisms `Γ ⟶ Pr`.
-    Naturality (stability under precomposition / substitution) is required.
+    This record retains the broader operational interface: `rewriteRel` is a
+    relation on morphisms `Γ ⟶ Pr`, stable under precomposition. Stability
+    alone does not imply the source's subobject claim. Consumers needing an
+    internal reduction predicate must supply a representing mono and prove
+    its factorization equivalence separately.
 -/
 structure LambdaTheory extends LambdaTheoryWithEquality where
   /-- The distinguished object of programs/processes.
       Paper: "a distinguished object Pr ∈ T of programs/processes". -/
   Pr : Obj
-  /-- The one-step rewrite relation on process terms.
-      Paper: "a distinguished subobject (⇝) ↪ Pr × Pr".
-      Concretely: for each context Γ, a relation on morphisms `p, q : Γ ⟶ Pr`. -/
+  /-- The one-step rewrite relation on generalized process terms.
+      A representing subobject is additional structure. -/
   rewriteRel : {Γ : Obj} → (Γ ⟶ Pr) → (Γ ⟶ Pr) → Prop
-  /-- Naturality: the rewrite relation is stable under substitution.
+  /-- Stability of the rewrite relation under substitution.
       If `p ⇝ q` in context Γ and σ : Δ ⟶ Γ, then `σ ≫ p ⇝ σ ≫ q` in Δ.
-      This is the "beck-chevalley" condition for the subobject (⇝) ↪ Pr × Pr. -/
+      This one-way condition is not a subobject representation or a full
+      Beck–Chevalley law. -/
   rewriteRel_nat : ∀ {Γ Δ : Obj} (σ : Δ ⟶ Γ) (p q : Γ ⟶ Pr),
       rewriteRel p q → rewriteRel (σ ≫ p) (σ ≫ q)
 

@@ -34,7 +34,7 @@ the configuration `normalTerm c k v`.
 
 The reference controls show the statement has content.  A concrete successor
 computation reaches its halted configuration.  The variant without the
-empty-list clause for `succ` still validates, yet fails adequacy on
+empty-list case for `succ` still validates, yet fails adequacy on
 `Code.succ` at the empty list, where Mathlib's machine returns `[1]`.
 -/
 
@@ -488,7 +488,7 @@ theorem succ_two_halts_with_three :
     Relation.ReflTransGen Reduces (normalTerm .succ .halt [2]) (encCfg (.halt [3])) :=
   (adequacy .succ [2] [3]).mpr (by simp [Code.eval])
 
-/-- Without the empty-list clause for `succ`, the authored language no longer
+/-- Without the empty-list case for `succ`, the authored language no longer
 computes Mathlib's `Code.succ` at the empty list, although that variant still
 validates (`withoutSuccOnEmpty_validate_eq_nil`). -/
 theorem withoutSuccOnEmpty_not_adequate :

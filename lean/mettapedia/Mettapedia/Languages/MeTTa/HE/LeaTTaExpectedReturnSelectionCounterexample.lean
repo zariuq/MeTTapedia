@@ -70,7 +70,7 @@ theorem application_types :
   rw [show application = .expr [.sym "f", .sym "a"] from rfl,
     Metta.Minimal.getTypes.eq_10 _ _ _ (by simp)]
   simp [hf, ha, hexpr, hatoms, arrowA, arrowB,
-    Metta.Minimal.typeInferenceAvoid, Metta.Atom.vars,
+    Metta.Minimal.typeInferenceAvoid, Metta.Atom.vars, Metta.Minimal.cartesian,
     Metta.Minimal.freshenArgumentTypes,
     Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
     Metta.Minimal.matchApplicationTypeArguments, Metta.Minimal.matchType,
@@ -86,7 +86,10 @@ private theorem application_type_prep :
 theorem outer_cast_accepts_later_return :
     Metta.Minimal.mettaTypeCast env Metta.Minimal.World.empty []
       application (.sym "RB") = .inr [] := by
-  rw [Metta.Minimal.mettaTypeCast, application_type_prep, application_types]
+  rw [Metta.Minimal.mettaTypeCast, Metta.Minimal.mettaTypeCastAvoiding]
+  simp only [application_type_prep, application_types]
+  simp [Metta.Minimal.freshenArgumentTypes, Metta.Minimal.freshenTypeCandidate,
+    Metta.Minimal.renameAllVars, Metta.Atom.vars]
   rfl
 
 /-- The independent inner policy scan nevertheless selects the earlier `RA`
@@ -111,9 +114,11 @@ theorem inner_selector_keeps_earlier_return :
       Metta.Minimal.wrapStates.eq_3, Metta.Minimal.World.empty]
   have hmatch : Metta.Minimal.matchType [] (.sym "A") (.sym "A") = some [] := by
     rfl
-  have hcheck : Metta.Minimal.typeCheckArgsOutcome env
-      Metta.Minimal.World.empty [.sym "A"] 0 [] [.sym "a"] = .success [] := by
-    simp [Metta.Minimal.typeCheckArgsOutcome, hprepA, ha,
+  have hcheck : Metta.Minimal.typeCheckArgsDetailedOutcome env
+      Metta.Minimal.World.empty [.sym "A"] 0 [] [.sym "a"] = .success [] [] := by
+    simp [Metta.Minimal.typeCheckArgsDetailedOutcome,
+      Metta.Minimal.typeCheckArgsDetailedOutcomeScoped, Metta.Minimal.scanActualTypes,
+      hprepA, ha,
       Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
       Metta.instantiate, hmatch]
   rw [selectedFunctionType, Metta.Minimal.selectFunctionType, hprepF, hf]
@@ -338,16 +343,30 @@ theorem repaired_selector_selects_later_expected_return :
     rfl
   have hreturnB : Metta.Minimal.matchType [] (.sym "RB") (.sym "RB") = some [] := by
     rfl
-  have hcheck : Metta.Minimal.typeCheckArgsOutcome env
-      Metta.Minimal.World.empty [.sym "A"] 0 [] [.sym "a"] = .success [] := by
-    simp [Metta.Minimal.typeCheckArgsOutcome, hprepA, ha,
+  have hbranches : Metta.Minimal.typeCheckArgsBranchesScoped env
+      Metta.Minimal.World.empty [.sym "A"]
+      (Metta.Minimal.applicationTypeInferenceScope (.sym "RB") [.sym "a"]) 0 []
+      [.sym "a"] = ⟨[[]], []⟩ := by
+    simp [Metta.Minimal.typeCheckArgsBranchesScoped,
+      Metta.Minimal.scanActualTypeBranches, hprepA, ha,
       Metta.Minimal.freshenTypeCandidate, Metta.Minimal.renameAllVars,
       Metta.instantiate, hmatchA]
+  have hfresh : Metta.Minimal.freshenFunctionTypeCandidatesAvoiding env
+      (.expr [.sym "f", .sym "a"]) [.sym "a"] (.sym "RB") [] [arrowA, arrowB] =
+        [arrowA, arrowB] := by
+    simp [Metta.Minimal.freshenFunctionTypeCandidatesAvoiding,
+      Metta.Minimal.functionTypeSelectionAvoiding,
+      Metta.Minimal.functionTypeSelectionAvoid,
+      Metta.Minimal.applicationTypeInferenceScope,
+      Metta.Minimal.typeInferenceAvoid, Metta.Minimal.freshenTypeCandidate,
+      Metta.Minimal.renameAllVars, env, arrowA, arrowB,
+      Metta.Minimal.MinEnv.ofAtomsGT, Metta.Atom.vars]
   rw [selectedExpectedFunctionType, Metta.Minimal.selectFunctionTypeForExpected,
-    hprepF, hf]
+    Metta.Minimal.selectFunctionTypeForExpectedAvoiding, hprepF, hf]
+  simp only [hfresh]
   simp [Metta.Minimal.scanFunctionTypeCandidatesForExpected, arrowA, arrowB,
-    hcheck, hreturnA, hreturnB,
-    Metta.Minimal.ExpectedFunctionTypeScanOutcome.prependError]
+    hbranches, Metta.Minimal.scanExpectedReturnBranches, hreturnA, hreturnB,
+    Metta.Minimal.ExpectedFunctionTypeScanOutcome.prependErrors]
 
 /-! ## Pre-instantiated-return wildcard counterexample
 
@@ -387,14 +406,14 @@ theorem preinstantiated_return_exposes_bound_atom_wildcard :
       "t" (.sym "Atom") (by simp [Metta.Atom.vars])]
   rfl
 
-private theorem dependentArgument_match : Metta.Minimal.matchType []
-    (.expr [.sym "P", .var "t"])
+private theorem dependentArgument_match (name : String) : Metta.Minimal.matchType []
+    (.expr [.sym "P", .var name])
     (.expr [.sym "P", .sym "Atom"]) =
-      some [.val "t" (.sym "Atom")] := by
+      some [.val name (.sym "Atom")] := by
   have hloop : Metta.Bindings.hasLoop
-      ([.val "t" (.sym "Atom")] : Metta.Bindings) = false := by
+      ([.val name (.sym "Atom")] : Metta.Bindings) = false := by
     simpa using Metta.Bindings.hasLoop_singleton_val_of_not_mem
-      "t" (.sym "Atom") (by simp [Metta.Atom.vars])
+      name (.sym "Atom") (by simp [Metta.Atom.vars])
   simp [Metta.Minimal.matchType, Metta.Minimal.matchReduced,
     Metta.Minimal.matchReducedList, Metta.matchAtoms,
     Metta.matchAtomsWith, Metta.Bindings.merge,
@@ -428,16 +447,35 @@ theorem repaired_selector_rejects_bound_atom_wildcard :
       (.sym "dependent-a") = .sym "dependent-a" := by
     simp [Metta.Minimal.typePrep, Metta.Minimal.subTokens.eq_1,
       Metta.Minimal.wrapStates.eq_3, Metta.Minimal.World.empty]
-  have hcheck : Metta.Minimal.typeCheckArgsOutcome dependentEnv
-      Metta.Minimal.World.empty [.expr [.sym "P", .var "t"]] 0 []
-        [.sym "dependent-a"] =
-          .success [.val "t" (.sym "Atom")] := by
-    simp [Metta.Minimal.typeCheckArgsOutcome, hprepA, ha,
+  have hfresh : Metta.Minimal.freshenFunctionTypeCandidatesAvoiding dependentEnv
+      (.expr [.sym "dependent-f", .sym "dependent-a"]) [.sym "dependent-a"]
+      (.sym "B") [] [dependentArrow] =
+        [.expr [.sym "->",
+          .expr [.sym "P",
+            .var (Metta.Minimal.captureAvoidingName ["t", "t", "t", "t"] 1 "t")],
+          .var (Metta.Minimal.captureAvoidingName ["t", "t", "t", "t"] 1 "t")]] := by
+    simp [Metta.Minimal.freshenFunctionTypeCandidatesAvoiding,
+      Metta.Minimal.functionTypeSelectionAvoiding,
+      Metta.Minimal.functionTypeSelectionAvoid,
+      Metta.Minimal.applicationTypeInferenceScope,
+      Metta.Minimal.typeInferenceAvoid, Metta.Minimal.freshenTypeCandidate,
+      Metta.Minimal.renameAllVars, dependentEnv, dependentArrow,
+      dependentArgumentType, Metta.Minimal.MinEnv.ofAtomsGT, Metta.Atom.vars]
+  rw [Metta.Minimal.selectFunctionTypeForExpected,
+    Metta.Minimal.selectFunctionTypeForExpectedAvoiding, hprepF, hf]
+  simp only [hfresh]
+  generalize Metta.Minimal.captureAvoidingName ["t", "t", "t", "t"] 1 "t" = name
+  have hbranches : Metta.Minimal.typeCheckArgsBranchesScoped dependentEnv
+      Metta.Minimal.World.empty [.expr [.sym "P", .var name]]
+      (Metta.Minimal.applicationTypeInferenceScope (.sym "B") [.sym "dependent-a"]) 0 []
+      [.sym "dependent-a"] = ⟨[[.val name (.sym "Atom")]], []⟩ := by
+    simp [Metta.Minimal.typeCheckArgsBranchesScoped,
+      Metta.Minimal.scanActualTypeBranches, hprepA, ha,
       dependentArgumentType, Metta.Minimal.freshenTypeCandidate,
       Metta.Minimal.renameAllVars, Metta.instantiate,
       dependentArgument_match]
-  have hreturn : Metta.Minimal.matchType [.val "t" (.sym "Atom")]
-      (.sym "B") (.var "t") = none := by
+  have hreturn : Metta.Minimal.matchType [.val name (.sym "Atom")]
+      (.sym "B") (.var name) = none := by
     simp [Metta.Minimal.matchType, Metta.Minimal.matchReduced,
       Metta.matchAtoms, Metta.matchAtomsWith, Metta.Bindings.merge,
       Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
@@ -445,14 +483,13 @@ theorem repaired_selector_rejects_bound_atom_wildcard :
       Metta.Bindings.unifyValues, Metta.Unify.unifyRounds,
       Metta.Unify.decomposeAll, Metta.Unify.decomposeEq,
       Metta.Atom.size, Metta.Atom.beq, BEq.beq]
-  have hinstantiate : Metta.instantiate [.val "t" (.sym "Atom")]
-      (.var "t") = .sym "Atom" := by
+  have hinstantiate : Metta.instantiate [.val name (.sym "Atom")]
+      (.var name) = .sym "Atom" := by
     exact Metta.instantiate_singleton_val_var_of_not_mem
-      "t" (.sym "Atom") (by simp [Metta.Atom.vars])
-  rw [Metta.Minimal.selectFunctionTypeForExpected, hprepF, hf]
-  simp [Metta.Minimal.scanFunctionTypeCandidatesForExpected,
-    dependentArrow, hcheck, hinstantiate, hreturn,
-    Metta.Minimal.ExpectedFunctionTypeScanOutcome.prependError]
+      name (.sym "Atom") (by simp [Metta.Atom.vars])
+  simp [Metta.Minimal.scanFunctionTypeCandidatesForExpected, hbranches,
+    Metta.Minimal.scanExpectedReturnBranches, hinstantiate, hreturn,
+    Metta.Minimal.ExpectedFunctionTypeScanOutcome.prependErrors]
 
 /-- The raw-return specification rejects the same candidate: the argument
 constraint forces `t = Atom`, while the return constraint forces `t = B`.

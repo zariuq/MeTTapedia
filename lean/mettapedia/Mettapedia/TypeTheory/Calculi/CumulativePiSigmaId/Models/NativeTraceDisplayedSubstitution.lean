@@ -47,6 +47,12 @@ theorem castSection_precompose {Gamma Delta : Type (u + 1)}
   cases equal
   rfl
 
+theorem castSection_heq {Gamma : Type (u + 1)} {a b : SetFamily Gamma}
+    (equal : a = b) (termSection : Section a) :
+    HEq (castSection equal termSection) termSection := by
+  cases equal
+  rfl
+
 /-- A de Bruijn renaming displayed over its semantic context morphism. -/
 structure Renaming {n m : Nat} (source : Context.{u} n) (target : Context.{u} m)
     (rho : Ren n m) (morphism : Morphism source target) where

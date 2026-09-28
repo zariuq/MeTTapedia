@@ -4,7 +4,7 @@ import Mettapedia.GSLT.Parsing.PlainBnfDeclarationAccumulator
 /-!
 # Sparse-trie declaration collection with exact ordered observations
 
-The finite algorithm follows the discovery source's collection clauses:
+The finite algorithm follows the discovery source's collection rules:
 first expression/span payloads are indexed; definitions are pushed onto a
 private reversed list; duplicate diagnostics are emitted in source order.
 The output is compared with the existing independent declaration semantics.
@@ -12,7 +12,7 @@ The output is compared with the existing independent declaration semantics.
 Only decidable equality of name components is used, including signed Integer
 components in structured edits. Natural-number names remain the default.
 
-This is an algorithm refinement, not a proof that authored clauses or their
+This is an algorithm refinement, not a proof that authored rules or their
 generated PeTTa realization execute it. No new grammar carrier is introduced.
 -/
 
@@ -56,7 +56,7 @@ theorem represents_append {index : Index Expression Span Scalar}
   · cases lookup name definitions <;> simp [lookup, payload, same]
 
 omit [DecidableEq Scalar] in
-/-- The source's two reverse-definition clauses are the existing reverseAux
+/-- The source's two reverse-definition rules are the existing reverseAux
 algorithm, including its arbitrary output-tail argument. -/
 theorem reverse_definitions_observation (reversed before : List (Definition (Name Scalar) Expression Span)) :
     List.reverseAux reversed before = reversed.reverse ++ before := List.reverseAux_eq

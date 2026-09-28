@@ -15,7 +15,7 @@ naturals encode both fuel and de Bruijn indices (`0 ↦ Z`, `n+1 ↦ (S n)`); id
 nullary constructors.
 
 This installment: the numeric substrate (`lt`) + **de Bruijn `shift`**, mirroring `LF.shift` /
-`lf-shift` clause-for-clause.  `shift` is self-contained (no continuation-passing needed — it is
+`lf-shift` equation-for-equation.  `shift` is self-contained (no continuation-passing needed — it is
 structural recursion on the AST with a `<`-guard), so it is the right first real brick.
 
 Integrity: 0 sorry / 0 native_decide; corpus closed by `rfl` (kernel computation on the certified
@@ -68,9 +68,9 @@ def Pi (A B : AST) : AST := .sexp (.id "Pi") [A, B]
 def Lam (A b : AST) : AST := .sexp (.id "Lam") [A, b]
 def App (f a : AST) : AST := .sexp (.id "App") [f, a]
 
-/-! ## de Bruijn `shift` — mirrors `LF.shift` / `lf-shift` clause-for-clause.
+/-! ## de Bruijn `shift` — mirrors `LF.shift` / `lf-shift` equation-for-equation.
 
-The `if (< k c)` guard is desugared to a helper `shiftVar` dispatched on `tt`/`ff`.  Binder clauses
+The `if (< k c)` guard is desugared to a helper `shiftVar` dispatched on `tt`/`ff`.  Binder rules
 raise the cutoff to `(S c)`.  All left-hand sides are headed by distinct constructors, so the system
 is orthogonal and order-independent. -/
 
@@ -95,15 +95,15 @@ def shiftRules : List RewriteDecl := ltRules ++ [
                  (App (shift (pv "c") (pv "f")) (shift (pv "c") (pv "a")))
   ]
 
-/-- The `shift` presentation (numeric substrate + shift clauses). -/
+/-- The `shift` presentation (numeric substrate + shift rules). -/
 def pShift : Presentation := .mk [] [] [] shiftRules []
 
 /-! ### `shift` corpus — proved by `rfl` on the certified normalizer.
 
-These mirror the way the recognizer uses `shift` (the arrow clause lowers `A -> B` to
+These mirror the way the recognizer uses `shift` (the arrow case lowers `A -> B` to
 `Pi A (shift 0 B)`), computed here *through `MeTTaIL.eval`*. -/
 
-/-- A free variable at index 0, cutoff 0, lifts: `shift 0 (Var 0) = Var 1`.  (The arrow-clause case.) -/
+/-- A free variable at index 0, cutoff 0, lifts: `shift 0 (Var 0) = Var 1`.  (The arrow case.) -/
 theorem shift_var0 : eval pShift 40 (shift Z (Var Z)) = Var (S Z) := by rfl
 
 /-- A variable at index 1, cutoff 0, lifts: `shift 0 (Var 1) = Var 2`. -/
@@ -194,7 +194,7 @@ theorem ctxidx_hit1 :
 
 /-! ## The parser family: `lf-atom / lf-app / lf-appmore / lf-arrow / lf-term` + `lf-recognize`.
 
-The mutually-recursive recursive-descent core, mirroring `lf_recognizer_v0.metta` clause-for-clause.
+The mutually-recursive recursive-descent core, mirroring `lf_recognizer_v0.metta` equation-for-equation.
 Every `case`-on-a-recursive-result is CPS-desugared to a continuation whose rules match **only** the
 closed result-shape set `{P, PErr}` — never a bare pattern variable — so under leftmost-outermost
 `oneStep` the inner call is forced to normal form *before* any continuation fires (a bare catch-all

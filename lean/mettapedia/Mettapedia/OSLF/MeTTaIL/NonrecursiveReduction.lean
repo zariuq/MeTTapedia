@@ -3,10 +3,9 @@ import Mettapedia.OSLF.MeTTaIL.ContextualStep
 /-!
 # Exact one-layer execution for nonrecursive LanguageDefs
 
-An authored congruence premise is the only premise form that consumes the
-recursive `rewriteAt` argument.  Consequently a language whose premises are
-congruence-free has the same one-step result at every positive contextual
-fuel.  This module records that fact once, independently of any particular
+Authored congruence and scoped-step premises are the premise forms that consume
+the recursive `rewriteAt` argument.  Consequently a language whose premises are
+free of both has the same one-step result at every positive contextual fuel.  This module records that fact once, independently of any particular
 LanguageDef.
 
 When every rule is moreover unconditional and places its right side without
@@ -27,6 +26,7 @@ set_option autoImplicit false
 /-- A premise that does not recursively invoke the enclosing reduction. -/
 def PremiseNonrecursive : Premise → Prop
   | .congruence _ _ => False
+  | .scopedStep _ => False
   | _ => True
 
 /-- Every premise of a rule is nonrecursive. -/

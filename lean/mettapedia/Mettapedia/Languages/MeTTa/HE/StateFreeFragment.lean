@@ -320,7 +320,7 @@ theorem stateOpFreeList_append :
     exact ⟨has.1, stateOpFreeList_append has.2 hbs⟩
 
 /-- Once mutation-head symbols themselves are excluded, expression closure is
-exactly child-list closure; the explicit head clause is a convenient runtime
+exactly child-list closure; the explicit head case is a convenient runtime
 eliminator, not an additional restriction. -/
 theorem stateOpFree_expr_iff_list {atoms : List Atom} :
     StateOpFree (.expr atoms) ↔ StateOpFreeList atoms := by
@@ -524,7 +524,7 @@ theorem not_groundingTableStateOpFree_mutating_error :
   simp [GroundedOutcomeStateOpFree, worldMutatingHeads] at emitted
 
 /-- Negative: a mutating control symbol is excluded even while it is inert
-data.  This conservative clause is required for evaluator closure because
+data.  This conservative case is required for evaluator closure because
 `cons-atom` can promote a symbol value into expression-head position. -/
 theorem not_stateOpFree_mutating_symbol :
     ¬StateOpFree (.sym "add-atom") := by

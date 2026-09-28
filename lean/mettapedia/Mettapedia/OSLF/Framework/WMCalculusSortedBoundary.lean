@@ -176,6 +176,7 @@ theorem congruencePatternChecks_eq (ctx : String) (constructors : List String)
   simp [LanguageDef.validateRulePatterns, congruencePatternChecks,
     LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
     LanguageDef.premiseProducedFvarNames, LanguageDef.premiseForAllParams,
+    LanguageDef.premiseLocallyScoped, Bool.and_assoc,
     patternFvarNames_nil, ← binderNames_eq]
   rfl
 

@@ -30,6 +30,8 @@ universe u v w w'
 
 /-! ## The category of indexed families -/
 
+-- The bundled fields intentionally retain separate universes.
+set_option linter.checkUnivs false in
 /-- An indexed family consists of an index type and a type over each index. -/
 structure IndexedFamily where
   Index : Type w

@@ -25,7 +25,7 @@ known desires; this module does not deny that result.
 namespace Mettapedia.CognitiveArchitecture.GodelClaw.Ethics
 
 export Mettapedia.CognitiveArchitecture.GodelClaw
-  (CoreValueDeclaration UniversalLovingCare oruzisCore SeedIdentity
+  (CoreValueDeclaration oruzisCore SeedIdentity
    ValuePreserving id_is_value_preserving)
 
 export Mettapedia.CognitiveArchitecture.GodelClaw.EpistemicLove

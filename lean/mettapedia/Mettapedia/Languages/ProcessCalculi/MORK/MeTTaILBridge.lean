@@ -1106,6 +1106,8 @@ private theorem premiseChain_matchSourceFactorsExt_go_aux {relEnv : ILRelEnv} {l
         (fun a' ha' => hwit_not_consumed a' (List.mem_cons_of_mem a ha'))
     | congruence _ _ =>
       simp [allPremisesTranslatableExt, List.all_cons, premiseToFactorOrGuard] at htrans
+    | scopedStep _ =>
+      simp [allPremisesTranslatableExt, List.all_cons, premiseToFactorOrGuard] at htrans
     | forAll _ _ _ =>
       simp [allPremisesTranslatableExt, List.all_cons, premiseToFactorOrGuard] at htrans
   | @guard bs0' bs_final' prems' witnesses' prem hnotfactor hstep htail ih =>
@@ -1120,6 +1122,8 @@ private theorem premiseChain_matchSourceFactorsExt_go_aux {relEnv : ILRelEnv} {l
     | freshness fc =>
       rw [premisesToSourceFactorsExt_cons_freshness]
       exact ih htrans_rest hnodup consumed hwit_not_consumed
+    | scopedStep _ =>
+      simp [allPremisesTranslatableExt, List.all_cons, premiseToFactorOrGuard] at htrans
     | forAll _ _ _ =>
       simp [allPremisesTranslatableExt, List.all_cons, premiseToFactorOrGuard] at htrans
 

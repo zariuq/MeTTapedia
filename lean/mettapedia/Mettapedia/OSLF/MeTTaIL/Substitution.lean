@@ -616,6 +616,47 @@ theorem liftBVars_injective (cutoff shift : Nat) :
   have lowered := congrArg (unliftBVars cutoff shift) equality
   simpa only [unliftBVars_liftBVars] using lowered
 
+/-- Eliminating a binder above every index of a scoped pattern leaves that
+pattern unchanged, independently of the replacement. -/
+theorem instantiateBVarAt_eq_self_of_isWellScopedAt {depth : Nat}
+    {replacement body : Pattern}
+    (hbody : body.isWellScopedAt depth = true) :
+    instantiateBVarAt depth replacement body = body := by
+  induction body using Pattern.inductionOn generalizing depth with
+  | hbvar index =>
+      simp only [Pattern.isWellScopedAt] at hbody
+      have below : index < depth := of_decide_eq_true hbody
+      simp [instantiateBVarAt, below]
+  | hfvar _ => simp only [instantiateBVarAt]
+  | happly _ arguments ih =>
+      simp only [Pattern.isWellScopedAt] at hbody
+      simp only [instantiateBVarAt]
+      congr 1
+      exact list_map_eq_self_scoped fun argument hmem =>
+        ih argument hmem (isWellScopedListAt_mem hbody hmem)
+  | hlambda _ body ih =>
+      simp only [Pattern.isWellScopedAt] at hbody
+      simp only [instantiateBVarAt]
+      congr 1
+      exact ih hbody
+  | hmultiLambda _ _ body ih =>
+      simp only [Pattern.isWellScopedAt] at hbody
+      simp only [instantiateBVarAt]
+      congr 1
+      exact ih hbody
+  | hsubst nestedBody nestedReplacement ihBody ihReplacement =>
+      simp only [Pattern.isWellScopedAt, Bool.and_eq_true] at hbody
+      simp only [instantiateBVarAt]
+      congr 1
+      · exact ihBody hbody.1
+      · exact ihReplacement hbody.2
+  | hcollection _ elements _ ih =>
+      simp only [Pattern.isWellScopedAt] at hbody
+      simp only [instantiateBVarAt]
+      congr 1
+      exact list_map_eq_self_scoped fun element hmem =>
+        ih element hmem (isWellScopedListAt_mem hbody hmem)
+
 /-- On a body scoped beneath exactly the eliminated binder and a closed
 replacement, binder-eliminating instantiation agrees with ordinary opening. -/
 theorem instantiateBVarAt_eq_openBVar_of_isWellScoped {depth : Nat}
